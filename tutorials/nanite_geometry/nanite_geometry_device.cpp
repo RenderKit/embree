@@ -356,10 +356,12 @@ namespace embree {
     static const uint EXPONENT_BITS = 4;    
     static const uint MANTISSA_BITS = 5;
     static const uint RP_BITS       = SIGN_BIT + EXPONENT_BITS + MANTISSA_BITS;
-
     static const uint EXPONENT_MASK = ((uint)1 << EXPONENT_BITS)-1;    
     static const uint MANTISSA_MASK = ((uint)1 << MANTISSA_BITS)-1;
     static const uint RP_MASK       = ((uint)1 << RP_BITS)-1;
+
+    static const uint FLOAT_EXPONENT_BIAS = 126; // 127-1 due to zigzag encoding
+    static const uint FLOAT_MANTISSA_BITS = 23;
     
     const Vec3f v0,v1,v2,v3;
 
@@ -372,61 +374,37 @@ namespace embree {
     {
       return (i >> 1) ^ -(i & 1);
     }
-    
+        
+    static __forceinline uint encodeFloat(const float diff) 
+    {
+      int exponent; uint mantissa = as_uint(frexp(diff, &exponent));
+      /*--- clamp exponent---*/
+      exponent = max(exponent, ((int)(-1) << (EXPONENT_BITS-1))+1 );
+      exponent = min(exponent, ((int)( 1) << (EXPONENT_BITS-1))   );      
+      uint exp = zigzagEncode(exponent);
+      /*--- round mantissa---*/      
+      mantissa += (uint)1 << (FLOAT_MANTISSA_BITS-MANTISSA_BITS-1);
+      /*--- clamp mantissa---*/            
+      mantissa >>= FLOAT_MANTISSA_BITS-MANTISSA_BITS;
+      mantissa &= MANTISSA_MASK;
+      const uint sign = diff < 0.0f ? ((uint)1<<(RP_BITS-1)) : 0;
+      return sign | (exp << MANTISSA_BITS) | mantissa;      
+    }
+
+    static __forceinline float decodeFloat(const uint input)
+    {
+      const uint sign = (input >> (RP_BITS-1)) << 31;
+      const uint exp  = ( ((uint)zigzagDecode((input >> MANTISSA_BITS) & EXPONENT_MASK)+FLOAT_EXPONENT_BIAS)<<FLOAT_MANTISSA_BITS);
+      const uint mant = ((input & MANTISSA_MASK) << (FLOAT_MANTISSA_BITS-MANTISSA_BITS));
+      const uint output = input != 0 ? (sign|exp|mant) : 0;
+      return as_float(output);
+    }
+
     __forceinline Vec3f evalBilinearPatch(const float u, const float v)
     {
       return lerp(lerp(v0,v1,u),lerp(v3,v2,u),v);
     }
-
-    __forceinline uint encodeFloatNew(const float old_p, const float new_p) 
-    {
-      PRINT("ENCODE NEW");
-      PRINT5(old_p,new_p,as_uint(new_p),as_uint(old_p),as_uint(new_p)-as_uint(old_p));
-      PRINT2(new_p-old_p,as_uint(new_p-old_p));
-
-      int old_exponent; uint old_mantissa = as_uint(frexp(old_p, &old_exponent));
-      int new_exponent; uint new_mantissa = as_uint(frexp(new_p, &new_exponent));
-
-      PRINT4(old_exponent,new_exponent,old_mantissa,new_mantissa);
-      PRINT2(old_exponent^new_exponent,old_mantissa^new_mantissa);
-      
-      return 0;
-    }
     
-    __forceinline uint encodeFloat(const float diff) // FIXME: zigzag encoding
-    {
-      PRINT("ENCODE");
-      PRINT2(diff,as_uint(diff));
-      int exponent; uint mantissa = as_uint(frexp(diff, &exponent));
-      //PRINT2(exponent,mantissa);
-      uint exp = zigzagEncode(exponent);
-      //PRINT(zigzagDecode(exp));
-      mantissa >>= 23-MANTISSA_BITS;
-      mantissa &= MANTISSA_MASK;
-      const uint sign = diff < 0.0f ? ((uint)1<<(RP_BITS-1)) : 0;
-      //PRINT(sign);
-      return sign | (exp << MANTISSA_BITS) | mantissa;      
-    }
-
-    __forceinline float decodeFloat(const uint input)
-    {
-      PRINT("DECODE");
-      if (input == 0) return as_float(0);
-      const uint sign = (input >> 9) << 31;
-      //PRINT( zigzagDecode((input >> MANTISSA_BITS) & EXPONENT_MASK) );
-      //PRINT( zigzagDecode((input >> MANTISSA_BITS) & EXPONENT_MASK)+126 );
-      
-      const uint exp  = ( ((uint)zigzagDecode((input >> MANTISSA_BITS) & EXPONENT_MASK)+126)<<23) & 0x7f800000;
-      const uint mant = ((input & MANTISSA_MASK) << (23-MANTISSA_BITS)) & (((uint)1<<23)-1);
-      const uint output = sign|exp|mant;
-      PRINT5(sign,exp,mant,output,as_float(output));
-
-      {
-        int exponent; uint mantissa = as_uint(frexp(as_float(output), &exponent));
-        //PRINT2(exponent,mantissa);
-      }
-      return as_float(output);
-    }
     
     __forceinline uint encode(const Vec3f &p, const uint x, const uint y, const uint gridResX, const uint gridResY)
     {
@@ -434,10 +412,9 @@ namespace embree {
       const float v = (float)y / (gridResY-1);      
       const Vec3f bp_p = evalBilinearPatch(u,v);
       const Vec3f diff = p - bp_p;
-      const uint rp_x = 0; //encodeFloat(diff.x);
+      const uint rp_x = encodeFloat(diff.x);
       const uint rp_y = encodeFloat(diff.y);
-      PRINT(encodeFloatNew(bp_p.y,p.y));
-      const uint rp_z = 0; //encodeFloat(diff.z);
+      const uint rp_z = encodeFloat(diff.z);
       return rp_x | (rp_y << (1*RP_BITS)) | (rp_z << (2*RP_BITS));
     }
 
@@ -446,9 +423,9 @@ namespace embree {
       const float u = (float)x / (gridResX-1);
       const float v = (float)y / (gridResY-1);      
       const Vec3f bp_p = evalBilinearPatch(u,v);
-      const float px = bp_p.x; // + decodeFloat((input>>0*RP_BITS) & RP_MASK);
+      const float px = bp_p.x + decodeFloat((input>>0*RP_BITS) & RP_MASK);
       const float py = bp_p.y + decodeFloat((input>>1*RP_BITS) & RP_MASK);
-      const float pz = bp_p.z; // + decodeFloat((input>>2*RP_BITS) & RP_MASK);
+      const float pz = bp_p.z + decodeFloat((input>>2*RP_BITS) & RP_MASK);
       return Vec3f(px,py,pz);
     }
     
@@ -502,8 +479,15 @@ namespace embree {
 
     
     PRINT3(sizeQuadTrees,sizeLCGPtrs,sizeCrackFixQuadNodes);
-
+    PRINT(LCGBP::zigzagEncode(0));
+    PRINT(LCGBP::zigzagDecode(0));
+    PRINT(LCGBP::encodeFloat(0.0f));
+    PRINT(LCGBP::decodeFloat(0));
+    
     float max_error = 0.0f;
+    double avg_error = 0.0;
+    uint num_error = 0;
+    BBox3f bounds(empty);
     
     uint index = 0;
     for (uint i=0;i<grid->numGrids;i++)
@@ -523,42 +507,39 @@ namespace embree {
           {
             PRINT2(local_index,NUM_TOTAL_QUAD_NODES_PER_RTC_LCG);
             FATAL("NUM_TOTAL_QUAD_NODES_PER_RTC_LCG");
-          }
-#if 1
-          LCGBP lcgbp(current->getVertex(0,0),
-                      current->getVertex(RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1,0),
-                      current->getVertex(RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1,RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1),
-                      current->getVertex(0,RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1));
-          
-          for (uint y=0;y<RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES;y++)
-          {
-            for (uint x=0;x<RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES;x++)            
-            {
-              const uint index = y*RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES+x;
-              const Vec3f org_v  = current->getVertex(x,y);
-
-              const uint encoded = lcgbp.encode(org_v,x,y,RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES,RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES);
-              const Vec3f new_v  = lcgbp.decode(encoded,x,y,RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES,RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES);
-              const float error = length(new_v-org_v);
-              max_error = max(max_error,error);
-              if (max_error > 0.5f)
-              {
-                PRINT5(x,org_v,encoded,new_v,error);
-                exit(0);                
-              }
-              PRINT2(error,max_error);
-            }
-            
-          }
-          // ===============
-#endif          
-          
+          }          
           index++;
+
+#if 1
+          LCGBP lcgbp(getVertex(start_x,start_y,vtx,grid_resX,grid_resY),
+                      getVertex(start_x+InitialSubGridRes-1,start_y,vtx,grid_resX,grid_resY),
+                      getVertex(start_x+InitialSubGridRes-1,start_y+InitialSubGridRes-1,vtx,grid_resX,grid_resY),
+                      getVertex(start_x,start_y+InitialSubGridRes-1,vtx,grid_resX,grid_resY));
+      
+          for (int y=0;y<InitialSubGridRes;y++)
+            for (int x=0;x<InitialSubGridRes;x++)
+            {          
+              const Vec3f org_v  = getVertex(start_x+x,start_y+y,vtx,grid_resX,grid_resY);
+              bounds.extend(org_v);
+              const uint encoded = lcgbp.encode(org_v,x,y,InitialSubGridRes,InitialSubGridRes);
+              const Vec3f new_v  = lcgbp.decode(encoded,x,y,InitialSubGridRes,InitialSubGridRes);
+              const float error = length(new_v-org_v);
+              avg_error += (double)error;
+              max_error = max(max_error,error);
+              num_error++;
+            }
+          // ===============
+#endif                
         }
     }
+
+    PRINT2(bounds,length(bounds.size()));
+    
     if (index > numSubGrids)
       FATAL("numSubGrids");    
 
+    PRINT2((float)(avg_error / num_error),max_error);
+    
     // PRINT(max_error);
     // exit(0);
     
