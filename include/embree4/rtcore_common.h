@@ -457,7 +457,7 @@ inline decltype(F) rtcGetSYCLDeviceFunctionPointer(sycl::queue& queue)
 {
   sycl::buffer<cl_ulong> fptr_buf(1);
   {
-    auto fptr_acc = fptr_buf.get_access<sycl::access::mode::write>();
+    auto fptr_acc = fptr_buf.get_host_access(); // <sycl::access::mode::write>
     fptr_acc[0] = 0;
   }
 
@@ -469,7 +469,7 @@ inline decltype(F) rtcGetSYCLDeviceFunctionPointer(sycl::queue& queue)
     });
   queue.wait_and_throw();
 
-  auto fptr_acc = fptr_buf.get_access<sycl::access::mode::read>();
+  auto fptr_acc = fptr_buf.get_host_access(); // <sycl::access::mode::read>
   return (decltype(F)) fptr_acc[0];
 }
 
