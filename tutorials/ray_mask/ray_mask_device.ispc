@@ -18,7 +18,7 @@ uniform TutorialData data;
 extern uniform bool g_ray_mask;
 
 /* adds a cube to the scene */
-uniform unsigned int addCube (RTCScene scene_i, uniform Vec3f d, uniform unsigned int mask)
+uniform unsigned int addCube (RTCScene scene_i, const uniform Vec3f& d, uniform unsigned int mask)
 {
   /* create a triangulated cube with 12 triangles and 8 vertices */
   RTCGeometry mesh = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
