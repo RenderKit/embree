@@ -4,7 +4,14 @@
 #pragma once
 
 #include <cstdint>
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#pragma clang diagnostic ignored "-W#pragma-messages"
+
 #include <sycl/sycl.hpp>
+
+#pragma clang diagnostic pop
 
 enum TraceRayCtrl
 {

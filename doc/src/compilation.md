@@ -17,12 +17,8 @@ C++11. Embree is tested with the following compilers:
 
 Linux
 
-  - Intel® oneAPI DPC++/C++ Compiler 2022.0.0
-  - Intel® Compiler 2020 Update 1
-  - Intel® Compiler 2019 Update 4
-  - Intel® Compiler 2018
-  - Intel® Compiler 2017 Update 1
-  - Intel® Compiler 2016 Update 3
+  - Intel® oneAPI DPC++/C++ Compiler 2023.0.0
+  - oneAPI DPC++/C++ Compiler 2022-12-14
   - Clang 5.0.0
   - Clang 4.0.0
   - GCC 10.0.1 (Fedora 32) AVX512 support
@@ -30,13 +26,17 @@ Linux
   - GCC  7.3.1 (Fedora 27) AVX2 support
   - GCC  7.3.1 (Fedora 26) AVX2 support
   - GCC  6.4.1 (Fedora 25) AVX2 support
+  - Intel® Implicit SPMD Program Compiler 1.18.1
+  - Intel® Implicit SPMD Program Compiler 1.17.0
   - Intel® Implicit SPMD Program Compiler 1.16.1
   - Intel® Implicit SPMD Program Compiler 1.15.0
+  - Intel® Implicit SPMD Program Compiler 1.14.1
+  - Intel® Implicit SPMD Program Compiler 1.13.0
   - Intel® Implicit SPMD Program Compiler 1.12.0
   
 macOS x86
 
-  - Intel® Compiler 2021 Update 1
+  - Intel® C++ Classic Compiler 2023.0.0
   - Apple Clang 12.0.5 (macOS 11.7.1)
 
 macOS M1
@@ -50,16 +50,16 @@ also use TBB inside your application. Optionally you can disable TBB
 in Embree through the `EMBREE_TASKING_SYSTEM` CMake variable.
 
 Embree supports the Intel® Implicit SPMD Program Compiler (Intel® ISPC), which allows
-straightforward parallelization of an entire renderer. If you do not
-want to use Intel® ISPC then you can disable `EMBREE_ISPC_SUPPORT` in
-CMake. Otherwise, download and install the Intel® ISPC binaries from
+straightforward parallelization of an entire renderer. If you
+want to use Intel® ISPC then you can enable `EMBREE_ISPC_SUPPORT` in
+CMake. Download and install the Intel® ISPC binaries from
 [ispc.github.io](https://ispc.github.io/downloads.html). After
-installation, put the path to `ispc` permanently into your `PATH`
-environment variable or you need to correctly set the
-`EMBREE_ISPC_EXECUTABLE` variable during CMake configuration.
+installation, put the path to `ispc` permanently into your `PATH` environment
+variable or you set the `EMBREE_ISPC_EXECUTABLE` variable to point at the ISPC
+executable during CMake configuration.
 
 You additionally have to install CMake 3.1.0 or higher and the developer
-version of GLUT.
+version of [GLFW](https://www.glfw.org/) version 3.
 
 Under macOS, all these dependencies can be installed
 using [MacPorts](http://www.macports.org/):
@@ -94,13 +94,10 @@ Per default CMake will use the compilers specified with the `CC` and
 `CXX` environment variables. Should you want to use a different
 compiler, run `cmake` first and set the `CMAKE_CXX_COMPILER` and
 `CMAKE_C_COMPILER` variables to the desired compiler. For example, to
-use the Intel® Compiler instead of the default GCC on most Linux machines
+use the Clang compiler instead of the default GCC on most Linux machines
 (`g++` and `gcc`), execute
 
-    cmake -DCMAKE_CXX_COMPILER=icpc -DCMAKE_C_COMPILER=icc ..
-
-Similarly, to use Clang set the variables to `clang++` and `clang`,
-respectively.
+    cmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang ..
 
 Running `ccmake` will open a dialog where you can perform various
 configurations as described below in [CMake Configuration]. After having
@@ -135,43 +132,70 @@ your application with such an Embree package.
 Linux SYCL Compilation
 -----------------------
 
-To compile Embree using SYCL one has to use Intel's DPC++ compiler,
-other SYCL compilers are not supported. The Embree SYCL compilation
-under Linux has been tested with the following compilers:
+There are two options to compile Embree with SYCL support:
+The open source ["oneAPI DPC++ Compiler"](https://github.com/intel/llvm/) or
+the ["Intel(R) oneAPI DPC++/C++ Compiler"](https://www.intel.com/content/www/us/en/developer/articles/tool/oneapi-standalone-components.html#dpcpp-cpp).
+Other SYCL compilers are not supported.
 
-  - [oneAPI DPC++ compiler 2022-09-14](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20220914/dpcpp-compiler.tar.gz)
+The "oneAPI DPC++ Compiler" is more up-to-date then the "Intel(R) oneAPI
+DPC++/C++ Compiler" but less stable. The current tested version of the "oneAPI
+DPC++ compiler is
+
+  - [oneAPI DPC++ Compiler 2022-12-14](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20221214/dpcpp-compiler.tar.gz)
   
-Please download and install one of these compilers. E.g. to install
-the oneAPI DPC++ compiler 2022-09-14 compiler:
+The compiler can be download and simply extracted. The oneAPI DPC++ compiler
+2022-12-14 can be setup executing the following command in a Linux (bash)
+shell:
 
-    wget https://github.com/intel/llvm/releases/download/sycl-nightly%2F20220914/dpcpp-compiler.tar.gz
+    wget https://github.com/intel/llvm/releases/download/sycl-nightly%2F20221214/dpcpp-compiler.tar.gz
     tar xzf dpcpp-compiler.tar.gz
     source ./dpcpp_compiler/startup.sh
 
 The `startup.sh` script will put `clang++` and `clang` from the
-DPC++ compiler into your path.
+oneAPI DPC++ Compiler into your path.
 
 Please also install all Linux packages described in the previous
 section.
 
-Now you can compile Embree using CMake. Create a build directory
-inside the Embree root directory and execute `cmake ..` inside this
-build directory.
+Now, you can configure Embree using CMake by executing the following command
+in the Embree root directory:
 
-    mkdir build
-    cd build
-    cmake -DCMAKE_CXX_COMPILER=clang++ \
+    cmake -B build \
+          -DCMAKE_CXX_COMPILER=clang++ \
           -DCMAKE_C_COMPILER=clang \
-          -DEMBREE_ISPC_SUPPORT=OFF \
-          -DEMBREE_SYCL_SUPPORT=ON ..
+          -DEMBREE_SYCL_SUPPORT=ON
 
-This configures the usage of the just installed DPC++ compiler,
-disables ISPC with `EMBREE_ISPC_SUPPORT=OFF` and turn on SYCL support
+This will create a directory `build` to use as the CMake build directory,
+configure the usage of the oneAPI DPC++ Compiler, and turn on SYCL support
 through `EMBREE_SYCL_SUPPORT=ON`.
 
-Now you can compile the Embree code:
+Alternatively, you can download and run the installer of the
 
-    cmake --build . -j 8
+ - [Intel(R) oneAPI DPC++/C++ Compiler 2023.0.0](https://www.intel.com/content/www/us/en/developer/articles/tool/oneapi-standalone-components.html#dpcpp-cpp).
+
+After installation, you can setup the compiler by sourcing the
+`vars.sh` script in the `env` directory of the compiler install directory, for example
+
+    source /opt/intel/oneAPI/compiler/2023.0.0/env/vars.sh
+
+This script will put the `icpx` and `icx` compiler executables from the
+Intel(R) oneAPI DPC++/C++ Compiler in your path.
+
+Now, you can configure Embree using CMake by executing the following command
+in the Embree root directory:
+
+    cmake -B build \
+          -DCMAKE_CXX_COMPILER=icpx \
+          -DCMAKE_C_COMPILER=icx \
+          -DEMBREE_SYCL_SUPPORT=ON
+
+More information about setting up the Intel(R) oneAPI DPC++/C++ compiler can be
+found in the [Development Reference Guide](https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compiler-setup.html). Please note, that the Intel(R) oneAPI DPC++/C++ compiler
+requires [at least CMake version 3.20.5 on Linux](https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compiler-setup/use-the-command-line/use-cmake-with-the-compiler.html).
+
+Independent of the DPC++ compiler choice, you can now build Embree using
+
+    cmake --build build -j 8
 
 The executables will be generated inside the build folder. The
 executable names of the SYCL versions of the tutorials end with
@@ -203,17 +227,18 @@ Windows
         
 Embree is tested using the following compilers under Windows:
 
+  - Intel® oneAPI DPC++/C++ Compiler 2023.0.0
+  - oneAPI DPC++/C++ Compiler 2022-12-14
   - Visual Studio 2019
   - Visual Studio 2017
   - Visual Studio 2015 (Update\ 1)
-  - Intel® oneAPI DPC++/C++ Compiler 2022.0.0
-  - Intel® Compiler 2019 Update 6
-  - Intel® Compiler 2017 Update 8
-  - LLVM Clang 9.0.0
+  - Intel® Implicit SPMD Program Compiler 1.18.1
+  - Intel® Implicit SPMD Program Compiler 1.17.0
+  - Intel® Implicit SPMD Program Compiler 1.16.1
+  - Intel® Implicit SPMD Program Compiler 1.15.0
   - Intel® Implicit SPMD Program Compiler 1.14.1
   - Intel® Implicit SPMD Program Compiler 1.13.0
   - Intel® Implicit SPMD Program Compiler 1.12.0
-  - Intel® Implicit SPMD Program Compiler 1.9.2
     
 
 To compile Embree for AVX-512 you have to use the Intel® Compiler.
@@ -233,18 +258,18 @@ to make sure that the libraries `tbb.dll` and `tbb_malloc.dll` can be
 found when executing your Embree applications, e.g. by putting the path
 to these libraries into your `PATH` environment variable.
 
-Embree supports the Intel® Implicit SPMD Program Compiler (Intel® ISPC), which allows
-straightforward parallelization of an entire renderer. When installing
+Embree supports the Intel® Implicit SPMD Program Compiler (Intel® ISPC), which
+allows straightforward parallelization of an entire renderer. When installing
 Intel® ISPC, make sure to download an Intel® ISPC version from
-[ispc.github.io](https://ispc.github.io/downloads.html) that is
-compatible with your Visual Studio version. After installation, put
-the path to `ispc.exe` permanently into your `PATH` environment
-variable or you need to correctly set the `EMBREE_ISPC_EXECUTABLE` variable
-during CMake configuration. If you do not want to use Intel® ISPC then you
-can disable `EMBREE_ISPC_SUPPORT` in CMake.
+[ispc.github.io](https://ispc.github.io/downloads.html) that is compatible with
+your Visual Studio version. After installation, put the path to `ispc.exe`
+permanently into your `PATH` environment variable or you need to correctly set
+the `EMBREE_ISPC_EXECUTABLE` variable during CMake configuration to point to
+the ISPC executaleb. If you want to use Intel® ISPC, you have to enable
+`EMBREE_ISPC_SUPPORT` in CMake.
 
 You additionally have to install [CMake](http://www.cmake.org/download/)
-(version 3.1.0 or higher). Note that you need a native Windows CMake
+(version 3.1 or higher). Note that you need a native Windows CMake
 installation, because CMake under Cygwin cannot generate solution files
 for Visual Studio.
 
@@ -258,9 +283,7 @@ for a 64-bit build.
 To use a different compiler than the Microsoft Visual C++ compiler, you
 additionally need to specify the proper compiler toolset through the
 option "Optional toolset to use (-T parameter)". E.g. to use Clang for
-compilation set the toolset to "LLVM_v142", to use the Intel®
-Compiler 2017 for compilation set the toolset to "Intel C++
-Compiler 17.0".
+compilation set the toolset to "LLVM_v142".
 
 Do not change the toolset manually in a solution file (neither through
 the project properties dialog, nor through the "Use Intel Compiler"
@@ -279,9 +302,8 @@ The following CMake options are only available under Windows:
 +  `USE_STATIC_RUNTIME`: Use the static version of the C/C++ runtime
   library. This option is turned OFF by default.
 
-Use the generated Visual Studio solution file `embree3.sln` to compile
-the project. To build Embree with support for the AVX2 instruction set
-you need at least Visual Studio 2013 (Update\ 4).
+Use the generated Visual Studio solution file `embree4.sln` to compile
+the project.
 
 We recommend enabling syntax highlighting for the `.ispc` source and
 `.isph` header files. To do so open Visual Studio, go to Tools ⇒
@@ -296,13 +318,7 @@ Studio command prompt:
     cd path\to\embree
     mkdir build
     cd build
-    cmake -G "Visual Studio 12 2013 Win64" ..
-    cmake --build . --config Release
-
-To use the Intel® Compiler, set the proper toolset, e.g. for Intel
-Compiler 17.0:
-
-    cmake -G "Visual Studio 12 2013 Win64" -T "Intel C++ Compiler 17.0" ..
+    cmake -G "Visual Studio 16 2019" ..
     cmake --build . --config Release
 
 You can also build only some projects with the `--target` switch.
@@ -330,17 +346,21 @@ on the vcpkg repository.
 Windows SYCL Compilation
 -------------------------
 
-To compile Embree using SYCL one has to use Intel's DPC++ compiler,
-other SYCL compilers are not supported. The Embree SYCL compilation
-under Windows has been tested with the following compilers:
+There are two options to compile Embree with SYCL support:
+The open source ["oneAPI DPC++ Compiler"](https://github.com/intel/llvm/) or
+the ["Intel(R) oneAPI DPC++/C++ Compiler"](https://www.intel.com/content/www/us/en/developer/articles/tool/oneapi-standalone-components.html#dpcpp-cpp).
+Other SYCL compilers are not supported. You will also need an installed version
+of Visual Studio that supports the C++17 standart, e.g. Visual Studio 2019.
 
-  - [oneAPI DPC++ compiler 2022-09-14](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20220914/dpcpp-compiler-win.tar.gz)
-  
-Please download and install one of these compilers.
+The "oneAPI DPC++ Compiler" is more up-to-date then the "Intel(R) oneAPI
+DPC++/C++ Compiler" but less stable. The current tested version of the oneAPI
+DPC++ compiler is
 
-Then open some "x64 Native Tools Command Prompt" of Visual Studio and
-execute the following line with properly configures the environment to
-use the DPC++ compiler:
+  - [oneAPI DPC++ Compiler 2022-12-14](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20221214/dpcpp-compiler-win.tar.gz)
+
+Download and unpack the archive, and open the "x64 Native Tools Command Prompt"
+of Visual Studio and execute the followings line to properly configure the
+environment to use the oneAPI DPC++ compiler:
 
     set "DPCPP_DIR=path_to_dpcpp_compiler"
     set "PATH=%DPCPP_DIR%\bin;%PATH%"
@@ -349,37 +369,63 @@ use the DPC++ compiler:
     set "INCLUDE=%DPCPP_DIR%\include;%INCLUDE%"
     set "LIB=%DPCPP_DIR%\lib;%LIB%"
 
-The `path_to_dpcpp_compiler` should point to your unpacked DPC++
+The `path_to_dpcpp_compiler` should point to the unpacked oneAPI DPC++
 compiler.
 
-Now you can configure Embree using CMake. Create a build directory
-inside the Embree root directory and execute `cmake ..` inside this
-build directory.
+Now, you can configure Embree using CMake by executing the following command
+in the Embree root directory:
 
-    mkdir build
-    cd build
-
-    cmake -G Ninja
+    cmake -B build
+          -G Ninja
           -D CMAKE_BUILD_TYPE=Release
           -D CMAKE_CXX_COMPILER=clang++
           -D CMAKE_C_COMPILER=clang
-          -D EMBREE_MAX_ISA=SSE2
-          -D EMBREE_ISPC_SUPPORT=OFF
           -D EMBREE_SYCL_SUPPORT=ON
-          -D TBB_ROOT=path_to_tbb\lib\cmake\tbb ..
+          -D TBB_ROOT=path_to_tbb\lib\cmake\tbb
 
-This uses the Ninja generator which is required for the DPC++
-compiler, and configures a release build that uses `clang++` and
-`clang` from the just installed DPC++ compiler.
+This will create a directory `build` to use as the CMake build directory, and
+configure a release build that uses `clang++` and `clang` from the oneAPI DPC++
+compiler.
 
-We also enable SYCL support in Embree using the
-`EMBREE_SYCL_SUPPORT` CMake option, and only enable just in time
-compilation (JIT compilation) by setting `EMBREE_SYCL_AOT_DEVICES` to
-`none`.
+The [Ninja](https://ninja-build.org/) generator is currently the easiest way to
+use the oneAPI DPC++ compiler.
 
-Now you can build Embree:
+We also enable SYCL support in Embree using the `EMBREE_SYCL_SUPPORT` CMake
+option.
 
-    cmake --build .
+Alternatively, you can download and run the installer of the
+
+ - [Intel(R) oneAPI DPC++/C++ Compiler 2023.0.0](https://www.intel.com/content/www/us/en/developer/articles/tool/oneapi-standalone-components.html#dpcpp-cpp).
+
+After installation, you can either open a regular `Command Prompt` and execute
+the `vars.bat` script in the `env` directory of the compiler install directory,
+for example
+
+    C:\Program Files (x86)\Intel\oneAPI\compiler\2023.0.0\env\vars.bat
+
+or simply open the installed "Intel oneAPI command prompt for Intel 64 for Visual Studio".
+
+Both ways will put the `icx` compiler executable from the
+Intel(R) oneAPI DPC++/C++ compiler in your path.
+
+Now, you can configure Embree using CMake by executing the following command
+in the Embree root directory:
+
+    cmake -B build
+          -G Ninja
+          -D CMAKE_BUILD_TYPE=Release
+          -D CMAKE_CXX_COMPILER=icx
+          -D CMAKE_C_COMPILER=icx
+          -D EMBREE_SYCL_SUPPORT=ON
+          -D TBB_ROOT=path_to_tbb\lib\cmake\tbb
+
+More information about setting up the Intel(R) oneAPI DPC++/C++ compiler can be
+found in the [Development Reference Guide](https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compiler-setup.html). Please note, that the Intel(R) oneAPI DPC++/C++ compiler
+requires [at least CMake version 3.23 on Windows](https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compiler-setup/use-the-command-line/use-cmake-with-the-compiler.html).
+
+Independent of the DPC++ compiler choice, you can now build Embree using
+
+    cmake --build build
 
 If you have problems with Ninja re-running CMake in an infinite loop,
 then first remove the "Re-run CMake if any of its inputs changed."
@@ -387,7 +433,7 @@ section from the `build.ninja` file and run the above command again.
 
 You can also create an Embree package using the following command:
 
-    cmake --build . --target package
+    cmake --build build --target package
 
 Please see the [Building Embree SYCL Applications] section on how to build
 your application with such an Embree package.
@@ -416,7 +462,7 @@ parameters that can be configured in CMake:
   from buffer overwrites. This option is OFF by default.
 
 + `EMBREE_ISPC_SUPPORT`: Enables Intel® ISPC support of Embree. This option
-  is ON by default.
+  is OFF by default.
 
 + `EMBREE_SYCL_SUPPORT`: Enables GPU support using SYCL. When this
   option is enabled you have to use some DPC++ compiler. Please see

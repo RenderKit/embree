@@ -3,7 +3,13 @@
 
 #pragma once
 
-#include <level_zero/ze_api.h>
+#if !defined(EMBREE_LEVEL_ZERO)
+struct _ze_device_handle_t {};
+#else
+struct _ze_device_handle_t;
+#endif
+
+typedef struct _ze_device_handle_t *ze_device_handle_t;
 
 #if defined(__cplusplus)
 #  define RTHWIF_API_EXTERN_C extern "C"

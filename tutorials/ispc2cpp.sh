@@ -31,6 +31,7 @@ sed -i.backup 's/int8/char/g' $2
 sed -i.backup 's/int16/int16_t/g' $2
 sed -i.backup 's/int32/int32_t/g' $2
 sed -i.backup 's/int64/int64_t/g' $2
+sed -i.backup 's/uint64/uint64/g' $2
 sed -i.backup 's/uchar/uint8_t/g' $2
 sed -i.backup  's/uintptr_t/size_t/g' $2
 sed -i.backup  's/intptr_t/ssize_t/g' $2

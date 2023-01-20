@@ -14,126 +14,141 @@ jobs:
 # Release Builds
 ####################################################################
 
-  release-windows-x64-Release-ICC19-VC141-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP:
+  release-windows-x64-Release-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
     with:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-      artifact-out: release-windows-x64-Release-ICC19-VC141-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      artifact-out: release-windows-x64-Release-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
       artifact-path: ./build/*.zip
       cmd: |
-        python scripts/test.py configure platform:x64 build:Release compiler:ICC19-VC141 ispc:ispc1.17.0 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.2.0 intensity:4 package:ZIP
+        python scripts/test.py configure platform:x64 build:Release compiler:ICX2023.0.0 ispc:ispc1.18.1 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.7.0 intensity:4 package:ZIP
         python scripts/test.py build
         python scripts/test.py test
 
-  release-macosx-x64-Release-ICC2021_1_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP:
+  release-macosx-x64-Release-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_macos.yml@main
     with:
       runs-on: '[ "macOS", "embree", "sign", "avx2" ]'
-      artifact-out: release-macosx-x64-Release-ICC2021_1_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      artifact-out: release-macosx-x64-Release-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
       artifact-path: ./build/*.zip
       cmd: |
-        scripts/test.py configure platform:x64 build:Release compiler:ICC2021.1.1 ispc:ispc1.17.0 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB2021.2.0 intensity:4 package:ZIP
+        scripts/test.py configure platform:x64 build:Release compiler:ICX2023.0.0 ispc:ispc1.18.1 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB2021.7.0 intensity:4 package:ZIP
         scripts/test.py build
         scripts/test.py test
 
-  release-linux-x64-Release-ICC2020_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP:
+  release-linux-x64-Release-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
-      image: embree/centos:7.4
+      image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      artifact-out: release-linux-x64-Release-ICC2020_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      artifact-out: release-linux-x64-Release-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
       artifact-path: ./build/*.tar.gz
       cmd: |
-        scripts/test.py configure platform:x64 build:Release compiler:ICC2020.1 ispc:ispc1.17.0 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.2.0 intensity:4 package:ZIP
+        scripts/test.py configure platform:x64 build:Release compiler:ICX2023.0.0 ispc:ispc1.18.1 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.7.0 intensity:4 package:ZIP
         scripts/test.py build
         scripts/test.py test
+
 
 #####################################################################
 # DPC++ Release Builds
 ####################################################################
 
-  release-windows-x64-Release-DPCPP-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP:
+  release-windows-x64-Release-SYCL-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
-      artifact-out: release-windows-x64-Release-DPCPP-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      artifact-out: release-windows-x64-Release-SYCL-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
       artifact-path: ./build/*.zip
       cmd: |
-        python scripts/test.py configure platform:x64 build:Release compiler:dpcpp EMBREE_SYCL_SUPPORT:ON sycl:dg2 gfx:RELEASE ispc:ispc1.17.0 isa:SSE2 intensity:1 package:ZIP
+        python scripts/test.py configure platform:x64 build:Release compiler:ICX2023.0.0 EMBREE_SYCL_SUPPORT:ON sycl:none gfx:RELEASE ispc:ispc1.18.1 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.7.0 intensity:4 package:ZIP
         python scripts/test.py build
         python scripts/test.py test
 
-  release-linux-x64-Release-DPCPP-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP:
+  # FIXME: remove this AOT release once JIT properly tested in CI
+  #release-windows-x64-Release-SYCL-ICX2023_0_0-AOT-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP:
+  #  secrets: inherit
+  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
+  #  with:
+  #    runs-on: '[ "Windows", "NAS", "dg2" ]'
+  #    artifact-out: release-windows-x64-Release-SYCL-ICX2023_0_0-AOT-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
+  #    artifact-path: ./build/*.zip
+  #    cmd: |
+  #      python scripts/test.py configure platform:x64 build:Release compiler:dpcpp EMBREE_SYCL_SUPPORT:ON sycl:dg2 gfx:RELEASE ispc:ispc1.18.1 isas:SSE2-SSE42-AVX-AVX2-AVX512 intensity:4 package:ZIP
+  #      python scripts/test.py build
+  #      python scripts/test.py test
+
+  release-linux-x64-Release-SYCL-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
       image: embree/ubuntu:20.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
-      artifact-out: release-linux-x64-Release-DPCPP-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      artifact-out: release-linux-x64-Release-SYCL-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
       artifact-path: ./build/*.tar.gz
       cmd: |
-        scripts/test.py configure platform:x64 build:Release compiler:dpcpp EMBREE_SYCL_SUPPORT:ON sycl:none gfx:RELEASE ispc:ispc1.17.0 isa:SSE2 tasking:TBB2021.2.0 intensity:1 package:ZIP
+        scripts/test.py configure platform:x64 build:Release compiler:ICX2023.0.0 EMBREE_SYCL_SUPPORT:ON sycl:none gfx:RELEASE ispc:ispc1.18.1 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.7.0 intensity:4 package:ZIP
         scripts/test.py build
         scripts/test.py test
+
 
 #####################################################################
 # Release binaries scans
 #####################################################################
   binary-analysis:
     needs:
-      - release-windows-x64-Release-ICC19-VC141-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
-      - release-macosx-x64-Release-ICC2021_1_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
-      - release-linux-x64-Release-ICC2020_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      - release-windows-x64-Release-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
+      - release-macosx-x64-Release-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
+      - release-linux-x64-Release-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/binary_analysis.yml@main
     with:
       project: embree
-      artifact-in-linux: release-windows-x64-Release-ICC19-VC141-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
-      artifact-in-macos: release-macosx-x64-Release-ICC2021_1_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
-      artifact-in-windows: release-linux-x64-Release-ICC2020_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      artifact-in-linux: release-windows-x64-Release-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
+      artifact-in-macos: release-macosx-x64-Release-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
+      artifact-in-windows: release-linux-x64-Release-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
       path: "build/*.zip build/*.gz"
 
   antivirus-scan:
     needs:
-      - release-windows-x64-Release-ICC19-VC141-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
-      - release-macosx-x64-Release-ICC2021_1_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
-      - release-linux-x64-Release-ICC2020_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      - release-windows-x64-Release-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
+      - release-macosx-x64-Release-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
+      - release-linux-x64-Release-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/antivirus_scan.yml@main
     with:
       project: embree
-      artifact-in-linux: release-windows-x64-Release-ICC19-VC141-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
-      artifact-in-macos: release-macosx-x64-Release-ICC2021_1_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
-      artifact-in-windows: release-linux-x64-Release-ICC2020_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      artifact-in-linux: release-windows-x64-Release-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
+      artifact-in-macos: release-macosx-x64-Release-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
+      artifact-in-windows: release-linux-x64-Release-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
       path: "build/*.zip build/*.gz"
 
   binary-analysis-dpcpp:
     needs:
-      - release-windows-x64-Release-DPCPP-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
-      - release-linux-x64-Release-DPCPP-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      - release-windows-x64-Release-SYCL-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
+      - release-linux-x64-Release-SYCL-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/binary_analysis.yml@main
     with:
       project: embree
-      artifact-in-linux: release-windows-x64-Release-DPCPP-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
-      artifact-in-windows: release-linux-x64-Release-DPCPP-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      artifact-in-linux: release-windows-x64-Release-SYCL-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
+      artifact-in-windows: release-linux-x64-Release-SYCL-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
       path: "build/*.zip build/*.gz"
       artifact-out-name: "binary-analysis-dpcpp"
 
   antivirus-scan-dpcpp:
     needs:
-      - release-windows-x64-Release-DPCPP-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
-      - release-linux-x64-Release-DPCPP-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      - release-windows-x64-Release-SYCL-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
+      - release-linux-x64-Release-SYCL-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/antivirus_scan.yml@main
     with:
       project: embree
-      artifact-in-linux: release-windows-x64-Release-DPCPP-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
-      artifact-in-windows: release-linux-x64-Release-DPCPP-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      artifact-in-linux: release-windows-x64-Release-SYCL-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
+      artifact-in-windows: release-linux-x64-Release-SYCL-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
       path: "build/*.zip build/*.gz"
       artifact-out-name: "antivirus-scan-dpcpp"

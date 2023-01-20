@@ -66,24 +66,10 @@ extern "C" Shader shader;
 void error_handler(void* userPtr, RTCError code, const char* str = nullptr);
 
 /* returns time stamp counter */
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
 inline int64_t get_tsc() { return 0; }
 #else
 extern "C" int64_t get_tsc();
-#endif
-
-#if defined(__WIN32__) && defined(__INTEL_LLVM_COMPILER)
-/* declare some standard library functions */
-extern "C" __declspec(dllimport) void abort ();
-extern "C" __declspec(dllimport) void exit(int);
-extern "C" __declspec(dllimport) int puts ( const char* str );
-extern "C" __declspec(dllimport) int putchar ( int character );
-#else
-/* declare some standard library functions */
-extern "C" void abort ();
-extern "C" void exit(int);
-extern "C" int puts ( const char* str );
-extern "C" int putchar ( int character );
 #endif
 
 /* face forward for shading normals */

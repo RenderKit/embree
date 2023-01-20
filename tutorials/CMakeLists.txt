@@ -69,6 +69,7 @@ ADD_SUBDIRECTORY(viewer)
 #ADD_SUBDIRECTORY(multi_instanced_geometry)
 #ADD_SUBDIRECTORY(intersection_filter)
 ADD_SUBDIRECTORY(pathtracer)
+
 #ADD_SUBDIRECTORY(hair_geometry)
 #ADD_SUBDIRECTORY(subdivision_geometry)
 #ADD_SUBDIRECTORY(displacement_geometry)
@@ -87,6 +88,8 @@ ADD_SUBDIRECTORY(nanite_geometry)
 #ADD_SUBDIRECTORY(collide)
 #ADD_SUBDIRECTORY(next_hit)
 #ADD_SUBDIRECTORY(multiscene_geometry)
+#ADD_SUBDIRECTORY(ray_mask)
+
 ADD_SUBDIRECTORY(embree_tests)
 
 ADD_SUBDIRECTORY(minimal)

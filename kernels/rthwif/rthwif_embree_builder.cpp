@@ -1,6 +1,10 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+#if !defined(_CRT_SECURE_NO_WARNINGS)
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include "rthwif_embree.h"
 #include "rthwif_embree_builder.h"
 #include "../common/scene.h"
@@ -9,7 +13,9 @@
 #include "rthwif_internal.h"
 #include "rthwif_builder.h"
 
+#if defined(EMBREE_LEVEL_ZERO)
 #include <level_zero/ze_api.h>
+#endif
 
 namespace embree
 {
@@ -84,6 +90,8 @@ namespace embree
     rthwifExit();
   }
 
+#if defined(EMBREE_LEVEL_ZERO)
+
   bool rthwifIsSYCLDeviceSupported(const sycl::device& sycl_device)
   {
     /* disabling of device check through env variable */
@@ -147,7 +155,22 @@ namespace embree
     return rayQuerySupported;
 #endif
   }
-    
+
+#else
+
+  bool rthwifIsSYCLDeviceSupported(const sycl::device& device)
+  {
+    // TODO: SYCL currently has no functionality to check if a GPU has RTHW
+    // capabilities. Therefore, we return true when the device is a GPU and the
+    // backend is level_zero, and hope for the best.
+    sycl::platform platform = device.get_platform();
+    return device.is_gpu() && (platform.get_info<sycl::info::platform::name>() == "Intel(R) Level-Zero");
+  }
+
+#endif
+
+#if defined(EMBREE_LEVEL_ZERO)
+
   void* rthwifAllocAccelBuffer(size_t bytes, sycl::device device, sycl::context context)
   {
     ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
@@ -171,6 +194,7 @@ namespace embree
     void* ptr = nullptr;
     ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT,hDevice,&ptr);
     assert(result == ZE_RESULT_SUCCESS);
+    _unused(result);
     return ptr;
   }
   
@@ -180,7 +204,25 @@ namespace embree
     ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
     ze_result_t result = zeMemFree(hContext,ptr);
     assert(result == ZE_RESULT_SUCCESS);
+    _unused(result);
   }
+
+#else
+
+  void* rthwifAllocAccelBuffer(size_t bytes, sycl::device device, sycl::context context)
+  {
+    void* ptr = sycl::aligned_alloc_shared(RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT, bytes, device, context);
+    assert(ptr);
+    return ptr;
+  }
+
+  void rthwifFreeAccelBuffer(void* ptr, sycl::context context)
+  {
+    if (ptr == nullptr) return;
+    sycl::free(ptr, context);
+  }
+
+#endif
 
   struct GEOMETRY_INSTANCE_DESC : RTHWIF_GEOMETRY_INSTANCE_DESC
   {
@@ -227,9 +269,11 @@ namespace embree
     if (geom->hasArgumentFilterFunctions() || geom->hasGeometryFilterFunctions())
       gflags = RTHWIF_GEOMETRY_FLAG_NONE;
     
+#if defined(EMBREE_RAY_MASK)
     /* invoke any hit callback when high mask bits are enabled */
     if (geom->mask & 0xFFFFFF80)
       gflags = RTHWIF_GEOMETRY_FLAG_NONE;
+#endif
     
     return gflags;
   }

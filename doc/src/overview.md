@@ -54,3 +54,4 @@ inconsistencies between a CPU and GPU version of the renderer. Embree
 supports GPUs based on the Xe HPG and Xe HPC microarchitecture,
 which support hardware accelerated ray tracing do deliver excellent
 levels of ray tracing performance.
+

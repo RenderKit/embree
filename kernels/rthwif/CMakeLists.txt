@@ -5,6 +5,13 @@ cmake_minimum_required(VERSION 3.1.0)
 
 project(embree_rthwif)
 
+IF(COMMAND cmake_policy)
+  if(POLICY CMP0135)
+    message("set policy CMP0135 to NEW")
+    cmake_policy(SET CMP0135 NEW)
+  endif()
+ENDIF()
+
 SET(CMAKE_CXX_STANDARD 17)
 
 #####################################################################
@@ -35,8 +42,12 @@ IF (NOT DEFINED EMBREE_SYCL_SUPPORT)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem \"${SYCL_COMPILER_DIR}/../include/sycl\" -isystem \"${SYCL_COMPILER_DIR}/../include/\"")       # disable warning from SYCL header (FIXME: why required?)
 ENDIF()
 
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-bitwise-instead-of-logical") # disables "use of bitwise '&' with boolean operands" warning
+SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -Wno-bitwise-instead-of-logical") # disables "use of bitwise '&' with boolean operands" warning
+
 ####################################################################
 # fetch TBB and build static version of it
+ADD_DEFINITIONS("-D_CRT_SECURE_NO_WARNINGS")
 
 option(TBB_STRICT "Treat compiler warnings as errors" OFF)
 option(TBB_TEST "Enable testing" OFF)
@@ -48,9 +59,14 @@ INCLUDE(FetchContent)
 
 SET(FETCHCONTENT_QUIET OFF)
 
+IF (NOT EMBREE_RTHWIF_TBB_GIT_REPOSITORY) # allow setting this externally
+  SET(EMBREE_RTHWIF_TBB_GIT_REPOSITORY "https://github.com/oneapi-src/oneTBB.git")
+ENDIF()
+
 FetchContent_Declare(
   tbb_static
-  URL https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.6.0.zip
+  GIT_REPOSITORY ${EMBREE_RTHWIF_TBB_GIT_REPOSITORY}
+  GIT_TAG v2021.6.0
 )
 FetchContent_MakeAvailable(tbb_static)
 
@@ -106,14 +122,23 @@ IF (EMBREE_SYCL_RT_VALIDATION_API)
 ENDIF()
 
 ADD_LIBRARY(embree_rthwif STATIC rthwif_builder.cpp builder/qbvh6.cpp builder/statistics.cpp)
-TARGET_LINK_LIBRARIES(embree_rthwif PUBLIC ${EMBREE_RTHWIF_SYCL} PRIVATE tbb simd sys -lze_loader)
+
+
+#TARGET_LINK_LIBRARIES(embree_rthwif PUBLIC ${EMBREE_RTHWIF_SYCL} PRIVATE tbb simd sys -lze_loader)
+
+TARGET_LINK_LIBRARIES(embree_rthwif PUBLIC ${EMBREE_RTHWIF_SYCL} PRIVATE tbb simd sys)
+if (EMBREE_LEVEL_ZERO)
+  TARGET_LINK_LIBRARIES(embree_rthwif PUBLIC -lze_loader)
+  TARGET_COMPILE_DEFINITIONS(embree_rthwif PUBLIC EMBREE_LEVEL_ZERO)
+  TARGET_COMPILE_DEFINITIONS(embree_rthwif PUBLIC EMBREE_SYCL_SUPPORT)
+endif()
 
 IF (EMBREE_SYCL_GPU_BVH_BUILDER)
   TARGET_LINK_LIBRARIES(embree_rthwif PUBLIC embree_rthwif_gpu)
 ENDIF()
 
-
 SET_PROPERTY(TARGET embree_rthwif APPEND PROPERTY COMPILE_FLAGS "-DEMBREE_SYCL_SUPPORT")
+
 
 IF (EMBREE_STATIC_LIB)
   INSTALL(TARGETS embree_rthwif EXPORT embree_rthwif-targets
@@ -128,5 +153,7 @@ INSTALL(TARGETS embree_rthwif_gpu EXPORT embree_rthwif_gpu-targets ARCHIVE DESTI
 INSTALL(EXPORT embree_rthwif_gpu-targets DESTINATION "${EMBREE_CMAKEEXPORT_DIR}" COMPONENT devel)
 ENDIF()
 
-ADD_SUBDIRECTORY(testing)
+IF (EMBREE_LEVEL_ZERO)
+  ADD_SUBDIRECTORY(testing)
+ENDIF()
 

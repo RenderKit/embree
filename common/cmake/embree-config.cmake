@@ -66,11 +66,18 @@ IF (EMBREE_SYCL_SUPPORT)
   IF (EMBREE_SYCL_RT_VALIDATION_API)
     INCLUDE("${EMBREE_ROOT_DIR}/@EMBREE_CMAKEEXPORT_DIR@/embree_rthwif_sycl-targets.cmake")
   ENDIF()
-  INCLUDE("${EMBREE_ROOT_DIR}/@EMBREE_CMAKEEXPORT_DIR@/embree_rthwif-targets.cmake")
+#  INCLUDE("${EMBREE_ROOT_DIR}/@EMBREE_CMAKEEXPORT_DIR@/embree_rthwif-targets.cmake")
+#  INCLUDE("${EMBREE_ROOT_DIR}/@EMBREE_CMAKEEXPORT_DIR@/embree_sycl-targets.cmake")  
+
+IF (EMBREE_STATIC_LIB)
+    INCLUDE("${EMBREE_ROOT_DIR}/@EMBREE_CMAKEEXPORT_DIR@/embree_rthwif-targets.cmake")
+  ENDIF()
   IF (EMBREE_SYCL_GPU_BVH_BUILDER) 
     INCLUDE("${EMBREE_ROOT_DIR}/@EMBREE_CMAKEEXPORT_DIR@/embree_rthwif_gpu-targets.cmake")
   ENDIF()
-  INCLUDE("${EMBREE_ROOT_DIR}/@EMBREE_CMAKEEXPORT_DIR@/embree_sycl-targets.cmake")  
+  
+  INCLUDE("${EMBREE_ROOT_DIR}/@EMBREE_CMAKEEXPORT_DIR@/embree_sycl-targets.cmake")
+  
 ENDIF()
 
 IF (EMBREE_STATIC_LIB)

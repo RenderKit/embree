@@ -25,7 +25,6 @@
 #include "../scenegraph/geometry_creation.h"
 #include "../scenegraph/obj_loader.h"
 #include "../scenegraph/xml_loader.h"
-#include "../scenegraph/rtas_loader.h"
 #include "../image/image.h"
 
 namespace embree
@@ -85,7 +84,6 @@ namespace embree
     case RTC_ERROR_OUT_OF_MEMORY    : printf("RTC_ERROR_OUT_OF_MEMORY"); break;
     case RTC_ERROR_UNSUPPORTED_CPU  : printf("RTC_ERROR_UNSUPPORTED_CPU"); break;
     case RTC_ERROR_CANCELLED        : printf("RTC_ERROR_CANCELLED"); break;
-    case RTC_ERROR_UNSUPPORTED_GPU  : printf("RTC_ERROR_UNSUPPORTED_GPU"); break;
     default                         : printf("invalid error code"); break;
     }
     if (str) {
@@ -126,7 +124,6 @@ namespace embree
       speed(1.0f),
       moveDelta(zero),
 
-      motion_blur(true),
       animate(true),
       render_time(0.f),
 
@@ -134,7 +131,7 @@ namespace embree
       print_frame_rate(false),
       avg_render_time(64,1.0),
       avg_frame_time(64,1.0),
-      avg_mrayps(64,1.0),      
+      avg_mrayps(64,1.0),
       print_camera(false),
 
       debug0(0),
@@ -245,7 +242,7 @@ namespace embree
        }, "--debug3: sets internal debugging value");
 
      registerOption("time", [this] (Ref<ParseStream> cin, const FileName& path) {
-         g_motion_blur = motion_blur = false;
+         g_motion_blur = false;
          animate = false;
          render_time = cin->getFloat();
        }, "--time: sets time for motion blur");
@@ -642,12 +639,7 @@ namespace embree
     initRayStats();
     
     for (unsigned int i=0; i<numFrames; i++)
-    {
-      double t0 = getSeconds();
       render(pixels,width,height,render_time,ispccamera);
-      double t1 = getSeconds();
-      std::cout << "Render time = " << (t1-t0)*1000.0 << " ms => " << 1.0 / (t1-t0) << " fps" << std::endl;
-    }
     
     Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels);
     storeImage(image, fileName);
@@ -713,6 +705,19 @@ namespace embree
     TutorialApplication::instance->reshapeFunc(window,width,height);
   }
 
+  void TutorialApplication::setCallbackFunctions(GLFWwindow* window)
+  {
+    glfwSetKeyCallback(window,embree::keyboardFunc);
+    glfwSetCursorPosCallback(window,embree::motionFunc);
+    glfwSetMouseButtonCallback(window,embree::clickFunc);
+    glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
+    glfwSetScrollCallback(window, ImGui_ImplGlfw_ScrollCallback);
+    glfwSetWindowSizeCallback(window,embree::reshapeFunc);
+    glfwSetWindowFocusCallback(window, ImGui_ImplGlfw_WindowFocusCallback);
+    glfwSetCursorEnterCallback(window, ImGui_ImplGlfw_CursorEnterCallback);
+    glfwSetMonitorCallback(ImGui_ImplGlfw_MonitorCallback);
+  }
+
   GLFWwindow* TutorialApplication::createFullScreenWindow()
   {
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
@@ -722,12 +727,6 @@ namespace embree
     glfwWindowHint(GLFW_BLUE_BITS,mode->blueBits);
     glfwWindowHint(GLFW_REFRESH_RATE,mode->refreshRate);
     GLFWwindow* window = glfwCreateWindow(mode->width,mode->height,tutorialName.c_str(),monitor,nullptr);
-    glfwSetKeyCallback(window,embree::keyboardFunc);
-    glfwSetCursorPosCallback(window,embree::motionFunc);
-    glfwSetMouseButtonCallback(window,embree::clickFunc);
-    glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
-    glfwSetScrollCallback(window, ImGui_ImplGlfw_ScrollCallback);
-    glfwSetWindowSizeCallback(window,embree::reshapeFunc);
     resize(mode->width,mode->height);
     return window;
   }
@@ -735,12 +734,6 @@ namespace embree
   GLFWwindow* TutorialApplication::createStandardWindow(int width, int height)
   {
     GLFWwindow* window = glfwCreateWindow(width,height,tutorialName.c_str(),nullptr,nullptr);
-    glfwSetKeyCallback(window,embree::keyboardFunc);
-    glfwSetCursorPosCallback(window,embree::motionFunc);
-    glfwSetMouseButtonCallback(window,embree::clickFunc);
-    glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
-    glfwSetScrollCallback(window, ImGui_ImplGlfw_ScrollCallback);
-    glfwSetWindowSizeCallback(window,embree::reshapeFunc);
     resize(width,height);
     return window;
   }
@@ -790,11 +783,13 @@ namespace embree
             width = window_width;
             height = window_height;
             window = createStandardWindow(width,height);
+            setCallbackFunctions(window);
           }
           else {
             window_width = width;
             window_height = height;
             window = createFullScreenWindow();
+            setCallbackFunctions(window);
           }
           glfwMakeContextCurrent(window);
           fullscreen = !fullscreen;
@@ -871,6 +866,7 @@ namespace embree
 
   void TutorialApplication::motionFunc(GLFWwindow* window, double x, double y)
   {
+    ImGui_ImplGlfw_CursorPosCallback(window, x, y);
     if (ImGui::GetIO().WantCaptureMouse) return;
   
     float dClickX = float(clickX - x), dClickY = float(clickY - y);
@@ -887,8 +883,7 @@ namespace embree
   void TutorialApplication::displayFunc()
   {
     double t0 = getSeconds();
-    g_motion_blur = motion_blur;
-    const float time = motion_blur ? float(t0-time0) : (animate ? 0.5 * sinf(fabsf(float(t0-time0))) + 0.5 : render_time);
+    const float time = g_motion_blur ? float(t0-time0) : (animate ? 0.5 * sinf(fabsf(float(t0-time0))) + 0.5 : render_time);
     
     /* update camera */
     camera.move(moveDelta.x*speed, moveDelta.y*speed, moveDelta.z*speed);
@@ -915,7 +910,10 @@ namespace embree
     glPixelZoom(1.0f,-1.0f);
     glDrawPixels(width,height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
 
-    ImGui_ImplGlfwGL2_NewFrame();
+    // Start the Dear ImGui frame
+    ImGui_ImplOpenGL2_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
     
     ImGuiWindowFlags window_flags = 0;
     window_flags |= ImGuiWindowFlags_NoTitleBar;
@@ -931,14 +929,7 @@ namespace embree
     //ImGui::SetNextWindowSize(ImVec2(200,height));
     ImGui::SetNextWindowBgAlpha(0.3f);
     ImGui::Begin("Embree", nullptr, window_flags);
-    ImGui::SetWindowFontScale(2);
-    
     drawGUI();
-    
-    // ImGui::Checkbox("Motion Blur", &motion_blur);
-    // if (!motion_blur) ImGui::Checkbox("Animate", &animate);
-    // if (!animate)     ImGui::SliderFloat("Time", &render_time, 0.f, 1.f);
-    // ImGui::Text("%3.2f fps",1.0f/avg_render_time.get());
     
     double render_dt = avg_render_time.get();
     double render_fps = render_dt != 0.0 ? 1.0f/render_dt : 0.0;
@@ -948,18 +939,16 @@ namespace embree
     double total_fps = total_dt != 0.0 ? 1.0f/total_dt : 0.0;
     ImGui::Text("Total: %3.2f fps",total_fps);
 
-
-    device_gui();
-    
 #if defined(RAY_STATS) && !defined(EMBREE_SYCL_TUTORIAL)
     ImGui::Text("%3.2f Mray/s",avg_mrayps.get());
 #endif
     ImGui::End();
-     
+
+    device_gui();
     //ImGui::ShowDemoWindow();
         
     ImGui::Render();
-    ImGui_ImplGlfwGL2_RenderDrawData(ImGui::GetDrawData());
+    ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
     
     glfwSwapBuffers(window);
 
@@ -1007,65 +996,49 @@ namespace embree
     this->width = width; this->height = height;
   }
 
-   void TutorialApplication::renderInteractive()
-   {
-     window_width = width;
-     window_height = height;
-     glfwSetErrorCallback(errorFunc);
-     glfwInit();
-     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,2);
-     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,0);
-     
-     if (fullscreen) window = createFullScreenWindow();
-     else            window = createStandardWindow(width,height);
-     
-     glfwMakeContextCurrent(window);
-     glfwSwapInterval(1);
-     reshapeFunc(window,0,0);
-     
-     // Setup ImGui binding
-     ImGui::CreateContext();
-     ImGuiIO& io = ImGui::GetIO(); (void)io;
-     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
-     ImGui_ImplGlfwGL2_Init(window, false);
-     
-     // Setup style
-     ImGui::StyleColorsDark();
-     //ImGui::StyleColorsClassic();
-     
-     // Load Fonts
-     // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them. 
-     // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple. 
-     // - If the file cannot be loaded, the function will return NULL. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-     // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
-     // - Read 'misc/fonts/README.txt' for more instructions and details.
-     // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-     //io.Fonts->AddFontDefault();
-     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
-     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
-     //IM_ASSERT(font != NULL);
-     
-     while (!glfwWindowShouldClose(window))
-     {
-       // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
-       // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
-       // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application.
-       // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
-       glfwPollEvents();
-       
-       displayFunc();
-     }
-     
-     ImGui_ImplGlfwGL2_Shutdown();
-     ImGui::DestroyContext();
-     
-     glfwDestroyWindow(window);
-     glfwTerminate();
-   }
-  
+  void TutorialApplication::renderInteractive()
+  {
+    window_width = width;
+    window_height = height;
+    glfwSetErrorCallback(errorFunc);
+    glfwInit();
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,0);
+
+    if (fullscreen) window = createFullScreenWindow();
+    else            window = createStandardWindow(width,height);
+
+    glfwMakeContextCurrent(window);
+    glfwSwapInterval(0);
+    reshapeFunc(window,0,0);
+
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL2_Init();
+
+    setCallbackFunctions(window);
+
+    // Setup style
+    ImGui::StyleColorsDark();
+
+    while (!glfwWindowShouldClose(window))
+    {
+      glfwPollEvents();
+
+      displayFunc();
+    }
+
+    // Cleanup
+    ImGui_ImplOpenGL2_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
+    glfwDestroyWindow(window);
+    glfwTerminate();
+  }
+
 #endif
   
   void TutorialApplication::render(unsigned* pixels, const unsigned width, const unsigned height, const float time, const ISPCCamera& camera)
@@ -1140,6 +1113,10 @@ namespace embree
 
       /* select device supported by Embree */
       device = new sycl::device(rtcSYCLDeviceSelector);
+      sycl::platform platform = device->get_platform();
+      log(1, "Selected SYCL Platform: " + platform.get_info<sycl::info::platform::name>());
+      log(1, "Selected SYCL Device: " + device->get_info<sycl::info::device::name>());
+
       queue = new sycl::queue(*device, exception_handler, { sycl::property::queue::in_order(), sycl::property::queue::enable_profiling() });
       context = new sycl::context(*device);
       g_device = rtcNewSYCLDevice(*context,rtcore.c_str());
@@ -1233,10 +1210,6 @@ namespace embree
         scene->add(loadOBJ(keyFramesFilenames[i],subdiv_mode != "",true));
       else if (keyFramesFilenames[i].ext() != "")
         scene->add(SceneGraph::load(keyFramesFilenames[i]));
-
-      if (toLowerCase(keyFramesFilenames[i].ext()) == std::string("rtas"))
-        scene->add(loadRTAS(keyFramesFilenames[i],true));
-
       
       if (verbosity >= 1) 
         std::cout << " [DONE]" << std::endl << std::flush;

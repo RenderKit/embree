@@ -20,32 +20,65 @@ ELSE()
 ENDIF()
 
 ##############################################################
-# Install SYCL specific stuff
+# Install SYCL specific files
 ##############################################################
 
 # SYCL library
 IF (EMBREE_SYCL_SUPPORT AND EMBREE_INSTALL_DEPENDENCIES)
   GET_FILENAME_COMPONENT(DPCPP_COMPILER_DIR ${CMAKE_CXX_COMPILER} PATH)
+  
   IF (WIN32)
-    INSTALL(FILES "${DPCPP_COMPILER_DIR}/../lib/sycl.lib" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
-    INSTALL(FILES "${DPCPP_COMPILER_DIR}/../bin/sycl.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
+    
+    FILE(GLOB_RECURSE LIB_SYCL_LIB_FILES "${DPCPP_COMPILER_DIR}/../lib/sycl?.lib")
+    IF (NOT LIB_SYCL_LIB_FILES)
+      SET(LIB_SYCL_LIB_FILES "${DPCPP_COMPILER_DIR}/../lib/sycl?.lib")
+    ENDIF()
+    INSTALL(FILES ${LIB_SYCL_LIB_FILES} DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+
+    FILE(GLOB_RECURSE LIB_SYCL_DLL_FILES "${DPCPP_COMPILER_DIR}/../bin/sycl?.dll")
+    IF (NOT LIB_SYCL_DLL_FILES)
+      SET(LIB_SYCL_DLL_FILES "${DPCPP_COMPILER_DIR}/../bin/sycl?.dll")
+    ENDIF()
+    INSTALL(FILES ${LIB_SYCL_DLL_FILES} DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
+    
     INSTALL(FILES "${DPCPP_COMPILER_DIR}/../bin/pi_level_zero.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
-    INSTALL(FILES "${DPCPP_COMPILER_DIR}/../bin/ze_loader.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
+
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/svml_dispmd.dll")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/svml_dispmd.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
+    ENDIF()
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/libmmd.dll")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/libmmd.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
+    ENDIF()
+    
   ELSE()
     
-    FILE(GLOB_RECURSE LIB_SYCL_FILES "${DPCPP_COMPILER_DIR}/../lib/libsycl.so.?")
+    FILE(GLOB_RECURSE LIB_SYCL_FILES 
+      "${DPCPP_COMPILER_DIR}/../lib/libsycl.so"
+      "${DPCPP_COMPILER_DIR}/../lib/libsycl.so.?"
+      "${DPCPP_COMPILER_DIR}/../lib/libsycl.so.?.?"
+      "${DPCPP_COMPILER_DIR}/../lib/libsycl.so.?.?.?")
     IF (NOT LIB_SYCL_FILES)
       SET(LIB_SYCL_FILES "${DPCPP_COMPILER_DIR}/../lib/libsycl.so.?")
     ENDIF()
     INSTALL(FILES ${LIB_SYCL_FILES} DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
     
-    FILE(GLOB_RECURSE LIB_ZE_LOADER_FILES "${DPCPP_COMPILER_DIR}/../lib/libze_loader.so.?")
-    IF (NOT LIB_ZE_LOADER_FILES)
-      SET(LIB_ZE_LOADER_FILES "${DPCPP_COMPILER_DIR}/../lib/libze_loader.so.?")
-    ENDIF()
-    INSTALL(FILES ${LIB_ZE_LOADER_FILES} DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
-    
     INSTALL(FILES "${DPCPP_COMPILER_DIR}/../lib/libpi_level_zero.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libsvml.so")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libsvml.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+    ENDIF()
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libirng.so")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libirng.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+    ENDIF()
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libimf.so")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libimf.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+    ENDIF()
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libintlc.so")
+      FILE(GLOB_RECURSE LIB_SYCL_FILES
+        "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libintlc.so"
+        "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libintlc.so.?")
+      INSTALL(FILES ${LIB_SYCL_FILES} DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+    ENDIF()
    
   ENDIF()
 ENDIF()
@@ -55,10 +88,17 @@ ENDIF()
 ##############################################################
 
 IF (WIN32)
-  SET(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
-  INCLUDE(InstallRequiredSystemLibraries)
-  LIST(FILTER CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS INCLUDE REGEX ".*msvcp[0-9]+\.dll|.*vcruntime[0-9]+\.dll|.*vcruntime[0-9]+_[0-9]+\.dll")
-  INSTALL(FILES ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
+  IF(SYCL_ONEAPI_ICX)
+    GET_FILENAME_COMPONENT(DPCPP_COMPILER_DIR ${CMAKE_CXX_COMPILER} PATH)
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/libmmd.dll")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/libmmd.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
+    ENDIF()
+  ELSE()
+    SET(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
+    INCLUDE(InstallRequiredSystemLibraries)
+    LIST(FILTER CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS INCLUDE REGEX ".*msvcp[0-9]+\.dll|.*vcruntime[0-9]+\.dll|.*vcruntime[0-9]+_[0-9]+\.dll")
+    INSTALL(FILES ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
+  ENDIF()
 ENDIF()
 
 ##############################################################
@@ -88,6 +128,9 @@ INSTALL(FILES "${PROJECT_SOURCE_DIR}/README.md" DESTINATION "${CMAKE_INSTALL_DOC
 INSTALL(FILES "${PROJECT_SOURCE_DIR}/readme.pdf" DESTINATION "${CMAKE_INSTALL_DOCDIR}" COMPONENT lib)
 INSTALL(FILES "${PROJECT_SOURCE_DIR}/third-party-programs.txt" DESTINATION "${CMAKE_INSTALL_DOCDIR}" COMPONENT lib)
 INSTALL(FILES "${PROJECT_SOURCE_DIR}/third-party-programs-TBB.txt" DESTINATION "${CMAKE_INSTALL_DOCDIR}" COMPONENT lib)
+INSTALL(FILES "${PROJECT_SOURCE_DIR}/third-party-programs-OIDN.txt" DESTINATION "${CMAKE_INSTALL_DOCDIR}" COMPONENT lib)
+INSTALL(FILES "${PROJECT_SOURCE_DIR}/third-party-programs-DPCPP.txt" DESTINATION "${CMAKE_INSTALL_DOCDIR}" COMPONENT lib)
+INSTALL(FILES "${PROJECT_SOURCE_DIR}/third-party-programs-oneAPI-DPCPP.txt" DESTINATION "${CMAKE_INSTALL_DOCDIR}" COMPONENT lib)
 
 ##############################################################
 # Install scripts to set embree paths
@@ -163,7 +206,7 @@ INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config-version.cmake" DESTINATION "$
 SET(CPACK_PACKAGE_NAME "Intel(R) Embree Ray Tracing Kernels")
 SET(CPACK_PACKAGE_FILE_NAME "embree-${EMBREE_VERSION}${EMBREE_VERSION_NOTE}")
 IF (EMBREE_SYCL_SUPPORT)
-  SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.dpcpp")
+  SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.sycl")
 ENDIF()
 #SET(CPACK_PACKAGE_ICON "${PROJECT_SOURCE_DIR}/embree-doc/images/icon.png")
 #SET(CPACK_PACKAGE_RELOCATABLE TRUE)
@@ -205,23 +248,11 @@ IF(WIN32)
     SET(CPACK_PACKAGE_NAME "${CPACK_PACKAGE_NAME} Win32")
   ENDIF()
 
-  IF (MSVC12)
-    SET(VCVER vc12)
-  ELSEIF(MSVC14) # also for VC15, which is toolset v141
-    SET(VCVER vc14)
-  ELSE()
-    SET(VCVER vc)
-  ENDIF()
-
   SET(CPACK_GENERATOR ZIP)
-  SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.${ARCH}.${VCVER}.windows")
+  SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.${ARCH}.windows")
   SET(CPACK_MONOLITHIC_INSTALL 1)
   IF (EMBREE_TESTING_PACKAGE)
-    IF (EMBREE_SYCL_SUPPORT)
-      SET(PACKAGE_SCRIPT "${PROJECT_SOURCE_DIR}/scripts/package_win_dpcpp.bat")
-    ELSE()
-      SET(PACKAGE_SCRIPT "${PROJECT_SOURCE_DIR}/scripts/package_win.bat")
-    ENDIF()
+    SET(PACKAGE_SCRIPT "${PROJECT_SOURCE_DIR}/scripts/package_win.bat")
     ADD_TEST(NAME "BuildPackage" WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}" COMMAND ${PACKAGE_SCRIPT} ${CMAKE_BUILD_TYPE} "${CPACK_PACKAGE_FILE_NAME}.zip")
   ENDIF()
 

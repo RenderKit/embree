@@ -16,7 +16,8 @@
 
 /* include ImGUI */
 #include "../imgui/imgui.h"
-#include "../imgui/imgui_impl_glfw_gl2.h"
+#include "../imgui/backends/imgui_impl_glfw.h"
+#include "../imgui/backends/imgui_impl_opengl2.h"
 
 #endif
 
@@ -113,6 +114,8 @@ namespace embree
     /* create a standard window of specified size */
     GLFWwindow* createStandardWindow(int width, int height);
 
+    void setCallbackFunctions(GLFWwindow* window);
+
     /* interactive rendering using GLFW window */
     void renderInteractive();
  
@@ -169,7 +172,6 @@ namespace embree
     float speed;
     Vec3f moveDelta;
 
-    bool motion_blur;  // motion blur on/off
     bool animate;      // if mblur off -> animate on/off
     float render_time; // if animate off -> render this time
 

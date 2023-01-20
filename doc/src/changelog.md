@@ -25,6 +25,11 @@ Version History
 -   Setting default frequency level to SIMD256 for ARM on all platforms.
     This allows using double pumped NEON execution by enabling
     EMBREE_ISA_NEON2X in cmake under Linux.
+-   Fixed missing end caps of motion blurred line segments.
+-   EMBREE_ISPC_SUPPORT is turned OFF by default.
+-   Embree drops support of the deprecated Intel(R) Compiler. It is replaced by
+    the Intel(R) oneAPI DPC++/C++ Compiler on Windows and Linux and the
+    Intel(R) C++ Classic Compiler on MacOS (latest tested versions is 2023.0.0).
 
 ### Embree 3.13.5
 -   Fixed bug in bounding flat Catmull Rom curves of subdivision level 4.

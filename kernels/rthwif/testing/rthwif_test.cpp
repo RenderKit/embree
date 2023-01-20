@@ -3,6 +3,10 @@
 
 #define NOMINMAX
 
+// prevents "'__thiscall' calling convention is not supported for this target" warning from TBB
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wignored-attributes"
+
 #include <CL/sycl.hpp>
 #include "tbb/tbb.h"
 
@@ -35,7 +39,7 @@ sycl::device device;
 sycl::context context;
 void* dispatchGlobalsPtr = nullptr;
 
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
 #define CONSTANT __attribute__((opencl_constant))
 #else
 #define CONSTANT
@@ -2163,3 +2167,5 @@ int main(int argc, char* argv[])
   rthwifExit();
   return numErrors ? 1 : 0;
 }
+
+#pragma clang diagnostic pop
