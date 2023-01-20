@@ -26,6 +26,7 @@ Version History
     This allows using double pumped NEON execution by enabling
     EMBREE_ISA_NEON2X in cmake under Linux.
 -   Fixed missing end caps of motion blurred line segments.
+-   EMBREE_ISPC_SUPPORT is turned OFF by default.
 
 ### Embree 3.13.5
 -   Fixed bug in bounding flat Catmull Rom curves of subdivision level 4.
