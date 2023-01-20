@@ -50,16 +50,16 @@ also use TBB inside your application. Optionally you can disable TBB
 in Embree through the `EMBREE_TASKING_SYSTEM` CMake variable.
 
 Embree supports the Intel® Implicit SPMD Program Compiler (Intel® ISPC), which allows
-straightforward parallelization of an entire renderer. If you do not
-want to use Intel® ISPC then you can disable `EMBREE_ISPC_SUPPORT` in
-CMake. Otherwise, download and install the Intel® ISPC binaries from
+straightforward parallelization of an entire renderer. If you
+want to use Intel® ISPC then you can enable `EMBREE_ISPC_SUPPORT` in
+CMake. Download and install the Intel® ISPC binaries from
 [ispc.github.io](https://ispc.github.io/downloads.html). After
-installation, put the path to `ispc` permanently into your `PATH`
-environment variable or you need to correctly set the
-`EMBREE_ISPC_EXECUTABLE` variable during CMake configuration.
+installation, put the path to `ispc` permanently into your `PATH` environment
+variable or you set the `EMBREE_ISPC_EXECUTABLE` variable to point at the ISPC
+executable during CMake configuration.
 
 You additionally have to install CMake 3.1.0 or higher and the developer
-version of GLUT.
+version of [GLFW](https://www.glfw.org/) version 3.
 
 Under macOS, all these dependencies can be installed
 using [MacPorts](http://www.macports.org/):
@@ -163,13 +163,11 @@ in the Embree root directory:
     cmake -B build \
           -DCMAKE_CXX_COMPILER=clang++ \
           -DCMAKE_C_COMPILER=clang \
-          -DEMBREE_ISPC_SUPPORT=OFF \
           -DEMBREE_SYCL_SUPPORT=ON
 
 This will create a directory `build` to use as the CMake build directory,
-configure the usage of the oneAPI DPC++ Compiler, disable ISPC
-with `EMBREE_ISPC_SUPPORT=OFF` (optional), and turn on SYCL support through
-`EMBREE_SYCL_SUPPORT=ON`.
+configure the usage of the oneAPI DPC++ Compiler, and turn on SYCL support
+through `EMBREE_SYCL_SUPPORT=ON`.
 
 Alternatively, you can download and run the installer of the
 
@@ -189,7 +187,6 @@ in the Embree root directory:
     cmake -B build \
           -DCMAKE_CXX_COMPILER=icpx \
           -DCMAKE_C_COMPILER=icx \
-          -DEMBREE_ISPC_SUPPORT=OFF \
           -DEMBREE_SYCL_SUPPORT=ON
 
 More information about setting up the Intel(R) oneAPI DPC++/C++ compiler can be
@@ -261,18 +258,18 @@ to make sure that the libraries `tbb.dll` and `tbb_malloc.dll` can be
 found when executing your Embree applications, e.g. by putting the path
 to these libraries into your `PATH` environment variable.
 
-Embree supports the Intel® Implicit SPMD Program Compiler (Intel® ISPC), which allows
-straightforward parallelization of an entire renderer. When installing
+Embree supports the Intel® Implicit SPMD Program Compiler (Intel® ISPC), which
+allows straightforward parallelization of an entire renderer. When installing
 Intel® ISPC, make sure to download an Intel® ISPC version from
-[ispc.github.io](https://ispc.github.io/downloads.html) that is
-compatible with your Visual Studio version. After installation, put
-the path to `ispc.exe` permanently into your `PATH` environment
-variable or you need to correctly set the `EMBREE_ISPC_EXECUTABLE` variable
-during CMake configuration. If you do not want to use Intel® ISPC then you
-can disable `EMBREE_ISPC_SUPPORT` in CMake.
+[ispc.github.io](https://ispc.github.io/downloads.html) that is compatible with
+your Visual Studio version. After installation, put the path to `ispc.exe`
+permanently into your `PATH` environment variable or you need to correctly set
+the `EMBREE_ISPC_EXECUTABLE` variable during CMake configuration to point to
+the ISPC executaleb. If you want to use Intel® ISPC, you have to enable
+`EMBREE_ISPC_SUPPORT` in CMake.
 
 You additionally have to install [CMake](http://www.cmake.org/download/)
-(version 3.1.0 or higher). Note that you need a native Windows CMake
+(version 3.1 or higher). Note that you need a native Windows CMake
 installation, because CMake under Cygwin cannot generate solution files
 for Visual Studio.
 
@@ -383,7 +380,6 @@ in the Embree root directory:
           -D CMAKE_BUILD_TYPE=Release
           -D CMAKE_CXX_COMPILER=clang++
           -D CMAKE_C_COMPILER=clang
-          -D EMBREE_ISPC_SUPPORT=OFF
           -D EMBREE_SYCL_SUPPORT=ON
           -D TBB_ROOT=path_to_tbb\lib\cmake\tbb
 
@@ -395,7 +391,7 @@ The [Ninja](https://ninja-build.org/) generator is currently the easiest way to
 use the oneAPI DPC++ compiler.
 
 We also enable SYCL support in Embree using the `EMBREE_SYCL_SUPPORT` CMake
-option and disable ISPC with `EMBREE_ISPC_SUPPORT=OFF` (optional).
+option.
 
 Alternatively, you can download and run the installer of the
 
@@ -420,7 +416,6 @@ in the Embree root directory:
           -D CMAKE_BUILD_TYPE=Release
           -D CMAKE_CXX_COMPILER=icx
           -D CMAKE_C_COMPILER=icx
-          -D EMBREE_ISPC_SUPPORT=OFF
           -D EMBREE_SYCL_SUPPORT=ON
           -D TBB_ROOT=path_to_tbb\lib\cmake\tbb
 
@@ -467,7 +462,7 @@ parameters that can be configured in CMake:
   from buffer overwrites. This option is OFF by default.
 
 + `EMBREE_ISPC_SUPPORT`: Enables Intel® ISPC support of Embree. This option
-  is ON by default.
+  is OFF by default.
 
 + `EMBREE_SYCL_SUPPORT`: Enables GPU support using SYCL. When this
   option is enabled you have to use some DPC++ compiler. Please see
