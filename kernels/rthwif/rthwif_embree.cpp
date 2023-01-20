@@ -55,6 +55,9 @@ const constexpr uint32_t TRAV_LOOP_FEATURES =
   RTC_FEATURE_FLAG_TRIANGLE |   // filter function enforced for triangles and quads in this case
   RTC_FEATURE_FLAG_QUAD |
 #endif
+#if defined(EMBREE_RAY_MASK)
+  RTC_FEATURE_FLAG_32_BIT_RAY_MASK |
+#endif
   RTC_FEATURE_FLAG_MOTION_BLUR |
   RTC_FEATURE_FLAG_CURVES |
   RTC_FEATURE_FLAG_GRID |
@@ -542,7 +545,9 @@ void trav_loop(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANC
     Geometry* geom = scene->get(geomID);
 
     /* perform ray masking */
+#if defined(EMBREE_RAY_MASK)
     if (ray.mask & geom->mask)
+#endif
     {
       if (candidate == intel_candidate_type_procedural)
       {

@@ -88,12 +88,17 @@ ENDIF()
 ##############################################################
 
 IF (WIN32)
-  SET(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
-  if (NOT EMBREE_SYCL_SUPPORT)
-  INCLUDE(InstallRequiredSystemLibraries)
+  IF(SYCL_ONEAPI_ICX)
+    GET_FILENAME_COMPONENT(DPCPP_COMPILER_DIR ${CMAKE_CXX_COMPILER} PATH)
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/libmmd.dll")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/libmmd.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
+    ENDIF()
+  ELSE()
+    SET(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
+    INCLUDE(InstallRequiredSystemLibraries)
+    LIST(FILTER CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS INCLUDE REGEX ".*msvcp[0-9]+\.dll|.*vcruntime[0-9]+\.dll|.*vcruntime[0-9]+_[0-9]+\.dll")
+    INSTALL(FILES ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
   ENDIF()
-  LIST(FILTER CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS INCLUDE REGEX ".*msvcp[0-9]+\.dll|.*vcruntime[0-9]+\.dll|.*vcruntime[0-9]+_[0-9]+\.dll")
-  INSTALL(FILES ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
 ENDIF()
 
 ##############################################################
@@ -123,6 +128,9 @@ INSTALL(FILES "${PROJECT_SOURCE_DIR}/README.md" DESTINATION "${CMAKE_INSTALL_DOC
 INSTALL(FILES "${PROJECT_SOURCE_DIR}/readme.pdf" DESTINATION "${CMAKE_INSTALL_DOCDIR}" COMPONENT lib)
 INSTALL(FILES "${PROJECT_SOURCE_DIR}/third-party-programs.txt" DESTINATION "${CMAKE_INSTALL_DOCDIR}" COMPONENT lib)
 INSTALL(FILES "${PROJECT_SOURCE_DIR}/third-party-programs-TBB.txt" DESTINATION "${CMAKE_INSTALL_DOCDIR}" COMPONENT lib)
+INSTALL(FILES "${PROJECT_SOURCE_DIR}/third-party-programs-OIDN.txt" DESTINATION "${CMAKE_INSTALL_DOCDIR}" COMPONENT lib)
+INSTALL(FILES "${PROJECT_SOURCE_DIR}/third-party-programs-DPCPP.txt" DESTINATION "${CMAKE_INSTALL_DOCDIR}" COMPONENT lib)
+INSTALL(FILES "${PROJECT_SOURCE_DIR}/third-party-programs-oneAPI-DPCPP.txt" DESTINATION "${CMAKE_INSTALL_DOCDIR}" COMPONENT lib)
 
 ##############################################################
 # Install scripts to set embree paths
