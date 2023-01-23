@@ -74,62 +74,10 @@ namespace embree {
   // =========================================================================================================================================================
   // =========================================================================================================================================================
   // =========================================================================================================================================================
-
-
-
-  enum {
-    NO_BORDER     = 0,
-    TOP_BORDER    = 1 << 0,
-    BOTTOM_BORDER = 1 << 1,
-    LEFT_BORDER   = 1 << 2,
-    RIGHT_BORDER  = 1 << 3,
-    FULL_BORDER   = TOP_BORDER|BOTTOM_BORDER|LEFT_BORDER|RIGHT_BORDER,
-    CRACK_FIXED_BORDER = 1 << 31    
-  };
-  
-  struct __aligned(32) LCGQuadNode
-  {
-    RTCLossyCompressedGrid grid;
-    uint flags;
-    uint lod_level;
-    uint ID;
-    uint localID;
-    Vec2f u_range;
-    Vec2f v_range;    
-
-    __forceinline bool hasBorder() const { return flags & FULL_BORDER; }
-    __forceinline Vec3f getVertex(const uint x, const uint y) { return Vec3f(grid.vertex[y][x][0],grid.vertex[y][x][1],grid.vertex[y][x][2]); }
-    
-  }; 
-
-  __forceinline BBox3f getGridBounds(const RTCLossyCompressedGrid &grid)
-  {
-    BBox3f bounds(empty);
-    for (uint y=0;y<RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES;y++)
-      for (uint x=0;x<RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES;x++)
-      {
-        Vec3f v(grid.vertex[y][x][0],grid.vertex[y][x][1],grid.vertex[y][x][2]);
-        bounds.extend(v);
-      }
-    return bounds;
-  }
-
   
   static const uint LOD_LEVELS = 3;
   static const uint NUM_TOTAL_QUAD_NODES_PER_RTC_LCG = (1-(1<<(2*LOD_LEVELS)))/(1-4);
 
-  struct LODEdgeLevel {
-    uchar top,right,bottom,left; // top,right,bottom,left
-    __forceinline LODEdgeLevel() {}
-    __forceinline LODEdgeLevel(const uchar top, const uchar right, const uchar bottom, const uchar left) : top(top),right(right),bottom(bottom),left(left) {}
-    __forceinline uint level() const { return max(max(top,right),max(bottom,left)); }
-
-    __forceinline bool needsCrackFixing() const {
-      const uint l = level();
-      if ( l != top || l != right || l != bottom || l != left) return true;
-      return false;
-    }
-  };
 
   __forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz, const uint width, const uint height)
   {
@@ -145,12 +93,12 @@ namespace embree {
     return Vec2f(a,b);
   }
   
-  __forceinline LODEdgeLevel getLODEdgeLevels(LCGQuadNode &current,const ISPCCamera& camera, const uint width, const uint height)
+  __forceinline LODEdgeLevel getLODEdgeLevels(LCGBP &current,const ISPCCamera& camera, const uint width, const uint height)
   {
-    const Vec3f v0 = current.getVertex(0,0);
-    const Vec3f v1 = current.getVertex(RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1,0);
-    const Vec3f v2 = current.getVertex(RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1,RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1);
-    const Vec3f v3 = current.getVertex(0,RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1);
+    const Vec3f v0 = current.v0;
+    const Vec3f v1 = current.v1;
+    const Vec3f v2 = current.v2;
+    const Vec3f v3 = current.v3;
 
     const Vec3f vx = camera.xfm.l.vx;
     const Vec3f vy = camera.xfm.l.vy;
@@ -190,7 +138,7 @@ namespace embree {
     return lod_levels;
   }
 
-    __forceinline uint getCrackFixingBorderMask(const LCGQuadNode &current, const LODEdgeLevel &lodEdgeLevel, const uint gridLODLevel)
+    __forceinline uint getCrackFixingBorderMask(const LCGBP &current, const LODEdgeLevel &lodEdgeLevel, const uint gridLODLevel)
     {
       uint mask = 0;
       if ((current.flags & TOP_BORDER   ) && lodEdgeLevel.top    != gridLODLevel) mask |= TOP_BORDER;
@@ -200,8 +148,9 @@ namespace embree {
       return mask;
     }
   
-  __forceinline void fixCracks(LCGQuadNode &current, const uint borderMask, const LODEdgeLevel &lodEdgeLevel, const uint gridLODLevel)
+  __forceinline void fixCracks(LCGBP &current, const uint borderMask, const LODEdgeLevel &lodEdgeLevel, const uint gridLODLevel)
   {
+#if 0    
     if (borderMask & TOP_BORDER)
     {
       current.flags |= CRACK_FIXED_BORDER;
@@ -252,35 +201,10 @@ namespace embree {
         current.grid.vertex[i][0][1] = current.grid.vertex[index][0][1];
         current.grid.vertex[i][0][2] = current.grid.vertex[index][0][2];        
       }
-    }        
+    }
+#endif    
   }
   
-  
-  struct __aligned(64) LCG_LODQuadTree_Grid {    
-    uint numQuadTrees;
-    uint numTotalQuadNodes;
-    uint numMaxResQuadNodes;
-
-    LCGQuadNode *quadTrees;
-    
-    uint numLCGPtrs;
-    void **lcg_ptrs;
-
-    uint numCrackFixQuadNodes;
-    LCGQuadNode *crackFixQuadNodes;
-    
-    RTCGeometry geometry;
-    uint geomID;
-
-    Texture* map_Kd;
-    
-    static __forceinline uint getQuadTreeChildIndex(const uint index)
-    {
-      return 4*index+1;
-    }
-  };
-
-  LCG_LODQuadTree_Grid *global_grid;
   
   inline Vec3fa getVertex(const uint x, const uint y, const Vec3fa *const vtx, const uint grid_resX, const uint grid_resY)
   {
@@ -288,182 +212,135 @@ namespace embree {
     const uint py = min(y,grid_resY-1);    
     return vtx[py*grid_resX + px];
   }
+  
+  // ==============================================================================================
+  // ==============================================================================================
+  // ==============================================================================================
+  
+  struct __aligned(64) LCGBP_Scene {
+    static const uint LOD_LEVELS = 3;
 
-  inline Vec3fa getAvgVertex(const uint x, const uint y, const Vec3fa *const vtx, const uint grid_resX, const uint grid_resY)
+    uint numAllocatedLCGBP;
+    uint numAllocatedLCGBPStates;
+    
+    uint numLCGBP;
+    uint numCurrentLCGBPStates;    
+    
+    LCGBP *lcgbp;
+    LCGBP_State *lcgbp_state;
+    
+    uint numCrackFixQuadNodes;
+    
+    RTCGeometry geometry;
+    uint geomID;
+
+    Texture* map_Kd;
+    
+    LCGBP_Scene(const uint maxNumLCGBP);
+
+    void addGrid(const uint gridResX, const uint gridResY, const Vec3fa *const vtx);
+  };
+  
+  LCGBP_Scene::LCGBP_Scene(const uint maxNumLCGBP)
   {
-    Vec3fa v(0.0f);
-    for (uint j=y-1;j<=y+1;j++)    
-      for (uint i=x-1;i<=x+1;i++)
-        v+= getVertex(i,j,vtx,grid_resX,grid_resY);
-    return v * 1.0f/9.0f;
+    numLCGBP = 0;
+    numCurrentLCGBPStates = 0;    
+    numAllocatedLCGBP = maxNumLCGBP; //((gridResX-1) / InitialSubGridRes) * ((gridResY-1) / InitialSubGridRes);
+    numAllocatedLCGBPStates = (1<<(2*(LOD_LEVELS-1))) * maxNumLCGBP;
+    lcgbp       = (LCGBP*)alignedUSMMalloc(sizeof(LCGBP)*numAllocatedLCGBP,64,EMBREE_USM_SHARED /*EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE*/);
+    lcgbp_state = (LCGBP_State*)alignedUSMMalloc(sizeof(LCGBP_State)*numAllocatedLCGBPStates,64,EMBREE_USM_SHARED/*EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE*/);
+    PRINT(numAllocatedLCGBP);
+    PRINT(numAllocatedLCGBPStates);
   }
-      
-  void createQuadNode(LCGQuadNode &current, LCGQuadNode *nodes, uint &index, const uint start_x, const uint start_y, const uint step, const Vec3fa *const vtx, const uint grid_resX, const uint grid_resY, const uint border_flags, const uint ID, const uint lod_level, const Vec2f u_range, Vec2f v_range)
+
+  void LCGBP_Scene::addGrid(const uint gridResX, const uint gridResY, const Vec3fa *const vtx)
   {
-    if (step == 0) return;
-      
-    for (int y=0;y<RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES;y++)
-      for (int x=0;x<RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES;x++)
+    PING;
+    double avg_error = 0.0;
+    double max_error = 0.0;
+    uint num_error = 0;
+
+    PRINT(lcgbp);
+    PRINT(gridResX);
+    PRINT(gridResY);
+    PRINT(vtx);
+    
+    for (int start_y=0;start_y+LCGBP::GRID_RES_QUAD<gridResY;start_y+=LCGBP::GRID_RES_QUAD)
+      for (int start_x=0;start_x+LCGBP::GRID_RES_QUAD<gridResX;start_x+=LCGBP::GRID_RES_QUAD)
       {
-        const uint px = start_x+x*step;
-        const uint py = start_y+y*step;
-        Vec3fa v;
-        //if (x==0 || y==0 || x==RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1 || y==RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1)          
-          v = getVertex(px,py,vtx,grid_resX,grid_resY);
-          //else
-          //v = getAvgVertex(px,py,vtx,grid_resX,grid_resY);
-        current.grid.vertex[y][x][0] = v.x;
-        current.grid.vertex[y][x][1] = v.y;
-        current.grid.vertex[y][x][2] = v.z;          
+        LCGBP &current = lcgbp[numLCGBP++];
+
+        const Vec3f v0 = getVertex(start_x,start_y,vtx,gridResX,gridResY);
+        const Vec3f v1 = getVertex(start_x+LCGBP::GRID_RES_VERTEX-1,start_y,vtx,gridResX,gridResY);
+        const Vec3f v2 = getVertex(start_x+LCGBP::GRID_RES_VERTEX-1,start_y+LCGBP::GRID_RES_VERTEX-1,vtx,gridResX,gridResY);
+        const Vec3f v3 = getVertex(start_x,start_y+LCGBP::GRID_RES_VERTEX-1,vtx,gridResX,gridResY);
+
+        new (&current) LCGBP(v0,v1,v2,v3);
+        
+        current.encode(start_x,start_y,vtx,gridResX,gridResY);
+        
+        for (int y=0;y<LCGBP::GRID_RES_QUAD;y++)
+          for (int x=0;x<LCGBP::GRID_RES_QUAD;x++)
+          {          
+            const Vec3f org_v  = getVertex(start_x+x,start_y+y,vtx,gridResX,gridResY);
+            const Vec3f new_v  = current.decode(x,y);
+            const float error = length(new_v-org_v);
+            if (error > 0.7)
+            {
+              PRINT3(x,y,error);              
+              exit(0);
+            }
+            avg_error += (double)error;
+            max_error = max(max_error,(double)error);
+            num_error++;
+          }
+
+        
+                
       }
-    
-    current.flags     = border_flags;
-    current.lod_level = lod_level;
-    current.ID        = ID;
-    current.localID   = index;
-    current.u_range   = u_range;
-    current.v_range   = v_range;    
-
-    const uint new_step = step>>1;
-    const uint new_res = RTC_LOSSY_COMPRESSED_GRID_QUAD_RES*new_step;
-
-    const float u_center = (u_range.x + u_range.y)/2.0f;
-    const float v_center = (v_range.x + v_range.y)/2.0f;
-    
-    if (new_step)
-    {    
-      const uint new_index = index;
-      index += 4;
-      
-      createQuadNode(nodes[new_index+0],nodes,index,start_x + 0*new_res,start_y + 0*new_res,new_step,vtx,grid_resX,grid_resY,border_flags & (LEFT_BORDER|TOP_BORDER),ID,lod_level+1,Vec2f(u_range.x,u_center),Vec2f(v_range.x,v_center));
-      createQuadNode(nodes[new_index+1],nodes,index,start_x + 1*new_res,start_y + 0*new_res,new_step,vtx,grid_resX,grid_resY,border_flags & (RIGHT_BORDER|TOP_BORDER),ID,lod_level+1,Vec2f(u_center,u_range.y),Vec2f(v_range.x,v_center));
-      createQuadNode(nodes[new_index+2],nodes,index,start_x + 0*new_res,start_y + 1*new_res,new_step,vtx,grid_resX,grid_resY,border_flags & (LEFT_BORDER|BOTTOM_BORDER),ID,lod_level+1,Vec2f(u_range.x,u_center),Vec2f(v_center,v_range.y));
-      createQuadNode(nodes[new_index+3],nodes,index,start_x + 1*new_res,start_y + 1*new_res,new_step,vtx,grid_resX,grid_resY,border_flags & (RIGHT_BORDER|BOTTOM_BORDER),ID,lod_level+1,Vec2f(u_center,u_range.y),Vec2f(v_center,v_range.y));
-    }
+    PRINT2((float)(avg_error / num_error),max_error);
   }
-
 
   
+  LCGBP_Scene *global_lcgbp_scene = nullptr;
+
+  // ==============================================================================================
+  // ==============================================================================================
+  // ==============================================================================================
+  
+    
   
   void convertISPCGridMesh(ISPCGridMesh* grid, RTCScene scene, ISPCOBJMaterial *material)
   {
     Vec3fa *vtx = grid->positions[0];
-    PRINT(material);
-    PRINT(grid->numVertices);
-    PRINT(grid->numGrids);
-    PRINT(sizeof(LCGQuadNode));    
-    PRINT( NUM_TOTAL_QUAD_NODES_PER_RTC_LCG );
-    PRINT(material->map_Kd);
-                
-    const uint InitialSubGridRes = (1 << (LOD_LEVELS-1)) * (RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1);
-    PRINT( InitialSubGridRes );
+
+    uint numLCGBP = 0;
     
-    uint numSubGrids = 0;
-    uint numQuadNodes = 0;
+    /* --- count lcgbp --- */
     for (uint i=0;i<grid->numGrids;i++)
     {
       PRINT3(i,grid->grids[i].resX,grid->grids[i].resY);      
       const uint grid_resX = grid->grids[i].resX;
       const uint grid_resY = grid->grids[i].resY;
-      const uint numInitialSubGrids = ((grid_resX-1) / InitialSubGridRes) * ((grid_resY-1) / InitialSubGridRes);
+      const uint numInitialSubGrids = ((grid_resX-1) / LCGBP::GRID_RES_QUAD) * ((grid_resY-1) / LCGBP::GRID_RES_QUAD);
       PRINT(numInitialSubGrids);
-      numSubGrids  += numInitialSubGrids;
-      numQuadNodes += numInitialSubGrids * NUM_TOTAL_QUAD_NODES_PER_RTC_LCG;
+      numLCGBP  += numInitialSubGrids;
     }
-  
-    PRINT(numSubGrids);
+    PRINT(numLCGBP);
 
-    global_grid = (LCG_LODQuadTree_Grid*)alignedUSMMalloc(sizeof(LCG_LODQuadTree_Grid),64);
-
-    global_grid->numQuadTrees = numSubGrids;
-    global_grid->numTotalQuadNodes = numQuadNodes;
-    global_grid->numMaxResQuadNodes = (1<<(2*(LOD_LEVELS-1))) * numSubGrids;
-    PRINT2( (1<<(2*(LOD_LEVELS-1))), global_grid->numMaxResQuadNodes );
-    const size_t sizeQuadTrees = sizeof(LCGQuadNode)*global_grid->numTotalQuadNodes;
-    global_grid->quadTrees = (LCGQuadNode*)alignedUSMMalloc(sizeQuadTrees,64);
-    const size_t sizeLCGPtrs = sizeof(void*)*global_grid->numMaxResQuadNodes;
-    global_grid->lcg_ptrs   = (void**)alignedUSMMalloc(sizeLCGPtrs,64,EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE);
-    const size_t sizeCrackFixQuadNodes = sizeof(LCGQuadNode)*global_grid->numMaxResQuadNodes;
-    global_grid->crackFixQuadNodes = (LCGQuadNode*)alignedUSMMalloc(sizeCrackFixQuadNodes,64,EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE); // FIXME: only borders at highest resolution
-
+    /* --- allocate global LCGBP --- */
+    global_lcgbp_scene = (LCGBP_Scene*)alignedUSMMalloc(sizeof(LCGBP_Scene),64);
+    new (global_lcgbp_scene) LCGBP_Scene(numLCGBP);
     
-    PRINT3(sizeQuadTrees,sizeLCGPtrs,sizeCrackFixQuadNodes);
-    
-    float max_error = 0.0f;
-    double avg_error = 0.0;
-    uint num_error = 0;
-    BBox3f bounds(empty);
-    
-    uint index = 0;
+    /* --- fill array of LCGBP --- */
     for (uint i=0;i<grid->numGrids;i++)
-    {
-      const uint grid_resX = grid->grids[i].resX;
-      const uint grid_resY = grid->grids[i].resY;
-    
-      for (int start_y=0;start_y+InitialSubGridRes<grid_resY;start_y+=InitialSubGridRes)
-        for (int start_x=0;start_x+InitialSubGridRes<grid_resX;start_x+=InitialSubGridRes)
-        {
-          LCGQuadNode *current = &global_grid->quadTrees[index*NUM_TOTAL_QUAD_NODES_PER_RTC_LCG];
-          uint local_index = 1;
-          Vec2f u_range((float)start_x/(grid_resX-1),(float)(start_x+InitialSubGridRes)/(grid_resX-1));
-          Vec2f v_range((float)start_y/(grid_resY-1),(float)(start_y+InitialSubGridRes)/(grid_resY-1));
-          createQuadNode(current[0],current,local_index,start_x,start_y,(1<<(LOD_LEVELS-1)),vtx,grid_resX,grid_resY,FULL_BORDER,index,0,u_range,v_range);          
-          if (local_index != NUM_TOTAL_QUAD_NODES_PER_RTC_LCG)
-          {
-            PRINT2(local_index,NUM_TOTAL_QUAD_NODES_PER_RTC_LCG);
-            FATAL("NUM_TOTAL_QUAD_NODES_PER_RTC_LCG");
-          }          
-          index++;
+      global_lcgbp_scene->addGrid(grid->grids[i].resX,grid->grids[i].resY,grid->positions[0]);    
 
-#if 1
-          LCGBP lcgbp(getVertex(start_x,start_y,vtx,grid_resX,grid_resY),
-                      getVertex(start_x+LCGBP::GRID_RES_VERTEX-1,start_y,vtx,grid_resX,grid_resY),
-                      getVertex(start_x+LCGBP::GRID_RES_VERTEX-1,start_y+LCGBP::GRID_RES_VERTEX-1,vtx,grid_resX,grid_resY),
-                      getVertex(start_x,start_y+LCGBP::GRID_RES_VERTEX-1,vtx,grid_resX,grid_resY));
-          lcgbp.encode(start_x,start_y,vtx,grid_resX,grid_resY);
-                       
-          for (int y=0;y<InitialSubGridRes;y++)
-            for (int x=0;x<InitialSubGridRes;x++)
-            {          
-              const Vec3f org_v  = getVertex(start_x+x,start_y+y,vtx,grid_resX,grid_resY);
-              bounds.extend(org_v);
-              const uint encoded = lcgbp.encode(org_v,x,y,33,33);
-              const Vec3f new_v  = lcgbp.decode(encoded,x,y,33,33);
-
-              const Vec3f new_v2  = lcgbp.decode(x,y);
-              if (new_v != new_v2)
-              {
-                PRINT2(new_v,new_v2);
-                exit(0);
-              }
-              const float error = length(new_v-org_v);
-              avg_error += (double)error;
-              max_error = max(max_error,error);
-              num_error++;
-            }
-          // ===============
-#endif                
-        }
-    }
-
-    PRINT2(bounds,length(bounds.size()));
-    PRINT(sizeof(LCGBP));
-      
-    if (index > numSubGrids)
-      FATAL("numSubGrids");    
-
-    PRINT2((float)(avg_error / num_error),max_error);
-    
-    // PRINT(max_error);
-    // exit(0);
-    
-    global_grid->geometry = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY);
-    rtcCommitGeometry(global_grid->geometry);
-    global_grid->geomID = rtcAttachGeometry(scene,global_grid->geometry);
+    global_lcgbp_scene->geometry = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY);
+    rtcCommitGeometry(global_lcgbp_scene->geometry);
+    global_lcgbp_scene->geomID = rtcAttachGeometry(scene,global_lcgbp_scene->geometry);
     //rtcReleaseGeometry(geom);
-
-    global_grid->map_Kd = (Texture*)material->map_Kd;
-    
+    global_lcgbp_scene->map_Kd = (Texture*)material->map_Kd;        
   }
 
 
@@ -516,7 +393,7 @@ namespace embree {
   }
 
 /* task that renders a single screen tile */
-  Vec3fa renderPixelPrimary(const TutorialData& data, float x, float y, const ISPCCamera& camera, const unsigned int width, const unsigned int height, LCG_LODQuadTree_Grid *grid)
+  Vec3fa renderPixelPrimary(const TutorialData& data, float x, float y, const ISPCCamera& camera, const unsigned int width, const unsigned int height, LCGBP_Scene *grid)
   {
     RTCIntersectArguments args;
     rtcInitIntersectArguments(&args);
@@ -536,7 +413,7 @@ namespace embree {
     return color;
   }
 
-  Vec3fa renderPixelDebug(const TutorialData& data, float x, float y, const ISPCCamera& camera, const unsigned int width, const unsigned int height, LCG_LODQuadTree_Grid *grid, const RenderMode mode)
+  Vec3fa renderPixelDebug(const TutorialData& data, float x, float y, const ISPCCamera& camera, const unsigned int width, const unsigned int height, LCGBP_Scene *lcgbp_scene, const RenderMode mode)
   {
     RTCIntersectArguments args;
     rtcInitIntersectArguments(&args);
@@ -565,18 +442,18 @@ namespace embree {
     }
     else if (mode == RENDER_DEBUG_SUBGRIDS)
     {
-      const uint gridID = ((LCGQuadNode*)grid->lcg_ptrs[primID])->ID;          
-      const uint subgridID = ((LCGQuadNode*)grid->lcg_ptrs[primID])->localID;    
-      color = randomColor(gridID*NUM_TOTAL_QUAD_NODES_PER_RTC_LCG+subgridID);   
+      //const uint gridID = ((LCGQuadNode*)grid->lcg_ptrs[primID])->ID;          
+      //const uint subgridID = ((LCGQuadNode*)grid->lcg_ptrs[primID])->localID;    
+      //color = randomColor(gridID*NUM_TOTAL_QUAD_NODES_PER_RTC_LCG+subgridID);   
     }    
     else if (mode == RENDER_DEBUG_GRIDS)
     {
-      const uint ID = ((LCGQuadNode*)grid->lcg_ptrs[primID])->ID;    
-      color = randomColor(ID);   
+      //const uint ID = ((LCGQuadNode*)grid->lcg_ptrs[primID])->ID;    
+      //color = randomColor(ID);   
     }
     else if (mode == RENDER_DEBUG_LOD)
     {
-      const uint level = ((LCGQuadNode*)grid->lcg_ptrs[primID])->lod_level;
+      const uint level = 0; //((LCGQuadNode*)grid->lcg_ptrs[primID])->lod_level;
       if (level == 0)
         color = Vec3fa(0,0,1);
       else if (level == 1)
@@ -586,18 +463,19 @@ namespace embree {
     }
     else if (mode == RENDER_DEBUG_CRACK_FIXING)
     {
-      const uint cracks_fixed = ((LCGQuadNode*)grid->lcg_ptrs[primID])->flags & CRACK_FIXED_BORDER;
+      const uint cracks_fixed = 0; //((LCGQuadNode*)grid->lcg_ptrs[primID])->flags & CRACK_FIXED_BORDER;
       if (cracks_fixed)
         color = Vec3fa(1,0,1);      
     }
     else if (mode == RENDER_DEBUG_UV)
     {
+#if 0      
       const uint flip_uv = localID & 1;
       const uint localQuadID = localID>>1;
       const uint local_y = localQuadID /  RTC_LOSSY_COMPRESSED_GRID_QUAD_RES;
       const uint local_x = localQuadID %  RTC_LOSSY_COMPRESSED_GRID_QUAD_RES;
       
-      const LCGQuadNode *current = ((LCGQuadNode*)grid->lcg_ptrs[primID]);      
+      //const LCGQuadNode *current = ((LCGQuadNode*)grid->lcg_ptrs[primID]);      
       const float u = flip_uv ? 1-ray.u : ray.u;
       const float v = flip_uv ? 1-ray.v : ray.v;
       const float u_size = (current->u_range.y - current->u_range.x) * (1.0f / RTC_LOSSY_COMPRESSED_GRID_QUAD_RES);
@@ -609,6 +487,7 @@ namespace embree {
 
       color = getTexel3f(grid->map_Kd,1-fu,fv);
       //color = Vec3fa(fu,fv,1.0f-fu-fv);
+#endif      
     }
     return Vec3fa(abs(dot(ray.dir,normalize(ray.Ng)))) * color;
   }
@@ -621,7 +500,7 @@ namespace embree {
                            const unsigned int height,
                            const float time,
                            const ISPCCamera& camera,
-                           LCG_LODQuadTree_Grid *grid,
+                           LCGBP_Scene *lcgbp_scene,
                            const RenderMode mode,
                            const uint spp)
   {
@@ -638,9 +517,9 @@ namespace embree {
     
       /* calculate pixel color */
       if (mode == RENDER_PRIMARY)
-        color += renderPixelPrimary(data, (float)fx,(float)fy,camera, width, height, grid);
+        color += renderPixelPrimary(data, (float)fx,(float)fy,camera, width, height, lcgbp_scene);
       else
-        color += renderPixelDebug(data, (float)fx,(float)fy,camera, width, height, grid,mode);
+        color += renderPixelDebug(data, (float)fx,(float)fy,camera, width, height, lcgbp_scene, mode);
     }
     color *= inv_spp;
     
@@ -660,7 +539,7 @@ namespace embree {
     /* render all pixels */
 #if defined(EMBREE_SYCL_TUTORIAL)
     RenderMode rendering_mode = user_rendering_mode;    
-    LCG_LODQuadTree_Grid *grid = global_grid;
+    LCGBP_Scene *lcgbp_scene = global_lcgbp_scene;
     uint spp = user_spp;
     TutorialData ldata = data;
     sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
@@ -668,7 +547,7 @@ namespace embree {
                                                    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
                                                                                const unsigned int x = item.get_global_id(1); if (x >= width ) return;
                                                                                const unsigned int y = item.get_global_id(0); if (y >= height) return;
-                                                                               renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,grid,rendering_mode,spp);
+                                                                               renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,lcgbp_scene,rendering_mode,spp);
                                                                              });
                                                  });
     global_gpu_queue->wait_and_throw();
@@ -727,11 +606,11 @@ namespace embree {
     const uint trisPerSubGrid = RTC_LOSSY_COMPRESSED_GRID_QUAD_RES*RTC_LOSSY_COMPRESSED_GRID_QUAD_RES*2;
     ImGui::Text("SPP: %d",user_spp);    
     ImGui::Text("BVH Build Time: %4.4f ms",avg_bvh_build_time.get());
-    ImGui::Text("numQuadTrees: %d ",global_grid->numQuadTrees);
-    ImGui::Text("numTotalQuadNodes: %d ",global_grid->numTotalQuadNodes);
-    ImGui::Text("numMaxResQuadNodes: %d => %d Triangles",global_grid->numMaxResQuadNodes,global_grid->numMaxResQuadNodes*trisPerSubGrid);    
-    ImGui::Text("numLCGPtrs: %d => %d Triangles",global_grid->numLCGPtrs,global_grid->numLCGPtrs*trisPerSubGrid);
-    ImGui::Text("numCrackFixQuadNodes: %d => %d Triangles",global_grid->numCrackFixQuadNodes,global_grid->numCrackFixQuadNodes*trisPerSubGrid);    
+    //ImGui::Text("numQuadTrees: %d ",global_grid->numQuadTrees);
+    //ImGui::Text("numTotalQuadNodes: %d ",global_grid->numTotalQuadNodes);
+    //ImGui::Text("numMaxResQuadNodes: %d => %d Triangles",global_grid->numMaxResQuadNodes,global_grid->numMaxResQuadNodes*trisPerSubGrid);    
+    //ImGui::Text("numLCGPtrs: %d => %d Triangles",global_grid->numLCGPtrs,global_grid->numLCGPtrs*trisPerSubGrid);
+    //ImGui::Text("numCrackFixQuadNodes: %d => %d Triangles",global_grid->numCrackFixQuadNodes,global_grid->numCrackFixQuadNodes*trisPerSubGrid);    
   }
   
   
@@ -744,81 +623,51 @@ namespace embree {
   {
 #if defined(EMBREE_SYCL_TUTORIAL)
 
-    
-    LCG_LODQuadTree_Grid *grid = global_grid;
-
-    // PRINT(grid);
-    // PRINT(grid->quadTrees);
-    // PRINT(grid->lcg_ptrs);
-    // PRINT(grid->crackFixQuadNodes);
-    
-    const uint numQuadTrees = grid->numQuadTrees;
-    
+    LCGBP_Scene *local_lcgbp_scene = global_lcgbp_scene;
     sycl::event init_event =  global_gpu_queue->submit([&](sycl::handler &cgh) {
                                                          cgh.single_task([=]() {
-                                                                           grid->numCrackFixQuadNodes = 0;
-                                                                           grid->numLCGPtrs = 0;
+                                                                           local_lcgbp_scene->numCurrentLCGBPStates = 0;
                                                                          });
                                                        });
+
+    waitOnEventAndCatchException(init_event);
     
     const uint wgSize = 64;
-    const sycl::nd_range<1> nd_range1(alignTo(numQuadTrees,wgSize),sycl::range<1>(wgSize));          
-    
+    const uint numLCGBP = local_lcgbp_scene->numLCGBP;
+    const sycl::nd_range<1> nd_range1(alignTo(numLCGBP,wgSize),sycl::range<1>(wgSize));              
     sycl::event compute_lod_event = global_gpu_queue->submit([=](sycl::handler& cgh){
                                                                cgh.depends_on(init_event);                                                   
                                                                cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) {
                                                                                            const uint i = item.get_global_id(0);
-                                                                                           if (i < numQuadTrees)
+                                                                                           if (i < numLCGBP)
                                                                                            {
-                                                                                             LCGQuadNode *const root = &grid->quadTrees[i*NUM_TOTAL_QUAD_NODES_PER_RTC_LCG];
-                                                                                             const LODEdgeLevel lod_edge_levels = getLODEdgeLevels(*root,camera,width,height);
-                                                                                             //PRINT5(i,lod_edge_levels.top,lod_edge_levels.right,lod_edge_levels.bottom,lod_edge_levels.left);
-                                                                                             const uint lod_level = lod_edge_levels.level();
-                                                                                             const uint crackFixingBorderMask = getCrackFixingBorderMask(*root,lod_edge_levels,lod_level);
-                                                                                             const uint numSubGrids = 1<<(2*lod_level);
-                                                                                             const uint offset = ((1<<(2*lod_level))-1)/(4-1);
-                                                                                             const uint numActiveQuads = atomic_add_global(&grid->numLCGPtrs,numSubGrids);
-                                                                                             
-                                                                                             if (crackFixingBorderMask)
-                                                                                             {
-                                                                                               for (uint j=0;j<numSubGrids;j++)
-                                                                                               {
-                                                                                                 LCGQuadNode *subgrid_root = &root[offset+j];
-                                                                                                 const uint subgrid_crackFixingBorderMask = subgrid_root->flags & crackFixingBorderMask;
-                                                                                                 if (subgrid_crackFixingBorderMask)
-                                                                                                 {
-                                                                                                   const uint numCrackFixQuadNodes = atomic_add_global(&grid->numCrackFixQuadNodes,(uint)1);
-                                                                                                   subgrid_root = &grid->crackFixQuadNodes[numCrackFixQuadNodes];
-                                                                                                   *subgrid_root = root[offset+j];
-                                                                                                   fixCracks(*subgrid_root, subgrid_crackFixingBorderMask, lod_edge_levels, lod_level);
-                                                                                                 }
-                                                                                                 grid->lcg_ptrs[numActiveQuads+j] = &subgrid_root->grid;
-                                                                                               }          
-                                                                                             }
-                                                                                             else        
-                                                                                               for (uint j=0;j<numSubGrids;j++)
-                                                                                                 grid->lcg_ptrs[numActiveQuads+j] = &root[offset+j].grid;
+                                                                                             const uint lod_level = 2;
+                                                                                             const uint numGrids9x9 = 1<<(2*lod_level);
+                                                                                             //const uint offset = ((1<<(2*lod_level))-1)/(4-1);
+                                                                                             const uint offset = atomic_add_global(&local_lcgbp_scene->numCurrentLCGBPStates,numGrids9x9);
+                                                                                             uint index = 0;
+                                                                                             for (uint y=0;y<4;y++)
+                                                                                               for (uint x=0;x<4;x++)
+                                                                                                 local_lcgbp_scene->lcgbp_state[offset+index++] = LCGBP_State(&local_lcgbp_scene->lcgbp[i],x*8,y*8,1,2,2,2,2);
                                                                                            }
                                                                                            
                                                                                          });
                                                              });
     waitOnEventAndCatchException(compute_lod_event);
 
-    //PRINT(getDeviceExecutionTiming(compute_lod_event));
-    //waitOnQueueAndCatchException(*global_gpu_queue);
-    //PRINT2(grid->numLCGPtrs,grid->numCrackFixQuadNodes);
+    PRINT( local_lcgbp_scene->numCurrentLCGBPStates );
     double t0 = getSeconds();
-
     
-    rtcSetGeometryUserData(grid->geometry,grid->lcg_ptrs);
-    rtcSetLossyCompressedGeometryPrimitiveCount(grid->geometry,grid->numLCGPtrs);
-    rtcCommitGeometry(grid->geometry);
+    rtcSetGeometryUserData(local_lcgbp_scene->geometry,local_lcgbp_scene->lcgbp_state);
+    rtcSetLossyCompressedGeometryPrimitiveCount(local_lcgbp_scene->geometry,local_lcgbp_scene->numCurrentLCGBPStates);
+    rtcCommitGeometry(local_lcgbp_scene->geometry);
     
     /* commit changes to scene */
     rtcCommitScene (data.g_scene);
 
     double dt0 = (getSeconds()-t0)*1000.0;
     avg_bvh_build_time.add(dt0);
+    //exit(0);
 #endif
   }
 

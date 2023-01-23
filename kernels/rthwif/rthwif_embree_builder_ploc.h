@@ -4,6 +4,7 @@
 #include "builder/gpu/AABB3f.h"
 #include "builder/gpu/sort.h"
 #include "builder/gpu/morton.h"
+#include "builder/gpu/lcgbp.h"
 #include <memory>
 #include "../common/scene.h" 
 #include "rthwif_builder.h"
@@ -1637,8 +1638,17 @@ namespace embree
       if (unlikely(geometry_desc[lcgID] == nullptr)) continue;
       if (geometry_desc[lcgID]->geometryType == RTHWIF_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY)
       {
+        
         RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC *geom = (RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC *)geometry_desc[lcgID];
-                
+
+#if 0        
+        for (uint i=0;i<geom->numGeometryPtrs;i++)
+        {
+          LCGBP_State &state = ((LCGBP_State*)(geom->compressedGeometryPtrsBuffer))[i];
+          PRINT3(i,(int)state.start_x,(int)state.start_y);
+        }
+        exit(0);
+#endif                
         numLCGs += geom->numGeometryPtrs;        
         const uint wgSize = 16;        
         const sycl::nd_range<1> nd_range1(wgSize*geom->numGeometryPtrs,sycl::range<1>(wgSize));          
@@ -1659,7 +1669,14 @@ namespace embree
                                QuadLeaf *local_leaf               = _local_leaf.get_pointer();
                                gpu::AABB3f *local_bounds          = _local_bounds.get_pointer();
 
-                               RTCLossyCompressedGrid &grid_source = *(RTCLossyCompressedGrid*)geom->compressedGeometryPtrsBuffer[ID];
+                               //RTCLossyCompressedGrid &grid_source = *(RTCLossyCompressedGrid*)geom->compressedGeometryPtrsBuffer[ID];
+
+                               LCGBP_State &state = ((LCGBP_State*)(geom->compressedGeometryPtrsBuffer))[ID];
+                               const LCGBP *const lcgbp = state.lcgbp;
+                               const uint lgcbp_start_x = state.start_x;
+                               const uint lgcbp_start_y = state.start_y;                               
+                               const uint lgcbp_step = state.step;
+                                 
                                char* dest = lcg_bvh_mem + ID * sizeLCGBVH;
                                LocalNodeData_subgroup *node = (LocalNodeData_subgroup*)(dest + 3 * 64);
                                QuadLeaf *leaf = (QuadLeaf*)(dest + (4*3+2+1)*64);
@@ -1672,11 +1689,23 @@ namespace embree
                                  const uint x = sx; 
                                  const uint y = sy + 2*rows;
 
-                                 const Vec3f p0 = getVertex(grid_source,y+0,x+0);
-                                 const Vec3f p1 = getVertex(grid_source,y+0,x+1);
-                                 const Vec3f p2 = getVertex(grid_source,y+1,x+1);
-                                 const Vec3f p3 = getVertex(grid_source,y+1,x+0);
+                                 //const Vec3f p0 = getVertex(grid_source,y+0,x+0);
+                                 //const Vec3f p1 = getVertex(grid_source,y+0,x+1);
+                                 //const Vec3f p2 = getVertex(grid_source,y+1,x+1);
+                                 //const Vec3f p3 = getVertex(grid_source,y+1,x+0);
 
+#if 0                                 
+                                 const Vec3f p0 = lcgbp->getVertexGrid9x9(x+0,y+0,step,lgcbp_start_x,lgcbp_start_y);
+                                 const Vec3f p1 = lcgbp->getVertexGrid9x9(x+1,y+0,step,lgcbp_start_x,lgcbp_start_y);
+                                 const Vec3f p2 = lcgbp->getVertexGrid9x9(x+1,y+1,step,lgcbp_start_x,lgcbp_start_y);
+                                 const Vec3f p3 = lcgbp->getVertexGrid9x9(x+0,y+1,step,lgcbp_start_x,lgcbp_start_y);
+#else
+                                 const Vec3f p0 = lcgbp->decode(lgcbp_start_x + (x+0), lgcbp_start_y + (y+0));
+                                 const Vec3f p1 = lcgbp->decode(lgcbp_start_x + (x+1), lgcbp_start_y + (y+0));
+                                 const Vec3f p2 = lcgbp->decode(lgcbp_start_x + (x+1), lgcbp_start_y + (y+1));
+                                 const Vec3f p3 = lcgbp->decode(lgcbp_start_x + (x+0), lgcbp_start_y + (y+1));
+                                 
+#endif                                 
                                  const uint geomID = lcgID;
                                  const uint primID = (ID << RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT) | 2*(y*RTC_LOSSY_COMPRESSED_GRID_QUAD_RES+x) ; //y*8+x; 
 
