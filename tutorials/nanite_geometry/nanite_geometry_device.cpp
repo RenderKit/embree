@@ -271,31 +271,37 @@ namespace embree {
         LCGBP &current = lcgbp[numLCGBP++];
 
         const Vec3f v0 = getVertex(start_x,start_y,vtx,gridResX,gridResY);
-        const Vec3f v1 = getVertex(start_x+LCGBP::GRID_RES_VERTEX-1,start_y,vtx,gridResX,gridResY);
-        const Vec3f v2 = getVertex(start_x+LCGBP::GRID_RES_VERTEX-1,start_y+LCGBP::GRID_RES_VERTEX-1,vtx,gridResX,gridResY);
-        const Vec3f v3 = getVertex(start_x,start_y+LCGBP::GRID_RES_VERTEX-1,vtx,gridResX,gridResY);
+        const Vec3f v1 = getVertex(start_x+LCGBP::GRID_RES_QUAD,start_y,vtx,gridResX,gridResY);
+        const Vec3f v2 = getVertex(start_x+LCGBP::GRID_RES_QUAD,start_y+LCGBP::GRID_RES_QUAD,vtx,gridResX,gridResY);
+        const Vec3f v3 = getVertex(start_x,start_y+LCGBP::GRID_RES_QUAD,vtx,gridResX,gridResY);
 
+        //PRINT4(v0,v1,v2,v3);
+        
         new (&current) LCGBP(v0,v1,v2,v3);
         
         current.encode(start_x,start_y,vtx,gridResX,gridResY);
         
-        for (int y=0;y<LCGBP::GRID_RES_QUAD;y++)
-          for (int x=0;x<LCGBP::GRID_RES_QUAD;x++)
-          {          
+        for (int y=0;y<LCGBP::GRID_RES_VERTEX;y++)
+        {
+          for (int x=0;x<LCGBP::GRID_RES_VERTEX;x++)
+          {
+            //PRINT2(x,y);
             const Vec3f org_v  = getVertex(start_x+x,start_y+y,vtx,gridResX,gridResY);
             const Vec3f new_v  = current.decode(x,y);
             const float error = length(new_v-org_v);
-            if (error > 0.7)
+            //PRINT5(x,y,org_v,new_v,error);            
+            if (error > 0.0)
             {
-              PRINT3(x,y,error);              
-              exit(0);
+              //PRINT5(x,y,LCGBP::as_uint(new_v.x),LCGBP::as_uint(new_v.y),LCGBP::as_uint(new_v.z));              
+              //exit(0);
             }
             avg_error += (double)error;
             max_error = max(max_error,(double)error);
             num_error++;
           }
-
-        
+          //exit(0);          
+        }
+        //return;
                 
       }
     PRINT2((float)(avg_error / num_error),max_error);
@@ -655,7 +661,7 @@ namespace embree {
                                                              });
     waitOnEventAndCatchException(compute_lod_event);
 
-    PRINT( local_lcgbp_scene->numCurrentLCGBPStates );
+    //PRINT( local_lcgbp_scene->numCurrentLCGBPStates );
     double t0 = getSeconds();
     
     rtcSetGeometryUserData(local_lcgbp_scene->geometry,local_lcgbp_scene->lcgbp_state);

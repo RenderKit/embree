@@ -1522,10 +1522,10 @@ namespace embree
       dest[4+i] = tmp[i*4+0] | (tmp[i*4+1]<<8) | (tmp[i*4+2]<<16) | (tmp[i*4+3]<<24);
   }
    
-   __forceinline Vec3f getVertex(const RTCLossyCompressedGrid &grid_source,const uint y, const uint x)
-   {
-     return Vec3f(grid_source.vertex[y][x][0],grid_source.vertex[y][x][1],grid_source.vertex[y][x][2]);
-   }
+   /* __forceinline Vec3f getVertex(const RTCLossyCompressedGrid &grid_source,const uint y, const uint x) */
+   /* { */
+   /*   return Vec3f(grid_source.vertex[y][x][0],grid_source.vertex[y][x][1],grid_source.vertex[y][x][2]); */
+   /* } */
 
 
    __forceinline float3 to_float3(const Vec3f &v)
@@ -1681,6 +1681,18 @@ namespace embree
                                LocalNodeData_subgroup *node = (LocalNodeData_subgroup*)(dest + 3 * 64);
                                QuadLeaf *leaf = (QuadLeaf*)(dest + (4*3+2+1)*64);
 
+                               /* if (subgroupLocalID == 0 && ID == 0) */
+                               /*   for (uint y=0;y<33;y++) */
+                               /*     for (uint x=0;x<33;x++) */
+                               /*     { */
+                               /*       const Vec3f new_v = lcgbp->decode(x,y);                                      */
+                               /*       //PRINT3(x,y,(float)new_v.x); */
+                               /*       PRINT5(x,y,gpu::as_uint(new_v.x),gpu::as_uint(new_v.y),gpu::as_uint(new_v.z));               */
+                                     
+                               /*     } */
+                                     
+                                   
+                               
                                const uint sx = start_x[subgroupLocalID];
                                const uint sy = start_y[subgroupLocalID];
                                
@@ -1791,6 +1803,10 @@ namespace embree
           iteration_time += gpu::getDeviceExecutionTiming(queue_event);
       }
     }
+
+    /* gpu::waitOnQueueAndCatchException(gpu_queue); */
+    /* exit(0); */
+    
     return numLCGs;
   }
    
