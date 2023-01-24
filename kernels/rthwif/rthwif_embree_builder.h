@@ -60,7 +60,7 @@ namespace embree
   
   void rthwifCleanup(void* dispatchGlobalsPtr, sycl::context context);
 
-  bool rthwifIsSYCLDeviceSupported(const sycl::device& sycl_device);
+  int rthwifIsSYCLDeviceSupported(const sycl::device& sycl_device);
   
   BBox3f rthwifBuild(Scene* scene, AccelBuffer& buffer_o);
 }
