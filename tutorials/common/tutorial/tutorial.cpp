@@ -27,6 +27,10 @@
 #include "../scenegraph/xml_loader.h"
 #include "../image/image.h"
 
+#if defined(EMBREE_SYCL_SUPPORT) && defined(EMBREE_SYCL_TUTORIAL)
+#include "../sycl/util.h"
+#endif
+
 namespace embree
 {
 #if defined(EMBREE_SYCL_SUPPORT)
@@ -1099,19 +1103,27 @@ namespace embree
 #endif
       }
 
-      auto exception_handler = [] (sycl::exception_list exceptions) {
-	 for (std::exception_ptr const& e : exceptions) {
-	   try {
-	     std::rethrow_exception(e);
-	   } catch(sycl::exception const& e) {
-	     std::cout << "ERROR: Caught asynchronous SYCL exception:\n" << e.what() << std::endl;
-	     exit(1);
-	   }
-	 }
+      auto exception_handler = [](sycl::exception_list exceptions)
+      {
+        for (std::exception_ptr const &e : exceptions) {
+          try {
+            std::rethrow_exception(e);
+          } catch (sycl::exception const &e) {
+            std::cout << "ERROR: Caught asynchronous SYCL exception:\n"
+                      << e.what() << std::endl;
+            exit(1);
+          }
+        }
       };
 
       /* select device supported by Embree */
-      device = new sycl::device(rtcSYCLDeviceSelector);
+      try {
+        device = new sycl::device(rtcSYCLDeviceSelector);
+      } catch(std::exception& e) {
+        std::cerr << "Caught exception creating sycl::device: " << e.what() << std::endl;
+        printAllSYCLDevices();
+        return;
+      }
       sycl::platform platform = device->get_platform();
       log(1, "Selected SYCL Platform: " + platform.get_info<sycl::info::platform::name>());
       log(1, "Selected SYCL Device: " + device->get_info<sycl::info::device::name>());
@@ -1123,6 +1135,10 @@ namespace embree
       global_gpu_device = device;
       global_gpu_context = context;
       global_gpu_queue = queue;
+
+      if (verbosity >= 1) {
+        printAllSYCLDevices();
+      }
 
       enableUSMAllocTutorial(global_gpu_context, global_gpu_device);
     }

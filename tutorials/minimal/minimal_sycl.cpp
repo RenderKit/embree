@@ -11,6 +11,8 @@
 #include <cstdio>
 #include <limits>
 
+#include "../common/sycl/util.h"
+
 /*
  * A minimal tutorial. 
  *
@@ -296,7 +298,15 @@ int main()
   enablePersistentJITCache();
 
   /* This will select the first GPU supported by Embree */
-  sycl::device sycl_device(rtcSYCLDeviceSelector);
+  sycl::device sycl_device;
+  try {
+    sycl_device = sycl::device(rtcSYCLDeviceSelector);
+  } catch(std::exception& e) {
+    std::cerr << "Caught exception creating sycl::device: " << e.what() << std::endl;
+    embree::printAllSYCLDevices();
+    return 1;
+  }
+
   sycl::queue sycl_queue(sycl_device); 
   sycl::context sycl_context(sycl_device);
   
