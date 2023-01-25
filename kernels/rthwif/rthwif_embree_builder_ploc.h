@@ -1522,11 +1522,6 @@ namespace embree
       dest[4+i] = tmp[i*4+0] | (tmp[i*4+1]<<8) | (tmp[i*4+2]<<16) | (tmp[i*4+3]<<24);
   }
    
-   /* __forceinline Vec3f getVertex(const RTCLossyCompressedGrid &grid_source,const uint y, const uint x) */
-   /* { */
-   /*   return Vec3f(grid_source.vertex[y][x][0],grid_source.vertex[y][x][1],grid_source.vertex[y][x][2]); */
-   /* } */
-
 
    __forceinline float3 to_float3(const Vec3f &v)
    {
@@ -1680,18 +1675,6 @@ namespace embree
                                char* dest = lcg_bvh_mem + ID * sizeLCGBVH;
                                LocalNodeData_subgroup *node = (LocalNodeData_subgroup*)(dest + 3 * 64);
                                QuadLeaf *leaf = (QuadLeaf*)(dest + (4*3+2+1)*64);
-
-                               /* if (subgroupLocalID == 0 && ID == 0) */
-                               /*   for (uint y=0;y<33;y++) */
-                               /*     for (uint x=0;x<33;x++) */
-                               /*     { */
-                               /*       const Vec3f new_v = lcgbp->decode(x,y);                                      */
-                               /*       //PRINT3(x,y,(float)new_v.x); */
-                               /*       PRINT5(x,y,gpu::as_uint(new_v.x),gpu::as_uint(new_v.y),gpu::as_uint(new_v.z));               */
-                                     
-                               /*     } */
-                                     
-                                   
                                
                                const uint sx = start_x[subgroupLocalID];
                                const uint sy = start_y[subgroupLocalID];
@@ -1701,23 +1684,11 @@ namespace embree
                                  const uint x = sx; 
                                  const uint y = sy + 2*rows;
 
-                                 //const Vec3f p0 = getVertex(grid_source,y+0,x+0);
-                                 //const Vec3f p1 = getVertex(grid_source,y+0,x+1);
-                                 //const Vec3f p2 = getVertex(grid_source,y+1,x+1);
-                                 //const Vec3f p3 = getVertex(grid_source,y+1,x+0);
-
-#if 0                                 
-                                 const Vec3f p0 = lcgbp->getVertexGrid9x9(x+0,y+0,step,lgcbp_start_x,lgcbp_start_y);
-                                 const Vec3f p1 = lcgbp->getVertexGrid9x9(x+1,y+0,step,lgcbp_start_x,lgcbp_start_y);
-                                 const Vec3f p2 = lcgbp->getVertexGrid9x9(x+1,y+1,step,lgcbp_start_x,lgcbp_start_y);
-                                 const Vec3f p3 = lcgbp->getVertexGrid9x9(x+0,y+1,step,lgcbp_start_x,lgcbp_start_y);
-#else
-                                 const Vec3f p0 = lcgbp->decode(lgcbp_start_x + (x+0), lgcbp_start_y + (y+0));
-                                 const Vec3f p1 = lcgbp->decode(lgcbp_start_x + (x+1), lgcbp_start_y + (y+0));
-                                 const Vec3f p2 = lcgbp->decode(lgcbp_start_x + (x+1), lgcbp_start_y + (y+1));
-                                 const Vec3f p3 = lcgbp->decode(lgcbp_start_x + (x+0), lgcbp_start_y + (y+1));
+                                 const Vec3f p0 = lcgbp->decode(lgcbp_start_x + (x+0)*lgcbp_step, lgcbp_start_y + (y+0)*lgcbp_step);
+                                 const Vec3f p1 = lcgbp->decode(lgcbp_start_x + (x+1)*lgcbp_step, lgcbp_start_y + (y+0)*lgcbp_step);
+                                 const Vec3f p2 = lcgbp->decode(lgcbp_start_x + (x+1)*lgcbp_step, lgcbp_start_y + (y+1)*lgcbp_step);
+                                 const Vec3f p3 = lcgbp->decode(lgcbp_start_x + (x+0)*lgcbp_step, lgcbp_start_y + (y+1)*lgcbp_step);
                                  
-#endif                                 
                                  const uint geomID = lcgID;
                                  const uint primID = (ID << RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT) | 2*(y*RTC_LOSSY_COMPRESSED_GRID_QUAD_RES+x) ; //y*8+x; 
 

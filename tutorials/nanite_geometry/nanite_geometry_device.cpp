@@ -647,14 +647,29 @@ namespace embree {
                                                                                            const uint i = item.get_global_id(0);
                                                                                            if (i < numLCGBP)
                                                                                            {
-                                                                                             const uint lod_level = 2;
+                                                                                             LODEdgeLevel edgeLevels = getLODEdgeLevels(local_lcgbp_scene->lcgbp[i],camera,width,height);
+                                                                                             const uint lod_level = edgeLevels.level();
+                                                                                             
                                                                                              const uint numGrids9x9 = 1<<(2*lod_level);
                                                                                              //const uint offset = ((1<<(2*lod_level))-1)/(4-1);
                                                                                              const uint offset = atomic_add_global(&local_lcgbp_scene->numCurrentLCGBPStates,numGrids9x9);
                                                                                              uint index = 0;
-                                                                                             for (uint y=0;y<4;y++)
-                                                                                               for (uint x=0;x<4;x++)
-                                                                                                 local_lcgbp_scene->lcgbp_state[offset+index++] = LCGBP_State(&local_lcgbp_scene->lcgbp[i],x*8,y*8,1,2,2,2,2);
+                                                                                             if (lod_level == 0)
+                                                                                             {
+                                                                                               local_lcgbp_scene->lcgbp_state[offset+index++] = LCGBP_State(&local_lcgbp_scene->lcgbp[i],0,0,4,lod_level,lod_level,lod_level,lod_level);
+                                                                                             }
+                                                                                             else if (lod_level == 1)
+                                                                                             {
+                                                                                               for (uint y=0;y<2;y++)
+                                                                                                 for (uint x=0;x<2;x++)
+                                                                                                   local_lcgbp_scene->lcgbp_state[offset+index++] = LCGBP_State(&local_lcgbp_scene->lcgbp[i],x*16,y*16,2,lod_level,lod_level,lod_level,lod_level);
+                                                                                             }
+                                                                                             else
+                                                                                             {
+                                                                                               for (uint y=0;y<4;y++)
+                                                                                                 for (uint x=0;x<4;x++)
+                                                                                                   local_lcgbp_scene->lcgbp_state[offset+index++] = LCGBP_State(&local_lcgbp_scene->lcgbp[i],x*8,y*8,1,lod_level,lod_level,lod_level,lod_level);
+                                                                                             }
                                                                                            }
                                                                                            
                                                                                          });

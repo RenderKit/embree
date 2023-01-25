@@ -5,7 +5,7 @@
 
 #include "../common/math/vec3.h"
 
-#define HIGH_PRECISION_OFFSETS 1
+#define HIGH_PRECISION_OFFSETS 0
 
 namespace embree {
 
@@ -183,6 +183,11 @@ namespace embree {
       return decode(lc_offsets[y*GRID_RES_VERTEX+x],x,y,GRID_RES_VERTEX,GRID_RES_VERTEX);
     }
 
+    __forceinline Vec3f decode(const LCType &input, const uint x, const uint y) const
+    {
+      return decode(input,x,y,GRID_RES_VERTEX,GRID_RES_VERTEX);
+    }
+    
     
     __forceinline Vec3fa getVertexGrid9x9(const uint x, const uint y, const uint step, const uint start_x, const uint start_y) const
     {
