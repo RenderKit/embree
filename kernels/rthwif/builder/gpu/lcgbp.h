@@ -23,6 +23,8 @@ namespace embree {
     uchar top,right,bottom,left; // top,right,bottom,left
     __forceinline LODEdgeLevel() {}
     __forceinline LODEdgeLevel(const uchar top, const uchar right, const uchar bottom, const uchar left) : top(top),right(right),bottom(bottom),left(left) {}
+    __forceinline LODEdgeLevel(const uchar all) : top(all),right(all),bottom(all),left(all) {}
+    
     __forceinline uint level() const { return max(max(top,right),max(bottom,left)); }
 
     __forceinline bool needsCrackFixing() const {
@@ -223,11 +225,34 @@ namespace embree {
   {
     LCGBP *lcgbp;
     uchar start_x, start_y, step, flags;
-    LODEdgeLevel lod_levels;
+    LODEdgeLevel lod_diff_levels;
 
     LCGBP_State() {}
 
-  LCGBP_State(LCGBP *lcgbp, const uint start_x, const uint start_y, const uint step, const uint lod_top, const uint lod_right, const uint lod_bottom, const uint lod_left) : lcgbp(lcgbp), start_x(start_x), start_y(start_y), step(step), flags(0), lod_levels(lod_top,lod_right,lod_bottom,lod_left) {}
+    LCGBP_State(LCGBP *lcgbp, const uint start_x, const uint start_y, const uint step, const LODEdgeLevel &lod_levels) : lcgbp(lcgbp), start_x(start_x), start_y(start_y), step(step)
+    {
+      uint border_flags = 0;
+      border_flags |= start_x == 0 ? LEFT_BORDER : 0;
+      border_flags |= start_y == 0 ? TOP_BORDER  : 0;
+      border_flags |= start_y+step*8 == LCGBP::GRID_RES_QUAD ? BOTTOM_BORDER : 0;
+      border_flags |= start_x+step*8 == LCGBP::GRID_RES_QUAD ? RIGHT_BORDER : 0;
+
+      const uint lod_level = lod_levels.level();
+
+      lod_diff_levels = LODEdgeLevel(0);
+      
+      if (border_flags & TOP_BORDER)
+        lod_diff_levels.top = lod_level - lod_levels.top;
+
+      if (border_flags & RIGHT_BORDER)
+        lod_diff_levels.right = lod_level - lod_levels.right;
+
+      if (border_flags & BOTTOM_BORDER)
+        lod_diff_levels.bottom = lod_level - lod_levels.bottom;
+
+      if (border_flags & LEFT_BORDER)
+        lod_diff_levels.left = lod_level - lod_levels.left;      
+    }
     
   };
   

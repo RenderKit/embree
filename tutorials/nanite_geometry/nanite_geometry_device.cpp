@@ -648,6 +648,19 @@ namespace embree {
                                                                                            if (i < numLCGBP)
                                                                                            {
                                                                                              LODEdgeLevel edgeLevels = getLODEdgeLevels(local_lcgbp_scene->lcgbp[i],camera,width,height);
+
+#if 0                                                                                             
+                                                                                             if (i == 0)
+                                                                                               edgeLevels = LODEdgeLevel(0);
+                                                                                             else if (i == 1)
+                                                                                               edgeLevels = LODEdgeLevel(1,1,1,0);
+                                                                                             else if (i == 2)
+                                                                                               edgeLevels = LODEdgeLevel(0,2,2,2);
+                                                                                             else if (i == 3)
+                                                                                               edgeLevels = LODEdgeLevel(1,2,2,2);
+#endif                                                                                             
+                                                                                                    
+                                                                                             
                                                                                              const uint lod_level = edgeLevels.level();
                                                                                              
                                                                                              const uint numGrids9x9 = 1<<(2*lod_level);
@@ -656,19 +669,19 @@ namespace embree {
                                                                                              uint index = 0;
                                                                                              if (lod_level == 0)
                                                                                              {
-                                                                                               local_lcgbp_scene->lcgbp_state[offset+index++] = LCGBP_State(&local_lcgbp_scene->lcgbp[i],0,0,4,lod_level,lod_level,lod_level,lod_level);
+                                                                                               local_lcgbp_scene->lcgbp_state[offset+index++] = LCGBP_State(&local_lcgbp_scene->lcgbp[i],0,0,4,edgeLevels);
                                                                                              }
                                                                                              else if (lod_level == 1)
                                                                                              {
                                                                                                for (uint y=0;y<2;y++)
                                                                                                  for (uint x=0;x<2;x++)
-                                                                                                   local_lcgbp_scene->lcgbp_state[offset+index++] = LCGBP_State(&local_lcgbp_scene->lcgbp[i],x*16,y*16,2,lod_level,lod_level,lod_level,lod_level);
+                                                                                                   local_lcgbp_scene->lcgbp_state[offset+index++] = LCGBP_State(&local_lcgbp_scene->lcgbp[i],x*16,y*16,2,edgeLevels);
                                                                                              }
                                                                                              else
                                                                                              {
                                                                                                for (uint y=0;y<4;y++)
                                                                                                  for (uint x=0;x<4;x++)
-                                                                                                   local_lcgbp_scene->lcgbp_state[offset+index++] = LCGBP_State(&local_lcgbp_scene->lcgbp[i],x*8,y*8,1,lod_level,lod_level,lod_level,lod_level);
+                                                                                                   local_lcgbp_scene->lcgbp_state[offset+index++] = LCGBP_State(&local_lcgbp_scene->lcgbp[i],x*8,y*8,1,edgeLevels);
                                                                                              }
                                                                                            }
                                                                                            
