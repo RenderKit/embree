@@ -76,7 +76,7 @@ namespace embree {
   // =========================================================================================================================================================
   
   static const uint LOD_LEVELS = 3;
-  static const uint NUM_TOTAL_QUAD_NODES_PER_RTC_LCG = (1-(1<<(2*LOD_LEVELS)))/(1-4);
+  //static const uint NUM_TOTAL_QUAD_NODES_PER_RTC_LCG = (1-(1<<(2*LOD_LEVELS)))/(1-4);
 
 
   __forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz, const uint width, const uint height)
@@ -190,14 +190,18 @@ namespace embree {
     for (int start_y=0;start_y+LCGBP::GRID_RES_QUAD<gridResY;start_y+=LCGBP::GRID_RES_QUAD)
       for (int start_x=0;start_x+LCGBP::GRID_RES_QUAD<gridResX;start_x+=LCGBP::GRID_RES_QUAD)
       {
-        LCGBP &current = lcgbp[numLCGBP++];
+        LCGBP &current = lcgbp[numLCGBP];
 
         const Vec3f v0 = getVertex(start_x,start_y,vtx,gridResX,gridResY);
         const Vec3f v1 = getVertex(start_x+LCGBP::GRID_RES_QUAD,start_y,vtx,gridResX,gridResY);
         const Vec3f v2 = getVertex(start_x+LCGBP::GRID_RES_QUAD,start_y+LCGBP::GRID_RES_QUAD,vtx,gridResX,gridResY);
         const Vec3f v3 = getVertex(start_x,start_y+LCGBP::GRID_RES_QUAD,vtx,gridResX,gridResY);
 
-        new (&current) LCGBP(v0,v1,v2,v3);        
+        const Vec2f u_range((float)start_x/(gridResX-1),(float)(start_x+LCGBP::GRID_RES_QUAD)/(gridResX-1));
+        const Vec2f v_range((float)start_y/(gridResY-1),(float)(start_y+LCGBP::GRID_RES_QUAD)/(gridResY-1));
+        
+        new (&current) LCGBP(v0,v1,v2,v3,numLCGBP++,u_range,v_range);
+        
         current.encode(start_x,start_y,vtx,gridResX,gridResY);
         
         for (int y=0;y<LCGBP::GRID_RES_VERTEX;y++)
@@ -231,8 +235,6 @@ namespace embree {
   
   void convertISPCGridMesh(ISPCGridMesh* grid, RTCScene scene, ISPCOBJMaterial *material)
   {
-    Vec3fa *vtx = grid->positions[0];
-
     uint numLCGBP = 0;
     
     /* --- count lcgbp --- */
@@ -361,40 +363,39 @@ namespace embree {
     }
     else if (mode == RENDER_DEBUG_SUBGRIDS)
     {
-      //const uint gridID = ((LCGQuadNode*)grid->lcg_ptrs[primID])->ID;          
-      //const uint subgridID = ((LCGQuadNode*)grid->lcg_ptrs[primID])->localID;    
-      //color = randomColor(gridID*NUM_TOTAL_QUAD_NODES_PER_RTC_LCG+subgridID);   
+      const uint gridID = lcgbp_scene->lcgbp_state[primID].lcgbp->ID;
+      const uint subgridID = lcgbp_scene->lcgbp_state[primID].localID;    
+      color = randomColor(gridID*(16+4+1)+subgridID);   
     }    
     else if (mode == RENDER_DEBUG_GRIDS)
     {
-      //const uint ID = ((LCGQuadNode*)grid->lcg_ptrs[primID])->ID;    
-      //color = randomColor(ID);   
+      const uint gridID = lcgbp_scene->lcgbp_state[primID].lcgbp->ID;      
+      color = randomColor(gridID);   
     }
     else if (mode == RENDER_DEBUG_LOD)
     {
-      const uint level = 0; //((LCGQuadNode*)grid->lcg_ptrs[primID])->lod_level;
-      if (level == 0)
+      const uint step = lcgbp_scene->lcgbp_state[primID].step; 
+      if (step == 4)
         color = Vec3fa(0,0,1);
-      else if (level == 1)
+      else if (step == 2)
         color = Vec3fa(0,1,0);
-      else if (level == 2)
+      else if (step == 1)
         color = Vec3fa(1,0,0);            
     }
     else if (mode == RENDER_DEBUG_CRACK_FIXING)
     {
-      const uint cracks_fixed = 0; //((LCGQuadNode*)grid->lcg_ptrs[primID])->flags & CRACK_FIXED_BORDER;
+      const uint cracks_fixed = lcgbp_scene->lcgbp_state[primID].cracksFixed();
       if (cracks_fixed)
         color = Vec3fa(1,0,1);      
     }
     else if (mode == RENDER_DEBUG_UV)
     {
-#if 0      
       const uint flip_uv = localID & 1;
       const uint localQuadID = localID>>1;
       const uint local_y = localQuadID /  RTC_LOSSY_COMPRESSED_GRID_QUAD_RES;
       const uint local_x = localQuadID %  RTC_LOSSY_COMPRESSED_GRID_QUAD_RES;
-      
-      //const LCGQuadNode *current = ((LCGQuadNode*)grid->lcg_ptrs[primID]);      
+
+      const LCGBP *const current = lcgbp_scene->lcgbp_state[primID].lcgbp;
       const float u = flip_uv ? 1-ray.u : ray.u;
       const float v = flip_uv ? 1-ray.v : ray.v;
       const float u_size = (current->u_range.y - current->u_range.x) * (1.0f / RTC_LOSSY_COMPRESSED_GRID_QUAD_RES);
@@ -404,9 +405,8 @@ namespace embree {
       const float fu = u_start + u * u_size;
       const float fv = v_start + v * v_size;
 
-      color = getTexel3f(grid->map_Kd,1-fu,fv);
+      color = getTexel3f(lcgbp_scene->map_Kd,1-fu,fv);
       //color = Vec3fa(fu,fv,1.0f-fu-fv);
-#endif      
     }
     return Vec3fa(abs(dot(ray.dir,normalize(ray.Ng)))) * color;
   }
@@ -522,7 +522,6 @@ namespace embree {
 
   extern "C" void device_gui()
   {
-    const uint trisPerSubGrid = RTC_LOSSY_COMPRESSED_GRID_QUAD_RES*RTC_LOSSY_COMPRESSED_GRID_QUAD_RES*2;
     ImGui::Text("SPP: %d",user_spp);    
     ImGui::Text("BVH Build Time: %4.4f ms",avg_bvh_build_time.get());
     ImGui::Text("numGrids9x9:   %d ",global_lcgbp_scene->numCurrentLCGBPStates);
@@ -579,19 +578,26 @@ namespace embree {
                                                                                              uint index = 0;
                                                                                              if (lod_level == 0)
                                                                                              {
-                                                                                               local_lcgbp_scene->lcgbp_state[offset+index++] = LCGBP_State(&local_lcgbp_scene->lcgbp[i],0,0,4,edgeLevels);
+                                                                                               local_lcgbp_scene->lcgbp_state[offset+index] = LCGBP_State(&local_lcgbp_scene->lcgbp[i],0,0,4,index,edgeLevels);
+                                                                                               index++;
                                                                                              }
                                                                                              else if (lod_level == 1)
                                                                                              {
                                                                                                for (uint y=0;y<2;y++)
                                                                                                  for (uint x=0;x<2;x++)
-                                                                                                   local_lcgbp_scene->lcgbp_state[offset+index++] = LCGBP_State(&local_lcgbp_scene->lcgbp[i],x*16,y*16,2,edgeLevels);
+                                                                                                 {
+                                                                                                   local_lcgbp_scene->lcgbp_state[offset+index] = LCGBP_State(&local_lcgbp_scene->lcgbp[i],x*16,y*16,2,index,edgeLevels);
+                                                                                                   index++;
+                                                                                                 }
                                                                                              }
                                                                                              else
                                                                                              {
                                                                                                for (uint y=0;y<4;y++)
                                                                                                  for (uint x=0;x<4;x++)
-                                                                                                   local_lcgbp_scene->lcgbp_state[offset+index++] = LCGBP_State(&local_lcgbp_scene->lcgbp[i],x*8,y*8,1,edgeLevels);
+                                                                                                 {
+                                                                                                   local_lcgbp_scene->lcgbp_state[offset+index] = LCGBP_State(&local_lcgbp_scene->lcgbp[i],x*8,y*8,1,index,edgeLevels);
+                                                                                                   index++;
+                                                                                                 }
                                                                                              }
                                                                                            }
                                                                                            

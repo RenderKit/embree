@@ -159,7 +159,9 @@ namespace embree {
 
 
     BilinearPatch patch;
-    uint flags;
+    Vec2f u_range;
+    Vec2f v_range;        
+    uint ID;
     LCType lc_offsets[GRID_RES_VERTEX*GRID_RES_VERTEX];    
             
     __forceinline LCType encode(const Vec3f &p, const uint x, const uint y, const uint gridResX, const uint gridResY)
@@ -216,7 +218,7 @@ namespace embree {
         }      
     }
     
-    __forceinline LCGBP(const Vec3f &v0,const Vec3f &v1,const Vec3f &v2,const Vec3f &v3) : patch(v0,v1,v2,v3),flags(0) {}
+    __forceinline LCGBP(const Vec3f &v0,const Vec3f &v1,const Vec3f &v2,const Vec3f &v3,const uint ID, const Vec2f& u_range,const Vec2f& v_range) : patch(v0,v1,v2,v3),u_range(u_range),v_range(v_range),ID(ID) {}
     
   };
 
@@ -224,12 +226,12 @@ namespace embree {
   struct LCGBP_State
   {
     LCGBP *lcgbp;
-    uchar start_x, start_y, step, flags;
+    uchar start_x, start_y, step, localID;
     LODEdgeLevel lod_diff_levels;
 
     LCGBP_State() {}
 
-    LCGBP_State(LCGBP *lcgbp, const uint start_x, const uint start_y, const uint step, const LODEdgeLevel &lod_levels) : lcgbp(lcgbp), start_x(start_x), start_y(start_y), step(step)
+    LCGBP_State(LCGBP *lcgbp, const uint start_x, const uint start_y, const uint step, const uint localID, const LODEdgeLevel &lod_levels) : lcgbp(lcgbp), start_x(start_x), start_y(start_y), step(step), localID(localID)
     {
       uint border_flags = 0;
       border_flags |= start_x == 0 ? LEFT_BORDER : 0;
@@ -252,6 +254,16 @@ namespace embree {
 
       if (border_flags & LEFT_BORDER)
         lod_diff_levels.left = lod_level - lod_levels.left;      
+    }
+
+    __forceinline bool cracksFixed()
+    {
+      uchar max_diff_level = 0;
+      max_diff_level = max(max_diff_level,lod_diff_levels.top);
+      max_diff_level = max(max_diff_level,lod_diff_levels.right);
+      max_diff_level = max(max_diff_level,lod_diff_levels.bottom);
+      max_diff_level = max(max_diff_level,lod_diff_levels.left);
+      return max_diff_level != 0;
     }
     
   };

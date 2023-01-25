@@ -316,10 +316,11 @@ namespace embree
     double time0 = getSeconds();
     
     sycl::queue  &gpu_queue  = *(sycl::queue*)sycl_queue;
+
+#if 0
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
     const uint numGeometries                = args.numGeometries;  
-
-#if 0    
+    
     // ===================================    
     // === prefetch builder scene data ===
     // ===================================
