@@ -126,85 +126,10 @@ namespace embree {
     i1 = min(max(0,i1),(int)LOD_LEVELS-1);
     i2 = min(max(0,i2),(int)LOD_LEVELS-1);
     i3 = min(max(0,i3),(int)LOD_LEVELS-1);
-
-#if 0
-    i0 = 2;
-    i1 = 2;
-    i2 = 2;
-    i3 = 2;
-#endif
     
     LODEdgeLevel lod_levels(i0,i1,i2,i3);
     return lod_levels;
   }
-
-    __forceinline uint getCrackFixingBorderMask(const LCGBP &current, const LODEdgeLevel &lodEdgeLevel, const uint gridLODLevel)
-    {
-      uint mask = 0;
-      if ((current.flags & TOP_BORDER   ) && lodEdgeLevel.top    != gridLODLevel) mask |= TOP_BORDER;
-      if ((current.flags & BOTTOM_BORDER) && lodEdgeLevel.bottom != gridLODLevel) mask |= BOTTOM_BORDER;
-      if ((current.flags & RIGHT_BORDER ) && lodEdgeLevel.right  != gridLODLevel) mask |= RIGHT_BORDER;
-      if ((current.flags & LEFT_BORDER  ) && lodEdgeLevel.left   != gridLODLevel) mask |= LEFT_BORDER;
-      return mask;
-    }
-  
-  __forceinline void fixCracks(LCGBP &current, const uint borderMask, const LODEdgeLevel &lodEdgeLevel, const uint gridLODLevel)
-  {
-#if 0    
-    if (borderMask & TOP_BORDER)
-    {
-      current.flags |= CRACK_FIXED_BORDER;
-      const uint diff = gridLODLevel - lodEdgeLevel.top;
-      for (uint i=1;i<RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1;i++)
-      {
-        const uint index = (i>>diff)<<diff;
-        current.grid.vertex[0][i][0] = current.grid.vertex[0][index][0];
-        current.grid.vertex[0][i][1] = current.grid.vertex[0][index][1];
-        current.grid.vertex[0][i][2] = current.grid.vertex[0][index][2];        
-      }
-    }
-
-    if (borderMask & BOTTOM_BORDER)
-    {
-      current.flags |= CRACK_FIXED_BORDER;      
-      const uint diff = gridLODLevel - lodEdgeLevel.bottom;
-      for (uint i=1;i<RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1;i++)
-      {
-        const uint index = (i>>diff)<<diff;
-        current.grid.vertex[8][i][0] = current.grid.vertex[8][index][0];
-        current.grid.vertex[8][i][1] = current.grid.vertex[8][index][1];
-        current.grid.vertex[8][i][2] = current.grid.vertex[8][index][2];        
-      }
-    }
-    
-    if (borderMask & RIGHT_BORDER)
-    {
-      current.flags |= CRACK_FIXED_BORDER;      
-      const uint diff = gridLODLevel - lodEdgeLevel.right;
-      for (uint i=1;i<RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1;i++)
-      {
-        const uint index = (i>>diff)<<diff;
-        current.grid.vertex[i][8][0] = current.grid.vertex[index][8][0];
-        current.grid.vertex[i][8][1] = current.grid.vertex[index][8][1];
-        current.grid.vertex[i][8][2] = current.grid.vertex[index][8][2];        
-      }
-    }
-
-    if (borderMask & LEFT_BORDER)
-    {
-      current.flags |= CRACK_FIXED_BORDER;      
-      const uint diff = gridLODLevel - lodEdgeLevel.left;
-      for (uint i=1;i<RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1;i++)
-      {
-        const uint index = (i>>diff)<<diff;
-        current.grid.vertex[i][0][0] = current.grid.vertex[index][0][0];
-        current.grid.vertex[i][0][1] = current.grid.vertex[index][0][1];
-        current.grid.vertex[i][0][2] = current.grid.vertex[index][0][2];        
-      }
-    }
-#endif    
-  }
-  
   
   inline Vec3fa getVertex(const uint x, const uint y, const Vec3fa *const vtx, const uint grid_resX, const uint grid_resY)
   {
@@ -255,15 +180,12 @@ namespace embree {
 
   void LCGBP_Scene::addGrid(const uint gridResX, const uint gridResY, const Vec3fa *const vtx)
   {
-    PING;
     double avg_error = 0.0;
     double max_error = 0.0;
     uint num_error = 0;
 
-    PRINT(lcgbp);
     PRINT(gridResX);
     PRINT(gridResY);
-    PRINT(vtx);
     
     for (int start_y=0;start_y+LCGBP::GRID_RES_QUAD<gridResY;start_y+=LCGBP::GRID_RES_QUAD)
       for (int start_x=0;start_x+LCGBP::GRID_RES_QUAD<gridResX;start_x+=LCGBP::GRID_RES_QUAD)
@@ -275,39 +197,30 @@ namespace embree {
         const Vec3f v2 = getVertex(start_x+LCGBP::GRID_RES_QUAD,start_y+LCGBP::GRID_RES_QUAD,vtx,gridResX,gridResY);
         const Vec3f v3 = getVertex(start_x,start_y+LCGBP::GRID_RES_QUAD,vtx,gridResX,gridResY);
 
-        //PRINT4(v0,v1,v2,v3);
-        
-        new (&current) LCGBP(v0,v1,v2,v3);
-        
+        new (&current) LCGBP(v0,v1,v2,v3);        
         current.encode(start_x,start_y,vtx,gridResX,gridResY);
         
         for (int y=0;y<LCGBP::GRID_RES_VERTEX;y++)
         {
           for (int x=0;x<LCGBP::GRID_RES_VERTEX;x++)
           {
-            //PRINT2(x,y);
             const Vec3f org_v  = getVertex(start_x+x,start_y+y,vtx,gridResX,gridResY);
             const Vec3f new_v  = current.decode(x,y);
             const float error = length(new_v-org_v);
-            //PRINT5(x,y,org_v,new_v,error);            
-            if (error > 0.0)
+            if (error > 0.1)
             {
-              //PRINT5(x,y,LCGBP::as_uint(new_v.x),LCGBP::as_uint(new_v.y),LCGBP::as_uint(new_v.z));              
+              PRINT5(x,y,LCGBP::as_uint(new_v.x),LCGBP::as_uint(new_v.y),LCGBP::as_uint(new_v.z));              
               //exit(0);
             }
             avg_error += (double)error;
             max_error = max(max_error,(double)error);
             num_error++;
           }
-          //exit(0);          
         }
-        //return;
-                
       }
     PRINT2((float)(avg_error / num_error),max_error);
   }
 
-  
   LCGBP_Scene *global_lcgbp_scene = nullptr;
 
   // ==============================================================================================
@@ -612,11 +525,8 @@ namespace embree {
     const uint trisPerSubGrid = RTC_LOSSY_COMPRESSED_GRID_QUAD_RES*RTC_LOSSY_COMPRESSED_GRID_QUAD_RES*2;
     ImGui::Text("SPP: %d",user_spp);    
     ImGui::Text("BVH Build Time: %4.4f ms",avg_bvh_build_time.get());
-    //ImGui::Text("numQuadTrees: %d ",global_grid->numQuadTrees);
-    //ImGui::Text("numTotalQuadNodes: %d ",global_grid->numTotalQuadNodes);
-    //ImGui::Text("numMaxResQuadNodes: %d => %d Triangles",global_grid->numMaxResQuadNodes,global_grid->numMaxResQuadNodes*trisPerSubGrid);    
-    //ImGui::Text("numLCGPtrs: %d => %d Triangles",global_grid->numLCGPtrs,global_grid->numLCGPtrs*trisPerSubGrid);
-    //ImGui::Text("numCrackFixQuadNodes: %d => %d Triangles",global_grid->numCrackFixQuadNodes,global_grid->numCrackFixQuadNodes*trisPerSubGrid);    
+    ImGui::Text("numGrids9x9:   %d ",global_lcgbp_scene->numCurrentLCGBPStates);
+    ImGui::Text("numGrids33x33: %d ",global_lcgbp_scene->numLCGBP);    
   }
   
   
@@ -689,7 +599,6 @@ namespace embree {
                                                              });
     waitOnEventAndCatchException(compute_lod_event);
 
-    //PRINT( local_lcgbp_scene->numCurrentLCGBPStates );
     double t0 = getSeconds();
     
     rtcSetGeometryUserData(local_lcgbp_scene->geometry,local_lcgbp_scene->lcgbp_state);
@@ -701,7 +610,6 @@ namespace embree {
 
     double dt0 = (getSeconds()-t0)*1000.0;
     avg_bvh_build_time.add(dt0);
-    //exit(0);
 #endif
   }
 
