@@ -395,13 +395,27 @@ namespace embree {
       const uint local_y = localQuadID /  RTC_LOSSY_COMPRESSED_GRID_QUAD_RES;
       const uint local_x = localQuadID %  RTC_LOSSY_COMPRESSED_GRID_QUAD_RES;
 
-      const LCGBP *const current = lcgbp_scene->lcgbp_state[primID].lcgbp;
+      const LCGBP_State &state = lcgbp_scene->lcgbp_state[primID];
+      const LCGBP &current = *state.lcgbp;
+      const uint start_x = state.start_x;
+      const uint start_y = state.start_y;
+      const uint end_x = state.start_x + state.step*8;
+      const uint end_y = state.start_y + state.step*8;
+
+      const float blend_start_u = (float)start_x / LCGBP::GRID_RES_QUAD;
+      const float blend_end_u   = (float)  end_x / LCGBP::GRID_RES_QUAD;
+      const float blend_start_v = (float)start_y / LCGBP::GRID_RES_QUAD;
+      const float blend_end_v   = (float)  end_y / LCGBP::GRID_RES_QUAD;
+
+      const Vec2f u_range(lerp(current.u_range.x,current.u_range.y,blend_start_u),lerp(current.u_range.x,current.u_range.y,blend_end_u));
+      const Vec2f v_range(lerp(current.v_range.x,current.v_range.y,blend_start_v),lerp(current.v_range.x,current.v_range.y,blend_end_v));
+      
       const float u = flip_uv ? 1-ray.u : ray.u;
       const float v = flip_uv ? 1-ray.v : ray.v;
-      const float u_size = (current->u_range.y - current->u_range.x) * (1.0f / RTC_LOSSY_COMPRESSED_GRID_QUAD_RES);
-      const float v_size = (current->v_range.y - current->v_range.x) * (1.0f / RTC_LOSSY_COMPRESSED_GRID_QUAD_RES);
-      const float u_start = current->u_range.x + u_size * (float)local_x;
-      const float v_start = current->v_range.x + v_size * (float)local_y;      
+      const float u_size = (u_range.y - u_range.x) * (1.0f / RTC_LOSSY_COMPRESSED_GRID_QUAD_RES);
+      const float v_size = (v_range.y - v_range.x) * (1.0f / RTC_LOSSY_COMPRESSED_GRID_QUAD_RES);
+      const float u_start = u_range.x + u_size * (float)local_x;
+      const float v_start = v_range.x + v_size * (float)local_y;      
       const float fu = u_start + u * u_size;
       const float fv = v_start + v * v_size;
 
@@ -524,7 +538,7 @@ namespace embree {
   {
     ImGui::Text("SPP: %d",user_spp);    
     ImGui::Text("BVH Build Time: %4.4f ms",avg_bvh_build_time.get());
-    ImGui::Text("numGrids9x9:   %d ",global_lcgbp_scene->numCurrentLCGBPStates);
+    ImGui::Text("numGrids9x9:   %d (out of %d)",global_lcgbp_scene->numCurrentLCGBPStates,global_lcgbp_scene->numLCGBP*(1<<(LOD_LEVELS+1)));
     ImGui::Text("numGrids33x33: %d ",global_lcgbp_scene->numLCGBP);    
   }
   
