@@ -5,6 +5,8 @@
 
 #include "../common/math/vec3.h"
 
+#define HIGH_PRECISION_OFFSETS 1
+
 namespace embree {
 
   enum {
@@ -29,28 +31,39 @@ namespace embree {
       return false;
     }
   };
+
+  struct BilinearPatch
+  {
+    const Vec3f v0,v1,v2,v3;
+    
+    __forceinline BilinearPatch(const Vec3f &v0,const Vec3f &v1,const Vec3f &v2,const Vec3f &v3) : v0(v0),v1(v1),v2(v2),v3(v3) {}                                    
+    __forceinline Vec3f eval(const float u, const float v) const
+    {
+      return lerp(lerp(v0,v1,u),lerp(v3,v2,u),v);
+    }    
+  };    
   
   struct __aligned(64) LCGBP
   {
+#if HIGH_PRECISION_OFFSETS == 0    
     static const uint SIGN_BIT      = 1;
     static const uint EXPONENT_BITS = 5;    
     static const uint MANTISSA_BITS = 4;
+#else
+    static const uint SIGN_BIT      = 1;
+    static const uint EXPONENT_BITS = 7;    
+    static const uint MANTISSA_BITS = 8;    
+#endif    
     static const uint RP_BITS       = SIGN_BIT + EXPONENT_BITS + MANTISSA_BITS;
     static const uint EXPONENT_MASK = ((uint)1 << EXPONENT_BITS)-1;    
     static const uint MANTISSA_MASK = ((uint)1 << MANTISSA_BITS)-1;
     static const uint RP_MASK       = ((uint)1 << RP_BITS)-1;
-
     static const uint FLOAT_EXPONENT_BIAS = 127; // 127-1 due to zigzag encoding
     static const uint FLOAT_MANTISSA_BITS = 23;
-    
 
     static const uint GRID_RES_VERTEX = 33;
     static const uint GRID_RES_QUAD   = GRID_RES_VERTEX-1;
-
-    const Vec3f v0,v1,v2,v3;
-    uint flags;
-    uint lc_offsets[GRID_RES_VERTEX*GRID_RES_VERTEX];
-
+  
     template<typename T>
       static __forceinline uint as_uint(T t)
     {
@@ -62,7 +75,7 @@ namespace embree {
     {
       return __builtin_bit_cast(float,t);
     }
-    
+  
     static const uint zigzagEncode(const int i)
     {
       return (i >> 31) ^ (i << 1);
@@ -104,37 +117,65 @@ namespace embree {
       return as_float(output);
     }
     
-    __forceinline Vec3f evalBilinearPatch(const float u, const float v) const
+    struct LCType
     {
-      return lerp(lerp(v0,v1,u),lerp(v3,v2,u),v);
-    }
-    
-    
-    __forceinline uint encode(const Vec3f &p, const uint x, const uint y, const uint gridResX, const uint gridResY)
+#if HIGH_PRECISION_OFFSETS == 0          
+      uint data;
+#else
+      ushort data_x,data_y,data_z;
+#endif      
+
+      __forceinline LCType() {}
+      
+      __forceinline LCType(const Vec3f &diff)
+      {
+        const uint x = encodeFloat(diff.x);
+        const uint y = encodeFloat(diff.y);
+        const uint z = encodeFloat(diff.z);
+#if HIGH_PRECISION_OFFSETS == 0                  
+        data = x | (y << (1*RP_BITS)) | (z << (2*RP_BITS));
+#else
+        data_x = x; data_y = y; data_z = z;
+#endif        
+      }
+      
+      __forceinline Vec3f decode() const
+      {
+#if HIGH_PRECISION_OFFSETS == 0                          
+        const float px = decodeFloat((data>>0*RP_BITS) & RP_MASK);
+        const float py = decodeFloat((data>>1*RP_BITS) & RP_MASK);
+        const float pz = decodeFloat((data>>2*RP_BITS) & RP_MASK);
+#else
+        const float px = decodeFloat(data_x);
+        const float py = decodeFloat(data_y);
+        const float pz = decodeFloat(data_z);        
+#endif        
+        return Vec3f(px,py,pz);
+      }
+      
+    };
+
+
+    BilinearPatch patch;
+    uint flags;
+    LCType lc_offsets[GRID_RES_VERTEX*GRID_RES_VERTEX];    
+            
+    __forceinline LCType encode(const Vec3f &p, const uint x, const uint y, const uint gridResX, const uint gridResY)
     {
       const float u = (float)x / (gridResX-1);
       const float v = (float)y / (gridResY-1);
-      //PRINT4(as_uint(u),as_uint(v),as_uint(1.0f-u),as_uint(1.0f-v));
-      const Vec3f bp_p = evalBilinearPatch(u,v);
-      
+      const Vec3f bp_p = patch.eval(u,v);      
       const Vec3f diff = p - bp_p;
-      const uint rp_x = encodeFloat(diff.x);
-      const uint rp_y = encodeFloat(diff.y);
-      const uint rp_z = encodeFloat(diff.z);
-      //PRINT5(diff,as_uint(diff.x),rp_x,rp_y,rp_z);      
-      return rp_x | (rp_y << (1*RP_BITS)) | (rp_z << (2*RP_BITS));
+      return LCType(diff);
     }
 
-    __forceinline Vec3f decode(const uint input, const uint x, const uint y, const uint gridResX, const uint gridResY) const
+    __forceinline Vec3f decode(const LCType &input, const uint x, const uint y, const uint gridResX, const uint gridResY) const
     {
       const float u = (float)x / (gridResX-1);
       const float v = (float)y / (gridResY-1);      
-      const Vec3f bp_p = evalBilinearPatch(u,v);
-      //PRINT3(u,v,bp_p);
-      const float px = bp_p.x + decodeFloat((input>>0*RP_BITS) & RP_MASK);
-      const float py = bp_p.y + decodeFloat((input>>1*RP_BITS) & RP_MASK);
-      const float pz = bp_p.z + decodeFloat((input>>2*RP_BITS) & RP_MASK);
-      return Vec3f(px,py,pz);
+      const Vec3f bp_p = patch.eval(u,v);
+      const Vec3f offset = input.decode();
+      return bp_p + offset;
     }
 
     __forceinline Vec3f decode(const uint x, const uint y) const
@@ -142,10 +183,6 @@ namespace embree {
       return decode(lc_offsets[y*GRID_RES_VERTEX+x],x,y,GRID_RES_VERTEX,GRID_RES_VERTEX);
     }
 
-    __forceinline Vec3f getOffset(const uint x, const uint y) const
-    {
-      return decode(lc_offsets[y*GRID_RES_VERTEX+x],x,y,GRID_RES_VERTEX,GRID_RES_VERTEX);
-    }
     
     __forceinline Vec3fa getVertexGrid9x9(const uint x, const uint y, const uint step, const uint start_x, const uint start_y) const
     {
@@ -168,17 +205,11 @@ namespace embree {
         {
           const Vec3f vertex = getVertex(start_x+x,start_y+y,vtx,gridResX,gridResY);
           lc_offsets[index] = encode(vertex,x,y,GRID_RES_VERTEX,GRID_RES_VERTEX);
-           const Vec3f new_vertex = decode(x,y); 
-           const float error = length(vertex-new_vertex);             
-           //PRINT6(x,y,vertex,new_vertex,error,as_uint(error));
-           //PRINT2(as_uint(vertex.x),as_uint(new_vertex.x));
-           //if (error > 0.01) exit(0); 
           index++;
         }      
     }
     
-    __forceinline LCGBP() {}
-    __forceinline LCGBP(const Vec3f &v0,const Vec3f &v1,const Vec3f &v2,const Vec3f &v3) : v0(v0),v1(v1),v2(v2),v3(v3),flags(0) {}
+    __forceinline LCGBP(const Vec3f &v0,const Vec3f &v1,const Vec3f &v2,const Vec3f &v3) : patch(v0,v1,v2,v3),flags(0) {}
     
   };
 

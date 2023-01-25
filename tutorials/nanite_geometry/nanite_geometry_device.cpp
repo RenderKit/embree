@@ -95,10 +95,10 @@ namespace embree {
   
   __forceinline LODEdgeLevel getLODEdgeLevels(LCGBP &current,const ISPCCamera& camera, const uint width, const uint height)
   {
-    const Vec3f v0 = current.v0;
-    const Vec3f v1 = current.v1;
-    const Vec3f v2 = current.v2;
-    const Vec3f v3 = current.v3;
+    const Vec3f v0 = current.patch.v0;
+    const Vec3f v1 = current.patch.v1;
+    const Vec3f v2 = current.patch.v2;
+    const Vec3f v3 = current.patch.v3;
 
     const Vec3f vx = camera.xfm.l.vx;
     const Vec3f vy = camera.xfm.l.vy;
@@ -628,7 +628,7 @@ namespace embree {
                                  const ISPCCamera& camera)
   {
 #if defined(EMBREE_SYCL_TUTORIAL)
-
+    
     LCGBP_Scene *local_lcgbp_scene = global_lcgbp_scene;
     sycl::event init_event =  global_gpu_queue->submit([&](sycl::handler &cgh) {
                                                          cgh.single_task([=]() {
