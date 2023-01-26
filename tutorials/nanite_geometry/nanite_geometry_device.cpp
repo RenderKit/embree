@@ -126,7 +126,10 @@ namespace embree {
     i1 = min(max(0,i1),(int)LOD_LEVELS-1);
     i2 = min(max(0,i2),(int)LOD_LEVELS-1);
     i3 = min(max(0,i3),(int)LOD_LEVELS-1);
-    
+
+#if 1
+    i0 = i1 = i2 = i3 = 2;
+#endif    
     LODEdgeLevel lod_levels(i0,i1,i2,i3);
     return lod_levels;
   }
@@ -244,7 +247,7 @@ namespace embree {
       const uint grid_resX = grid->grids[i].resX;
       const uint grid_resY = grid->grids[i].resY;
       const uint numInitialSubGrids = ((grid_resX-1) / LCGBP::GRID_RES_QUAD) * ((grid_resY-1) / LCGBP::GRID_RES_QUAD);
-      PRINT(numInitialSubGrids);
+      //PRINT(numInitialSubGrids);
       numLCGBP  += numInitialSubGrids;
     }
     PRINT(numLCGBP);
@@ -536,10 +539,14 @@ namespace embree {
 
   extern "C" void device_gui()
   {
+    const uint numTrianglesPerGrid9x9 = 8*8*2;
+    const uint numTrianglesPerGrid33x33 = 32*32*2;
     ImGui::Text("SPP: %d",user_spp);    
     ImGui::Text("BVH Build Time: %4.4f ms",avg_bvh_build_time.get());
     ImGui::Text("numGrids9x9:   %d (out of %d)",global_lcgbp_scene->numCurrentLCGBPStates,global_lcgbp_scene->numLCGBP*(1<<(LOD_LEVELS+1)));
-    ImGui::Text("numGrids33x33: %d ",global_lcgbp_scene->numLCGBP);    
+    ImGui::Text("numGrids33x33: %d ",global_lcgbp_scene->numLCGBP);
+    ImGui::Text("numTriangles: %d (out of %d)",global_lcgbp_scene->numCurrentLCGBPStates*numTrianglesPerGrid9x9,global_lcgbp_scene->numLCGBP*numTrianglesPerGrid33x33);    
+    
   }
   
   

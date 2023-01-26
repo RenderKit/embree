@@ -1801,14 +1801,12 @@ namespace embree
         
         
         gpu::waitOnEventAndCatchException(queue_event);
+        PRINT( gpu::getDeviceExecutionTiming(queue_event) );
         if (unlikely(verbose))
           iteration_time += gpu::getDeviceExecutionTiming(queue_event);
       }
     }
 
-    /* gpu::waitOnQueueAndCatchException(gpu_queue); */
-    /* exit(0); */
-    
     return numLCGs;
   }
    
