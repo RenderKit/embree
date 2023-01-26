@@ -1602,12 +1602,6 @@ namespace embree
       {
         
         RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC *geom = (RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC *)geometry_desc[lcgID];
-
-        struct GridPos {
-          uchar x,y;
-          __forceinline GridPos() {}
-          __forceinline GridPos(const uchar x, const uchar y) : x(x), y(y) {}
-        };
         
         numLCGs += geom->numGeometryPtrs;        
         const uint wgSize = 16;        
@@ -1616,7 +1610,7 @@ namespace embree
             sycl::local_accessor< LocalNodeData_subgroup, 1> _local_node(sycl::range<1>(3),cgh); //FIXME: reuse _local_leaf
             sycl::local_accessor< QuadLeaf, 1> _local_leaf(sycl::range<1>(16),cgh);
             sycl::local_accessor< gpu::AABB3f, 1> _local_bounds(sycl::range<1>(12),cgh);
-            sycl::local_accessor< GridPos, 1> _gridPos(sycl::range<1>(9*9),cgh);
+            sycl::local_accessor< Vec3f, 1> _gridPos(sycl::range<1>(9*9),cgh);
             
             cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                              {
@@ -1630,7 +1624,7 @@ namespace embree
                                LocalNodeData_subgroup *local_node = _local_node.get_pointer();
                                QuadLeaf *local_leaf               = _local_leaf.get_pointer();
                                gpu::AABB3f *local_bounds          = _local_bounds.get_pointer();
-                               GridPos *gridPos                   = _gridPos.get_pointer();
+                               Vec3f *gridPos                     = _gridPos.get_pointer();
 
                                LCGBP_State &state = ((LCGBP_State*)(geom->compressedGeometryPtrsBuffer))[ID];
                                const LCGBP *const lcgbp = state.lcgbp;
@@ -1650,55 +1644,47 @@ namespace embree
                                {
                                  const uint x = subgroupLocalID;
                                  if (x < 9)
-                                   gridPos[y*9+x] = GridPos(lgcbp_start_x + (x+0)*lgcbp_step, lgcbp_start_y + (y+0)*lgcbp_step);
+                                   gridPos[y*9+x] = lcgbp->decode(lgcbp_start_x + x*lgcbp_step, lgcbp_start_y + y*lgcbp_step);
                                }
 
                                sub_group_barrier();
                                
                                /* ---- fix cracks if necessary ---- */
-
-                               if (unlikely(lod_diff_levels.top))
                                {
-                                 const uint diff = lod_diff_levels.top;
-                                 for (uint i=1;i<9-1;i++)
+                                 const uint i = subgroupLocalID;
+                                 
+                                 if (unlikely(lod_diff_levels.top))
                                  {
+                                   const uint diff = lod_diff_levels.top;
                                    const uint index = (i>>diff)<<diff;
-                                   const uint x = i;
-                                   const uint y = 0;
-                                   gridPos[y*9+x] = gridPos[y*9+index];
+                                   const Vec3f p = gridPos[index];
+                                   sub_group_barrier();
+                                   if (i>=1 && i<8)
+                                     gridPos[i] = p; 
                                  }
-                               }
-                               if (unlikely(lod_diff_levels.right))
-                               {
-                                 const uint diff = lod_diff_levels.right;
-                                 for (uint i=1;i<9-1;i++)
+                                 if (unlikely(lod_diff_levels.right))
                                  {
+                                   const uint diff = lod_diff_levels.right;
                                    const uint index = (i>>diff)<<diff;
-                                   const uint x = 8;
-                                   const uint y = i;
-                                   gridPos[y*9+x] = gridPos[index*9+x];
+                                   const Vec3f p = gridPos[index*9+8];
+                                   if (i>=1 && i<8)
+                                     gridPos[i*9+8] = p; 
                                  }
-                               }
-                               if (unlikely(lod_diff_levels.bottom))
-                               {
-                                 const uint diff = lod_diff_levels.bottom;
-                                 for (uint i=1;i<9-1;i++)
+                                 if (unlikely(lod_diff_levels.bottom))
                                  {
+                                   const uint diff = lod_diff_levels.bottom;
                                    const uint index = (i>>diff)<<diff;
-                                   const uint x = i;
-                                   const uint y = 8;
-                                   gridPos[y*9+x] = gridPos[y*9+index];
+                                   const Vec3f p = gridPos[8*9+index];
+                                   if (i>=1 && i<8)
+                                     gridPos[8*9+i] = p;                                  
                                  }
-                               }
-                               if (unlikely(lod_diff_levels.left))
-                               {
-                                 const uint diff = lod_diff_levels.left;
-                                 for (uint i=1;i<9-1;i++)
+                                 if (unlikely(lod_diff_levels.left))
                                  {
+                                   const uint diff = lod_diff_levels.left;
                                    const uint index = (i>>diff)<<diff;
-                                   const uint x = 0;
-                                   const uint y = i;
-                                   gridPos[y*9+x] = gridPos[index*9+x];
+                                   const Vec3f p = gridPos[index*9];
+                                   if (i>=1 && i<8)
+                                     gridPos[i*9] = p;                                 
                                  }
                                }
                                
@@ -1709,17 +1695,11 @@ namespace embree
                                  const uint x = sx; 
                                  const uint y = sy + 2*rows;
 
-#if 0                                 
-                                 const Vec3f p0 = lcgbp->decode(lgcbp_start_x + (x+0)*lgcbp_step, lgcbp_start_y + (y+0)*lgcbp_step);
-                                 const Vec3f p1 = lcgbp->decode(lgcbp_start_x + (x+1)*lgcbp_step, lgcbp_start_y + (y+0)*lgcbp_step);
-                                 const Vec3f p2 = lcgbp->decode(lgcbp_start_x + (x+1)*lgcbp_step, lgcbp_start_y + (y+1)*lgcbp_step);
-                                 const Vec3f p3 = lcgbp->decode(lgcbp_start_x + (x+0)*lgcbp_step, lgcbp_start_y + (y+1)*lgcbp_step);
-#else
-                                 const Vec3f p0 = lcgbp->decode(gridPos[(y+0)*9+(x+0)].x, gridPos[(y+0)*9+(x+0)].y);
-                                 const Vec3f p1 = lcgbp->decode(gridPos[(y+0)*9+(x+1)].x, gridPos[(y+0)*9+(x+1)].y);
-                                 const Vec3f p2 = lcgbp->decode(gridPos[(y+1)*9+(x+1)].x, gridPos[(y+1)*9+(x+1)].y);
-                                 const Vec3f p3 = lcgbp->decode(gridPos[(y+1)*9+(x+0)].x, gridPos[(y+1)*9+(x+0)].y);                                 
-#endif                                 
+                                 const Vec3f p0 = gridPos[9*(y+0)+(x+0)];
+                                 const Vec3f p1 = gridPos[9*(y+0)+(x+1)];
+                                 const Vec3f p2 = gridPos[9*(y+1)+(x+1)];
+                                 const Vec3f p3 = gridPos[9*(y+1)+(x+0)];
+
                                  const uint geomID = lcgID;
                                  const uint primID = (ID << RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT) | 2*(y*RTC_LOSSY_COMPRESSED_GRID_QUAD_RES+x) ; //y*8+x; 
 
@@ -1729,7 +1709,6 @@ namespace embree
                                  quad_bounds.extend( to_float3(p1) );
                                  quad_bounds.extend( to_float3(p2) );
                                  quad_bounds.extend( to_float3(p3) );
-
                                  
                                  if (blockID == 0)
                                    local_bounds[rows*3+0] = quad_bounds.sub_group_reduce();
@@ -1801,7 +1780,6 @@ namespace embree
         
         
         gpu::waitOnEventAndCatchException(queue_event);
-        PRINT( gpu::getDeviceExecutionTiming(queue_event) );
         if (unlikely(verbose))
           iteration_time += gpu::getDeviceExecutionTiming(queue_event);
       }

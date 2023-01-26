@@ -127,7 +127,7 @@ namespace embree {
     i2 = min(max(0,i2),(int)LOD_LEVELS-1);
     i3 = min(max(0,i3),(int)LOD_LEVELS-1);
 
-#if 1
+#if 0
     i0 = i1 = i2 = i3 = 2;
 #endif    
     LODEdgeLevel lod_levels(i0,i1,i2,i3);
@@ -579,7 +579,7 @@ namespace embree {
                                                                                            {
                                                                                              LODEdgeLevel edgeLevels = getLODEdgeLevels(local_lcgbp_scene->lcgbp[i],camera,width,height);
 
-#if 0                                                                                             
+#if 1                                                                                             
                                                                                              if (i == 0)
                                                                                                edgeLevels = LODEdgeLevel(0);
                                                                                              else if (i == 1)
