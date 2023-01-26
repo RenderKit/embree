@@ -225,16 +225,6 @@ Embree SYCL Known Issues
 
       llvm-foreach: Floating point exception (core dumped)
 
-- When the integrated GPU is enabled in addition to the discrete GPU
-  you will get this error when trying to start SYCL applications:
-
-      Floating point exception (core dumped)
-
-  To work around the issue either disable the integrated GPU in the
-  BIOS or try the following environment settings:
-
-      UseVmBind=0 ZE_AFFINITY_MASK=0
-
 - Intel® Data Center GPU Flex Series and Intel® Data Center GPU Max
   Series are currently not supported.
 
