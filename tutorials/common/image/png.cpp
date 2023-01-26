@@ -103,7 +103,7 @@ namespace embree
  
     // read the png into image_data through row_pointers
     png_read_image(png_ptr, row_pointers.data());
-  
+
     if (color_type == PNG_COLOR_TYPE_RGB && bit_depth == 8)
     {
       for (size_t y=0;y<height;y++)

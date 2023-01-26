@@ -1644,7 +1644,9 @@ namespace embree
                                {
                                  const uint x = subgroupLocalID;
                                  if (x < 9)
+                                 {
                                    gridPos[y*9+x] = lcgbp->decode(lgcbp_start_x + x*lgcbp_step, lgcbp_start_y + y*lgcbp_step);
+                                 }
                                }
 
                                sub_group_barrier();
@@ -1778,10 +1780,11 @@ namespace embree
                              });
           });
         
-        
         gpu::waitOnEventAndCatchException(queue_event);
+        
         if (unlikely(verbose))
           iteration_time += gpu::getDeviceExecutionTiming(queue_event);
+        PRINT( gpu::getDeviceExecutionTiming(queue_event) );
       }
     }
 

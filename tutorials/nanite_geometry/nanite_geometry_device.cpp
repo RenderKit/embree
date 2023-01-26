@@ -70,6 +70,18 @@ namespace embree {
   Averaged<double> avg_lod_selection_crack_fixing_time(64,1.0);
   
 
+  __forceinline Vec3fa getTexel3f(const Texture* texture, float s, float t)
+  {
+    int iu = (int)floorf(s * (float)(texture->width-1));
+    int iv = (int)floorf(t * (float)(texture->height-1));    
+    const int offset = (iv * texture->width + iu) * 4;
+    unsigned char * txt = (unsigned char*)texture->data;
+    const unsigned char  r = txt[offset+0];
+    const unsigned char  g = txt[offset+1];
+    const unsigned char  b = txt[offset+2];
+    return Vec3fa(  (float)r * 1.0f/255.0f, (float)g * 1.0f/255.0f, (float)b * 1.0f/255.0f );
+  }
+  
 
   // =========================================================================================================================================================
   // =========================================================================================================================================================
@@ -177,8 +189,8 @@ namespace embree {
     numAllocatedLCGBPStates = (1<<(2*(LOD_LEVELS-1))) * maxNumLCGBP;
     lcgbp       = (LCGBP*)alignedUSMMalloc(sizeof(LCGBP)*numAllocatedLCGBP,64,EMBREE_USM_SHARED /*EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE*/);
     lcgbp_state = (LCGBP_State*)alignedUSMMalloc(sizeof(LCGBP_State)*numAllocatedLCGBPStates,64,EMBREE_USM_SHARED/*EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE*/);
-    PRINT(numAllocatedLCGBP);
-    PRINT(numAllocatedLCGBPStates);
+    PRINT2(numAllocatedLCGBP,numAllocatedLCGBP*sizeof(LCGBP));
+    PRINT2(numAllocatedLCGBPStates,numAllocatedLCGBPStates*sizeof(LCGBP_State));
   }
 
   void LCGBP_Scene::addGrid(const uint gridResX, const uint gridResY, const Vec3fa *const vtx)
@@ -216,7 +228,7 @@ namespace embree {
             const float error = length(new_v-org_v);
             if (error > 0.1)
             {
-              PRINT5(x,y,LCGBP::as_uint(new_v.x),LCGBP::as_uint(new_v.y),LCGBP::as_uint(new_v.z));              
+              //PRINT5(x,y,LCGBP::as_uint(new_v.x),LCGBP::as_uint(new_v.y),LCGBP::as_uint(new_v.z));              
               //exit(0);
             }
             avg_error += (double)error;
@@ -267,19 +279,57 @@ namespace embree {
     global_lcgbp_scene->map_Kd = (Texture*)material->map_Kd;        
   }
 
-
-
-  __forceinline Vec3fa getTexel3f(const Texture* texture, float s, float t)
+  inline Vec3fa generateVertex(const int x, const int y, const int gridResX, const int gridResY,const Texture* texture)
   {
-    int iu = (int)floor(s * (float)(texture->width));
-    int iv = (int)floor(t * (float)(texture->height));    
-    const int offset = (iv * texture->width + iu) * 4;
-    unsigned char * txt = (unsigned char*)texture->data;
-    const unsigned char  r = txt[offset+0];
-    const unsigned char  g = txt[offset+1];
-    const unsigned char  b = txt[offset+2];
-    return Vec3fa(  (float)r * 1.0f/255.0f, (float)g * 1.0f/255.0f, (float)b * 1.0f/255.0f );
+    const float scale = 1000.0f;
+    const int px = min(x,gridResX-1);
+    const int py = min(y,gridResY-1);
+    const float u = min((float)px / (gridResX-1),0.99f);
+    const float v = min((float)py / (gridResY-1),0.99f);
+    Vec3f vtx = Vec3fa(px-gridResX/2,py-gridResY/2,0);
+    const Vec3f d = getTexel3f(texture,u,v);
+    vtx.z += d.z*scale;
+    return vtx;
+    //return vtx + d*scale;
   }
+  
+
+  void generateGrid(RTCScene scene, const uint gridResX, const uint gridResY)
+  {
+    const uint numLCGBP = ((gridResX-1) / LCGBP::GRID_RES_QUAD) * ((gridResY-1) / LCGBP::GRID_RES_QUAD);
+
+    /* --- allocate global LCGBP --- */
+    global_lcgbp_scene = (LCGBP_Scene*)alignedUSMMalloc(sizeof(LCGBP_Scene),64);
+    new (global_lcgbp_scene) LCGBP_Scene(numLCGBP);
+
+    const uint vertices = gridResX*gridResY;
+    Vec3fa *vtx = (Vec3fa*)malloc(sizeof(Vec3fa)*vertices);
+
+    const FileName fileNameDisplacement("Rock_Mossy_02_height.png");
+    Texture *displacement = new Texture(loadImage(fileNameDisplacement),fileNameDisplacement);
+    PRINT2(displacement->width,displacement->height);
+    
+    for (uint y=0;y<gridResY;y++)
+      for (uint x=0;x<gridResX;x++)
+        vtx[y*gridResX+x] = generateVertex(x,y,gridResX,gridResY,displacement);
+    
+    global_lcgbp_scene->addGrid(gridResX,gridResY,vtx);
+
+    free(vtx);
+    
+    global_lcgbp_scene->geometry = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY);
+    rtcCommitGeometry(global_lcgbp_scene->geometry);
+    global_lcgbp_scene->geomID = rtcAttachGeometry(scene,global_lcgbp_scene->geometry);
+    //rtcReleaseGeometry(geom);
+
+    const FileName fileNameDiffuse("Rock_Mossy_02_diffuseOriginal.png");
+    Texture *diffuse = new Texture(loadImage(fileNameDiffuse),fileNameDiffuse);
+    PRINT2(diffuse->width,diffuse->height);
+    
+    global_lcgbp_scene->map_Kd = diffuse;                
+  }
+
+
   
   extern "C" ISPCScene* g_ispc_scene;
 
@@ -292,6 +342,7 @@ namespace embree {
     rtcSetSceneBuildQuality(data.g_scene,RTC_BUILD_QUALITY_LOW);
     rtcSetSceneFlags(data.g_scene,RTC_SCENE_FLAG_DYNAMIC);
 
+#if 0    
     PRINT(g_ispc_scene->numGeometries);
     PRINT(g_ispc_scene->numMaterials);
     
@@ -300,7 +351,12 @@ namespace embree {
       ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
       if (geometry->type == GRID_MESH)
         convertISPCGridMesh((ISPCGridMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID]);
-    }  
+    }
+#else
+    const uint gridResX = 16*1024;
+    const uint gridResY = 16*1024;    
+    generateGrid(data.g_scene,gridResX,gridResY);
+#endif    
   
     /* update scene */
     rtcCommitScene (data.g_scene);  
@@ -349,7 +405,7 @@ namespace embree {
     /* intersect ray with scene */
     rtcIntersect1(data.g_scene,RTCRayHit_(ray),&args);
 
-    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
+    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(1.0f);
 
     const uint localID = ray.primID & (((uint)1<<RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT)-1);
     const uint primID = ray.primID >> RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT;

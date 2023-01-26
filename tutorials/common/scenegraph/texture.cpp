@@ -84,7 +84,7 @@ namespace embree
   {
     // if (texture_cache.find(fileName.str()) != texture_cache.end())
     //   return texture_cache[fileName.str()];
-
+    PRINT(fileName);
     std::shared_ptr<Texture> tex(new Texture(loadImage(fileName),fileName));
     //return texture_cache[fileName.str()] = tex;
     return tex;
