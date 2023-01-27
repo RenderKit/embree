@@ -683,11 +683,10 @@ namespace embree
   __forceinline void copyCLs_from_SLM_to_GlobalMemory(void *dest, void *source, const uint numCachelines)
   {
     const uint subgroupLocalID = get_sub_group_local_id();
-    //const uint subgroupSize = get_sub_group_size();
     uint *s = (uint*)source;    
     uint *d = (uint*)dest;
     for (uint i=0;i<numCachelines;i++,s+=16,d+=16)
-    sub_group_store(d,s[subgroupLocalID]);
+      sub_group_store(d,s[subgroupLocalID]);
   }
   
   __forceinline uint estimateLossyCompressedGeometriesSize(const uint numLossyCompressedGeometries)
@@ -1784,7 +1783,7 @@ namespace embree
         
         if (unlikely(verbose))
           iteration_time += gpu::getDeviceExecutionTiming(queue_event);
-        PRINT( gpu::getDeviceExecutionTiming(queue_event) );
+        //PRINT( gpu::getDeviceExecutionTiming(queue_event) );
       }
     }
 
