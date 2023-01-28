@@ -1,5 +1,6 @@
 ## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
+CMAKE_MINIMUM_REQUIRED(VERSION 3.1.0)
 
 SET(EMBREE_VERSION_MAJOR 3)
 SET(EMBREE_VERSION_MINOR 13)
@@ -11,8 +12,6 @@ MATH(EXPR EMBREE_VERSION_NUMBER "10000*${EMBREE_VERSION_MAJOR} + 100*${EMBREE_VE
 SET(CPACK_RPM_PACKAGE_RELEASE 1)
 
 PROJECT(embree${EMBREE_VERSION_MAJOR})
-
-CMAKE_MINIMUM_REQUIRED(VERSION 3.1.0)
 
 # We use our own strip tool on macOS to sign during install. This is required as CMake modifies RPATH of the binary during install.
 IF (APPLE AND EMBREE_SIGN_FILE)
