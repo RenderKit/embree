@@ -1724,6 +1724,8 @@ namespace embree
                                      gridPos[i*9] = p;                                 
                                  }
                                }
+
+                               sub_group_barrier();
                                
                                /* --------------------------------- */
                                
@@ -1764,9 +1766,7 @@ namespace embree
                                  
                                  const uint offset = ((char*)(leaf+blockID*6) - (char*)(node+blockID))/64;                                 
                                  writeNode_subgroup(local_node[blockID],offset,local_bounds[rows*3+blockID],quad_bounds,blockID == 2 ? 4 : 6,subgroupLocalID-blockID*6,NODE_TYPE_QUAD);
-                                                                  
-                                 sub_group_barrier();
-                                 
+                                 sub_group_barrier();                                 
                                  copyCLs_from_SLM_to_GlobalMemory(node,local_node,3);                                 
                                }
 
@@ -1824,7 +1824,7 @@ namespace embree
         
         if (unlikely(verbose))
           iteration_time += gpu::getDeviceExecutionTiming(queue_event);
-        PRINT( gpu::getDeviceExecutionTiming(queue_event) );
+        //PRINT( gpu::getDeviceExecutionTiming(queue_event) );
       }
     }
 
