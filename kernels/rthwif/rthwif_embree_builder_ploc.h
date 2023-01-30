@@ -189,6 +189,41 @@ namespace embree
     }    
   };
 
+  struct __aligned(64) QuadLeafData {
+    unsigned int shaderIndex;   
+    unsigned int geomIndex;     
+    unsigned int primIndex0;
+    unsigned int primIndex1Delta;
+    float v[4][3];
+
+    __forceinline QuadLeafData() {}
+
+    __forceinline QuadLeafData(const Vec3f &v0, const Vec3f &v1, const Vec3f &v2, const Vec3f &v3,
+                               const uint j0, const uint j1, const uint j2,
+                               const uint shaderID, const uint geomID, const uint primID0, const uint primID1, const GeometryFlags geomFlags, const uint geomMask)
+    {
+      shaderIndex = (geomMask << 24) | shaderID;
+      geomIndex = geomID | ((uint)geomFlags << 30);
+      primIndex0 = primID0;
+      const uint delta = primID1 - primID0;
+      const uint j = (((j0) << 0) | ((j1) << 2) | ((j2) << 4));
+      primIndex1Delta = delta | (j << 16) | (1 << 22); // single prim in leaf            
+      v[0][0] = v0.x;
+      v[0][1] = v0.y;
+      v[0][2] = v0.z;
+      v[1][0] = v1.x;
+      v[1][1] = v1.y;
+      v[1][2] = v1.z;
+      v[2][0] = v2.x;
+      v[2][1] = v2.y;
+      v[2][2] = v2.z;
+      v[3][0] = v3.x;
+      v[3][1] = v3.y;
+      v[3][2] = v3.z;
+
+    }
+  };
+
   struct LeafGenerationData {
 
     __forceinline LeafGenerationData() {}
@@ -1588,6 +1623,8 @@ namespace embree
       dest.tmp[42+i] = upper_z;      
     }
   }
+
+   
         
    
    uint createLossyCompressedGeometries_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGS, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, char* lcg_bvh_mem, double &iteration_time, const bool verbose)    
@@ -1606,8 +1643,8 @@ namespace embree
         const uint wgSize = 16;        
         const sycl::nd_range<1> nd_range1(wgSize*geom->numGeometryPtrs,sycl::range<1>(wgSize));          
         sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+            //sycl::local_accessor< QuadLeaf, 1> _local_leaf(sycl::range<1>(16),cgh);            
             sycl::local_accessor< LocalNodeData_subgroup, 1> _local_node(sycl::range<1>(3),cgh); //FIXME: reuse _local_leaf
-            sycl::local_accessor< QuadLeaf, 1> _local_leaf(sycl::range<1>(16),cgh);
             sycl::local_accessor< gpu::AABB3f, 1> _local_bounds(sycl::range<1>(12),cgh);
             sycl::local_accessor< Vec3f, 1> _gridPos(sycl::range<1>(9*9),cgh);
             
@@ -1620,8 +1657,9 @@ namespace embree
                                const uint start_x[16] = { 0,1,2, 0,1,2, 3,4,5, 3,4,5, 6,7,6,7};
                                const uint start_y[16] = { 0,0,0, 1,1,1, 0,0,0, 1,1,1, 0,0,1,1};
 
-                               LocalNodeData_subgroup *local_node = _local_node.get_pointer();
-                               QuadLeaf *local_leaf               = _local_leaf.get_pointer();
+                               //QuadLeaf *local_leaf               = _local_leaf.get_pointer();
+                               //LocalNodeData_subgroup *local_node = (LocalNodeData_subgroup *)local_leaf;//_local_node.get_pointer();
+                               LocalNodeData_subgroup *local_node = _local_node.get_pointer();                               
                                gpu::AABB3f *local_bounds          = _local_bounds.get_pointer();
                                Vec3f *gridPos                     = _gridPos.get_pointer();
 
@@ -1634,7 +1672,7 @@ namespace embree
                                  
                                char* dest = lcg_bvh_mem + ID * sizeLCGBVH;
                                LocalNodeData_subgroup *node = (LocalNodeData_subgroup*)(dest + 3 * 64);
-                               QuadLeaf *leaf = (QuadLeaf*)(dest + (4*3+2+1)*64);
+                               QuadLeafData *leaf = (QuadLeafData*)(dest + (4*3+2+1)*64);
                                
                                const uint sx = start_x[subgroupLocalID];
                                const uint sy = start_y[subgroupLocalID];
@@ -1643,9 +1681,7 @@ namespace embree
                                {
                                  const uint x = subgroupLocalID;
                                  if (x < 9)
-                                 {
                                    gridPos[y*9+x] = lcgbp->decode(lgcbp_start_x + x*lgcbp_step, lgcbp_start_y + y*lgcbp_step);
-                                 }
                                }
 
                                sub_group_barrier();
@@ -1704,8 +1740,14 @@ namespace embree
                                  const uint geomID = lcgID;
                                  const uint primID = (ID << RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT) | 2*(y*RTC_LOSSY_COMPRESSED_GRID_QUAD_RES+x) ; //y*8+x; 
 
-                                 local_leaf[subgroupLocalID] = QuadLeaf( p0,p1,p3,p2, 3,2,1, 0, geomID, primID, primID+1, GeometryFlags::OPAQUE, -1, /*i == (numChildren-1)*/ true );
+                                 //local_leaf[subgroupLocalID] = QuadLeaf( p0,p1,p3,p2, 3,2,1, 0, geomID, primID, primID+1, GeometryFlags::OPAQUE, -1, /*i == (numChildren-1)*/ true );
+                                 //sub_group_barrier();
+                                 //copyCLs_from_SLM_to_GlobalMemory(leaf,local_leaf,16);
 
+                                 leaf[subgroupLocalID] = QuadLeafData( p0,p1,p3,p2, 3,2,1, 0, geomID, primID, primID+1, GeometryFlags::OPAQUE, -1);
+
+                                 //sub_group_barrier();
+                                 
                                  gpu::AABB3f quad_bounds( to_float3(p0) );
                                  quad_bounds.extend( to_float3(p1) );
                                  quad_bounds.extend( to_float3(p2) );
@@ -1725,7 +1767,6 @@ namespace embree
                                                                   
                                  sub_group_barrier();
                                  
-                                 copyCLs_from_SLM_to_GlobalMemory(leaf,local_leaf,16);
                                  copyCLs_from_SLM_to_GlobalMemory(node,local_node,3);                                 
                                }
 
@@ -1783,7 +1824,7 @@ namespace embree
         
         if (unlikely(verbose))
           iteration_time += gpu::getDeviceExecutionTiming(queue_event);
-        //PRINT( gpu::getDeviceExecutionTiming(queue_event) );
+        PRINT( gpu::getDeviceExecutionTiming(queue_event) );
       }
     }
 
