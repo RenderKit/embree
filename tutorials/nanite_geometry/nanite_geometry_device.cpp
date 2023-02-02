@@ -342,7 +342,7 @@ namespace embree {
     rtcSetSceneBuildQuality(data.g_scene,RTC_BUILD_QUALITY_LOW);
     rtcSetSceneFlags(data.g_scene,RTC_SCENE_FLAG_DYNAMIC);
 
-#if 0    
+#if 1    
     PRINT(g_ispc_scene->numGeometries);
     PRINT(g_ispc_scene->numMaterials);
     
