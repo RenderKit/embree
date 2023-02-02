@@ -5,8 +5,10 @@
 #include "../common/tutorial/benchmark_render.h"
 
 #if defined(EMBREE_SYCL_TUTORIAL)
+#  define NAME "quaternion_motion_blur_sycl (beta)"
 #  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
 #else
+#  define NAME "quaternion_motion_blur"
 #  define FEATURES FEATURE_RTCORE
 #endif
 
@@ -30,7 +32,7 @@ namespace embree
   struct Tutorial : public TutorialApplication 
   {
     Tutorial()
-      : TutorialApplication("quaternion motion blur",FEATURES)
+      : TutorialApplication(NAME,FEATURES)
     {
       registerOption("spp", [] (Ref<ParseStream> cin, const FileName& path) {
           g_spp = cin->getInt();

@@ -3,12 +3,6 @@
 
 #include "../common/tutorial/tutorial.h"
 
-#if defined(EMBREE_SYCL_TUTORIAL)
-#  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
-#else
-#  define FEATURES FEATURE_RTCORE
-#endif
-
 namespace embree
 {
   typedef void (*DrawGUI)(void);
@@ -25,7 +19,7 @@ namespace embree
   struct Tutorial : public TutorialApplication 
   {
     Tutorial()
-      : TutorialApplication("voronoi", FEATURES) {}
+      : TutorialApplication("voronoi", FEATURE_RTCORE) {}
 
 #if defined(USE_GLFW)
     

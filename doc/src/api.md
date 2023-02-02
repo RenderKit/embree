@@ -220,13 +220,24 @@ get used on the GPU:
 Embree SYCL Known Issues
 ------------------------
 
+- The SYCL version of Embree is still in beta phase and current
+  performance may not reflect the performance of the final product.
+  
+- Currently only the following Intel® Arc™ GPUs are support:
+
+  - Intel® Arc™ A770 Graphics
+  - Intel® Arc™ A750 Graphics
+  - Intel® Arc™ A770M Graphics
+  - Intel® Arc™ A730M Graphics
+  - Intel® Arc™ A550M Graphics
+
+- Intel® Data Center GPU Flex Series and Intel® Data Center GPU Max
+  Series are currently not supported.
+
 - Ahead of time compilation is currently not working properly and you
   will get this error during compilation:
 
       llvm-foreach: Floating point exception (core dumped)
-
-- Intel® Data Center GPU Flex Series and Intel® Data Center GPU Max
-  Series are currently not supported.
 
 - Compilation with build configuration "debug" is currently not working on
   Windows.

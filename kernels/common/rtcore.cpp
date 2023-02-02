@@ -41,6 +41,15 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewSYCLDevice);
     Lock<MutexSys> lock(g_mutex);
+    
+    std::cout << std::endl;
+    std::cout << "==================================================================================" << std::endl;
+    std::cout << "  The SYCL version of Embree is still in beta phase and current performance may   " << std::endl;
+    std::cout << "  not reflect the performance of the final product. Please read documentation     " << std::endl;
+    std::cout << "  section \"Embree SYCL Known Issues\" for limitations of this beta release.      " << std::endl;
+    std::cout << "==================================================================================" << std::endl;
+    std::cout << std::endl;
+    
     DeviceGPU* device = new DeviceGPU(sycl_context,config);
     return (RTCDevice) device->refInc();
     RTC_CATCH_END(nullptr);
