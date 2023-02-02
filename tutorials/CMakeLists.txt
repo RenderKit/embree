@@ -58,6 +58,7 @@ ENDIF()
 
 ADD_SUBDIRECTORY(common)
 
+ADD_SUBDIRECTORY(embree_info)
 ADD_SUBDIRECTORY(verify)
 ADD_SUBDIRECTORY(triangle_geometry)
 ADD_SUBDIRECTORY(dynamic_scene)

@@ -92,12 +92,12 @@ namespace embree
 
 #if defined(EMBREE_LEVEL_ZERO)
 
-  bool rthwifIsSYCLDeviceSupported(const sycl::device& sycl_device)
+  int rthwifIsSYCLDeviceSupported(const sycl::device& sycl_device)
   {
     /* disabling of device check through env variable */
     const char* disable_device_check = getenv("EMBREE_DISABLE_DEVICEID_CHECK");
     if (disable_device_check && strcmp(disable_device_check,"1") == 0)
-      return true;
+      return 1;
 
     sycl::platform platform = sycl_device.get_platform();
     ze_driver_handle_t hDriver = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(platform);
@@ -105,11 +105,11 @@ namespace embree
     uint32_t count = 0;
     std::vector<ze_driver_extension_properties_t> extensions;
     ze_result_t result = zeDriverGetExtensionProperties(hDriver,&count,extensions.data());
-    if (result != ZE_RESULT_SUCCESS) return false;
+    if (result != ZE_RESULT_SUCCESS) return -1;
 
     extensions.resize(count);
     result = zeDriverGetExtensionProperties(hDriver,&count,extensions.data());
-    if (result != ZE_RESULT_SUCCESS) return false;
+    if (result != ZE_RESULT_SUCCESS) return -1;
 
     bool ze_extension_ray_tracing = false;
     for (uint32_t i=0; i<extensions.size(); i++)
@@ -123,14 +123,15 @@ namespace embree
       break;
     }
     if (!ze_extension_ray_tracing)
-      return false;
+      return -1;
   
 #if 1
 
     /* check if GPU device is supported */
     ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(sycl_device);
     const RTHWIF_FEATURES features = rthwifGetSupportedFeatures(hDevice);
-    return features != RTHWIF_FEATURES_NONE;
+    if (features == RTHWIF_FEATURES_NONE)
+      return -1;
 
 #else
 
@@ -149,22 +150,33 @@ namespace embree
     module_properties.pNext = &raytracing_properties;
       
     ze_result_t result = zeDeviceGetModuleProperties(hDevice, &module_properties);
-    if (result != ZE_RESULT_SUCCESS) return false;
+    if (result != ZE_RESULT_SUCCESS) return -1;
 
     const bool rayQuerySupported = raytracing_properties.flags & ZE_DEVICE_RAYTRACING_EXT_FLAG_RAYQUERY;
-    return rayQuerySupported;
+    if (!rayQuerySupported)
+      return -1;
 #endif
+
+    return sycl_device.get_info<sycl::info::device::max_compute_units>();
   }
 
 #else
 
-  bool rthwifIsSYCLDeviceSupported(const sycl::device& device)
+  int rthwifIsSYCLDeviceSupported(const sycl::device& device)
   {
     // TODO: SYCL currently has no functionality to check if a GPU has RTHW
-    // capabilities. Therefore, we return true when the device is a GPU and the
-    // backend is level_zero, and hope for the best.
+    // capabilities. Therefore, we return true when the device is a GPU,
+    // the backend is level_zero, and the GPU has 8 threads per EU because
+    // that indicates raytracing hardware.
+    uint32_t threadsPerEU = 0;
+    if (device.has(sycl::aspect::ext_intel_gpu_hw_threads_per_eu)) {
+      threadsPerEU = device.get_info<sycl::ext::intel::info::device::gpu_hw_threads_per_eu>();
+    }
     sycl::platform platform = device.get_platform();
-    return device.is_gpu() && (platform.get_info<sycl::info::platform::name>() == "Intel(R) Level-Zero");
+    if(!device.is_gpu() || (threadsPerEU < 8) || (platform.get_info<sycl::info::platform::name>() != "Intel(R) Level-Zero"))
+      return -1;
+    else
+      return device.get_info<sycl::info::device::max_compute_units>();
   }
 
 #endif
