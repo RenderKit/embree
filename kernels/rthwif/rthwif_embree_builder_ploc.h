@@ -188,6 +188,42 @@ namespace embree
     }    
   };
 
+  struct __aligned(64) QuadLeafData {
+    unsigned int shaderIndex;   
+    unsigned int geomIndex;     
+    unsigned int primIndex0;
+    unsigned int primIndex1Delta;
+    float v[4][3];
+
+    __forceinline QuadLeafData() {}
+
+    __forceinline QuadLeafData(const Vec3f &v0, const Vec3f &v1, const Vec3f &v2, const Vec3f &v3,
+                               const uint j0, const uint j1, const uint j2,
+                               const uint shaderID, const uint geomID, const uint primID0, const uint primID1, const GeometryFlags geomFlags, const uint geomMask)
+    {
+      shaderIndex = (geomMask << 24) | shaderID;
+      geomIndex = geomID | ((uint)geomFlags << 30);
+      primIndex0 = primID0;
+      const uint delta = primID1 - primID0;
+      const uint j = (((j0) << 0) | ((j1) << 2) | ((j2) << 4));
+      primIndex1Delta = delta | (j << 16) | (1 << 22); // single prim in leaf            
+      v[0][0] = v0.x;
+      v[0][1] = v0.y;
+      v[0][2] = v0.z;
+      v[1][0] = v1.x;
+      v[1][1] = v1.y;
+      v[1][2] = v1.z;
+      v[2][0] = v2.x;
+      v[2][1] = v2.y;
+      v[2][2] = v2.z;
+      v[3][0] = v3.x;
+      v[3][1] = v3.y;
+      v[3][2] = v3.z;
+
+    }
+  };
+  
+
   struct LeafGenerationData {
 
     __forceinline LeafGenerationData() {}
@@ -2582,18 +2618,16 @@ namespace embree
       const uint wgSize = 256;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(leaves,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-          sycl::local_accessor< QuadLeaf, 1> _localLeaf(sycl::range<1>(wgSize),cgh);
           cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                            {
                              const uint globalID = item.get_global_id(0);
                              const uint localID  = item.get_local_id(0);
-                             QuadLeaf *localLeaf = _localLeaf.get_pointer();
                              bool valid = false;
-                             QuadLeaf *qleaf = nullptr;
+                             QuadLeafData*qleaf = nullptr;
                                                                       
                              if (globalID < leaves)                                                                        
                              {
-                               qleaf = (QuadLeaf *)globals->nodeBlockPtr(leafGenData[globalID].blockID);
+                               qleaf = (QuadLeafData *)globals->nodeBlockPtr(leafGenData[globalID].blockID);
                                const uint geomID = leafGenData[globalID].geomID & GEOMID_MASK;
                                const RTHWIF_GEOMETRY_DESC *const geometryDesc = geometries[geomID];                                 
 
@@ -2621,8 +2655,7 @@ namespace embree
                                    const uint p3_index = try_pair_triangles(uint3(tri.v0,tri.v1,tri.v2),uint3(tri1.v0,tri1.v1,tri1.v2),lb0,lb1,lb2);
                                    p3 = getVec3f(*triMesh,((uint*)&tri1)[p3_index]); // FIXME: might cause tri1 to store to mem first
                                  }
-
-                                 localLeaf[localID] = QuadLeaf( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, (GeometryFlags)triMesh->geometryFlags, triMesh->geometryMask, /*i == (numChildren-1)*/ true );
+                                 *qleaf = QuadLeafData( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, (GeometryFlags)triMesh->geometryFlags, triMesh->geometryMask);
                                }
                                else if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_QUADS)
                                {
@@ -2637,7 +2670,7 @@ namespace embree
                                  const Vec3f p1 = getVec3f(*quadMesh,quad.v1);
                                  const Vec3f p2 = getVec3f(*quadMesh,quad.v2);                                       
                                  const Vec3f p3 = getVec3f(*quadMesh,quad.v3);                                                                          
-                                 localLeaf[localID] = QuadLeaf( p0,p1,p3,p2, 3,2,1, 0, geomID, primID0, primID0, (GeometryFlags)quadMesh->geometryFlags, quadMesh->geometryMask, /*i == (numChildren-1)*/ true );
+                                 *qleaf = QuadLeafData( p0,p1,p3,p2, 3,2,1, 0, geomID, primID0, primID0, (GeometryFlags)quadMesh->geometryFlags, quadMesh->geometryMask);
                                }
                              
                                else if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE)
@@ -2670,18 +2703,19 @@ namespace embree
                            /* === write out to global memory === */
                            /* ================================== */
                                                                       
-                           const uint subgroupLocalID = get_sub_group_local_id();
-                           uint mask = sub_group_ballot(valid);
-                           while(mask)
-                           {
-                             const uint index = sycl::ctz(mask);
-                             mask &= mask-1;
-                             uint ID = sub_group_broadcast(localID,index);
-                             uint* dest = sub_group_broadcast((uint*)qleaf,index);
-                             uint* source = (uint*)&localLeaf[ID];
-                             const uint v = source[subgroupLocalID];                                                                        
-                             sub_group_store(dest,v);
-                           }                                                                                                            
+                           /* const uint subgroupLocalID = get_sub_group_local_id(); */
+                           /* uint mask = sub_group_ballot(valid); */
+                           /* while(mask) */
+                           /* { */
+                           /*   const uint index = sycl::ctz(mask); */
+                           /*   mask &= mask-1; */
+                           /*   uint ID = sub_group_broadcast(localID,index); */
+                           /*   uint* dest = sub_group_broadcast((uint*)qleaf,index); */
+                           /*   uint* source = (uint*)&localLeaf[ID]; */
+                           /*   const uint v = source[subgroupLocalID]; */
+                           /*   sub_group_store(dest,v); */
+                           /* } */
+                             
                            });
 		  
         });
