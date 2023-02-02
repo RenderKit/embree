@@ -23,12 +23,12 @@ IF (EMBREE_SYCL_RT_VALIDATION_API)
 ENDIF()
 
 ADD_EXECUTABLE(embree_rthwif_cornell_box rthwif_cornell_box.cpp)
-TARGET_LINK_LIBRARIES(embree_rthwif_cornell_box embree_rthwif sys simd tbb)
+TARGET_LINK_LIBRARIES(embree_rthwif_cornell_box embree_rthwif sys simd ${TBB_TARGET})
 SET_PROPERTY(TARGET embree_rthwif_cornell_box APPEND PROPERTY COMPILE_FLAGS "-fsycl -fsycl-targets=spir64 -DEMBREE_SYCL_SUPPORT")
 SET_PROPERTY(TARGET embree_rthwif_cornell_box APPEND PROPERTY LINK_FLAGS "-fsycl -lze_loader -fsycl-targets=spir64 -Xsycl-target-backend=spir64 \" -cl-intel-greater-than-4GB-buffer-required \"")
 
 ADD_EXECUTABLE(embree_rthwif_test rthwif_test.cpp)
-TARGET_LINK_LIBRARIES(embree_rthwif_test embree_rthwif sys simd tbb)
+TARGET_LINK_LIBRARIES(embree_rthwif_test embree_rthwif sys simd ${TBB_TARGET})
 SET_PROPERTY(TARGET embree_rthwif_test APPEND PROPERTY COMPILE_FLAGS "-fsycl -fsycl-targets=spir64 -DEMBREE_SYCL_SUPPORT")
 SET_PROPERTY(TARGET embree_rthwif_test APPEND PROPERTY LINK_FLAGS "-fsycl -lze_loader -fsycl-targets=spir64 -Xsycl-target-backend=spir64 \" -cl-intel-greater-than-4GB-buffer-required \"")
 
