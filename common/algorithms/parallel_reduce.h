@@ -5,6 +5,10 @@
 
 #include "parallel_for.h"
 
+#if defined(TASKING_HPX)
+#include <hpx/parallel/algorithms/transform_reduce.hpp>
+#endif
+
 namespace embree
 {
   template<typename Index, typename Value, typename Func, typename Reduction>
@@ -69,7 +73,7 @@ namespace embree
       throw std::runtime_error("task cancelled");
     return v;
   #endif
-#else // TASKING_PPL
+#elif defined(TASKING_PPL)
     struct AlignedValue
     {
       char storage[__alignof(Value)+sizeof(Value)];
@@ -107,6 +111,14 @@ namespace embree
     };
     const Value v = concurrency::parallel_reduce(Iterator_Index(first), Iterator_Index(last), AlignedValue(identity), range_reduction, reduction);
     return v;
+#elif defined(TASKING_HPX)
+    const auto sz = last-first;
+    auto irange = hpx::util::counting_shape(sz);
+    const Value v = hpx::transform_reduce(
+       hpx::execution::par, hpx::util::begin(irange), hpx::util::end(irange), identity, reduction, func);
+    return v;
+#else
+#  error "no tasking system enabled"
 #endif
   }
 

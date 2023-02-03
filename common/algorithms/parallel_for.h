@@ -8,6 +8,11 @@
 #include "../math/emath.h"
 #include "../math/range.h"
 
+#if defined(TASKING_HPX)
+#include <hpx/local/algorithm.hpp>
+#include <hpx/modules/iterator_support.hpp>
+#endif
+
 namespace embree
 {
   /* parallel_for without range */
@@ -46,6 +51,13 @@ namespace embree
     concurrency::parallel_for(Index(0),N,Index(1),[&](Index i) { 
         func(i);
       });
+#elif defined(TASKING_HPX)
+    auto irange = hpx::util::counting_shape(N);
+
+    hpx::for_each(hpx::execution::par, hpx::util::begin(irange), hpx::util::end(irange), 
+    [&](Index i) {
+        func(i);
+    });
 #else
 #  error "no tasking system enabled"
 #endif
@@ -84,7 +96,13 @@ namespace embree
     concurrency::parallel_for(first, last, Index(1) /*minStepSize*/, [&](Index i) { 
         func(range<Index>(i,i+1)); 
       });
+#elif defined(TASKING_HPX)
+    auto irange = hpx::util::counting_shape(last-first);
 
+    hpx::experimental::for_loop_strided(hpx::execution::par, hpx::util::begin(irange), hpx::util::end(irange), minStepSize,
+    [&](auto i) {
+        func(range<Index>(*i, (*i)+1));
+    });
 #else
 #  error "no tasking system enabled"
 #endif

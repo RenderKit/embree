@@ -128,19 +128,33 @@ namespace embree
 namespace embree
 {
   BarrierSys::BarrierSys (size_t N) {
+#if defined(TASKING_HPX)
+    b = std::make_shared<hpx::barrier<>>(N);
+#else
     opaque = new BarrierSysImplementation(N);
+#endif
   }
 
   BarrierSys::~BarrierSys () {
+#if !defined(TASKING_HPX)
     delete (BarrierSysImplementation*) opaque;
+#endif
   }
 
   void BarrierSys::init(size_t count) {
+#if !defined(TASKING_HPX)
+    b.reset(new hpx::barrier<>{count});
+#else
     ((BarrierSysImplementation*) opaque)->init(count);
+#endif
   }
 
   void BarrierSys::wait() {
+#if defined(TASKING_HPX)
+    b->arrive_and_wait();
+#else
     ((BarrierSysImplementation*) opaque)->wait();
+#endif
   }
 
   LinearBarrierActive::LinearBarrierActive (size_t N) 

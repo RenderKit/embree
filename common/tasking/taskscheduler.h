@@ -9,6 +9,8 @@
 #  include "taskschedulertbb.h"
 #elif defined(TASKING_PPL)
 #  include "taskschedulerppl.h"
+#elif defined(TASKING_HPX)
+#  include "taskschedulerhpx.h"
 #else
 #  error "no tasking system enabled"
 #endif
