@@ -44,9 +44,9 @@ RTC_NAMESPACE_BEGIN;
     
     std::cout << std::endl;
     std::cout << "==================================================================================" << std::endl;
-    std::cout << "  The SYCL version of Embree is still in beta phase and current performance may   " << std::endl;
-    std::cout << "  not reflect the performance of the final product. Please read documentation     " << std::endl;
-    std::cout << "  section \"Embree SYCL Known Issues\" for limitations of this beta release.      " << std::endl;
+    std::cout << "  The SYCL support of Embree is in beta phase. Current functionality, quality,    " << std::endl;
+    std::cout << "  and GPU performance may not reflect that of the final product. Please read the  " << std::endl;
+    std::cout << "  documentation section \"Embree SYCL Known Issues\" for known limitations.       " << std::endl;
     std::cout << "==================================================================================" << std::endl;
     std::cout << std::endl;
     

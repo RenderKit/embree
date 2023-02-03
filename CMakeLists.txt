@@ -147,11 +147,11 @@ IF (NOT APPLE)
   OPTION(EMBREE_SYCL_SUPPORT "Enables SYCL GPU support." OFF)
   IF (EMBREE_SYCL_SUPPORT)
     MESSAGE(WARNING
-      "==================================================================================\n"
-      "  The SYCL version of Embree is still in beta phase and current performance may   \n"
-      "  not reflect the performance of the final product. Please read documentation     \n"
-      "  section \"Embree SYCL Known Issues\" for limitations of this beta release.      \n"
-      "==================================================================================\n")
+       "==================================================================================\n"
+       "  The SYCL support of Embree is in beta phase. Current functionality, quality,    \n"
+       "  and GPU performance may not reflect that of the final product. Please read the  \n"
+       "  documentation section \"Embree SYCL Known Issues\" for known limitations.       \n"
+       "==================================================================================\n")
   ENDIF()
 ENDIF()
 CMAKE_DEPENDENT_OPTION(EMBREE_SYCL_LARGEGRF "Enables SYCL large GRF support." OFF "EMBREE_SYCL_SUPPORT" OFF)

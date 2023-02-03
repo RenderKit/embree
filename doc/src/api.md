@@ -220,8 +220,9 @@ get used on the GPU:
 Embree SYCL Known Issues
 ------------------------
 
-- The SYCL version of Embree is still in beta phase and current
-  performance may not reflect the performance of the final product.
+- The SYCL support of Embree is in beta phase. Current functionality,
+  quality, and GPU performance may not reflect that of the final
+  product.
   
 - Currently only the following Intel® Arc™ GPUs are support:
 

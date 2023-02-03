@@ -2,13 +2,15 @@ Version History
 ---------------
 
 ### Embree 4.0.0
--   This is a major Embree release which adds support for Intel® Arc™ GPUs through SYCL.
-    The SYCL version of Embree is still in beta phase and current performance may
-    not reflect the performance of the final product. Please read documentation
-    section "Embree SYCL Known Issues" for limitations of this beta release.
--   A small number of API changes were required to get optimal experience and performance on the GPU.
-    See documentation section "Upgrading from Embree 3 to Embree 4" for details.
--   Renamed API include folder from embree3 to embree4
+-   This Embree release adds support for Intel® Arc™ GPUs through SYCL.
+-   The SYCL support of Embree is in beta phase. Current functionality, quality,
+    and GPU performance may not reflect that of the final product. Please read the
+    documentation section "Embree SYCL Known Issues" for known limitations.
+-   Embree CPU support in this release as at Gold level, incorporating the same quality
+    and performance as previous releases.
+-   A small number of API changes were required to get optimal experience and
+    performance on the CPU and GPU. See documentation section "Upgrading from Embree 3 to
+    Embree 4" for details.
 -   rtcIntersect and rtcOccluded function arguments changed slightly.
 -   RTCIntersectContext is renamed to RTCRayQuery context and most members moved to
     new RTCIntersectArguments and RTCOccludedArguments structures.
