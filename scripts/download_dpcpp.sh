@@ -69,6 +69,18 @@ mkdir -p ${DPCPP_VERSION}
 cp -r dpcpp_compiler/* ${DPCPP_VERSION}
 rm -rf dpcpp_compiler
 
+# add startup script to Windows version of the compiler
+if [ "$PLATFORM" = "WIN" ]; then
+echo '@echo off
+set "DPCPP_DIR=%~dp0"
+set "PATH=%DPCPP_DIR%\bin;%PATH%"
+set "PATH=%DPCPP_DIR%\lib;%PATH%"
+set "CPATH=%DPCPP_DIR%\include;%CPATH%"
+set "INCLUDE=%DPCPP_DIR%\include;%INCLUDE%"
+set "LIB=%DPCPP_DIR%\lib;%LIB%"' > ${DST_DIR}/${DPCPP_VERSION}/startup.bat
+fi
+
+
 echo "dpcpp compiler available here ${DST_DIR}/${DPCPP_VERSION}"
 
 cd ${CUR_DIR}

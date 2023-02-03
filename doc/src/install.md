@@ -56,13 +56,14 @@ CMake. Just let CMake find your unpacked Embree package using the
 
      FIND_PACKAGE(embree <EMBREE_VERSION_MAJOR> REQUIRED)
 
-For CMake to properly find Embree you need to set the `embree_DIR`
-variable to the folder you extracted the Embree package to. You might
-also have to set the `TBB_DIR` variable to a local TBB install, in
-case you do not have TBB installed globally on your system:
+For CMake to properly find Embree you need to set the `embree_DIR` variable to
+the folder containing the `embree_config.cmake` file. You might also have to
+set the `TBB_DIR` variable to the path containing `TBB-config.cmake` of a local
+TBB install, in case you do not have TBB installed globally on your system,
+e.g:
 
     cmake -D embree_DIR=path_to_embree_package/lib/cmake/embree-<EMBREE_VERSION>/ \
-          -D TBB_DIR=path_to_tbb_package \
+          -D TBB_DIR=path_to_tbb_package/lib/cmake/tbb/ \
           ..
 
 The `FIND_PACKAGE` function will create an `embree` target that

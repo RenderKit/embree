@@ -51,7 +51,7 @@ RTC_NAMESPACE_BEGIN;
   {
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcIsSYCLDeviceSupported);
-    return rthwifIsSYCLDeviceSupported(device);
+    return rthwifIsSYCLDeviceSupported(device) > 0;
     RTC_CATCH_END(nullptr);
     return false;
   }
@@ -60,7 +60,7 @@ RTC_NAMESPACE_BEGIN;
   {
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSYCLDeviceSelector);
-    return rthwifIsSYCLDeviceSupported(device) ? 1 : -1;
+    return rthwifIsSYCLDeviceSupported(device);
     RTC_CATCH_END(nullptr);
     return false;
   }

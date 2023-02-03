@@ -1643,7 +1643,6 @@ namespace embree
         const uint wgSize = 16;        
         const sycl::nd_range<1> nd_range1(wgSize*geom->numGeometryPtrs,sycl::range<1>(wgSize));          
         sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-            //sycl::local_accessor< QuadLeaf, 1> _local_leaf(sycl::range<1>(16),cgh);            
             sycl::local_accessor< LocalNodeData_subgroup, 1> _local_node(sycl::range<1>(3),cgh); //FIXME: reuse _local_leaf
             sycl::local_accessor< gpu::AABB3f, 1> _local_bounds(sycl::range<1>(12),cgh);
             sycl::local_accessor< Vec3f, 1> _gridPos(sycl::range<1>(9*9),cgh);
@@ -1657,15 +1656,12 @@ namespace embree
                                const uint start_x[16] = { 0,1,2, 0,1,2, 3,4,5, 3,4,5, 6,7,6,7};
                                const uint start_y[16] = { 0,0,0, 1,1,1, 0,0,0, 1,1,1, 0,0,1,1};
 
-                               //QuadLeaf *local_leaf               = _local_leaf.get_pointer();
-                               //LocalNodeData_subgroup *local_node = (LocalNodeData_subgroup *)local_leaf;//_local_node.get_pointer();
                                LocalNodeData_subgroup *local_node = _local_node.get_pointer();                               
                                gpu::AABB3f *local_bounds          = _local_bounds.get_pointer();
                                Vec3f *gridPos                     = _gridPos.get_pointer();
 
                                LCGBP_State &state = ((LCGBP_State*)(geom->compressedGeometryPtrsBuffer))[ID];
                                const LCGBP *const lcgbp = state.lcgbp;
-                               const LODEdgeLevel lod_diff_levels = state.lod_diff_levels;
                                const uint lgcbp_start_x = state.start_x;
                                const uint lgcbp_start_y = state.start_y;                               
                                const uint lgcbp_step = state.step;
@@ -1687,45 +1683,65 @@ namespace embree
                                sub_group_barrier();
                                
                                /* ---- fix cracks if necessary ---- */
+                               if (unlikely(state.lod_diff_levels))
                                {
                                  const uint i = subgroupLocalID;
-                                 
-                                 if (unlikely(lod_diff_levels.top))
+                                 const uint diff_top    = state.get_lod_diff_level(0);
+                                 const uint diff_right  = state.get_lod_diff_level(1);
+                                 const uint diff_bottom = state.get_lod_diff_level(2);
+                                 const uint diff_left   = state.get_lod_diff_level(3);
+                                   
+                                 if (unlikely(diff_top))
                                  {
-                                   const uint diff = lod_diff_levels.top;
-                                   const uint index = (i>>diff)<<diff;
+                                   const uint index = (i>>diff_top)<<diff_top;
                                    const Vec3f p = gridPos[index];
                                    sub_group_barrier();
-                                   if (i>=1 && i<8)
+                                   if (i>0 && i<8)
                                      gridPos[i] = p; 
                                  }
-                                 if (unlikely(lod_diff_levels.right))
+                                 if (unlikely(diff_right))
                                  {
-                                   const uint diff = lod_diff_levels.right;
-                                   const uint index = (i>>diff)<<diff;
+                                   const uint index = (i>>diff_right)<<diff_right;
                                    const Vec3f p = gridPos[index*9+8];
-                                   if (i>=1 && i<8)
+                                   if (i>0 && i<8)
                                      gridPos[i*9+8] = p; 
                                  }
-                                 if (unlikely(lod_diff_levels.bottom))
+                                 if (unlikely(diff_bottom))
                                  {
-                                   const uint diff = lod_diff_levels.bottom;
-                                   const uint index = (i>>diff)<<diff;
+                                   const uint index = (i>>diff_bottom)<<diff_bottom;
                                    const Vec3f p = gridPos[8*9+index];
-                                   if (i>=1 && i<8)
+                                   if (i>0 && i<8)
                                      gridPos[8*9+i] = p;                                  
                                  }
-                                 if (unlikely(lod_diff_levels.left))
+                                 if (unlikely(diff_left))
                                  {
-                                   const uint diff = lod_diff_levels.left;
-                                   const uint index = (i>>diff)<<diff;
+                                   const uint index = (i>>diff_left)<<diff_left;
                                    const Vec3f p = gridPos[index*9];
-                                   if (i>=1 && i<8)
+                                   if (i>0 && i<8)
                                      gridPos[i*9] = p;                                 
+                                 }
+
+                                 sub_group_barrier();
+                                 if (state.blend)
+                                 {
+                                   const float blend_factor = (uint)state.blend / 255.0f;
+                                   const uint x = subgroupLocalID;                                   
+                                   if (x>0 && x<8 && (x%2))
+                                     for (uint y=1;y<8;y+=2)
+                                     {
+                                       const uint blend_x = x + ((x < 4) ? 1 : -1);
+                                       const uint blend_y = y + ((y < 4) ? 1 : -1);
+                                       //if (ID == 1)
+                                       //  PRINT4(x,y,blend_x,blend_y);
+                                       
+                                       const Vec3f blend_v = lerp(gridPos[blend_y*9+blend_x],gridPos[y*9+x],blend_factor);
+                                       gridPos[y*9+x] = blend_v;
+                                   }
+                                   
+                                   
                                  }
                                }
 
-                               sub_group_barrier();
                                
                                /* --------------------------------- */
                                
@@ -1742,13 +1758,7 @@ namespace embree
                                  const uint geomID = lcgID;
                                  const uint primID = (ID << RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT) | 2*(y*RTC_LOSSY_COMPRESSED_GRID_QUAD_RES+x) ; //y*8+x; 
 
-                                 //local_leaf[subgroupLocalID] = QuadLeaf( p0,p1,p3,p2, 3,2,1, 0, geomID, primID, primID+1, GeometryFlags::OPAQUE, -1, /*i == (numChildren-1)*/ true );
-                                 //sub_group_barrier();
-                                 //copyCLs_from_SLM_to_GlobalMemory(leaf,local_leaf,16);
-
                                  leaf[subgroupLocalID] = QuadLeafData( p0,p1,p3,p2, 3,2,1, 0, geomID, primID, primID+1, GeometryFlags::OPAQUE, -1);
-
-                                 //sub_group_barrier();
                                  
                                  gpu::AABB3f quad_bounds( to_float3(p0) );
                                  quad_bounds.extend( to_float3(p1) );
@@ -3065,17 +3075,13 @@ namespace embree
       const uint wgSize = 256;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(leaves,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-          sycl::local_accessor< QuadLeaf, 1> _localLeaf(sycl::range<1>(wgSize),cgh);
           cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                            {
                              const uint globalID = item.get_global_id(0);
-                             const uint localID  = item.get_local_id(0);
-                             QuadLeaf *localLeaf = _localLeaf.get_pointer();
-                             bool valid = false;
-                             QuadLeaf *qleaf = nullptr;
+                             QuadLeafData*qleaf = nullptr;
                              if (globalID < leaves)                                                                        
                              {
-                               qleaf = (QuadLeaf *)globals->nodeBlockPtr(leafGenData[globalID].blockID);
+                               qleaf = (QuadLeafData *)globals->nodeBlockPtr(leafGenData[globalID].blockID);
                                const uint geomID = leafGenData[globalID].geomID & GEOMID_MASK;
                                const RTHWIF_GEOMETRY_DESC *const geometryDesc = geometries[geomID];                                 
                                if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_TRIANGLES)
@@ -3084,7 +3090,6 @@ namespace embree
                                  // ====================                           
                                  // === TriangleMesh ===
                                  // ====================                                                                        
-                                 valid = true;                                   
                                  const uint primID0 = leafGenData[globalID].primID;
                                  const uint primID1 = primID0 + (leafGenData[globalID].geomID >> PAIR_OFFSET_SHIFT);                                   
                                  RTHWIF_GEOMETRY_TRIANGLES_DESC* triMesh = (RTHWIF_GEOMETRY_TRIANGLES_DESC*)geometryDesc;
@@ -3102,15 +3107,13 @@ namespace embree
                                    const uint p3_index = try_pair_triangles(uint3(tri.v0,tri.v1,tri.v2),uint3(tri1.v0,tri1.v1,tri1.v2),lb0,lb1,lb2);
                                    p3 = getVec3f(*triMesh,((uint*)&tri1)[p3_index]); // FIXME: might cause tri1 to store to mem first
                                  }
-
-                                 localLeaf[localID] = QuadLeaf( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, (GeometryFlags)triMesh->geometryFlags, triMesh->geometryMask, /*i == (numChildren-1)*/ true );
+                                 *qleaf = QuadLeafData( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, (GeometryFlags)triMesh->geometryFlags, triMesh->geometryMask);
                                }
                                else if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_QUADS)
                                {
                                  // ================                           
                                  // === QuadMesh ===
                                  // ================
-                                 valid = true;                                                                    
                                  const uint primID0 = leafGenData[globalID].primID;                                   
                                  RTHWIF_GEOMETRY_QUADS_DESC* quadMesh = (RTHWIF_GEOMETRY_QUADS_DESC*)geometryDesc;                             
                                  const RTHWIF_QUAD_INDICES &quad = getQuadDesc(*quadMesh,primID0);
@@ -3118,7 +3121,7 @@ namespace embree
                                  const Vec3f p1 = getVec3f(*quadMesh,quad.v1);
                                  const Vec3f p2 = getVec3f(*quadMesh,quad.v2);                                       
                                  const Vec3f p3 = getVec3f(*quadMesh,quad.v3);                                                                          
-                                 localLeaf[localID] = QuadLeaf( p0,p1,p3,p2, 3,2,1, 0, geomID, primID0, primID0, (GeometryFlags)quadMesh->geometryFlags, quadMesh->geometryMask, /*i == (numChildren-1)*/ true );
+                                 *qleaf = QuadLeafData( p0,p1,p3,p2, 3,2,1, 0, geomID, primID0, primID0, (GeometryFlags)quadMesh->geometryFlags, quadMesh->geometryMask);
                                }
                              
                                else if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE)
@@ -3163,18 +3166,19 @@ namespace embree
                            /* === write out to global memory === */
                            /* ================================== */
                                                                       
-                           const uint subgroupLocalID = get_sub_group_local_id();
-                           uint mask = sub_group_ballot(valid);
-                           while(mask)
-                           {
-                             const uint index = sycl::ctz(mask);
-                             mask &= mask-1;
-                             uint ID = sub_group_broadcast(localID,index);
-                             uint* dest = sub_group_broadcast((uint*)qleaf,index);
-                             uint* source = (uint*)&localLeaf[ID];
-                             const uint v = source[subgroupLocalID];                                                                        
-                             sub_group_store(dest,v);
-                           }                                                                                                            
+                           /* const uint subgroupLocalID = get_sub_group_local_id(); */
+                           /* uint mask = sub_group_ballot(valid); */
+                           /* while(mask) */
+                           /* { */
+                           /*   const uint index = sycl::ctz(mask); */
+                           /*   mask &= mask-1; */
+                           /*   uint ID = sub_group_broadcast(localID,index); */
+                           /*   uint* dest = sub_group_broadcast((uint*)qleaf,index); */
+                           /*   uint* source = (uint*)&localLeaf[ID]; */
+                           /*   const uint v = source[subgroupLocalID]; */
+                           /*   sub_group_store(dest,v); */
+                           /* } */
+                             
                            });
 		  
         });

@@ -342,7 +342,7 @@ namespace embree {
     rtcSetSceneBuildQuality(data.g_scene,RTC_BUILD_QUALITY_LOW);
     rtcSetSceneFlags(data.g_scene,RTC_SCENE_FLAG_DYNAMIC);
 
-#if 1    
+#if 1
     PRINT(g_ispc_scene->numGeometries);
     PRINT(g_ispc_scene->numMaterials);
     
@@ -532,7 +532,7 @@ namespace embree {
 #if defined(EMBREE_SYCL_TUTORIAL)
     RenderMode rendering_mode = user_rendering_mode;    
     LCGBP_Scene *lcgbp_scene = global_lcgbp_scene;
-    uint spp = user_spp;
+    uint spp = 1; //user_spp;
     TutorialData ldata = data;
     sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
                                                    const sycl::nd_range<2> nd_range = make_nd_range(height,width);
@@ -614,6 +614,8 @@ namespace embree {
                                  const ISPCCamera& camera)
   {
 #if defined(EMBREE_SYCL_TUTORIAL)
+
+    uint blend = max(255-((int)user_spp-1)*4,0);
     
     LCGBP_Scene *local_lcgbp_scene = global_lcgbp_scene;
     sycl::event init_event =  global_gpu_queue->submit([&](sycl::handler &cgh) {
@@ -641,9 +643,9 @@ namespace embree {
                                                                                              else if (i == 1)
                                                                                                edgeLevels = LODEdgeLevel(1,1,1,0);
                                                                                              else if (i == 2)
-                                                                                               edgeLevels = LODEdgeLevel(0,2,2,2);
+                                                                                               edgeLevels = LODEdgeLevel(0,1,1,1);
                                                                                              else if (i == 3)
-                                                                                               edgeLevels = LODEdgeLevel(1,2,2,2);
+                                                                                               edgeLevels = LODEdgeLevel(1,1,1,1);
 #endif                                                                                             
                                                                                                     
                                                                                              
@@ -655,7 +657,7 @@ namespace embree {
                                                                                              uint index = 0;
                                                                                              if (lod_level == 0)
                                                                                              {
-                                                                                               local_lcgbp_scene->lcgbp_state[offset+index] = LCGBP_State(&local_lcgbp_scene->lcgbp[i],0,0,4,index,edgeLevels);
+                                                                                               local_lcgbp_scene->lcgbp_state[offset+index] = LCGBP_State(&local_lcgbp_scene->lcgbp[i],0,0,4,index,edgeLevels,blend);
                                                                                                index++;
                                                                                              }
                                                                                              else if (lod_level == 1)
@@ -663,7 +665,7 @@ namespace embree {
                                                                                                for (uint y=0;y<2;y++)
                                                                                                  for (uint x=0;x<2;x++)
                                                                                                  {
-                                                                                                   local_lcgbp_scene->lcgbp_state[offset+index] = LCGBP_State(&local_lcgbp_scene->lcgbp[i],x*16,y*16,2,index,edgeLevels);
+                                                                                                   local_lcgbp_scene->lcgbp_state[offset+index] = LCGBP_State(&local_lcgbp_scene->lcgbp[i],x*16,y*16,2,index,edgeLevels,blend);
                                                                                                    index++;
                                                                                                  }
                                                                                              }
@@ -672,7 +674,7 @@ namespace embree {
                                                                                                for (uint y=0;y<4;y++)
                                                                                                  for (uint x=0;x<4;x++)
                                                                                                  {
-                                                                                                   local_lcgbp_scene->lcgbp_state[offset+index] = LCGBP_State(&local_lcgbp_scene->lcgbp[i],x*8,y*8,1,index,edgeLevels);
+                                                                                                   local_lcgbp_scene->lcgbp_state[offset+index] = LCGBP_State(&local_lcgbp_scene->lcgbp[i],x*8,y*8,1,index,edgeLevels,blend);
                                                                                                    index++;
                                                                                                  }
                                                                                              }
@@ -692,6 +694,7 @@ namespace embree {
     rtcCommitScene (data.g_scene);
 
     double dt0 = (getSeconds()-t0)*1000.0;
+                                            
     avg_bvh_build_time.add(dt0);
 #endif
   }

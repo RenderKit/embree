@@ -227,11 +227,11 @@ namespace embree {
   {
     LCGBP *lcgbp;
     uchar start_x, start_y, step, localID;
-    LODEdgeLevel lod_diff_levels;
+    uchar blend, lod_diff_levels, tmp0, tmp1;
 
     LCGBP_State() {}
 
-    LCGBP_State(LCGBP *lcgbp, const uint start_x, const uint start_y, const uint step, const uint localID, const LODEdgeLevel &lod_levels) : lcgbp(lcgbp), start_x(start_x), start_y(start_y), step(step), localID(localID)
+    LCGBP_State(LCGBP *lcgbp, const uint start_x, const uint start_y, const uint step, const uint localID, const LODEdgeLevel &lod_levels, const uint blend) : lcgbp(lcgbp), start_x(start_x), start_y(start_y), step(step), localID(localID), blend(blend), lod_diff_levels(0), tmp0(0), tmp1(0)
     {
       uint border_flags = 0;
       border_flags |= start_x == 0 ? LEFT_BORDER : 0;
@@ -241,30 +241,26 @@ namespace embree {
 
       const uint lod_level = lod_levels.level();
 
-      lod_diff_levels = LODEdgeLevel(0);
-      
       if (border_flags & TOP_BORDER)
-        lod_diff_levels.top = lod_level - lod_levels.top;
+        lod_diff_levels |= (lod_level - lod_levels.top) << 0;
 
       if (border_flags & RIGHT_BORDER)
-        lod_diff_levels.right = lod_level - lod_levels.right;
+        lod_diff_levels |= (lod_level - lod_levels.right) << 2;
 
       if (border_flags & BOTTOM_BORDER)
-        lod_diff_levels.bottom = lod_level - lod_levels.bottom;
+        lod_diff_levels |= (lod_level - lod_levels.bottom) << 4;
 
       if (border_flags & LEFT_BORDER)
-        lod_diff_levels.left = lod_level - lod_levels.left;      
+        lod_diff_levels |= (lod_level - lod_levels.left) << 6;      
     }
 
     __forceinline bool cracksFixed()
     {
-      uchar max_diff_level = 0;
-      max_diff_level = max(max_diff_level,lod_diff_levels.top);
-      max_diff_level = max(max_diff_level,lod_diff_levels.right);
-      max_diff_level = max(max_diff_level,lod_diff_levels.bottom);
-      max_diff_level = max(max_diff_level,lod_diff_levels.left);
-      return max_diff_level != 0;
+      return lod_diff_levels != 0;
     }
+
+    __forceinline uchar get_lod_diff_level(const uint index) const { return (lod_diff_levels >> (index*2)) & 3; }
+    
     
   };
   
