@@ -636,6 +636,19 @@ STBIWDEF int stbi_write_tga(char const *filename, int x, int y, int comp, const 
 
 #ifndef STBI_WRITE_NO_STDIO
 
+#if defined(__INTEL_LLVM_COMPILER) && defined(WIN32)
+inline float my_frexp(float value, int* exp)
+{
+   // using the Intel(R) oneAPI DPC++/C++ Compiler with -no-intel-libs results
+   // in an unresolved external symbol "__imp_frexp" error and therefore we
+   // provide a the manual implemetation referenced here
+   // https://en.cppreference.com/w/c/numeric/math/frexp in this case
+   static_assert(FLT_RADIX == 2, "custom implementation of frexp only works for base 2 floating point representations");
+   *exp = (value == 0) ? 0 : (int)(1 + logb(value));
+   return scalbn(value, -(*exp));
+}
+#endif
+
 static void stbiw__linear_to_rgbe(unsigned char *rgbe, float *linear)
 {
    int exponent;
@@ -644,7 +657,11 @@ static void stbiw__linear_to_rgbe(unsigned char *rgbe, float *linear)
    if (maxcomp < 1e-32f) {
       rgbe[0] = rgbe[1] = rgbe[2] = rgbe[3] = 0;
    } else {
+#if defined(__INTEL_LLVM_COMPILER) && defined(WIN32)
+      float normalize = (float) my_frexp(maxcomp, &exponent) * 256.0f/maxcomp;
+#else
       float normalize = (float) frexp(maxcomp, &exponent) * 256.0f/maxcomp;
+#endif
 
       rgbe[0] = (unsigned char)(linear[0] * normalize);
       rgbe[1] = (unsigned char)(linear[1] * normalize);
