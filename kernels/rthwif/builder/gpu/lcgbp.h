@@ -159,6 +159,7 @@ namespace embree {
 
 
     BilinearPatch patch;
+    int neighbor_top,neighbor_right,neighbor_bottom,neighbor_left;
     Vec2f u_range;
     Vec2f v_range;        
     uint ID;
@@ -218,7 +219,7 @@ namespace embree {
         }      
     }
     
-    __forceinline LCGBP(const Vec3f &v0,const Vec3f &v1,const Vec3f &v2,const Vec3f &v3,const uint ID, const Vec2f& u_range,const Vec2f& v_range) : patch(v0,v1,v2,v3),u_range(u_range),v_range(v_range),ID(ID) {}
+    __forceinline LCGBP(const Vec3f &v0,const Vec3f &v1,const Vec3f &v2,const Vec3f &v3,const uint ID, const Vec2f& u_range,const Vec2f& v_range, const uint neighbor_top, const int neighbor_right, const int neighbor_bottom, const int neighbor_left) : patch(v0,v1,v2,v3),neighbor_top(neighbor_top),neighbor_right(neighbor_right),neighbor_bottom(neighbor_bottom),neighbor_left(neighbor_left),u_range(u_range),v_range(v_range),ID(ID)  {}
     
   };
 

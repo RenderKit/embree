@@ -1720,28 +1720,27 @@ namespace embree
                                    if (i>0 && i<8)
                                      gridPos[i*9] = p;                                 
                                  }
-
-                                 sub_group_barrier();
-                                 if (state.blend)
-                                 {
-                                   const float blend_factor = (uint)state.blend / 255.0f;
-                                   const uint x = subgroupLocalID;                                   
-                                   if (x>0 && x<8 && (x%2))
-                                     for (uint y=1;y<8;y+=2)
-                                     {
-                                       const uint blend_x = x + ((x < 4) ? 1 : -1);
-                                       const uint blend_y = y + ((y < 4) ? 1 : -1);
-                                       //if (ID == 1)
-                                       //  PRINT4(x,y,blend_x,blend_y);
-                                       
-                                       const Vec3f blend_v = lerp(gridPos[blend_y*9+blend_x],gridPos[y*9+x],blend_factor);
-                                       gridPos[y*9+x] = blend_v;
-                                   }
-                                   
-                                   
-                                 }
                                }
 
+
+                               if (state.blend)
+                               {
+                                 sub_group_barrier();                                   
+                                 const float blend_factor = (uint)(state.blend) / 255.0f;
+                                 const uint x = subgroupLocalID;                                   
+                                 if (x>0 && x<8 && (x%2))
+                                   for (uint y=1;y<8;y+=2)
+                                   {
+                                     const uint blend_x = x + ((x < 4) ? 1 : -1);
+                                     const uint blend_y = y + ((y < 4) ? 1 : -1);
+                                     //if (ID == 1)
+                                     //  PRINT4(x,y,blend_x,blend_y);
+                                       
+                                     const Vec3f blend_v = lerp(gridPos[blend_y*9+blend_x],gridPos[y*9+x],1.0f - blend_factor);
+                                     gridPos[y*9+x] = blend_v;
+                                   }
+                                 sub_group_barrier();                                                                      
+                               }
                                
                                /* --------------------------------- */
                                
