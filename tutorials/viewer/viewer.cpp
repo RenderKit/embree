@@ -6,8 +6,10 @@
 #include "../common/tutorial/benchmark_render.h"
 
 #if defined(EMBREE_SYCL_TUTORIAL)
+#  define NAME "viewer_sycl (beta)"
 #  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
 #else
+#  define NAME "viewer"
 #  define FEATURES FEATURE_RTCORE
 #endif
 
@@ -31,7 +33,7 @@ namespace embree
   struct Tutorial : public SceneLoadingTutorialApplication
   {
     Tutorial()
-      : SceneLoadingTutorialApplication("viewer",FEATURES)
+      : SceneLoadingTutorialApplication(NAME,FEATURES)
     {
 #if RTC_MIN_WIDTH
       registerOption("min-width", [] (Ref<ParseStream> cin, const FileName& path) {

@@ -5,8 +5,10 @@
 #include "../common/tutorial/benchmark_render.h"
 
 #if defined(EMBREE_SYCL_TUTORIAL)
+#  define NAME "user_geometry_sycl (beta)"
 #  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
 #else
+#  define NAME "user_geometry"
 #  define FEATURES FEATURE_RTCORE
 #endif
 
@@ -15,7 +17,7 @@ namespace embree
   struct Tutorial : public TutorialApplication 
   {
     Tutorial()
-      : TutorialApplication("user_geometry",FEATURES) 
+      : TutorialApplication(NAME,FEATURES) 
     {
       /* set default camera */
       //camera.from = Vec3fa(0.8846014142,2.204180241,-0.6649734378);

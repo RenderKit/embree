@@ -2,10 +2,15 @@ Version History
 ---------------
 
 ### Embree 4.0.0
--   This is a major Embree release which adds support for Intel® Arc™ GPUs through SYCL.
--   A small number of API changes were required to get optimal experience and performance on the GPU.
-    See documentation section "Upgrading from Embree 3 to Embree 4" for details.
--   Renamed API include folder from embree3 to embree4
+-   This Embree release adds support for Intel® Arc™ GPUs through SYCL.
+-   The SYCL support of Embree is in beta phase. Current functionality, quality,
+    and GPU performance may not reflect that of the final product. Please read the
+    documentation section "Embree SYCL Known Issues" for known limitations.
+-   Embree CPU support in this release as at Gold level, incorporating the same quality
+    and performance as previous releases.
+-   A small number of API changes were required to get optimal experience and
+    performance on the CPU and GPU. See documentation section "Upgrading from Embree 3 to
+    Embree 4" for details.
 -   rtcIntersect and rtcOccluded function arguments changed slightly.
 -   RTCIntersectContext is renamed to RTCRayQuery context and most members moved to
     new RTCIntersectArguments and RTCOccludedArguments structures.
@@ -23,8 +28,7 @@ Version History
 -   Feature flags enable reducing code complexity for optimal performance on the GPU.
 -   Fixed compilation issues for ARM AArch64 processor under Linux.
 -   Setting default frequency level to SIMD256 for ARM on all platforms.
-    This allows using double pumped NEON execution by enabling
-    EMBREE_ISA_NEON2X in cmake under Linux.
+    This allows using double pumped NEON execution by enabling EMBREE_ISA_NEON2X in cmake under Linux.
 -   Fixed missing end caps of motion blurred line segments.
 -   EMBREE_ISPC_SUPPORT is turned OFF by default.
 -   Embree drops support of the deprecated Intel(R) Compiler. It is replaced by

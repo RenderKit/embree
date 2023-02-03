@@ -5,8 +5,10 @@
 #include "../common/tutorial/benchmark_render.h"
 
 #if defined(EMBREE_SYCL_TUTORIAL)
+#  define NAME "pathtracer_sycl (beta)"
 #  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
 #else
+#  define NAME "pathtracer"
 #  define FEATURES FEATURE_RTCORE
 #endif
 
@@ -21,7 +23,7 @@ namespace embree
   struct Tutorial : public SceneLoadingTutorialApplication
   {
     Tutorial()
-      : SceneLoadingTutorialApplication("pathtracer",FEATURES)
+      : SceneLoadingTutorialApplication(NAME,FEATURES)
     {
       registerOption("spp", [] (Ref<ParseStream> cin, const FileName& path) {
           g_spp = cin->getInt();
