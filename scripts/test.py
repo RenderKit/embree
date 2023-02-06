@@ -505,6 +505,7 @@ def runConfig(config):
     conf.append("-D EMBREE_TUTORIALS_LIBPNG=OFF")
     if OS == "linux" and config["package"] == "ZIP":
       conf.append("-D EMBREE_INSTALL_DEPENDENCIES=ON")
+      conf.append("-D EMBREE_BUILD_GLFW_FROM_SOURCE=ON")
       conf.append("-D EMBREE_ZIP_MODE=ON")
       conf.append("-D CMAKE_SKIP_INSTALL_RPATH=OFF")
       conf.append("-D CMAKE_INSTALL_INCLUDEDIR=include")
@@ -522,6 +523,7 @@ def runConfig(config):
       conf.append("-D CMAKE_INSTALL_BINDIR=bin")
     elif OS == "windows" and config["package"] == "ZIP":
       conf.append("-D EMBREE_INSTALL_DEPENDENCIES=ON")
+      conf.append("-D EMBREE_BUILD_GLFW_FROM_SOURCE=ON")
       conf.append("-D EMBREE_ZIP_MODE=ON")
       conf.append("-D CMAKE_INSTALL_INCLUDEDIR=include")
       conf.append("-D CMAKE_INSTALL_LIBDIR=lib")
