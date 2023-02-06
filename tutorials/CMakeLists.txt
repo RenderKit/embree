@@ -13,37 +13,44 @@ IF (EMBREE_TUTORIALS)
 
 IF (EMBREE_TUTORIALS_GLFW)
 
-  IF (NOT WIN32 OR EMBREE_EXTERNAL_GLFW)
-  
-    FIND_PACKAGE(glfw3 REQUIRED)
-    SET(GLFW_LIBRARY glfw)
-    SET(GLFW_INCLUDE_DIRS)
-    
-  ELSE()
-  
-    # detect and select Win32 or x64
-    IF (CMAKE_SIZEOF_VOID_P EQUAL 8)
-      SET(ARCH x64)
-    ELSE()
-      SET(ARCH Win32)
-    ENDIF()
-  
-    # detect Visual Studio version
-    IF (MSVC12)
-      SET(VCVER vc12)
-    ELSE()
-      SET(VCVER vc14)
-    ENDIF()
-  
-    FIND_PATH(GLFW_INCLUDE_DIRS NAMES GLFW/glfw3.h PATHS common/glfw/include)
-    FIND_LIBRARY(GLFW_LIBRARY glfw3 common/glfw/${ARCH}/${VCVER})
-    MARK_AS_ADVANCED(
-      GLFW_INCLUDE_DIR
-      GLFW_LIBRARY
-    )
+  FIND_PACKAGE(glfw3 QUIET)
 
-    # workaround for internal dpcpp on windows: link to .lib instead .dll
-    STRING(REGEX REPLACE "[.]dll$" ".lib" GLFW_LIBRARY ${GLFW_LIBRARY})
+  IF(NOT glfw3_FOUND OR EMBREE_INSTALL_DEPENDENCIES)
+    CMAKE_MINIMUM_REQUIRED(VERSION 3.14)
+    MESSAGE("-- glfw3 installation not found. download and build from source")
+
+    INCLUDE(FetchContent)
+    SET(FETCHCONTENT_QUIET OFF)
+
+    set(GLFW_BUILD_DOCS OFF CACHE INTERNAL "")
+    set(GLFW_BUILD_EXAMPLES OFF CACHE INTERNAL "")
+    set(GLFW_BUILD_TESTS OFF CACHE INTERNAL "")
+
+    # The patch command first resets the glfw repository to the tag 3.2.1
+    # state. That is because CMake wants to apply the patch again when CMake
+    # needs to reconfigure, which fails.
+    FetchContent_Declare(
+      glfw
+      GIT_REPOSITORY https://github.com/glfw/glfw
+      GIT_TAG 3.2.1
+      PATCH_COMMAND git reset --hard && git apply -v ${CMAKE_CURRENT_SOURCE_DIR}/common/glfw/glfw.patch
+    )
+    FetchContent_MakeAvailable(glfw)
+
+    # We want to build glfw and link statically, so no need to
+    # install it as part of the Embree install targets.
+    if (IS_DIRECTORY "${glfw_SOURCE_DIR}")
+      set_property(DIRECTORY ${glfw_SOURCE_DIR} PROPERTY EXCLUDE_FROM_ALL YES)
+    endif()
+
+    MARK_AS_ADVANCED(FETCHCONTENT_BASE_DIR)
+    MARK_AS_ADVANCED(FETCHCONTENT_FULLY_DISCONNECTED)
+    MARK_AS_ADVANCED(FETCHCONTENT_QUIET)
+    MARK_AS_ADVANCED(FETCHCONTENT_SOURCE_DIR_GLFW)
+    MARK_AS_ADVANCED(FETCHCONTENT_UPDATES_DISCONNECTED)
+    MARK_AS_ADVANCED(FETCHCONTENT_UPDATES_DISCONNECTED_GLFW)
+  ELSE()
+    MESSAGE("-- glfw3 installation found.")
   ENDIF()
 
   FIND_PACKAGE(OpenGL)
@@ -52,8 +59,9 @@ IF (EMBREE_TUTORIALS_GLFW)
   ENDIF()
 
   ADD_DEFINITIONS(-DUSE_GLFW)
-  INCLUDE_DIRECTORIES(${OPENGL_INCLUDE_DIR} ${GLFW_INCLUDE_DIRS})
 
+  # all libraries we have to link against when using a window/gui
+  SET(GUI_LIBRARIES imgui glfw ${OPENGL_LIBRARIES})
 ENDIF()
 
 ADD_SUBDIRECTORY(common)
