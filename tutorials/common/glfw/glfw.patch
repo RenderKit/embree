@@ -1,96 +1,109 @@
-From e022142abd924a8c31cd38f73fa84c957dacf38e Mon Sep 17 00:00:00 2001
+From 8dfd5804447a1f35c15e650737fee3694bc71f26 Mon Sep 17 00:00:00 2001
 From: Florian Reibold <florian.reibold@intel.com>
-Date: Fri, 3 Feb 2023 20:34:13 +0100
-Subject: [PATCH] replace LoadLibraryA with LoadLibraryExA and restrict lookup
- to SYSTEM32 on Windows
+Date: Mon, 6 Feb 2023 17:29:44 +0100
+Subject: [PATCH] fix LoadLibraryA
 
 ---
+ src/null_platform.h  |  2 +-
  src/wgl_context.c    |  2 +-
  src/win32_init.c     | 12 ++++++------
  src/win32_platform.h |  2 +-
- 3 files changed, 8 insertions(+), 8 deletions(-)
+ 4 files changed, 9 insertions(+), 9 deletions(-)
 
+diff --git a/src/null_platform.h b/src/null_platform.h
+index 708975d1..d916b922 100644
+--- a/src/null_platform.h
++++ b/src/null_platform.h
+@@ -43,7 +43,7 @@
+ #include "null_joystick.h"
+ 
+ #if defined(_GLFW_WIN32)
+- #define _glfw_dlopen(name) LoadLibraryA(name)
++ #define _glfw_dlopen(name) LoadLibraryExA(name,NULL,LOAD_LIBRARY_SEARCH_SYSTEM32)
+  #define _glfw_dlclose(handle) FreeLibrary((HMODULE) handle)
+  #define _glfw_dlsym(handle, name) GetProcAddress((HMODULE) handle, name)
+ #else
 diff --git a/src/wgl_context.c b/src/wgl_context.c
-index 696c4cba..4ea378ce 100644
+index 72ad11de..5c42fa81 100644
 --- a/src/wgl_context.c
 +++ b/src/wgl_context.c
-@@ -427,7 +427,7 @@ GLFWbool _glfwInitWGL(void)
+@@ -416,7 +416,7 @@ GLFWbool _glfwInitWGL(void)
      if (_glfw.wgl.instance)
          return GLFW_TRUE;
  
 -    _glfw.wgl.instance = LoadLibraryA("opengl32.dll");
-+    _glfw.wgl.instance = LoadLibraryExA("opengl32.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
++    _glfw.wgl.instance = LoadLibraryExA("opengl32.dll",NULL,LOAD_LIBRARY_SEARCH_SYSTEM32);
      if (!_glfw.wgl.instance)
      {
-         _glfwInputError(GLFW_PLATFORM_ERROR, "WGL: Failed to load opengl32.dll");
+         _glfwInputErrorWin32(GLFW_PLATFORM_ERROR,
 diff --git a/src/win32_init.c b/src/win32_init.c
-index b2a0a679..8d4b7e18 100644
+index 885f32fa..5e698cc2 100644
 --- a/src/win32_init.c
 +++ b/src/win32_init.c
-@@ -64,7 +64,7 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved)
- //
- static GLFWbool loadLibraries(void)
- {
--    _glfw.win32.winmm.instance = LoadLibraryA("winmm.dll");
-+    _glfw.win32.winmm.instance = LoadLibraryExA("winmm.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
-     if (!_glfw.win32.winmm.instance)
-     {
-         _glfwInputError(GLFW_PLATFORM_ERROR, "Win32: Failed to load winmm.dll");
-@@ -74,7 +74,7 @@ static GLFWbool loadLibraries(void)
-     _glfw.win32.winmm.timeGetTime = (TIMEGETTIME_T)
-         GetProcAddress(_glfw.win32.winmm.instance, "timeGetTime");
+@@ -82,7 +82,7 @@ static GLFWbool loadLibraries(void)
+         return GLFW_FALSE;
+     }
  
 -    _glfw.win32.user32.instance = LoadLibraryA("user32.dll");
-+    _glfw.win32.user32.instance = LoadLibraryExA("user32.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
++    _glfw.win32.user32.instance = LoadLibraryExA("user32.dll",NULL,LOAD_LIBRARY_SEARCH_SYSTEM32);
      if (!_glfw.win32.user32.instance)
      {
-         _glfwInputError(GLFW_PLATFORM_ERROR, "Win32: Failed to load user32.dll");
-@@ -86,7 +86,7 @@ static GLFWbool loadLibraries(void)
-     _glfw.win32.user32.ChangeWindowMessageFilterEx = (CHANGEWINDOWMESSAGEFILTEREX_T)
-         GetProcAddress(_glfw.win32.user32.instance, "ChangeWindowMessageFilterEx");
+         _glfwInputErrorWin32(GLFW_PLATFORM_ERROR,
+@@ -105,7 +105,7 @@ static GLFWbool loadLibraries(void)
+     _glfw.win32.user32.GetSystemMetricsForDpi_ = (PFN_GetSystemMetricsForDpi)
+         GetProcAddress(_glfw.win32.user32.instance, "GetSystemMetricsForDpi");
  
 -    _glfw.win32.dinput8.instance = LoadLibraryA("dinput8.dll");
-+    _glfw.win32.dinput8.instance = LoadLibraryExA("dinput8.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
++    _glfw.win32.dinput8.instance = LoadLibraryExA("dinput8.dll",NULL,LOAD_LIBRARY_SEARCH_SYSTEM32);
      if (_glfw.win32.dinput8.instance)
      {
-         _glfw.win32.dinput8.DirectInput8Create = (DIRECTINPUT8CREATE_T)
-@@ -107,7 +107,7 @@ static GLFWbool loadLibraries(void)
+         _glfw.win32.dinput8.Create = (PFN_DirectInput8Create)
+@@ -126,7 +126,7 @@ static GLFWbool loadLibraries(void)
  
          for (i = 0;  names[i];  i++)
          {
 -            _glfw.win32.xinput.instance = LoadLibraryA(names[i]);
-+            _glfw.win32.xinput.instance = LoadLibraryExA(names[i], NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
++            _glfw.win32.xinput.instance = LoadLibraryExA(names[i],NULL,LOAD_LIBRARY_SEARCH_SYSTEM32);
              if (_glfw.win32.xinput.instance)
              {
-                 _glfw.win32.xinput.XInputGetCapabilities = (XINPUTGETCAPABILITIES_T)
-@@ -120,7 +120,7 @@ static GLFWbool loadLibraries(void)
+                 _glfw.win32.xinput.GetCapabilities = (PFN_XInputGetCapabilities)
+@@ -139,7 +139,7 @@ static GLFWbool loadLibraries(void)
          }
      }
  
 -    _glfw.win32.dwmapi.instance = LoadLibraryA("dwmapi.dll");
-+    _glfw.win32.dwmapi.instance = LoadLibraryExA("dwmapi.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
++    _glfw.win32.dwmapi.instance = LoadLibraryExA("dwmapi.dll",NULL,LOAD_LIBRARY_SEARCH_SYSTEM32);
      if (_glfw.win32.dwmapi.instance)
      {
-         _glfw.win32.dwmapi.DwmIsCompositionEnabled = (DWMISCOMPOSITIONENABLED_T)
-@@ -129,7 +129,7 @@ static GLFWbool loadLibraries(void)
-             GetProcAddress(_glfw.win32.dwmapi.instance, "DwmFlush");
+         _glfw.win32.dwmapi.IsCompositionEnabled = (PFN_DwmIsCompositionEnabled)
+@@ -152,7 +152,7 @@ static GLFWbool loadLibraries(void)
+             GetProcAddress(_glfw.win32.dwmapi.instance, "DwmGetColorizationColor");
      }
  
 -    _glfw.win32.shcore.instance = LoadLibraryA("shcore.dll");
-+    _glfw.win32.shcore.instance = LoadLibraryExA("shcore.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
++    _glfw.win32.shcore.instance = LoadLibraryExA("shcore.dll",NULL,LOAD_LIBRARY_SEARCH_SYSTEM32);
      if (_glfw.win32.shcore.instance)
      {
-         _glfw.win32.shcore.SetProcessDpiAwareness = (SETPROCESSDPIAWARENESS_T)
+         _glfw.win32.shcore.SetProcessDpiAwareness_ = (PFN_SetProcessDpiAwareness)
+@@ -161,7 +161,7 @@ static GLFWbool loadLibraries(void)
+             GetProcAddress(_glfw.win32.shcore.instance, "GetDpiForMonitor");
+     }
+ 
+-    _glfw.win32.ntdll.instance = LoadLibraryA("ntdll.dll");
++    _glfw.win32.ntdll.instance = LoadLibraryExA("ntdll.dll",NULL,LOAD_LIBRARY_SEARCH_SYSTEM32);
+     if (_glfw.win32.ntdll.instance)
+     {
+         _glfw.win32.ntdll.RtlVerifyVersionInfo_ = (PFN_RtlVerifyVersionInfo)
 diff --git a/src/win32_platform.h b/src/win32_platform.h
-index c0dcff15..7e538e79 100644
+index bf703d7e..55b8425b 100644
 --- a/src/win32_platform.h
 +++ b/src/win32_platform.h
-@@ -210,7 +210,7 @@ typedef VkBool32 (APIENTRY *PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR)(
- 
- #define _GLFW_WNDCLASSNAME L"GLFW30"
+@@ -289,7 +289,7 @@ typedef VkBool32 (APIENTRY *PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR)(
+  #define _GLFW_WNDCLASSNAME L"GLFW30"
+ #endif
  
 -#define _glfw_dlopen(name) LoadLibraryA(name)
-+#define _glfw_dlopen(name) LoadLibraryExA(name, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32)
++#define _glfw_dlopen(name) LoadLibraryExA(name,NULL,LOAD_LIBRARY_SEARCH_SYSTEM32)
  #define _glfw_dlclose(handle) FreeLibrary((HMODULE) handle)
  #define _glfw_dlsym(handle, name) GetProcAddress((HMODULE) handle, name)
  

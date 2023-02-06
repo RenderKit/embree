@@ -23,19 +23,19 @@ IF (EMBREE_TUTORIALS_GLFW)
     MESSAGE("-- glfw3 installation not found. download and build from source")
 
     INCLUDE(FetchContent)
-    SET(FETCHCONTENT_QUIET OFF)
+    SET(FETCHCONTENT_QUIET ON)
 
     set(GLFW_BUILD_DOCS OFF CACHE INTERNAL "")
     set(GLFW_BUILD_EXAMPLES OFF CACHE INTERNAL "")
     set(GLFW_BUILD_TESTS OFF CACHE INTERNAL "")
 
-    # The patch command first resets the glfw repository to the tag 3.2.1
-    # state. That is because CMake wants to apply the patch again when CMake
-    # needs to reconfigure, which fails.
+    # The patch command first resets the glfw repository to a clean state. That
+    # is because CMake wants to apply the patch again when CMake needs to
+    # reconfigure, which fails.
     FetchContent_Declare(
       glfw
       GIT_REPOSITORY https://github.com/glfw/glfw
-      GIT_TAG 3.2.1
+      GIT_TAG 3.3.8
       PATCH_COMMAND git reset --hard && git apply -v ${CMAKE_CURRENT_SOURCE_DIR}/common/glfw/glfw.patch
     )
     FetchContent_MakeAvailable(glfw)
