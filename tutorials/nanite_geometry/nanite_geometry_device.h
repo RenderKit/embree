@@ -16,7 +16,9 @@ namespace embree {
     RENDER_DEBUG_QUADS    = 3,
     RENDER_DEBUG_LOD      = 4,
     RENDER_DEBUG_CRACK_FIXING = 5,
-    RENDER_DEBUG_UV = 6,        
+    RENDER_DEBUG_CLOD = 6,
+    RENDER_DEBUG_TEXTURE = 7,        
+    
   };
   
 struct TutorialData

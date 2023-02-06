@@ -3,8 +3,6 @@
 
 #include "nanite_geometry_device.h"
 
-#define MIN_LOD_DISTANCE 10
-
 #if defined(USE_GLFW)
 
 /* include GLFW for window management */
@@ -101,11 +99,11 @@ namespace embree {
   };
 
 
-  __forceinline LODPatchLevel getLODPatchLevel(LCGBP &current,const ISPCCamera& camera, const uint width, const uint height)
+  __forceinline LODPatchLevel getLODPatchLevel(const float MIN_LOD_DISTANCE,LCGBP &current,const ISPCCamera& camera, const uint width, const uint height)
   {
     const float minDistance = MIN_LOD_DISTANCE;
-    const uint startRange[LOD_LEVELS] = { 0,1,3 };
-    const uint   endRange[LOD_LEVELS] = { 1,3,7 };    
+    const uint startRange[LOD_LEVELS+1] = { 0,1,3,7};
+    const uint   endRange[LOD_LEVELS+1] = { 1,3,7,15};    
     
     const Vec3f v0 = current.patch.v0;
     const Vec3f v1 = current.patch.v1;
@@ -126,16 +124,14 @@ namespace embree {
           segment = i;
           break;
         }
-    if (segment == -1) segment = LOD_LEVELS-1;
-
-    float blend = min((dist_minDistance-startRange[segment])/(endRange[segment]-startRange[segment]),1.0f);
-    
-    //PRINT(dist);
-    //PRINT(dist_minDistance);
-    //PRINT(dist_level);
-    //PRINT(segment);
-    //PRINT(blend);
-    
+    float blend = 0.0f;
+    if (segment == -1)
+      segment = LOD_LEVELS-1;
+    else if (segment != 0)
+    {
+      blend = min((dist_minDistance-startRange[segment])/(endRange[segment]-startRange[segment]),1.0f);
+      segment--;
+    }    
     return LODPatchLevel(LOD_LEVELS-1-segment,blend);    
   }
   
@@ -224,6 +220,9 @@ namespace embree {
     uint geomID;
 
     Texture* map_Kd;
+
+    BBox3f bounds;
+    float minLODDistance;
     
     LCGBP_Scene(const uint maxNumLCGBP);
 
@@ -234,12 +233,14 @@ namespace embree {
   {
     numLCGBP = 0;
     numCurrentLCGBPStates = 0;    
-    numAllocatedLCGBP = maxNumLCGBP; //((gridResX-1) / InitialSubGridRes) * ((gridResY-1) / InitialSubGridRes);
+    numAllocatedLCGBP = maxNumLCGBP; 
     numAllocatedLCGBPStates = (1<<(2*(LOD_LEVELS-1))) * maxNumLCGBP;
     lcgbp       = (LCGBP*)alignedUSMMalloc(sizeof(LCGBP)*numAllocatedLCGBP,64,EMBREE_USM_SHARED /*EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE*/);
     lcgbp_state = (LCGBP_State*)alignedUSMMalloc(sizeof(LCGBP_State)*numAllocatedLCGBPStates,64,EMBREE_USM_SHARED/*EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE*/);
     PRINT2(numAllocatedLCGBP,numAllocatedLCGBP*sizeof(LCGBP));
     PRINT2(numAllocatedLCGBPStates,numAllocatedLCGBPStates*sizeof(LCGBP_State));
+    bounds = BBox3f(empty);
+    minLODDistance = 1.0f;
   }
 
   void LCGBP_Scene::addGrid(const uint gridResX, const uint gridResY, const Vec3fa *const vtx)
@@ -253,7 +254,9 @@ namespace embree {
 
     const uint lcg_resX = ((gridResX-1) / LCGBP::GRID_RES_QUAD);
     const uint lcg_resY = ((gridResY-1) / LCGBP::GRID_RES_QUAD);
-        
+
+    BBox3f gridBounds(empty);
+    
     for (int start_y=0;start_y+LCGBP::GRID_RES_QUAD<gridResY;start_y+=LCGBP::GRID_RES_QUAD)
       for (int start_x=0;start_x+LCGBP::GRID_RES_QUAD<gridResX;start_x+=LCGBP::GRID_RES_QUAD)
       {
@@ -287,10 +290,12 @@ namespace embree {
           {
             const Vec3f org_v  = getVertex(start_x+x,start_y+y,vtx,gridResX,gridResY);
             const Vec3f new_v  = current.decode(x,y);
+            gridBounds.extend(new_v);
+            
             const float error = length(new_v-org_v);
             if (error > 0.1)
             {
-              //PRINT5(x,y,LCGBP::as_uint(new_v.x),LCGBP::as_uint(new_v.y),LCGBP::as_uint(new_v.z));              
+              PRINT5(x,y,LCGBP::as_uint(new_v.x),LCGBP::as_uint(new_v.y),LCGBP::as_uint(new_v.z));              
               //exit(0);
             }
             avg_error += (double)error;
@@ -300,6 +305,8 @@ namespace embree {
         }
       }
     PRINT2((float)(avg_error / num_error),max_error);
+    bounds.extend(gridBounds);
+    minLODDistance = length(bounds.size()) / 16.0f;
   }
 
   LCGBP_Scene *global_lcgbp_scene = nullptr;
@@ -509,7 +516,20 @@ namespace embree {
       if (cracks_fixed)
         color = Vec3fa(1,0,1);      
     }
-    else if (mode == RENDER_DEBUG_UV)
+    else if (mode == RENDER_DEBUG_CLOD)
+    {
+      const uint step = lcgbp_scene->lcgbp_state[primID].step; 
+      if (step == 4)
+        color = Vec3fa(0,0,1);
+      else if (step == 2)
+        color = Vec3fa(0,1,0);
+      else if (step == 1)
+        color = Vec3fa(1,0,0);                  
+      const uint blend = (uint)lcgbp_scene->lcgbp_state[primID].blend;
+      if (blend)
+        color = Vec3fa(1,1,0);      
+    }    
+    else if (mode == RENDER_DEBUG_TEXTURE)
     {
       const uint flip_uv = localID & 1;
       const uint localQuadID = localID>>1;
@@ -689,14 +709,14 @@ namespace embree {
     const uint wgSize = 64;
     const uint numLCGBP = local_lcgbp_scene->numLCGBP;
 
-#if 0    
+#if 0
     for (uint i=0;i<numLCGBP;i++)
     {
       LCGBP &current = local_lcgbp_scene->lcgbp[i];
       LODPatchLevel plevel = getLODPatchLevel(current,camera,width,height);
-      PRINT2(plevel.level,plevel.blend);
+      PRINT3(i,plevel.level,plevel.blend);
     }
-    exit(0);
+    //exit(0);
 #endif
     
     const sycl::nd_range<1> nd_range1(alignTo(numLCGBP,wgSize),sycl::range<1>(wgSize));              
@@ -706,38 +726,21 @@ namespace embree {
                                                                                            const uint i = item.get_global_id(0);
                                                                                            if (i < numLCGBP)
                                                                                            {
-                                                                                             LCGBP &current = local_lcgbp_scene->lcgbp[i];                                                                                             
-                                                                                             //LODEdgeLevel edgeLevels = getLODEdgeLevels(current,camera,width,height);
-                                                                                             LODPatchLevel patchLevel = getLODPatchLevel(current,camera,width,height);
-                                                                                             //const uint lod_level = edgeLevels.level;
+                                                                                             LCGBP &current = local_lcgbp_scene->lcgbp[i];
+                                                                                             const float minLODDistance = local_lcgbp_scene->minLODDistance;
+                                                                                             LODPatchLevel patchLevel = getLODPatchLevel(minLODDistance,current,camera,width,height);
                                                                                              const uint lod_level = patchLevel.level;
                                                                                              
                                                                                              uint lod_level_top    = lod_level;
                                                                                              uint lod_level_right  = lod_level;
                                                                                              uint lod_level_bottom = lod_level;
                                                                                              uint lod_level_left   = lod_level;
-                                                                                             
-                                                                                             // if (current.neighbor_top    != -1) lod_level_top    = getLODEdgeLevels(local_lcgbp_scene->lcgbp[current.neighbor_top],camera,width,height).level();
-                                                                                             // if (current.neighbor_right  != -1) lod_level_right  = getLODEdgeLevels(local_lcgbp_scene->lcgbp[current.neighbor_right],camera,width,height).level();
-                                                                                             // if (current.neighbor_bottom != -1) lod_level_bottom = getLODEdgeLevels(local_lcgbp_scene->lcgbp[current.neighbor_bottom],camera,width,height).level();
-                                                                                             // if (current.neighbor_left   != -1) lod_level_left   = getLODEdgeLevels(local_lcgbp_scene->lcgbp[current.neighbor_left],camera,width,height).level();
 
-                                                                                             if (current.neighbor_top    != -1) lod_level_top    = getLODPatchLevel(local_lcgbp_scene->lcgbp[current.neighbor_top],camera,width,height).level;
-                                                                                             if (current.neighbor_right  != -1) lod_level_right  = getLODPatchLevel(local_lcgbp_scene->lcgbp[current.neighbor_right],camera,width,height).level;
-                                                                                             if (current.neighbor_bottom != -1) lod_level_bottom = getLODPatchLevel(local_lcgbp_scene->lcgbp[current.neighbor_bottom],camera,width,height).level;
-                                                                                             if (current.neighbor_left   != -1) lod_level_left   = getLODPatchLevel(local_lcgbp_scene->lcgbp[current.neighbor_left],camera,width,height).level;
+                                                                                             if (current.neighbor_top    != -1) lod_level_top    = getLODPatchLevel(minLODDistance,local_lcgbp_scene->lcgbp[current.neighbor_top],camera,width,height).level;
+                                                                                             if (current.neighbor_right  != -1) lod_level_right  = getLODPatchLevel(minLODDistance,local_lcgbp_scene->lcgbp[current.neighbor_right],camera,width,height).level;
+                                                                                             if (current.neighbor_bottom != -1) lod_level_bottom = getLODPatchLevel(minLODDistance,local_lcgbp_scene->lcgbp[current.neighbor_bottom],camera,width,height).level;
+                                                                                             if (current.neighbor_left   != -1) lod_level_left   = getLODPatchLevel(minLODDistance,local_lcgbp_scene->lcgbp[current.neighbor_left],camera,width,height).level;
                                                                                              
-
-#if 0                                                                                             
-                                                                                             if (i == 0)
-                                                                                               edgeLevels = LODEdgeLevel(0);
-                                                                                             else if (i == 1)
-                                                                                               edgeLevels = LODEdgeLevel(1,1,1,0);
-                                                                                             else if (i == 2)
-                                                                                               edgeLevels = LODEdgeLevel(0,1,1,1);
-                                                                                             else if (i == 3)
-                                                                                               edgeLevels = LODEdgeLevel(1,1,1,1);
-#else
 
                                                                                              LODEdgeLevel edgeLevels(lod_level);
                                                                                              
@@ -746,9 +749,6 @@ namespace embree {
                                                                                              edgeLevels.bottom = min(edgeLevels.bottom,(uchar)lod_level_bottom);
                                                                                              edgeLevels.left   = min(edgeLevels.left,(uchar)lod_level_left);
                                                                                              uint blend = (uint)floorf(255.0f * patchLevel.blend);
-#endif                                                                                             
-                                                                                                    
-                                                                                             
                                                                                              
                                                                                              const uint numGrids9x9 = 1<<(2*lod_level);
                                                                                              //const uint offset = ((1<<(2*lod_level))-1)/(4-1);

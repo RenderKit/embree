@@ -1719,11 +1719,11 @@ namespace embree
                                    const Vec3f p = gridPos[index*9];
                                    if (i>0 && i<8)
                                      gridPos[i*9] = p;                                 
-                                 }
+                                 }                                  
                                }
 
-
-                               if (state.blend)
+                               /* ---- continous LOD support ---- */
+                               if (unlikely(state.blend))
                                {
                                  sub_group_barrier();                                   
                                  const float blend_factor = (uint)(state.blend) / 255.0f;
@@ -1733,15 +1733,12 @@ namespace embree
                                    {
                                      const uint blend_x = x + ((x < 4) ? 1 : -1);
                                      const uint blend_y = y + ((y < 4) ? 1 : -1);
-                                     //if (ID == 1)
-                                     //  PRINT4(x,y,blend_x,blend_y);
-                                       
-                                     const Vec3f blend_v = lerp(gridPos[blend_y*9+blend_x],gridPos[y*9+x],1.0f - blend_factor);
+                                     const Vec3f blend_v = lerp(gridPos[y*9+x],gridPos[blend_y*9+blend_x],blend_factor);
                                      gridPos[y*9+x] = blend_v;
                                    }
                                  sub_group_barrier();                                                                      
                                }
-                               
+                              
                                /* --------------------------------- */
                                
                                for (uint rows=0;rows<4;rows++,leaf+=16,node+=3)

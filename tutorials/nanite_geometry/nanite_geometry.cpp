@@ -54,8 +54,13 @@ namespace embree
         user_rendering_mode = RENDER_DEBUG_CRACK_FIXING;
       }
       else if (key == GLFW_KEY_F7) {
-        user_rendering_mode = RENDER_DEBUG_UV;
+        user_rendering_mode = RENDER_DEBUG_CLOD;
+        PING;
+      }
+      else if (key == GLFW_KEY_F8) {
+        user_rendering_mode = RENDER_DEBUG_TEXTURE;
       }      
+      
       else if (key == GLFW_KEY_KP_SUBTRACT) {
         user_spp -= user_spp > 0 ? 1 : 0;
       }            
