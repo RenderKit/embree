@@ -155,9 +155,38 @@ jobs:
       artifact-out: continuous-linux-DG2-AOT-GPU-BVH-BUILDER
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON EMBREE_SYCL_GPU_BVH_BUILDER:ON USERGEOM:CONTEXT FILTER_FUNCTION:CONTEXT gfx:EMBARGO sycl:dg2 tasking:INT intensity:4
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.18.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON EMBREE_SYCL_GPU_BVH_BUILDER:ON USERGEOM:CONTEXT FILTER_FUNCTION:CONTEXT gfx:EMBARGO sycl:dg2 tasking:INT intensity:4
         scripts/test.py build --debug
         scripts/test.py build
+
+  linux-DG2-JIT-GPU-BVH-BUILDER:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    needs: [setup_gfx, setup_dpcpp]
+    with:
+      image: embree/ubuntu:22.04
+      runs-on: '[ "Linux", "docker", "build" ]'
+      artifact-out: continuous-linux-DG2-JIT-GPU-BVH-BUILDER
+      artifact-path: ./build .ctest_conf
+      cmd: |
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.18.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON EMBREE_SYCL_GPU_BVH_BUILDER:ON USERGEOM:CONTEXT FILTER_FUNCTION:CONTEXT gfx:EMBARGO sycl:none tasking:INT intensity:4
+        scripts/test.py build --debug
+        scripts/test.py build
+
+  linux-DG2-JIT-PUBLIC-GPU-BVH-BUILDER:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    needs: [setup_gfx, setup_dpcpp]
+    with:
+      image: embree/ubuntu:22.04
+      runs-on: '[ "Linux", "docker", "build" ]'
+      artifact-out: continuous-linux-DG2-JIT-PUBLIC-GPU-BVH-BUILDER
+      artifact-path: ./build .ctest_conf
+      cmd: |
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.18.1 isa:AVX512 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON EMBREE_SYCL_GPU_BVH_BUILDER:ON USERGEOM:CONTEXT FILTER_FUNCTION:CONTEXT gfx:PUBLIC sycl:none tasking:TBB2021.7.0 intensity:4
+        scripts/test.py build --debug
+        scripts/test.py build
+
 
 
   linux-DG2-AOT-INTERNAL-test:
