@@ -228,11 +228,11 @@ namespace embree {
   {
     LCGBP *lcgbp;
     uchar start_x, start_y, step, localID;
-    uchar blend, lod_diff_levels, lod_level, tmp;
+    uchar blend, lod_diff_levels, lod_level, flags;
 
     LCGBP_State() {}
 
-    LCGBP_State(LCGBP *lcgbp, const uint start_x, const uint start_y, const uint step, const uint localID, const LODEdgeLevel &lod_levels, const uint blend) : lcgbp(lcgbp), start_x(start_x), start_y(start_y), step(step), localID(localID), blend(blend), lod_diff_levels(0), lod_level(0), tmp(0)
+    LCGBP_State(LCGBP *lcgbp, const uint start_x, const uint start_y, const uint step, const uint localID, const uint lod_level, const LODEdgeLevel &lod_levels, const uint blend) : lcgbp(lcgbp), start_x(start_x), start_y(start_y), step(step), localID(localID), blend(blend), lod_diff_levels(0), lod_level(lod_level)
     {
       uint border_flags = 0;
       border_flags |= start_x == 0 ? LEFT_BORDER : 0;
@@ -240,7 +240,7 @@ namespace embree {
       border_flags |= start_y+step*8 == LCGBP::GRID_RES_QUAD ? BOTTOM_BORDER : 0;
       border_flags |= start_x+step*8 == LCGBP::GRID_RES_QUAD ? RIGHT_BORDER : 0;
 
-      lod_level = lod_levels.level();
+      //lod_level = lod_levels.level();
 
       if (border_flags & TOP_BORDER)
         lod_diff_levels |= (lod_level - lod_levels.top) << 0;
@@ -252,7 +252,9 @@ namespace embree {
         lod_diff_levels |= (lod_level - lod_levels.bottom) << 4;
 
       if (border_flags & LEFT_BORDER)
-        lod_diff_levels |= (lod_level - lod_levels.left) << 6;      
+        lod_diff_levels |= (lod_level - lod_levels.left) << 6;
+
+      flags = border_flags;
     }
 
     __forceinline bool cracksFixed()

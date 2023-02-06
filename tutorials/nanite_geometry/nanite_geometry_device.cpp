@@ -14,7 +14,7 @@
 
 #endif
 
-#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 16.0f
+#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 32.0f
 
 #include "../../kernels/rthwif/builder/gpu/lcgbp.h"
 
@@ -772,7 +772,7 @@ namespace embree {
                                                                                              edgeLevels.right  = min(edgeLevels.right,(uchar)lod_level_right);
                                                                                              edgeLevels.bottom = min(edgeLevels.bottom,(uchar)lod_level_bottom);
                                                                                              edgeLevels.left   = min(edgeLevels.left,(uchar)lod_level_left);
-                                                                                               
+                                                                                             
                                                                                              uint blend = (uint)floorf(255.0f * patchLevel.blend);
                                                                                              
                                                                                              const uint numGrids9x9 = 1<<(2*lod_level);
@@ -781,7 +781,7 @@ namespace embree {
                                                                                              uint index = 0;
                                                                                              if (lod_level == 0)
                                                                                              {
-                                                                                               local_lcgbp_scene->lcgbp_state[offset+index] = LCGBP_State(&current,0,0,4,index,edgeLevels,blend);
+                                                                                               local_lcgbp_scene->lcgbp_state[offset+index] = LCGBP_State(&current,0,0,4,index,lod_level,edgeLevels,blend);
                                                                                                index++;
                                                                                              }
                                                                                              else if (lod_level == 1)
@@ -789,7 +789,7 @@ namespace embree {
                                                                                                for (uint y=0;y<2;y++)
                                                                                                  for (uint x=0;x<2;x++)
                                                                                                  {
-                                                                                                   local_lcgbp_scene->lcgbp_state[offset+index] = LCGBP_State(&current,x*16,y*16,2,index,edgeLevels,blend);
+                                                                                                   local_lcgbp_scene->lcgbp_state[offset+index] = LCGBP_State(&current,x*16,y*16,2,index,lod_level,edgeLevels,blend);
                                                                                                    index++;
                                                                                                  }
                                                                                              }
@@ -798,7 +798,7 @@ namespace embree {
                                                                                                for (uint y=0;y<4;y++)
                                                                                                  for (uint x=0;x<4;x++)
                                                                                                  {
-                                                                                                   local_lcgbp_scene->lcgbp_state[offset+index] = LCGBP_State(&current,x*8,y*8,1,index,edgeLevels,blend);
+                                                                                                   local_lcgbp_scene->lcgbp_state[offset+index] = LCGBP_State(&current,x*8,y*8,1,index,lod_level,edgeLevels,blend);
                                                                                                    index++;
                                                                                                  }
                                                                                              }

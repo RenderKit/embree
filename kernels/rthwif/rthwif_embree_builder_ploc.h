@@ -1728,10 +1728,23 @@ namespace embree
                                  sub_group_barrier();
 
                                  const uint x = subgroupLocalID;
-                                 const uint sy = 1; 
-                                 const uint ey = 7; 
-                                 const uint sx = 1; 
-                                 const uint ex = 7; 
+#if 0
+                                 const uint diff_top    = state.get_lod_diff_level(0);
+                                 const uint diff_right  = state.get_lod_diff_level(1);
+                                 const uint diff_bottom = state.get_lod_diff_level(2);
+                                 const uint diff_left   = state.get_lod_diff_level(3);
+                                 
+                                 const uint sy = diff_top ? 1 : 0; 
+                                 const uint ey = diff_bottom ? 7 : 8; 
+                                 const uint sx = diff_left ? 1 : 0; 
+                                 const uint ex = diff_right ? 7 : 8;
+#else
+                                 const uint sy = (state.flags & TOP_BORDER) ? 1 : 0; 
+                                 const uint ey = (state.flags & BOTTOM_BORDER) ? 7 : 8; 
+                                 const uint sx = (state.flags & LEFT_BORDER) ? 1 : 0; 
+                                 const uint ex = (state.flags & RIGHT_BORDER) ? 7 : 8;
+                                 
+#endif                                 
                                  
                                  if (x>=sx && x<=ex)
                                    for (uint y=sy;y<=ey;y++)
