@@ -83,17 +83,19 @@ ENDIF()
 ##############################################################
 
 IF (WIN32)
-  IF(SYCL_ONEAPI_ICX)
+  IF(SYCL_ONEAPI_ICX AND EMBREE_INSTALL_DEPENDENCIES)
     GET_FILENAME_COMPONENT(DPCPP_COMPILER_DIR ${CMAKE_CXX_COMPILER} PATH)
     IF (EXISTS "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/libmmd.dll")
       INSTALL(FILES "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/libmmd.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
     ENDIF()
-  ELSE()
-    SET(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
-    INCLUDE(InstallRequiredSystemLibraries)
-    LIST(FILTER CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS INCLUDE REGEX ".*msvcp[0-9]+\.dll|.*vcruntime[0-9]+\.dll|.*vcruntime[0-9]+_[0-9]+\.dll")
-    INSTALL(FILES ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
   ENDIF()
+
+  SET(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
+  SET(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_NO_WARNINGS TRUE)
+  INCLUDE(InstallRequiredSystemLibraries)
+  LIST(FILTER CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS INCLUDE REGEX ".*msvcp[0-9]+\.dll|.*vcruntime[0-9]+\.dll|.*vcruntime[0-9]+_[0-9]+\.dll")
+  INSTALL(FILES ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
+
 ENDIF()
 
 ##############################################################
