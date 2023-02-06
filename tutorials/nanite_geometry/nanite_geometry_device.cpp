@@ -14,6 +14,7 @@
 
 #endif
 
+#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 32.0f
 
 #include "../../kernels/rthwif/builder/gpu/lcgbp.h"
 
@@ -306,7 +307,7 @@ namespace embree {
       }
     PRINT2((float)(avg_error / num_error),max_error);
     bounds.extend(gridBounds);
-    minLODDistance = length(bounds.size()) / 16.0f;
+    minLODDistance = length(bounds.size()) / RELATIVE_MIN_LOD_DISTANCE_FACTOR;
   }
 
   LCGBP_Scene *global_lcgbp_scene = nullptr;
@@ -474,7 +475,7 @@ namespace embree {
     /* intersect ray with scene */
     rtcIntersect1(data.g_scene,RTCRayHit_(ray),&args);
 
-    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(1.0f);
+    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(1.0f,0.0f,1.0f);
 
     const uint localID = ray.primID & (((uint)1<<RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT)-1);
     const uint primID = ray.primID >> RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT;

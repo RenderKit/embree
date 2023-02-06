@@ -1679,8 +1679,30 @@ namespace embree
                                  if (x < 9)
                                    gridPos[y*9+x] = lcgbp->decode(lgcbp_start_x + x*lgcbp_step, lgcbp_start_y + y*lgcbp_step);
                                }
-
                                sub_group_barrier();
+
+                               /* ---- continous LOD support ---- */
+                               if (unlikely(state.blend))
+                               {
+                                 sub_group_barrier();                                   
+                                 const float blend_factor = (uint)(state.blend) / 255.0f;
+                                 const uint x = subgroupLocalID;                                   
+                                 if (x>0 && x<8)
+                                   for (uint y=1;y<8;y++)
+                                   {
+                                     uint blend_x = x + ((x < 4) ? 1 : -1);
+                                     uint blend_y = y + ((y < 4) ? 1 : -1);
+                                     blend_x = (x%2) ? blend_x : x;
+                                     blend_y = (y%2) ? blend_y : y;
+                                     if (blend_x != x || blend_y != y)
+                                     {
+                                       const Vec3f blend_v = lerp(gridPos[y*9+x],gridPos[blend_y*9+blend_x],blend_factor);
+                                       gridPos[y*9+x] = blend_v;
+                                     }
+                                   }
+                                 sub_group_barrier();                                                                      
+                               }
+                               
                                
                                /* ---- fix cracks if necessary ---- */
                                if (unlikely(state.lod_diff_levels))
@@ -1722,22 +1744,6 @@ namespace embree
                                  }                                  
                                }
 
-                               /* ---- continous LOD support ---- */
-                               if (unlikely(state.blend))
-                               {
-                                 sub_group_barrier();                                   
-                                 const float blend_factor = (uint)(state.blend) / 255.0f;
-                                 const uint x = subgroupLocalID;                                   
-                                 if (x>0 && x<8 && (x%2))
-                                   for (uint y=1;y<8;y+=2)
-                                   {
-                                     const uint blend_x = x + ((x < 4) ? 1 : -1);
-                                     const uint blend_y = y + ((y < 4) ? 1 : -1);
-                                     const Vec3f blend_v = lerp(gridPos[y*9+x],gridPos[blend_y*9+blend_x],blend_factor);
-                                     gridPos[y*9+x] = blend_v;
-                                   }
-                                 sub_group_barrier();                                                                      
-                               }
                               
                                /* --------------------------------- */
                                
