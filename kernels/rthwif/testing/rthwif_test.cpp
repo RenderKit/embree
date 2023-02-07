@@ -1579,20 +1579,20 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
 
       Geometry* geom = nullptr;
       if (instID != -1) {
-        Scene::InstanceGeometry* instance = (Scene::InstanceGeometry*) scenes[0]->geometries[instID].get();
-        geom = instance->scene->geometries[geomID].get();
+        Scene::InstanceGeometry* instance = (Scene::InstanceGeometry*) (scenes[0]->geometries.data() + instID)->get();
+        geom = (instance->scene->geometries.data() + geomID)->get();
       } else {
-        geom = scenes[bvh_level]->geometries[geomID].get();
+        geom = (scenes[bvh_level]->geometries.data() + geomID)->get();
       }
 
       if (geom->type == Geometry::TRIANGLE_MESH)
       {
         const TriangleMesh* mesh = (TriangleMesh*) geom;
 
-        const sycl::int4 tri = mesh->triangles[primID];
-        const sycl::float3 tri_v0 = mesh->vertices[tri.x()];
-        const sycl::float3 tri_v1 = mesh->vertices[tri.y()];
-        const sycl::float3 tri_v2 = mesh->vertices[tri.z()];
+        const sycl::int4 tri = *(mesh->triangles.data() + primID);
+        const sycl::float3 tri_v0 = *(mesh->vertices.data() + tri.x());
+        const sycl::float3 tri_v1 = *(mesh->vertices.data() + tri.y());
+        const sycl::float3 tri_v2 = *(mesh->vertices.data() + tri.z());
 
         /* calculate vertices relative to ray origin */
         const sycl::float3 O = intel_get_ray_origin(query,bvh_level);
