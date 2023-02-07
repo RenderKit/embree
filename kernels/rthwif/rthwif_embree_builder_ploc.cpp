@@ -26,37 +26,37 @@ namespace embree
 {
   using namespace embree::isa;
 
-  __forceinline uint estimateSizeInternalNodes(const uint numQuads, const uint numInstances, const uint numProcedurals, const bool conservative)
+  __forceinline size_t estimateSizeInternalNodes(const size_t numQuads, const size_t numInstances, const size_t numProcedurals, const bool conservative)
   {
-    const uint N = numQuads + numInstances + numProcedurals; 
+    const size_t N = numQuads + numInstances + numProcedurals; 
     // === conservative estimate ===
-    uint numFatLeaves = 0;
+    size_t numFatLeaves = 0;
     if (conservative)
       numFatLeaves = ceilf( (float)N/2 ) + ceilf( (float)numInstances/2 ); // FIXME : better upper bound for instance case
     else
       numFatLeaves = ceilf( (float)N/3 ) + ceilf( (float)numInstances/2 ); // FIXME : better upper bound for instance case        
-    const uint numInnerNodes = ceilf( (float)numFatLeaves/4 ); 
+    const size_t numInnerNodes = ceilf( (float)numFatLeaves/4 ); 
     return gpu::alignTo(std::max( ((numFatLeaves + numInnerNodes) * 64) , N * 16),64);
   }
 
-  __forceinline uint estimateSizeLeafNodes(const uint numQuads, const uint numInstances, const uint numProcedurals)
+  __forceinline size_t estimateSizeLeafNodes(const size_t numQuads, const size_t numInstances, const size_t numProcedurals)
   {
     return (numQuads + numProcedurals + 2 * numInstances) * 64;  
   }
 
-  __forceinline uint estimateAccelBufferSize(const uint numQuads, const uint numInstances, const uint numProcedurals, const bool conservative)
+  __forceinline size_t estimateAccelBufferSize(const size_t numQuads, const size_t numInstances, const size_t numProcedurals, const bool conservative)
   {
-    const uint header              = 128;
-    const uint node_size           = estimateSizeInternalNodes(numQuads,numInstances,numProcedurals,conservative);
-    const uint leaf_size           = estimateSizeLeafNodes(numQuads,numInstances,numProcedurals); 
-    const uint totalSize           = header + node_size + leaf_size;
+    const size_t header              = 128;
+    const size_t node_size           = estimateSizeInternalNodes(numQuads,numInstances,numProcedurals,conservative);
+    const size_t leaf_size           = estimateSizeLeafNodes(numQuads,numInstances,numProcedurals); 
+    const size_t totalSize           = header + node_size + leaf_size;
     return totalSize;
   }
 
-  __forceinline uint estimateScratchBufferSize(const uint numPrimitives)
+  __forceinline size_t estimateScratchBufferSize(const size_t numPrimitives)
   {
-    // === sizeof(uint)*MAX_LARGE_WGS for prefix sums across large work groups ===
-    return sizeof(PLOCGlobals) + sizeof(uint)*MAX_LARGE_WGS + numPrimitives * sizeof(LeafGenerationData);
+    // === sizeof(size_t)*MAX_LARGE_WGS for prefix sums across large work groups ===
+    return sizeof(PLOCGlobals) + sizeof(size_t)*MAX_LARGE_WGS + numPrimitives * sizeof(LeafGenerationData);
   }
   
   void checkBVH2PlocHW(BVH2Ploc *bvh2, uint index,uint &nodes,uint &leaves,float &nodeSAH, float &leafSAH, const uint numPrimitives, const uint bvh2_max_allocations)
@@ -309,10 +309,11 @@ namespace embree
     double time0 = getSeconds();
     
     sycl::queue  &gpu_queue  = *(sycl::queue*)sycl_queue;
+
+#if 0
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
     const uint numGeometries                = args.numGeometries;  
-
-#if 0    
+    
     // ===================================    
     // === prefetch builder scene data ===
     // ===================================
@@ -471,10 +472,9 @@ namespace embree
       numQuads = countQuadsPerGeometryUsingBlocks(gpu_queue,globals,args.geometries,numGeometries,numQuadBlocks,scratch,scratch+numGeometries,host_device_tasks,device_quadification_time,verbose1);
       timer.stop(BuildTimer::PRE_PROCESS);
       timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_quadification_time);
-      if (unlikely(verbose2)) std::cout << "=> Count Quads " << timer.get_host_timer() << " ms (host) " << (float)device_quadification_time << " ms (device) " << std::endl;
+      if (unlikely(verbose2)) std::cout << "=> Count " << numQuads << " Quads " << timer.get_host_timer() << " ms (host) " << (float)device_quadification_time << " ms (device) " << std::endl;
     }
-
-
+    
     // ================================
     // === estimate size of the BVH ===
     // ================================
@@ -548,7 +548,6 @@ namespace embree
         if (unlikely(verbose2)) std::cout << "=> Init Globals II: " << dt << " ms" << std::endl;        
       }      
     }	    
-    
 
     timer.start(BuildTimer::PRE_PROCESS);        
     
@@ -556,10 +555,10 @@ namespace embree
     // ===================================================          
     // ==== merge triangles to quads, create primrefs ====
     // ===================================================
-         
+
     if (numQuads)
       createQuads_initPLOCPrimRefs(gpu_queue,globals,args.geometries,numGeometries,numQuadBlocks,scratch,bvh2,0,create_primref_time,verbose1);
-
+    
     // ====================================          
     // ==== create procedural primrefs ====
     // ====================================
