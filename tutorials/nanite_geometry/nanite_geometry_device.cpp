@@ -429,7 +429,7 @@ namespace embree {
 #endif    
   
     /* update scene */
-    rtcCommitScene (data.g_scene);  
+    //rtcCommitScene (data.g_scene);  
   }
 
 

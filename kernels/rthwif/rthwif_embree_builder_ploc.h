@@ -1178,8 +1178,10 @@ namespace embree
   {
     const uint *const blocksPerGeom          = scratch;
     const uint *const quadsPerBlockPrefixSum = scratch + numGeoms;
-    
     static const uint MERGE_TRIANGLES_TO_QUADS_SUB_GROUP_WIDTH = 16;
+
+
+    
     const sycl::nd_range<1> nd_range1(numQuadBlocks*TRIANGLE_QUAD_BLOCK_SIZE,sycl::range<1>(TRIANGLE_QUAD_BLOCK_SIZE));
     sycl::event quadification_event = gpu_queue.submit([&](sycl::handler &cgh) {
         sycl::local_accessor< uint      , 0> _active_counter(cgh);
@@ -1202,7 +1204,7 @@ namespace embree
                                                       
                            // ====================                           
                            // === TriangleMesh ===
-                           // ====================                           
+                           // ====================
                            if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_TRIANGLES)
                            {
                              RTHWIF_GEOMETRY_TRIANGLES_DESC* triMesh = (RTHWIF_GEOMETRY_TRIANGLES_DESC*)geometryDesc;                             
@@ -1289,8 +1291,8 @@ namespace embree
                            const uint numGroups       = item.get_group_range(0);                                                        
                            const uint localID         = item.get_local_id(0);
                            const uint step_local      = item.get_local_range().size();
-                           const uint startID         = (groupID + 0)*numGeoms / numWGs;
-                           const uint endID           = (groupID + 1)*numGeoms / numWGs;
+                           const uint startID         = ((size_t)groupID + 0)*(size_t)numGeoms / numWGs;
+                           const uint endID           = ((size_t)groupID + 1)*(size_t)numGeoms / numWGs;
                            const uint sizeID          = endID-startID;
                            const uint aligned_sizeID  = gpu::alignTo(sizeID,CREATE_INSTANCES_WG_SIZE);
                            
@@ -2189,8 +2191,8 @@ namespace embree
             item.barrier(sycl::access::fence_space::local_space);
             
             const uint groupID        = wgID;                                                             
-            const uint startID        = (groupID + 0)*numPrims / NN_SEARCH_WG_NUM;
-            const uint endID          = (groupID + 1)*numPrims / NN_SEARCH_WG_NUM;
+            const uint startID        = ((size_t)groupID + 0)*(size_t)numPrims / NN_SEARCH_WG_NUM;
+            const uint endID          = ((size_t)groupID + 1)*(size_t)numPrims / NN_SEARCH_WG_NUM;
             const uint sizeID         = endID-startID;
             const uint aligned_sizeID = gpu::alignTo(sizeID,WORKING_WG_SIZE);
             
@@ -2557,9 +2559,7 @@ namespace embree
       data |= (isLeaf ? leaf_type : NODE_TYPE_INTERNAL) << 2;
       const gpu::AABB3f childBounds = bvh2[index].bounds; //.conservativeBounds();
       // === bounds valid ? ====
-      uint equal_dims = childBounds.lower_x == childBounds.upper_x ? 1 : 0;
-      equal_dims += childBounds.lower_y == childBounds.upper_y ? 1 : 0;
-      equal_dims += childBounds.lower_z == childBounds.upper_z ? 1 : 0;
+      const uint equal_dims = childBounds.numEqualDims();
       const bool write = (i<numChildren) && equal_dims <= 1;
       // === quantize bounds ===
       const gpu::AABB3f  qbounds    = QBVHNodeN::quantize_bounds(lower, _exp_x, _exp_y, _exp_z, childBounds);

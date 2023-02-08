@@ -5,8 +5,10 @@
 #include "../common/tutorial/benchmark_render.h"
 
 #if defined(EMBREE_SYCL_TUTORIAL)
+#  define NAME "motion_blur_geometry_sycl (beta)"
 #  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
 #else
+#  define NAME "motion_blur_geometry"
 #  define FEATURES FEATURE_RTCORE
 #endif
 
@@ -21,7 +23,7 @@ namespace embree
   struct Tutorial : public TutorialApplication 
   {
     Tutorial()
-      : TutorialApplication("motion_blur_geometry",FEATURES) 
+      : TutorialApplication(NAME,FEATURES) 
     {
       registerOption("time", [] (Ref<ParseStream> cin, const FileName& path) {
         g_time = cin->getFloat();

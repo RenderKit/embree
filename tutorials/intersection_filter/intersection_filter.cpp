@@ -5,8 +5,10 @@
 #include "../common/tutorial/benchmark_render.h"
 
 #if defined(EMBREE_SYCL_TUTORIAL)
+#  define NAME "intersection_filter_sycl (beta)"
 #  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
 #else
+#  define NAME "intersection_filter"
 #  define FEATURES FEATURE_RTCORE
 #endif
 
@@ -15,7 +17,7 @@ namespace embree
   struct Tutorial : public TutorialApplication 
   {
     Tutorial()
-      : TutorialApplication("intersection_filter",FEATURES) 
+      : TutorialApplication(NAME,FEATURES) 
     {
       /* set default camera */
       camera.from = Vec3fa(-1.27f,1.75f,-6.75f);

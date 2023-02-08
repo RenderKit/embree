@@ -59,7 +59,7 @@ namespace embree
     case CPU::UNKNOWN:         frequency_level = FREQUENCY_SIMD256; break;
     case CPU::XEON_ICE_LAKE:   frequency_level = FREQUENCY_SIMD256; break;
     case CPU::CORE_ICE_LAKE:   frequency_level = FREQUENCY_SIMD256; break;
-    case CPU::CORE_TIGER_LAKE: frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::CORE_TIGER_LAKE: frequency_level = FREQUENCY_SIMD256; break;
     case CPU::CORE_COMET_LAKE: frequency_level = FREQUENCY_SIMD128; break;
     case CPU::CORE_CANNON_LAKE:frequency_level = FREQUENCY_SIMD128; break;
     case CPU::CORE_KABY_LAKE:  frequency_level = FREQUENCY_SIMD128; break;
