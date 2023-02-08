@@ -2079,9 +2079,7 @@ namespace embree
       data |= (isLeaf ? leaf_type : NODE_TYPE_INTERNAL) << 2;
       const gpu::AABB3f childBounds = bvh2[index].bounds; //.conservativeBounds();
       // === bounds valid ? ====
-      uint equal_dims = childBounds.lower_x == childBounds.upper_x ? 1 : 0;
-      equal_dims += childBounds.lower_y == childBounds.upper_y ? 1 : 0;
-      equal_dims += childBounds.lower_z == childBounds.upper_z ? 1 : 0;
+      const uint equal_dims = childBounds.numEqualDims();
       const bool write = (i<numChildren) && equal_dims <= 1;
       // === quantize bounds ===
       const gpu::AABB3f  qbounds    = QBVHNodeN::quantize_bounds(lower, _exp_x, _exp_y, _exp_z, childBounds);
