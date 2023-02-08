@@ -187,14 +187,20 @@ namespace embree
   {
     ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
     ze_device_handle_t  hDevice  = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
-    
+
     ze_raytracing_mem_alloc_ext_desc_t rt_desc;
     rt_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_RAYTRACING_EXT_PROPERTIES;
+    rt_desc.pNext = nullptr;
     rt_desc.flags = 0;
+
+    ze_relaxed_allocation_limits_exp_desc_t relaxed;
+    relaxed.stype = ZE_STRUCTURE_TYPE_RELAXED_ALLOCATION_LIMITS_EXP_DESC;
+    relaxed.pNext = &rt_desc;
+    relaxed.flags = ZE_RELAXED_ALLOCATION_LIMITS_EXP_FLAG_MAX_SIZE;
     
     ze_device_mem_alloc_desc_t device_desc;
     device_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_MEM_ALLOC_DESC;
-    device_desc.pNext = &rt_desc;
+    device_desc.pNext = &relaxed;
     device_desc.flags = ZE_DEVICE_MEM_ALLOC_FLAG_BIAS_CACHED;
     device_desc.ordinal = 0;
   
@@ -205,7 +211,8 @@ namespace embree
     
     void* ptr = nullptr;
     ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT,hDevice,&ptr);
-    assert(result == ZE_RESULT_SUCCESS);
+    if (result != ZE_RESULT_SUCCESS)
+      throw_RTCError(RTC_ERROR_OUT_OF_MEMORY,"BVH memory allocation failed");
     _unused(result);
     return ptr;
   }
@@ -224,7 +231,8 @@ namespace embree
   void* rthwifAllocAccelBuffer(size_t bytes, sycl::device device, sycl::context context)
   {
     void* ptr = sycl::aligned_alloc_shared(RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT, bytes, device, context);
-    assert(ptr);
+    if (ptr == nullptr)
+      throw_RTCError(RTC_ERROR_OUT_OF_MEMORY,"BVH memory allocation failed");
     return ptr;
   }
 
@@ -647,8 +655,11 @@ namespace embree
       
       /* allocate BVH data */
       if (accel.size() < bytes) // FIXME: accel.size() triggers a USM transfer
+      {
+        accel.reserve(bytes);
         accel.resize(bytes);
-      
+      }
+        
 #if !defined(EMBREE_SYCL_GPU_BVH_BUILDER)      
       memset(accel.data(),0,accel.size()); // FIXME: not required
 #endif
