@@ -292,7 +292,7 @@ struct RTCRayQueryContext
 /* Initializes an ray query context. */
 RTC_FORCEINLINE void rtcInitRayQueryContext(uniform RTCRayQueryContext* uniform context)
 {
-  uniform unsigned l = 0;
+  uniform unsigned int l = 0;
   
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   context->instStackSize = 0;

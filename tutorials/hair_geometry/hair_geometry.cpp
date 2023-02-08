@@ -5,8 +5,10 @@
 #include "../common/tutorial/benchmark_render.h"
 
 #if defined(EMBREE_SYCL_TUTORIAL)
+#  define NAME "hair_geometry_sycl (beta)"
 #  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
 #else
+#define NAME "hair_geometry"
 #  define FEATURES FEATURE_RTCORE
 #endif
 
@@ -21,7 +23,7 @@ namespace embree
   struct Tutorial : public SceneLoadingTutorialApplication 
   {
     Tutorial()
-      : SceneLoadingTutorialApplication("hair_geometry",FEATURES) {}
+      : SceneLoadingTutorialApplication(NAME,FEATURES) {}
 
     void postParseCommandLine() override
     {

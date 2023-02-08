@@ -1141,8 +1141,10 @@ namespace embree
   {
     const uint *const blocksPerGeom          = scratch;
     const uint *const quadsPerBlockPrefixSum = scratch + numGeoms;
-    
     static const uint MERGE_TRIANGLES_TO_QUADS_SUB_GROUP_WIDTH = 16;
+
+
+    
     const sycl::nd_range<1> nd_range1(numQuadBlocks*TRIANGLE_QUAD_BLOCK_SIZE,sycl::range<1>(TRIANGLE_QUAD_BLOCK_SIZE));
     sycl::event quadification_event = gpu_queue.submit([&](sycl::handler &cgh) {
         sycl::local_accessor< uint      , 0> _active_counter(cgh);
@@ -1165,7 +1167,7 @@ namespace embree
                                                       
                            // ====================                           
                            // === TriangleMesh ===
-                           // ====================                           
+                           // ====================
                            if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_TRIANGLES)
                            {
                              RTHWIF_GEOMETRY_TRIANGLES_DESC* triMesh = (RTHWIF_GEOMETRY_TRIANGLES_DESC*)geometryDesc;                             
@@ -1229,7 +1231,7 @@ namespace embree
 		  
       });
     gpu::waitOnEventAndCatchException(quadification_event);
-    if (unlikely(verbose)) iteration_time += gpu::getDeviceExecutionTiming(quadification_event);      
+    if (unlikely(verbose)) iteration_time += gpu::getDeviceExecutionTiming(quadification_event);
   }
        
    uint createInstances_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGS, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, double &iteration_time, const bool verbose)    
@@ -2621,8 +2623,8 @@ namespace embree
           cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                            {
                              const uint globalID = item.get_global_id(0);
-                             const uint localID  = item.get_local_id(0);
-                             bool valid = false;
+                             //const uint localID  = item.get_local_id(0);
+                             //bool valid = false;
                              QuadLeafData*qleaf = nullptr;
                                                                       
                              if (globalID < leaves)                                                                        
@@ -2637,7 +2639,7 @@ namespace embree
                                  // ====================                           
                                  // === TriangleMesh ===
                                  // ====================                                                                        
-                                 valid = true;                                   
+                                 //valid = true;                                   
                                  const uint primID0 = leafGenData[globalID].primID;
                                  const uint primID1 = primID0 + (leafGenData[globalID].geomID >> PAIR_OFFSET_SHIFT);                                   
                                  RTHWIF_GEOMETRY_TRIANGLES_DESC* triMesh = (RTHWIF_GEOMETRY_TRIANGLES_DESC*)geometryDesc;
@@ -2662,7 +2664,7 @@ namespace embree
                                  // ================                           
                                  // === QuadMesh ===
                                  // ================
-                                 valid = true;                                                                    
+                                 //valid = true;                                                                    
                                  const uint primID0 = leafGenData[globalID].primID;                                   
                                  RTHWIF_GEOMETRY_QUADS_DESC* quadMesh = (RTHWIF_GEOMETRY_QUADS_DESC*)geometryDesc;                             
                                  const RTHWIF_QUAD_INDICES &quad = getQuadDesc(*quadMesh,primID0);

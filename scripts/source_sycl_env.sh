@@ -13,7 +13,6 @@ IGC_DIR=$2
 
 # FIXME: for whatever reason this is still needed for the official compute runtime
 # otherwise some sycl_test test fail.
-export SYCL_DEVICE_FILTER=level_zero
 export PATH=${DPCPP_DIR}/bin:${IGC_DIR}/usr/bin:${IGC_DIR}/usr/local/bin:${PATH}
 export CPATH=${DPCPP_DIR}/include/sycl:${DPCPP_DIR}/include
 export LIBRARY_PATH=${DPCPP_DIR}/lib:${LIBRARY_PATH}
@@ -24,8 +23,6 @@ export LD_LIBRARY_PATH=${DPCPP_DIR}/lib:${IGC_DIR}/usr/lib/x86_64-linux-gnu:${IG
 export OCL_ICD_FILENAMES=${IGC_DIR}/usr/lib/x86_64-linux-gnu/intel-opencl/libigdrcl.so:${IGC_DIR}/usr/local/lib/intel-opencl/libigdrcl.so
 
 export OCL_ICD_VENDORS=${IGC_DIR}/etc/OpenCL/vendors/intel.icd
-export OPENCL_INCLUDE_DIR=${DPCPP_DIR}/include/sycl
-export OPENCL_LIBRARY=${DPCPP_DIR}/lib/libOpenCL.so
 
 export CXX=${DPCPP_DIR}/bin/clang++
 export CC=${DPCPP_DIR}/bin/clang

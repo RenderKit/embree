@@ -614,7 +614,7 @@ static GL3WglGetProcAddr wgl_get_proc_address;
 
 static int open_libgl(void)
 {
-    libgl = LoadLibraryA("opengl32.dll");
+    libgl = LoadLibraryExA("opengl32.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
     if (!libgl)
         return GL3W_ERROR_LIBRARY_OPEN;
     wgl_get_proc_address = (GL3WglGetProcAddr)GetProcAddress(libgl, "wglGetProcAddress");

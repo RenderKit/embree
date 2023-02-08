@@ -5,8 +5,10 @@
 #include "../common/tutorial/benchmark_render.h"
 
 #if defined(EMBREE_SYCL_TUTORIAL)
+#  define NAME "multiscene_geometry_sycl (beta)"
 #  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
 #else
+#  define NAME "multiscene_geometry"
 #  define FEATURES FEATURE_RTCORE
 #endif
 
@@ -17,7 +19,7 @@ namespace embree
   struct Tutorial : public TutorialApplication
   {
     Tutorial()
-      : TutorialApplication("dynamic_scene", FEATURES)
+      : TutorialApplication(NAME, FEATURES)
     {
       /* set start camera */
       camera.from = Vec3f(2, 2, 2);

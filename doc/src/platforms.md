@@ -14,12 +14,11 @@ Series) under Linux.
 Currently the following products are supported and further products
 will get enabled soon:
 
-- Intel® Arc ™ A770 Graphics
-- Intel® Arc ™ A750 Graphics
-- Intel® Arc ™ A770M Graphics
-- Intel® Arc ™ A730M Graphics
-- Intel® Arc ™ A550M Graphics
-- Intel® Data Center GPU Flex 170
+- Intel® Arc™ A770 Graphics
+- Intel® Arc™ A750 Graphics
+- Intel® Arc™ A770M Graphics
+- Intel® Arc™ A730M Graphics
+- Intel® Arc™ A550M Graphics
 
 The code compiles with the Intel® Compiler, Intel® oneAPI DPC++
 Compiler, GCC, Clang, and the Microsoft Compiler. To use Embree on the

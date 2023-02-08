@@ -4,8 +4,10 @@
 #include "../common/tutorial/tutorial.h"
 
 #if defined(EMBREE_SYCL_TUTORIAL)
+#  define NAME "next_hit_sycl (beta)"
 #  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
 #else
+#  define NAME "next_hit"
 #  define FEATURES FEATURE_RTCORE
 #endif
 
@@ -36,7 +38,7 @@ namespace embree
   struct Tutorial : public SceneLoadingTutorialApplication
   {
     Tutorial()
-      : SceneLoadingTutorialApplication("next_hit",FEATURES)
+      : SceneLoadingTutorialApplication(NAME,FEATURES)
     {
       registerOption("single_pass", [] (Ref<ParseStream> cin, const FileName& path) {
           g_next_hit_mode = SINGLE_PASS;
