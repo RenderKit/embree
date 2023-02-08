@@ -586,9 +586,14 @@ namespace embree {
     
     for (uint i=0;i<spp;i++)
     {
-      RandomSampler_init(sampler, x, y, i);      
-      float fx = x + RandomSampler_get1D(sampler);
-      float fy = y + RandomSampler_get1D(sampler);
+      float fx = x; 
+      float fy = y; 
+      if (i >= 1)
+      {
+        RandomSampler_init(sampler, 0, 0, i);
+        fx += RandomSampler_get1D(sampler);
+        fy += RandomSampler_get1D(sampler);
+      }        
     
       /* calculate pixel color */
       if (mode == RENDER_PRIMARY)

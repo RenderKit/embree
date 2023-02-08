@@ -1775,7 +1775,6 @@ namespace embree
                                {
                                  const uint x = sx; 
                                  const uint y = sy + 2*rows;
-
                                  const Vec3f p0 = gridPos[9*(y+0)+(x+0)];
                                  const Vec3f p1 = gridPos[9*(y+0)+(x+1)];
                                  const Vec3f p2 = gridPos[9*(y+1)+(x+1)];
