@@ -1254,8 +1254,8 @@ namespace embree
                            const uint numGroups       = item.get_group_range(0);                                                        
                            const uint localID         = item.get_local_id(0);
                            const uint step_local      = item.get_local_range().size();
-                           const uint startID         = (groupID + 0)*numGeoms / numWGs;
-                           const uint endID           = (groupID + 1)*numGeoms / numWGs;
+                           const uint startID         = ((size_t)groupID + 0)*(size_t)numGeoms / numWGs;
+                           const uint endID           = ((size_t)groupID + 1)*(size_t)numGeoms / numWGs;
                            const uint sizeID          = endID-startID;
                            const uint aligned_sizeID  = gpu::alignTo(sizeID,CREATE_INSTANCES_WG_SIZE);
                            
@@ -1730,8 +1730,8 @@ namespace embree
             item.barrier(sycl::access::fence_space::local_space);
             
             const uint groupID        = wgID;                                                             
-            const uint startID        = (groupID + 0)*numPrims / NN_SEARCH_WG_NUM;
-            const uint endID          = (groupID + 1)*numPrims / NN_SEARCH_WG_NUM;
+            const uint startID        = ((size_t)groupID + 0)*(size_t)numPrims / NN_SEARCH_WG_NUM;
+            const uint endID          = ((size_t)groupID + 1)*(size_t)numPrims / NN_SEARCH_WG_NUM;
             const uint sizeID         = endID-startID;
             const uint aligned_sizeID = gpu::alignTo(sizeID,WORKING_WG_SIZE);
             
