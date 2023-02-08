@@ -189,10 +189,15 @@ namespace embree
     rt_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_RAYTRACING_EXT_PROPERTIES;
     rt_desc.pNext = nullptr;
     rt_desc.flags = 0;
+
+    ze_relaxed_allocation_limits_exp_desc_t relaxed;
+    relaxed.stype = ZE_STRUCTURE_TYPE_RELAXED_ALLOCATION_LIMITS_EXP_DESC;
+    relaxed.pNext = &rt_desc;
+    relaxed.flags = ZE_RELAXED_ALLOCATION_LIMITS_EXP_FLAG_MAX_SIZE;
     
     ze_device_mem_alloc_desc_t device_desc;
     device_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_MEM_ALLOC_DESC;
-    device_desc.pNext = &rt_desc;
+    device_desc.pNext = &relaxed;
     device_desc.flags = ZE_DEVICE_MEM_ALLOC_FLAG_BIAS_CACHED;
     device_desc.ordinal = 0;
   
