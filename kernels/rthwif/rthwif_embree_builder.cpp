@@ -203,7 +203,8 @@ namespace embree
     
     void* ptr = nullptr;
     ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT,hDevice,&ptr);
-    assert(result == ZE_RESULT_SUCCESS);
+    if (result != ZE_RESULT_SUCCESS)
+      throw_RTCError(RTC_ERROR_OUT_OF_MEMORY,"BVH memory allocation failed");
     _unused(result);
     return ptr;
   }
@@ -222,7 +223,8 @@ namespace embree
   void* rthwifAllocAccelBuffer(size_t bytes, sycl::device device, sycl::context context)
   {
     void* ptr = sycl::aligned_alloc_shared(RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT, bytes, device, context);
-    assert(ptr);
+    if (ptr == nullptr)
+      throw_RTCError(RTC_ERROR_OUT_OF_MEMORY,"BVH memory allocation failed");
     return ptr;
   }
 
