@@ -184,9 +184,10 @@ namespace embree
   {
     ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
     ze_device_handle_t  hDevice  = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
-    
+
     ze_raytracing_mem_alloc_ext_desc_t rt_desc;
     rt_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_RAYTRACING_EXT_PROPERTIES;
+    rt_desc.pNext = nullptr;
     rt_desc.flags = 0;
     
     ze_device_mem_alloc_desc_t device_desc;
