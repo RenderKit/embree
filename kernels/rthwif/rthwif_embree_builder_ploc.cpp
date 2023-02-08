@@ -479,13 +479,13 @@ namespace embree
     // === estimate size of the BVH ===
     // ================================
 
-    uint numPrimitives             = numQuads + numInstances + numProcedurals;  // actual #prims can be lower due to invalid instances or procedurals but quads count is accurate at this point
-    const uint allocated_size      = args.accelBufferBytes;
-    const uint header              = 128;
-    const uint leaf_size           = estimateSizeLeafNodes(numQuads,numInstances,numProcedurals);
-    const uint node_size           = (header + leaf_size) <= allocated_size ? allocated_size - leaf_size - header : 0; 
-    const uint node_data_start     = header;
-    const uint leaf_data_start     = header + node_size;
+    size_t numPrimitives             = numQuads + numInstances + numProcedurals;  // actual #prims can be lower due to invalid instances or procedurals but quads count is accurate at this point
+    const size_t allocated_size      = args.accelBufferBytes;
+    const size_t header              = 128;
+    const size_t leaf_size           = estimateSizeLeafNodes(numQuads,numInstances,numProcedurals);
+    const size_t node_size           = (header + leaf_size) <= allocated_size ? allocated_size - leaf_size - header : 0; 
+    const size_t node_data_start     = header;
+    const size_t leaf_data_start     = header + node_size;
       
     // =================================================================
     // === if allocated accel buffer is too small, return with error ===
@@ -506,7 +506,7 @@ namespace embree
     }
 
     const size_t conv_mem_size = sizeof(numPrimitives)*numPrimitives;
-    const uint NUM_ACTIVE_LARGE_WGS = min((numPrimitives+LARGE_WG_SIZE-1)/LARGE_WG_SIZE,(uint)MAX_WGS);
+    const size_t NUM_ACTIVE_LARGE_WGS = min((numPrimitives+LARGE_WG_SIZE-1)/LARGE_WG_SIZE,(size_t)MAX_WGS);
 
     // ===========================
     // === set up all pointers ===

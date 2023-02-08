@@ -427,6 +427,15 @@ namespace embree
         if (lower_z < -FLT_LARGE || upper_z > FLT_LARGE) return false;
         return true;
       }
+
+      __forceinline uint numEqualDims() const
+      {
+        uint equal_dims = lower_x == upper_x ? 1 : 0;
+        equal_dims += lower_y == upper_y ? 1 : 0;
+        equal_dims += lower_z == upper_z ? 1 : 0;
+        return equal_dims;
+      }
+
       
       friend __forceinline embree_ostream operator<<(embree_ostream cout, const AABB3f &aabb)
       {
