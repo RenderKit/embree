@@ -13,77 +13,19 @@ jobs:
   ################################################################################
   ###############################################################################
 
-  ####################################################################
-  # Setup dpcpp and gfx if not already on NAS
-  ####################################################################
-  setup_dpcpp:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
-    with:
-      image: embree/ubuntu:22.04
-      runs-on: '[ "Linux", "docker", "build" ]'
-      cmd: |
-        DPCPP_VERSION=$(cat .ci-env.yaml | grep DPCPP_VERSION_LINUX | sed 's/.*:\ //')
-        echo "Setup DPCPP ${DPCPP_VERSION} for Linux"
-        ./scripts/download_dpcpp.sh ${DPCPP_VERSION} ${NAS_LINUX}/dpcpp-compiler-linux LINUX ${PUBLIC_GITHUB_TOKEN}
-        DPCPP_VERSION=$(cat .ci-env.yaml | grep DPCPP_VERSION_WIN | sed 's/.*:\ //')
-        echo "Setup DPCPP ${DPCPP_VERSION} for Windows"
-        ./scripts/download_dpcpp.sh ${DPCPP_VERSION} ${NAS_LINUX}/dpcpp-compiler-win WIN ${PUBLIC_GITHUB_TOKEN}
-
-  setup_gfx:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
-    with:
-      image: embree/ubuntu:22.04
-      runs-on: '[ "Linux", "docker", "build" ]'
-      cmd: |
-        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_EMBARGO | sed 's/.*:\ //')
-        echo "Setup GFX ${GFX_VERSION} for Linux"
-        echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/" ${ARTIFACTORY_TOKEN}
-        ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/ ${ARTIFACTORY_TOKEN}
-        
-        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_INTERNAL | sed 's/.*:\ //')
-        echo "Setup GFX ${GFX_VERSION} for Linux"
-        echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/" ${ARTIFACTORY_TOKEN}
-        ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/ ${ARTIFACTORY_TOKEN}
-
-        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_PUBLIC | sed 's/.*:\ //')
-        echo "Setup GFX ${GFX_VERSION} for Linux"
-        echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/" ${ARTIFACTORY_TOKEN}
-        ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/ ${ARTIFACTORY_TOKEN}
-
-        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_RELEASE | sed 's/.*:\ //')
-        echo "Setup GFX ${GFX_VERSION} for Linux"
-        echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/" ${ARTIFACTORY_TOKEN}
-        ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/ ${ARTIFACTORY_TOKEN}
-        
-        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_WIN_INTERNAL | sed 's/.*:\ //')
-        echo "Setup GFX ${GFX_VERSION} for Windows"
-        echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/" ${ARTIFACTORY_TOKEN}
-        ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/ ${ARTIFACTORY_TOKEN}
-
-        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_WIN_PUBLIC | sed 's/.*:\ //')
-        echo "Setup GFX ${GFX_VERSION} for Windows"
-        echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/" ${ARTIFACTORY_TOKEN}
-        ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/ ${ARTIFACTORY_TOKEN}
-
-        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_WIN_RELEASE | sed 's/.*:\ //')
-        echo "Setup GFX ${GFX_VERSION} for Windows"
-        echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/" ${ARTIFACTORY_TOKEN}
-        ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/ ${ARTIFACTORY_TOKEN}
-
-
   ########################################
   # Linux DG2
   ########################################
 
   linux-DG2-JIT-INTERNAL:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
-    needs: [setup_gfx, setup_dpcpp]
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
     with:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
+      install-gfx-driver: false
       artifact-out: linux-DG2-JIT-INTERNAL
       artifact-path: ./build .ctest_conf
       cmd: |
@@ -93,12 +35,14 @@ jobs:
 
   linux-DG2-JIT-INTERNAL-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
     needs: ["linux-DG2-JIT-INTERNAL"]
     with:
       image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
       artifact-in: linux-DG2-JIT-INTERNAL
       cmd: |
         scripts/test.py test --debug
@@ -106,11 +50,13 @@ jobs:
 
   linux-DG2-JIT-PUBLIC:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
-    needs: [setup_gfx, setup_dpcpp]
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
     with:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-public.env
+      install-gfx-driver: false
       artifact-out: linux-DG2-JIT-PUBLIC
       artifact-path: ./build .ctest_conf
       cmd: |
@@ -120,12 +66,14 @@ jobs:
 
   linux-DG2-JIT-PUBLIC-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
     needs: ["linux-DG2-JIT-PUBLIC"]
     with:
       image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-public.env
       artifact-in: linux-DG2-JIT-PUBLIC
       cmd: |
         scripts/test.py test --debug
@@ -133,11 +81,13 @@ jobs:
 
   linux-DG2-AOT-INTERNAL:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
-    needs: [setup_gfx, setup_dpcpp]
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
     with:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-embargo.env
+      install-gfx-driver: false
       artifact-out: linux-DG2-AOT-INTERNAL
       artifact-path: ./build .ctest_conf
       cmd: |
@@ -147,12 +97,14 @@ jobs:
 
   linux-DG2-AOT-INTERNAL-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
     needs: ["linux-DG2-AOT-INTERNAL"]
     with:
       image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
       artifact-in: linux-DG2-AOT-INTERNAL
       cmd: |
         scripts/test.py test --debug
@@ -160,11 +112,13 @@ jobs:
 
   linux-DG2-JIT-PUBLIC-ICX:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
-    needs: [setup_gfx, setup_dpcpp]
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
     with:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      install-gfx-driver: false
       artifact-out: linux-DG2-JIT-PUBLIC-ICX
       artifact-path: ./build .ctest_conf
       cmd: |
@@ -174,12 +128,14 @@ jobs:
 
   linux-DG2-JIT-PUBLIC-ICX-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
     needs: ["linux-DG2-JIT-PUBLIC-ICX"]
     with:
       image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
       artifact-in: linux-DG2-JIT-PUBLIC-ICX
       cmd: |
         scripts/test.py test --debug
@@ -191,11 +147,13 @@ jobs:
   
   linux-PVC-JIT-INTERNAL:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
-    needs: [setup_gfx, setup_dpcpp]
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
     with:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-embargo.env
+      install-gfx-driver: false
       artifact-out: linux-PVC-JIT-INTERNAL
       artifact-path: ./build .ctest_conf
       cmd: |
@@ -205,12 +163,14 @@ jobs:
 
   linux-PVC-1T-JIT-INTERNAL-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
     needs: ["linux-PVC-JIT-INTERNAL"]
     with:
       image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "pvc" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-embargo.env
       artifact-in: linux-PVC-JIT-INTERNAL
       cmd: |
         export EnableImplicitScaling=0
@@ -265,10 +225,12 @@ jobs:
 
   windows-DG2-AOT-INTERNAL:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
-    needs: [setup_gfx, setup_dpcpp]
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@devel
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
+      shell: 'cmd'
       cmd: |
         python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_SYCL_SUPPORT:ON sycl:dg2 intensity:3 gfx:INTERNAL
         python scripts/test.py build
@@ -276,10 +238,12 @@ jobs:
 
   windows-DG2-AOT-PUBLIC:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
-    needs: [setup_gfx, setup_dpcpp]
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@devel
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
+      shell: 'cmd'
       cmd: |
         python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_SYCL_SUPPORT:ON sycl:dg2 intensity:3 gfx:PUBLIC
         python scripts/test.py build
@@ -287,10 +251,12 @@ jobs:
 
   windows-DG2-JIT-PUBLIC-ICX:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
-    needs: [setup_gfx, setup_dpcpp]
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@devel
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-internal.env
+      shell: 'cmd'
       cmd: |
         python scripts/test.py configure platform:x64 compiler:ICX2023.0.0 ispc:ispc1.18.1 isa:AVX512 tasking:TBB2021.7.0 build:Release EMBREE_SYCL_SUPPORT:ON sycl:none intensity:2 gfx:PUBLIC
         python scripts/test.py build
@@ -438,6 +404,11 @@ jobs:
         python scripts/test.py build
         python scripts/test.py test
 
+  ################################################################################
+  ################################################################################
+  # CPU tests
+  ################################################################################
+  ################################################################################
 
   ########################################
   # MacOS
