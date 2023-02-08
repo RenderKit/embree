@@ -2,6 +2,7 @@ Version History
 ---------------
 
 ### Embree 4.1.0
+- Improved performance for Tiger Lake CPUs.
 
 ### Embree 4.0.0
 -   This Embree release adds support for Intel® Arc™ GPUs through SYCL.
