@@ -654,12 +654,8 @@ namespace embree
       size_t bytes = headerBytes+size.accelBufferExpectedBytes;
       
       /* allocate BVH data */
-      if (accel.size() < bytes) // FIXME: accel.size() triggers a USM transfer
-      {
-        accel.reserve(bytes);
-        accel.resize(bytes);
-      }
-        
+      if (accel.size() < bytes) accel.resize(bytes);
+      
 #if !defined(EMBREE_SYCL_GPU_BVH_BUILDER)      
       memset(accel.data(),0,accel.size()); // FIXME: not required
 #endif
