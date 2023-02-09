@@ -591,10 +591,7 @@ namespace embree
       size_t bytes = headerBytes+size.accelBufferExpectedBytes;
         
       /* allocate BVH data */
-      if (accel.size() < bytes) {
-        accel.reserve(bytes);
-        accel.resize(bytes);
-      }
+      if (accel.size() < bytes) accel.resize(bytes);
       memset(accel.data(),0,accel.size()); // FIXME: not required
 
       /* build BVH for each time segment */
