@@ -6,7 +6,7 @@
 namespace embree
 {
   template<typename InternalNode>
-  void computeInternalNodeStatistics(BVHStatistics& stats, QBVH6::Node node, const BBox1f time_range, const float node_bounds_area, const float root_bounds_area)
+  void computeInternalNodeStatistics(BVHStatistics& stats, QBVH6::Node node, const BBox1f time_range, const float node_bounds_area, const float root_bounds_area, size_t depth)
   {
     InternalNode* inner = node.innerNode<InternalNode>();
 
@@ -16,7 +16,7 @@ namespace embree
       if (inner->valid(i))
       {
         size++;
-        computeStatistics(stats, inner->child(i), time_range, area(inner->bounds(i)), root_bounds_area, InternalNode::NUM_CHILDREN);
+        computeStatistics(stats, inner->child(i), time_range, area(inner->bounds(i)), root_bounds_area, InternalNode::NUM_CHILDREN, depth+1);
       }
     }
 
@@ -26,9 +26,10 @@ namespace embree
     stats.internalNode.numChildrenTotal += InternalNode::NUM_CHILDREN;
     stats.internalNode.nodeSAH += time_range.size() * node_bounds_area / root_bounds_area;
     stats.internalNode.numBytes += sizeof(InternalNode);
+    stats.depth = max(stats.depth, depth);
   }
 
-  void computeStatistics(BVHStatistics& stats, QBVH6::Node node, const BBox1f time_range, const float node_bounds_area, const float root_bounds_area, uint32_t numChildren)
+  void computeStatistics(BVHStatistics& stats, QBVH6::Node node, const BBox1f time_range, const float node_bounds_area, const float root_bounds_area, uint32_t numChildren, size_t depth)
   {
     switch (node.type)
     {
@@ -108,7 +109,7 @@ namespace embree
     }
     case NODE_TYPE_INTERNAL:
     {
-      computeInternalNodeStatistics<QBVH6::InternalNode6>(stats, node, time_range, node_bounds_area, root_bounds_area);
+      computeInternalNodeStatistics<QBVH6::InternalNode6>(stats, node, time_range, node_bounds_area, root_bounds_area, depth);
       break;
     }
     default:
@@ -119,8 +120,8 @@ namespace embree
   BVHStatistics QBVH6::computeStatistics() const
   {
     BVHStatistics stats;
-    if (empty()) return stats;
-    embree::computeStatistics(stats,root(),BBox1f(0,1),area(bounds),area(bounds),6);
+    if (empty()) return stats;    
+    embree::computeStatistics(stats,root(),BBox1f(0,1),area(bounds),area(bounds),6,1);
     return stats;
   }
 

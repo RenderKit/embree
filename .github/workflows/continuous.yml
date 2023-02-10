@@ -243,11 +243,11 @@ jobs:
       artifact-out: linux-PVC-JIT-INTERNAL
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 gfx:EMBARGO
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 gfx:INTERNAL
         scripts/test.py build --debug
         scripts/test.py build
 
-  linux-PVC-JIT-INTERNAL-test:
+  linux-PVC-1T-JIT-INTERNAL-test:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     needs: ["linux-PVC-JIT-INTERNAL"]
@@ -257,6 +257,21 @@ jobs:
       runs-on: '[ "Linux", "docker", "pvc" ]'
       artifact-in: linux-PVC-JIT-INTERNAL
       cmd: |
+        export EnableImplicitScaling=0
+        scripts/test.py test --debug
+        scripts/test.py test
+
+  linux-PVC-2T-JIT-INTERNAL-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    needs: ["linux-PVC-JIT-INTERNAL"]
+    with:
+      image: embree/ubuntu:22.04
+      options: --device=/dev/dri:/dev/dri
+      runs-on: '[ "Linux", "docker", "pvc" ]'
+      artifact-in: linux-PVC-JIT-INTERNAL
+      cmd: |
+        export EnableImplicitScaling=1
         scripts/test.py test --debug
         scripts/test.py test
 

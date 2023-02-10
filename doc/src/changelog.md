@@ -2,7 +2,8 @@ Version History
 ---------------
 
 ### Embree 4.1.0
-- Improved performance for Tiger Lake CPUs.
+- Improved performance for Tiger Lake, Comet Lake, Cannon Lake, Kaby Lake,
+  and Skylake client CPUs by using 256 bit SIMD instructions by default.
 
 ### Embree 4.0.0
 -   This Embree release adds support for Intel® Arc™ GPUs through SYCL.
