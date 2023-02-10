@@ -227,6 +227,10 @@ namespace embree
         if (new_alloced <= size_alloced) 
           return size_alloced;
 
+        /* if current size is 0 allocate exact requested size */
+        if (size_alloced == 0)
+          return new_alloced;
+
         /* resize to next power of 2 otherwise */
         size_t new_size_alloced = size_alloced;
         while (new_size_alloced < new_alloced) {

@@ -284,9 +284,12 @@ namespace embree
     static const uint FATLEAF_SHIFT0     =  31;
     static const uint FATLEAF_SHIFT1     =  30;    
     static const uint FATLEAF_BIT0       =  (uint)1<<FATLEAF_SHIFT0;
+#if USE_NEW_OPENING == 1    
     static const uint FATLEAF_BIT1       =  (uint)1<<FATLEAF_SHIFT1;    
     static const uint FATLEAF_MASK       = ~(FATLEAF_BIT0|FATLEAF_BIT1);
-    
+#else
+    static const uint FATLEAF_MASK       = ~(FATLEAF_BIT0);
+#endif    
     
     uint left;   // 4 bytes
     uint right;  // 4 bytes
@@ -301,9 +304,13 @@ namespace embree
     
     __forceinline void init(const uint _left, const uint _right, const gpu::AABB3f &_bounds, const uint subtree_size_left, const uint subtree_size_right)
     {
-      left    = _left  | ((subtree_size_left  <= FATLEAF_THRESHOLD ? 1 : 0)<<FATLEAF_SHIFT0) | ((subtree_size_left   == 2 ? 1 : 0)<<FATLEAF_SHIFT1);
-      right   = _right | ((subtree_size_right <= FATLEAF_THRESHOLD ? 1 : 0)<<FATLEAF_SHIFT0) | ((subtree_size_right  == 2 ? 1 : 0)<<FATLEAF_SHIFT1);
+      left    = _left  | ((subtree_size_left  <= FATLEAF_THRESHOLD ? 1 : 0)<<FATLEAF_SHIFT0);
+      right   = _right | ((subtree_size_right <= FATLEAF_THRESHOLD ? 1 : 0)<<FATLEAF_SHIFT0);
 
+#if USE_NEW_OPENING == 1
+      left  |= ((subtree_size_left   == 2 ? 1 : 0)<<FATLEAF_SHIFT1);
+      right |= ((subtree_size_right  == 2 ? 1 : 0)<<FATLEAF_SHIFT1);
+#endif      
       // === better coalescing ===             
       bounds.lower_x = _bounds.lower_x;
       bounds.lower_y = _bounds.lower_y;
@@ -340,10 +347,19 @@ namespace embree
     }
 
     static  __forceinline bool isFatLeaf     (const uint index, const uint numPrimitives) { return (index & FATLEAF_BIT0) || (index & FATLEAF_MASK) < numPrimitives;  }
-    static  __forceinline bool isSmallFatLeaf(const uint index, const uint numPrimitives) { return (index & FATLEAF_BIT1) && (index & FATLEAF_MASK) >= numPrimitives;  }        
+#if USE_NEW_OPENING == 1    
+    static  __forceinline bool isSmallFatLeaf(const uint index, const uint numPrimitives) { return (index & FATLEAF_BIT1) && (index & FATLEAF_MASK) >= numPrimitives;  }
+#endif    
     static  __forceinline uint getIndex      (const uint index)                           { return index & FATLEAF_MASK;  }
     static  __forceinline bool isLeaf        (const uint index, const uint numPrimitives) { return getIndex(index) < numPrimitives;  }
-    static  __forceinline uint makeFatLeaf   (const uint index, const uint numChildren)   { return index | (1<<FATLEAF_SHIFT0) | ((numChildren <= 2 ? 1 : 0)<<FATLEAF_SHIFT1);  }
+    static  __forceinline uint makeFatLeaf   (const uint index, const uint numChildren)
+    {
+#if USE_NEW_OPENING == 1          
+      return index | (1<<FATLEAF_SHIFT0) | ((numChildren <= 2 ? 1 : 0)<<FATLEAF_SHIFT1);
+#else
+      return index | (1<<FATLEAF_SHIFT0);      
+#endif      
+    }
 
     __forceinline operator const gpu::AABB3f &() const { return bounds; }
 

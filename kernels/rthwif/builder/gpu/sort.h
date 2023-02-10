@@ -210,8 +210,8 @@ namespace embree
                                                                     const uint step_local  = item.get_local_range().size();
                                                                     const uint groupID     = item.get_group(0);
 
-                                                                    const uint startID = (groupID + 0)*primitives / RADIX_SORT_NUM_DSS;
-                                                                    const uint endID   = (groupID + 1)*primitives / RADIX_SORT_NUM_DSS;
+                                                                    const uint startID = ((size_t)groupID + 0)*(size_t)primitives / RADIX_SORT_NUM_DSS;
+                                                                    const uint endID   = ((size_t)groupID + 1)*(size_t)primitives / RADIX_SORT_NUM_DSS;
                                                                                                                                                                                                             
                                                                     if (localID < RADIX_SORT_BINS)
                                                                       histogram[localID] = 0;
@@ -258,8 +258,8 @@ namespace embree
                                                                         const uint subgroupLocalID = get_sub_group_local_id();
                                                                         
 
-                                                                        const uint startID = (groupID + 0)*primitives / RADIX_SORT_NUM_DSS;
-                                                                        const uint endID   = (groupID + 1)*primitives / RADIX_SORT_NUM_DSS;
+                                                                        const uint startID = ((size_t)groupID + 0)*(size_t)primitives / RADIX_SORT_NUM_DSS;
+                                                                        const uint endID   = ((size_t)groupID + 1)*(size_t)primitives / RADIX_SORT_NUM_DSS;
 
                                                                         
                                                                         /* --- reduce global histogram --- */

@@ -74,7 +74,8 @@ namespace embree
     cout << "  numBuildPrimitivesPostSplit = " << numBuildPrimitivesPostSplit << std::endl;
     cout << "  primRefSplits               = " << std::setprecision(2) << percent(numBuildPrimitivesPostSplit,numBuildPrimitives) << "%" << std::endl;
     cout << "  numBVHPrimitives            = " << totalPrimitives << std::endl;
-    cout << "  spatialSplits               = " << std::setprecision(2) << percent(totalPrimitives,numScenePrimitives) << "%" << std::endl;    
+    cout << "  spatialSplits               = " << std::setprecision(2) << percent(totalPrimitives,numScenePrimitives) << "%" << std::endl;
+    cout << "  maxDepth                    = " << depth << std::endl;
     cout << std::endl;
      
     cout << "                      #nodes     SAH   total       bytes     used    total   b/node  b/child   b/prim  #child     fill" << std::endl;

@@ -99,6 +99,32 @@ IF (WIN32)
   LIST(FILTER CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS INCLUDE REGEX ".*msvcp[0-9]+\.dll|.*vcruntime[0-9]+\.dll|.*vcruntime[0-9]+_[0-9]+\.dll")
   INSTALL(FILES ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
 
+ELSE()
+
+  IF(SYCL_ONEAPI_ICX AND EMBREE_INSTALL_DEPENDENCIES)
+
+    GET_FILENAME_COMPONENT(DPCPP_COMPILER_DIR ${CMAKE_CXX_COMPILER} PATH)
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libsvml.so")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libsvml.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+    ENDIF()
+
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libirng.so")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libirng.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+    ENDIF()
+
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libimf.so")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libimf.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+    ENDIF()
+
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libintlc.so")
+      FILE(GLOB LIB_SYCL_FILES LIST_DIRECTORIES FALSE
+        "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libintlc.so"
+        "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libintlc.so.?")
+      INSTALL(FILES ${LIB_SYCL_FILES} DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+    ENDIF()
+
+  ENDIF()
+
 ENDIF()
 
 ##############################################################
