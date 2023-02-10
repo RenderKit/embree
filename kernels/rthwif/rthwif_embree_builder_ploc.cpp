@@ -59,7 +59,7 @@ namespace embree
     return sizeof(PLOCGlobals) + sizeof(size_t)*MAX_LARGE_WGS + numPrimitives * sizeof(LeafGenerationData);
   }
   
-  void checkBVH2PlocHW(BVH2Ploc *bvh2, uint index,uint &nodes,uint &leaves,float &nodeSAH, float &leafSAH, const uint numPrimitives, const uint bvh2_max_allocations)
+  void checkBVH2PlocHW(BVH2Ploc *bvh2, uint index,uint &nodes,uint &leaves,float &nodeSAH, float &leafSAH, uint &maxDepth,const uint numPrimitives, const uint bvh2_max_allocations, const uint depth)
   {
     if (bvh2[index].bounds.empty()) {
       PRINT2(index,bvh2[index]);
@@ -79,6 +79,7 @@ namespace embree
     }
     else
     {
+      maxDepth = max(maxDepth,depth+1);
       uint indices[BVH_BRANCHING_FACTOR];
       const uint numChildren = openBVH2MaxAreaSortChildren(BVH2Ploc::getIndex(index),indices,bvh2,numPrimitives);
       for (uint i=0;i<numChildren;i++)
@@ -89,10 +90,10 @@ namespace embree
       nodeSAH += bvh2[index].bounds.area();
       
       if (!bvh2[index].bounds.encloses( bvh2[ bvh2[index].leftIndex() ].bounds )) PRINT2("ENCLOSING ERROR LEFT",index);
-      checkBVH2PlocHW(bvh2,bvh2[index].leftIndex(),nodes,leaves,nodeSAH,leafSAH,numPrimitives,bvh2_max_allocations);
+      checkBVH2PlocHW(bvh2,bvh2[index].leftIndex(),nodes,leaves,nodeSAH,leafSAH,maxDepth,numPrimitives,bvh2_max_allocations,depth+1);
 
       if (!bvh2[index].bounds.encloses( bvh2[ bvh2[index].rightIndex() ].bounds )) PRINT2("ENCLOSING ERROR RIGHT",index);
-      checkBVH2PlocHW(bvh2,bvh2[index].rightIndex(),nodes,leaves,nodeSAH,leafSAH,numPrimitives,bvh2_max_allocations);
+      checkBVH2PlocHW(bvh2,bvh2[index].rightIndex(),nodes,leaves,nodeSAH,leafSAH,maxDepth,numPrimitives,bvh2_max_allocations,depth+1);
     }
   }
 
@@ -769,10 +770,11 @@ namespace embree
       uint leaves = 0;
       float nodeSAH = 0;
       float leafSAH = 0;
-      checkBVH2PlocHW(bvh2,globals->rootIndex,nodes,leaves,nodeSAH,leafSAH,numPrimitives,globals->bvh2_index_allocator);
+      uint maxDepth = 0;
+      checkBVH2PlocHW(bvh2,globals->rootIndex,nodes,leaves,nodeSAH,leafSAH,maxDepth,numPrimitives,globals->bvh2_index_allocator,0);
       nodeSAH /= globals->geometryBounds.area();
       leafSAH /= globals->geometryBounds.area();                
-      PRINT4(nodes,leaves,nodeSAH,leafSAH);
+      PRINT5(nodes,leaves,nodeSAH,leafSAH,maxDepth);
  
       /* --- dummy kernel to trigger USM transfer again to not screw up device timings --- */
       sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
