@@ -17,8 +17,99 @@
  */
 
 
-/** Required alignment of acceleration structure buffers. */
+/**
+
+ \brief Additional ze_result_t enum fields. 
+
+*/
+typedef enum ze_result_t
+{
+  ZE_RESULT_SUCCESS,                             ///< operation was successfull
+  ZE_RESULT_ERROR_UNKNOWN,                       ///< unknown error occurred
+  
+  ZE_RESULT_RAYTRACING_EXT_RETRY_BUILD_ACCEL,    ///< acceleration structure build ran out of memory, app should re-try with more memory
+  ZE_RESULT_RAYTRACING_EXT_OPERATION_DEFERRED,   ///< operation is deferred to a parallel operation
+  
+} ze_raytracing_result_t;
+
+
+/**
+
+  \brief Additional ze_structure_type_t enum fields.
+
+*/
+
+typedef enum ze_structure_type_t
+{
+  ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_DESC,  ///< ze_raytracing_accel_size_ext_desc_t
+  ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC, ///< ze_raytracing_build_accel_ext_desc_t
+  
+} ze_structure_type_t;
+
+
+/**
+  \brief Feature bit for acceleration structure build API
+*/
+typedef enum ze_device_raytracing_ext_flag_t {
+  ZE_DEVICE_RAYTRACING_EXT_FLAG_ACCEL_BUILD  = 1 << 0,    ///< support for ray tracing acceleration structure build API
+};
+
+
+/**
+
+  \brief A handle of a parallel operation that can get joined with worker threads. 
+
+  A parallel operation object can get used to perform acceleration
+  structure build operations in parallel on multiple hardware
+  thread. Therefore, a parallel build operation attached to an
+  acceleration strucutre build can get joined by application manged
+  threads to assist in building the acceleration structure.
+
+*/
+typedef ze_raytracing_parallel_operation_opaque_ext_handle_t* ze_raytracing_parallel_operation_ext_handle_t;
+
+
+/**
+
+   \brief Create new parallel operation
+
+   Creates a new parallel operation that can get attached to a build
+   operation. Only a single build operation can be attached to a
+   parallel operation at a given time.
+*/
+
+ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingParallelOperationCreateExt( ze_raytracing_parallel_operation_ext_handle_t* phParallelOperation );
+
+
+/**
+  \brief Destroy parallel operation.
+*/
+
+ZE_APIEXPORT ze_result ZE_APICALL zeRaytracingParallelOperationDestroyExt( ze_raytracing_parallel_operation_ext_handle_t hParallelOperation );
+
+
+/**
+  \brief Returns the maximal number of threads that can join the parallel operation.
+*/
+
+ZE_APIEXPORT ze_result ZE_APICALL zeRaytracingParallelOperationGetMaxConcurrencyExt( ze_raytracing_parallel_operation_ext_handle_t hParallelOperation, uint32_t* pMaxConcurency );
+
+
+/**
+   \brief Join parallel operation
+
+   Called by worker threads to join a parallel build operation. When
+   the build finished, all worker threads return from this function
+   with the same error code of the build.
+*/
+
+ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingParallelOperationJoinExt( ze_raytracing_parallel_operation_ext_handle_t hParallelOperation );
+
+
+
+/** Required alignment of acceleration structure buffer. */
 #define ZE_RAYTRACING_ACCELERATION_STRUCTURE_ALIGNMENT_EXT 128
+
 
 /**
  \brief Enumeration of geometry flags supported by the geometries.
@@ -139,8 +230,8 @@ typedef struct ze_raytracing_triangle_indices_ext_t
   barycentric u/v pametrization of the quad is defined to be (u=0,
   v=0) at v0, (u=1, v=0) at v1, (u=0, v=1) at v3, and (u=1, v=1) at
   v2. This is achieved by correcting the u'/v' coordinates of the
-  second triangle by u = 1-u' and v = 1-v', thus the parametrization
-  is piecewise linear.
+  second triangle by u = 1-u' and v = 1-v', yielding a piecewise
+  linear parametrization.
 
 */
 typedef struct ze_raytracing_quad_indices_ext_t
@@ -259,8 +350,8 @@ typedef struct ze_raytracing_geometry_triangles_ext_desc_t  // 40 bytes
   barycentric u/v pametrization of the quad is defined to be (u=0,
   v=0) at v0, (u=1, v=0) at v1, (u=0, v=1) at v3, and (u=1, v=1) at
   v2. This is achieved by correcting the u'/v' coordinates of the
-  second triangle by u = 1-u' and v = 1-v', thus the parametrization
-  is piecewise linear.
+  second triangle by u = 1-u' and v = 1-v', yielding a piecewise
+  linear parametrization.
 
 */
 typedef struct ze_raytracing_geometry_quads_ext_desc_t // 40 bytes
@@ -344,43 +435,6 @@ typedef struct ze_raytracing_geometry_instance_ext_desc_t  // 32 bytes
 
 
 /**
-  \brief Bitmask with features supported. 
-*/
-#if 0
-typedef enum ze_raytracing_features_ext_t {
-  ZE_RAYTRACING_FEATURE_EXT_NONE = 0,
-  ZE_RAYTRACING_FEATURE_EXT_GEOMETRY_TYPE_TRIANGLES  = 1 << 0,    ///< support for ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES geometries 
-  ZE_RAYTRACING_FEATURE_EXT_GEOMETRY_TYPE_QUADS      = 1 << 1,    ///< support for ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS geometries
-  ZE_RAYTRACING_FEATURE_EXT_GEOMETRY_TYPE_AABBS_FPTR = 1 << 2,    ///< support for ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR geometries
-  ZE_RAYTRACING_FEATURE_EXT_GEOMETRY_TYPE_INSTANCE   = 1 << 3,    ///< support for ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE geometries
-  
-} ze_raytracing_features_ext_t;
-#else
-typedef enum ze_device_raytracing_ext_flag_t {
-  ZE_DEVICE_RAYTRACING_EXT_FLAG_GEOMETRY_TYPE_TRIANGLES  = 1 << 0,    ///< support for ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES geometries 
-  ZE_DEVICE_RAYTRACING_EXT_FLAG_GEOMETRY_TYPE_QUADS      = 1 << 1,    ///< support for ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS geometries
-  ZE_DEVICE_RAYTRACING_EXT_FLAG_GEOMETRY_TYPE_AABBS_FPTR = 1 << 2,    ///< support for ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR geometries
-  ZE_DEVICE_RAYTRACING_EXT_FLAG_GEOMETRY_TYPE_INSTANCE   = 1 << 3,    ///< support for ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE geometries
-};
-#endif
-
-/**
-
- \brief Additional ze_result_t enum fields. 
-
-*/
-typedef enum ze_result_t
-{
-  ZE_RESULT_SUCCESS,                             ///< operation was successfull
-  ZE_RESULT_ERROR_UNKNOWN,                       ///< unknown error occurred
-  
-  ZE_RESULT_RAYTRACING_EXT_RETRY_BUILD_ACCEL,    ///< acceleration structure build ran out of memory, app should re-try with more memory
-  ZE_RESULT_RAYTRACING_EXT_OPERATION_DEFERRED,   ///< operation is deferred into ray tracing parallel operation
-  
-} ze_raytracing_result_t;
-
-
-/**
 
    \brief Build quality hint for acceleration structure build. 
 
@@ -438,26 +492,12 @@ typedef enum ze_raytracing_build_ext_flags_t
 
 /**
 
-  \brief A handle of a parallel operation that can get joined with worker threads. 
-
-  A parallel operation object can get used to perform acceleration
-  structure build operations in parallel on multiple hardware
-  thread. Therefore, a parallel build operation attached to an
-  acceleration strucutre build can get joined by application manged
-  threads to assist in building the acceleration structure.
-
-*/
-typedef ze_raytracing_parallel_operation_opaque_ext_handle_t* ze_raytracing_parallel_operation_ext_handle_t;
-
-
-/**
-
    \brief Returns information about acceleration structure size estimates
 
    This structure is returned by zeRaytracingGetAccelSizeExt and
    contains acceleration structure size estimates.
 */
-typedef struct ze_raytracing_accel_size_ext_t
+typedef struct ze_raytracing_accel_size_ext_desc_t
 {
   /** [in] type of this structure */
   ze_structure_type_t stype;
@@ -486,13 +526,13 @@ typedef struct ze_raytracing_accel_size_ext_t
   */
   size_t scratchBufferBytes;
   
-} ze_raytracing_accel_size_ext_t;
+} ze_raytracing_accel_size_ext_desc_t;
 
 
 /** 
    \brief Argument structure passed to zeRaytracingBuildAccelExt function.
 */
-typedef struct ze_raytracing_build_accel_args_ext_t
+typedef struct ze_raytracing_build_accel_ext_desc_t
 {
   /** [in] type of this structure */
   ze_structure_type_t stype;
@@ -501,30 +541,30 @@ typedef struct ze_raytracing_build_accel_args_ext_t
   void* pNext;
   
   /** 
-      Array of pointers to geometry descriptors. This array and the
-      geometry descriptors themselves can be standard host memory
-      allocations. A pointer to a geometry descriptor can be null, in
-      which case the geometry is treated as empty. 
+      [in] Array of pointers to geometry descriptors. This array and
+      the geometry descriptors themselves have to be standard host
+      memory allocations. A pointer to a geometry descriptor can be
+      NULL, in which case the geometry is treated as empty.
   */
   const ze_raytracing_geometry_ext_desc_t** geometries;
 
   /**
-     Number of geometries in geometry descriptor array. 
+     [in] Number of geometries in geometry descriptor array. 
   */
   uint32_t numGeometries;
 
   /**
-     Destination buffer for acceleration structure. This has to be a
-     shared memory allocation aligned to
-     ZE_RAYTRACING_ACCELERATION_STRUCTURE_ALIGNMENT bytes and using the ray
-     tracing allocation descriptor
-     (ze_raytracing_mem_alloc_ext_ext_desc_t) in the zeMemAllocShared
-     call. 
+     [out] Destination buffer for acceleration structure. This has to
+     be a shared memory allocation aligned to
+     ZE_RAYTRACING_ACCELERATION_STRUCTURE_ALIGNMENT bytes and using
+     the ray tracing allocation descriptor
+     ze_raytracing_mem_alloc_ext_ext_desc_t in the zeMemAllocShared
+     call.
   */
   void* accelBuffer;
 
   /** 
-      Number of allocated bytes of the acceleration structure
+      [in] Number of allocated bytes of the acceleration structure
       buffer. This can be 0 in which case the build implementation may
       just return an improved accel buffer expected size estimate by
       looking at the scene data. 
@@ -532,23 +572,23 @@ typedef struct ze_raytracing_build_accel_args_ext_t
   size_t accelBufferBytes;
 
   /**
-     Scratch space buffer to be used during accleration structure
-     construction. Can be a standard host allocation. 
+     [scratch] Scratch space buffer to be used during accleration structure
+     construction. This buffer has to be a standard host memory allocation.
   */
   void* scratchBuffer;
 
   /**
-     Number of allocated bytes of the scratch space buffer. 
+     [in] Number of allocated bytes of the scratch space buffer. 
   */
   size_t scratchBufferBytes;
 
   /** 
-      Build quality to use (see ze_raytracing_build_quality_ext_t) 
+      [in] Build quality to use (see ze_raytracing_build_quality_ext_t) 
   */
   ze_raytracing_build_quality_ext_t quality;
 
   /**
-     Some hints for acceleration structure build (see ze_raytracing_build_ext_flags_t) 
+     [in] Some build flags for acceleration structure build (see ze_raytracing_build_ext_flags_t) 
   */
   ze_raytracing_build_ext_flags_t flags;
 
@@ -564,34 +604,28 @@ typedef struct ze_raytracing_build_accel_args_ext_t
   ze_raytracing_parallel_operation_ext_handle_t parallelOperation;
 
   /**
-     A pointer passed to callbacks. 
+     [in,optional] A pointer passed to callbacks.
   */
   void* buildUserPtr;
   
   /**
      [out][optional] When the pointer is NULL no data is
      returned. When the build fails with
-     ZE_RESULT_RAYTRACING_EXT_RETRY_BUILD_ACCEL, this returns new
+     ZE_RESULT_RAYTRACING_EXT_RETRY_BUILD_ACCEL, this returns the new
      expected acceleration structure bytes to be used for
      re-build. When the build succeeds this returns the number of
-     bytes used in the acceleration structure buffer.
+     bytes actually used in the acceleration structure buffer.
   */
   size_t* accelBufferBytesOut;
   
   /**
      [out][optional] Destination address to write acceleration
-     structure bounds to (can be NULL).
+     structure bounds to. When set to NULL no data is returned.
   */
   ze_raytracing_aabb_ext_t* boundsOut;
   
-} ze_raytracing_build_accel_args_ext_t;
+} ze_raytracing_build_accel_ext_desc_t;
 
-
-/*
- * Returns features supported by the implementation.
- */
-
-//ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingGetSupportedFeaturesExt( ze_device_handle_t deviceID, ze_raytracing_features_ext_t* pRaytracingFeatures );
 
 /**
 
@@ -608,7 +642,7 @@ typedef struct ze_raytracing_build_accel_args_ext_t
 
 */
 
-ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingGetAccelSizeExt( const ze_raytracing_build_accel_args_t* args, ze_raytracing_accel_size_ext_t* pAccelSizeOut );
+ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingGetAccelSizeExt( const ze_raytracing_build_accel_t* args, ze_raytracing_accel_size_ext_desc_t* pAccelSizeOut );
 
 
 /**
@@ -619,7 +653,7 @@ ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingGetAccelSizeExt( const ze_raytra
    structure of the scene consisting of the specified geometry
    descriptors and writes the acceleration structure to the provided
    destination buffer. All types of geometries can get freely mixed
-   inside a scene. Please see ze_raytracing_build_accel_args_ext_t for
+   inside a scene. Please see ze_raytracing_build_accel_ext_desc_t for
    a description of all input arguments.
 
    It is the users responsibility to manage the acceleration structure
@@ -671,38 +705,5 @@ ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingGetAccelSizeExt( const ze_raytra
 
  */
 
-ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingBuildAccelExt( const ze_raytracing_build_accel_args_ext_t* args );
+ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingBuildAccelExt( const ze_raytracing_build_accel_ext_desc_t* args );
 
-/**
-
-   \brief Create new parallel operation
-
-   Creates a new parallel operation that can get attached to a build
-   operation. Only a single build operation can be attached to a
-   parallel operation at a given time.
-*/
-
-ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingParallelOperationCreateExt( ze_raytracing_parallel_operation_ext_handle_t* phParallelOperation );
-
-/**
-  \brief Destroy parallel operation.
-*/
-
-ZE_APIEXPORT ze_result ZE_APICALL zeRaytracingParallelOperationDestroyExt( ze_raytracing_parallel_operation_ext_handle_t hParallelOperation );
-
-/**
-  \brief Returns the maximal number of threads that can join the parallel operation.
-*/
-
-ZE_APIEXPORT ze_result ZE_APICALL zeRaytracingParallelOperationGetMaxConcurrencyExt( ze_raytracing_parallel_operation_ext_handle_t hParallelOperation, uint32_t* pMaxConcurency );
-
-
-/**
-   \brief Join parallel operation
-
-   Called by worker threads to join a parallel build operation. When
-   the build finished, all worker threads return from this function
-   with the same error code of the build.
-*/
-
-ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingParallelOperationJoinExt( ze_raytracing_parallel_operation_ext_handle_t hParallelOperation );
