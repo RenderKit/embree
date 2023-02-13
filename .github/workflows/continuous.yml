@@ -179,12 +179,14 @@ jobs:
 
   linux-PVC-2T-JIT-INTERNAL-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
     needs: ["linux-PVC-JIT-INTERNAL"]
     with:
       image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "pvc" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-embargo.env
       artifact-in: linux-PVC-JIT-INTERNAL
       cmd: |
         export EnableImplicitScaling=1
