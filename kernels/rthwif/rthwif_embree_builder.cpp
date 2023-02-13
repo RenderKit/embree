@@ -578,7 +578,9 @@ namespace embree
       createGeometryDesc(&geomDescrData[offset],scene,scene->get(geomID),type);
       geomDescr[geomID] = (RTHWIF_GEOMETRY_DESC*) &geomDescrData[offset];
       offset += sizeof_RTHWIF_GEOMETRY(type);
+#if !defined(EMBREE_SYCL_GPU_BVH_BUILDER)      
       assert(offset <= geomDescrData.size());
+#endif      
     }
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)

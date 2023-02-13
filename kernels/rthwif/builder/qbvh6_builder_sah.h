@@ -167,7 +167,7 @@ namespace embree
       struct Settings
       {
       public:
-        size_t maxDepth = 32;        //!< maximum depth of BVH to build
+        size_t maxDepth = 27;        //!< maximum depth of BVH to build
         size_t sahBlockSize = 6;     //!< blocksize for SAH heuristic
         size_t leafSize[NUM_TYPES] = { 9,9,6,6,6 }; //!< target size of a leaf
         size_t typeSplitSize = 128;  //!< number of primitives when performing type splitting
@@ -611,6 +611,10 @@ namespace embree
         /* creates a fat leaf, which is an internal node that only points to real leaves */
         const ReductionTy createFatLeaf(const BuildRecord& curRecord, char* curAddr, size_t curBytes)
         {
+          /* this should never occur but is a fatal error */
+          if (curRecord.depth > cfg.maxDepth)
+            throw_RTCError(RTC_ERROR_UNKNOWN,"BVH too deep");
+          
           /* there should be at least one primitive and not too many */
           assert(curRecord.size() > 0);
           assert(curRecord.size() <= cfg.leafSize[curRecord.type]);
@@ -686,8 +690,9 @@ namespace embree
         const ReductionTy createLargeLeaf(const BuildRecord& curRecord, char* curAddr, size_t curBytes)
         {
           /* this should never occur but is a fatal error */
-          assert(curRecord.depth <= cfg.maxDepth);
-          
+          if (curRecord.depth > cfg.maxDepth)
+            throw_RTCError(RTC_ERROR_UNKNOWN,"BVH too deep");
+                      
           /* all primitives have to have the same type */
           Type ty MAYBE_UNUSED = getType(prims[curRecord.begin()].geomID());
           for (size_t i=curRecord.begin(); i<curRecord.end(); i++)
