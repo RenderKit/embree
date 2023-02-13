@@ -236,11 +236,8 @@ def runConfig(config):
         dpcpp_dir = os.environ["DPCPP_ROOT"]
         gfx_dir = os.environ["GFX_DRIVER_ROOT"]
       else :
-        DPCPP_VERSION, GFX_VERSION = get_dpcpp_and_gfx_version(config, compiler, OS)
-        DPCPP_VERSION=DPCPP_VERSION.replace("/", "\\")
-        GFX_VERSION=GFX_VERSION.replace("/", "\\")
-        dpcpp_dir = ""+NAS+"\\dpcpp-compiler-win\\"+DPCPP_VERSION
-        gfx_dir = ""+NAS+"\\gfx-driver-win\\"+GFX_VERSION
+        print("Error DPCPP_ROOT or GFX_DRIVER_ROOT is not set")
+        sys.exit(1)
 
       cmake_build_suffix=""
       ispc_ext = "-vs2015"
@@ -275,7 +272,12 @@ def runConfig(config):
       env.append("source "+NAS+"/intel/oneAPI/compiler/"+compiler[3:]+"/env/vars.sh")
       conf.append("-D CMAKE_CXX_COMPILER=icpx -D CMAKE_C_COMPILER=icx")
       if enable_sycl_support:
-        tmp, GFX_VERSION = get_dpcpp_and_gfx_version(config, compiler, OS)
+        if os.environ["GFX_DRIVER_ROOT"] :
+          GFX_VERSION = os.environ["GFX_DRIVER_VERSION"]
+          gfx_dir = os.environ["GFX_DRIVER_ROOT"]
+        else :
+          print("Error GFX_DRIVER_ROOT is not set")
+          sys.exit(1)
 
         # set up backend
         env.append("export SYCL_DEVICE_FILTER=level_zero")
@@ -305,9 +307,8 @@ def runConfig(config):
         dpcpp_dir = os.environ["DPCPP_ROOT"]
         gfx_dir = os.environ["GFX_DRIVER_ROOT"]+"/install"
       else :
-        DPCPP_VERSION, GFX_VERSION = get_dpcpp_and_gfx_version(config, compiler, OS)
-        gfx_dir = ""+NAS+"/gfx-driver-linux/"+GFX_VERSION+"/install"
-        dpcpp_dir = ""+NAS+"/dpcpp-compiler-linux/"+DPCPP_VERSION
+        print("Error DPCPP_ROOT or GFX_DRIVER_ROOT is not set")
+        sys.exit(1)
 
       # set up backend
       if "backend" in config: # opencl or level_zero
