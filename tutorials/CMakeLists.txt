@@ -36,7 +36,7 @@ IF (EMBREE_TUTORIALS_GLFW)
       glfw
       GIT_REPOSITORY https://github.com/glfw/glfw
       GIT_TAG 3.3.8
-      PATCH_COMMAND git config --global core.autocrlf true && git reset --hard && git apply -v ${CMAKE_CURRENT_SOURCE_DIR}/common/glfw/glfw.patch
+      PATCH_COMMAND git reset --hard && git apply -v ${CMAKE_CURRENT_SOURCE_DIR}/common/glfw/glfw.patch
     )
     FetchContent_MakeAvailable(glfw)
 
