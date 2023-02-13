@@ -229,14 +229,21 @@ def runConfig(config):
       env.append('"'+ONE_API_PATH_WINDOWS+'\\'+compiler[3:]+'\\env\\vars.bat"')
       conf.append("-G Ninja -D CMAKE_CXX_COMPILER=icx -DCMAKE_C_COMPILER=icx")
     elif (compiler.startswith("dpcpp")):
+
+      if os.environ["DPCPP_ROOT"] and os.environ["GFX_DRIVER_ROOT"] :
+        DPCPP_VERSION = os.environ["DPCPP_VERSION"]
+        GFX_VERSION = os.environ["GFX_DRIVER_VERSION"]
+        dpcpp_dir = os.environ["DPCPP_ROOT"]
+        gfx_dir = os.environ["GFX_DRIVER_ROOT"]
+      else :
+        DPCPP_VERSION, GFX_VERSION = get_dpcpp_and_gfx_version(config, compiler, OS)
+        DPCPP_VERSION=DPCPP_VERSION.replace("/", "\\")
+        GFX_VERSION=GFX_VERSION.replace("/", "\\")
+        dpcpp_dir = ""+NAS+"\\dpcpp-compiler-win\\"+DPCPP_VERSION
+        gfx_dir = ""+NAS+"\\gfx-driver-win\\"+GFX_VERSION
+
       cmake_build_suffix=""
       ispc_ext = "-vs2015"
-      DPCPP_VERSION, GFX_VERSION = get_dpcpp_and_gfx_version(config, compiler, OS)
-      DPCPP_VERSION=DPCPP_VERSION.replace("/", "\\")
-      GFX_VERSION=GFX_VERSION.replace("/", "\\")
-
-      dpcpp_dir = ""+NAS+"\\dpcpp-compiler-win\\"+DPCPP_VERSION
-      gfx_dir = ""+NAS+"\\gfx-driver-win\\"+GFX_VERSION
 
       conf.append("-G Ninja")
       conf.append("-D CMAKE_CXX_COMPILER=clang++")
@@ -291,7 +298,16 @@ def runConfig(config):
     elif (compiler.startswith("CLANG")):
       conf.append("-D CMAKE_CXX_COMPILER="+NAS+"/clang/v"+compiler[5:]+"/bin/clang++ -D CMAKE_C_COMPILER="+NAS+"/clang/v"+compiler[5:]+"/bin/clang")
     elif (compiler.startswith("dpcpp")):
-      DPCPP_VERSION, GFX_VERSION = get_dpcpp_and_gfx_version(config, compiler, OS)
+
+      if os.environ["DPCPP_ROOT"] and os.environ["GFX_DRIVER_ROOT"] :
+        DPCPP_VERSION = os.environ["DPCPP_VERSION"]
+        GFX_VERSION = os.environ["GFX_DRIVER_VERSION"]
+        dpcpp_dir = os.environ["DPCPP_ROOT"]
+        gfx_dir = os.environ["GFX_DRIVER_ROOT"]+"/install"
+      else :
+        DPCPP_VERSION, GFX_VERSION = get_dpcpp_and_gfx_version(config, compiler, OS)
+        gfx_dir = ""+NAS+"/gfx-driver-linux/"+GFX_VERSION+"/install"
+        dpcpp_dir = ""+NAS+"/dpcpp-compiler-linux/"+DPCPP_VERSION
 
       # set up backend
       if "backend" in config: # opencl or level_zero
@@ -301,8 +317,6 @@ def runConfig(config):
         print("using level_zero backend")
         env.append("export SYCL_DEVICE_FILTER=level_zero")
 
-      gfx_dir = ""+NAS+"/gfx-driver-linux/"+GFX_VERSION+"/install"
-      dpcpp_dir = ""+NAS+"/dpcpp-compiler-linux/"+DPCPP_VERSION
       conf.append("-D CMAKE_CXX_COMPILER="+dpcpp_dir+"/bin/clang++")
       conf.append("-D CMAKE_C_COMPILER="  +dpcpp_dir+"/bin/clang")
 

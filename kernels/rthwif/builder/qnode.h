@@ -10,9 +10,6 @@
 
 namespace embree
 {
-  static constexpr int ray_time_accuracy = 16;   // number of bits for ray.time to use in rttrav unit
-  static constexpr int grid_motion_accuracy = 8; // number of bits of grid dlower1 to use in rttrav unit
-  
   /* The type of a node. */
   enum NodeType : uint8_t
   {
