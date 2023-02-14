@@ -249,6 +249,7 @@ namespace embree
          g_motion_blur = false;
          animate = false;
          render_time = cin->getFloat();
+         g_debug = render_time;
        }, "--time: sets time for motion blur");
 
     registerOption("coherent", [this] (Ref<ParseStream> cin, const FileName& path) {
