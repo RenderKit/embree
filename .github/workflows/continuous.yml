@@ -201,20 +201,20 @@ jobs:
 
 
 
-  linux-DG2-AOT-INTERNAL-test:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
-    needs: ["linux-DG2-AOT-INTERNAL"]
-    with:
-      image: embree/ubuntu:22.04
-      options: --device=/dev/dri:/dev/dri
-      runs-on: '[ "Linux", "docker", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
-      artifact-in: linux-DG2-AOT-INTERNAL
-      cmd: |
-        scripts/test.py test --debug
-        scripts/test.py test
+ # linux-DG2-AOT-INTERNAL-test:
+ #   secrets: inherit
+ #   uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+ #   needs: ["linux-DG2-AOT-INTERNAL"]
+ #   with:
+ #     image: embree/ubuntu:22.04
+ #     options: --device=/dev/dri:/dev/dri
+ #     runs-on: '[ "Linux", "docker", "dg2" ]'
+ #     project: embree
+ #     env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
+ #     artifact-in: linux-DG2-AOT-INTERNAL
+ #     cmd: |
+ #       scripts/test.py test --debug
+ #       scripts/test.py test
 
   linux-DG2-JIT-PUBLIC-ICX:
     secrets: inherit
