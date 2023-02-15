@@ -17,6 +17,7 @@
 #define RELATIVE_MIN_LOD_DISTANCE_FACTOR 32.0f
 
 #include "../../kernels/rthwif/builder/gpu/lcgbp.h"
+#include "../../kernels/rthwif/builder/gpu/morton.h"
 
 namespace embree {
 
@@ -315,8 +316,88 @@ namespace embree {
   // ==============================================================================================
   // ==============================================================================================
   // ==============================================================================================
-  
+
+
+  void extractRanges(const gpu::Range &current, const gpu::MortonCodePrimitive64x32Bits3D *const mcodes, std::vector<gpu::Range> &ranges, const uint threshold)
+  {
+    if (current.size() < threshold)
+    {
+      ranges.push_back(current);
+    }
+    else
+    {
+      gpu::Range left, right;
+      splitRange(current,mcodes,left,right);
+      extractRanges(left,mcodes,ranges,threshold);
+      extractRanges(right,mcodes,ranges,threshold);      
+    }
+  }
+
+  void convertISPCQuadMesh(ISPCQuadMesh* mesh, RTCScene scene, ISPCOBJMaterial *material)
+  {
+    PING;
+    BBox3fa bounds(empty);
+    for (uint i=0;i<mesh->numVertices;i++)
+      bounds.extend(mesh->positions[0][i]);
+    const Vec3f lower = bounds.lower;
+    const Vec3f diag = bounds.size();
+    const Vec3f inv_diag  = diag != Vec3fa(0.0f) ? Vec3fa(1.0f) / diag : Vec3fa(0.0f);
+
+    std::vector<CompressedVertex> compressed_vertices;
+    std::vector<gpu::MortonCodePrimitive64x32Bits3D> mcodes;
+    std::vector<gpu::Range> ranges;
     
+    for (uint i=0;i<mesh->numVertices;i++)
+    {
+      CompressedVertex v(mesh->positions[0][i],lower,inv_diag);
+      compressed_vertices.push_back(v);      
+      //PRINT3(i,mesh->positions[0][i],v.decompress(lower,diag));
+    }
+
+    for (uint i=0;i<mesh->numQuads;i++)
+    {
+      const uint v0 = mesh->quads[i].v0;
+      const uint v1 = mesh->quads[i].v1;
+      const uint v2 = mesh->quads[i].v2;
+      const uint v3 = mesh->quads[i].v3;
+
+      const Vec3fa &vtx0 = mesh->positions[0][v0];
+      const Vec3fa &vtx1 = mesh->positions[0][v1];
+      const Vec3fa &vtx2 = mesh->positions[0][v2];
+      const Vec3fa &vtx3 = mesh->positions[0][v3];
+
+      BBox3fa quadBounds(empty);
+      quadBounds.extend(vtx0);
+      quadBounds.extend(vtx1);
+      quadBounds.extend(vtx2);
+      quadBounds.extend(vtx3);
+            
+      const uint grid_size = 1 << 21;
+      const Vec3f grid_base = lower;
+      const Vec3f grid_extend = diag;
+      const Vec3f grid_scale = ((float)grid_size * 0.99f) * inv_diag;
+      const Vec3f centroid =  quadBounds.center2();
+
+      const Vec3f gridpos_f = (centroid-grid_base)*grid_scale;                                                                      
+      const uint gx = (uint)gridpos_f.x;
+      const uint gy = (uint)gridpos_f.y;
+      const uint gz = (uint)gridpos_f.z;
+      const uint64_t code = bitInterleave64<uint64_t>(gx,gy,gz);
+      mcodes.push_back(gpu::MortonCodePrimitive64x32Bits3D(code,i));      
+    }
+    
+    std::sort(mcodes.begin(), mcodes.end()); 
+
+    gpu::Range current(0,mcodes.size());
+    extractRanges(current,&*mcodes.begin(),ranges,128);
+
+    for (uint i=0;i<ranges.size();i++)
+      PRINT4(i,ranges[i].start,ranges[i].end,ranges[i].size());
+    
+    PRINT(bounds);
+    PRINT(diag);    
+    exit(0);
+  }  
   
   void convertISPCGridMesh(ISPCGridMesh* grid, RTCScene scene, ISPCOBJMaterial *material)
   {
@@ -421,13 +502,15 @@ namespace embree {
       ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
       if (geometry->type == GRID_MESH)
         convertISPCGridMesh((ISPCGridMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID]);
+      else if (geometry->type == QUAD_MESH)
+        convertISPCQuadMesh((ISPCQuadMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID]);
     }
 #else
     const uint gridResX = 16*1024;
     const uint gridResY = 16*1024;    
     generateGrid(data.g_scene,gridResX,gridResY);
 #endif    
-  
+    exit(0);
     /* update scene */
     //rtcCommitScene (data.g_scene);  
   }

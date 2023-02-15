@@ -262,9 +262,40 @@ namespace embree {
       return lod_diff_levels != 0;
     }
 
-    __forceinline uchar get_lod_diff_level(const uint index) const { return (lod_diff_levels >> (index*2)) & 3; }
+    __forceinline uchar get_lod_diff_level(const uint index) const { return (lod_diff_levels >> (index*2)) & 3; }        
+  };
+
+
+  // =====================================================================================================================================================================
+  // =====================================================================================================================================================================
+  // =====================================================================================================================================================================
+
+  struct CompressedVertex
+  {
+    ushort x,y,z;
+
+    static const uint BITS_PER_DIM = 16;
+    static const uint BITS_MASK = ((uint)1<<BITS_PER_DIM)-1;
+    static const uint RES_PER_DIM = BITS_MASK;
     
+    __forceinline CompressedVertex() {}
+
+    __forceinline CompressedVertex(const Vec3f &org, const Vec3f &lower, const Vec3f &inv_diag)
+    {
+      const Vec3f norm_v = (org - lower)*inv_diag;
+      x = (ushort)(norm_v.x * (float)RES_PER_DIM);
+      y = (ushort)(norm_v.y * (float)RES_PER_DIM);
+      z = (ushort)(norm_v.z * (float)RES_PER_DIM);
+    }
+
+    __forceinline Vec3f decompress(const Vec3f &lower, const Vec3f &diag) const
+    {
+      const Vec3f vv((float)x,(float)y,(float)z);
+      return lower + vv * (1.0f / RES_PER_DIM) * diag;
+    }
     
   };
+  
+  
   
 };
