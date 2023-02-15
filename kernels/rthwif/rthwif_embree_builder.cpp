@@ -435,7 +435,7 @@ namespace embree
       if (type.extraBytes) return createGeometryDesc((GEOMETRY_INSTANCE_DESC*)out,scene,dynamic_cast<Instance*>(geom));
       else                 return createGeometryDesc((RTHWIF_GEOMETRY_INSTANCE_DESC*)out,scene,dynamic_cast<Instance*>(geom));
     case RTHWIF_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY: createGeometryDesc((RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC*)out,scene,dynamic_cast<LossyCompressedGeometry*>(geom));
-    default: assert(false);
+    default: /* assert(false); */
     }
   }
 

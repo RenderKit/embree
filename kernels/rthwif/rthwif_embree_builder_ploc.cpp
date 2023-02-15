@@ -20,7 +20,12 @@
 // === maximum number of workgroups with 1024 elements, DG2/PVC perform best with 64 ===
 #define MAX_LARGE_WGS                         256
 
+// === rebalance if BVH2 subtrees are degenerated ===
+#define BVH2_REBALANCE                        1
+
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)      
+
+#define COMPUTE_MAX_DEPTH_STATS 0
 
 namespace embree
 {
@@ -63,6 +68,14 @@ namespace embree
     // === sizeof(size_t)*MAX_LARGE_WGS for prefix sums across large work groups ===
     return sizeof(PLOCGlobals) + sizeof(size_t)*MAX_LARGE_WGS + numPrimitives * sizeof(LeafGenerationData);
   }
+
+  uint getBVH2Depth(BVH2Ploc *bvh2, uint index, const uint numPrimitives)
+  {
+    if (BVH2Ploc::getIndex(index) < numPrimitives) //isLeaf 
+      return 1;
+    else
+      return 1 + std::max(getBVH2Depth(bvh2,bvh2[index].leftIndex(),numPrimitives),getBVH2Depth(bvh2,bvh2[index].rightIndex(),numPrimitives));
+  }  
   
   void checkBVH2PlocHW(BVH2Ploc *bvh2, uint index,uint &nodes,uint &leaves,float &nodeSAH, float &leafSAH, uint &maxDepth,const uint numPrimitives, const uint bvh2_max_allocations, const uint depth)
   {
@@ -533,7 +546,7 @@ namespace embree
     MCPrim *const mc1 = mc0 + numPrimitives;     
     MCPrim *const morton_codes[2] = { mc0, mc1 }; 
     uint *const cluster_index     = (uint*) (bvh_mem + 0 * numPrimitives * sizeof(uint)); // * 2
-    uint *const bvh2_subtree_size = (uint*) (bvh_mem + 2 * numPrimitives * sizeof(uint)); // * 2        
+    BVH2SubTreeState *const bvh2_subtree_size = (BVH2SubTreeState*) (bvh_mem + 2 * numPrimitives * sizeof(uint)); // * 2        
     uint *cluster_i[2] = { cluster_index + 0, cluster_index + numPrimitives };        
     uint *const cluster_index_source = cluster_i[0];
     uint *const   cluster_index_dest = cluster_i[1];
@@ -649,7 +662,7 @@ namespace embree
     double device_compute_mc_time = 0.0f;
 
     if (!fastMCMode)
-      computeMortonCodes64Bit_SaveMSBBits(gpu_queue,&globals->centroidBounds,mc0,bvh2,bvh2_subtree_size,numPrimitives,device_compute_mc_time,verbose1);
+      computeMortonCodes64Bit_SaveMSBBits(gpu_queue,&globals->centroidBounds,mc0,bvh2,(uint*)bvh2_subtree_size,numPrimitives,device_compute_mc_time,verbose1);
     else
       computeMortonCodes64Bit(gpu_queue,&globals->centroidBounds,(gpu::MortonCodePrimitive40x24Bits3D*)mc1,bvh2,numPrimitives,0,(uint64_t)-1,device_compute_mc_time,verbose1);
             
@@ -672,7 +685,7 @@ namespace embree
 
       sycl::event initial = sycl::event();
       sycl::event block0  = gpu::radix_sort_Nx8Bit(gpu_queue, morton_codes[0], morton_codes[1], numPrimitives, (uint*)scratch, 4, 8, initial, sortWGs);      
-      sycl::event restore = restoreMSBBits(gpu_queue,mc0,bvh2_subtree_size,numPrimitives,block0,verbose1);      
+      sycl::event restore = restoreMSBBits(gpu_queue,mc0,(uint*)bvh2_subtree_size,numPrimitives,block0,verbose1);      
       sycl::event block1  = gpu::radix_sort_Nx8Bit(gpu_queue, morton_codes[0], morton_codes[1], numPrimitives, (uint*)scratch, 4, 8, restore, sortWGs);
       gpu::waitOnEventAndCatchException(block1);      
     }
@@ -717,7 +730,7 @@ namespace embree
       std::cout << "=> Init Clusters: " << timer.get_host_timer() << " ms (host) " << device_init_clusters_time << " ms (device) " << std::endl;		
 
     uint numPrims = numPrimitives;
-  
+     
     // ===================================================================================================================================================
     // ===================================================================================================================================================
     // ===================================================================================================================================================
@@ -736,40 +749,75 @@ namespace embree
     // ========================      
 
     clearScratchMem(gpu_queue,sync_mem,0,NUM_ACTIVE_LARGE_WGS,device_ploc_iteration_time,verbose1);
-  
+
+    float ratio = 100.0f;
     for (;numPrims>1;iteration++)
     {          
       // ==================================================            
       // ==== single kernel path if #prims < threshold ====
       // ==================================================
-
+      
       if (numPrims < SINGLE_WG_SWITCH_THRESHOLD)
       {
+#if BVH2_REBALANCE == 1
+        // ===============================================================================================================
+        // ========================================== rebalance BVH2 if degenerated ======================================
+        // ===============================================================================================================
+#if COMPUTE_MAX_DEPTH_STATS == 1
+        uint maxDepth = 0;
+        for (uint i=0;i<numPrims;i++)
+        {
+          const uint depth = getBVH2Depth(bvh2,cluster_index_source[i],numPrimitives);
+          maxDepth = max(maxDepth,depth);
+        }
+        PRINT(maxDepth);
+#endif
+        
+        double rebalanceBVH2_time = 0.0f;
+        rebalanceBVH2(gpu_queue,bvh2,cluster_index,numPrims,bvh2_subtree_size,numPrimitives,rebalanceBVH2_time,verbose1);
+        if (unlikely(verbose2))
+          PRINT(rebalanceBVH2_time);
+        timer.add_to_device_timer(BuildTimer::BUILD,rebalanceBVH2_time);
+
+#if COMPUTE_MAX_DEPTH_STATS == 1
+        maxDepth = 0;
+        for (uint i=0;i<numPrims;i++)
+        {
+          const uint depth = getBVH2Depth(bvh2,cluster_index_source[i],numPrimitives);
+          maxDepth = max(maxDepth,depth);
+        }
+        PRINT(maxDepth);        
+#endif
+        // ===============================================================================================================
+        // ===============================================================================================================
+        // ===============================================================================================================
+#endif        
+        
         double singleWG_time = 0.0f;
         singleWGBuild(gpu_queue, globals, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, numPrims, SEARCH_RADIUS_SHIFT, singleWG_time, verbose1);
         //PRINT((float)singleWG_time);
         timer.add_to_device_timer(BuildTimer::BUILD,singleWG_time);
         numPrims = 1;
+        ratio = (numPrims-1) / numPrims * 100.0f;        
       }
       else  
       {            
         // ===================================================================================
         // ==== nearest neighbor search, merge clusters and create bvh2 nodes (fast path) ====
         // ===================================================================================
-
         device_ploc_iteration_time = 0.0f;
-        iteratePLOC(gpu_queue,globals,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,sync_mem,numPrims,NUM_ACTIVE_LARGE_WGS,host_device_tasks,SEARCH_RADIUS_SHIFT,device_ploc_iteration_time,verbose1);
+        iteratePLOC(gpu_queue,globals,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,sync_mem,numPrims,NUM_ACTIVE_LARGE_WGS,host_device_tasks,SEARCH_RADIUS_SHIFT,device_ploc_iteration_time,ratio < BOTTOM_LEVEL_RATIO,verbose1);
         timer.add_to_device_timer(BuildTimer::BUILD,device_ploc_iteration_time);
 
         
         const uint new_numPrims = *host_device_tasks;
-        assert(new_numPrims < numPrims);          
-        numPrims = new_numPrims;          
-            
+        assert(new_numPrims < numPrims);
+        ratio = (float)(numPrims-new_numPrims) / numPrims * 100.0f;
+        numPrims = new_numPrims;                      
         // ==========================            
       }        
       if (unlikely(verbose2))
-        PRINT4(iteration,numPrims,(float)device_ploc_iteration_time,(float)timer.get_accum_device_timer(BuildTimer::BUILD));
+        PRINT5(iteration,numPrims,ratio,(float)device_ploc_iteration_time,(float)timer.get_accum_device_timer(BuildTimer::BUILD));
     }
     
     timer.stop(BuildTimer::BUILD);        
@@ -783,12 +831,10 @@ namespace embree
 
     if (unlikely(verbose2))
     {
-      PRINT(globals->bvh2_index_allocator);
-      if (globals->bvh2_index_allocator > 2*numPrimitives)
+      PRINT2(globals->bvh2_index_allocator,2*numPrimitives);              
+      if (globals->bvh2_index_allocator >= 2*numPrimitives)
         FATAL("BVH2 construction, allocator");
-      
-      PRINT(globals->rootIndex);
-      PRINT(globals->bvh2_index_allocator);
+      PRINT(globals->rootIndex);      
       uint nodes = 0;
       uint leaves = 0;
       float nodeSAH = 0;
@@ -885,6 +931,8 @@ namespace embree
 #if 0
     if (verbose2)
     {
+      gpu::waitOnQueueAndCatchException(gpu_queue);
+      
       qbvh->print(std::cout,qbvh->root(),0,6);
       BVHStatistics stats = qbvh->computeStatistics();      
       stats.print(std::cout);
