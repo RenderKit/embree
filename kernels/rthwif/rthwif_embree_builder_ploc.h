@@ -16,11 +16,20 @@
 #define PAIR_OFFSET_SHIFT            28
 #define GEOMID_MASK                  (((uint)1<<PAIR_OFFSET_SHIFT)-1)
 #define LARGE_WG_SIZE                1024
-#define USE_NEW_OPENING              0
 #define TRIANGLE_QUAD_BLOCK_SIZE     64
 #define QBVH6_HEADER_OFFSET          128
 #define HOST_DEVICE_COMM_BUFFER_SIZE 16*sizeof(uint)
 #define EQUAL_DISTANCES_WORKAROUND   1
+
+#if 1
+#define TOP_LEVEL_RATIO              5.0f
+#define BOTTOM_LEVEL_RATIO           5.0f
+#else
+#define TOP_LEVEL_RATIO              0.0f
+#define BOTTOM_LEVEL_RATIO           0.0f
+#endif
+#define REBALANCE_BVH2_MINIMUM_DEPTH    30
+#define REBALANCE_BVH2_SIZE_DEPTH_RATIO 5.0f
 
 namespace embree
 {  
@@ -136,6 +145,26 @@ namespace embree
 
   static_assert(sizeof(PLOCGlobals) == 128, "PLOCGlobals must be 128 bytes large");
 
+  struct BVH2SubTreeState
+  {
+    static const uint DEPTH_BITS = 7;
+    static const uint LEAVES_BITS = 32 - DEPTH_BITS;
+    uint depth : DEPTH_BITS;
+    uint leaves : LEAVES_BITS;
+    static const uint MAX_LEAVES = ((uint)1 << LEAVES_BITS)-1;
+
+    __forceinline BVH2SubTreeState() {}
+
+    __forceinline BVH2SubTreeState(const uint leaves, const uint depth) : leaves(leaves), depth(depth) {}
+    
+    __forceinline BVH2SubTreeState(const BVH2SubTreeState &left, const BVH2SubTreeState &right)
+    {
+      leaves = sycl::min((uint)(left.leaves)+(uint)right.leaves,MAX_LEAVES);
+      depth = sycl::max(left.depth+(uint)1,right.depth+(uint)1);
+    }
+
+    
+  };
         
   struct __aligned(64) QBVHNodeN
   {
@@ -280,12 +309,7 @@ namespace embree
     static const uint FATLEAF_SHIFT0     =  31;
     static const uint FATLEAF_SHIFT1     =  30;    
     static const uint FATLEAF_BIT0       =  (uint)1<<FATLEAF_SHIFT0;
-#if USE_NEW_OPENING == 1    
-    static const uint FATLEAF_BIT1       =  (uint)1<<FATLEAF_SHIFT1;    
-    static const uint FATLEAF_MASK       = ~(FATLEAF_BIT0|FATLEAF_BIT1);
-#else
     static const uint FATLEAF_MASK       = ~(FATLEAF_BIT0);
-#endif    
     
     uint left;   // 4 bytes
     uint right;  // 4 bytes
@@ -298,15 +322,11 @@ namespace embree
     __forceinline uint getLeafIndex()   const { return left & FATLEAF_MASK;  }
     __forceinline uint rightIndex()     const { return right & FATLEAF_MASK; }
     
-    __forceinline void init(const uint _left, const uint _right, const gpu::AABB3f &_bounds, const uint subtree_size_left, const uint subtree_size_right)
+    __forceinline void init(const uint _left, const uint _right, const gpu::AABB3f &_bounds, const BVH2SubTreeState &subtree_size_left, const BVH2SubTreeState &subtree_size_right)
     {
-      left    = _left  | ((subtree_size_left  <= FATLEAF_THRESHOLD ? 1 : 0)<<FATLEAF_SHIFT0);
-      right   = _right | ((subtree_size_right <= FATLEAF_THRESHOLD ? 1 : 0)<<FATLEAF_SHIFT0);
+      left    = _left  | ((subtree_size_left.leaves  <= FATLEAF_THRESHOLD ? 1 : 0)<<FATLEAF_SHIFT0);
+      right   = _right | ((subtree_size_right.leaves <= FATLEAF_THRESHOLD ? 1 : 0)<<FATLEAF_SHIFT0);
 
-#if USE_NEW_OPENING == 1
-      left  |= ((subtree_size_left   == 2 ? 1 : 0)<<FATLEAF_SHIFT1);
-      right |= ((subtree_size_right  == 2 ? 1 : 0)<<FATLEAF_SHIFT1);
-#endif      
       // === better coalescing ===             
       bounds.lower_x = _bounds.lower_x;
       bounds.lower_y = _bounds.lower_y;
@@ -343,19 +363,9 @@ namespace embree
     }
 
     static  __forceinline bool isFatLeaf     (const uint index, const uint numPrimitives) { return (index & FATLEAF_BIT0) || (index & FATLEAF_MASK) < numPrimitives;  }
-#if USE_NEW_OPENING == 1    
-    static  __forceinline bool isSmallFatLeaf(const uint index, const uint numPrimitives) { return (index & FATLEAF_BIT1) && (index & FATLEAF_MASK) >= numPrimitives;  }
-#endif    
     static  __forceinline uint getIndex      (const uint index)                           { return index & FATLEAF_MASK;  }
     static  __forceinline bool isLeaf        (const uint index, const uint numPrimitives) { return getIndex(index) < numPrimitives;  }
-    static  __forceinline uint makeFatLeaf   (const uint index, const uint numChildren)
-    {
-#if USE_NEW_OPENING == 1          
-      return index | (1<<FATLEAF_SHIFT0) | ((numChildren <= 2 ? 1 : 0)<<FATLEAF_SHIFT1);
-#else
-      return index | (1<<FATLEAF_SHIFT0);      
-#endif      
-    }
+    static  __forceinline uint makeFatLeaf   (const uint index, const uint numChildren)   { return index | (1<<FATLEAF_SHIFT0);      }
 
     __forceinline operator const gpu::AABB3f &() const { return bounds; }
 
@@ -1592,7 +1602,7 @@ namespace embree
   
 
   template<typename type>  
-    __forceinline void initClusters(sycl::queue &gpu_queue, type *const mc0, const BVH2Ploc *const bvh2, uint *const cluster_index, uint *const bvh2_subtree_size, const uint numPrimitives, double &iteration_time, const bool verbose)    
+    __forceinline void initClusters(sycl::queue &gpu_queue, type *const mc0, const BVH2Ploc *const bvh2, uint *const cluster_index, BVH2SubTreeState *const bvh2_subtree_size, const uint numPrimitives, double &iteration_time, const bool verbose)    
   {
     static const uint INIT_CLUSTERS_WG_SIZE = 256;    
     const sycl::nd_range<1> nd_range1(sycl::range<1>(gpu::alignTo(numPrimitives,INIT_CLUSTERS_WG_SIZE)),sycl::range<1>(INIT_CLUSTERS_WG_SIZE)); 
@@ -1603,7 +1613,7 @@ namespace embree
                            if (globalID < numPrimitives)
                            {
                              const uint index = mc0[globalID].getIndex();
-                             bvh2_subtree_size[globalID] = 1;
+                             bvh2_subtree_size[globalID] = BVH2SubTreeState(1,1);
                              cluster_index[globalID] = index;
                            }
                          });
@@ -1639,13 +1649,18 @@ namespace embree
   }
 
 
-  __forceinline void findNN(const uint localID, const uint ID, const uint local_window_size, const gpu::AABB3f *const cached_bounds, uint *const cached_neighbor, const uint SEARCH_RADIUS_SHIFT)
+  __forceinline void findNN(const uint localID, const uint ID, const uint local_window_size, const gpu::AABB3f *const cached_bounds, uint *const cached_neighbor, const uint SEARCH_RADIUS_SHIFT,const bool forceNeighborMerge=false)
   {
     /* ---------------------------------------------------------- */                                                       
     /* --- compute nearest neighbor and store result into SLM --- */
     /* ---------------------------------------------------------- */
     const uint SEARCH_RADIUS =    (uint)1<<SEARCH_RADIUS_SHIFT;            
-    const uint encode_mask   = ~(((uint)1<<(SEARCH_RADIUS_SHIFT+1))-1);
+    uint encode_mask   = ~(((uint)1<<(SEARCH_RADIUS_SHIFT+1))-1);
+
+    /* --- only look at exponent if we need to force a merge --- */
+    if (forceNeighborMerge)
+      encode_mask =~(((uint)1<<(24))-1);
+    
     
     uint min_area_index = -1;
     const gpu::AABB3f bounds0 = cached_bounds[localID];              
@@ -1667,27 +1682,28 @@ namespace embree
       min_area_index = min(min_area_index,new_area_index0);                  
       gpu::atomic_min_local(&cached_neighbor[localID+r],new_area_index1);                  
     }
-    gpu::atomic_min_local(&cached_neighbor[localID],min_area_index);     
+    gpu::atomic_min_local(&cached_neighbor[localID],min_area_index);
+
   }
 
 
-  __forceinline uint getNewClusterIndexCreateBVH2Node(const uint localID, const uint ID, const uint maxID, const uint local_window_start, const uint *const cluster_index_source, const gpu::AABB3f *const cached_bounds, const uint *const cached_neighbor,const uint *const cached_clusterID, BVH2Ploc *const bvh2, uint *const bvh2_index_allocator, uint *const bvh2_subtree_size, const uint SEARCH_RADIUS_SHIFT)
+  __forceinline uint getNewClusterIndexCreateBVH2Node(const uint localID, const uint ID, const uint maxID, const uint local_window_start, const gpu::AABB3f *const cached_bounds, const uint *const cached_neighbor,const uint *const cached_clusterID, BVH2Ploc *const bvh2, uint *const bvh2_index_allocator, BVH2SubTreeState *const bvh2_subtree_size, const uint SEARCH_RADIUS_SHIFT)
   {
     const uint decode_mask =  (((uint)1<<(SEARCH_RADIUS_SHIFT+1))-1);
               
     uint new_cluster_index = -1;
     if (ID < maxID)
     {                
-      new_cluster_index = cluster_index_source[ID];
+      new_cluster_index = cached_clusterID[ID-local_window_start]; //cluster_index_source[ID];
 #if EQUAL_DISTANCES_WORKAROUND == 1          
-      const uint n_i     = decodeRelativeOffset(ID -local_window_start,cached_neighbor[ID -local_window_start] & decode_mask,  ID) + local_window_start;
-      const uint n_i_n_i = decodeRelativeOffset(n_i-local_window_start,cached_neighbor[n_i-local_window_start] & decode_mask, n_i) + local_window_start;
+      uint n_i     = decodeRelativeOffset(ID -local_window_start,cached_neighbor[ID -local_window_start] & decode_mask,  ID) + local_window_start;
+      uint n_i_n_i = decodeRelativeOffset(n_i-local_window_start,cached_neighbor[n_i-local_window_start] & decode_mask, n_i) + local_window_start;
 #else
-      const uint n_i     = decodeRelativeOffset(ID -local_window_start,cached_neighbor[ID -local_window_start] & decode_mask,  0) + local_window_start;
-      const uint n_i_n_i = decodeRelativeOffset(n_i-local_window_start,cached_neighbor[n_i-local_window_start] & decode_mask,  0) + local_window_start;          
+      uint n_i     = decodeRelativeOffset(ID -local_window_start,cached_neighbor[ID -local_window_start] & decode_mask,  0) + local_window_start;
+      uint n_i_n_i = decodeRelativeOffset(n_i-local_window_start,cached_neighbor[n_i-local_window_start] & decode_mask,  0) + local_window_start;          
 #endif          
       const gpu::AABB3f bounds = cached_bounds[ID - local_window_start];
-                                                
+      
       if (ID == n_i_n_i)  
       {
         if (ID < n_i)
@@ -1702,9 +1718,8 @@ namespace embree
           const uint bvh2_index = gpu::atomic_add_global_sub_group_shared(bvh2_counter,1);
 
           /* --- store new BVH2 node --- */
-          const uint new_size = bvh2_subtree_size[leftIndex] + bvh2_subtree_size[rightIndex];
           bvh2[bvh2_index].init(leftIndex,rightIndex,gpu::merge(leftBounds,rightBounds),bvh2_subtree_size[leftIndex],bvh2_subtree_size[rightIndex]);                                                         
-          bvh2_subtree_size[bvh2_index] = new_size;
+          bvh2_subtree_size[bvh2_index] = BVH2SubTreeState(bvh2_subtree_size[leftIndex],bvh2_subtree_size[rightIndex]);
           new_cluster_index = bvh2_index;
         }
         else
@@ -1714,7 +1729,7 @@ namespace embree
     return new_cluster_index;
   }
   
-  void iteratePLOC (sycl::queue &gpu_queue, PLOCGlobals *const globals, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, uint *const scratch_mem, const uint numPrims, const uint NN_SEARCH_WG_NUM, uint *host_device_tasks, const uint SEARCH_RADIUS_SHIFT, double &iteration_time, const bool verbose)    
+  void iteratePLOC (sycl::queue &gpu_queue, PLOCGlobals *const globals, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, BVH2SubTreeState *const bvh2_subtree_size, uint *const scratch_mem, const uint numPrims, const uint NN_SEARCH_WG_NUM, uint *host_device_tasks, const uint SEARCH_RADIUS_SHIFT, double &iteration_time, const bool forceNeighborMerge, const bool verbose)    
   {
     static const uint NN_SEARCH_SUB_GROUP_WIDTH = 16;
     static const uint NN_SEARCH_WG_SIZE         = LARGE_WG_SIZE;
@@ -1776,7 +1791,7 @@ namespace embree
               /* --- compute nearest neighbor and store result into SLM --- */
               /* ---------------------------------------------------------- */
 
-              findNN(localID,ID,local_window_size,cached_bounds.get_pointer(),cached_neighbor.get_pointer(),SEARCH_RADIUS_SHIFT);
+              findNN(localID,ID,local_window_size,cached_bounds.get_pointer(),cached_neighbor.get_pointer(),SEARCH_RADIUS_SHIFT,forceNeighborMerge);
 
               item.barrier(sycl::access::fence_space::local_space);
               
@@ -1785,7 +1800,6 @@ namespace embree
               /* ---------------------------------------------------------- */
 
               const uint new_cluster_index = getNewClusterIndexCreateBVH2Node(localID,ID,maxID,local_window_start,
-                                                                              cluster_index_source,
                                                                               cached_bounds.get_pointer(),cached_neighbor.get_pointer(),cached_clusterID.get_pointer(),
                                                                               bvh2,bvh2_index_allocator,bvh2_subtree_size,
                                                                               SEARCH_RADIUS_SHIFT);
@@ -1887,7 +1901,7 @@ namespace embree
                              BVH2Ploc *const bvh2,
                              uint *const global_cluster_index_source,
                              uint *const global_cluster_index_dest,
-                             uint *const bvh2_subtree_size,
+                             BVH2SubTreeState *const bvh2_subtree_size,
                              gpu::AABB3f *const cached_bounds,
                              uint *const cached_neighbor,
                              uint *const cached_clusterID,                             
@@ -1905,9 +1919,10 @@ namespace embree
     
     uint *const cluster_index_source = &global_cluster_index_source[startID];
     uint *const cluster_index_dest   = &global_cluster_index_dest[startID];
+
+    float ratio = 100.0f;
     
     uint numPrims = endID-startID; 
-                                                     
     while(numPrims>BOTTOM_UP_THRESHOLD)
     {
       const uint aligned_numPrims = gpu::alignTo(numPrims,WORKING_WG_SIZE);
@@ -1933,22 +1948,22 @@ namespace embree
         cached_clusterID[localID] = clusterID;        
         cached_neighbor[localID] = -1;              
         
+
         item.barrier(sycl::access::fence_space::local_space);
+        
 
         /* ---------------------------------------------------------- */                                                       
         /* --- compute nearest neighbor and store result into SLM --- */
         /* ---------------------------------------------------------- */
-
-        findNN(localID,ID,local_window_size,cached_bounds,cached_neighbor,SEARCH_RADIUS_SHIFT);
+        findNN(localID,ID,local_window_size,cached_bounds,cached_neighbor,SEARCH_RADIUS_SHIFT,ratio < TOP_LEVEL_RATIO);
         
-        item.barrier(sycl::access::fence_space::local_space); 
-
+        item.barrier(sycl::access::fence_space::local_space);
+        
         /* ---------------------------------------------------------- */                                                       
         /* --- merge valid nearest neighbors and create bvh2 node --- */
         /* ---------------------------------------------------------- */
 
         const uint new_cluster_index = getNewClusterIndexCreateBVH2Node(localID,ID,maxID,local_window_start,
-                                                                        cluster_index_source,
                                                                         cached_bounds,cached_neighbor,cached_clusterID,
                                                                         bvh2,bvh2_index_allocator,bvh2_subtree_size,
                                                                         SEARCH_RADIUS_SHIFT);
@@ -1975,8 +1990,12 @@ namespace embree
         cluster_index_source[t] = cluster_index_dest[t];      
 
       item.barrier(sycl::access::fence_space::local_space);
+
+      const uint new_numPrims = total_offset;
       
-      numPrims = total_offset;      
+      ratio = (float)(numPrims-new_numPrims) / numPrims * 100.0f;
+
+      numPrims = total_offset;
     }
     return numPrims; /* return number of remaining cluster reps */
   }
@@ -1985,7 +2004,7 @@ namespace embree
   // ====================================================================================================================================================================================
   // ====================================================================================================================================================================================
   
-  void singleWGBuild(sycl::queue &gpu_queue, PLOCGlobals *const globals, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, const uint numPrimitives, const uint SEARCH_RADIUS_SHIFT, double &iteration_time, const bool verbose)
+  void singleWGBuild(sycl::queue &gpu_queue, PLOCGlobals *const globals, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, BVH2SubTreeState *const bvh2_subtree_size, const uint numPrimitives, const uint SEARCH_RADIUS_SHIFT, double &iteration_time, const bool verbose)
   {
     static const uint SINGLE_WG_SUB_GROUP_WIDTH = 16;
     static const uint SINGLE_WG_SIZE = LARGE_WG_SIZE;
@@ -2013,6 +2032,89 @@ namespace embree
     gpu::waitOnEventAndCatchException(queue_event);
     if (unlikely(verbose)) iteration_time += gpu::getDeviceExecutionTiming(queue_event);      
   }
+
+
+  // =========================================================================================================================================================================
+  // ====================================================================== Rebalance BVH2 ===================================================================================
+  // =========================================================================================================================================================================
+
+  // todo: open only up to fat leaves
+  
+  __forceinline void rebalanceBVH2(BVH2Ploc *bvh2, uint root, const uint numPrimitives,BVH2SubTreeState *const bvh2_subtree_size, uint *const inner, uint *const leaves)
+  {
+    uint numLeaves = 0;
+    uint numInner = 1;
+    inner[0] = root;
+
+    uint start = 0;
+    while(start<numInner)
+    {
+      const uint num = numInner-start;
+      for (uint i=0;i<num;i++)
+      {
+        const uint index = inner[start+i];
+        const uint left  = bvh2[index].leftIndex();          
+        if (BVH2Ploc::isFatLeaf(left,numPrimitives))
+          leaves[numLeaves++] = left;
+        else
+          inner[numInner++] = left;
+
+        const uint right = bvh2[index].rightIndex();
+        if (BVH2Ploc::isFatLeaf(right,numPrimitives))
+          leaves[numLeaves++] = right;
+        else
+          inner[numInner++] = right;
+      }
+      start += num;
+    }
+    
+    uint active = numLeaves;
+    while(active > 1)
+    {
+      uint new_active = 0;
+      for (uint i=0;i<active;i+=2)
+        if (i+1 < active)
+        {
+          const uint innerID = inner[--numInner];
+          const uint leftIndex  = leaves[i+0];
+          const uint rightIndex = leaves[i+1];
+          const gpu::AABB3f &leftBounds  = bvh2[leftIndex].bounds;
+          const gpu::AABB3f &rightBounds = bvh2[rightIndex].bounds;          
+          bvh2[innerID].init(leftIndex,rightIndex,gpu::merge(leftBounds,rightBounds),bvh2_subtree_size[leftIndex],bvh2_subtree_size[rightIndex]);                                                         
+          bvh2_subtree_size[innerID] = BVH2SubTreeState(bvh2_subtree_size[leftIndex],bvh2_subtree_size[rightIndex]);
+          leaves[new_active++] = innerID;
+        }
+        else
+          leaves[new_active++] = leaves[i];
+      active = new_active;      
+    }    
+  }
+  
+  __forceinline void rebalanceBVH2(sycl::queue &gpu_queue, BVH2Ploc *const bvh2, uint *const cluster_index, const uint numClusters, BVH2SubTreeState *const bvh2_subtree_size, const uint numPrimitives, double &iteration_time, const bool verbose)    
+  {
+    static const uint REBALANCE_BVH2_WG_SIZE = 16;    
+    const sycl::nd_range<1> nd_range1(numClusters*REBALANCE_BVH2_WG_SIZE,sycl::range<1>(REBALANCE_BVH2_WG_SIZE)); 
+    sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+        sycl::local_accessor< uint, 1> _inner(sycl::range<1>((512)),cgh);
+        sycl::local_accessor< uint, 1> _leaves(sycl::range<1>((512)),cgh);                
+        
+        cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
+                         {
+                           const uint groupID = item.get_group(0);
+                           const uint root = cluster_index[groupID];
+                           const uint subTreeSize = bvh2_subtree_size[root].leaves;
+                           const uint depth = bvh2_subtree_size[root].depth;
+                           uint *inner  = _inner.get_pointer();
+                           uint *leaves = _leaves.get_pointer();
+                           if (depth >= REBALANCE_BVH2_MINIMUM_DEPTH && (float)subTreeSize/depth < REBALANCE_BVH2_SIZE_DEPTH_RATIO && subTreeSize < 512)
+                             rebalanceBVH2(bvh2,root,numPrimitives,bvh2_subtree_size,inner,leaves);
+                         });
+                                                       
+      });
+    gpu::waitOnEventAndCatchException(queue_event);
+    if (unlikely(verbose)) iteration_time += gpu::getDeviceExecutionTiming(queue_event);
+  }
+  
 
   // ===================================================================================================================================================================================
   // ====================================================================== BVH2 -> QBVH6 conversion ===================================================================================
@@ -2150,19 +2252,13 @@ namespace embree
                                                                           
     indices[0] = _left;
     indices[1] = _right;
-#if USE_NEW_OPENING == 1
-    areas[0]  = !BVH2Ploc::isFatLeaf( _left ,numPrimitives) ? bvh2[BVH2Ploc::getIndex( _left)].bounds.area() : neg_inf;
-    areas[1]  = !BVH2Ploc::isFatLeaf( _right,numPrimitives) ? bvh2[BVH2Ploc::getIndex(_right)].bounds.area() : neg_inf;
-    areas[0]  = BVH2Ploc::isSmallFatLeaf( _left ,numPrimitives) ? pos_inf : areas[0];
-    areas[1]  = BVH2Ploc::isSmallFatLeaf( _right,numPrimitives) ? pos_inf : areas[1];
-#else    
     areas[0]  = (!BVH2Ploc::isFatLeaf( _left,numPrimitives)) ? bvh2[BVH2Ploc::getIndex( _left)].bounds.area() : neg_inf;    
     areas[1]  = (!BVH2Ploc::isFatLeaf(_right,numPrimitives)) ? bvh2[BVH2Ploc::getIndex(_right)].bounds.area() : neg_inf; 
-#endif
-    
-    uint numChildren = 2;
+
+    uint numChildren = 2;    
+#if 1   
     while (numChildren < BVH_BRANCHING_FACTOR)
-    {
+    {      
       /*! find best child to split */
       float bestArea = areas[0];
       uint bestChild = 0;
@@ -2173,47 +2269,36 @@ namespace embree
           bestChild = i;
         }
       
-      if (areas[bestChild] < 0.0f)
-      {
-#if 0 
-        const uint free_space = BVH_BRANCHING_FACTOR - numChildren + 1;
-        bestChild = -1;
-        {
-          for (uint i=0;i<numChildren;i++)
-          {
-            const uint numFatChildren = getNumLeaves(indices[i],bvh2,numPrimitives);
-            if (numFatChildren > 2 && numFatChildren <= free_space)
-            {
-              bestChild = i;
-              break;
-            }
-          }
-        }
-        if (bestChild == -1)
-#endif
-          break; // nothing left to open
-      }
+      if (areas[bestChild] < 0.0f) break;
       
       const uint bestNodeID = indices[bestChild];      
       const uint left  = bvh2[BVH2Ploc::getIndex(bestNodeID)].left;
       const uint right = bvh2[BVH2Ploc::getIndex(bestNodeID)].right;
 
-#if USE_NEW_OPENING == 1
-      // === ensures 3 items per fat-leaf, however, this pulls leaf data into inner node memory region ===
-      if (numChildren == 5 && (BVH2Ploc::isSmallFatLeaf(left,numPrimitives) || BVH2Ploc::isSmallFatLeaf(right,numPrimitives))) break;
-
-      areas[bestChild  ]  = !BVH2Ploc::isFatLeaf(left ,numPrimitives) ? bvh2[BVH2Ploc::getIndex( left)].bounds.area() : neg_inf;
-      areas[bestChild  ]  = BVH2Ploc::isSmallFatLeaf(left ,numPrimitives) ? pos_inf : areas[bestChild];      
-      areas[numChildren]  = !BVH2Ploc::isFatLeaf(right,numPrimitives) ? bvh2[BVH2Ploc::getIndex(right)].bounds.area() : neg_inf;
-      areas[numChildren]  = BVH2Ploc::isSmallFatLeaf(right,numPrimitives) ? pos_inf : areas[numChildren];
-#else      
       areas[bestChild]     = (!BVH2Ploc::isFatLeaf(left,numPrimitives)) ? bvh2[BVH2Ploc::getIndex(left)].bounds.area() : neg_inf; 
       areas[numChildren]   = (!BVH2Ploc::isFatLeaf(right,numPrimitives)) ? bvh2[BVH2Ploc::getIndex(right)].bounds.area() : neg_inf; 
-#endif      
       indices[bestChild]   = left;      
       indices[numChildren] = right;                                                                            
       numChildren++;      
     }
+#else
+    while(numChildren < BVH_BRANCHING_FACTOR)
+    {
+      const uint cur_numChildren = numChildren;      
+      for (uint i=0;i<cur_numChildren && numChildren < BVH_BRANCHING_FACTOR;i++)
+      {
+        if (!BVH2Ploc::isFatLeaf(indices[i],numPrimitives))
+        {
+          const uint left  = bvh2[BVH2Ploc::getIndex(indices[i])].left;
+          const uint right = bvh2[BVH2Ploc::getIndex(indices[i])].right;          
+          indices[i]   = left;      
+          indices[numChildren] = right;                                                                            
+          numChildren++;                
+        }
+      }
+      if (cur_numChildren == numChildren) break;
+    }
+#endif    
     
     for (uint i=0;i<numChildren;i++)
       areas[i] = fabs(areas[i]);
