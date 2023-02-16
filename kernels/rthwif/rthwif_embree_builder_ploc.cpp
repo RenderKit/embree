@@ -21,7 +21,7 @@
 #define MAX_LARGE_WGS                         256
 
 // === rebalance if BVH2 subtrees are degenerated ===
-#define BVH2_REBALANCE                        0
+#define BVH2_REBALANCE                        1
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)      
 
