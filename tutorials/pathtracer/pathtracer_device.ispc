@@ -1109,6 +1109,14 @@ void postIntersectGeometry(const uniform TutorialData& data, const Ray& ray, Dif
   {
     uniform ISPCTriangleMesh* uniform mesh = (uniform ISPCTriangleMesh* uniform) geometry;
     materialID = mesh->geom.materialID;
+
+    ISPCTriangle* tri = &mesh->triangles[dg.primID];
+    const Vec3f p0 = make_Vec3f(mesh->positions[0][tri->v0]);
+    const Vec3f p1 = make_Vec3f(mesh->positions[0][tri->v1]);
+    const Vec3f p2 = make_Vec3f(mesh->positions[0][tri->v2]);
+    const Vec3f e = max(max(abs(p0),abs(p1)),max(abs(p2),abs(ray.org)));
+    dg.eps = 32.0f*1.19209e-07f*max(max(e.x,e.y),max(e.z,ray.tfar));
+    
     if (mesh->texcoords)
     {
       ISPCTriangle* tri = &mesh->triangles[dg.primID];
@@ -1156,6 +1164,15 @@ void postIntersectGeometry(const uniform TutorialData& data, const Ray& ray, Dif
   {
     uniform ISPCQuadMesh* uniform mesh = (uniform ISPCQuadMesh* uniform) geometry;
     materialID = mesh->geom.materialID;
+
+    ISPCQuad* quad = &mesh->quads[dg.primID];
+    const Vec3f p0 = make_Vec3f(mesh->positions[0][quad->v0]);
+    const Vec3f p1 = make_Vec3f(mesh->positions[0][quad->v1]);
+    const Vec3f p2 = make_Vec3f(mesh->positions[0][quad->v2]);
+    const Vec3f p3 = make_Vec3f(mesh->positions[0][quad->v3]);
+    const Vec3f e = max(max(max(abs(p0),abs(p1)),max(abs(p2),abs(p3))),abs(ray.org));
+    dg.eps = 32.0f*1.19209e-07f*max(max(e.x,e.y),max(e.z,ray.tfar));
+    
     if (mesh->texcoords)
     {
       ISPCQuad* quad = &mesh->quads[dg.primID];

@@ -510,7 +510,7 @@ namespace embree {
     const uint gridResY = 16*1024;    
     generateGrid(data.g_scene,gridResX,gridResY);
 #endif    
-    exit(0);
+    //exit(0);
     /* update scene */
     //rtcCommitScene (data.g_scene);  
   }

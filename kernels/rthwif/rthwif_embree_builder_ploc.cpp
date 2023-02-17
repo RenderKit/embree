@@ -25,8 +25,6 @@
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)      
 
-#define COMPUTE_MAX_DEPTH_STATS 0
-
 namespace embree
 {
   using namespace embree::isa;
@@ -75,7 +73,53 @@ namespace embree
       return 1;
     else
       return 1 + std::max(getBVH2Depth(bvh2,bvh2[index].leftIndex(),numPrimitives),getBVH2Depth(bvh2,bvh2[index].rightIndex(),numPrimitives));
+  }
+
+  uint getNumLeaves(BVH2Ploc *bvh2, uint index, const uint numPrimitives)
+  {
+    if (BVH2Ploc::getIndex(index) < numPrimitives) //isLeaf 
+      return 1;
+    else
+      return getNumLeaves(bvh2,bvh2[index].leftIndex(),numPrimitives) + getNumLeaves(bvh2,bvh2[index].rightIndex(),numPrimitives);
+  }
+
+
+  uint getNumFatLeaves(BVH2Ploc *bvh2, uint index, const uint numPrimitives)
+  {
+    if (BVH2Ploc::isFatLeaf(index,numPrimitives)) //isLeaf 
+      return 1;
+    else
+      return getNumFatLeaves(bvh2,bvh2[index].leftIndex(),numPrimitives) + getNumFatLeaves(bvh2,bvh2[index].rightIndex(),numPrimitives);
+  }
+  
+
+
+  void printBVH2Path(BVH2Ploc *bvh2, uint index, const uint numPrimitives)
+  {
+    if (BVH2Ploc::getIndex(index) < numPrimitives) //isLeaf
+    {
+      PRINT2(index,"LEAF");
+    }
+    else
+    {
+      const uint depth = getBVH2Depth(bvh2,index,numPrimitives);
+      const uint leftIndex = bvh2[index].leftIndex();
+      const uint rightIndex = bvh2[index].rightIndex();
+      const bool isFatLeafLeft = BVH2Ploc::isFatLeaf(bvh2[index].left,numPrimitives);
+      const bool isFatLeafRight = BVH2Ploc::isFatLeaf(bvh2[index].right,numPrimitives);
+      const uint numLeavesLeft = getNumLeaves(bvh2,leftIndex,numPrimitives);
+      const uint numLeavesRight = getNumLeaves(bvh2,rightIndex,numPrimitives);      
+      PRINT6(index,depth,leftIndex,rightIndex,isFatLeafLeft,isFatLeafRight);
+      PRINT2(leftIndex,numLeavesLeft);
+      PRINT2(rightIndex,numLeavesRight);
+      
+      if (!isFatLeafLeft)
+        printBVH2Path(bvh2, leftIndex,numPrimitives);
+      if (!isFatLeafRight)      
+        printBVH2Path(bvh2,rightIndex,numPrimitives);      
+    }
   }  
+  
   
   void checkBVH2PlocHW(BVH2Ploc *bvh2, uint index,uint &nodes,uint &leaves,float &nodeSAH, float &leafSAH, uint &maxDepth,const uint numPrimitives, const uint bvh2_max_allocations, const uint depth)
   {
@@ -730,7 +774,6 @@ namespace embree
       std::cout << "=> Init Clusters: " << timer.get_host_timer() << " ms (host) " << device_init_clusters_time << " ms (device) " << std::endl;		
 
     uint numPrims = numPrimitives;
-     
     // ===================================================================================================================================================
     // ===================================================================================================================================================
     // ===================================================================================================================================================
@@ -759,46 +802,11 @@ namespace embree
       
       if (numPrims < SINGLE_WG_SWITCH_THRESHOLD)
       {
-#if BVH2_REBALANCE == 1
-        // ===============================================================================================================
-        // ========================================== rebalance BVH2 if degenerated ======================================
-        // ===============================================================================================================
-#if COMPUTE_MAX_DEPTH_STATS == 1
-        uint maxDepth = 0;
-        for (uint i=0;i<numPrims;i++)
-        {
-          const uint depth = getBVH2Depth(bvh2,cluster_index_source[i],numPrimitives);
-          maxDepth = max(maxDepth,depth);
-        }
-        PRINT(maxDepth);
-#endif
-        
-        double rebalanceBVH2_time = 0.0f;
-        rebalanceBVH2(gpu_queue,bvh2,cluster_index,numPrims,bvh2_subtree_size,numPrimitives,rebalanceBVH2_time,verbose1);
-        if (unlikely(verbose2))
-          PRINT(rebalanceBVH2_time);
-        timer.add_to_device_timer(BuildTimer::BUILD,rebalanceBVH2_time);
-
-#if COMPUTE_MAX_DEPTH_STATS == 1
-        maxDepth = 0;
-        for (uint i=0;i<numPrims;i++)
-        {
-          const uint depth = getBVH2Depth(bvh2,cluster_index_source[i],numPrimitives);
-          maxDepth = max(maxDepth,depth);
-        }
-        PRINT(maxDepth);        
-#endif
-        // ===============================================================================================================
-        // ===============================================================================================================
-        // ===============================================================================================================
-#endif        
-        
         double singleWG_time = 0.0f;
         singleWGBuild(gpu_queue, globals, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, numPrims, SEARCH_RADIUS_SHIFT, singleWG_time, verbose1);
         //PRINT((float)singleWG_time);
         timer.add_to_device_timer(BuildTimer::BUILD,singleWG_time);
         numPrims = 1;
-        ratio = (numPrims-1) / numPrims * 100.0f;        
       }
       else  
       {            
@@ -824,11 +832,48 @@ namespace embree
 
     if (unlikely(verbose2))
       std::cout << "=> PLOC phase: " <<  timer.get_host_timer() << " ms (host) " << (float)timer.get_accum_device_timer(BuildTimer::BUILD) << " ms (device) " << std::endl;    
-    
+
+#if BVH2_REBALANCE == 1
+        // ===============================================================================================================
+        // ========================================== rebalance BVH2 if degenerated ======================================
+        // ===============================================================================================================
+#if 0
+        uint maxDepth = 0;
+        for (uint i=0;i<numPrims;i++)
+        {
+          const uint depth = getBVH2Depth(bvh2,cluster_index_source[i],numPrimitives);
+          maxDepth = max(maxDepth,depth);
+        }
+        PRINT(maxDepth);
+#endif
+        
+        double rebalanceBVH2_time = 0.0f;
+        rebalanceBVH2(gpu_queue,bvh2,bvh2_subtree_size,numPrimitives,rebalanceBVH2_time,verbose1);
+        if (unlikely(verbose2))
+          PRINT(rebalanceBVH2_time);
+        timer.add_to_device_timer(BuildTimer::BUILD,rebalanceBVH2_time);
+
+#if 0
+        maxDepth = 0;
+        for (uint i=0;i<numPrims;i++)
+        {
+          const uint depth = getBVH2Depth(bvh2,cluster_index_source[i],numPrimitives);
+          maxDepth = max(maxDepth,depth);
+        }
+        PRINT(maxDepth);        
+#endif
+        // ===============================================================================================================
+        // ===============================================================================================================
+        // ===============================================================================================================
+#endif        
+                
     // =====================================                
     // === check and convert BVH2 (host) ===
     // =====================================
 
+    if (unlikely(verbose2))
+        PRINT2(globals->bvh2_index_allocator,2*numPrimitives);        
+    
     if (unlikely(verbose2))
     {
       PRINT2(globals->bvh2_index_allocator,2*numPrimitives);              
