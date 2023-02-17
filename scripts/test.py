@@ -231,8 +231,6 @@ def runConfig(config):
     elif (compiler.startswith("dpcpp")):
 
       if os.environ["DPCPP_ROOT"] and os.environ["GFX_DRIVER_ROOT"] :
-        DPCPP_VERSION = os.environ["DPCPP_VERSION"]
-        GFX_VERSION = os.environ["GFX_DRIVER_VERSION"]
         dpcpp_dir = os.environ["DPCPP_ROOT"]
         gfx_dir = os.environ["GFX_DRIVER_ROOT"]
       else :
@@ -273,17 +271,13 @@ def runConfig(config):
       conf.append("-D CMAKE_CXX_COMPILER=icpx -D CMAKE_C_COMPILER=icx")
       if enable_sycl_support:
         if os.environ["GFX_DRIVER_ROOT"] :
-          GFX_VERSION = os.environ["GFX_DRIVER_VERSION"]
-          gfx_dir = os.environ["GFX_DRIVER_ROOT"]
+          gfx_dir = os.environ["GFX_DRIVER_ROOT"] + "/install"
         else :
           print("Error GFX_DRIVER_ROOT is not set")
           sys.exit(1)
 
         # set up backend
         env.append("export SYCL_DEVICE_FILTER=level_zero")
-
-        gfx_dir = ""+NAS+"/gfx-driver-linux/"+GFX_VERSION+"/install"
-
         sys.stderr.write("gfx_dir = "+gfx_dir+"\n")
 
         env.append("export PATH="+gfx_dir+"/usr/bin:"+gfx_dir+"/usr/local/bin:$PATH")
@@ -302,10 +296,8 @@ def runConfig(config):
     elif (compiler.startswith("dpcpp")):
 
       if os.environ["DPCPP_ROOT"] and os.environ["GFX_DRIVER_ROOT"] :
-        DPCPP_VERSION = os.environ["DPCPP_VERSION"]
-        GFX_VERSION = os.environ["GFX_DRIVER_VERSION"]
         dpcpp_dir = os.environ["DPCPP_ROOT"]
-        gfx_dir = os.environ["GFX_DRIVER_ROOT"]+"/install"
+        gfx_dir = os.environ["GFX_DRIVER_ROOT"] + "/install"
       else :
         print("Error DPCPP_ROOT or GFX_DRIVER_ROOT is not set")
         sys.exit(1)
@@ -552,12 +544,10 @@ def runConfig(config):
   if OS == "linux" and compiler.startswith("dpcpp"):
     # some additional debug output of gfx and dpcpp version
     which_clang = str(subprocess.check_output(escape(" && ".join(env)) + " && which clang++", shell=True, stderr=subprocess.PIPE).decode('utf-8').rstrip("\n"))
-    print("DEBUG - DPCPP version:", DPCPP_VERSION, " - which clang++: ", which_clang)
-    assert which_clang == NAS+"/dpcpp-compiler-linux/"+DPCPP_VERSION+"/bin/clang++"
+    print("DEBUG - DPCPP version:", dpcpp_dir, " - which clang++: ", which_clang)
       
     which_ocloc = str(subprocess.check_output(escape(" && ".join(env)) + " && which ocloc", shell=True, stderr=subprocess.PIPE).decode('utf-8').rstrip("\n"))
-    print("DEBUG - GFX version:", GFX_VERSION, " - which ocloc: ", which_ocloc)
-    assert which_ocloc == NAS+"/gfx-driver-linux/"+GFX_VERSION+"/install/usr/bin/ocloc" or which_ocloc == NAS+"/gfx-driver-linux/"+GFX_VERSION+"/install/usr/local/bin/ocloc"
+    print("DEBUG - GFX version:", gfx_dir, " - which ocloc: ", which_ocloc)
 
   if rtcore:
     conf.append("-D EMBREE_CONFIG="+(",".join(rtcore)))
