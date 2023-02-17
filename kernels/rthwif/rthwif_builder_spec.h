@@ -22,7 +22,7 @@
  \brief Additional ze_result_t enum fields. 
 
 */
-typedef enum ze_result_t
+typedef enum _ze_result_t
 {
   ZE_RESULT_SUCCESS,                             ///< operation was successfull
   ZE_RESULT_ERROR_UNKNOWN,                       ///< unknown error occurred
@@ -30,7 +30,7 @@ typedef enum ze_result_t
   ZE_RESULT_RAYTRACING_EXT_RETRY_BUILD_ACCEL,    ///< acceleration structure build ran out of memory, app should re-try with more memory
   ZE_RESULT_RAYTRACING_EXT_OPERATION_DEFERRED,   ///< operation is deferred to a parallel operation
   
-} ze_raytracing_result_t;
+} ze_result_t;
 
 
 /**
@@ -39,9 +39,9 @@ typedef enum ze_result_t
 
 */
 
-typedef enum ze_structure_type_t
+typedef enum _ze_structure_type_t
 {
-  ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_DESC,  ///< ze_raytracing_accel_size_ext_desc_t
+  ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES,  ///< ze_raytracing_accel_size_ext_properties_t
   ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC, ///< ze_raytracing_build_accel_ext_desc_t
   
 } ze_structure_type_t;
@@ -50,9 +50,9 @@ typedef enum ze_structure_type_t
 /**
   \brief Feature bit for acceleration structure build API
 */
-typedef enum ze_device_raytracing_ext_flag_t {
-  ZE_DEVICE_RAYTRACING_EXT_FLAG_ACCEL_BUILD  = 1 << 0,    ///< support for ray tracing acceleration structure build API
-};
+typedef enum _ze_device_raytracing_ext_flag_t {
+  ZE_DEVICE_RAYTRACING_EXT_FLAG_ACCEL_BUILD,    ///< support for ray tracing acceleration structure build API
+} ze_device_raytracing_ext_flag_t;
 
 
 /**
@@ -66,7 +66,7 @@ typedef enum ze_device_raytracing_ext_flag_t {
   threads to assist in building the acceleration structure.
 
 */
-typedef ze_raytracing_parallel_operation_opaque_ext_handle_t* ze_raytracing_parallel_operation_ext_handle_t;
+typedef _ze_raytracing_parallel_operation_ext_handle_t* ze_raytracing_parallel_operation_ext_handle_t;
 
 
 /**
@@ -114,17 +114,39 @@ ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingParallelOperationJoinExt( ze_ray
 /**
  \brief Enumeration of geometry flags supported by the geometries.
 */
-typedef enum ze_raytracing_geometry_ext_flags_t : uint8_t
+typedef uint8_t ze_raytracing_geometry_ext_flags_t;
+typedef enum _ze_raytracing_geometry_ext_flag_t : uint8_t
 {
   ZE_RAYTRACING_GEOMETRY_EXT_FLAG_NONE = 0,        ///< Default geometry flags
   ZE_RAYTRACING_GEOMETRY_EXT_FLAG_OPAQUE = 1,      ///< Opaque geometries do not invoke an anyhit shader
-} ze_raytracing_geometry_ext_flags_t;
+} ze_raytracing_geometry_ext_flag_t;
+
+/**
+
+
+ \brief Format of elements in data buffers. 
+
+ The format is used to specify the format of elements of data buffer,
+ such as the format of transformation used for instancing, or index
+ format for triangles and quads.
+
+*/
+typedef enum _ze_raytracing_format_ext_t : uint8_t
+{
+  ZE_RAYTRACING_FORMAT_EXT_FLOAT3,                        ///< 3 component float vector (see ze_raytracing_float3_ext_t layout)
+  ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_COLUMN_MAJOR,         ///< 3x4 affine transformation in column major format (see ze_raytracing_transform_float3x4_column_major_ext_t layout)
+  ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_ALIGNED_COLUMN_MAJOR, ///< 3x4 affine transformation in column major format (see ze_raytracing_transform_float3x4_aligned_column_major_ext_t layout)
+  ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_ROW_MAJOR,            ///< 3x4 affine transformation in row    major format (see ze_raytracing_transform_float3x4_row_major_ext_t layout)
+  ZE_RAYTRACING_FORMAT_EXT_AABB,                          ///< 3 dimensional axis aligned bounding box (see ze_raytracing_aabb_ext_t layout)
+  ZE_RAYTRACING_FORMAT_EXT_TRIANGLE_INDICES_UINT32,       ///< triangle indices of uint32 type (see ze_raytracing_triangle_indices_uint32_ext_t layout)
+  ZE_RAYTRACING_FORMAT_EXT_QUAD_INDICES_UINT32,           ///< quad indices of uint32 type (see ze_raytracing_quad_indices_uint32_ext_t layout)
+} ze_raytracing_format_ext_t;
 
 
 /**
  \brief A 3-component short vector type. 
 */
-typedef struct ze_raytracing_float3_ext_t {
+typedef struct _ze_raytracing_float3_ext_t {
   float x; ///< x coordinate of float3 vector
   float y; ///< y coordinate of float3 vector
   float z; ///< z coordinate of float3 vector
@@ -140,7 +162,7 @@ typedef struct ze_raytracing_float3_ext_t {
  transforms a point (x,y,z) to x*vx + y*vy + z*vz + * p.
 
 */
-typedef struct ze_raytracing_transform_float3x4_column_major_ext_t {
+typedef struct _ze_raytracing_transform_float3x4_column_major_ext_t {
   float vx_x, vx_y, vx_z; ///< column 0 of 3x4 matrix
   float vy_x, vy_y, vy_z; ///< column 1 of 3x4 matrix
   float vz_x, vz_y, vz_z; ///< column 2 of 3x4 matrix
@@ -157,7 +179,7 @@ typedef struct ze_raytracing_transform_float3x4_column_major_ext_t {
    transforms a point (x,y,z) to x*vx + y*vy + z*vz + p. The column
    vectors are aligned to 16 bytes and pad members are ignored.
 */
-typedef struct ze_raytracing_transform_float3x4_aligned_column_major_ext_t
+typedef struct _ze_raytracing_transform_float3x4_aligned_column_major_ext_t
 {
   float vx_x, vx_y, vx_z, pad0; ///< column 0 of 3x4 matrix with ignored padding
   float vy_x, vy_y, vy_z, pad1; ///< column 1 of 3x4 matrix with ignored padding
@@ -175,7 +197,7 @@ typedef struct ze_raytracing_transform_float3x4_aligned_column_major_ext_t
   vz=(vz_x,vz_y,vz_z), and p=(p_x,p_y,p_z). The transformation
   transforms a point (x,y,z) to x*vx + y*vy + z*vz + p.
 */
-typedef struct ze_raytracing_transform_float3x4_row_major_ext_t
+typedef struct _ze_raytracing_transform_float3x4_row_major_ext_t
 {
   float vx_x, vy_x, vz_x, p_x; ///< row 0 of 3x4 matrix
   float vx_y, vy_y, vz_y, p_y; ///< row 1 of 3x4 matrix
@@ -189,7 +211,7 @@ typedef struct ze_raytracing_transform_float3x4_row_major_ext_t
   upper bounds in each dimension.
 
 */
-typedef struct ze_raytracing_aabb_ext_t
+typedef struct _ze_raytracing_aabb_ext_t
 {
   ze_raytracing_float3_ext_t lower; ///< lower bounds of AABB
   ze_raytracing_float3_ext_t upper; ///< upper bounds of AABB
@@ -209,12 +231,12 @@ typedef struct ze_raytracing_aabb_ext_t
   v2.
 
 */
-typedef struct ze_raytracing_triangle_indices_ext_t
+typedef struct _ze_raytracing_triangle_indices_uint32_ext_t
 {
   uint32_t v0;   ///< first index pointing to the first triangle vertex in vertex array
   uint32_t v1;   ///< second index pointing to the second triangle vertex in vertex array
   uint32_t v2;   ///< third index pointing to the third triangle vertex in vertex array
-} ze_raytracing_triangle_indices_ext_t;
+} ze_raytracing_triangle_indices_uint32_ext_t;
 
 
 /** 
@@ -234,13 +256,13 @@ typedef struct ze_raytracing_triangle_indices_ext_t
   linear parametrization.
 
 */
-typedef struct ze_raytracing_quad_indices_ext_t
+typedef struct _ze_raytracing_quad_indices_uint32_ext_t
 { 
   uint32_t v0;  ///< first index pointing to the first quad vertex in vertex array
   uint32_t v1;  ///< second index pointing to the second quad vertex in vertex array
   uint32_t v2;  ///< third index pointing to the third quad vertex in vertex array
   uint32_t v3;  ///< forth index pointing to the forth quad vertex in vertex array
-} ze_raytracing_quad_indices_ext_t;
+} ze_raytracing_quad_indices_uint32_ext_t;
 
 
 /**
@@ -252,30 +274,13 @@ typedef struct ze_raytracing_quad_indices_ext_t
   member at offset 0 to identify the type of the descriptor.
 
 */
-typedef enum ze_raytracing_geometry_type_ext_t : uint8_t
+typedef enum _ze_raytracing_geometry_type_ext_t : uint8_t
 {
-  ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES = 0,   ///< triangle mesh geometry type identifying ze_raytracing_geometry_triangles_ext_desc_ext_t
-  ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS = 1,       ///< quad mesh geometry type identifying ze_raytracing_geometry_quads_ext_desc_ext_t
-  ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR = 2,  ///< procedural geometry type identifying ze_raytracing_geometry_aabbs_fptr_ext_desc_ext_t
-  ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE = 3,    ///< instance geometry type identifying ze_raytracing_geometry_instance_ext_desc_ext_t
+  ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES = 0,   ///< triangle mesh geometry type identifying ze_raytracing_geometry_triangles_ext_desc_t
+  ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS = 1,       ///< quad mesh geometry type identifying ze_raytracing_geometry_quads_ext_desc_t
+  ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR = 2,  ///< procedural geometry type identifying ze_raytracing_geometry_aabbs_fptr_ext_desc_t
+  ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE = 3,    ///< instance geometry type identifying ze_raytracing_geometry_instance_ext_desc_t
 } ze_raytracing_geometry_type_ext_t;
-
-
-/**
-
-
- \brief The format of transformations supported. 
-
- To specify instance transformations various formats of the
- transformation are supported.
-
-*/
-typedef enum ze_raytracing_transform_format_ext_t : uint8_t
-{
-  ZE_RAYTRACING_TRANSFORM_FORMAT_EXT_FLOAT3X4_COLUMN_MAJOR = 0,         ///< 3x4 affine transformation in column major format (see ze_raytracing_transform_float3x4_column_major_ext_t layout)
-  ZE_RAYTRACING_TRANSFORM_FORMAT_EXT_FLOAT3X4_ALIGNED_COLUMN_MAJOR = 1, ///< 3x4 affine transformation in column major format (see ze_raytracing_transform_float3x4_aligned_column_major_ext_t layout)
-  ZE_RAYTRACING_TRANSFORM_FORMAT_EXT_FLOAT3X4_ROW_MAJOR = 2,            ///< 3x4 affine transformation in row    major format (see ze_raytracing_transform_float3x4_row_major_ext_t layout)
-} ze_raytracing_transform_format_ext_t;
 
 
 /**
@@ -285,14 +290,15 @@ typedef enum ze_raytracing_transform_format_ext_t : uint8_t
   This enumation lists flags to be used to specify instances.
 
 */
-typedef enum ze_raytracing_instance_ext_flags_ext_t : uint8_t
+typedef uint8_t ze_raytracing_instance_ext_flags_t;
+typedef enum _ze_raytracing_instance_ext_flag_t : uint8_t
 {
   ZE_RAYTRACING_INSTANCE_EXT_FLAG_NONE = 0,                               ///< default instance flag
   ZE_RAYTRACING_INSTANCE_EXT_FLAG_TRIANGLE_CULL_DISABLE = 0x1,            ///< disables culling of front and backfacing triangles
   ZE_RAYTRACING_INSTANCE_EXT_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE = 0x2,  ///< reverses front and back face of triangles
   ZE_RAYTRACING_INSTANCE_EXT_FLAG_FORCE_OPAQUE = 0x4,                     ///< forces instanced geometry to be opaque, unless ray flag forces it to be non-opaque
   ZE_RAYTRACING_INSTANCE_EXT_FLAG_FORCE_NON_OPAQUE = 0x8                  ///< forces instanced geometry to be non-opaque, unless ray flag forces it to be opaque
-} ze_raytracing_instance_ext_flags_ext_t;
+} ze_raytracing_instance_ext_flag_ext_t;
 
 /**
 
@@ -303,7 +309,7 @@ typedef enum ze_raytracing_instance_ext_flags_ext_t : uint8_t
  ze_raytracing_geometry_type_ext_t for details.
 
 */
-typedef struct ze_raytracing_geometry_ext_desc_t {
+typedef struct _ze_raytracing_geometry_ext_desc_t {
   ze_raytracing_geometry_type_ext_t geometryType;           ///< type of geometry descriptor
 } ze_raytracing_geometry_ext_desc_t;
 
@@ -319,19 +325,22 @@ typedef struct ze_raytracing_geometry_ext_desc_t {
   v2.
 
 */
-typedef struct ze_raytracing_geometry_triangles_ext_desc_t  // 40 bytes
+typedef struct _ze_raytracing_geometry_triangles_ext_desc_t  // 40 bytes
 {
   ze_raytracing_geometry_type_ext_t geometryType;       ///< must be ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES
   ze_raytracing_geometry_ext_flags_t geometryFlags;     ///< geometry flags for all primitives of this geometry
   uint8_t geometryMask;                                 ///< 8-bit geometry mask for ray masking
   uint8_t reserved0;                                    ///< must be zero
-  uint32_t reserved1;                                   ///< must be zero
+  uint8_t reserved1;                                    ///< must be zero
+  uint8_t reserved2;                                    ///< must be zero
+  ze_raytracing_format_ext_t triangleFormat;            ///< format of triangleBuffer (must be ZE_RAYTRACING_FORMAT_EXT_TRIANGLE_INDICES_UINT32)
+  ze_raytracing_format_ext_t vertexFormat;              ///< format of vertexBuffer (must be ZE_RAYTRACING_FORMAT_EXT_FLOAT3)
   unsigned int triangleCount;                           ///< number of triangles in triangleBuffer
-  unsigned int triangleStride;                          ///< stride in bytes of triangles in triangleBuffer
   unsigned int vertexCount;                             ///< number of vertices in vertexBuffer
+  unsigned int triangleStride;                          ///< stride in bytes of triangles in triangleBuffer
   unsigned int vertexStride;                            ///< stride in bytes of vertices in vertexBuffer
-  ze_raytracing_triangle_indices_ext_t* triangleBuffer; ///< pointer to array of triangle indices
-  ze_raytracing_float3_ext_t* vertexBuffer;             ///< pointer to array of triangle vertices
+  void* triangleBuffer;                                 ///< pointer to array of triangle indices in specified format
+  void* vertexBuffer;                                   ///< pointer to array of triangle vertices in specified format
   
 } ze_raytracing_raytracing_geometry_triangles_ext_desc_t;
 
@@ -354,19 +363,22 @@ typedef struct ze_raytracing_geometry_triangles_ext_desc_t  // 40 bytes
   linear parametrization.
 
 */
-typedef struct ze_raytracing_geometry_quads_ext_desc_t // 40 bytes
+typedef struct _ze_raytracing_geometry_quads_ext_desc_t // 40 bytes
 {
   ze_raytracing_geometry_type_ext_t geometryType;   ///< must be ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS
   ze_raytracing_geometry_ext_flags_t geometryFlags; ///< geometry flags for all primitives of this geometry
   uint8_t geometryMask;                             ///< 8-bit geometry mask for ray masking
   uint8_t reserved0;                                ///< must be zero
-  uint32_t reserved1;                               ///< must be zero
+  uint8_t reserved1;                                ///< must be zero
+  uint8_t reserved2;                                ///< must be zero
+  ze_raytracing_format_ext_t quadFormat;            ///< format of quadBuffer (must be ZE_RAYTRACING_FORMAT_EXT_QUAD_INDICES_UINT32)
+  ze_raytracing_format_ext_t vertexFormat;          ///< format of vertexBuffer (must be ZE_RAYTRACING_FORMAT_EXT_FLOAT3)
   unsigned int quadCount;                           ///< number of quads in quadBuffer
-  unsigned int quadStride;                          ///< stride in bytes of quads in quadBuffer
   unsigned int vertexCount;                         ///< number of vertices in vertexBuffer
+  unsigned int quadStride;                          ///< stride in bytes of quads in quadBuffer
   unsigned int vertexStride;                        ///< stride in bytes of vertices in vertexBuffer
-  ze_raytracing_quad_indices_ext_t* quadBuffer;     ///< pointer to an array of quad indices
-  ze_raytracing_float3_ext_t* vertexBuffer;         ///< pointer to an array of quad vertices
+  void* quadBuffer;                                 ///< pointer to an array of quad indices in specified format
+  void* vertexBuffer;                               ///< pointer to an array of quad vertices in specified format
   
 } ze_raytracing_raytracing_geometry_quads_ext_desc_t;
 
@@ -397,7 +409,7 @@ typedef void (*ze_raytracing_geometry_aabbs_fptr_ext_t)(const uint32_t primID,  
  short time range to implement multi-segment motion blur.
 
 */
-typedef struct ze_raytracing_geometry_aabbs_fptr_ext_desc_t // 24 bytes
+typedef struct _ze_raytracing_geometry_aabbs_fptr_ext_desc_t // 24 bytes
 {
   ze_raytracing_geometry_type_ext_t geometryType;      ///< must be ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR
   ze_raytracing_geometry_ext_flags_t geometryFlags;    ///< geometry flags for all primitives of this geometry
@@ -420,14 +432,14 @@ typedef struct ze_raytracing_geometry_aabbs_fptr_ext_desc_t // 24 bytes
   object space bounding box of the instantiated acceleration
   structure.
 */
-typedef struct ze_raytracing_geometry_instance_ext_desc_t  // 32 bytes
+typedef struct _ze_raytracing_geometry_instance_ext_desc_t  // 32 bytes
 {
   ze_raytracing_geometry_type_ext_t geometryType;          ///< must be ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE
   ze_raytracing_instance_ext_flags_t instanceFlags;        ///< flags for the instance (see ze_raytracing_instance_ext_flags_t)
   uint8_t geometryMask;                                    ///< 8-bit geometry mask for ray masking
-  ze_raytracing_transform_format_ext_t transformFormat;    ///< format of the specified transformation
+  ze_raytracing_format_ext_t transformFormat;              ///< format of the specified transformation
   unsigned int instanceUserID;                             ///< a user specified identifier for the instance
-  float* transform;                                        ///< object to world instance transformation in specified format
+  void* transform;                                         ///< object to world instance transformation in specified format
   ze_raytracing_aabb_ext_t* bounds;                        ///< AABB of the instanced acceleration structure
   void* accel;                                             ///< pointer to acceleration structure to instantiate
     
@@ -452,7 +464,7 @@ typedef struct ze_raytracing_geometry_instance_ext_desc_t  // 32 bytes
    be significantly reduced.
 
 */
-typedef enum ze_raytracing_build_quality_ext_t
+typedef enum _ze_raytracing_build_quality_ext_t
 {
   ZE_RAYTRACING_BUILD_QUALITY_EXT_LOW    = 0,   ///< build low quality acceleration structure (fast)
   ZE_RAYTRACING_BUILD_QUALITY_EXT_MEDIUM = 1,   ///< build medium quality acceleration structure (slower)
@@ -466,28 +478,31 @@ typedef enum ze_raytracing_build_quality_ext_t
   \brief Flags for acceleration structure build. 
 
   These flags allow the application to tune the accelertion structure
-  build to optimize for dynamic content
-  (ZE_RAYTRACING_BUILD_EXT_FLAG_DYNAMIC) or to create more compact
-  acceleration structures (ZE_RAYTRACING_BUILD_EXT_FLAG_COMPACT). Usage
-  of any of these flags may reduce ray tracing performance.
+  build.
+
+  Using the ZE_RAYTRACING_BUILD_EXT_FLAG_COMPACT flag causes the
+  acceleration strucuture to create more compact acceleration
+  structures.
 
   The acceleration structure build implementation might choose to use
   spatial splitting to split large or long primitives into smaller
-  pieces. This resultsx in any-hit shaders being invoked multiple
+  pieces. This results in any-hit shaders being invoked multiple
   times for non-opaque primitives. If the application requires only a
   single any-hit shader invokation per primitive, the
   ZE_RAYTRACING_BUILD_EXT_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION build flag
   should get used.
 
+  Usage of any of these flags may reduce ray tracing performance.
+
 */
-typedef enum ze_raytracing_build_ext_flags_t
+typedef uint32_t ze_raytracing_build_ext_flags_t;
+typedef enum _ze_raytracing_build_ext_flag_t
 {
-  ZE_RAYTRACING_BUILD_EXT_FLAG_NONE    = 0,         ///< default build flags
-  ZE_RAYTRACING_BUILD_EXT_FLAG_DYNAMIC = (1 << 0),  ///< optimize for dynamic content
-  ZE_RAYTRACING_BUILD_EXT_FLAG_COMPACT = (1 << 1),  ///< build more compact acceleration structure
-  ZE_RAYTRACING_BUILD_EXT_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION = (1 << 2), ///< guarantees single any hit shader invokation per primitive
+  ZE_RAYTRACING_BUILD_EXT_FLAG_NONE    = 0,                               ///< default build flags
+  ZE_RAYTRACING_BUILD_EXT_FLAG_COMPACT = (1 << 0),                        ///< build more compact acceleration structure
+  ZE_RAYTRACING_BUILD_EXT_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION = (1 << 1), ///< guarantees single any hit shader invokation per primitive
   
-} ze_raytracing_build_ext_flags_t;
+} ze_raytracing_build_ext_flag_t;
 
 
 /**
@@ -497,7 +512,7 @@ typedef enum ze_raytracing_build_ext_flags_t
    This structure is returned by zeRaytracingGetAccelSizeExt and
    contains acceleration structure size estimates.
 */
-typedef struct ze_raytracing_accel_size_ext_desc_t
+typedef struct _ze_raytracing_accel_size_ext_properties_t
 {
   /** [in] type of this structure */
   ze_structure_type_t stype;
@@ -526,13 +541,13 @@ typedef struct ze_raytracing_accel_size_ext_desc_t
   */
   size_t scratchBufferBytes;
   
-} ze_raytracing_accel_size_ext_desc_t;
+} ze_raytracing_accel_size_ext_properties_t;
 
 
 /** 
    \brief Argument structure passed to zeRaytracingBuildAccelExt function.
 */
-typedef struct ze_raytracing_build_accel_ext_desc_t
+typedef struct _ze_raytracing_build_accel_ext_desc_t
 {
   /** [in] type of this structure */
   ze_structure_type_t stype;
@@ -558,7 +573,7 @@ typedef struct ze_raytracing_build_accel_ext_desc_t
      be a shared memory allocation aligned to
      ZE_RAYTRACING_ACCELERATION_STRUCTURE_ALIGNMENT bytes and using
      the ray tracing allocation descriptor
-     ze_raytracing_mem_alloc_ext_ext_desc_t in the zeMemAllocShared
+     ze_raytracing_mem_alloc_ext_desc_t in the zeMemAllocShared
      call.
   */
   void* accelBuffer;
@@ -642,7 +657,7 @@ typedef struct ze_raytracing_build_accel_ext_desc_t
 
 */
 
-ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingGetAccelSizeExt( const ze_raytracing_build_accel_t* args, ze_raytracing_accel_size_ext_desc_t* pAccelSizeOut );
+ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingGetAccelSizeExt( const ze_raytracing_build_accel_ext_desc_t* args, ze_raytracing_accel_size_ext_properties_t* pAccelSizeOut );
 
 
 /**
