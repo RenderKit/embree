@@ -20,6 +20,7 @@
 #define QBVH6_HEADER_OFFSET          128
 #define HOST_DEVICE_COMM_BUFFER_SIZE 16*sizeof(uint)
 #define EQUAL_DISTANCES_WORKAROUND   1
+#define REBALANCE_BVH2_MINIMUM_DEPTH 30
 
 #if 1
 #define TOP_LEVEL_RATIO              5.0f
@@ -28,8 +29,6 @@
 #define TOP_LEVEL_RATIO              0.0f
 #define BOTTOM_LEVEL_RATIO           0.0f
 #endif
-#define REBALANCE_BVH2_MINIMUM_DEPTH    30
-#define REBALANCE_BVH2_SIZE_DEPTH_RATIO 5.0f
 
 namespace embree
 {  
@@ -148,10 +147,14 @@ namespace embree
   struct BVH2SubTreeState
   {
     static const uint DEPTH_BITS = 7;
-    static const uint LEAVES_BITS = 32 - DEPTH_BITS;
-    uint depth : DEPTH_BITS;
+    static const uint LEAVES_BITS = 32 - DEPTH_BITS - 1;
+
+    uint depth  : DEPTH_BITS;
     uint leaves : LEAVES_BITS;
+    uint mark   : 1;
+    
     static const uint MAX_LEAVES = ((uint)1 << LEAVES_BITS)-1;
+    static const uint MAX_DEPTH  = ((uint)1 << DEPTH_BITS)-1;
 
     __forceinline BVH2SubTreeState() {}
 
@@ -160,9 +163,25 @@ namespace embree
     __forceinline BVH2SubTreeState(const BVH2SubTreeState &left, const BVH2SubTreeState &right)
     {
       leaves = sycl::min((uint)(left.leaves)+(uint)right.leaves,MAX_LEAVES);
+      const uint leftFatLeaf  = left.leaves  <= FATLEAF_THRESHOLD ? 1 : 0;
+      const uint rightFatLeaf = right.leaves <= FATLEAF_THRESHOLD ? 1 : 0;
+      const uint sum = leftFatLeaf + rightFatLeaf;
+#if 1     
+      if (sum == 0) depth = 0;
+      else if (sum == 2) depth = 1;
+      else depth = sycl::max(left.depth,right.depth)+1;
+      
+      if (sum == 0 && sycl::max(left.depth,right.depth) >= REBALANCE_BVH2_MINIMUM_DEPTH)
+        mark = 1;
+#else      
       depth = sycl::max(left.depth+(uint)1,right.depth+(uint)1);
+#endif      
     }
-
+    
+    __forceinline bool isMarked() const
+    {
+      return mark == 1;
+    }
     
   };
         
@@ -2037,36 +2056,40 @@ namespace embree
   // =========================================================================================================================================================================
   // ====================================================================== Rebalance BVH2 ===================================================================================
   // =========================================================================================================================================================================
-
-  // todo: open only up to fat leaves
   
-  __forceinline void rebalanceBVH2(BVH2Ploc *bvh2, uint root, const uint numPrimitives,BVH2SubTreeState *const bvh2_subtree_size, uint *const inner, uint *const leaves)
+  __forceinline void rebalanceBVH2(BVH2Ploc *bvh2, uint root, const uint numPrimitives,const BVH2SubTreeState *const bvh2_subtree_size, uint *const inner, uint *const leaves, const uint maxEntries)
   {
     uint numLeaves = 0;
     uint numInner = 1;
     inner[0] = root;
 
     uint start = 0;
-    while(start<numInner)
+    while(start<numInner && numInner < maxEntries)
     {
       const uint num = numInner-start;
-      for (uint i=0;i<num;i++)
+      uint plus = 0;
+      for (uint i=0;i<num;i++,plus++)
       {
         const uint index = inner[start+i];
         const uint left  = bvh2[index].leftIndex();          
-        if (BVH2Ploc::isFatLeaf(left,numPrimitives))
+        if (BVH2Ploc::isFatLeaf(bvh2[index].left,numPrimitives))
           leaves[numLeaves++] = left;
         else
           inner[numInner++] = left;
 
         const uint right = bvh2[index].rightIndex();
-        if (BVH2Ploc::isFatLeaf(right,numPrimitives))
+        if (BVH2Ploc::isFatLeaf(bvh2[index].right,numPrimitives))
           leaves[numLeaves++] = right;
         else
           inner[numInner++] = right;
+
+        if (numInner >= maxEntries) break;
       }
-      start += num;
+      start+=plus;
     }
+
+    while(numInner >= numLeaves)
+      leaves[numLeaves++] = inner[--numInner];
     
     uint active = numLeaves;
     while(active > 1)
@@ -2081,7 +2104,7 @@ namespace embree
           const gpu::AABB3f &leftBounds  = bvh2[leftIndex].bounds;
           const gpu::AABB3f &rightBounds = bvh2[rightIndex].bounds;          
           bvh2[innerID].init(leftIndex,rightIndex,gpu::merge(leftBounds,rightBounds),bvh2_subtree_size[leftIndex],bvh2_subtree_size[rightIndex]);                                                         
-          bvh2_subtree_size[innerID] = BVH2SubTreeState(bvh2_subtree_size[leftIndex],bvh2_subtree_size[rightIndex]);
+          //bvh2_subtree_size[innerID] = BVH2SubTreeState(bvh2_subtree_size[leftIndex],bvh2_subtree_size[rightIndex]);
           leaves[new_active++] = innerID;
         }
         else
@@ -2090,24 +2113,38 @@ namespace embree
     }    
   }
   
-  __forceinline void rebalanceBVH2(sycl::queue &gpu_queue, BVH2Ploc *const bvh2, uint *const cluster_index, const uint numClusters, BVH2SubTreeState *const bvh2_subtree_size, const uint numPrimitives, double &iteration_time, const bool verbose)    
+  __forceinline void rebalanceBVH2(sycl::queue &gpu_queue, BVH2Ploc *const bvh2, const BVH2SubTreeState *const bvh2_subtree_size, const uint numPrimitives, double &iteration_time, const bool verbose)    
   {
-    static const uint REBALANCE_BVH2_WG_SIZE = 16;    
-    const sycl::nd_range<1> nd_range1(numClusters*REBALANCE_BVH2_WG_SIZE,sycl::range<1>(REBALANCE_BVH2_WG_SIZE)); 
+    static const uint REBALANCE_BVH2_WG_SIZE = 16;
+    static const uint MAX_NUM_REBALANCE_NODES = 256;
+    
+    const sycl::nd_range<1> nd_range1(gpu::alignTo(numPrimitives,REBALANCE_BVH2_WG_SIZE),sycl::range<1>(REBALANCE_BVH2_WG_SIZE));
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-        sycl::local_accessor< uint, 1> _inner(sycl::range<1>((512)),cgh);
-        sycl::local_accessor< uint, 1> _leaves(sycl::range<1>((512)),cgh);                
+        sycl::local_accessor< uint, 1> _inner(sycl::range<1>((MAX_NUM_REBALANCE_NODES)),cgh);
+        sycl::local_accessor< uint, 1> _leaves(sycl::range<1>((MAX_NUM_REBALANCE_NODES)),cgh);                
         
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                          {
-                           const uint groupID = item.get_group(0);
-                           const uint root = cluster_index[groupID];
-                           const uint subTreeSize = bvh2_subtree_size[root].leaves;
-                           const uint depth = bvh2_subtree_size[root].depth;
-                           uint *inner  = _inner.get_pointer();
-                           uint *leaves = _leaves.get_pointer();
-                           if (depth >= REBALANCE_BVH2_MINIMUM_DEPTH && (float)subTreeSize/depth < REBALANCE_BVH2_SIZE_DEPTH_RATIO && subTreeSize < 512)
-                             rebalanceBVH2(bvh2,root,numPrimitives,bvh2_subtree_size,inner,leaves);
+                           const uint ID = item.get_global_id(0);
+                           if (ID < numPrimitives)
+                           {
+                             const uint global_root = numPrimitives+ID;
+                             uint *inner  = _inner.get_pointer();
+                             uint *leaves = _leaves.get_pointer();
+                             uint mask = sub_group_ballot(bvh2_subtree_size[global_root].isMarked());
+                             while (mask)
+                             {
+                               const uint index = sycl::ctz(mask);
+                               mask &= mask-1;
+                               const uint root = sub_group_broadcast(global_root,index);
+                               const uint leftIndex = bvh2[root].leftIndex();
+                               const uint rightIndex = bvh2[root].rightIndex();
+                               if (bvh2_subtree_size[leftIndex].depth >= REBALANCE_BVH2_MINIMUM_DEPTH)                             
+                                 rebalanceBVH2(bvh2,leftIndex,numPrimitives,bvh2_subtree_size,inner,leaves,MAX_NUM_REBALANCE_NODES);
+                               if (bvh2_subtree_size[rightIndex].depth >= REBALANCE_BVH2_MINIMUM_DEPTH)                             
+                                 rebalanceBVH2(bvh2,rightIndex,numPrimitives,bvh2_subtree_size,inner,leaves,MAX_NUM_REBALANCE_NODES);                             
+                             }
+                           }
                          });
                                                        
       });
