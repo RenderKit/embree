@@ -7381,6 +7381,7 @@ static size_t SaveEXRNPartImageToMemory(const EXRImage* exr_images,
   memcpy((*memory_out), &memory[0], memory.size());
   unsigned char* memory_ptr = *memory_out + memory.size();
   size_t sum = memory.size();
+  ((void)(sum));
 
   // Writing offset data for chunks
   for (unsigned int i = 0; i < num_parts; ++i) {
