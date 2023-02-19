@@ -91,8 +91,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
-      install-gfx-driver: false
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-release.env
       artifact-out: release-linux-x64-Release-SYCL-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
       artifact-path: ./build/*.tar.gz
       cmd: |
