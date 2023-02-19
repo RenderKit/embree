@@ -295,7 +295,28 @@ namespace embree {
     }
     
   };
+
+  struct LossyCompressedMesh
+  {
+    BBox3f bounds;
+    uint numQuads;
+    uint numVertices;
+
+    __forceinline LossyCompressedMesh() {}
+  };
   
-  
+
+  struct LossyCompressedMeshCluster
+  {
+    uint numQuads;
+    uint ID;
+    uint offsetIndices;
+    uint offsetVertices;
+    
+    LossyCompressedMesh *mesh;
+    char *data;
+
+    __forceinline LossyCompressedMeshCluster() {}
+  };
   
 };

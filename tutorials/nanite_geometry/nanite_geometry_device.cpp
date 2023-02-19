@@ -204,48 +204,85 @@ namespace embree {
   // ==============================================================================================
   // ==============================================================================================
   
-  struct __aligned(64) LCGBP_Scene {
+  struct __aligned(64) LCG_Scene {
     static const uint LOD_LEVELS = 3;
 
+    /* --- general data --- */
+    BBox3f bounds;
+    
+    /* --- lossy compressed bilinear patches --- */
     uint numAllocatedLCGBP;
-    uint numAllocatedLCGBPStates;
-    
+    uint numAllocatedLCGBPStates;    
     uint numLCGBP;
-    uint numCurrentLCGBPStates;    
-    
+    uint numCurrentLCGBPStates;        
     LCGBP *lcgbp;
-    LCGBP_State *lcgbp_state;
-    
+    LCGBP_State *lcgbp_state;    
     uint numCrackFixQuadNodes;
-    
+
+    /* --- lossy compressed meshes --- */
+    uint numLCMeshes;        
+    uint numLCMeshClusters;    
+    LossyCompressedMesh *lcm;
+    LossyCompressedMeshCluster *lcm_cluster;
+    char *compressedClusterData;
+
+    /* --- embree geometry --- */
     RTCGeometry geometry;
     uint geomID;
 
+    /* --- texture handle --- */
     Texture* map_Kd;
 
-    BBox3f bounds;
+    /* --- LOD settings --- */
     float minLODDistance;
     
-    LCGBP_Scene(const uint maxNumLCGBP);
+    LCG_Scene(const uint maxNumLCGBP, const uint numLCMs, const uint numLCMClusters);
 
     void addGrid(const uint gridResX, const uint gridResY, const Vec3fa *const vtx);
   };
   
-  LCGBP_Scene::LCGBP_Scene(const uint maxNumLCGBP)
+  LCG_Scene::LCG_Scene(const uint maxNumLCGBP, const uint numLCMs, const uint numLCMClusters)
   {
+    bounds = BBox3f(empty);
+    minLODDistance = 1.0f;
+    /* --- lossy compressed bilinear patches --- */
     numLCGBP = 0;
     numCurrentLCGBPStates = 0;    
     numAllocatedLCGBP = maxNumLCGBP; 
     numAllocatedLCGBPStates = (1<<(2*(LOD_LEVELS-1))) * maxNumLCGBP;
-    lcgbp       = (LCGBP*)alignedUSMMalloc(sizeof(LCGBP)*numAllocatedLCGBP,64,EMBREE_USM_SHARED /*EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE*/);
-    lcgbp_state = (LCGBP_State*)alignedUSMMalloc(sizeof(LCGBP_State)*numAllocatedLCGBPStates,64,EMBREE_USM_SHARED/*EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE*/);
-    PRINT2(numAllocatedLCGBP,numAllocatedLCGBP*sizeof(LCGBP));
-    PRINT2(numAllocatedLCGBPStates,numAllocatedLCGBPStates*sizeof(LCGBP_State));
-    bounds = BBox3f(empty);
-    minLODDistance = 1.0f;
+    lcgbp = nullptr;
+    lcgbp_state = nullptr;
+
+    /* --- lossy compressed meshes --- */
+    numLCMeshes = numLCMs;        
+    numLCMeshClusters = numLCMClusters;
+    lcm = 0;
+    lcm_cluster = 0;
+    compressedClusterData = 0;
+    
+    if (maxNumLCGBP)
+    {
+      lcgbp       = (LCGBP*)alignedUSMMalloc(sizeof(LCGBP)*numAllocatedLCGBP,64,EMBREE_USM_SHARED /*EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE*/);
+      lcgbp_state = (LCGBP_State*)alignedUSMMalloc(sizeof(LCGBP_State)*numAllocatedLCGBPStates,64,EMBREE_USM_SHARED/*EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE*/);
+      PRINT2(numAllocatedLCGBP,numAllocatedLCGBP*sizeof(LCGBP));
+      PRINT2(numAllocatedLCGBPStates,numAllocatedLCGBPStates*sizeof(LCGBP_State));
+    }
+
+    PRINT(numLCMeshes);
+    PRINT(numLCMeshClusters);
+    
+    if (numLCMeshes)
+    {
+      lcm = (LossyCompressedMesh*)alignedUSMMalloc(sizeof(LossyCompressedMesh)*numLCMeshes,64,EMBREE_USM_SHARED /*EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE*/);      
+    }
+
+    if (numLCMeshClusters)
+    {
+      lcm_cluster = (LossyCompressedMeshCluster*)alignedUSMMalloc(sizeof(LossyCompressedMeshCluster)*numLCMeshClusters,64,EMBREE_USM_SHARED /*EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE*/);            
+    }    
   }
 
-  void LCGBP_Scene::addGrid(const uint gridResX, const uint gridResY, const Vec3fa *const vtx)
+  void LCG_Scene::addGrid(const uint gridResX, const uint gridResY, const Vec3fa *const vtx)
   {
     double avg_error = 0.0;
     double max_error = 0.0;
@@ -311,7 +348,7 @@ namespace embree {
     minLODDistance = length(bounds.size()) / RELATIVE_MIN_LOD_DISTANCE_FACTOR;
   }
 
-  LCGBP_Scene *global_lcgbp_scene = nullptr;
+  LCG_Scene *global_lcgbp_scene = nullptr;
 
   // ==============================================================================================
   // ==============================================================================================
@@ -391,11 +428,29 @@ namespace embree {
     gpu::Range current(0,mcodes.size());
     extractRanges(current,&*mcodes.begin(),ranges,128);
 
-    for (uint i=0;i<ranges.size();i++)
+    const uint numClusters = ranges.size();
+    for (uint i=0;i<numClusters;i++)
       PRINT4(i,ranges[i].start,ranges[i].end,ranges[i].size());
     
     PRINT(bounds);
-    PRINT(diag);    
+    PRINT(diag);
+
+
+    /* --- allocate global LCGBP --- */
+    global_lcgbp_scene = (LCG_Scene*)alignedUSMMalloc(sizeof(LCG_Scene),64);
+    new (global_lcgbp_scene) LCG_Scene(0,1,numClusters);
+
+    global_lcgbp_scene->lcm[0].bounds      = bounds;
+    global_lcgbp_scene->lcm[0].numQuads    = mesh->numQuads;
+    global_lcgbp_scene->lcm[0].numVertices = mesh->numVertices;
+
+    for (uint i=0;i<ranges.size();i++)
+    {
+      global_lcgbp_scene->lcm_cluster[i].numQuads  = ranges[i].size();
+      global_lcgbp_scene->lcm_cluster[i].ID = i;
+    }
+      
+    
     exit(0);
   }  
   
@@ -416,8 +471,8 @@ namespace embree {
     PRINT(numLCGBP);
 
     /* --- allocate global LCGBP --- */
-    global_lcgbp_scene = (LCGBP_Scene*)alignedUSMMalloc(sizeof(LCGBP_Scene),64);
-    new (global_lcgbp_scene) LCGBP_Scene(numLCGBP);
+    global_lcgbp_scene = (LCG_Scene*)alignedUSMMalloc(sizeof(LCG_Scene),64);
+    new (global_lcgbp_scene) LCG_Scene(numLCGBP,0,0);
     
     /* --- fill array of LCGBP --- */
     for (uint i=0;i<grid->numGrids;i++)
@@ -450,8 +505,8 @@ namespace embree {
     const uint numLCGBP = ((gridResX-1) / LCGBP::GRID_RES_QUAD) * ((gridResY-1) / LCGBP::GRID_RES_QUAD);
 
     /* --- allocate global LCGBP --- */
-    global_lcgbp_scene = (LCGBP_Scene*)alignedUSMMalloc(sizeof(LCGBP_Scene),64);
-    new (global_lcgbp_scene) LCGBP_Scene(numLCGBP);
+    global_lcgbp_scene = (LCG_Scene*)alignedUSMMalloc(sizeof(LCG_Scene),64);
+    new (global_lcgbp_scene) LCG_Scene(numLCGBP,0,0);
 
     const uint vertices = gridResX*gridResY;
     Vec3fa *vtx = (Vec3fa*)malloc(sizeof(Vec3fa)*vertices);
@@ -526,7 +581,7 @@ namespace embree {
   }
 
 /* task that renders a single screen tile */
-  Vec3fa renderPixelPrimary(const TutorialData& data, float x, float y, const ISPCCamera& camera, const unsigned int width, const unsigned int height, LCGBP_Scene *grid)
+  Vec3fa renderPixelPrimary(const TutorialData& data, float x, float y, const ISPCCamera& camera, const unsigned int width, const unsigned int height, LCG_Scene *grid)
   {
     RTCIntersectArguments args;
     rtcInitIntersectArguments(&args);
@@ -546,7 +601,7 @@ namespace embree {
     return color;
   }
 
-  Vec3fa renderPixelDebug(const TutorialData& data, float x, float y, const ISPCCamera& camera, const unsigned int width, const unsigned int height, LCGBP_Scene *lcgbp_scene, const RenderMode mode)
+  Vec3fa renderPixelDebug(const TutorialData& data, float x, float y, const ISPCCamera& camera, const unsigned int width, const unsigned int height, LCG_Scene *lcgbp_scene, const RenderMode mode)
   {
     RTCIntersectArguments args;
     rtcInitIntersectArguments(&args);
@@ -658,7 +713,7 @@ namespace embree {
                            const unsigned int height,
                            const float time,
                            const ISPCCamera& camera,
-                           LCGBP_Scene *lcgbp_scene,
+                           LCG_Scene *lcgbp_scene,
                            const RenderMode mode,
                            const uint spp)
   {
@@ -702,7 +757,7 @@ namespace embree {
     /* render all pixels */
 #if defined(EMBREE_SYCL_TUTORIAL)
     RenderMode rendering_mode = user_rendering_mode;    
-    LCGBP_Scene *lcgbp_scene = global_lcgbp_scene;
+    LCG_Scene *lcgbp_scene = global_lcgbp_scene;
     uint spp = user_spp;
     TutorialData ldata = data;
     sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
@@ -786,7 +841,7 @@ namespace embree {
   {
 #if defined(EMBREE_SYCL_TUTORIAL)
     
-    LCGBP_Scene *local_lcgbp_scene = global_lcgbp_scene;
+    LCG_Scene *local_lcgbp_scene = global_lcgbp_scene;
     sycl::event init_event =  global_gpu_queue->submit([&](sycl::handler &cgh) {
                                                          cgh.single_task([=]() {
                                                                            local_lcgbp_scene->numCurrentLCGBPStates = 0;
