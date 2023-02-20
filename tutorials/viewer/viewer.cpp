@@ -70,7 +70,7 @@ namespace embree
       "  geomID: visualization of geometry ID\n"
       "  primID: visualization of geometry and primitive ID");
 
-#if defined(EMBREE_SYCL_TUTORIAL)
+#if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION)
       registerOption("features", [] (Ref<ParseStream> cin, const FileName& path) {
           g_use_scene_features = false;
           unsigned int feature_mask = RTC_FEATURE_FLAG_NONE;
