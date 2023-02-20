@@ -273,7 +273,7 @@ namespace embree {
   struct CompressedVertex
   {
     ushort x,y,z;
-
+    
     static const uint BITS_PER_DIM = 16;
     static const uint BITS_MASK = ((uint)1<<BITS_PER_DIM)-1;
     static const uint RES_PER_DIM = BITS_MASK;
@@ -283,16 +283,24 @@ namespace embree {
     __forceinline CompressedVertex(const Vec3f &org, const Vec3f &lower, const Vec3f &inv_diag)
     {
       const Vec3f norm_v = (org - lower)*inv_diag;
-      x = (ushort)(norm_v.x * (float)RES_PER_DIM);
-      y = (ushort)(norm_v.y * (float)RES_PER_DIM);
-      z = (ushort)(norm_v.z * (float)RES_PER_DIM);
+      x = (uint)(floorf(norm_v.x * (float)RES_PER_DIM));
+      y = (uint)(floorf(norm_v.y * (float)RES_PER_DIM));
+      z = (uint)(floorf(norm_v.z * (float)RES_PER_DIM));
     }
 
     __forceinline Vec3f decompress(const Vec3f &lower, const Vec3f &diag) const
     {
       const Vec3f vv((float)x,(float)y,(float)z);
       return lower + vv * (1.0f / RES_PER_DIM) * diag;
-    }
+    }    
+  };
+
+  struct CompressedQuadIndices
+  {
+    uint v0,v1,v2,v3; //FIXME
+
+    __forceinline CompressedQuadIndices() {}
+    __forceinline CompressedQuadIndices(const uint v0,const uint v1,const uint v2,const uint v3) : v0(v0), v1(v1), v2(v2), v3(v3) {}
     
   };
 
@@ -301,8 +309,25 @@ namespace embree {
     BBox3f bounds;
     uint numQuads;
     uint numVertices;
-
+    
+    CompressedVertex *compressedVertices;
+    CompressedQuadIndices *compressedIndices;
+    
     __forceinline LossyCompressedMesh() {}
+
+    __forceinline BBox3f decompressQuadBounds(const CompressedQuadIndices &indices,const Vec3f &lower, const Vec3f &diag) const
+    {
+      const Vec3f vtx0 = compressedVertices[indices.v0].decompress(lower,diag);
+      const Vec3f vtx1 = compressedVertices[indices.v1].decompress(lower,diag);
+      const Vec3f vtx2 = compressedVertices[indices.v2].decompress(lower,diag);
+      const Vec3f vtx3 = compressedVertices[indices.v3].decompress(lower,diag);
+      BBox3f quadBounds(empty);
+      quadBounds.extend(vtx0);
+      quadBounds.extend(vtx1);
+      quadBounds.extend(vtx2);
+      quadBounds.extend(vtx3);
+      return quadBounds;
+    }
   };
   
 
@@ -314,9 +339,34 @@ namespace embree {
     uint offsetVertices;
     
     LossyCompressedMesh *mesh;
-    char *data;
-
+    
     __forceinline LossyCompressedMeshCluster() {}
+
+    __forceinline uint getDecompressedInnerNodesSizeInBytes() const
+    {
+      uint numCacheLines = 0;
+      uint numPrims = numQuads;
+      while(1)
+      {
+        uint numNodes = (numPrims+5)/6;
+        if (numNodes == 1) break;
+        numCacheLines += numNodes;
+        numPrims = numNodes;        
+      }
+      numCacheLines++;
+      return numCacheLines*64;        
+    }
+
+    __forceinline uint getDecompressedLeavesSizeInBytes() const
+    {
+      return numQuads * 64;
+    }
+    
+    __forceinline uint getDecompressedSizeInBytes() const
+    {
+      return getDecompressedInnerNodesSizeInBytes() + getDecompressedLeavesSizeInBytes();
+    }
+    
   };
   
 };

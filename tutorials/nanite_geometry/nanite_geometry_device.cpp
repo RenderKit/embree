@@ -16,6 +16,8 @@
 
 #define RELATIVE_MIN_LOD_DISTANCE_FACTOR 32.0f
 
+#define TEST_QUAD_MESHES 1
+
 #include "../../kernels/rthwif/builder/gpu/lcgbp.h"
 #include "../../kernels/rthwif/builder/gpu/morton.h"
 
@@ -224,7 +226,6 @@ namespace embree {
     uint numLCMeshClusters;    
     LossyCompressedMesh *lcm;
     LossyCompressedMeshCluster *lcm_cluster;
-    char *compressedClusterData;
 
     /* --- embree geometry --- */
     RTCGeometry geometry;
@@ -258,7 +259,6 @@ namespace embree {
     numLCMeshClusters = numLCMClusters;
     lcm = 0;
     lcm_cluster = 0;
-    compressedClusterData = 0;
     
     if (maxNumLCGBP)
     {
@@ -428,30 +428,86 @@ namespace embree {
     gpu::Range current(0,mcodes.size());
     extractRanges(current,&*mcodes.begin(),ranges,128);
 
+    uint numTotalVertices = 0;
+    uint numTotalIndices  = 0;
     const uint numClusters = ranges.size();
     for (uint i=0;i<numClusters;i++)
+    {
+      numTotalVertices += ranges[i].size()*4; // FIXME !!!
+      numTotalIndices += ranges[i].size()*4;  // FIXME !!!
       PRINT4(i,ranges[i].start,ranges[i].end,ranges[i].size());
+    }
     
     PRINT(bounds);
     PRINT(diag);
-
+    PRINT(numTotalVertices);
+    PRINT(numTotalIndices);    
 
     /* --- allocate global LCGBP --- */
     global_lcgbp_scene = (LCG_Scene*)alignedUSMMalloc(sizeof(LCG_Scene),64);
     new (global_lcgbp_scene) LCG_Scene(0,1,numClusters);
 
-    global_lcgbp_scene->lcm[0].bounds      = bounds;
-    global_lcgbp_scene->lcm[0].numQuads    = mesh->numQuads;
-    global_lcgbp_scene->lcm[0].numVertices = mesh->numVertices;
+    global_lcgbp_scene->lcm[0].bounds             = bounds;
+    global_lcgbp_scene->lcm[0].numQuads           = mesh->numQuads;
+    global_lcgbp_scene->lcm[0].numVertices        = mesh->numVertices;
+    global_lcgbp_scene->lcm[0].compressedVertices = (CompressedVertex*)alignedUSMMalloc(sizeof(CompressedVertex)*numTotalVertices,64); // FIXME
+    global_lcgbp_scene->lcm[0].compressedIndices  = (CompressedQuadIndices*)alignedUSMMalloc(sizeof(CompressedQuadIndices)*mesh->numQuads,64); //FIXME    
 
+    uint globalCompressedVertexOffset = 0;
+    uint globalCompressedIndexOffset = 0;
+
+
+    for (uint i=0;i<mesh->numVertices;i++)
+      global_lcgbp_scene->lcm[0].compressedVertices[ globalCompressedVertexOffset++ ] = CompressedVertex(mesh->positions[0][i],lower,inv_diag);
+      
     for (uint i=0;i<ranges.size();i++)
     {
       global_lcgbp_scene->lcm_cluster[i].numQuads  = ranges[i].size();
       global_lcgbp_scene->lcm_cluster[i].ID = i;
+      global_lcgbp_scene->lcm_cluster[i].offsetIndices  = globalCompressedIndexOffset;      
+      global_lcgbp_scene->lcm_cluster[i].offsetVertices = 0; //globalCompressedVertexOffset;
+      global_lcgbp_scene->lcm_cluster[i].mesh = &global_lcgbp_scene->lcm[0];
+        
+      for (uint j=ranges[i].start;j<ranges[i].end;j++)
+      {
+        const uint index = mcodes[j].getIndex();
+        const uint v0 = mesh->quads[index].v0;
+        const uint v1 = mesh->quads[index].v1;
+        const uint v2 = mesh->quads[index].v2;
+        const uint v3 = mesh->quads[index].v3;
+
+        const Vec3fa &vtx0 = mesh->positions[0][v0];
+        const Vec3fa &vtx1 = mesh->positions[0][v1];
+        const Vec3fa &vtx2 = mesh->positions[0][v2];
+        const Vec3fa &vtx3 = mesh->positions[0][v3];
+
+        // BBox3fa test_bounds(empty);
+        // test_bounds.extend(vtx0);
+        // test_bounds.extend(vtx1);
+        // test_bounds.extend(vtx2);
+        // test_bounds.extend(vtx3);
+        
+        global_lcgbp_scene->lcm[0].compressedIndices[ globalCompressedIndexOffset++ ] = CompressedQuadIndices(v0,v1,v2,v3);
+
+        // global_lcgbp_scene->lcm[0].compressedVertices[ globalCompressedVertexOffset+0 ] = CompressedVertex(vtx0,lower,inv_diag);
+        // global_lcgbp_scene->lcm[0].compressedVertices[ globalCompressedVertexOffset+1 ] = CompressedVertex(vtx1,lower,inv_diag);
+        // global_lcgbp_scene->lcm[0].compressedVertices[ globalCompressedVertexOffset+2 ] = CompressedVertex(vtx2,lower,inv_diag);
+        // global_lcgbp_scene->lcm[0].compressedVertices[ globalCompressedVertexOffset+3 ] = CompressedVertex(vtx3,lower,inv_diag);
+        // globalCompressedVertexOffset += 4;
+      }      
     }
-      
     
-    exit(0);
+    PRINT( globalCompressedIndexOffset );
+    PRINT( globalCompressedVertexOffset );
+
+
+    global_lcgbp_scene->geometry = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY);
+    rtcCommitGeometry(global_lcgbp_scene->geometry);
+    global_lcgbp_scene->geomID = rtcAttachGeometry(scene,global_lcgbp_scene->geometry);
+    //rtcReleaseGeometry(geom);
+    global_lcgbp_scene->map_Kd = (Texture*)material->map_Kd;        
+    
+    //exit(0);
   }  
   
   void convertISPCGridMesh(ISPCGridMesh* grid, RTCScene scene, ISPCOBJMaterial *material)
@@ -849,20 +905,19 @@ namespace embree {
                                                        });
 
     waitOnEventAndCatchException(init_event);
-    
-    const uint wgSize = 64;
-    const uint numLCGBP = local_lcgbp_scene->numLCGBP;
 
-#if 0
-    for (uint i=0;i<numLCGBP;i++)
-    {
-      LCGBP &current = local_lcgbp_scene->lcgbp[i];
-      LODPatchLevel plevel = getLODPatchLevel(current,camera,width,height);
-      PRINT3(i,plevel.level,plevel.blend);
-    }
-    //exit(0);
-#endif
+    void *lcg_ptr = nullptr;
+    uint lcg_num_prims = 0;
     
+#if TEST_QUAD_MESHES == 1
+
+     lcg_ptr = local_lcgbp_scene->lcm_cluster;
+     lcg_num_prims = local_lcgbp_scene->numLCMeshClusters;
+     PRINT(lcg_ptr);
+    
+#else  
+    const uint wgSize = 64;
+    const uint numLCGBP = local_lcgbp_scene->numLCGBP;    
     const sycl::nd_range<1> nd_range1(alignTo(numLCGBP,wgSize),sycl::range<1>(wgSize));              
     sycl::event compute_lod_event = global_gpu_queue->submit([=](sycl::handler& cgh){
                                                                cgh.depends_on(init_event);                                                   
@@ -950,11 +1005,16 @@ namespace embree {
                                                                                          });
                                                              });
     waitOnEventAndCatchException(compute_lod_event);
+        
+    lcg_ptr = local_lcgbp_scene->lcgbp_state;
+    lcg_num_prims = local_lcgbp_scene->numCurrentLCGBPStates;
+#endif
 
     double t0 = getSeconds();
     
-    rtcSetGeometryUserData(local_lcgbp_scene->geometry,local_lcgbp_scene->lcgbp_state);
-    rtcSetLossyCompressedGeometryPrimitiveCount(local_lcgbp_scene->geometry,local_lcgbp_scene->numCurrentLCGBPStates);
+    rtcSetGeometryUserData(local_lcgbp_scene->geometry,lcg_ptr);
+    
+    rtcSetLossyCompressedGeometryPrimitiveCount(local_lcgbp_scene->geometry,lcg_num_prims);
     rtcCommitGeometry(local_lcgbp_scene->geometry);
     
     /* commit changes to scene */

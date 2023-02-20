@@ -55,7 +55,7 @@ namespace embree
     const size_t lcg_size            = estimateLossyCompressedGeometriesSize(numLossyCompressedGeometries);
     // PRINT(node_size);
     // PRINT(leaf_size);    
-    // PRINT(lcg_size);
+    //PRINT(lcg_size);
     const size_t totalSize           = header + node_size + leaf_size + lcg_size;
     // PRINT(totalSize);
     return totalSize;
@@ -646,7 +646,8 @@ namespace embree
     // ===================================================          
     // ==== create lossy compressed geometry primrefs ====
     // ===================================================
-    
+
+    PRINT((void*)lcg_bvh_mem);
     if (numLossyCompressedGeometries)
       numLossyCompressedGeometries = createLossyCompressedGeometries_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,sync_mem,NUM_ACTIVE_LARGE_WGS,bvh2,numQuads + numProcedurals + numInstances,host_device_tasks,lcg_bvh_mem,create_primref_time,verbose1);
     
@@ -896,6 +897,7 @@ namespace embree
                                                                     });
                                                   });
       gpu::waitOnEventAndCatchException(queue_event);
+
     }
     
     // =============================    
@@ -983,6 +985,7 @@ namespace embree
       stats.print(std::cout);
       stats.print_raw(std::cout);
       PRINT("VERBOSE STATS DONE");
+      exit(0);
     }        
 #endif
     

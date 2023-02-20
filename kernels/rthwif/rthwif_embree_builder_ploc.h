@@ -771,9 +771,15 @@ namespace embree
   
   __forceinline uint estimateLossyCompressedGeometriesSize(const uint numLossyCompressedGeometries)
   {
+#if 0    
     const uint numQuads = numLossyCompressedGeometries * (RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1) * (RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1) * 64;
     const uint numInnerNodes = numLossyCompressedGeometries * (4*3+2+1) * 64;
     return numQuads + numInnerNodes;
+#else
+    const uint numQuads = numLossyCompressedGeometries * 128 * 64;
+    const uint numInnerNodes = numLossyCompressedGeometries * (22+4+1) * 64;
+    return numQuads + numInnerNodes;    
+#endif    
   }  
   
 
@@ -1491,7 +1497,7 @@ namespace embree
   }
 
 
-  __forceinline void writeNode(void *_dest, const uint relative_block_offset, const gpu::AABB3f &parent_bounds, const uint numChildren, uint indices[BVH_BRANCHING_FACTOR], const gpu::AABB3f child_bounds[6])
+   __forceinline void writeNode(void *_dest, const int relative_block_offset, const gpu::AABB3f &parent_bounds, const uint numChildren, const gpu::AABB3f child_bounds[6], const NodeType default_type)
   {
     uint *dest = (uint*)_dest;    
     
@@ -1516,7 +1522,7 @@ namespace embree
 
     uint8_t tmp[48];
     
-    tmp[0]         = NODE_TYPE_MIXED; // type
+    tmp[0]         = NODE_TYPE_MIXED;
     tmp[1]         = 0;    // pad 
     tmp[2]         = _exp_x; assert(_exp_x >= -128 && _exp_x <= 127); 
     tmp[3]         = _exp_y; assert(_exp_y >= -128 && _exp_y <= 127);
@@ -1538,7 +1544,7 @@ namespace embree
       // === determine leaf type ===
       const bool isLeaf = true; // && !forceFatLeaves;      
       const uint numBlocks    =  1;
-      NodeType leaf_type = NODE_TYPE_QUAD;
+      NodeType leaf_type = default_type;
       data = (i<numChildren) ? numBlocks : 0;
       data |= (isLeaf ? leaf_type : NODE_TYPE_INTERNAL) << 2;
       const gpu::AABB3f childBounds = child_bounds[i]; //.conservativeBounds();
@@ -1677,7 +1683,6 @@ namespace embree
    uint createLossyCompressedGeometries_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGS, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, char* lcg_bvh_mem, double &iteration_time, const bool verbose)    
   {    
     uint numLCGs = 0;
-    const uint sizeLCGBVH = estimateLossyCompressedGeometriesSize(1);
     for (uint lcgID=0;lcgID<numGeoms;lcgID++)
     {
       if (unlikely(geometry_desc[lcgID] == nullptr)) continue;
@@ -1686,7 +1691,140 @@ namespace embree
         
         RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC *geom = (RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC *)geometry_desc[lcgID];
         
-        numLCGs += geom->numGeometryPtrs;        
+        numLCGs += geom->numGeometryPtrs;
+        
+#if 1
+        char* dest = lcg_bvh_mem;
+        
+        PRINT2( geom->compressedGeometryPtrsBuffer, numLCGs );
+        uint clOffset = 0;
+        for (uint ID=0;ID<numLCGs;ID++)
+        {
+          LossyCompressedMeshCluster &cluster = ((LossyCompressedMeshCluster*)(geom->compressedGeometryPtrsBuffer))[ID];
+          LossyCompressedMesh &mesh = *cluster.mesh;
+          CompressedVertex *compressedVertices = mesh.compressedVertices + cluster.offsetVertices; //FIXME RELATIVE
+          CompressedQuadIndices *compressedIndices = mesh.compressedIndices + cluster.offsetIndices;
+
+          PRINT( cluster.offsetVertices );
+          PRINT( cluster.offsetIndices );
+          
+          const Vec3f lower = mesh.bounds.lower;
+          const Vec3f diag = mesh.bounds.size();          
+
+          //PRINT( cluster.getDecompressedInnerNodesSizeInBytes() );
+          QuadLeafData *leaf = (QuadLeafData*)(dest + cluster.getDecompressedInnerNodesSizeInBytes());
+          
+          PRINT(cluster.numQuads);
+          gpu::AABB3f clusterPrimBounds[128];
+          gpu::AABB3f clusterBounds;
+          clusterBounds.init();
+          for (uint q=0;q<cluster.numQuads;q++)
+          {
+            const uint v0 = compressedIndices[q].v0;
+            const uint v1 = compressedIndices[q].v1;
+            const uint v2 = compressedIndices[q].v2;
+            const uint v3 = compressedIndices[q].v3;
+
+            const Vec3f vtx0 = compressedVertices[v0].decompress(lower,diag);
+            const Vec3f vtx1 = compressedVertices[v1].decompress(lower,diag);
+            const Vec3f vtx2 = compressedVertices[v2].decompress(lower,diag);
+            const Vec3f vtx3 = compressedVertices[v3].decompress(lower,diag);
+
+            const uint geomID = lcgID;
+            const uint primID = (q << RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT);
+            
+            leaf[q] = QuadLeafData( vtx0,vtx1,vtx3,vtx2, 3,2,1, 0, geomID, primID, primID+1, GeometryFlags::OPAQUE, -1);
+
+            gpu::AABB3f quad_bounds( to_float3(vtx0) );
+            quad_bounds.extend( to_float3(vtx1) );
+            quad_bounds.extend( to_float3(vtx2) );
+            quad_bounds.extend( to_float3(vtx3) );
+            clusterBounds.extend(quad_bounds);
+            clusterPrimBounds[q] = quad_bounds;
+            //PRINT4(vtx0,vtx1,vtx2,vtx3);            
+          }
+
+          uint numPrims = cluster.numQuads;
+          uint numNodes = (numPrims+5)/6;
+          uint new_numPrims = 0;
+
+          char *inner_node = (char*)leaf - numNodes*64;
+
+          // === quad node layer ===
+          PRINT(numNodes);
+          /* for (uint i=0;i<numPrims;i++) */
+          /*   PRINT2(i,clusterPrimBounds[i]); */
+          
+          for (uint i=0;i<numNodes;i++)
+          {
+            gpu::AABB3f nodeBounds;
+            nodeBounds.init();            
+            for (uint j=0;j<6;j++)
+            {
+              const uint index = min(i*6+j,numPrims-1);
+              nodeBounds.extend( clusterPrimBounds[index] );
+            }
+            const uint numChildren = min(numPrims-i*6,(uint)6);
+            writeNode(&inner_node[i*64],((int64_t)&leaf[i*6]-(int64_t)&inner_node[i*64])/64,nodeBounds,numChildren,&clusterPrimBounds[i*6],NODE_TYPE_QUAD);
+            clusterPrimBounds[new_numPrims++] = nodeBounds;
+          }
+
+          numPrims = new_numPrims;
+          numNodes = (numPrims+5)/6;
+          new_numPrims = 0;
+          //PRINT(numNodes);
+
+          char *prev_inner_node = inner_node;                   
+          inner_node -= numNodes * 64;
+          
+          while(numNodes>1)
+          {
+            /* for (uint i=0;i<numPrims;i++) */
+            /*   PRINT2(i,clusterPrimBounds[i]); */
+            
+            for (uint i=0;i<numNodes;i++)
+            {            
+              gpu::AABB3f nodeBounds;
+              nodeBounds.init();            
+              for (uint j=0;j<6;j++)
+              {
+                const uint index = min(i*6+j,numPrims-1);
+                nodeBounds.extend( clusterPrimBounds[ index] );
+              }
+              const uint numChildren = min(numPrims-i*6,(uint)6);
+              char *cur = &inner_node[i*64];
+              writeNode(cur,((int64_t)&prev_inner_node[i*6*64]-(int64_t)cur)/64,nodeBounds,numChildren,&clusterPrimBounds[i*6],NODE_TYPE_INTERNAL);
+              clusterPrimBounds[new_numPrims++] = nodeBounds;
+            }
+
+            numPrims = new_numPrims;
+            numNodes = (numPrims+5)/6;
+            new_numPrims = 0;
+            //PRINT(numNodes);
+            
+            prev_inner_node = inner_node;                   
+            inner_node -= numNodes * 64;            
+          }
+
+          //PRINT("ROOT");
+          //PRINT2(numPrims,clusterBounds);
+            /* for (uint i=0;i<numPrims;i++) */
+            /*   PRINT2(i,clusterPrimBounds[i]); */
+          
+          writeNode(dest,((int64_t)prev_inner_node-(int64_t)dest)/64,clusterBounds,numPrims,clusterPrimBounds,NODE_TYPE_INTERNAL);
+            
+                    
+          BVH2Ploc node;                             
+          node.initLeaf(lcgID,clOffset,clusterBounds);                               
+          node.store(&bvh2[prim_type_offset + ID]);          
+          clOffset += cluster.getDecompressedSizeInBytes() / 64;
+          //PRINT3( cluster.numQuads, clusterBounds, cluster.getDecompressedSizeInBytes() / 64 );
+        }
+
+        
+        //exit(0);
+#else
+        const uint SIZE_LCG_BVH = estimateLossyCompressedGeometriesSize(1);        
         const uint wgSize = 16;        
         const sycl::nd_range<1> nd_range1(wgSize*geom->numGeometryPtrs,sycl::range<1>(wgSize));          
         sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
@@ -1893,7 +2031,7 @@ namespace embree
                                if (subgroupLocalID == 0)
                                {
                                  BVH2Ploc node;                             
-                                 node.initLeaf(lcgID,ID,parent_bounds);                               
+                                 node.initLeaf(lcgID,ID*SIZE_LCG_BVH/64,parent_bounds);                               
                                  node.store(&bvh2[prim_type_offset + ID]);
                                }
                                
@@ -1905,6 +2043,7 @@ namespace embree
         if (unlikely(verbose))
           iteration_time += gpu::getDeviceExecutionTiming(queue_event);
         //PRINT( gpu::getDeviceExecutionTiming(queue_event) );
+#endif        
       }
     }
 
@@ -2854,7 +2993,7 @@ namespace embree
   // =============================================================================================================================================
 
 
-  bool convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, uint *host_device_tasks, const RTHWIF_GEOMETRY_DESC **const geometries, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const uint numPrimitives, const bool instanceMode, const GeometryTypeRanges &geometryTypeRanges, const char* const lcg_bvh_mem, float& conversion_device_time,  const bool verbose)
+  bool convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, uint *host_device_tasks, const RTHWIF_GEOMETRY_DESC **const geometries, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const uint numPrimitives, const bool instanceMode, const GeometryTypeRanges &geometryTypeRanges, char* const lcg_bvh_mem, float& conversion_device_time,  const bool verbose)
   {
     static const uint STOP_THRESHOLD = 1296;    
     double total_time = 0.0f;    
@@ -2864,7 +3003,7 @@ namespace embree
     
     host_device_tasks[0] = 0;
     host_device_tasks[1] = 0;
-
+    
     /* ---- Phase I: single WG generates enough work for the breadth-first phase --- */
     {
       const uint wgSize = LARGE_WG_SIZE;
@@ -2970,6 +3109,7 @@ namespace embree
       if (unlikely(verbose)) total_time += gpu::getDeviceExecutionTiming(queue_event);
     }
 
+    
     if (unlikely(host_device_tasks[0] == -1)) return false;
 
     /* ---- Phase II: full breadth-first phase until only fat leaves or single leaves remain--- */
@@ -3226,8 +3366,6 @@ namespace embree
     }    
     if (unlikely(host_device_tasks[0] == -1)) return false;
 
-    const uint SIZE_LCG_BVH = estimateLossyCompressedGeometriesSize(1);
-    
     /* ---- Phase IV: for each primID, geomID pair generate corresponding leaf data --- */
     const uint leaves = host_device_tasks[0]; 
     if (leaves)
@@ -3314,10 +3452,12 @@ namespace embree
                                  // === Lossy Compressed Geometry ===
                                  // =================================                                 
                                  const uint primID = leafGenData[globalID].primID;
-                                 InternalNode6Data *lcg_root = (InternalNode6Data*)(lcg_bvh_mem + SIZE_LCG_BVH * primID);
+                                 InternalNode6Data *lcg_root = (InternalNode6Data*)(lcg_bvh_mem + primID * 64);
+                                 const int oldOffset = lcg_root->childOffset;
                                  InternalNode6Data *dest     = (InternalNode6Data *)qleaf;         
                                  *dest = *lcg_root;
-                                 dest->childOffset = ((uint64_t)lcg_root + 64 - (uint64_t)dest)/64; // FIXME with SLM
+                                 dest->childOffset = ((uint64_t)lcg_root + oldOffset*64 - (uint64_t)dest)/64; // FIXME with SLM
+                                 //dest->childOffset = ((uint64_t)lcg_root - (uint64_t)dest)/64; // FIXME with SLM
                                }
                                
                              }
@@ -3346,6 +3486,7 @@ namespace embree
       if (unlikely(verbose)) total_time += gpu::getDeviceExecutionTiming(queue_event);     
     }        
     conversion_device_time = (float)total_time;
+    gpu::waitOnQueueAndCatchException(gpu_queue); //exit(0);
     return true;    
   }
   
