@@ -1500,7 +1500,8 @@ namespace embree
    __forceinline void writeNode(void *_dest, const int relative_block_offset, const gpu::AABB3f &parent_bounds, const uint numChildren, const gpu::AABB3f child_bounds[6], const NodeType default_type)
   {
     uint *dest = (uint*)_dest;    
-    
+    //PRINT3(dest,numChildren,relative_block_offset);
+
     const float _ulp = std::numeric_limits<float>::epsilon();
     const float up = 1.0f + float(_ulp);  
     const gpu::AABB3f conservative_bounds = parent_bounds.conservativeBounds();
@@ -1683,6 +1684,8 @@ namespace embree
    uint createLossyCompressedGeometries_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGS, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, char* lcg_bvh_mem, double &iteration_time, const bool verbose)    
   {    
     uint numLCGs = 0;
+    char* dest = lcg_bvh_mem;
+    
     for (uint lcgID=0;lcgID<numGeoms;lcgID++)
     {
       if (unlikely(geometry_desc[lcgID] == nullptr)) continue;
@@ -1693,10 +1696,9 @@ namespace embree
         
         numLCGs += geom->numGeometryPtrs;
         
-#if 1
-        char* dest = lcg_bvh_mem;
+#if 0
         
-        PRINT2( geom->compressedGeometryPtrsBuffer, numLCGs );
+        //PRINT2( geom->compressedGeometryPtrsBuffer, numLCGs );
         uint clOffset = 0;
         for (uint ID=0;ID<numLCGs;ID++)
         {
@@ -1705,16 +1707,16 @@ namespace embree
           CompressedVertex *compressedVertices = mesh.compressedVertices + cluster.offsetVertices; //FIXME RELATIVE
           CompressedQuadIndices *compressedIndices = mesh.compressedIndices + cluster.offsetIndices;
 
-          PRINT( cluster.offsetVertices );
-          PRINT( cluster.offsetIndices );
+          //PRINT( cluster.offsetVertices );
+          //PRINT( cluster.offsetIndices );
           
           const Vec3f lower = mesh.bounds.lower;
           const Vec3f diag = mesh.bounds.size();          
 
           //PRINT( cluster.getDecompressedInnerNodesSizeInBytes() );
+          //QuadLeafData *leaf = (QuadLeafData*)(dest + clOffset*64 + cluster.getDecompressedInnerNodesSizeInBytes());
           QuadLeafData *leaf = (QuadLeafData*)(dest + cluster.getDecompressedInnerNodesSizeInBytes());
-          
-          PRINT(cluster.numQuads);
+          //PRINT(cluster.numQuads);
           gpu::AABB3f clusterPrimBounds[128];
           gpu::AABB3f clusterBounds;
           clusterBounds.init();
@@ -1751,7 +1753,7 @@ namespace embree
           char *inner_node = (char*)leaf - numNodes*64;
 
           // === quad node layer ===
-          PRINT(numNodes);
+          //PRINT(numNodes);
           /* for (uint i=0;i<numPrims;i++) */
           /*   PRINT2(i,clusterPrimBounds[i]); */
           
@@ -1818,6 +1820,7 @@ namespace embree
           node.initLeaf(lcgID,clOffset,clusterBounds);                               
           node.store(&bvh2[prim_type_offset + ID]);          
           clOffset += cluster.getDecompressedSizeInBytes() / 64;
+          dest += cluster.getDecompressedSizeInBytes();
           //PRINT3( cluster.numQuads, clusterBounds, cluster.getDecompressedSizeInBytes() / 64 );
         }
 
@@ -1851,7 +1854,7 @@ namespace embree
                                const uint lgcbp_start_y = state.start_y;                               
                                const uint lgcbp_step = state.step;
                                  
-                               char* dest = lcg_bvh_mem + ID * sizeLCGBVH;
+                               char* dest = lcg_bvh_mem + ID * SIZE_LCG_BVH;
                                LocalNodeData_subgroup *node = (LocalNodeData_subgroup*)(dest + 3 * 64);
                                QuadLeafData *leaf = (QuadLeafData*)(dest + (4*3+2+1)*64);
                                
@@ -2793,7 +2796,7 @@ namespace embree
 
   __forceinline void writeNode(void *_dest, const uint relative_block_offset, const gpu::AABB3f &parent_bounds, const uint numChildren, uint indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint numPrimitives, const NodeType type, const GeometryTypeRanges &geometryTypeRanges)
   {
-    uint *dest = (uint*)_dest;    
+    uint *dest = (uint*)_dest;
     //dest = (uint*) __builtin_assume_aligned(dest,16);
     
     const float _ulp = std::numeric_limits<float>::epsilon();

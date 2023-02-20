@@ -647,7 +647,6 @@ namespace embree
     // ==== create lossy compressed geometry primrefs ====
     // ===================================================
 
-    PRINT((void*)lcg_bvh_mem);
     if (numLossyCompressedGeometries)
       numLossyCompressedGeometries = createLossyCompressedGeometries_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,sync_mem,NUM_ACTIVE_LARGE_WGS,bvh2,numQuads + numProcedurals + numInstances,host_device_tasks,lcg_bvh_mem,create_primref_time,verbose1);
     

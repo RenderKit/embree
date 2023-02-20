@@ -16,7 +16,7 @@
 
 #define RELATIVE_MIN_LOD_DISTANCE_FACTOR 32.0f
 
-#define TEST_QUAD_MESHES 1
+#define TEST_QUAD_MESHES 0
 
 #include "../../kernels/rthwif/builder/gpu/lcgbp.h"
 #include "../../kernels/rthwif/builder/gpu/morton.h"
@@ -464,7 +464,7 @@ namespace embree {
     {
       global_lcgbp_scene->lcm_cluster[i].numQuads  = ranges[i].size();
       global_lcgbp_scene->lcm_cluster[i].ID = i;
-      global_lcgbp_scene->lcm_cluster[i].offsetIndices  = 0; //globalCompressedIndexOffset;      
+      global_lcgbp_scene->lcm_cluster[i].offsetIndices  = globalCompressedIndexOffset;      
       global_lcgbp_scene->lcm_cluster[i].offsetVertices = 0; //globalCompressedVertexOffset;
       global_lcgbp_scene->lcm_cluster[i].mesh = &global_lcgbp_scene->lcm[0];
         
@@ -913,7 +913,7 @@ namespace embree {
 
      lcg_ptr = local_lcgbp_scene->lcm_cluster;
      lcg_num_prims = local_lcgbp_scene->numLCMeshClusters;
-     PRINT(lcg_ptr);
+     //PRINT(lcg_ptr);
     
 #else  
     const uint wgSize = 64;
