@@ -464,7 +464,7 @@ namespace embree {
     {
       global_lcgbp_scene->lcm_cluster[i].numQuads  = ranges[i].size();
       global_lcgbp_scene->lcm_cluster[i].ID = i;
-      global_lcgbp_scene->lcm_cluster[i].offsetIndices  = globalCompressedIndexOffset;      
+      global_lcgbp_scene->lcm_cluster[i].offsetIndices  = 0; //globalCompressedIndexOffset;      
       global_lcgbp_scene->lcm_cluster[i].offsetVertices = 0; //globalCompressedVertexOffset;
       global_lcgbp_scene->lcm_cluster[i].mesh = &global_lcgbp_scene->lcm[0];
         
