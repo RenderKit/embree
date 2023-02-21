@@ -348,6 +348,19 @@ jobs:
         python scripts/test.py build
         python scripts/test.py test
 
+  windows-DG2-JIT-INTERNAL-TBB2020_3:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@devel
+    needs: [setup_gfx, setup_dpcpp]
+    with:
+      runs-on: '[ "Windows", "NAS", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
+      cmd: |
+        python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_SYCL_SUPPORT:ON sycl:none intensity:3 tasking:TBB2020.3
+        python scripts/test.py build
+        python scripts/test.py test
+
   ################################################################################
   ################################################################################
   # CPU tests
@@ -555,6 +568,7 @@ jobs:
       - windows-DG2-JIT-INTERNAL
       - windows-DG2-JIT-PUBLIC
       - windows-DG2-JIT-PUBLIC-ICX
+      - windows-DG2-JIT-INTERNAL-TBB2020_3
       - linux-fedora29_ICX
       - linux-fedora32-GCC
       - linux-fedora32_ICX

@@ -36,7 +36,7 @@ extern uniform int g_animation_mode;
 uniform bool g_subdiv_mode = false;
 uniform unsigned int keyframeID = 0;
 
-#if defined(EMBREE_SYCL_TUTORIAL) && defined(USE_SPECIALIZATION_CONSTANTS)
+#if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION) && defined(USE_SPECIALIZATION_CONSTANTS)
 const static sycl::specialization_id<RTCFeatureFlags> rtc_feature_mask(RTC_FEATURE_FLAG_ALL);
 #endif
 uniform RTCFeatureFlags g_used_features = RTC_FEATURE_FLAG_NONE;
@@ -1738,7 +1738,7 @@ export void renderFrameStandard (uniform int* uniform pixels,
                           const uniform ISPCCamera& camera)
 {
 /* render image */
-#if defined(EMBREE_SYCL_TUTORIAL)
+#if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION)
   TutorialData ldata = data;
 
 #if defined(USE_SPECIALIZATION_CONSTANTS)

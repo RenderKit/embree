@@ -16,7 +16,7 @@ extern uniform bool g_changed;
 
 extern uniform float g_debug;
 
-#if defined(EMBREE_SYCL_TUTORIAL)
+#if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION)
 static const sycl::specialization_id<RTCFeatureFlags> spec_feature_mask;
 #endif
 
