@@ -451,14 +451,15 @@ namespace embree
     return RTHWIF_ERROR_NONE;
   }
   
-  catch (std::bad_alloc&) {
-    return RTHWIF_ERROR_RETRY;
+  catch (std::exception& e) {
+    if (std::string(e.what()) == std::string(std::bad_alloc().what())) {
+      return RTHWIF_ERROR_RETRY;
+    }
+    else {
+      return RTHWIF_ERROR_OTHER;
+    }
   }
   
-  catch (...) {
-    return RTHWIF_ERROR_OTHER;
-  }
-
   struct RTHWIF_PARALLEL_OPERATION_IMPL
   {
     RTHWIF_ERROR errorCode = RTHWIF_ERROR_NONE;
