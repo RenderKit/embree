@@ -460,23 +460,23 @@ namespace embree
 
   __forceinline const RTHWIF_TRIANGLE_INDICES &getTriangleDesc(const RTHWIF_GEOMETRY_TRIANGLES_DESC& mesh, const uint triID)
   {
-    return *(RTHWIF_TRIANGLE_INDICES*)((char*)mesh.triangleBuffer + mesh.triangleStride * triID);    
+    return *(RTHWIF_TRIANGLE_INDICES*)((char*)mesh.triangleBuffer + mesh.triangleStride * uint64_t(triID));    
   }
 
   __forceinline const RTHWIF_QUAD_INDICES &getQuadDesc(const RTHWIF_GEOMETRY_QUADS_DESC& mesh, const uint triID)
   {
-    return *(RTHWIF_QUAD_INDICES*)((char*)mesh.quadBuffer + mesh.quadStride * triID);    
+    return *(RTHWIF_QUAD_INDICES*)((char*)mesh.quadBuffer + mesh.quadStride * uint64_t(triID));    
   }
     
   __forceinline Vec3f getVec3f(const RTHWIF_GEOMETRY_TRIANGLES_DESC& mesh, const uint vtxID)
   {
-    return *(Vec3f*)((char*)mesh.vertexBuffer + mesh.vertexStride * vtxID);
+    return *(Vec3f*)((char*)mesh.vertexBuffer + mesh.vertexStride * uint64_t(vtxID));
     
   }
 
   __forceinline Vec3f getVec3f(const RTHWIF_GEOMETRY_QUADS_DESC& mesh, const uint vtxID)
   {
-    return *(Vec3f*)((char*)mesh.vertexBuffer + mesh.vertexStride * vtxID);
+    return *(Vec3f*)((char*)mesh.vertexBuffer + mesh.vertexStride * uint64_t(vtxID));
     
   }
     
