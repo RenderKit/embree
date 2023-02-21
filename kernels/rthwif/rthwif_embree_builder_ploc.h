@@ -1697,7 +1697,7 @@ namespace embree
         numLCGs += geom->numGeometryPtrs;
 #if 1
 
-#if 0
+#if 1
         
         for (uint ID=0;ID<geom->numGeometryPtrs;ID++)
         {
