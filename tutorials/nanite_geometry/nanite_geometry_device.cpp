@@ -383,23 +383,44 @@ namespace embree {
   void convertISPCQuadMesh(ISPCQuadMesh* mesh, RTCScene scene, ISPCOBJMaterial *material)
   {
     PING;
-    BBox3fa bounds(empty);
-    for (uint i=0;i<mesh->numVertices;i++)
-      bounds.extend(mesh->positions[0][i]);
-    const Vec3f lower = bounds.lower;
-    const Vec3f diag = bounds.size();
+    BBox3fa centroidBounds(empty);
+    BBox3fa geometryBounds(empty);
+    
+    for (uint i=0;i<mesh->numQuads;i++)
+    {
+      const uint v0 = mesh->quads[i].v0;
+      const uint v1 = mesh->quads[i].v1;
+      const uint v2 = mesh->quads[i].v2;
+      const uint v3 = mesh->quads[i].v3;
+
+      const Vec3fa &vtx0 = mesh->positions[0][v0];
+      const Vec3fa &vtx1 = mesh->positions[0][v1];
+      const Vec3fa &vtx2 = mesh->positions[0][v2];
+      const Vec3fa &vtx3 = mesh->positions[0][v3];
+
+      BBox3fa quadBounds(empty);
+      quadBounds.extend(vtx0);
+      quadBounds.extend(vtx1);
+      quadBounds.extend(vtx2);
+      quadBounds.extend(vtx3);
+      centroidBounds.extend(quadBounds.center2());
+      geometryBounds.extend(quadBounds);
+    }
+    
+    const Vec3f lower = centroidBounds.lower;
+    const Vec3f diag = centroidBounds.size();
     const Vec3f inv_diag  = diag != Vec3fa(0.0f) ? Vec3fa(1.0f) / diag : Vec3fa(0.0f);
 
-    std::vector<CompressedVertex> compressed_vertices;
+    //std::vector<CompressedVertex> compressed_vertices;
     std::vector<gpu::MortonCodePrimitive64x32Bits3D> mcodes;
     std::vector<gpu::Range> ranges;
     
-    for (uint i=0;i<mesh->numVertices;i++)
-    {
-      CompressedVertex v(mesh->positions[0][i],lower,inv_diag);
-      compressed_vertices.push_back(v);      
-      //PRINT3(i,mesh->positions[0][i],v.decompress(lower,diag));
-    }
+    // for (uint i=0;i<mesh->numVertices;i++)
+    // {
+    //   CompressedVertex v(mesh->positions[0][i],lower,inv_diag);
+    //   compressed_vertices.push_back(v);      
+    //   //PRINT3(i,mesh->positions[0][i],v.decompress(lower,diag));
+    // }
 
     for (uint i=0;i<mesh->numQuads;i++)
     {
@@ -422,6 +443,8 @@ namespace embree {
       const uint grid_size = 1 << 21;
       const Vec3f grid_base = lower;
       const Vec3f grid_extend = diag;
+      //const float3 grid_extend(centroidBounds.maxDiagDim());                             
+      
       const Vec3f grid_scale = ((float)grid_size * 0.99f) * inv_diag;
       const Vec3f centroid =  quadBounds.center2();
 
@@ -448,7 +471,7 @@ namespace embree {
       //PRINT4(i,ranges[i].start,ranges[i].end,ranges[i].size());
     }
     
-    PRINT(bounds);
+    PRINT(centroidBounds);
     PRINT(diag);
     PRINT(numTotalVertices);
     PRINT(numTotalIndices);    
@@ -457,7 +480,7 @@ namespace embree {
     global_lcgbp_scene = (LCG_Scene*)alignedUSMMalloc(sizeof(LCG_Scene),64);
     new (global_lcgbp_scene) LCG_Scene(0,1,numClusters);
 
-    global_lcgbp_scene->lcm[0].bounds             = bounds;
+    global_lcgbp_scene->lcm[0].bounds             = geometryBounds;
     global_lcgbp_scene->lcm[0].numQuads           = mesh->numQuads;
     global_lcgbp_scene->lcm[0].numVertices        = mesh->numVertices;
     global_lcgbp_scene->lcm[0].compressedVertices = (CompressedVertex*)alignedUSMMalloc(sizeof(CompressedVertex)*numTotalVertices,64); // FIXME
@@ -468,7 +491,12 @@ namespace embree {
 
     //for (uint i=0;i<mesh->numVertices;i++)
     //  global_lcgbp_scene->lcm[0].compressedVertices[ globalCompressedVertexOffset++ ] = CompressedVertex(mesh->positions[0][i],lower,inv_diag);
-      
+
+
+    const Vec3f geometry_lower    = geometryBounds.lower;
+    const Vec3f geometry_diag     = geometryBounds.size();
+    const Vec3f geometry_inv_diag = geometry_diag != Vec3fa(0.0f) ? Vec3fa(1.0f) / geometry_diag : Vec3fa(0.0f);
+    
     for (uint i=0;i<ranges.size();i++)
     {
       global_lcgbp_scene->lcm_cluster[i].numQuads  = ranges[i].size();
@@ -501,8 +529,7 @@ namespace embree {
       {
         const uint old_v = (*i).first;
         const uint new_v = (*i).second;
-        global_lcgbp_scene->lcm[0].compressedVertices[ globalCompressedVertexOffset + new_v ] = CompressedVertex(mesh->positions[0][old_v],lower,inv_diag);
-        
+        global_lcgbp_scene->lcm[0].compressedVertices[ globalCompressedVertexOffset + new_v ] = CompressedVertex(mesh->positions[0][old_v],geometry_lower,geometry_inv_diag);        
       }
       
       globalCompressedVertexOffset += index_map.size();
@@ -681,7 +708,7 @@ namespace embree {
     /* intersect ray with scene */
     rtcIntersect1(data.g_scene,RTCRayHit_(ray),&args);
 
-    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(1.0f,0.0f,1.0f);
+    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(1.0f,1.0f,1.0f);
 
     const uint localID = ray.primID & (((uint)1<<RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT)-1);
     const uint primID = ray.primID >> RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT;

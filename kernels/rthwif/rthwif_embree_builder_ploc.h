@@ -1684,7 +1684,7 @@ namespace embree
    uint createLossyCompressedGeometries_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGS, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, char* lcg_bvh_mem, uint *const lcg_bvh_mem_allocator, double &iteration_time, const bool verbose)    
   {    
     uint numLCGs = 0;
-    char* dest = lcg_bvh_mem;
+    //char* dest = lcg_bvh_mem;
     
     for (uint lcgID=0;lcgID<numGeoms;lcgID++)
     {
