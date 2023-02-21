@@ -1696,7 +1696,7 @@ namespace embree
         
         numLCGs += geom->numGeometryPtrs;
         
-#if 0
+#if 1
         
         //PRINT2( geom->compressedGeometryPtrsBuffer, numLCGs );
         uint clOffset = 0;
@@ -1706,17 +1706,11 @@ namespace embree
           LossyCompressedMesh &mesh = *cluster.mesh;
           CompressedVertex *compressedVertices = mesh.compressedVertices + cluster.offsetVertices; //FIXME RELATIVE
           CompressedQuadIndices *compressedIndices = mesh.compressedIndices + cluster.offsetIndices;
-
-          //PRINT( cluster.offsetVertices );
-          //PRINT( cluster.offsetIndices );
           
           const Vec3f lower = mesh.bounds.lower;
           const Vec3f diag = mesh.bounds.size();          
-
-          //PRINT( cluster.getDecompressedInnerNodesSizeInBytes() );
-          //QuadLeafData *leaf = (QuadLeafData*)(dest + clOffset*64 + cluster.getDecompressedInnerNodesSizeInBytes());
-          QuadLeafData *leaf = (QuadLeafData*)(dest + cluster.getDecompressedInnerNodesSizeInBytes());
-          //PRINT(cluster.numQuads);
+          
+          QuadLeafData *leaf = (QuadLeafData*)(dest + (cluster.numBlocks-cluster.numQuads)*64);
           gpu::AABB3f clusterPrimBounds[128];
           gpu::AABB3f clusterBounds;
           clusterBounds.init();
@@ -1743,7 +1737,6 @@ namespace embree
             quad_bounds.extend( to_float3(vtx3) );
             clusterBounds.extend(quad_bounds);
             clusterPrimBounds[q] = quad_bounds;
-            //PRINT4(vtx0,vtx1,vtx2,vtx3);            
           }
 
           uint numPrims = cluster.numQuads;
@@ -1774,7 +1767,6 @@ namespace embree
           numPrims = new_numPrims;
           numNodes = (numPrims+5)/6;
           new_numPrims = 0;
-          //PRINT(numNodes);
 
           char *prev_inner_node = inner_node;                   
           inner_node -= numNodes * 64;
@@ -1818,10 +1810,10 @@ namespace embree
                     
           BVH2Ploc node;                             
           node.initLeaf(lcgID,clOffset,clusterBounds);                               
-          node.store(&bvh2[prim_type_offset + ID]);          
-          clOffset += cluster.getDecompressedSizeInBytes() / 64;
-          dest += cluster.getDecompressedSizeInBytes();
-          //PRINT3( cluster.numQuads, clusterBounds, cluster.getDecompressedSizeInBytes() / 64 );
+          node.store(&bvh2[prim_type_offset + ID]);
+          
+          clOffset += cluster.numBlocks; 
+          dest += cluster.numBlocks*64; 
         }
 
         

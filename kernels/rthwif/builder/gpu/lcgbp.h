@@ -331,18 +331,19 @@ namespace embree {
   };
   
 
-  struct LossyCompressedMeshCluster
+  struct __aligned(16) LossyCompressedMeshCluster
   {
     uint numQuads;
+    uint numBlocks;
     uint ID;
     uint offsetIndices;
     uint offsetVertices;
-    
+    uint tmp;
     LossyCompressedMesh *mesh;
     
     __forceinline LossyCompressedMeshCluster() {}
 
-    __forceinline uint getDecompressedInnerNodesSizeInBytes() const
+    static __forceinline uint getDecompressedInnerNodesSizeInBytes(const uint numQuads) 
     {
       uint numCacheLines = 0;
       uint numPrims = numQuads;
@@ -357,14 +358,14 @@ namespace embree {
       return numCacheLines*64;        
     }
 
-    __forceinline uint getDecompressedLeavesSizeInBytes() const
+    static __forceinline uint getDecompressedLeavesSizeInBytes(const uint numQuads)
     {
       return numQuads * 64;
     }
     
-    __forceinline uint getDecompressedSizeInBytes() const
+    static __forceinline uint getDecompressedSizeInBytes(const uint numQuads)
     {
-      return getDecompressedInnerNodesSizeInBytes() + getDecompressedLeavesSizeInBytes();
+      return getDecompressedInnerNodesSizeInBytes(numQuads) + getDecompressedLeavesSizeInBytes(numQuads);
     }
     
   };

@@ -16,7 +16,7 @@
 
 #define RELATIVE_MIN_LOD_DISTANCE_FACTOR 32.0f
 
-#define TEST_QUAD_MESHES 0
+#define TEST_QUAD_MESHES 1
 
 #include "../../kernels/rthwif/builder/gpu/lcgbp.h"
 #include "../../kernels/rthwif/builder/gpu/morton.h"
@@ -463,6 +463,7 @@ namespace embree {
     for (uint i=0;i<ranges.size();i++)
     {
       global_lcgbp_scene->lcm_cluster[i].numQuads  = ranges[i].size();
+      global_lcgbp_scene->lcm_cluster[i].numBlocks = LossyCompressedMeshCluster::getDecompressedSizeInBytes(ranges[i].size())/64;
       global_lcgbp_scene->lcm_cluster[i].ID = i;
       global_lcgbp_scene->lcm_cluster[i].offsetIndices  = globalCompressedIndexOffset;      
       global_lcgbp_scene->lcm_cluster[i].offsetVertices = 0; //globalCompressedVertexOffset;
