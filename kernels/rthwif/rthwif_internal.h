@@ -25,7 +25,7 @@ enum TraceRayCtrl
 typedef __attribute__((opencl_global)) struct rtglobals_opaque_t* rtglobals_t;
 typedef __attribute__((opencl_private)) struct rtfence_opaque_t* rtfence_t;
 
-#ifdef __SYCL_DEVICE_ONLY__
+#if defined(__SYCL_DEVICE_ONLY__) || defined(EMBREE_SYCL_RT_SIMULATION)
 
 SYCL_EXTERNAL extern "C" __attribute__((opencl_global)) void* intel_get_implicit_dispatch_globals();
 SYCL_EXTERNAL extern "C" void* intel_get_rt_stack(rtglobals_t rt_dispatch_globals);

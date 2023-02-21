@@ -20,22 +20,22 @@ namespace embree
   
   inline RTHWIF_TRIANGLE_INDICES getPrimitive(const RTHWIF_GEOMETRY_TRIANGLES_DESC* geom, uint32_t primID) {
     assert(primID < geom->triangleCount);
-    return *(RTHWIF_TRIANGLE_INDICES*)((char*)geom->triangleBuffer + primID*geom->triangleStride);
+    return *(RTHWIF_TRIANGLE_INDICES*)((char*)geom->triangleBuffer + uint64_t(primID)*geom->triangleStride);
   }
   
   inline Vec3f getVertex(const RTHWIF_GEOMETRY_TRIANGLES_DESC* geom, uint32_t vertexID) {
     assert(vertexID < geom->vertexCount);
-    return *(Vec3f*)((char*)geom->vertexBuffer + vertexID*geom->vertexStride);
+    return *(Vec3f*)((char*)geom->vertexBuffer + uint64_t(vertexID)*geom->vertexStride);
   }
   
   inline RTHWIF_QUAD_INDICES getPrimitive(const RTHWIF_GEOMETRY_QUADS_DESC* geom, uint32_t primID) {
     assert(primID < geom->quadCount);
-    return *(RTHWIF_QUAD_INDICES*)((char*)geom->quadBuffer + primID*geom->quadStride);
+    return *(RTHWIF_QUAD_INDICES*)((char*)geom->quadBuffer + uint64_t(primID)*geom->quadStride);
   }
   
   inline Vec3f getVertex(const RTHWIF_GEOMETRY_QUADS_DESC* geom, uint32_t vertexID) {
     assert(vertexID < geom->vertexCount);
-    return *(Vec3f*)((char*)geom->vertexBuffer + vertexID*geom->vertexStride);
+    return *(Vec3f*)((char*)geom->vertexBuffer + uint64_t(vertexID)*geom->vertexStride);
   }
 
   inline AffineSpace3fa getTransform(const RTHWIF_GEOMETRY_INSTANCE_DESC* geom)
@@ -451,14 +451,15 @@ namespace embree
     return RTHWIF_ERROR_NONE;
   }
   
-  catch (std::bad_alloc&) {
-    return RTHWIF_ERROR_RETRY;
+  catch (std::exception& e) {
+    if (std::string(e.what()) == std::string(std::bad_alloc().what())) {
+      return RTHWIF_ERROR_RETRY;
+    }
+    else {
+      return RTHWIF_ERROR_OTHER;
+    }
   }
   
-  catch (...) {
-    return RTHWIF_ERROR_OTHER;
-  }
-
   struct RTHWIF_PARALLEL_OPERATION_IMPL
   {
     RTHWIF_ERROR errorCode = RTHWIF_ERROR_NONE;

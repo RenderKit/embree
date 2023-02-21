@@ -30,7 +30,7 @@ RTC_API_EXTERN_C RTCDevice rtcNewSYCLDevice(sycl::context context, const char* c
   return rtcNewSYCLDeviceInternal(context, config);
 }
 
-#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && (defined(__SYCL_DEVICE_ONLY__) || defined(EMBREE_SYCL_RT_SIMULATION))
 
 SYCL_EXTERNAL void rtcIntersect1(RTCScene hscene, struct RTCRayHit* rayhit, struct RTCIntersectArguments* args)
 {
