@@ -1681,7 +1681,7 @@ namespace embree
    
         
    
-   uint createLossyCompressedGeometries_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGS, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, char* lcg_bvh_mem, double &iteration_time, const bool verbose)    
+   uint createLossyCompressedGeometries_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGS, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, char* lcg_bvh_mem, uint *const lcg_bvh_mem_allocator, double &iteration_time, const bool verbose)    
   {    
     uint numLCGs = 0;
     char* dest = lcg_bvh_mem;
@@ -1695,9 +1695,11 @@ namespace embree
         RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC *geom = (RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC *)geometry_desc[lcgID];
         
         numLCGs += geom->numGeometryPtrs;
+#if 1
+
+#if 0
         
-#if 1        
-        for (uint ID=0;ID<numLCGs;ID++)
+        for (uint ID=0;ID<geom->numGeometryPtrs;ID++)
         {
           LossyCompressedMeshCluster &cluster = ((LossyCompressedMeshCluster*)(geom->compressedGeometryPtrsBuffer))[ID];
           LossyCompressedMesh &mesh = *cluster.mesh;
@@ -1705,7 +1707,10 @@ namespace embree
           CompressedQuadIndices *compressedIndices = mesh.compressedIndices + cluster.offsetIndices;
           
           const Vec3f lower = mesh.bounds.lower;
-          const Vec3f diag = mesh.bounds.size();          
+          const Vec3f diag = mesh.bounds.size();
+
+          //uint globalBlocks = gpu::atomic_add_global(lcg_bvh_mem_allocator,(uint)cluster.numBlocks);
+
           
           QuadLeafData *leaf = (QuadLeafData*)(dest + (cluster.numBlocks-cluster.numQuads)*64);
           gpu::AABB3f clusterPrimBounds[128];
@@ -1770,6 +1775,104 @@ namespace embree
           
           dest += cluster.numBlocks*64; 
         }
+#else
+        const uint wgSize = 16;        
+        const sycl::nd_range<1> nd_range1(wgSize*geom->numGeometryPtrs,sycl::range<1>(wgSize));          
+        sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+            sycl::local_accessor< gpu::AABB3f, 1> _clusterPrimBounds(sycl::range<1>(128),cgh);
+            cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
+                             {
+                               const uint subgroupLocalID = get_sub_group_local_id();
+                               const uint ID         = item.get_group(0);
+
+                               LossyCompressedMeshCluster &cluster = ((LossyCompressedMeshCluster*)(geom->compressedGeometryPtrsBuffer))[ID];
+                               LossyCompressedMesh &mesh = *cluster.mesh;
+                               CompressedVertex *compressedVertices = mesh.compressedVertices + cluster.offsetVertices; //FIXME RELATIVE
+                               CompressedQuadIndices *compressedIndices = mesh.compressedIndices + cluster.offsetIndices;
+          
+                               const Vec3f lower = mesh.bounds.lower;
+                               const Vec3f diag = mesh.bounds.size();
+
+                               uint globalBlockID = 0;
+                               if (subgroupLocalID == 0)
+                                 globalBlockID = gpu::atomic_add_global(lcg_bvh_mem_allocator,(uint)cluster.numBlocks);
+                               globalBlockID = sub_group_broadcast(globalBlockID,0);
+                                                              
+                               char *const dest = lcg_bvh_mem + globalBlockID*64;
+          
+                               QuadLeafData *leaf = (QuadLeafData*)(dest + (cluster.numBlocks-cluster.numQuads)*64);
+                               gpu::AABB3f *clusterPrimBounds = _clusterPrimBounds.get_pointer();
+                               gpu::AABB3f clusterBounds;
+                               clusterBounds.init();
+                               for (uint q=0;q<cluster.numQuads;q++)
+                               {
+                                 const uint v0 = compressedIndices[q].v0;
+                                 const uint v1 = compressedIndices[q].v1;
+                                 const uint v2 = compressedIndices[q].v2;
+                                 const uint v3 = compressedIndices[q].v3;
+
+                                 const Vec3f vtx0 = compressedVertices[v0].decompress(lower,diag);
+                                 const Vec3f vtx1 = compressedVertices[v1].decompress(lower,diag);
+                                 const Vec3f vtx2 = compressedVertices[v2].decompress(lower,diag);
+                                 const Vec3f vtx3 = compressedVertices[v3].decompress(lower,diag);
+
+                                 const uint geomID = lcgID;
+                                 const uint primID = (q << RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT);
+            
+                                 leaf[q] = QuadLeafData( vtx0,vtx1,vtx3,vtx2, 3,2,1, 0, geomID, primID, primID+1, GeometryFlags::OPAQUE, -1);
+
+                                 gpu::AABB3f quad_bounds( to_float3(vtx0) );
+                                 quad_bounds.extend( to_float3(vtx1) );
+                                 quad_bounds.extend( to_float3(vtx2) );
+                                 quad_bounds.extend( to_float3(vtx3) );
+                                 clusterBounds.extend(quad_bounds);
+                                 clusterPrimBounds[q] = quad_bounds;
+                               }
+
+                               sub_group_barrier();
+                               
+                               uint numPrims = cluster.numQuads;
+                               uint numNodes = ((numPrims+BVH_BRANCHING_FACTOR-1)/BVH_BRANCHING_FACTOR);
+                               char *prev = (char*)leaf;
+                               char *cur  = prev - numNodes*64;
+                               NodeType node_type = NODE_TYPE_QUAD;
+                               while(numPrims > BVH_BRANCHING_FACTOR)
+                               {
+                                 for (uint i=0;i<numNodes;i++)
+                                 {
+                                   gpu::AABB3f nodeBounds;
+                                   nodeBounds.init();            
+                                   for (uint j=0;j<BVH_BRANCHING_FACTOR;j++)
+                                   {
+                                     const uint index = min(i*BVH_BRANCHING_FACTOR+j,numPrims-1);
+                                     nodeBounds.extend( clusterPrimBounds[index] );
+                                   }
+                                   const uint numChildren = min(numPrims-i*BVH_BRANCHING_FACTOR,(uint)BVH_BRANCHING_FACTOR);
+                                   writeNode(&cur[i*64],((int64_t)&prev[i*64*BVH_BRANCHING_FACTOR]-(int64_t)&cur[i*64])/64,nodeBounds,numChildren,&clusterPrimBounds[i*BVH_BRANCHING_FACTOR],node_type);
+                                   clusterPrimBounds[i] = nodeBounds;
+                                 }
+                                 sub_group_barrier();
+                                 
+                                 node_type = NODE_TYPE_INTERNAL;
+                                 numPrims = numNodes;
+                                 numNodes = ((numPrims+BVH_BRANCHING_FACTOR-1)/BVH_BRANCHING_FACTOR);
+                                 prev = cur;
+                                 cur -= numNodes*64;            
+                               }
+                               writeNode(dest,((int64_t)prev-(int64_t)dest)/64,clusterBounds,numPrims,clusterPrimBounds,node_type);          
+                                
+                               BVH2Ploc node;                             
+                               node.initLeaf(lcgID,((int64_t)dest-(int64_t)lcg_bvh_mem)/64,clusterBounds);                               
+                               node.store(&bvh2[prim_type_offset + ID]);                                         
+                             });
+          });
+        
+        gpu::waitOnEventAndCatchException(queue_event);
+        
+        if (unlikely(verbose))
+          iteration_time += gpu::getDeviceExecutionTiming(queue_event);        
+#endif        
+        
 #else
         const uint SIZE_LCG_BVH = estimateLossyCompressedGeometriesSize(1);        
         const uint wgSize = 16;        
@@ -2972,6 +3075,7 @@ namespace embree
                                globals->node_mem_allocator_start = node_start;
                                globals->node_mem_allocator_cur   = node_end;
                                globals->qbvh_base_pointer        = (char*)qbvh;
+                               globals->numLeaves                = 0;
                                // === init intial state ===
                                TmpNodeState *root_state = (TmpNodeState*)((char*)qbvh + 64 * node_start);
                                uint rootIndex = globals->rootIndex;
