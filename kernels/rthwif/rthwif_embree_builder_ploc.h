@@ -1697,7 +1697,7 @@ namespace embree
         numLCGs += geom->numGeometryPtrs;
 #if 1
 
-#if 1
+#if 0
         
         for (uint ID=0;ID<geom->numGeometryPtrs;ID++)
         {
@@ -1817,9 +1817,10 @@ namespace embree
                                  const Vec3f vtx3 = compressedVertices[v3].decompress(lower,diag);
 
                                  const uint geomID = lcgID;
-                                 const uint primID = (q << RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT);
+                                 const uint primID0 = ID;
+                                 const uint primID1 = ID;
             
-                                 leaf[q] = QuadLeafData( vtx0,vtx1,vtx3,vtx2, 3,2,1, 0, geomID, primID, primID+1, GeometryFlags::OPAQUE, -1);
+                                 leaf[q] = QuadLeafData( vtx0,vtx1,vtx3,vtx2, 3,2,1, 0, geomID, primID0, primID1, GeometryFlags::OPAQUE, -1);
 
                                  gpu::AABB3f quad_bounds( to_float3(vtx0) );
                                  quad_bounds.extend( to_float3(vtx1) );

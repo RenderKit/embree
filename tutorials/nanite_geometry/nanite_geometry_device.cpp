@@ -759,6 +759,11 @@ namespace embree {
       color = getTexel3f(lcgbp_scene->map_Kd,1-fu,fv);
       //color = Vec3fa(fu,fv,1.0f-fu-fv);
     }
+    else if (mode == RENDER_DEBUG_CLUSTER_ID)
+    {
+      color =  randomColor(primID);    
+    }
+    
     return Vec3fa(abs(dot(ray.dir,normalize(ray.Ng)))) * color;
   }
   

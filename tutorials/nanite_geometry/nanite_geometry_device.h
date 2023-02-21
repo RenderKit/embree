@@ -10,15 +10,15 @@
 namespace embree {
 
   enum RenderMode {
-    RENDER_PRIMARY        = 0,
-    RENDER_DEBUG_GRIDS    = 1,
-    RENDER_DEBUG_SUBGRIDS = 2,    
-    RENDER_DEBUG_QUADS    = 3,
-    RENDER_DEBUG_LOD      = 4,
+    RENDER_PRIMARY            = 0,
+    RENDER_DEBUG_GRIDS        = 1,
+    RENDER_DEBUG_SUBGRIDS     = 2,    
+    RENDER_DEBUG_QUADS        = 3,
+    RENDER_DEBUG_LOD          = 4,
     RENDER_DEBUG_CRACK_FIXING = 5,
-    RENDER_DEBUG_CLOD = 6,
-    RENDER_DEBUG_TEXTURE = 7,        
-    
+    RENDER_DEBUG_CLOD         = 6,
+    RENDER_DEBUG_TEXTURE      = 7,        
+    RENDER_DEBUG_CLUSTER_ID   = 8,            
   };
   
 struct TutorialData
