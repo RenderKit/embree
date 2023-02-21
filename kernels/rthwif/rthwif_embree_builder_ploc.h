@@ -1696,10 +1696,7 @@ namespace embree
         
         numLCGs += geom->numGeometryPtrs;
         
-#if 1
-        
-        //PRINT2( geom->compressedGeometryPtrsBuffer, numLCGs );
-        uint clOffset = 0;
+#if 1        
         for (uint ID=0;ID<numLCGs;ID++)
         {
           LossyCompressedMeshCluster &cluster = ((LossyCompressedMeshCluster*)(geom->compressedGeometryPtrsBuffer))[ID];
@@ -1740,84 +1737,39 @@ namespace embree
           }
 
           uint numPrims = cluster.numQuads;
-          uint numNodes = (numPrims+5)/6;
-          uint new_numPrims = 0;
-
-          char *inner_node = (char*)leaf - numNodes*64;
-
-          // === quad node layer ===
-          //PRINT(numNodes);
-          /* for (uint i=0;i<numPrims;i++) */
-          /*   PRINT2(i,clusterPrimBounds[i]); */
-          
-          for (uint i=0;i<numNodes;i++)
+          uint numNodes = ((numPrims+BVH_BRANCHING_FACTOR-1)/BVH_BRANCHING_FACTOR);
+          char *prev = (char*)leaf;
+          char *cur  = prev - numNodes*64;
+          NodeType node_type = NODE_TYPE_QUAD;
+          while(numPrims > BVH_BRANCHING_FACTOR)
           {
-            gpu::AABB3f nodeBounds;
-            nodeBounds.init();            
-            for (uint j=0;j<6;j++)
-            {
-              const uint index = min(i*6+j,numPrims-1);
-              nodeBounds.extend( clusterPrimBounds[index] );
-            }
-            const uint numChildren = min(numPrims-i*6,(uint)6);
-            writeNode(&inner_node[i*64],((int64_t)&leaf[i*6]-(int64_t)&inner_node[i*64])/64,nodeBounds,numChildren,&clusterPrimBounds[i*6],NODE_TYPE_QUAD);
-            clusterPrimBounds[new_numPrims++] = nodeBounds;
-          }
-
-          numPrims = new_numPrims;
-          numNodes = (numPrims+5)/6;
-          new_numPrims = 0;
-
-          char *prev_inner_node = inner_node;                   
-          inner_node -= numNodes * 64;
-          
-          while(numNodes>1)
-          {
-            /* for (uint i=0;i<numPrims;i++) */
-            /*   PRINT2(i,clusterPrimBounds[i]); */
-            
             for (uint i=0;i<numNodes;i++)
-            {            
+            {
               gpu::AABB3f nodeBounds;
               nodeBounds.init();            
-              for (uint j=0;j<6;j++)
+              for (uint j=0;j<BVH_BRANCHING_FACTOR;j++)
               {
-                const uint index = min(i*6+j,numPrims-1);
-                nodeBounds.extend( clusterPrimBounds[ index] );
+                const uint index = min(i*BVH_BRANCHING_FACTOR+j,numPrims-1);
+                nodeBounds.extend( clusterPrimBounds[index] );
               }
-              const uint numChildren = min(numPrims-i*6,(uint)6);
-              char *cur = &inner_node[i*64];
-              writeNode(cur,((int64_t)&prev_inner_node[i*6*64]-(int64_t)cur)/64,nodeBounds,numChildren,&clusterPrimBounds[i*6],NODE_TYPE_INTERNAL);
-              clusterPrimBounds[new_numPrims++] = nodeBounds;
-            }
-
-            numPrims = new_numPrims;
-            numNodes = (numPrims+5)/6;
-            new_numPrims = 0;
-            //PRINT(numNodes);
-            
-            prev_inner_node = inner_node;                   
-            inner_node -= numNodes * 64;            
+              const uint numChildren = min(numPrims-i*BVH_BRANCHING_FACTOR,(uint)BVH_BRANCHING_FACTOR);
+              writeNode(&cur[i*64],((int64_t)&prev[i*64*BVH_BRANCHING_FACTOR]-(int64_t)&cur[i*64])/64,nodeBounds,numChildren,&clusterPrimBounds[i*BVH_BRANCHING_FACTOR],node_type);
+              clusterPrimBounds[i] = nodeBounds;
+            }            
+            node_type = NODE_TYPE_INTERNAL;
+            numPrims = numNodes;
+            numNodes = ((numPrims+BVH_BRANCHING_FACTOR-1)/BVH_BRANCHING_FACTOR);
+            prev = cur;
+            cur -= numNodes*64;            
           }
-
-          //PRINT("ROOT");
-          //PRINT2(numPrims,clusterBounds);
-            /* for (uint i=0;i<numPrims;i++) */
-            /*   PRINT2(i,clusterPrimBounds[i]); */
-          
-          writeNode(dest,((int64_t)prev_inner_node-(int64_t)dest)/64,clusterBounds,numPrims,clusterPrimBounds,NODE_TYPE_INTERNAL);
-            
-                    
+          writeNode(dest,((int64_t)prev-(int64_t)dest)/64,clusterBounds,numPrims,clusterPrimBounds,node_type);          
+                                
           BVH2Ploc node;                             
-          node.initLeaf(lcgID,clOffset,clusterBounds);                               
+          node.initLeaf(lcgID,((int64_t)dest-(int64_t)lcg_bvh_mem)/64,clusterBounds);                               
           node.store(&bvh2[prim_type_offset + ID]);
           
-          clOffset += cluster.numBlocks; 
           dest += cluster.numBlocks*64; 
         }
-
-        
-        //exit(0);
 #else
         const uint SIZE_LCG_BVH = estimateLossyCompressedGeometriesSize(1);        
         const uint wgSize = 16;        
