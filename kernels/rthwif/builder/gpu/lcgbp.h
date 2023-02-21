@@ -297,7 +297,7 @@ namespace embree {
 
   struct CompressedQuadIndices
   {
-    uint v0,v1,v2,v3; //FIXME
+    uchar v0,v1,v2,v3; 
 
     __forceinline CompressedQuadIndices() {}
     __forceinline CompressedQuadIndices(const uint v0,const uint v1,const uint v2,const uint v3) : v0(v0), v1(v1), v2(v2), v3(v3) {}

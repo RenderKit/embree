@@ -370,6 +370,16 @@ namespace embree {
     }
   }
 
+  __forceinline uint remap_vtx_index(const uint v, std::map<uint,uint> &index_map, uint &numLocalIndices)
+  {
+    auto e = index_map.find(v);
+    if (e != index_map.end()) return e->second;
+    const uint ID = numLocalIndices++;
+    index_map[v] = ID;
+    return ID;
+  }
+    
+
   void convertISPCQuadMesh(ISPCQuadMesh* mesh, RTCScene scene, ISPCOBJMaterial *material)
   {
     PING;
@@ -435,7 +445,7 @@ namespace embree {
     {
       numTotalVertices += ranges[i].size()*4; // FIXME !!!
       numTotalIndices += ranges[i].size()*4;  // FIXME !!!
-      PRINT4(i,ranges[i].start,ranges[i].end,ranges[i].size());
+      //PRINT4(i,ranges[i].start,ranges[i].end,ranges[i].size());
     }
     
     PRINT(bounds);
@@ -456,9 +466,8 @@ namespace embree {
     uint globalCompressedVertexOffset = 0;
     uint globalCompressedIndexOffset = 0;
 
-
-    for (uint i=0;i<mesh->numVertices;i++)
-      global_lcgbp_scene->lcm[0].compressedVertices[ globalCompressedVertexOffset++ ] = CompressedVertex(mesh->positions[0][i],lower,inv_diag);
+    //for (uint i=0;i<mesh->numVertices;i++)
+    //  global_lcgbp_scene->lcm[0].compressedVertices[ globalCompressedVertexOffset++ ] = CompressedVertex(mesh->positions[0][i],lower,inv_diag);
       
     for (uint i=0;i<ranges.size();i++)
     {
@@ -466,8 +475,11 @@ namespace embree {
       global_lcgbp_scene->lcm_cluster[i].numBlocks = LossyCompressedMeshCluster::getDecompressedSizeInBytes(ranges[i].size())/64;
       global_lcgbp_scene->lcm_cluster[i].ID = i;
       global_lcgbp_scene->lcm_cluster[i].offsetIndices  = globalCompressedIndexOffset;      
-      global_lcgbp_scene->lcm_cluster[i].offsetVertices = 0; //globalCompressedVertexOffset;
+      global_lcgbp_scene->lcm_cluster[i].offsetVertices = globalCompressedVertexOffset;
       global_lcgbp_scene->lcm_cluster[i].mesh = &global_lcgbp_scene->lcm[0];
+
+      std::map<uint,uint> index_map;
+      uint numLocalIndices = 0;
         
       for (uint j=ranges[i].start;j<ranges[i].end;j++)
       {
@@ -477,25 +489,24 @@ namespace embree {
         const uint v2 = mesh->quads[index].v2;
         const uint v3 = mesh->quads[index].v3;
 
-        const Vec3fa &vtx0 = mesh->positions[0][v0];
-        const Vec3fa &vtx1 = mesh->positions[0][v1];
-        const Vec3fa &vtx2 = mesh->positions[0][v2];
-        const Vec3fa &vtx3 = mesh->positions[0][v3];
+        const uint remaped_v0 =  remap_vtx_index(v0,index_map,numLocalIndices);
+        const uint remaped_v1 =  remap_vtx_index(v1,index_map,numLocalIndices);
+        const uint remaped_v2 =  remap_vtx_index(v2,index_map,numLocalIndices);
+        const uint remaped_v3 =  remap_vtx_index(v3,index_map,numLocalIndices);
 
-        // BBox3fa test_bounds(empty);
-        // test_bounds.extend(vtx0);
-        // test_bounds.extend(vtx1);
-        // test_bounds.extend(vtx2);
-        // test_bounds.extend(vtx3);
+        global_lcgbp_scene->lcm[0].compressedIndices[ globalCompressedIndexOffset++ ] = CompressedQuadIndices(remaped_v0,remaped_v1,remaped_v2,remaped_v3);
+      }
+
+      for (std::map<uint,uint>::iterator i=index_map.begin(); i != index_map.end(); i++)
+      {
+        const uint old_v = (*i).first;
+        const uint new_v = (*i).second;
+        global_lcgbp_scene->lcm[0].compressedVertices[ globalCompressedVertexOffset + new_v ] = CompressedVertex(mesh->positions[0][old_v],lower,inv_diag);
         
-        global_lcgbp_scene->lcm[0].compressedIndices[ globalCompressedIndexOffset++ ] = CompressedQuadIndices(v0,v1,v2,v3);
-
-        // global_lcgbp_scene->lcm[0].compressedVertices[ globalCompressedVertexOffset+0 ] = CompressedVertex(vtx0,lower,inv_diag);
-        // global_lcgbp_scene->lcm[0].compressedVertices[ globalCompressedVertexOffset+1 ] = CompressedVertex(vtx1,lower,inv_diag);
-        // global_lcgbp_scene->lcm[0].compressedVertices[ globalCompressedVertexOffset+2 ] = CompressedVertex(vtx2,lower,inv_diag);
-        // global_lcgbp_scene->lcm[0].compressedVertices[ globalCompressedVertexOffset+3 ] = CompressedVertex(vtx3,lower,inv_diag);
-        // globalCompressedVertexOffset += 4;
-      }      
+      }
+      
+      globalCompressedVertexOffset += index_map.size();
+      if (index_map.size() > 256) FATAL("index_map"); // byte indices
     }
     
     PRINT( globalCompressedIndexOffset );
