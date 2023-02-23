@@ -31,6 +31,39 @@ namespace embree
     // ============================================================================= MORTON CODES =====================================================================================
     // ================================================================================================================================================================================
 
+#if 1 
+    struct __aligned(8) MortonCodePrimitive
+    {
+      static const uint GRID_SHIFT = 10; // * 3 = 30
+      
+      static const uint CODE_SHIFT = 64-3*GRID_SHIFT;      
+      static const uint64_t INDEX_MASK = ((uint64_t)1 << CODE_SHIFT)-1;
+
+      uint64_t index_code; // 64bit code + index combo
+
+      __forceinline MortonCodePrimitive() {}
+      __forceinline MortonCodePrimitive(const ulong c) : index_code(c) {}
+      __forceinline MortonCodePrimitive(const uint64_t code, const uint index) { index_code = (code << CODE_SHIFT) | (uint64_t)index; }
+      __forceinline MortonCodePrimitive(const uint3 &v, const uint index) : MortonCodePrimitive(gpu::bitInterleave3D_64bits(v), index) {}
+
+      //__forceinline uint getIndex() const { return (uint)index_code; }
+      //__forceinline uint getCode()  const { return (uint)(index_code>>32); }
+
+      __forceinline uint getIndex() const { return (uint)(index_code & INDEX_MASK); }
+      __forceinline uint64_t getCode()  const { return index_code; }
+
+      __forceinline uint64_t getMCode()  const { return index_code & (~INDEX_MASK); }      
+      
+      __forceinline operator const uint64_t&()  const { return index_code; }
+
+      __forceinline bool operator < (const MortonCodePrimitive& mc) const
+      {
+        return index_code < mc.index_code;
+      }
+    
+
+    };
+#endif
 
     struct __aligned(8) MortonCodePrimitive40x24Bits3D
     {

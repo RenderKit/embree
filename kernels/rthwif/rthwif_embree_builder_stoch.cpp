@@ -11,24 +11,26 @@
 #include "../builders/primrefgen.h"
 #include "../builders/primrefgen_presplit.h"
 #include "../builders/splitter.h"
-#include "../geometry/triangle1v.h"
-#include "../geometry/quad1v.h"
+//#include "../geometry/triangle1v.h"
+//#include "../geometry/quad1v.h"
 
 #include "../common/state.h"
 #include "../../common/algorithms/parallel_for_for.h"
 #include "../../common/algorithms/parallel_for_for_prefix_sum.h"
 
-#include "../bvh/gbvh_builder_gpu.h"
-#include "../bvh/gbvh_builder_gpu_morton.h"
+//#include "../bvh/gbvh_builder_gpu.h"
+//#include "../bvh/gbvh_builder_gpu_morton.h"
+#include "builder/gpu/morton.h"
 
 #include "../common/lexers/streamfilters.h"
 #include <stack>
 #include  <unistd.h>
-#include "../bvh/sobol.h"
+//#include "../bvh/sobol.h"
+#include "builder/gpu/builder.h"
+#include "builder/gpu/sort2.h"
 
 #define CHECK2(x) if (!(x)) { throw std::runtime_error("check2 error: " #x); }
-#define EMBREE_DPCPP_SUPPORT
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
 
 #define NUM_TOPLEVEL_WG  64
 #define SIZE_TOPLEVEL_WG 1024
@@ -246,7 +248,7 @@ namespace embree
           subsetNodeSelections   =                  (uint*)sycl::aligned_alloc(64,sizeof(uint)*numPrims,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);          
           nodeSelections         =                  (uint*)sycl::aligned_alloc(64,sizeof(uint)*numPrims,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
           leafPrimitiveRanges    =            (gpu::Range*)sycl::aligned_alloc(64,sizeof(gpu::Range)*2*numPrims,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
-          sobolMatrix            =                  (uint*)sycl::aligned_alloc(64,sizeof(uint)*sobol::Matrices::num_dimensions*sobol::Matrices::size,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
+          //sobolMatrix            =                  (uint*)sycl::aligned_alloc(64,sizeof(uint)*sobol::Matrices::num_dimensions*sobol::Matrices::size,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
           subsetAABB             =             (gpu::AABB*)sycl::aligned_alloc(64,sizeof(gpu::AABB)*numPrims,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
           clusterIDX             =                  (uint*)sycl::aligned_alloc(64,sizeof(uint)*numPrims,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
           centroidAABB           =             (gpu::AABB*)sycl::aligned_alloc(64,sizeof(gpu::AABB)*numPrims,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
@@ -480,7 +482,7 @@ namespace embree
     {
       const uint wgSize = 1024;
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-                                                   sycl::accessor< WeightClampingContextHW, 0, sycl_read_write, sycl_local> _lwc(cgh);
+                                                   sycl::local_accessor< WeightClampingContextHW, 0> _lwc(cgh);
                                                    const sycl::nd_range<1> nd_range(sycl::range<1>(gpu::alignTo(size,wgSize)),sycl::range<1>(wgSize));                                                        
                                                    cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(32) {
 
@@ -680,6 +682,7 @@ namespace embree
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
                                                    const sycl::nd_range<1> nd_range(sycl::range<1>(gpu::alignTo(targetSubsetSize,wgSize)),sycl::range<1>(wgSize));                                                        
                                                    cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(32) {
+                                                       /*
                                                        auto sampleSobol = [&](unsigned long long index, const unsigned dimension, const unsigned scramble = 0U) {
                                                         assert(dimension < sobol::Matrices::num_dimensions);
 
@@ -692,6 +695,7 @@ namespace embree
 
                                                         return result * (1.f / (1ULL << 32));
                                                        };
+                                                       */
 
 
                                                        const uint i     = item.get_global_id(0);
@@ -699,12 +703,12 @@ namespace embree
                                                        if (i < ctx.targetSubsetSize)
                                                        {
                                                          float rnd;
-                                                         if (params.useSobol) {
-                                                           rnd = sampleSobol(i, params.randomSeed);
-                                                         } else {
+                                                         //if (params.useSobol) {
+                                                         //  rnd = sampleSobol(i, params.randomSeed);
+                                                         //} else {
                                                            float offset = params.randomSeed * (1.f / (1ULL << 32));
                                                            rnd = ((float(i) + offset) / ctx.targetSubsetSize);
-                                                         }
+                                                         //}
                                                          float lf = (1 - params.uniformCdfFrac) / ctx.cdf[ctx.size-1];
                                                          float rf = params.uniformCdfFrac / ctx.size;
 
@@ -1028,7 +1032,7 @@ namespace embree
                                                     const sycl::nd_range<1> nd_range(sycl::range<1>(NUM_TOPLEVEL_WG*SIZE_TOPLEVEL_WG),sycl::range<1>(SIZE_TOPLEVEL_WG));
     
                                                     /* local variables */
-                                                    sycl::accessor< gpu::BinInfoNew   , 1, sycl_read_write, sycl_local> _binInfo(sycl::range<1>(NUM_BININFO),cgh);
+                                                    sycl::local_accessor< gpu::BinInfoNew   , 1> _binInfo(sycl::range<1>(NUM_BININFO),cgh);
                                                                                     
                                                     cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16) {
                                                         const uint localID      = item.get_local_id(0);                                                         
@@ -1092,8 +1096,8 @@ namespace embree
         assert(numPrimitives > cfg_maxLeafSize);
         sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
                                                     /* local variables */
-                                                    sycl::accessor< uint           , 0, sycl_read_write, sycl_local> _atomicCountLeft(cgh);
-                                                    sycl::accessor< uint           , 0, sycl_read_write, sycl_local> _atomicCountRight(cgh);		  		  		  		  
+                                                    sycl::local_accessor< uint           , 0> _atomicCountLeft(cgh);
+                                                    sycl::local_accessor< uint           , 0> _atomicCountRight(cgh);		  		  		  		  
                                                     
                                                     const sycl::nd_range<1> nd_range(sycl::range<1>(NUM_TOPLEVEL_WG*SIZE_TOPLEVEL_WG),sycl::range<1>(SIZE_TOPLEVEL_WG));
                                                     
@@ -1356,12 +1360,12 @@ namespace embree
                                                     const sycl::nd_range<1> nd_range(sycl::range<1>(numWGs*sizeWG),sycl::range<1>(sizeWG));
   
                                                     /* local variables */
-                                                    sycl::accessor< gpu::BinInfoNew, 0, sycl_read_write, sycl_local> _binInfo(cgh);
-                                                    sycl::accessor< gpu::Split     , 0, sycl_read_write, sycl_local> _bestSplit(cgh);		  
-                                                    sycl::accessor< uint           , 0, sycl_read_write, sycl_local> _atomicCountLeft(cgh);
-                                                    sycl::accessor< uint           , 0, sycl_read_write, sycl_local> _atomicCountRight(cgh);		  		  		  		  
-                                                    sycl::accessor< gpu::AABB3f    , 0, sycl_read_write, sycl_local> _leftBounds(cgh);
-                                                    sycl::accessor< gpu::AABB3f    , 0, sycl_read_write, sycl_local> _rightBounds(cgh);
+                                                    sycl::local_accessor< gpu::BinInfoNew, 0> _binInfo(cgh);
+                                                    sycl::local_accessor< gpu::Split     , 0> _bestSplit(cgh);		  
+                                                    sycl::local_accessor< uint           , 0> _atomicCountLeft(cgh);
+                                                    sycl::local_accessor< uint           , 0> _atomicCountRight(cgh);		  		  		  		  
+                                                    sycl::local_accessor< gpu::AABB3f    , 0> _leftBounds(cgh);
+                                                    sycl::local_accessor< gpu::AABB3f    , 0> _rightBounds(cgh);
                                                                                   
                                                     cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16) {
                                                         const uint localID     = item.get_local_id(0);                                                         
@@ -1501,9 +1505,9 @@ namespace embree
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) { //18
                                                     const sycl::nd_range<1> nd_range(sycl::range<1>(numWGs*sizeWG),sycl::range<1>(sizeWG));		  
                                                     /* local variables */
-                                                    sycl::accessor< uint           , 0, sycl_read_write, sycl_local> _atomicCountLeft(cgh);
-                                                    sycl::accessor< uint           , 0, sycl_read_write, sycl_local> _atomicCountRight(cgh);		  		  		  		  
-                                                    sycl::accessor< uint           , 1, sycl_read_write, sycl_local> _stack(sycl::range<1>(128),cgh);
+                                                    sycl::local_accessor< uint           , 0> _atomicCountLeft(cgh);
+                                                    sycl::local_accessor< uint           , 0> _atomicCountRight(cgh);		  		  		  		  
+                                                    sycl::local_accessor< uint           , 1> _stack(sycl::range<1>(128),cgh);
                                                                                   
                                                     cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16) {
                                                         const uint localID      = item.get_local_id(0);                                                         
@@ -1942,102 +1946,6 @@ namespace embree
     }
   }
 
-  void writeHierarchy(Scene* scene, const gpu::BVH2BuildRecord *bvh_nodes, const uint *const primref_index, const PrimRef *const primref) {
-    FILE* f = fopen("out.obj", "w");
-
-    int o = 1;
-
-    fprintf(f, "o bvh\n");
-    std::function<void(std::string, unsigned int)> rec = [&](std::string prefix, uint node_index) {
-      const auto &node = bvh_nodes[node_index];
-      const auto bounds = node.bounds;
-      
-      fprintf(f, "o node_%s\n", prefix.c_str());
-      
-      fprintf(f, "v %f %f %f\n", bounds.lower_x, bounds.lower_y, bounds.lower_z);
-      fprintf(f, "v %f %f %f\n", bounds.upper_x, bounds.lower_y, bounds.lower_z);
-      fprintf(f, "v %f %f %f\n", bounds.lower_x, bounds.upper_y, bounds.lower_z);
-      fprintf(f, "v %f %f %f\n", bounds.upper_x, bounds.upper_y, bounds.lower_z);
-      fprintf(f, "v %f %f %f\n", bounds.lower_x, bounds.lower_y, bounds.upper_z);
-      fprintf(f, "v %f %f %f\n", bounds.upper_x, bounds.lower_y, bounds.upper_z);
-      fprintf(f, "v %f %f %f\n", bounds.lower_x, bounds.upper_y, bounds.upper_z);
-      fprintf(f, "v %f %f %f\n", bounds.upper_x, bounds.upper_y, bounds.upper_z);
-
-      fprintf(f, "f %i %i %i %i\n", o + 0, o + 1, o + 5, o + 4);
-      fprintf(f, "f %i %i %i %i\n", o + 1, o + 3, o + 7, o + 5);
-      fprintf(f, "f %i %i %i %i\n", o + 3, o + 2, o + 6, o + 7);
-      fprintf(f, "f %i %i %i %i\n", o + 2, o + 0, o + 4, o + 6);
-      fprintf(f, "f %i %i %i %i\n", o + 4, o + 5, o + 7, o + 6);
-      fprintf(f, "f %i %i %i %i\n", o + 0, o + 2, o + 3, o + 1);
-
-      o += 8;
-
-      if (node.left == -1) {
-
-      } else {
-        rec(prefix + "0", node.left);
-        rec(prefix + "1", node.right);
-      }
-    };
-
-    rec("", 0);
-
-    fprintf(f, "o prims\n");
-    std::function<void(std::string, unsigned int)> rec2 = [&](std::string prefix, uint node_index) {
-      const auto &node = bvh_nodes[node_index];
-      const auto bounds = node.bounds;
-
-      if (node.left == -1) {
-        for (uint i = node.start; i < node.end; i++) {
-          auto pi = primref[primref_index[i]];
-
-          if (TriangleMesh* mesh = scene->getSafe<TriangleMesh>(pi.geomID()))
-          {
-            const TriangleMesh::Triangle tri = mesh->triangle(pi.primID());
-            const Vec3f p0 = mesh->vertices[0][tri.v[0]];
-            const Vec3f p1 = mesh->vertices[0][tri.v[1]];
-            const Vec3f p2 = mesh->vertices[0][tri.v[2]];
-            Vec3f p3 = p2;
-          
-            uint8_t lb0 = 0,lb1 = 0,lb2 = 0;
-            uint16_t second = mesh->triangle_pairs[pi.primID()];
-          
-            /* handle paired triangle */
-            if (second)
-            {
-              const TriangleMesh::Triangle tri1 = mesh->triangle(pi.primID()+second);
-            
-              bool pair = pair_triangles(Vec3<uint32_t>(tri.v[0],tri.v[1],tri.v[2]),Vec3<uint32_t>(tri1.v[0],tri1.v[1],tri1.v[2]),lb0,lb1,lb2);
-              assert(pair);
-            
-              if (lb0 == 3) p3 = mesh->vertices[0][tri1.v[0]];
-              if (lb1 == 3) p3 = mesh->vertices[0][tri1.v[1]];
-              if (lb2 == 3) p3 = mesh->vertices[0][tri1.v[2]];
-            }
-
-            fprintf(f, "o prim_%s_%i\n", prefix.c_str(), i);
-
-            fprintf(f, "v %f %f %f\n", p0.x, p0.y, p0.z);
-            fprintf(f, "v %f %f %f\n", p1.x, p1.y, p1.z);
-            fprintf(f, "v %f %f %f\n", p2.x, p2.y, p2.z);
-            fprintf(f, "v %f %f %f\n", p3.x, p3.y, p3.z);
-
-            fprintf(f, "f %i %i %i %i\n", o + 0, o + 1, o + 2, o + 3);
-
-            o += 4;
-          }
-        }
-      } else {
-        rec2(prefix + "0", node.left);
-        rec2(prefix + "1", node.right);
-      }
-    };
-
-    rec2("", 0);
-
-    fclose(f);
-  }
-
   // ===================================================================================================================================================================================
   // ================================================================================= BVH2 ============================================================================================
   // ===================================================================================================================================================================================
@@ -2086,230 +1994,6 @@ namespace embree
       getLeafIndicesStoch(node.left, bvh_nodes, primref_index, dest, indexID);
       getLeafIndicesStoch(node.right,bvh_nodes, primref_index, dest, indexID);
     }    
-  }
-
-
-  void convertBVH2toQBVH6_Stoch(Scene* scene, QBVH6 *qbvh,char *curAddr, const gpu::BVH2BuildRecord *const bvh2, const gpu::Range *lpr, const uint bvh2_index, const uint* primref_index, const PrimRef *const primref, uint *color_geomID, const BVHBuilder::Settings &settings)
-  {
-    //PING;
-    assert(sizeof(QBVH6::InternalNode6) == 64);
-    static uint BVH6_BRANCHING_FACTOR = 6;
-    
-    BBox3f bounds[BVH6_BRANCHING_FACTOR];
-    float areas[BVH6_BRANCHING_FACTOR];      
-    uint indices[BVH6_BRANCHING_FACTOR];
-    
-    const uint sizeSubtree = lpr[bvh2_index].start;
-    //PRINT(sizeSubtree);
-    
-    if (sizeSubtree <= settings.maxLeafSize)
-    {
-      //PRINT3("LEAF",sizeSubtree,curAddr);
-      uint geomIDs[BVH6_BRANCHING_FACTOR];      
-      uint primIDs[BVH6_BRANCHING_FACTOR];
-
-      /* fat leaf */
-      const uint numChildren = sizeSubtree;      
-      uint indexID = 0;
-      getLeafIndicesStoch(bvh2_index,bvh2, primref_index, indices,indexID);
-      CHECK2(indexID == numChildren);
-
-      for (uint i=0;i<numChildren;i++)
-      {
-        bounds[i] = primref[indices[i]].bounds();
-        //PRINT3(i,indices[i],bounds[i]);
-      }
-      
-      BBox3f node_bounds = empty;
-      for (size_t i=0; i<numChildren; i++)
-        node_bounds.extend(bounds[i]);
-
-      for (uint i=0;i<numChildren;i++)
-      {
-        geomIDs[i] = primref[indices[i]].geomID();
-        primIDs[i] = primref[indices[i]].primID();
-        //PRINT4(i,primrefIndex,geomIDs[i],primIDs[i]);
-      }
-      
-      if (numChildren == 1)
-      {
-        //PRINT2("SINGLE QUAD LEAF",(void*)curAddr);
-        QuadLeaf *qleaf = (QuadLeaf*)(curAddr);
-
-        uint geomID = geomIDs[0];
-        uint primID = primIDs[0];        
-        if (TriangleMesh* mesh = scene->getSafe<TriangleMesh>(geomID))
-        {
-          const TriangleMesh::Triangle tri = mesh->triangle(primID);
-          const Vec3f p0 = mesh->vertices[0][tri.v[0]];
-          const Vec3f p1 = mesh->vertices[0][tri.v[1]];
-          const Vec3f p2 = mesh->vertices[0][tri.v[2]];
-          Vec3f p3 = p2;
-        
-          uint8_t lb0 = 0,lb1 = 0,lb2 = 0;
-          uint16_t second = mesh->triangle_pairs[primID];
-        
-          /* handle paired triangle */
-          if (second)
-          {
-            const TriangleMesh::Triangle tri1 = mesh->triangle(primID+second);
-          
-            bool pair = pair_triangles(Vec3<uint32_t>(tri.v[0],tri.v[1],tri.v[2]),Vec3<uint32_t>(tri1.v[0],tri1.v[1],tri1.v[2]),lb0,lb1,lb2);
-            CHECK2(pair);
-          
-            if (lb0 == 3) p3 = mesh->vertices[0][tri1.v[0]];
-            if (lb1 == 3) p3 = mesh->vertices[0][tri1.v[1]];
-            if (lb2 == 3) p3 = mesh->vertices[0][tri1.v[2]];
-          }
-
-          *qleaf = QuadLeaf( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID, primID+second, GeometryFlags::OPAQUE, 0xFF, true );
-        }
-        
-        return; // NODE_TYPE_QUAD;             
-      }
-      
-      QBVH6::InternalNode6* qnode = new (curAddr) QBVH6::InternalNode6(node_bounds,NODE_TYPE_QUAD);
-      //PRINT3(qnode,NODE_TYPE_QUAD,qnode);
-      qnode->nodeMask = 0xff; //((uint)1<numChildren)-1;      
-      char* childAddr = qbvh->allocLeaf(sizeof(QuadLeaf)*numChildren);        
-      qnode->setChildOffset(childAddr);
-
-      for (uint i=0;i<numChildren;i++)
-        qnode->setChild(i,bounds[i], NODE_TYPE_QUAD,1,0);      
-
-      for (uint i=numChildren;i<BVH6_BRANCHING_FACTOR;i++)
-        qnode->invalidateChild(i);
-      
-      assert(sizeof(QuadLeaf) == 64);
-
-      for (uint i=0;i<numChildren;i++)
-      {
-        uint geomID = geomIDs[i];
-        uint primID = primIDs[i];
-        
-        QuadLeaf *qleaf = (QuadLeaf*)(childAddr + sizeof(QuadLeaf) * i);
-        //PRINT2(i,qleaf);
-        if (TriangleMesh* mesh = scene->getSafe<TriangleMesh>(geomID))
-        {
-          const TriangleMesh::Triangle tri = mesh->triangle(primID);
-          const Vec3f p0 = mesh->vertices[0][tri.v[0]];
-          const Vec3f p1 = mesh->vertices[0][tri.v[1]];
-          const Vec3f p2 = mesh->vertices[0][tri.v[2]];
-          Vec3f p3 = p2;
-        
-          uint8_t lb0 = 0,lb1 = 0,lb2 = 0;
-          uint16_t second = mesh->triangle_pairs[primID];
-        
-          /* handle paired triangle */
-          if (second)
-          {
-            const TriangleMesh::Triangle tri1 = mesh->triangle(primID+second);
-          
-            bool pair = pair_triangles(Vec3<uint32_t>(tri.v[0],tri.v[1],tri.v[2]),Vec3<uint32_t>(tri1.v[0],tri1.v[1],tri1.v[2]),lb0,lb1,lb2);
-            CHECK2(pair);
-          
-            if (lb0 == 3) p3 = mesh->vertices[0][tri1.v[0]];
-            if (lb1 == 3) p3 = mesh->vertices[0][tri1.v[1]];
-            if (lb2 == 3) p3 = mesh->vertices[0][tri1.v[2]];
-          }
-          
-          *qleaf = QuadLeaf( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID, primID+second, GeometryFlags::OPAQUE, 0xFF, /*i == (numChildren-1)*/ true );
-        }
-      }
-      
-      return; // NODE_TYPE_INTERNAL;
-            
-    }
-    else
-    {      
-      indices[0] = bvh2_index;
-      bounds[0] = bvh2[bvh2_index].bounds.convert();
-      areas[0]  = bvh2[bvh2_index].bounds.area();
-      uint numChildren = 1;
-      while (numChildren < BVH6_BRANCHING_FACTOR)
-      {
-        /*! find best child to split */
-        float bestArea = neg_inf;
-        int bestChild = -1;
-        for (int i=0; i<numChildren; i++)
-        {
-          const float area = areas[i];
-
-          /* ignore leaves as they cannot get split */
-          if ( lpr[indices[i]].start <= settings.maxLeafSize) continue;
-
-          /* find child with largest number of items */
-          if (area > bestArea) {
-            bestArea = area;
-            bestChild = i;
-          }
-        }
-        if (bestChild == -1) break;
-        
-        const uint bestNodeID = indices[bestChild];
-        CHECK2(!bvh2[bestNodeID].isLeaf());
-        
-        const uint left = bvh2[bestNodeID].left;
-        const uint right = bvh2[bestNodeID].right;
-
-        indices[bestChild] = left;
-        bounds[bestChild]  = bvh2[left].bounds.convert();
-        areas[bestChild]   = bvh2[left].bounds.area();
-        
-        indices[numChildren] = right;
-        bounds[numChildren]  = bvh2[right].bounds.convert();
-        areas[numChildren]   = bvh2[right].bounds.area();
-        
-        numChildren++;        
-      }
-      
-      //PRINT(numChildren);
-      BBox3f node_bounds = empty;
-      for (size_t i=0; i<numChildren; i++)
-        node_bounds.extend(bounds[i]);
-
-#if 1
-      for (size_t i=0; i<numChildren-1; i++)
-        for (size_t j=i+1; j<numChildren; j++)
-        {
-          if (areas[i] < areas[j])
-          {
-            std::swap(areas[i],areas[j]);
-            std::swap(bounds[i],bounds[j]);
-            std::swap(indices[i],indices[j]);            
-          }
-        }
-      for (size_t i=0; i<numChildren-1; i++)
-        CHECK2(areas[i] >= areas[i+1]);      
-#endif
-      
-      QBVH6::InternalNode6* qnode = new (curAddr) QBVH6::InternalNode6(node_bounds,NODE_TYPE_INTERNAL);
-      //PRINT2(qnode,NODE_TYPE_INTERNAL);
-      
-      qnode->nodeMask = 0xff;      
-        
-      char* childAddr = qbvh->allocNode(sizeof(QBVH6::InternalNode6)*numChildren);
-        
-      qnode->setChildOffset(childAddr);
-      
-      for (uint i=0;i<numChildren;i++)
-      {        
-        //PRINT2(i,bounds[i]);
-        //PRINT2("RECURSE",i);
-        convertBVH2toQBVH6_Stoch(scene, qbvh,childAddr + 64 * i,bvh2,lpr,indices[i],primref_index,primref,color_geomID,settings);
-        //PRINT2("BACK RECURSION",i);
-        //PRINT3(i,bounds[i],type);
-
-        NodeType type = lpr[indices[i]].start > 1 ? NODE_TYPE_INTERNAL : NODE_TYPE_QUAD;
-
-        qnode->setChild(i,bounds[i],type,1);        
-      }
-
-      for (uint i=numChildren;i<BVH6_BRANCHING_FACTOR;i++)
-        qnode->invalidateChild(i);
-
-      return; // NODE_TYPE_INTERNAL;
-    }
   }
 
   // ====================================================================================================================================================================================
@@ -2382,50 +2066,16 @@ namespace embree
     params.printParameters(0);
   }
 
-  PrimInfo rthwifCreatePrimRefArrayStoch(Scene* scene, Geometry::GTypeMask types, bool mblur, const size_t numPrimRefs, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
-  {
-    ParallelForForPrefixSumState<PrimInfo> pstate;
-
-    auto getSize = [&](size_t geomID) -> size_t {
-                     Geometry* geom = scene->geometries[geomID].ptr;
-                     if (geom == nullptr) return 0;
-                     if (!geom->isEnabled()) return 0;
-                     if (!(geom->getTypeMask() & types)) return 0;
-                     if ((geom->numTimeSteps != 1) != mblur) return 0;
-                     if (GridMesh* mesh = scene->getSafe<GridMesh>(geomID))
-                       return mesh->getNumTotalQuads(); // FIXME: slow
-                     else
-                       return geom->size();
-                   };
-    
-    /* first try */
-    progressMonitor(0);
-    pstate.init(scene->size(),getSize,size_t(1024));
-    PrimInfo pinfo = parallel_for_for_prefix_sum0_( pstate, size_t(1), getSize, PrimInfo(empty), [&](size_t geomID, const range<size_t>& r, size_t k) -> PrimInfo {
-                                                                                                   if (TriangleMesh* mesh = scene->getSafe<TriangleMesh>(geomID))
-                                                                                                     return mesh->createTrianglePairPrimRefArray(prims,r,k,(unsigned)geomID);
-                                                                                                   else
-                                                                                                     return scene->get(geomID)->createPrimRefArray(prims,r,k,(unsigned)geomID);
-                                                                                                 }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
-    
-    /* if we need to filter out geometry, run again */
-    if (pinfo.size() != numPrimRefs)
-    {
-      progressMonitor(0);
-      pinfo = parallel_for_for_prefix_sum1_( pstate, size_t(1), getSize, PrimInfo(empty), [&](size_t geomID, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo {
-                                                                                            if (TriangleMesh* mesh = scene->getSafe<TriangleMesh>(geomID))
-                                                                                              return mesh->createTrianglePairPrimRefArray(prims,r,base.size(),(unsigned)geomID);
-                                                                                            else                                                                               
-                                                                                              return scene->get(geomID)->createPrimRefArray(prims,r,base.size(),(unsigned)geomID);
-                                                                                          }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
-    }
-    return pinfo;
-  }
-
-
   BBox3fa rthwifBuildStoch(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel)
   {
+    DeviceGPU* deviceGPU;
+    PrimInfo pinfo;
+    gpu::AABB *aabb = nullptr;
+    const uint numPrimitives = 0;
+    sycl::queue gpu_queue;
+
     PING;
+    /*
     DeviceGPU* deviceGPU = dynamic_cast<DeviceGPU*>(scene->device);
     assert(deviceGPU);
     
@@ -2458,8 +2108,8 @@ namespace embree
 
     const uint numPrimitives = pinfo.size();
     PRINT2(org_numPrimitives,numPrimitives);
+    */
     
-    sycl::queue &gpu_queue = deviceGPU->getGPUQueue();
     const int maxWorkGroupSize = deviceGPU->getGPUMaxWorkGroupSize();
 
     const uint gpu_maxWorkGroupSize = deviceGPU->getGPUDevice().get_info<sycl::info::device::max_work_group_size>();
@@ -2481,11 +2131,11 @@ namespace embree
     
     /* --- estimate size of the BVH --- */
     const uint leaf_primitive_size = 64;
-    const uint node_size       = max( (uint)(sizeof(uint)*8*numPrimitives),(uint)( (numPrimitives+15)/8 * sizeof(BVH::AlignedNode))); // need at least 32 bytes * numPrimitives node memory for storing the clusters
+    const uint node_size       = 0;//max( (uint)(sizeof(uint)*8*numPrimitives),(uint)( (numPrimitives+15)/8 * sizeof(BVH::AlignedNode))); // need at least 32 bytes * numPrimitives node memory for storing the clusters
     const uint leaf_size       = numPrimitives * 64; // REMOVE !!!
-    const uint totalSize       = sizeof(gpu::BVHBase) + node_size + leaf_size; 
-    const uint node_data_start = sizeof(gpu::BVHBase);
-    const uint leaf_data_start = sizeof(gpu::BVHBase) + node_size;
+    const uint totalSize       = /*sizeof(gpu::BVHBase) +*/ node_size + leaf_size; 
+    const uint node_data_start = /*sizeof(gpu::BVHBase) +*/ 0;
+    const uint leaf_data_start = /*sizeof(gpu::BVHBase) +*/ node_size;
 
     if (unlikely(deviceGPU->verbosity(2)))
     {
@@ -2502,7 +2152,7 @@ namespace embree
 
     double alloc_time0 = getSeconds();
 
-    gpu::AABB *aabb = (gpu::AABB*)prims.data();
+    //gpu::AABB *aabb = (gpu::AABB*)prims.data();
     assert(aabb);
 
     char *bvh_mem = (char*)sycl::aligned_alloc(64,totalSize,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
@@ -2571,7 +2221,7 @@ namespace embree
     ctx.wgBuildState = wgBuildState;
     ctx.wgTaskState = wgTaskState;        
 
-    std::memcpy(ctx.sobolMatrix, sobol::Matrices::matrices, sizeof(uint)*sobol::Matrices::num_dimensions*sobol::Matrices::size);
+    //std::memcpy(ctx.sobolMatrix, sobol::Matrices::matrices, sizeof(uint)*sobol::Matrices::num_dimensions*sobol::Matrices::size);
 
     // === DUMMY KERNEL TO TRIGGER USM TRANSFER ===
     {	  
@@ -2790,7 +2440,7 @@ namespace embree
         auto range = ctx.leafPrimitiveRanges[i];
         std::cout << ctx.primref_index0[i] << ", [" << range.start << ", " << range.end << ")" << std::endl;
       }
-      */
+
       size_t min = ~0;
       size_t max = 0;
 
@@ -3340,9 +2990,9 @@ namespace embree
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) { //18
                                                     const sycl::nd_range<1> nd_range(sycl::range<1>(numTopLevelNodes*sizeWG),sycl::range<1>(sizeWG));		  
                                                     /* local variables */
-                                                    sycl::accessor< uint           , 0, sycl_read_write, sycl_local> _atomicCountLeft(cgh);
-                                                    sycl::accessor< uint           , 0, sycl_read_write, sycl_local> _atomicCountRight(cgh);		  		  		  		  
-                                                    sycl::accessor< uint           , 1, sycl_read_write, sycl_local> _stack(sycl::range<1>(128),cgh);
+                                                    sycl::local_accessor< uint           , 0> _atomicCountLeft(cgh);
+                                                    sycl::local_accessor< uint           , 0> _atomicCountRight(cgh);		  		  		  		  
+                                                    sycl::local_accessor< uint           , 1> _stack(sycl::range<1>(128),cgh);
                                                                                   
                                                     cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16) {
                                                         const uint localID      = item.get_local_id(0);                                                         
@@ -3522,16 +3172,10 @@ namespace embree
     if( globals->bvh2_index_allocator >= 2*numPrimitives)
       FATAL("ALLOCATOR");
 
+    /*
     // ==========================================================
     // ==========================================================
 
-    /* build BVH */
-    BVHBuilder::Settings settings2;
-    settings2.branchingFactor = 6; //buildConfig.bvh_width;
-    settings2.sahBlockSize = 1; //buildConfig.bvh_width;;
-    settings2.minLeafSize = 6; //buildConfig.bvh_width;
-    settings2.maxLeafSize = 6; //buildConfig.bvh_width;
-    
     alloc.clear();
     QBVH6::SizeEstimate sizeEstimate(node_size,leaf_size,0);
     PRINT(pinfo.geomBounds);
@@ -3551,7 +3195,7 @@ namespace embree
     qbvh->rootNodeOffset = QBVH6::Node((char*)(root_node - (char*)qbvh), NODE_TYPE_INTERNAL, 0);
     PRINT(qbvh->rootNodeOffset);
     
-    convertBVH2toQBVH6_Stoch(scene,qbvh,root_node,bvh2,ctx.leafPrimitiveRanges,globals->rootIndex,primref_index,prims.data(),nullptr,settings2);
+    //convertBVH2toQBVH6_Stoch(scene,qbvh,root_node,bvh2,ctx.leafPrimitiveRanges,globals->rootIndex,primref_index,prims.data(),nullptr,settings2);
     //convertBVH2toQBVH6_new(scene,qbvh,root_node,bvh2,globals->rootIndex,bvh2_subtree_size,prims.data(),settings,numPrimitives);
 
     qbvh->computeStatistics();
@@ -3565,6 +3209,7 @@ namespace embree
     }
     
     return pinfo.geomBounds;
+    */
   }
 
   /************************************************************************************/

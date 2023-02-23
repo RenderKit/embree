@@ -336,6 +336,14 @@ namespace embree
         return result;	
       }
 
+      __forceinline bool isValid()
+      {
+        if (lower_x > upper_x) return false;
+        if (lower_y > upper_y) return false;
+        if (lower_z > upper_z) return false;        
+        return true;
+      }
+
       __forceinline float halfArea() const
       {
         const float3 d = size();
