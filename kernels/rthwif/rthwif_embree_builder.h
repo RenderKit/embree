@@ -29,17 +29,22 @@ namespace embree
       typedef std::size_t size_type;
       typedef std::ptrdiff_t difference_type;
       
-      AccelAllocator() {}
+      AccelAllocator()
+        : device(nullptr), context(nullptr) {}
       
-      AccelAllocator(sycl::device device, sycl::context context)
-        : device(device), context(context) {}
+      AccelAllocator(const sycl::device& device, const sycl::context& context)
+        : device(&device), context(&context) {}
       
       __forceinline pointer allocate( size_type n ) {
-        return (pointer) rthwifAllocAccelBuffer(n*sizeof(T),device,context);
+        if (context && device)
+          return (pointer) rthwifAllocAccelBuffer(n*sizeof(T),*device,*context);
+        else
+          return nullptr;
       }
       
       __forceinline void deallocate( pointer p, size_type n ) {
-        rthwifFreeAccelBuffer(p,context);
+        if (context)
+          rthwifFreeAccelBuffer(p,*context);
       }
       
       __forceinline void construct( pointer p, const_reference val ) {
@@ -50,8 +55,10 @@ namespace embree
         p->~T();
       }
 
-      sycl::device device;
-      sycl::context context;
+      private:
+
+      const sycl::device* device;
+      const sycl::context* context;
     };
 
   typedef vector_t<char,AccelAllocator<char>> AccelBuffer;
