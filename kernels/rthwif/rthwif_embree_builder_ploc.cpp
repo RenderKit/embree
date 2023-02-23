@@ -4,6 +4,7 @@
 #include "rthwif_embree_builder_ploc.h"
 #include "builder/qbvh6.h"
 #include "../common/algorithms/parallel_reduce.h"
+#include "rthwif_embree_builder_stoch.h"
 
 // === less than threshold, a single workgroup is used to perform all PLOC iterations in a single kernel launch ===
 #define SINGLE_WG_SWITCH_THRESHOLD            4*1024
@@ -432,7 +433,7 @@ namespace embree
     return RTHWIF_ERROR_NONE;      
   }
 
-  RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args, void *sycl_queue, uint verbose_level=0)
+  RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args, DeviceGPU* device, void *sycl_queue, uint verbose_level=0)
   {
     BuildTimer timer;
     timer.reset();

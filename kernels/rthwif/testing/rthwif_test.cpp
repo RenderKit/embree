@@ -235,10 +235,11 @@ struct TestOutput
 std::ostream& operator<<(std::ostream& out, const intel_float3& v) {
   return out << "(" << v.x << "," << v.y << "," << v.z  << ")";
 }
-
+/*
 std::ostream& operator<<(std::ostream& out, const sycl::float3& v) {
   return out << "(" << v.x() << "," << v.y() << "," << v.z()  << ")";
 }
+*/
 
 void compareTestOutput(uint32_t tid, uint32_t& errors, const TestOutput& test, const TestOutput& expected)
 {
@@ -1239,7 +1240,7 @@ struct Scene
       {
         
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-        err = rthwifBuildAccelGPU(args,&queue,VERBOSE);        
+        //err = rthwifBuildAccelGPU(args,&queue,VERBOSE);        
 #else                
         err = rthwifBuildAccel(args);
 #endif        
@@ -1283,7 +1284,7 @@ struct Scene
         args.accelBufferBytes = accelBytes;
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-        err = rthwifBuildAccelGPU(args,&queue,VERBOSE);
+        //err = rthwifBuildAccelGPU(args,&queue,VERBOSE);
 #else        
         err = rthwifBuildAccel(args);
 #endif        

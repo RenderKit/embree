@@ -686,7 +686,7 @@ namespace embree
         
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
         
-        err = rthwifBuildAccelGPU(args,&sycl_queue,gpu_device->verbose);
+        err = rthwifBuildAccelGPU(args,gpu_device,&sycl_queue,gpu_device->verbose);
         if (err == RTHWIF_ERROR_NONE && gpu_device->verbosity(2))
         {
           QBVH6* qbvh   = (QBVH6*)args.accelBuffer;

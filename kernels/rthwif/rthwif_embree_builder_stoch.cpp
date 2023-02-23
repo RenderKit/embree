@@ -1,6 +1,8 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+#include "rthwif_embree_builder_stoch.h"
+
 #include "rthwif_embree_builder.h"
 #include "builder/qbvh6_builder_sah.h"
 #include "rthwif_internal.h"
@@ -2066,14 +2068,8 @@ namespace embree
     params.printParameters(0);
   }
 
-  BBox3fa rthwifBuildStoch(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel)
+  BBox3fa rthwifBuildStoch(DeviceGPU* deviceGPU, sycl::queue &gpu_queue, PrimInfo pinfo, const uint numPrimitives, gpu::AABB *aabb)
   {
-    DeviceGPU* deviceGPU;
-    PrimInfo pinfo;
-    gpu::AABB *aabb = nullptr;
-    const uint numPrimitives = 0;
-    sycl::queue gpu_queue;
-
     PING;
     /*
     DeviceGPU* deviceGPU = dynamic_cast<DeviceGPU*>(scene->device);
@@ -2189,7 +2185,7 @@ namespace embree
     if (unlikely(deviceGPU->verbosity(2)))
       std::cout << "USM allocation time " << 1000 * (alloc_time1 - alloc_time0) << " ms for " << (double)totalUSMAllocations / (1024*1024) << " MBs " << std::endl;     	
 
-    void* scenePtr = (void*) scene; // FIXME: hack to pass polymorphic class
+    void* scenePtr = (void*) nullptr; // FIXME: hack to pass polymorphic class
 
     assert(sizeof( gpu::BVH2BuildRecord ) <= 48 );
 
