@@ -28,6 +28,17 @@
 
 namespace embree
 {
+    __forceinline gpu::AABB3f convert_AABB3f(const gpu::AABB &aabb)
+    {
+      return gpu::AABB3f(aabb.lower.x(), aabb.lower.y(), aabb.lower.z(), aabb.upper.x(), aabb.upper.y(), aabb.upper.z());
+    }
+
+    __forceinline gpu::AABB convert_AABB(const gpu::AABB3f &aabb)
+    {
+      return gpu::AABB(float4(aabb.lower_x,aabb.lower_y,aabb.lower_z,0.0f),
+                  float4(aabb.upper_x,aabb.upper_y,aabb.upper_z,0.0f));
+    }
+
   using namespace embree::isa;
 
   __forceinline size_t estimateSizeInternalNodes(const size_t numQuads, const size_t numInstances, const size_t numProcedurals, const bool conservative)
@@ -637,6 +648,28 @@ namespace embree
     // =================================================================================================
     
     numPrimitives = numQuads + numInstances + numProcedurals;
+
+    gpu::AABB* aabb = (gpu::AABB*)sycl::aligned_alloc(64,sizeof(gpu::AABB)*numPrimitives,device->getGPUDevice(),device->getGPUContext(),sycl::usm::alloc::shared);
+    {
+      const uint wgSize = 32;
+      sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) { //7
+                                              const sycl::nd_range<1> nd_range(sycl::range<1>(gpu::alignTo(numPrimitives,wgSize)),sycl::range<1>(wgSize));                                                        
+                                              cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(32) {
+                                                uint i = item.get_global_id(0);
+                                                if (!(i < numPrimitives)) return;
+                                                aabb[i] = convert_AABB(bvh2[i].bounds);
+                                              });
+                                          });
+    }
+    gpu::waitOnQueueAndCatchException(gpu_queue);
+
+    PRINT("HELLO");
+    PRINT(bvh2[10].bounds);
+    PRINT(aabb[10]);
+
+    rthwifBuildStoch(device, gpu_queue, numPrimitives, aabb);
+
+    PRINT("BYE");
 
     const GeometryTypeRanges geometryTypeRanges(numQuads,numProcedurals,numInstances);        
     

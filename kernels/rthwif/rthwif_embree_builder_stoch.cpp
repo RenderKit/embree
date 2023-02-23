@@ -2068,7 +2068,7 @@ namespace embree
     params.printParameters(0);
   }
 
-  BBox3fa rthwifBuildStoch(DeviceGPU* deviceGPU, sycl::queue &gpu_queue, PrimInfo pinfo, const uint numPrimitives, gpu::AABB *aabb)
+  BBox3fa rthwifBuildStoch(DeviceGPU* deviceGPU, sycl::queue &gpu_queue, const uint numPrimitives, gpu::AABB *aabb)
   {
     PING;
     /*
