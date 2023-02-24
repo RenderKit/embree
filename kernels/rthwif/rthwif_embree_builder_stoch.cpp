@@ -3177,13 +3177,12 @@ namespace embree
     
     //if (unlikely(deviceGPU->verbosity(2)))
       std::cout << "BVH GPU Stochastic Builder DONE in " << 1000.*total_diff << " ms : " << numPrimitives*0.000001f/total_diff << " MPrims/s " << std::endl << std::flush;
-        
+    /*
     PRINT2(globals->bvh2_index_allocator,numPrimitives);
         
     if( globals->bvh2_index_allocator >= 2*numPrimitives)
       FATAL("ALLOCATOR");
 
-    /*
     // ==========================================================
     // ==========================================================
 
@@ -3221,6 +3220,8 @@ namespace embree
     
     return pinfo.geomBounds;
     */
+
+    return {};
   }
 
   /************************************************************************************/
