@@ -2008,6 +2008,7 @@ namespace embree
   // *************************************************
   void parseBuildParams(BuildParametersHW &params)
   {
+    /*
     // for now we have a fixed file in the experiment folder
     // TODO make it command-line
     char cwd[PATH_MAX];
@@ -2066,6 +2067,7 @@ namespace embree
         params.localMortonSearchWindow = cin->get().Int();
     }
     params.printParameters(0);
+    */
   }
 
   BBox3fa rthwifBuildStoch(DeviceGPU* deviceGPU, sycl::queue &gpu_queue, const uint numPrimitives, gpu::AABB *aabb)
@@ -2133,7 +2135,7 @@ namespace embree
     const uint node_data_start = /*sizeof(gpu::BVHBase) +*/ 0;
     const uint leaf_data_start = /*sizeof(gpu::BVHBase) +*/ node_size;
 
-    if (unlikely(deviceGPU->verbosity(2)))
+    //if (unlikely(deviceGPU->verbosity(2)))
     {
       PRINT( maxWorkGroupSize );	
       PRINT( leaf_primitive_size );
@@ -2182,7 +2184,7 @@ namespace embree
                     
     double alloc_time1 = getSeconds();
 
-    if (unlikely(deviceGPU->verbosity(2)))
+    //if (unlikely(deviceGPU->verbosity(2)))
       std::cout << "USM allocation time " << 1000 * (alloc_time1 - alloc_time0) << " ms for " << (double)totalUSMAllocations / (1024*1024) << " MBs " << std::endl;     	
 
     void* scenePtr = (void*) nullptr; // FIXME: hack to pass polymorphic class
@@ -3160,7 +3162,7 @@ namespace embree
     leafSAH /= globals->geometryBounds.area();                
     PRINT4(nodes,leaves,(float)nodeSAH,(float)leafSAH);
     
-    if (unlikely(deviceGPU->verbosity(2)))
+    //if (unlikely(deviceGPU->verbosity(2)))
       std::cout << "BVH GPU Stochastic Builder DONE in " << 1000.*total_diff << " ms : " << numPrimitives*0.000001f/total_diff << " MPrims/s " << std::endl << std::flush;
         
     PRINT2(globals->bvh2_index_allocator,numPrimitives);
