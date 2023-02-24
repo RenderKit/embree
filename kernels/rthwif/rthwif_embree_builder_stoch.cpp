@@ -31,6 +31,9 @@
 #include "builder/gpu/builder.h"
 #include "builder/gpu/sort2.h"
 
+
+#include <unordered_set>
+
 #define CHECK2(x) if (!(x)) { throw std::runtime_error("check2 error: " #x); }
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
 
@@ -1911,7 +1914,7 @@ namespace embree
   }
 
 
-    void checkBVH2StochHW(gpu::BVH2BuildRecord *bvh_nodes, uint index,const uint *const primref_index,gpu::AABB *aabb,uint &nodes,uint &leaves,double &nodeSAH, double &leafSAH, const uint cfg_maxLeafSize)
+    void checkBVH2StochHW_(gpu::BVH2BuildRecord *bvh_nodes, std::unordered_set<uint> &prims, uint index,const uint *const primref_index,gpu::AABB *aabb,uint &nodes,uint &leaves,double &nodeSAH, double &leafSAH, const uint cfg_maxLeafSize)
   {
     //PRINT3(index,bvh_nodes[index].isLeaf(),bvh_nodes[index]);
     if (!bvh_nodes[index].bounds.isValid()) {
@@ -1922,6 +1925,7 @@ namespace embree
     {      
       for (uint i=bvh_nodes[index].start;i<bvh_nodes[index].end;i++)
       {
+        if (prims.erase(primref_index[ i ]) != 1) FATAL("unknown primitive!");;
         assert(bvh_nodes[index].bounds.encloses( convert_AABB3f( aabb[ primref_index[ i ]  ])));
       }
 
@@ -1937,15 +1941,31 @@ namespace embree
       if (bvh_nodes[index].left != -1)
       {
         assert(bvh_nodes[index].bounds.encloses( bvh_nodes[ bvh_nodes[index].left ].bounds ));        
-        checkBVH2StochHW(bvh_nodes,bvh_nodes[index].left,primref_index,aabb,nodes,leaves,nodeSAH,leafSAH,cfg_maxLeafSize);
+        checkBVH2StochHW_(bvh_nodes,prims,bvh_nodes[index].left,primref_index,aabb,nodes,leaves,nodeSAH,leafSAH,cfg_maxLeafSize);
       }
       
       if (bvh_nodes[index].right != -1)
       {
         assert(bvh_nodes[index].bounds.encloses( bvh_nodes[ bvh_nodes[index].right ].bounds ));        
-        checkBVH2StochHW(bvh_nodes,bvh_nodes[index].right,primref_index,aabb,nodes,leaves,nodeSAH,leafSAH,cfg_maxLeafSize);
+        checkBVH2StochHW_(bvh_nodes,prims,bvh_nodes[index].right,primref_index,aabb,nodes,leaves,nodeSAH,leafSAH,cfg_maxLeafSize);
       }
     }
+  }
+
+  void checkBVH2StochHW(gpu::Globals *globals, gpu::BVH2BuildRecord *bvh_nodes, uint numPrimitives, const uint *const primref_index, gpu::AABB *aabb, const uint cfg_maxLeafSize) {
+    uint nodes = 0;
+    uint leaves = 0;
+    double nodeSAH = 0;
+    double leafSAH = 0; 
+    std::unordered_set<uint32_t> set;
+    for (uint i = 0; i < numPrimitives; i++)
+      set.insert(i);
+    checkBVH2StochHW_(bvh_nodes,set,globals->rootIndex,primref_index,aabb,nodes,leaves,nodeSAH,leafSAH,cfg_maxLeafSize);
+    if (!set.empty())
+      FATAL("primitives missing!");
+    nodeSAH /= globals->geometryBounds.area();
+    leafSAH /= globals->geometryBounds.area();                
+    PRINT4(nodes,leaves,(float)nodeSAH,(float)leafSAH);
   }
 
   // ===================================================================================================================================================================================
@@ -3153,14 +3173,7 @@ namespace embree
     // ================================= CHECK BVH2 ====================================
     // =================================================================================
     
-    uint nodes = 0;
-    uint leaves = 0;
-    double nodeSAH = 0;
-    double leafSAH = 0;      
-    checkBVH2StochHW(bvh2,globals->rootIndex,primref_index,aabb,nodes,leaves,nodeSAH,leafSAH,cfg_maxLeafSize_BottomLevel);
-    nodeSAH /= globals->geometryBounds.area();
-    leafSAH /= globals->geometryBounds.area();                
-    PRINT4(nodes,leaves,(float)nodeSAH,(float)leafSAH);
+    checkBVH2StochHW(globals,bvh2,numPrimitives,primref_index,aabb,cfg_maxLeafSize_BottomLevel);
     
     //if (unlikely(deviceGPU->verbosity(2)))
       std::cout << "BVH GPU Stochastic Builder DONE in " << 1000.*total_diff << " ms : " << numPrimitives*0.000001f/total_diff << " MPrims/s " << std::endl << std::flush;
