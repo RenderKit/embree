@@ -304,11 +304,13 @@ namespace embree {
     
   };
 
-  struct LossyCompressedMesh
+  struct __aligned(32) LossyCompressedMesh
   {
     BBox3f bounds;
     uint numQuads;
     uint numVertices;
+    uint geomID;
+    uint tmp[3];
     
     CompressedVertex *compressedVertices;
     CompressedQuadIndices *compressedIndices;
@@ -331,7 +333,7 @@ namespace embree {
   };
   
 
-  struct __aligned(16) LossyCompressedMeshCluster
+  struct __aligned(32) LossyCompressedMeshCluster
   {
     uint numQuads;
     uint numBlocks;
