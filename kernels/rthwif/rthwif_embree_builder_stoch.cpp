@@ -1921,34 +1921,43 @@ namespace embree
       FATAL("invalid bounds in BVH2");
     }
 
+    gpu::AABB3f bounds;
+    bounds.init();
     if (bvh_nodes[index].isLeaf())
     {      
       for (uint i=bvh_nodes[index].start;i<bvh_nodes[index].end;i++)
       {
         if (prims.erase(primref_index[ i ]) != 1) FATAL("unknown primitive!");;
-        assert(bvh_nodes[index].bounds.encloses( convert_AABB3f( aabb[ primref_index[ i ]  ])));
+        if (!bvh_nodes[index].bounds.encloses( convert_AABB3f( aabb[ primref_index[ i ]  ]))) FATAL("primitive not enclosed!");
+        bounds.extend(convert_AABB3f( aabb[ primref_index[ i ]  ]));
       }
-
       
       leaves++;
       for (uint i=bvh_nodes[index].start;i<bvh_nodes[index].end;i++)      
         leafSAH +=  aabb[ primref_index[i] ].area();                    
+      if (bvh_nodes[index].bounds != bounds) FATAL("wrong leaf bounds!");
     }
     else
     {
       nodes++;
       nodeSAH += bvh_nodes[index].bounds.area();
+
       if (bvh_nodes[index].left != -1)
       {
-        assert(bvh_nodes[index].bounds.encloses( bvh_nodes[ bvh_nodes[index].left ].bounds ));        
+        if (bvh_nodes[ bvh_nodes[index].left ].parent != index) FATAL("left child not pointing to parent!");
+        if(!bvh_nodes[index].bounds.encloses( bvh_nodes[ bvh_nodes[index].left ].bounds )) FATAL("left child not enclosed!");        
+        bounds.extend(bvh_nodes[ bvh_nodes[index].left ].bounds );
         checkBVH2StochHW_(bvh_nodes,prims,bvh_nodes[index].left,primref_index,aabb,nodes,leaves,nodeSAH,leafSAH,cfg_maxLeafSize);
       }
       
       if (bvh_nodes[index].right != -1)
       {
-        assert(bvh_nodes[index].bounds.encloses( bvh_nodes[ bvh_nodes[index].right ].bounds ));        
+        if (bvh_nodes[ bvh_nodes[index].right ].parent != index) FATAL("right child not pointing to parent!");
+        if(!bvh_nodes[index].bounds.encloses( bvh_nodes[ bvh_nodes[index].right ].bounds )) FATAL("right child not enclosed!");        
+        bounds.extend(bvh_nodes[ bvh_nodes[index].right ].bounds );
         checkBVH2StochHW_(bvh_nodes,prims,bvh_nodes[index].right,primref_index,aabb,nodes,leaves,nodeSAH,leafSAH,cfg_maxLeafSize);
       }
+      if (bvh_nodes[index].bounds != bounds) FATAL("wrong inner bounds!");
     }
   }
 
@@ -2090,7 +2099,7 @@ namespace embree
     */
   }
 
-  BBox3fa rthwifBuildStoch(DeviceGPU* deviceGPU, sycl::queue &gpu_queue, const uint numPrimitives, gpu::AABB *aabb)
+  StochReturn rthwifBuildStoch(DeviceGPU* deviceGPU, sycl::queue &gpu_queue, const uint numPrimitives, gpu::AABB *aabb)
   {
     PING;
     /*
@@ -2238,7 +2247,6 @@ namespace embree
     ctx.morton_codes[1] = morton_codes[1];
     ctx.wgBuildState = wgBuildState;
     ctx.wgTaskState = wgTaskState;        
-
     //std::memcpy(ctx.sobolMatrix, sobol::Matrices::matrices, sizeof(uint)*sobol::Matrices::num_dimensions*sobol::Matrices::size);
 
     // === DUMMY KERNEL TO TRIGGER USM TRANSFER ===
@@ -3104,7 +3112,7 @@ namespace embree
 
 
     /* --- bottom-up BVH2 refit --- */
-#if 0
+#if 1
 
     refitGeometryBoundsCalculateSAHHW(bvh2,0,primref_index,aabb); // FIXME needs GPU refit variant
 
@@ -3221,7 +3229,13 @@ namespace embree
     return pinfo.geomBounds;
     */
 
-    return {};
+
+    StochReturn ret;
+    ret.bvh2 = bvh2;
+    ret.indices = primref_index;
+    ret.rootIndex = globals->rootIndex;
+
+    return ret;
   }
 
   /************************************************************************************/

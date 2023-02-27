@@ -308,6 +308,74 @@ namespace embree
 // =================================================================================================================================================================================
 // =================================================================================================================================================================================
 
+  static uint createLeafPrimitives(PLOCGlobals *const globals, BVH2Ploc* bvh2Ploc, uint *indices, uint start, uint end, uint depth = 0) {
+    //PRINT4("leaf", depth, start, end);
+    if (start == end - 1) {
+      return indices[start];
+    }
+
+    auto idxPloc = globals->bvh2_index_allocator++;
+    //PRINT(idxPloc);
+    auto &plocNode = bvh2Ploc[idxPloc];
+
+    uint mid = start + (end - start) / 2;
+    plocNode.left = createLeafPrimitives(globals, bvh2Ploc, indices, start, mid, depth + 1);
+    plocNode.right = createLeafPrimitives(globals, bvh2Ploc, indices, mid, end, depth + 1);
+
+    //PRINT2(plocNode.leftIndex(), plocNode.rightIndex());
+    const auto &leftNode = bvh2Ploc[plocNode.leftIndex()];
+    const auto &rightNode = bvh2Ploc[plocNode.rightIndex()];
+
+    plocNode.bounds = gpu::merge(leftNode.bounds, rightNode.bounds);
+
+    return BVH2Ploc::makeFatLeaf(idxPloc, 0);
+  }
+
+  static uint convertStochBVH2toPlocBVH2(PLOCGlobals *const globals, BVH2Ploc* bvh2Ploc, gpu::BVH2BuildRecord *bvh2Stoch, uint *indices, gpu::AABB* aabb, uint idxStoch, uint depth = 0) {
+    //PRINT2(depth, idxStoch);
+    auto &stochNode = bvh2Stoch[idxStoch];
+    
+    if (stochNode.isLeaf()) {
+      gpu::AABB3f bounds;
+      bounds.init();
+      for (auto i = stochNode.start; i < stochNode.end; i++) {
+        if (!stochNode.bounds.encloses(convert_AABB3f(aabb[indices[i]])))
+          FATAL("prim not enclosed!");
+        if (!stochNode.bounds.encloses(bvh2Ploc[indices[i]].bounds))
+          FATAL("prim not enclosed 2!");
+          bounds.extend(convert_AABB3f(aabb[indices[i]]));
+      }
+      if (bounds != stochNode.bounds) {
+        PRINT2(stochNode.bounds, bounds);
+        FATAL("invalid bounds");
+      }
+      return createLeafPrimitives(globals, bvh2Ploc, indices, stochNode.start, stochNode.end, depth);
+    }
+
+    auto idxPloc = globals->bvh2_index_allocator++;
+    auto &plocNode = bvh2Ploc[idxPloc];
+
+    plocNode.left = convertStochBVH2toPlocBVH2(globals, bvh2Ploc, bvh2Stoch, indices, aabb, stochNode.left, depth + 1);
+    plocNode.right = convertStochBVH2toPlocBVH2(globals, bvh2Ploc, bvh2Stoch, indices, aabb, stochNode.right, depth + 1);
+
+    const auto &leftNode = bvh2Ploc[plocNode.leftIndex()];
+    const auto &rightNode = bvh2Ploc[plocNode.rightIndex()];
+
+    plocNode.bounds = gpu::merge(leftNode.bounds, rightNode.bounds);
+
+    if (stochNode.bounds != gpu::merge(bvh2Stoch[stochNode.left].bounds, bvh2Stoch[stochNode.right].bounds)) {
+      FATAL("invalid bounds");
+    }
+
+    if (plocNode.bounds != stochNode.bounds) {
+      PRINT2(plocNode.bounds, stochNode.bounds);
+      FATAL("invalid bounds");
+    }
+
+
+    return idxPloc;
+  }
+
   RTHWIF_API RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o, void *sycl_queue, uint verbose_level=0)
   {
     double time0 = getSeconds();
@@ -648,7 +716,9 @@ namespace embree
     // =================================================================================================
     
     numPrimitives = numQuads + numInstances + numProcedurals;
+    const GeometryTypeRanges geometryTypeRanges(numQuads,numProcedurals,numInstances);        
 
+#if 1
     gpu::AABB* aabb = (gpu::AABB*)sycl::aligned_alloc(64,sizeof(gpu::AABB)*numPrimitives,device->getGPUDevice(),device->getGPUContext(),sycl::usm::alloc::shared);
     {
       const uint wgSize = 32;
@@ -656,23 +726,18 @@ namespace embree
                                               const sycl::nd_range<1> nd_range(sycl::range<1>(gpu::alignTo(numPrimitives,wgSize)),sycl::range<1>(wgSize));                                                        
                                               cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(32) {
                                                 uint i = item.get_global_id(0);
-                                                if (!(i < numPrimitives)) return;
-                                                aabb[i] = convert_AABB(bvh2[i].bounds);
+                                                if (i < numPrimitives)
+                                                  aabb[i] = convert_AABB(bvh2[i].bounds);
                                               });
                                           });
     }
     gpu::waitOnQueueAndCatchException(gpu_queue);
 
-    PRINT("HELLO");
-    PRINT(bvh2[10].bounds);
-    PRINT(aabb[10]);
-
-    rthwifBuildStoch(device, gpu_queue, numPrimitives, aabb);
-
-    PRINT("BYE");
-
-    const GeometryTypeRanges geometryTypeRanges(numQuads,numProcedurals,numInstances);        
+    StochReturn res = rthwifBuildStoch(device, gpu_queue, numPrimitives, aabb);
     
+    globals->rootIndex = convertStochBVH2toPlocBVH2(globals, bvh2, res.bvh2, res.indices, aabb, res.rootIndex);
+    globals->geometryBounds = bvh2[globals->rootIndex].bounds;
+#else    
     if (unlikely(verbose2))
     {
       PRINT4(numPrimitives,numQuads,numInstances,numProcedurals);
@@ -845,7 +910,7 @@ namespace embree
     if (unlikely(verbose2))
       std::cout << "=> PLOC phase: " <<  timer.get_host_timer() << " ms (host) " << (float)timer.get_accum_device_timer(BuildTimer::BUILD) << " ms (device) " << std::endl;    
 
-
+#endif
 
 #if BVH2_REBALANCE == 1
         // ===============================================================================================================

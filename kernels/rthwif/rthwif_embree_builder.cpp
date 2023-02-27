@@ -632,7 +632,7 @@ namespace embree
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     // === scratch buffer === 
-    char *scratchBuffer  = (char*)sycl::aligned_alloc(64,sizeTotal.scratchBufferBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),gpu_device->verbose > 1 ? sycl::usm::alloc::shared : sycl::usm::alloc::device);
+    char *scratchBuffer  = (char*)sycl::aligned_alloc(64,sizeTotal.scratchBufferBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::usm::alloc::shared);
     assert(scratchBuffer);
     args.scratchBuffer = scratchBuffer;
     args.scratchBufferBytes = sizeTotal.scratchBufferBytes;
@@ -686,7 +686,7 @@ namespace embree
         
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
         
-        err = rthwifBuildAccelGPU(args,gpu_device,&sycl_queue,gpu_device->verbose);
+        err = rthwifBuildAccelGPU(args,gpu_device,&sycl_queue,2);
         if (err == RTHWIF_ERROR_NONE && gpu_device->verbosity(2))
         {
           QBVH6* qbvh   = (QBVH6*)args.accelBuffer;

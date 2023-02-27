@@ -338,6 +338,7 @@ namespace embree
     
     __forceinline double getDeviceExecutionTiming(sycl::event &queue_event)
     {
+      return 0;
       const auto t0 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_start>();
       const auto t1 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_end>();
       return (t1-t0)*1E-6;      
