@@ -383,6 +383,7 @@ namespace embree {
   void convertISPCQuadMesh(ISPCQuadMesh* mesh, RTCScene scene, ISPCOBJMaterial *material)
   {
     PING;
+    PRINT(mesh->numQuads);
     BBox3fa centroidBounds(empty);
     BBox3fa geometryBounds(empty);
     
@@ -403,7 +404,7 @@ namespace embree {
       quadBounds.extend(vtx1);
       quadBounds.extend(vtx2);
       quadBounds.extend(vtx3);
-      centroidBounds.extend(quadBounds.center2());
+      centroidBounds.extend(quadBounds.center());
       geometryBounds.extend(quadBounds);
     }
     
@@ -446,7 +447,7 @@ namespace embree {
       //const float3 grid_extend(centroidBounds.maxDiagDim());                             
       
       const Vec3f grid_scale = ((float)grid_size * 0.99f) * inv_diag;
-      const Vec3f centroid =  quadBounds.center2();
+      const Vec3f centroid =  quadBounds.center();
 
       const Vec3f gridpos_f = (centroid-grid_base)*grid_scale;                                                                      
       const uint gx = (uint)gridpos_f.x;
@@ -799,7 +800,7 @@ namespace embree {
     }
     else if (mode == RENDER_DEBUG_CLUSTER_ID)
     {
-      color =  randomColor(primID);    
+      color =  randomColor(ray.primID);    
     }
     
     return Vec3fa(abs(dot(ray.dir,normalize(ray.Ng)))) * color;
