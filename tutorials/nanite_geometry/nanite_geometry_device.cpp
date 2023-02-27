@@ -487,6 +487,8 @@ namespace embree {
     global_lcgbp_scene->lcm[0].compressedVertices = (CompressedVertex*)alignedUSMMalloc(sizeof(CompressedVertex)*numTotalVertices,64); // FIXME
     global_lcgbp_scene->lcm[0].compressedIndices  = (CompressedQuadIndices*)alignedUSMMalloc(sizeof(CompressedQuadIndices)*mesh->numQuads,64); //FIXME    
 
+    PRINT2((sizeof(CompressedVertex)*numTotalVertices,sizeof(CompressedQuadIndices)*mesh->numQuads);
+           
     uint globalCompressedVertexOffset = 0;
     uint globalCompressedIndexOffset = 0;
 
