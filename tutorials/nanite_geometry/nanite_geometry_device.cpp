@@ -377,14 +377,17 @@ namespace embree {
   }
     
 
-  void convertISPCQuadMesh(ISPCQuadMesh* mesh, RTCScene scene, ISPCOBJMaterial *material,const uint geomID,std::vector<LossyCompressedMesh*> &lcm_ptrs,std::vector<LossyCompressedMeshCluster> &lcm_clusters)
+  void convertISPCQuadMesh(ISPCQuadMesh* mesh, RTCScene scene, ISPCOBJMaterial *material,const uint geomID,std::vector<LossyCompressedMesh*> &lcm_ptrs,std::vector<LossyCompressedMeshCluster> &lcm_clusters, size_t &totalCompressedSize)
   {
-    PING;
-    PRINT(mesh->numQuads);
+    const uint lcm_ID = lcm_ptrs.size();
+    const uint numQuads = mesh->numQuads;
+    const uint INITIAL_CREATE_RANGE_THRESHOLD = 128;
+    // === get centroid and geometry bounding boxes ===
+    
     BBox3fa centroidBounds(empty);
     BBox3fa geometryBounds(empty);
     
-    for (uint i=0;i<mesh->numQuads;i++)
+    for (uint i=0;i<numQuads;i++)
     {
       const uint v0 = mesh->quads[i].v0;
       const uint v1 = mesh->quads[i].v1;
@@ -404,6 +407,8 @@ namespace embree {
       centroidBounds.extend(quadBounds.center());
       geometryBounds.extend(quadBounds);
     }
+
+    // === create morton codes for quads ===
     
     const Vec3f lower = centroidBounds.lower;
     const Vec3f diag = centroidBounds.size();
@@ -412,7 +417,7 @@ namespace embree {
     std::vector<gpu::MortonCodePrimitive64x32Bits3D> mcodes;
     std::vector<gpu::Range> ranges;
     
-    for (uint i=0;i<mesh->numQuads;i++)
+    for (uint i=0;i<numQuads;i++)
     {
       const uint v0 = mesh->quads[i].v0;
       const uint v1 = mesh->quads[i].v1;
@@ -444,50 +449,85 @@ namespace embree {
       const uint64_t code = bitInterleave64<uint64_t>(gx,gy,gz);
       mcodes.push_back(gpu::MortonCodePrimitive64x32Bits3D(code,i));      
     }
+
+    // === sort morton codes ===
     
     std::sort(mcodes.begin(), mcodes.end()); 
 
+    // === extract ranges ===
+    
     gpu::Range current(0,mcodes.size());
-    extractRanges(current,&*mcodes.begin(),ranges,128);
+    extractRanges(current,&*mcodes.begin(),ranges,INITIAL_CREATE_RANGE_THRESHOLD);
+
+    // === test range if it fullfills requirements, split if necessary ===
 
     uint numTotalVertices = 0;
-    uint numTotalIndices  = 0;
-    const uint numClusters = ranges.size();
-    for (uint i=0;i<numClusters;i++)
-    {
-      numTotalVertices += ranges[i].size()*4; // FIXME !!!
-      numTotalIndices += ranges[i].size()*4;  // FIXME !!!
-      //PRINT4(i,ranges[i].start,ranges[i].end,ranges[i].size());
+
+    for (uint i=0;i<ranges.size();i++)
+    {      
+      while(1)
+      {
+        std::map<uint,uint> index_map;
+        uint numLocalIndices = 0;
+        bool split = false;
+        for (uint j=ranges[i].start;j<ranges[i].end;j++)
+        {
+          const uint index = mcodes[j].getIndex();
+          const uint v0 = mesh->quads[index].v0;
+          const uint v1 = mesh->quads[index].v1;
+          const uint v2 = mesh->quads[index].v2;
+          const uint v3 = mesh->quads[index].v3;
+
+          remap_vtx_index(v0,index_map,numLocalIndices);
+          remap_vtx_index(v1,index_map,numLocalIndices);
+          remap_vtx_index(v2,index_map,numLocalIndices);
+          remap_vtx_index(v3,index_map,numLocalIndices);
+          if (index_map.size() > 256)
+          {
+            gpu::Range left,right;
+            const uint center = (ranges[i].start + ranges[i].end)/2;
+            left.start  = ranges[i].start;
+            left.end    = center;
+            right.start = center;
+            right.end = ranges[i].end;
+            ranges[i] = left;
+            ranges.push_back(right);
+            split = true;
+            break;
+          }
+        }
+        if (!split)
+        {
+          numTotalVertices += index_map.size();
+          break;
+        }
+      }      
     }
     
-    PRINT(centroidBounds);
-    PRINT(diag);
-    PRINT(numTotalVertices);
-    PRINT(numTotalIndices);    
-
-    /* --- allocate global LCGBP --- */
+    // === allocate LossyCompressedMesh in USM ===
+    
     LossyCompressedMesh *lcm = (LossyCompressedMesh *)alignedUSMMalloc(sizeof(LossyCompressedMesh),64);
     lcm_ptrs.push_back(lcm);
   
     lcm->bounds             = geometryBounds;
-    lcm->numQuads           = mesh->numQuads;
+    lcm->numQuads           = numQuads;
     lcm->numVertices        = mesh->numVertices;
     lcm->geomID             = geomID; 
     lcm->compressedVertices = (CompressedVertex*)alignedUSMMalloc(sizeof(CompressedVertex)*numTotalVertices,64); // FIXME
-    lcm->compressedIndices  = (CompressedQuadIndices*)alignedUSMMalloc(sizeof(CompressedQuadIndices)*mesh->numQuads,64); //FIXME    
-
-    PRINT2(sizeof(CompressedVertex)*numTotalVertices,sizeof(CompressedQuadIndices)*mesh->numQuads);
+    lcm->compressedIndices  = (CompressedQuadIndices*)alignedUSMMalloc(sizeof(CompressedQuadIndices)*numQuads,64); //FIXME    
            
     uint globalCompressedVertexOffset = 0;
     uint globalCompressedIndexOffset = 0;
 
-
+    // === quantize vertices with respect to geometry bounding box ===
+    
     const Vec3f geometry_lower    = geometryBounds.lower;
     const Vec3f geometry_diag     = geometryBounds.size();
     const Vec3f geometry_inv_diag = geometry_diag != Vec3fa(0.0f) ? Vec3fa(1.0f) / geometry_diag : Vec3fa(0.0f);
     
     for (uint i=0;i<ranges.size();i++)
     {
+      
       LossyCompressedMeshCluster cluster;
       cluster.numQuads  = ranges[i].size();
       cluster.numBlocks = LossyCompressedMeshCluster::getDecompressedSizeInBytes(ranges[i].size())/64;
@@ -498,7 +538,9 @@ namespace embree {
 
       std::map<uint,uint> index_map;
       uint numLocalIndices = 0;
-        
+
+      // === remap vertices relative to cluster ===
+      
       for (uint j=ranges[i].start;j<ranges[i].end;j++)
       {
         const uint index = mcodes[j].getIndex();
@@ -523,14 +565,19 @@ namespace embree {
       }
       
       globalCompressedVertexOffset += index_map.size();
+      
       if (index_map.size() > 256) FATAL("index_map"); // byte indices
+      if (globalCompressedVertexOffset > numTotalVertices) FATAL("numTotalVertices");
+      
       lcm_clusters.push_back(cluster);
     }
-    
-    PRINT( globalCompressedIndexOffset );
-    PRINT( globalCompressedVertexOffset );
-    
-    //exit(0);
+
+    const size_t uncompressedSizeMeshBytes = mesh->numVertices * sizeof(Vec3f) + mesh->numQuads * sizeof(uint) * 4;
+    const size_t compressedSizeMeshBytes = sizeof(CompressedVertex)*numTotalVertices + sizeof(CompressedQuadIndices)*numQuads;
+    const size_t clusterSizeBytes = ranges.size()*sizeof(LossyCompressedMeshCluster);
+    PRINT5(lcm_ID,uncompressedSizeMeshBytes,compressedSizeMeshBytes,(float)compressedSizeMeshBytes/uncompressedSizeMeshBytes,clusterSizeBytes);
+
+    totalCompressedSize += compressedSizeMeshBytes + clusterSizeBytes;
   }  
   
   void convertISPCGridMesh(ISPCGridMesh* grid, RTCScene scene, ISPCOBJMaterial *material)
@@ -633,12 +680,12 @@ namespace embree {
 
     uint numGridMeshes = 0;
     uint numQuadMeshes = 0;
-
+    uint numQuads      = 0;
     for (unsigned int geomID=0; geomID<g_ispc_scene->numGeometries; geomID++)
     {
       ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
       if (geometry->type == GRID_MESH) numGridMeshes++;
-      else if (geometry->type == QUAD_MESH) numQuadMeshes++;
+      else if (geometry->type == QUAD_MESH) { numQuadMeshes++; numQuads+= ((ISPCQuadMesh*)geometry)->numQuads; }
     }
 
     global_lcgbp_scene = (LCG_Scene*)alignedUSMMalloc(sizeof(LCG_Scene),64);
@@ -646,6 +693,7 @@ namespace embree {
 
     std::vector<LossyCompressedMesh*> lcm_ptrs;
     std::vector<LossyCompressedMeshCluster> lcm_clusters;
+    size_t totalCompressedSize = 0;
     
     for (unsigned int geomID=0; geomID<g_ispc_scene->numGeometries; geomID++)
     {
@@ -653,9 +701,10 @@ namespace embree {
       if (geometry->type == GRID_MESH)
         convertISPCGridMesh((ISPCGridMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID]);
       else if (geometry->type == QUAD_MESH)
-        convertISPCQuadMesh((ISPCQuadMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID],geomID,lcm_ptrs,lcm_clusters);
+        convertISPCQuadMesh((ISPCQuadMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID],geomID,lcm_ptrs,lcm_clusters,totalCompressedSize);
     }
-
+    PRINT5(numQuadMeshes,numQuads,totalCompressedSize,(float)totalCompressedSize/numQuads,(float)totalCompressedSize/numQuads*0.5f);
+    
     // === finalize quad meshes ===
     if (numQuadMeshes)
     {

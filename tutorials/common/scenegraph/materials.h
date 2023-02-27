@@ -122,11 +122,10 @@ namespace embree
 
     virtual Material* material() 
     {
-      PING;
       map_d = _map_d.get();
       map_Ka = _map_Ka.get();
       map_Kd = _map_Kd.get();
-      PRINT2(map_Kd,_map_Kd.get());
+      //PRINT2(map_Kd,_map_Kd.get());
       map_Ks = _map_Ks.get();
       map_Kt = _map_Kt.get();
       map_Ns = _map_Ns.get();
