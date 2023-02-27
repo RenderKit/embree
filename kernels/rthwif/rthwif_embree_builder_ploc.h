@@ -1497,7 +1497,7 @@ namespace embree
   }
 
 
-   __forceinline void writeNode(void *_dest, const int relative_block_offset, const gpu::AABB3f &parent_bounds, const uint numChildren, const gpu::AABB3f child_bounds[6], const NodeType default_type)
+   __forceinline void writeNodeFast(void *_dest, const int relative_block_offset, const gpu::AABB3f &parent_bounds, const uint numChildren, const gpu::AABB3f child_bounds[6], const NodeType default_type)
   {
     uint *dest = (uint*)_dest;    
     //PRINT3(dest,numChildren,relative_block_offset);
@@ -1763,19 +1763,51 @@ namespace embree
                                NodeType node_type = NODE_TYPE_QUAD;
                                while(numPrims > BVH_BRANCHING_FACTOR)
                                {
+#if 1                                 
                                  for (uint i=subgroupLocalID;i<numNodes;i+=subgroupSize)
                                  {
                                    gpu::AABB3f nodeBounds;
-                                   nodeBounds.init();            
+                                   nodeBounds.init();
+                                   const uint offset = i*BVH_BRANCHING_FACTOR;
                                    for (uint j=0;j<BVH_BRANCHING_FACTOR;j++)
                                    {
-                                     const uint index = min(i*BVH_BRANCHING_FACTOR+j,numPrims-1);
+                                     const uint index = min(offset+j,numPrims-1);
                                      nodeBounds.extend( clusterPrimBounds[index] );
                                    }
-                                   const uint numChildren = min(numPrims-i*BVH_BRANCHING_FACTOR,(uint)BVH_BRANCHING_FACTOR);
-                                   writeNode(&cur[i*64],((int64_t)&prev[i*64*BVH_BRANCHING_FACTOR]-(int64_t)&cur[i*64])/64,nodeBounds,numChildren,&clusterPrimBounds[i*BVH_BRANCHING_FACTOR],node_type);
+                                   const uint numChildren = min(numPrims-offset,(uint)BVH_BRANCHING_FACTOR);
+                                   writeNodeFast(&cur[i*64],((int64_t)&prev[64*offset]-(int64_t)&cur[i*64])/64,nodeBounds,numChildren,&clusterPrimBounds[offset],node_type);
+                                   sub_group_barrier();                                   
                                    clusterPrimBounds[i] = nodeBounds;
                                  }
+#else
+                                 for (uint j=0;j<numNodes;j+=2)
+                                 {
+                                   const uint subgroupBlockID = subgroupLocalID / 8;
+                                   const uint subgroupLocalBlockID = min((uint)subgroupLocalID % 8,(uint)BVH_BRANCHING_FACTOR-1);
+                                   const uint i = min((j+subgroupBlockID),numNodes-1);
+                                   const uint offset = i*BVH_BRANCHING_FACTOR;
+                                   const uint index = min(offset+subgroupLocalBlockID,numPrims-1);                                   
+                                   const gpu::AABB3f nodeBounds = clusterPrimBounds[index];
+                                   const gpu::AABB3f rootBounds = nodeBounds.sub_group_reduce();
+                                   const uint numChildren = min(numPrims-offset,(uint)BVH_BRANCHING_FACTOR);
+                                   char *dest = &cur[i*64];
+                                   char *local_dest = (char*)&clusterPrimBounds[offset];
+                                   sub_group_barrier();                                   
+                                   writeNode_subgroup(*(LocalNodeData_subgroup*)dest,((int64_t)&prev[64*offset]-(int64_t)dest)/64,rootBounds,nodeBounds,numChildren,subgroupLocalBlockID,node_type);
+                                   sub_group_barrier();
+#if 0                                   
+                                   for (uint c=0;c<2;c++)
+                                   {
+                                     uint* destCopy = sub_group_broadcast((uint*)dest,c*8); 
+                                     uint* sourceCopy = sub_group_broadcast((uint*)local_dest,c*8); 
+                                     const uint v = sourceCopy[subgroupLocalID]; 
+                                     sub_group_store(destCopy,v);                                      
+                                   }
+                                   sub_group_barrier();
+#endif                                   
+                                   clusterPrimBounds[i] = rootBounds;
+                                 }                                 
+#endif                                 
                                  sub_group_barrier();
                                  
                                  node_type = NODE_TYPE_INTERNAL;
@@ -1784,7 +1816,7 @@ namespace embree
                                  prev = cur;
                                  cur -= numNodes*64;            
                                }
-                               writeNode(dest,((int64_t)prev-(int64_t)dest)/64,clusterBounds,numPrims,clusterPrimBounds,node_type);          
+                               writeNodeFast(dest,((int64_t)prev-(int64_t)dest)/64,clusterBounds,numPrims,clusterPrimBounds,node_type);          
                                 
                                BVH2Ploc node;                             
                                node.initLeaf(lcgID,((int64_t)dest-(int64_t)lcg_bvh_mem)/64,clusterBounds);                               
@@ -1796,8 +1828,6 @@ namespace embree
         
         if (unlikely(verbose))
           iteration_time += gpu::getDeviceExecutionTiming(queue_event);
-
-        PRINT( gpu::getDeviceExecutionTiming(queue_event) );
         
 #else
         const uint SIZE_LCG_BVH = estimateLossyCompressedGeometriesSize(1);        
