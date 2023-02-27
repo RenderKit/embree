@@ -703,7 +703,6 @@ namespace embree {
       else if (geometry->type == QUAD_MESH)
         convertISPCQuadMesh((ISPCQuadMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID],geomID,lcm_ptrs,lcm_clusters,totalCompressedSize);
     }
-    PRINT5(numQuadMeshes,numQuads,totalCompressedSize,(float)totalCompressedSize/numQuads,(float)totalCompressedSize/numQuads*0.5f);
     
     // === finalize quad meshes ===
     if (numQuadMeshes)
@@ -717,7 +716,10 @@ namespace embree {
       rtcCommitGeometry(global_lcgbp_scene->geometry);
       global_lcgbp_scene->geomID = rtcAttachGeometry(data.g_scene,global_lcgbp_scene->geometry);
       //rtcReleaseGeometry(geom);
-      global_lcgbp_scene->map_Kd = nullptr;        
+      global_lcgbp_scene->map_Kd = nullptr;
+      
+      PRINT(global_lcgbp_scene->numLCMeshClusters);
+      PRINT5(numQuadMeshes,numQuads,totalCompressedSize,(float)totalCompressedSize/numQuads,(float)totalCompressedSize/numQuads*0.5f);
       
     }
     
