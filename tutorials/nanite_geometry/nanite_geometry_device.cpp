@@ -377,7 +377,7 @@ namespace embree {
   }
     
 
-  void convertISPCQuadMesh(ISPCQuadMesh* mesh, RTCScene scene, ISPCOBJMaterial *material,const uint geomID,std::vector<LossyCompressedMesh*> &lcm_ptrs,std::vector<LossyCompressedMeshCluster> &lcm_clusters, size_t &totalCompressedSize)
+  void convertISPCQuadMesh(ISPCQuadMesh* mesh, RTCScene scene, ISPCOBJMaterial *material,const uint geomID,std::vector<LossyCompressedMesh*> &lcm_ptrs,std::vector<LossyCompressedMeshCluster> &lcm_clusters, size_t &totalCompressedSize, size_t &numDecompressedBlocks)
   {
     const uint lcm_ID = lcm_ptrs.size();
     const uint numQuads = mesh->numQuads;
@@ -570,6 +570,7 @@ namespace embree {
       if (globalCompressedVertexOffset > numTotalVertices) FATAL("numTotalVertices");
       
       lcm_clusters.push_back(cluster);
+      numDecompressedBlocks += cluster.numBlocks;      
     }
 
     const size_t uncompressedSizeMeshBytes = mesh->numVertices * sizeof(Vec3f) + mesh->numQuads * sizeof(uint) * 4;
@@ -694,6 +695,7 @@ namespace embree {
     std::vector<LossyCompressedMesh*> lcm_ptrs;
     std::vector<LossyCompressedMeshCluster> lcm_clusters;
     size_t totalCompressedSize = 0;
+    size_t numDecompressedBlocks = 0;
     
     for (unsigned int geomID=0; geomID<g_ispc_scene->numGeometries; geomID++)
     {
@@ -701,7 +703,7 @@ namespace embree {
       if (geometry->type == GRID_MESH)
         convertISPCGridMesh((ISPCGridMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID]);
       else if (geometry->type == QUAD_MESH)
-        convertISPCQuadMesh((ISPCQuadMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID],geomID,lcm_ptrs,lcm_clusters,totalCompressedSize);
+        convertISPCQuadMesh((ISPCQuadMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID],geomID,lcm_ptrs,lcm_clusters,totalCompressedSize,numDecompressedBlocks);
     }
     
     // === finalize quad meshes ===
@@ -719,7 +721,9 @@ namespace embree {
       global_lcgbp_scene->map_Kd = nullptr;
       
       PRINT(global_lcgbp_scene->numLCMeshClusters);
-      PRINT5(numQuadMeshes,numQuads,totalCompressedSize,(float)totalCompressedSize/numQuads,(float)totalCompressedSize/numQuads*0.5f);
+      PRINT2(numQuadMeshes,numQuads);
+      PRINT3(totalCompressedSize,(float)totalCompressedSize/numQuads,(float)totalCompressedSize/numQuads*0.5f);
+      PRINT3(numDecompressedBlocks,numDecompressedBlocks*64,(float)numDecompressedBlocks*64/totalCompressedSize);
       
     }
     
