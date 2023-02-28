@@ -304,7 +304,7 @@ namespace embree {
     __forceinline Vec3f decompress(const Vec3f &lower, const Vec3f &diag) const
     {
       const Vec3f vv((float)x,(float)y,(float)z);
-      return lower + vv * (1.0f / RES_PER_DIM) * diag;
+      return madd(vv,diag,lower);
     }
 
     __forceinline CompressedVertex sub_group_reduce_min() const
