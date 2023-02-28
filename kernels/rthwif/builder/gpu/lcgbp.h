@@ -283,9 +283,15 @@ namespace embree {
     static const uint BITS_MASK = ((uint)1<<BITS_PER_DIM)-1;
     static const uint RES_PER_DIM = BITS_MASK;
     
+    static const ushort MIN_VALUE = 0;
+    static const ushort MAX_VALUE = BITS_MASK;
+    
     __forceinline CompressedVertex() {}
 
     __forceinline CompressedVertex(const ushort x, const ushort y, const ushort z) : x(x), y(y), z(z) {}
+
+    __forceinline CompressedVertex(const ushort v) : x(v), y(v), z(v) {}
+    
     
     __forceinline CompressedVertex(const Vec3f &org, const Vec3f &lower, const Vec3f &inv_diag)
     {
@@ -299,7 +305,26 @@ namespace embree {
     {
       const Vec3f vv((float)x,(float)y,(float)z);
       return lower + vv * (1.0f / RES_PER_DIM) * diag;
-    }    
+    }
+
+    __forceinline CompressedVertex sub_group_reduce_min() const
+    {
+      CompressedVertex result;
+      result.x = embree::sub_group_reduce(x, SYCL_EXT_ONEAPI::minimum<ushort>());
+      result.y = embree::sub_group_reduce(y, SYCL_EXT_ONEAPI::minimum<ushort>());
+      result.z = embree::sub_group_reduce(z, SYCL_EXT_ONEAPI::minimum<ushort>());
+      return result;	
+    }
+
+    __forceinline CompressedVertex sub_group_reduce_max() const
+    {
+      CompressedVertex result;
+      result.x = embree::sub_group_reduce(x, SYCL_EXT_ONEAPI::maximum<ushort>());
+      result.y = embree::sub_group_reduce(y, SYCL_EXT_ONEAPI::maximum<ushort>());
+      result.z = embree::sub_group_reduce(z, SYCL_EXT_ONEAPI::maximum<ushort>());
+      return result;	
+    }
+    
   };
 
 
@@ -314,26 +339,34 @@ namespace embree {
   }
   
   
-  struct CompressedAABB
+  struct CompressedAABB3f
   {
     CompressedVertex lower,upper;
 
-    __forceinline CompressedAABB() {}
+    __forceinline CompressedAABB3f() {}
     
-    __forceinline CompressedAABB(const CompressedVertex &lower, const CompressedVertex &upper) : lower(lower), upper(upper) {}
+    __forceinline CompressedAABB3f(const CompressedVertex &lower, const CompressedVertex &upper) : lower(lower), upper(upper) {}
 
-    __forceinline CompressedAABB(const CompressedVertex &v) : v(v) {}
+    __forceinline CompressedAABB3f(const CompressedVertex &v) : lower(v),upper(v) {}
+
+    __forceinline CompressedAABB3f(const CompressedAABB3f &v) : lower(v.lower),upper(v.upper) {}
+
+    __forceinline void init()
+    {
+      lower = CompressedVertex::MAX_VALUE;
+      upper = CompressedVertex::MIN_VALUE;      
+    }
     
-    __forceinline void extend(const CompressedAABB &v)
+    __forceinline void extend(const CompressedAABB3f &v)
     {
       lower = min(lower,v.lower);
-      upper = min(upper,v.upper);      
+      upper = max(upper,v.upper);      
     }
 
     __forceinline void extend(const CompressedVertex &v)
     {
       lower = min(lower,v);
-      upper = min(upper,v);      
+      upper = max(upper,v);      
     }
     
     __forceinline BBox3f decompress(const Vec3f &start, const Vec3f &diag) const
@@ -341,7 +374,15 @@ namespace embree {
       const Vec3f lower_f = lower.decompress(start,diag);
       const Vec3f upper_f = upper.decompress(start,diag);
       return BBox3f(lower_f,upper_f);
-    }    
+    }
+
+    __forceinline CompressedAABB3f sub_group_reduce() const
+    {
+      const CompressedVertex l = lower.sub_group_reduce_min();
+      const CompressedVertex u = lower.sub_group_reduce_max();      
+      return CompressedAABB3f(l,u);
+    }
+ 
     
   };  
 

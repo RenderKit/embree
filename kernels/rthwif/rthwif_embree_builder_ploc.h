@@ -1673,6 +1673,10 @@ namespace embree
   }
 
    
+   __forceinline gpu::AABB3f to_AABB3f(const BBox3f &v)
+  {
+    return gpu::AABB3f(to_float3(v.lower),to_float3(v.upper));
+  }
         
    
    uint createLossyCompressedGeometries_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGS, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, char* lcg_bvh_mem, uint *const lcg_bvh_mem_allocator, double &iteration_time, const bool verbose)    
@@ -1739,17 +1743,15 @@ namespace embree
                                  const uint primID1 = ID;
             
                                  leaf[q] = QuadLeafData( vtx0,vtx1,vtx3,vtx2, 3,2,1, 0, geomID, primID0, primID1, GeometryFlags::OPAQUE, -1);
-
                                  gpu::AABB3f quad_bounds( to_float3(vtx0) );
                                  quad_bounds.extend( to_float3(vtx1) );
                                  quad_bounds.extend( to_float3(vtx2) );
-                                 quad_bounds.extend( to_float3(vtx3) );
+                                 quad_bounds.extend( to_float3(vtx3) );                                 
                                  clusterBounds.extend(quad_bounds);
                                  clusterPrimBounds[q] = quad_bounds;
                                }
 
                                clusterBounds = clusterBounds.sub_group_reduce();                                
-                               
                                uint numPrims = cluster.numQuads;
                                uint numNodes = ((numPrims+BVH_BRANCHING_FACTOR-1)/BVH_BRANCHING_FACTOR);
                                char *prev = (char*)leaf;
@@ -1784,7 +1786,7 @@ namespace embree
                                 
                                BVH2Ploc node;                             
                                node.initLeaf(lcgID,((int64_t)dest-(int64_t)lcg_bvh_mem)/64,clusterBounds);                               
-                               node.store(&bvh2[prim_type_offset + ID]);                                         
+                               node.store(&bvh2[prim_type_offset + ID]);
                              });
           });
         
