@@ -195,14 +195,14 @@ def runConfig(config):
       conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
     elif (compiler.startswith("ICX")):
       env.append("source "+NAS+"/intel/oneAPI/compiler/"+compiler[3:]+"/env/vars.sh")
-      conf.append("-DCMAKE_CXX_COMPILER=icpx -DCMAKE_C_COMPILER=icx")
+      conf.append("-G Ninja -DCMAKE_CXX_COMPILER=icpx -DCMAKE_C_COMPILER=icx")
     elif (compiler.startswith("ICC")):
       conf.append("-D CMAKE_CXX_COMPILER="+NAS+"/intel/"+compiler[3:]+"/bin/icpc -D CMAKE_C_COMPILER="+NAS+"/intel/"+compiler[3:]+"/bin/icc")
     elif (compiler.startswith("CLANG")):
       conf.append("-D CMAKE_CXX_COMPILER="+NAS+"/clang/v"+compiler[5:]+"/bin/clang++ -D CMAKE_C_COMPILER="+NAS+"/clang/v"+compiler[5:]+"/bin/clang")
     elif (compiler.startswith("dpcpp")):
       env.append("source " + os.environ["DPCPP_ROOT"] + "/startup.sh")
-      conf.append("-D CMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang")
+      conf.append("-G Ninja -D CMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang")
     else:
       raise ValueError('unknown compiler: ' + compiler + '')
 
