@@ -77,12 +77,13 @@ if (EMBREE_BUILDER_TBB_STATIC OR NOT TASKING_TBB)
     GIT_REPOSITORY ${EMBREE_RTHWIF_TBB_GIT_REPOSITORY}
     GIT_TAG v2021.6.0
   )
-  FetchContent_MakeAvailable(tbb_static)
 
-  # We want to build tbb_static to link it into embree_rthwif, but don't want to
-  # install it as part of the Embree install targets.
-  if (IS_DIRECTORY "${tbb_static_SOURCE_DIR}")
-    set_property(DIRECTORY ${tbb_static_SOURCE_DIR} PROPERTY EXCLUDE_FROM_ALL YES)
+  FetchContent_GetProperties(tbb_static)
+  if(NOT tbb_static_POPULATED)
+    FetchContent_Populate(tbb_static)
+    # We want to build tbb_static to link it into embree_rthwif, but don't want to
+    # install it as part of the Embree install targets.
+    add_subdirectory(${tbb_static_SOURCE_DIR} ${tbb_static_BINARY_DIR} EXCLUDE_FROM_ALL)
   endif()
 
   MARK_AS_ADVANCED(FETCHCONTENT_BASE_DIR)

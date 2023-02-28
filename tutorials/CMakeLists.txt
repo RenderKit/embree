@@ -38,12 +38,13 @@ IF (EMBREE_TUTORIALS_GLFW)
       GIT_TAG 3.3.8
       PATCH_COMMAND git reset --hard && git apply -v ${CMAKE_CURRENT_SOURCE_DIR}/common/glfw/glfw.patch
     )
-    FetchContent_MakeAvailable(glfw)
 
-    # We want to build glfw and link statically, so no need to
-    # install it as part of the Embree install targets.
-    if (IS_DIRECTORY "${glfw_SOURCE_DIR}")
-      set_property(DIRECTORY ${glfw_SOURCE_DIR} PROPERTY EXCLUDE_FROM_ALL YES)
+    FetchContent_GetProperties(glfw)
+    if(NOT glfw_POPULATED)
+      FetchContent_Populate(glfw)
+      # We want to build glfw and link statically, so no need to
+      # install it as part of the Embree install targets.
+      add_subdirectory(${glfw_SOURCE_DIR} ${glfw_BINARY_DIR} EXCLUDE_FROM_ALL)
     endif()
 
     MARK_AS_ADVANCED(FETCHCONTENT_BASE_DIR)
