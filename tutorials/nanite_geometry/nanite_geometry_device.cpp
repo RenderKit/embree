@@ -997,10 +997,11 @@ namespace embree {
     const uint numTrianglesPerGrid33x33 = 32*32*2;
     ImGui::Text("SPP: %d",user_spp);    
     ImGui::Text("BVH Build Time: %4.4f ms",avg_bvh_build_time.get());
+#if TEST_QUAD_MESHES == 0    
     ImGui::Text("numGrids9x9:   %d (out of %d)",global_lcgbp_scene->numCurrentLCGBPStates,global_lcgbp_scene->numLCGBP*(1<<(LOD_LEVELS+1)));
     ImGui::Text("numGrids33x33: %d ",global_lcgbp_scene->numLCGBP);
     ImGui::Text("numTriangles: %d (out of %d)",global_lcgbp_scene->numCurrentLCGBPStates*numTrianglesPerGrid9x9,global_lcgbp_scene->numLCGBP*numTrianglesPerGrid33x33);    
-    
+#endif    
   }
   
   
