@@ -203,8 +203,8 @@ RTC_API void rtcSetGeometryPointQueryFunction(RTCGeometry geometry, RTCPointQuer
 /* Sets the number of primitives of a user geometry. */
 RTC_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry geometry, unsigned int userPrimitiveCount);
 
-/* Sets the number of primitives of a user geometry. */
-RTC_API void rtcSetLossyCompressedGeometryPrimitiveCount(RTCGeometry geometry, unsigned int userPrimitiveCount);
+/* Setups loosy compressed geometries. */
+RTC_API void rtcSetLCData(RTCGeometry hgeometry, uint numLCGs, void* pLCGs, uint numLCGMs, void* pLCMs);
 
 /* Sets the bounding callback function to calculate bounding boxes for user primitives. */
 RTC_API void rtcSetGeometryBoundsFunction(RTCGeometry geometry, RTCBoundsFunction bounds, void* userPtr);

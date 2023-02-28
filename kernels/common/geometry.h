@@ -614,6 +614,9 @@ namespace embree
     virtual LBBox3fa vlinearBounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t primID, const BBox1f& time_range) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vlinearBounds not implemented for this geometry"); 
     }
+
+    /*! sets the number of primitives */
+    virtual void setLCData(uint numLCGs, void* pLCGs, uint numLCGMs, void* pLCMs);
     
   public:
     __forceinline bool hasIntersectionFilter() const { return intersectionFilterN != nullptr; }
@@ -624,6 +627,13 @@ namespace embree
 
     void* userPtr;              //!< user pointer
     unsigned int numPrimitives; //!< number of primitives of this geometry
+
+    unsigned int numLCGs;
+    unsigned int numLCMs;
+
+    void *pLCGs;
+    void *pLCMs;
+    
     
     unsigned int numTimeSteps;  //!< number of time steps
     float fnumTimeSegments;     //!< number of time segments (precalculation)

@@ -131,15 +131,17 @@ typedef enum RTHWIF_INSTANCE_FLAGS : uint8_t
 
 
 /* Triangle mesh geometry descriptor. */
-typedef struct RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC  // 40 bytes
+typedef struct RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC  // 32 bytes
 {
   RTHWIF_GEOMETRY_TYPE geometryType;       // must be RTHWIF_GEOMETRY_TYPE_TRIANGLES
   RTHWIF_GEOMETRY_FLAGS geometryFlags;     // geometry flags for all primitives of this geometry
   uint8_t geometryMask;                    // 8-bit geometry mask for ray masking
   uint8_t reserved0;                       // must be zero
   uint32_t reserved1;                      // must be zero
-  unsigned int numGeometryPtrs;            // number of pointers;
-  void**compressedGeometryPtrsBuffer;      // pointer to array of triangle indices  
+  unsigned int numLCGs;                    // number of lossy compressed grids
+  unsigned int numLCMs;                    // number of lossy compressed meshes
+  void *pLCGs;                             // pointer to lossy compressed grid headers
+  void *pLCMs;                             // pointer to lossy compressed mesh headers  
 } RTHWIF_RAYTRACING_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC;
 
 

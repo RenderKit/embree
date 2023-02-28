@@ -63,15 +63,22 @@ namespace embree
     device->refDec();
   }
 
-  void Geometry::setNumPrimitives(unsigned int numPrimitives_in)
-  {      
-    if (numPrimitives_in == numPrimitives) return;
-    
-    numPrimitives = numPrimitives_in;
-    
+  void Geometry::setLCData(uint _numLCGs, void* _pLCGs, uint _numLCMs, void* _pLCMs)
+  {
+    numLCGs = _numLCGs;
+    numLCMs = _numLCMs;
+    pLCGs   = _pLCGs;
+    pLCMs   = _pLCMs;    
+    numPrimitives = _numLCGs + _numLCMs;    
     Geometry::update();
   }
 
+  void Geometry::setNumPrimitives(unsigned int numPrimitives_in)
+  {      
+    if (numPrimitives_in == numPrimitives) return;    
+    numPrimitives = numPrimitives_in;
+  }
+  
   void Geometry::setNumTimeSteps (unsigned int numTimeSteps_in)
   {
     if (numTimeSteps_in == numTimeSteps) {

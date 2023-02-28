@@ -1461,22 +1461,6 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetLossyCompressedGeometryPrimitiveCount(RTCGeometry hgeometry, unsigned int userPrimitiveCount)
-  {
-    Geometry* geometry = (Geometry*) hgeometry;
-    RTC_CATCH_BEGIN;
-    RTC_TRACE(rtcSetLossyCompressedGeometryPrimitiveCount);
-    RTC_VERIFY_HANDLE(hgeometry);
-    RTC_ENTER_DEVICE(hgeometry);
-    
-    if (unlikely(geometry->getType() != Geometry::GTY_LOSSY_COMPRESSED_GEOMETRY))
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation only allowed for lossy compressed geometries"); 
-
-    geometry->setNumPrimitives(userPrimitiveCount);
-    RTC_CATCH_END2(geometry);
-  }
-
-
   RTC_API void rtcSetGeometryTimeStepCount(RTCGeometry hgeometry, unsigned int timeStepCount)
   {
     Geometry* geometry = (Geometry*) hgeometry;
@@ -1745,6 +1729,18 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(scene);
     return nullptr;
   }
+
+  RTC_API void rtcSetLCData (RTCGeometry hgeometry, uint numLCGs, void* pLCGs, uint numLCGMs, void* pLCMs)
+  {
+    Geometry* geometry = (Geometry*) hgeometry;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcSetLCData);
+    RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
+    geometry->setLCData(numLCGs,pLCGs,numLCGMs,pLCMs);
+    RTC_CATCH_END2(geometry);
+  }
+
 
   RTC_API void rtcSetGeometryBoundsFunction (RTCGeometry hgeometry, RTCBoundsFunction bounds, void* userPtr)
   {

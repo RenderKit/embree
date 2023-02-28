@@ -304,8 +304,10 @@ namespace embree
     out->geometryType = RTHWIF_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY;
     out->geometryFlags = getGeometryFlags(scene,geom);
     out->geometryMask = mask32_to_mask8(geom->mask);
-    out->numGeometryPtrs = geom->numPrimitives;
-    out->compressedGeometryPtrsBuffer = (void**)geom->userPtr;
+    out->numLCGs = geom->numLCGs;//geom->numPrimitives;
+    out->pLCGs = geom->pLCGs; //(void*)geom->userPtr;
+    out->numLCMs = geom->numLCMs;    
+    out->pLCMs = geom->pLCMs;    
   }
 
   void createGeometryDesc(RTHWIF_GEOMETRY_TRIANGLES_DESC* out, Scene* scene, TriangleMesh* geom)

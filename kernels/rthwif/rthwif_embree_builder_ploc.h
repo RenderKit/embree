@@ -776,9 +776,7 @@ namespace embree
     const uint numInnerNodes = numLossyCompressedGeometries * (4*3+2+1) * 64;
     return numQuads + numInnerNodes;
 #else
-    const uint numQuads = numLossyCompressedGeometries * 128 * 64;
-    const uint numInnerNodes = numLossyCompressedGeometries * (22+4+1) * 64;
-    return numQuads + numInnerNodes;    
+    return  numLossyCompressedGeometries * LossyCompressedMeshCluster::getDecompressedSizeInBytes(LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER);    
 #endif    
   }  
   
@@ -1027,7 +1025,7 @@ namespace embree
                                }
                                case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR :  gpu::atomic_add_local(&numProcedurals,((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geom)->primCount);     break;
                                case RTHWIF_GEOMETRY_TYPE_INSTANCE   :  gpu::atomic_add_local(&numInstances  ,(uint)1); break;
-                               case RTHWIF_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY :  gpu::atomic_add_local(&numLossyCompressedGeometries,((RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC*)geom)->numGeometryPtrs); break;                     
+                               case RTHWIF_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY : gpu::atomic_add_local(&numLossyCompressedGeometries,((RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC*)geom)->numLCGs + ((RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC*)geom)->numLCMs); break;                     
                                };
                              }
                              blocksPerGeom[geomID] = numBlocks;
@@ -1681,7 +1679,7 @@ namespace embree
    
    uint createLossyCompressedGeometries_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGS, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, char* lcg_bvh_mem, uint *const lcg_bvh_mem_allocator, double &iteration_time, const bool verbose)    
   {    
-    uint numLCGs = 0;
+    uint numTotalLCGs = 0;
     //char* dest = lcg_bvh_mem;
     
     for (uint lcgID=0;lcgID<numGeoms;lcgID++)
@@ -1692,339 +1690,338 @@ namespace embree
         
         RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC *geom = (RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC *)geometry_desc[lcgID];
         
-        numLCGs += geom->numGeometryPtrs;
-#if 1
-
-        //for (uint ID=0;ID<geom->numGeometryPtrs;ID++)
-
-        //while(1)
-        //{
-        const uint wgSize = 16;        
-        const sycl::nd_range<1> nd_range1(wgSize*geom->numGeometryPtrs,sycl::range<1>(wgSize));          
-        sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-            sycl::local_accessor< gpu::AABB3f, 1> _clusterPrimBounds(sycl::range<1>(128),cgh);
-            cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
-                             {
-                               const uint subgroupLocalID = get_sub_group_local_id();
-                               const uint subgroupSize    = get_sub_group_size();                                           
-                               const uint ID         = item.get_group(0);
-
-                               const LossyCompressedMeshCluster &cluster = ((LossyCompressedMeshCluster*)(geom->compressedGeometryPtrsBuffer))[ID];
-                               const LossyCompressedMesh &mesh = *cluster.mesh;
-                               const CompressedVertex *const compressedVertices = mesh.compressedVertices + cluster.offsetVertices; 
-                               const CompressedQuadIndices *const compressedIndices = mesh.compressedIndices + cluster.offsetIndices;
-          
-                               const Vec3f lower = mesh.bounds.lower;
-                               const Vec3f diag = mesh.bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
-
-                               uint globalBlockID = 0;
-                               if (subgroupLocalID == 0)
-                                 globalBlockID = gpu::atomic_add_global(lcg_bvh_mem_allocator,(uint)cluster.numBlocks);
-                               globalBlockID = sub_group_broadcast(globalBlockID,0);
-                               char *const dest = lcg_bvh_mem + globalBlockID*64;
-          
-                               QuadLeafData *const leaf = (QuadLeafData*)(dest + (cluster.numBlocks-cluster.numQuads)*64);
-                               gpu::AABB3f *const clusterPrimBounds = _clusterPrimBounds.get_pointer();
-                               gpu::AABB3f clusterBounds;
-                               clusterBounds.init();
-                               for (uint q=subgroupLocalID;q<cluster.numQuads;q+=subgroupSize)
+        if (geom->numLCMs)
+        {
+          //for (uint ID=0;ID<geom->numGeometryPtrs;ID++)          
+          const uint wgSize = 16;        
+          const sycl::nd_range<1> nd_range1(wgSize*geom->numLCMs,sycl::range<1>(wgSize));          
+          sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+              sycl::local_accessor< gpu::AABB3f, 1> _clusterPrimBounds(sycl::range<1>(LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER),cgh);
+              cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                                {
-                                 const uint v0 = compressedIndices[q].v0;
-                                 const uint v1 = compressedIndices[q].v1;
-                                 const uint v2 = compressedIndices[q].v2;
-                                 const uint v3 = compressedIndices[q].v3;
+                                 const uint subgroupLocalID = get_sub_group_local_id();
+                                 const uint subgroupSize    = get_sub_group_size();                                           
+                                 const uint ID         = item.get_group(0);
 
-                                 const Vec3f vtx0 = compressedVertices[v0].decompress(lower,diag);
-                                 const Vec3f vtx1 = compressedVertices[v1].decompress(lower,diag);
-                                 const Vec3f vtx2 = compressedVertices[v2].decompress(lower,diag);
-                                 const Vec3f vtx3 = compressedVertices[v3].decompress(lower,diag);
+                                 const LossyCompressedMeshCluster &cluster = ((LossyCompressedMeshCluster*)(geom->pLCMs))[ID];
+                                 const LossyCompressedMesh &mesh = *cluster.mesh;
+                                 const CompressedVertex *const compressedVertices = mesh.compressedVertices + cluster.offsetVertices; 
+                                 const CompressedQuadIndices *const compressedIndices = mesh.compressedIndices + cluster.offsetIndices;
+          
+                                 const Vec3f lower = mesh.bounds.lower;
+                                 const Vec3f diag = mesh.bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
 
-                                 gpu::AABB3f quad_bounds( to_float3(vtx0) );
-                                 quad_bounds.extend( to_float3(vtx1) );
-                                 quad_bounds.extend( to_float3(vtx2) );
-                                 quad_bounds.extend( to_float3(vtx3) );                                 
-                                 clusterBounds.extend(quad_bounds);
-
-                                 const uint geomID = lcgID;
-                                 const uint primID0 = ID;
-                                 const uint primID1 = ID;
-            
-                                 leaf[q] = QuadLeafData( vtx0,vtx1,vtx3,vtx2, 3,2,1, 0, geomID, primID0, primID1, GeometryFlags::OPAQUE, -1);
-                                 clusterPrimBounds[q] = quad_bounds;
-                               }
-
-                               clusterBounds = clusterBounds.sub_group_reduce();                                
-                               uint numPrims = cluster.numQuads;
-                               uint numNodes = ((numPrims+BVH_BRANCHING_FACTOR-1)/BVH_BRANCHING_FACTOR);
-                               char *prev = (char*)leaf;
-                               char *cur  = prev - numNodes*64;
-                               NodeType node_type = NODE_TYPE_QUAD;
-                               while(numPrims > BVH_BRANCHING_FACTOR)
-                               {
-                                 for (uint i=subgroupLocalID;i<numNodes;i+=subgroupSize)
+                                 uint globalBlockID = 0;
+                                 if (subgroupLocalID == 0)
+                                   globalBlockID = gpu::atomic_add_global(lcg_bvh_mem_allocator,(uint)cluster.numBlocks);
+                                 globalBlockID = sub_group_broadcast(globalBlockID,0);
+                                 char *const dest = lcg_bvh_mem + globalBlockID*64;
+          
+                                 QuadLeafData *const leaf = (QuadLeafData*)(dest + (cluster.numBlocks-cluster.numQuads)*64);
+                                 gpu::AABB3f *const clusterPrimBounds = _clusterPrimBounds.get_pointer();
+                                 gpu::AABB3f clusterBounds;
+                                 clusterBounds.init();
+                                 for (uint q=subgroupLocalID;q<cluster.numQuads;q+=subgroupSize)
                                  {
-                                   gpu::AABB3f nodeBounds;
-                                   nodeBounds.init();
-                                   const uint offset = i*BVH_BRANCHING_FACTOR;
-                                   for (uint j=0;j<BVH_BRANCHING_FACTOR;j++)
+                                   const uint v0 = compressedIndices[q].v0;
+                                   const uint v1 = compressedIndices[q].v1;
+                                   const uint v2 = compressedIndices[q].v2;
+                                   const uint v3 = compressedIndices[q].v3;
+
+                                   const Vec3f vtx0 = compressedVertices[v0].decompress(lower,diag);
+                                   const Vec3f vtx1 = compressedVertices[v1].decompress(lower,diag);
+                                   const Vec3f vtx2 = compressedVertices[v2].decompress(lower,diag);
+                                   const Vec3f vtx3 = compressedVertices[v3].decompress(lower,diag);
+
+                                   gpu::AABB3f quad_bounds( to_float3(vtx0) );
+                                   quad_bounds.extend( to_float3(vtx1) );
+                                   quad_bounds.extend( to_float3(vtx2) );
+                                   quad_bounds.extend( to_float3(vtx3) );                                 
+                                   clusterBounds.extend(quad_bounds);
+
+                                   const uint geomID = lcgID;
+                                   const uint primID0 = ID;
+                                   const uint primID1 = ID;
+            
+                                   leaf[q] = QuadLeafData( vtx0,vtx1,vtx3,vtx2, 3,2,1, 0, geomID, primID0, primID1, GeometryFlags::OPAQUE, -1);
+                                   clusterPrimBounds[q] = quad_bounds;
+                                 }
+
+                                 clusterBounds = clusterBounds.sub_group_reduce();                                
+                                 uint numPrims = cluster.numQuads;
+                                 uint numNodes = ((numPrims+BVH_BRANCHING_FACTOR-1)/BVH_BRANCHING_FACTOR);
+                                 char *prev = (char*)leaf;
+                                 char *cur  = prev - numNodes*64;
+                                 NodeType node_type = NODE_TYPE_QUAD;
+                                 while(numPrims > BVH_BRANCHING_FACTOR)
+                                 {
+                                   for (uint i=subgroupLocalID;i<numNodes;i+=subgroupSize)
                                    {
-                                     const uint index = min(offset+j,numPrims-1);
-                                     nodeBounds.extend( clusterPrimBounds[index] );
+                                     gpu::AABB3f nodeBounds;
+                                     nodeBounds.init();
+                                     const uint offset = i*BVH_BRANCHING_FACTOR;
+                                     for (uint j=0;j<BVH_BRANCHING_FACTOR;j++)
+                                     {
+                                       const uint index = min(offset+j,numPrims-1);
+                                       nodeBounds.extend( clusterPrimBounds[index] );
+                                     }
+                                     const uint numChildren = min(numPrims-offset,(uint)BVH_BRANCHING_FACTOR);
+                                     writeNodeFast(&cur[i*64],((int64_t)&prev[64*offset]-(int64_t)&cur[i*64])/64,nodeBounds,numChildren,&clusterPrimBounds[offset],node_type);
+                                     sub_group_barrier();                                   
+                                     clusterPrimBounds[i] = nodeBounds;
                                    }
-                                   const uint numChildren = min(numPrims-offset,(uint)BVH_BRANCHING_FACTOR);
-                                   writeNodeFast(&cur[i*64],((int64_t)&prev[64*offset]-(int64_t)&cur[i*64])/64,nodeBounds,numChildren,&clusterPrimBounds[offset],node_type);
-                                   sub_group_barrier();                                   
-                                   clusterPrimBounds[i] = nodeBounds;
-                                 }
-                                 sub_group_barrier();
-                                 
-                                 node_type = NODE_TYPE_INTERNAL;
-                                 numPrims = numNodes;
-                                 numNodes = ((numPrims+BVH_BRANCHING_FACTOR-1)/BVH_BRANCHING_FACTOR);
-                                 prev = cur;
-                                 cur -= numNodes*64;            
-                               }
-                               writeNodeFast(dest,((int64_t)prev-(int64_t)dest)/64,clusterBounds,numPrims,clusterPrimBounds,node_type);          
-                                
-                               BVH2Ploc node;                             
-                               node.initLeaf(lcgID,((int64_t)dest-(int64_t)lcg_bvh_mem)/64,clusterBounds);                               
-                               node.store(&bvh2[prim_type_offset + ID]);
-                             });
-          });
-        
-        gpu::waitOnEventAndCatchException(queue_event);
-        
-        if (unlikely(verbose))
-          iteration_time += gpu::getDeviceExecutionTiming(queue_event);
-        //PRINT(gpu::getDeviceExecutionTiming(queue_event));
-        //*lcg_bvh_mem_allocator = 0;
-        // }
-        
-#else
-        const uint SIZE_LCG_BVH = estimateLossyCompressedGeometriesSize(1);        
-        const uint wgSize = 16;        
-        const sycl::nd_range<1> nd_range1(wgSize*geom->numGeometryPtrs,sycl::range<1>(wgSize));          
-        sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-            sycl::local_accessor< LocalNodeData_subgroup, 1> _local_node(sycl::range<1>(3),cgh); //FIXME: reuse _local_leaf
-            sycl::local_accessor< gpu::AABB3f, 1> _local_bounds(sycl::range<1>(12),cgh);
-            sycl::local_accessor< Vec3f, 1> _gridPos(sycl::range<1>(9*9),cgh);
-            
-            cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
-                             {
-                               const uint subgroupLocalID = get_sub_group_local_id();
-                               const uint blockID = subgroupLocalID <  6 ? 0 : (subgroupLocalID <  12 ? 1 : 2);
-                               
-                               const uint ID         = item.get_group(0);
-                               const uint start_x[16] = { 0,1,2, 0,1,2, 3,4,5, 3,4,5, 6,7,6,7};
-                               const uint start_y[16] = { 0,0,0, 1,1,1, 0,0,0, 1,1,1, 0,0,1,1};
-
-                               LocalNodeData_subgroup *local_node = _local_node.get_pointer();                               
-                               gpu::AABB3f *local_bounds          = _local_bounds.get_pointer();
-                               Vec3f *gridPos                     = _gridPos.get_pointer();
-
-                               LCGBP_State &state = ((LCGBP_State*)(geom->compressedGeometryPtrsBuffer))[ID];
-                               const LCGBP *const lcgbp = state.lcgbp;
-                               const uint lgcbp_start_x = state.start_x;
-                               const uint lgcbp_start_y = state.start_y;                               
-                               const uint lgcbp_step = state.step;
-                                 
-                               char* dest = lcg_bvh_mem + ID * SIZE_LCG_BVH;
-                               LocalNodeData_subgroup *node = (LocalNodeData_subgroup*)(dest + 3 * 64);
-                               QuadLeafData *leaf = (QuadLeafData*)(dest + (4*3+2+1)*64);
-                               
-                               const uint sx = start_x[subgroupLocalID];
-                               const uint sy = start_y[subgroupLocalID];
-
-                               for (uint y=0;y<9;y++)
-                               {
-                                 const uint x = subgroupLocalID;
-                                 if (x < 9)
-                                   gridPos[y*9+x] = lcgbp->decode(lgcbp_start_x + x*lgcbp_step, lgcbp_start_y + y*lgcbp_step);
-                               }
-                               sub_group_barrier();                               
-                               
-                               /* ---- fix cracks if necessary ---- */
-                               if (unlikely(state.lod_diff_levels))
-                               {
-                                 const uint i = subgroupLocalID;
-                                 const uint diff_top    = state.get_lod_diff_level(0);
-                                 const uint diff_right  = state.get_lod_diff_level(1);
-                                 const uint diff_bottom = state.get_lod_diff_level(2);
-                                 const uint diff_left   = state.get_lod_diff_level(3);
-                                   
-                                 if (unlikely(diff_top))
-                                 {
-                                   const uint index = (i>>diff_top)<<diff_top;
-                                   const Vec3f p = gridPos[index];
                                    sub_group_barrier();
-                                   if (i>0 && i<8)
-                                     gridPos[i] = p; 
-                                 }
-                                 if (unlikely(diff_right))
-                                 {
-                                   const uint index = (i>>diff_right)<<diff_right;
-                                   const Vec3f p = gridPos[index*9+8];
-                                   if (i>0 && i<8)
-                                     gridPos[i*9+8] = p; 
-                                 }
-                                 if (unlikely(diff_bottom))
-                                 {
-                                   const uint index = (i>>diff_bottom)<<diff_bottom;
-                                   const Vec3f p = gridPos[8*9+index];
-                                   if (i>0 && i<8)
-                                     gridPos[8*9+i] = p;                                  
-                                 }
-                                 if (unlikely(diff_left))
-                                 {
-                                   const uint index = (i>>diff_left)<<diff_left;
-                                   const Vec3f p = gridPos[index*9];
-                                   if (i>0 && i<8)
-                                     gridPos[i*9] = p;                                 
-                                 }                                  
-                               }
-
-
-                               /* ---- continous LOD support ---- */
-                               if (unlikely(state.blend))
-                               {
-                                 sub_group_barrier();
-
-                                 const uint x = subgroupLocalID;
-#if 0
-                                 const uint diff_top    = state.get_lod_diff_level(0);
-                                 const uint diff_right  = state.get_lod_diff_level(1);
-                                 const uint diff_bottom = state.get_lod_diff_level(2);
-                                 const uint diff_left   = state.get_lod_diff_level(3);
                                  
-                                 const uint sy = diff_top ? 1 : 0; 
-                                 const uint ey = diff_bottom ? 7 : 8; 
-                                 const uint sx = diff_left ? 1 : 0; 
-                                 const uint ex = diff_right ? 7 : 8;
+                                   node_type = NODE_TYPE_INTERNAL;
+                                   numPrims = numNodes;
+                                   numNodes = ((numPrims+BVH_BRANCHING_FACTOR-1)/BVH_BRANCHING_FACTOR);
+                                   prev = cur;
+                                   cur -= numNodes*64;            
+                                 }
+                                 writeNodeFast(dest,((int64_t)prev-(int64_t)dest)/64,clusterBounds,numPrims,clusterPrimBounds,node_type);          
+                                
+                                 BVH2Ploc node;                             
+                                 node.initLeaf(lcgID,((int64_t)dest-(int64_t)lcg_bvh_mem)/64,clusterBounds);                               
+                                 node.store(&bvh2[prim_type_offset + ID]);
+                               });
+            });
+        
+          gpu::waitOnEventAndCatchException(queue_event);
+        
+          if (unlikely(verbose))
+            iteration_time += gpu::getDeviceExecutionTiming(queue_event);
+          //PRINT(gpu::getDeviceExecutionTiming(queue_event));
+          //*lcg_bvh_mem_allocator = 0;
+          // }
+          numTotalLCGs += geom->numLCMs;          
+        }
+
+        if (geom->numLCGs)
+        {
+          const uint SIZE_LCG_BVH = estimateLossyCompressedGeometriesSize(1);        
+          const uint wgSize = 16;        
+          const sycl::nd_range<1> nd_range1(wgSize*geom->numLCGs,sycl::range<1>(wgSize));          
+          sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+              sycl::local_accessor< LocalNodeData_subgroup, 1> _local_node(sycl::range<1>(3),cgh); //FIXME: reuse _local_leaf
+              sycl::local_accessor< gpu::AABB3f, 1> _local_bounds(sycl::range<1>(12),cgh);
+              sycl::local_accessor< Vec3f, 1> _gridPos(sycl::range<1>(9*9),cgh);
+            
+              cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
+                               {
+                                 const uint subgroupLocalID = get_sub_group_local_id();
+                                 const uint blockID = subgroupLocalID <  6 ? 0 : (subgroupLocalID <  12 ? 1 : 2);
+                               
+                                 const uint ID         = item.get_group(0);
+                                 const uint start_x[16] = { 0,1,2, 0,1,2, 3,4,5, 3,4,5, 6,7,6,7};
+                                 const uint start_y[16] = { 0,0,0, 1,1,1, 0,0,0, 1,1,1, 0,0,1,1};
+
+                                 LocalNodeData_subgroup *local_node = _local_node.get_pointer();                               
+                                 gpu::AABB3f *local_bounds          = _local_bounds.get_pointer();
+                                 Vec3f *gridPos                     = _gridPos.get_pointer();
+
+                                 LCGBP_State &state = ((LCGBP_State*)(geom->pLCGs))[ID];
+                                 const LCGBP *const lcgbp = state.lcgbp;
+                                 const uint lgcbp_start_x = state.start_x;
+                                 const uint lgcbp_start_y = state.start_y;                               
+                                 const uint lgcbp_step = state.step;
+                                 
+                                 char* dest = lcg_bvh_mem + ID * SIZE_LCG_BVH;
+                                 LocalNodeData_subgroup *node = (LocalNodeData_subgroup*)(dest + 3 * 64);
+                                 QuadLeafData *leaf = (QuadLeafData*)(dest + (4*3+2+1)*64);
+                               
+                                 const uint sx = start_x[subgroupLocalID];
+                                 const uint sy = start_y[subgroupLocalID];
+
+                                 for (uint y=0;y<9;y++)
+                                 {
+                                   const uint x = subgroupLocalID;
+                                   if (x < 9)
+                                     gridPos[y*9+x] = lcgbp->decode(lgcbp_start_x + x*lgcbp_step, lgcbp_start_y + y*lgcbp_step);
+                                 }
+                                 sub_group_barrier();                               
+                               
+                                 /* ---- fix cracks if necessary ---- */
+                                 if (unlikely(state.lod_diff_levels))
+                                 {
+                                   const uint i = subgroupLocalID;
+                                   const uint diff_top    = state.get_lod_diff_level(0);
+                                   const uint diff_right  = state.get_lod_diff_level(1);
+                                   const uint diff_bottom = state.get_lod_diff_level(2);
+                                   const uint diff_left   = state.get_lod_diff_level(3);
+                                   
+                                   if (unlikely(diff_top))
+                                   {
+                                     const uint index = (i>>diff_top)<<diff_top;
+                                     const Vec3f p = gridPos[index];
+                                     sub_group_barrier();
+                                     if (i>0 && i<8)
+                                       gridPos[i] = p; 
+                                   }
+                                   if (unlikely(diff_right))
+                                   {
+                                     const uint index = (i>>diff_right)<<diff_right;
+                                     const Vec3f p = gridPos[index*9+8];
+                                     if (i>0 && i<8)
+                                       gridPos[i*9+8] = p; 
+                                   }
+                                   if (unlikely(diff_bottom))
+                                   {
+                                     const uint index = (i>>diff_bottom)<<diff_bottom;
+                                     const Vec3f p = gridPos[8*9+index];
+                                     if (i>0 && i<8)
+                                       gridPos[8*9+i] = p;                                  
+                                   }
+                                   if (unlikely(diff_left))
+                                   {
+                                     const uint index = (i>>diff_left)<<diff_left;
+                                     const Vec3f p = gridPos[index*9];
+                                     if (i>0 && i<8)
+                                       gridPos[i*9] = p;                                 
+                                   }                                  
+                                 }
+
+
+                                 /* ---- continous LOD support ---- */
+                                 if (unlikely(state.blend))
+                                 {
+                                   sub_group_barrier();
+
+                                   const uint x = subgroupLocalID;
+#if 0
+                                   const uint diff_top    = state.get_lod_diff_level(0);
+                                   const uint diff_right  = state.get_lod_diff_level(1);
+                                   const uint diff_bottom = state.get_lod_diff_level(2);
+                                   const uint diff_left   = state.get_lod_diff_level(3);
+                                 
+                                   const uint sy = diff_top ? 1 : 0; 
+                                   const uint ey = diff_bottom ? 7 : 8; 
+                                   const uint sx = diff_left ? 1 : 0; 
+                                   const uint ex = diff_right ? 7 : 8;
 #else
-                                 const uint sy = (state.flags & TOP_BORDER) ? 1 : 0; 
-                                 const uint ey = (state.flags & BOTTOM_BORDER) ? 7 : 8; 
-                                 const uint sx = (state.flags & LEFT_BORDER) ? 1 : 0; 
-                                 const uint ex = (state.flags & RIGHT_BORDER) ? 7 : 8;
+                                   const uint sy = (state.flags & TOP_BORDER) ? 1 : 0; 
+                                   const uint ey = (state.flags & BOTTOM_BORDER) ? 7 : 8; 
+                                   const uint sx = (state.flags & LEFT_BORDER) ? 1 : 0; 
+                                   const uint ex = (state.flags & RIGHT_BORDER) ? 7 : 8;
                                  
 #endif                                 
                                  
-                                 if (x>=sx && x<=ex)
-                                   for (uint y=sy;y<=ey;y++)
-                                   {
-                                     uint state_blend = state.blend;
-                                     const float blend_factor = (float)state_blend * 1.0f / 255.0f;                                     
-                                     
-                                     uint blend_x = x + ((x < 4) ? 1 : -1);
-                                     uint blend_y = y + ((y < 4) ? 1 : -1);
-                                     blend_x = (x%2) ? blend_x : x;
-                                     blend_y = (y%2) ? blend_y : y;
-                                     if (blend_x != x || blend_y != y)
+                                   if (x>=sx && x<=ex)
+                                     for (uint y=sy;y<=ey;y++)
                                      {
-                                       const Vec3f blend_v = lerp(gridPos[y*9+x],gridPos[blend_y*9+blend_x],blend_factor);
-                                       gridPos[y*9+x] = blend_v;
+                                       uint state_blend = state.blend;
+                                       const float blend_factor = (float)state_blend * 1.0f / 255.0f;                                     
+                                     
+                                       uint blend_x = x + ((x < 4) ? 1 : -1);
+                                       uint blend_y = y + ((y < 4) ? 1 : -1);
+                                       blend_x = (x%2) ? blend_x : x;
+                                       blend_y = (y%2) ? blend_y : y;
+                                       if (blend_x != x || blend_y != y)
+                                       {
+                                         const Vec3f blend_v = lerp(gridPos[y*9+x],gridPos[blend_y*9+blend_x],blend_factor);
+                                         gridPos[y*9+x] = blend_v;
+                                       }
                                      }
-                                   }
-                                 sub_group_barrier();                                                                      
-                               }
+                                   sub_group_barrier();                                                                      
+                                 }
                                
 
                               
-                               /* --------------------------------- */
+                                 /* --------------------------------- */
                                
-                               for (uint rows=0;rows<4;rows++,leaf+=16,node+=3)
-                               {
-                                 const uint x = sx; 
-                                 const uint y = sy + 2*rows;
-                                 const Vec3f p0 = gridPos[9*(y+0)+(x+0)];
-                                 const Vec3f p1 = gridPos[9*(y+0)+(x+1)];
-                                 const Vec3f p2 = gridPos[9*(y+1)+(x+1)];
-                                 const Vec3f p3 = gridPos[9*(y+1)+(x+0)];
+                                 for (uint rows=0;rows<4;rows++,leaf+=16,node+=3)
+                                 {
+                                   const uint x = sx; 
+                                   const uint y = sy + 2*rows;
+                                   const Vec3f p0 = gridPos[9*(y+0)+(x+0)];
+                                   const Vec3f p1 = gridPos[9*(y+0)+(x+1)];
+                                   const Vec3f p2 = gridPos[9*(y+1)+(x+1)];
+                                   const Vec3f p3 = gridPos[9*(y+1)+(x+0)];
 
-                                 const uint geomID = lcgID;
-                                 const uint primID = (ID << RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT) | 2*(y*RTC_LOSSY_COMPRESSED_GRID_QUAD_RES+x) ; //y*8+x; 
+                                   const uint geomID = lcgID;
+                                   const uint primID = (ID << RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT) | 2*(y*RTC_LOSSY_COMPRESSED_GRID_QUAD_RES+x) ; //y*8+x; 
 
-                                 leaf[subgroupLocalID] = QuadLeafData( p0,p1,p3,p2, 3,2,1, 0, geomID, primID, primID+1, GeometryFlags::OPAQUE, -1);
+                                   leaf[subgroupLocalID] = QuadLeafData( p0,p1,p3,p2, 3,2,1, 0, geomID, primID, primID+1, GeometryFlags::OPAQUE, -1);
                                  
-                                 gpu::AABB3f quad_bounds( to_float3(p0) );
-                                 quad_bounds.extend( to_float3(p1) );
-                                 quad_bounds.extend( to_float3(p2) );
-                                 quad_bounds.extend( to_float3(p3) );
+                                   gpu::AABB3f quad_bounds( to_float3(p0) );
+                                   quad_bounds.extend( to_float3(p1) );
+                                   quad_bounds.extend( to_float3(p2) );
+                                   quad_bounds.extend( to_float3(p3) );
                                  
-                                 if (blockID == 0)
-                                   local_bounds[rows*3+0] = quad_bounds.sub_group_reduce();
-                                 else if (blockID == 1)
-                                   local_bounds[rows*3+1] = quad_bounds.sub_group_reduce();
-                                 else if (blockID == 2)
-                                   local_bounds[rows*3+2] = quad_bounds.sub_group_reduce();
+                                   if (blockID == 0)
+                                     local_bounds[rows*3+0] = quad_bounds.sub_group_reduce();
+                                   else if (blockID == 1)
+                                     local_bounds[rows*3+1] = quad_bounds.sub_group_reduce();
+                                   else if (blockID == 2)
+                                     local_bounds[rows*3+2] = quad_bounds.sub_group_reduce();
                                  
+                                   sub_group_barrier();
+                                 
+                                   const uint offset = ((char*)(leaf+blockID*6) - (char*)(node+blockID))/64;                                 
+                                   writeNode_subgroup(local_node[blockID],offset,local_bounds[rows*3+blockID],quad_bounds,blockID == 2 ? 4 : 6,subgroupLocalID-blockID*6,NODE_TYPE_QUAD);
+                                   sub_group_barrier();                                 
+                                   copyCLs_from_SLM_to_GlobalMemory(node,local_node,3);                                 
+                                 }
+
                                  sub_group_barrier();
+
+                                 // === two internal full 6-wide nodes ===
+                                 node = (LocalNodeData_subgroup*)(dest + 1 * 64);
+                                 {
+                                   gpu::AABB3f child_bounds;
+                                   child_bounds.init();
                                  
-                                 const uint offset = ((char*)(leaf+blockID*6) - (char*)(node+blockID))/64;                                 
-                                 writeNode_subgroup(local_node[blockID],offset,local_bounds[rows*3+blockID],quad_bounds,blockID == 2 ? 4 : 6,subgroupLocalID-blockID*6,NODE_TYPE_QUAD);
-                                 sub_group_barrier();                                 
-                                 copyCLs_from_SLM_to_GlobalMemory(node,local_node,3);                                 
-                               }
+                                   if (subgroupLocalID < 12)
+                                     child_bounds = local_bounds[subgroupLocalID];                               
+                                   const gpu::AABB3f parent_bounds = child_bounds.sub_group_reduce();
+                                 
+                                   if (subgroupLocalID < 12)                               
+                                     writeNode_subgroup(local_node[blockID],blockID == 0 ? 2 : 7,parent_bounds,child_bounds,6,subgroupLocalID-blockID*6,NODE_TYPE_INTERNAL);
+                                   sub_group_barrier();
+                                   copyCLs_from_SLM_to_GlobalMemory(node,local_node,2);
+                                   sub_group_barrier();
 
-                               sub_group_barrier();
+                                   if (blockID == 0)
+                                     local_bounds[0] = child_bounds.sub_group_reduce();
+                                   else if (blockID == 1)
+                                     local_bounds[1] = child_bounds.sub_group_reduce();
+                                   sub_group_barrier();                                 
+                                 }
+                              
+                                 // === one internal 2-wide root node ===
 
-                               // === two internal full 6-wide nodes ===
-                               node = (LocalNodeData_subgroup*)(dest + 1 * 64);
-                               {
+                                 node = (LocalNodeData_subgroup*)(dest + 0 * 64);
                                  gpu::AABB3f child_bounds;
                                  child_bounds.init();
                                  
-                                 if (subgroupLocalID < 12)
+                                 if (subgroupLocalID < 2)
                                    child_bounds = local_bounds[subgroupLocalID];                               
                                  const gpu::AABB3f parent_bounds = child_bounds.sub_group_reduce();
                                  
-                                 if (subgroupLocalID < 12)                               
-                                   writeNode_subgroup(local_node[blockID],blockID == 0 ? 2 : 7,parent_bounds,child_bounds,6,subgroupLocalID-blockID*6,NODE_TYPE_INTERNAL);
+                                 if (subgroupLocalID < 2)                               
+                                   writeNode_subgroup(local_node[0],1,parent_bounds,child_bounds,2,subgroupLocalID,NODE_TYPE_INTERNAL);
                                  sub_group_barrier();
-                                 copyCLs_from_SLM_to_GlobalMemory(node,local_node,2);
-                                 sub_group_barrier();
-
-                                 if (blockID == 0)
-                                   local_bounds[0] = child_bounds.sub_group_reduce();
-                                 else if (blockID == 1)
-                                   local_bounds[1] = child_bounds.sub_group_reduce();
-                                 sub_group_barrier();                                 
-                               }
-                              
-                               // === one internal 2-wide root node ===
-
-                               node = (LocalNodeData_subgroup*)(dest + 0 * 64);
-                               gpu::AABB3f child_bounds;
-                               child_bounds.init();
-                                 
-                               if (subgroupLocalID < 2)
-                                 child_bounds = local_bounds[subgroupLocalID];                               
-                               const gpu::AABB3f parent_bounds = child_bounds.sub_group_reduce();
-                                 
-                               if (subgroupLocalID < 2)                               
-                                 writeNode_subgroup(local_node[0],1,parent_bounds,child_bounds,2,subgroupLocalID,NODE_TYPE_INTERNAL);
-                               sub_group_barrier();
-                               copyCLs_from_SLM_to_GlobalMemory(node,local_node,1);
+                                 copyCLs_from_SLM_to_GlobalMemory(node,local_node,1);
                                
-                               if (subgroupLocalID == 0)
-                               {
-                                 BVH2Ploc node;                             
-                                 node.initLeaf(lcgID,ID*SIZE_LCG_BVH/64,parent_bounds);                               
-                                 node.store(&bvh2[prim_type_offset + ID]);
-                               }
+                                 if (subgroupLocalID == 0)
+                                 {
+                                   BVH2Ploc node;                             
+                                   node.initLeaf(lcgID,ID*SIZE_LCG_BVH/64,parent_bounds);                               
+                                   node.store(&bvh2[prim_type_offset + ID]);
+                                 }
                                
-                             });
-          });
+                               });
+            });
         
-        gpu::waitOnEventAndCatchException(queue_event);
+          gpu::waitOnEventAndCatchException(queue_event);
         
-        if (unlikely(verbose))
-          iteration_time += gpu::getDeviceExecutionTiming(queue_event);
-        //PRINT( gpu::getDeviceExecutionTiming(queue_event) );
-#endif        
+          if (unlikely(verbose))
+            iteration_time += gpu::getDeviceExecutionTiming(queue_event);
+          //PRINT( gpu::getDeviceExecutionTiming(queue_event) );
+          numTotalLCGs += geom->numLCGs;          
+        }
       }
     }
-
-    return numLCGs;
+    return numTotalLCGs;
   }
    
 
