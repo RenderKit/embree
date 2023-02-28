@@ -9,6 +9,11 @@
 
 namespace embree {
 
+  __forceinline float3 to_float3(const Vec3f &v)
+  {
+    return float3(v.x,v.y,v.z);
+  }
+  
   enum {
     NO_BORDER     = 0,
     TOP_BORDER    = 1 << 0,
@@ -280,6 +285,8 @@ namespace embree {
     
     __forceinline CompressedVertex() {}
 
+    __forceinline CompressedVertex(const ushort x, const ushort y, const ushort z) : x(x), y(y), z(z) {}
+    
     __forceinline CompressedVertex(const Vec3f &org, const Vec3f &lower, const Vec3f &inv_diag)
     {
       const Vec3f norm_v = (org - lower)*inv_diag;
@@ -294,6 +301,49 @@ namespace embree {
       return lower + vv * (1.0f / RES_PER_DIM) * diag;
     }    
   };
+
+
+  __forceinline CompressedVertex min(const CompressedVertex &v0,  const CompressedVertex &v1)
+  {
+    return CompressedVertex(min(v0.x,v1.x),min(v0.y,v1.y),min(v0.z,v1.z));
+  }
+
+  __forceinline CompressedVertex max(const CompressedVertex &v0,  const CompressedVertex &v1)
+  {
+    return CompressedVertex(max(v0.x,v1.x),max(v0.y,v1.y),max(v0.z,v1.z));
+  }
+  
+  
+  struct CompressedAABB
+  {
+    CompressedVertex lower,upper;
+
+    __forceinline CompressedAABB() {}
+    
+    __forceinline CompressedAABB(const CompressedVertex &lower, const CompressedVertex &upper) : lower(lower), upper(upper) {}
+
+    __forceinline CompressedAABB(const CompressedVertex &v) : v(v) {}
+    
+    __forceinline void extend(const CompressedAABB &v)
+    {
+      lower = min(lower,v.lower);
+      upper = min(upper,v.upper);      
+    }
+
+    __forceinline void extend(const CompressedVertex &v)
+    {
+      lower = min(lower,v);
+      upper = min(upper,v);      
+    }
+    
+    __forceinline BBox3f decompress(const Vec3f &start, const Vec3f &diag) const
+    {
+      const Vec3f lower_f = lower.decompress(start,diag);
+      const Vec3f upper_f = upper.decompress(start,diag);
+      return BBox3f(lower_f,upper_f);
+    }    
+    
+  };  
 
   struct CompressedQuadIndices
   {

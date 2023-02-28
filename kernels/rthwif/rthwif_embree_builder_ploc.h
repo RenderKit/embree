@@ -1577,12 +1577,6 @@ namespace embree
       dest[4+i] = tmp[i*4+0] | (tmp[i*4+1]<<8) | (tmp[i*4+2]<<16) | (tmp[i*4+3]<<24);
   }
    
-
-   __forceinline float3 to_float3(const Vec3f &v)
-   {
-     return float3(v.x,v.y,v.z);
-   }
-
    struct __aligned(64) LocalNodeData_subgroup { 
      uint lower[4];
      uint8_t tmp[48];
@@ -1763,7 +1757,6 @@ namespace embree
                                NodeType node_type = NODE_TYPE_QUAD;
                                while(numPrims > BVH_BRANCHING_FACTOR)
                                {
-#if 1                                 
                                  for (uint i=subgroupLocalID;i<numNodes;i+=subgroupSize)
                                  {
                                    gpu::AABB3f nodeBounds;
@@ -1779,35 +1772,6 @@ namespace embree
                                    sub_group_barrier();                                   
                                    clusterPrimBounds[i] = nodeBounds;
                                  }
-#else
-                                 for (uint j=0;j<numNodes;j+=2)
-                                 {
-                                   const uint subgroupBlockID = subgroupLocalID / 8;
-                                   const uint subgroupLocalBlockID = min((uint)subgroupLocalID % 8,(uint)BVH_BRANCHING_FACTOR-1);
-                                   const uint i = min((j+subgroupBlockID),numNodes-1);
-                                   const uint offset = i*BVH_BRANCHING_FACTOR;
-                                   const uint index = min(offset+subgroupLocalBlockID,numPrims-1);                                   
-                                   const gpu::AABB3f nodeBounds = clusterPrimBounds[index];
-                                   const gpu::AABB3f rootBounds = nodeBounds.sub_group_reduce();
-                                   const uint numChildren = min(numPrims-offset,(uint)BVH_BRANCHING_FACTOR);
-                                   char *dest = &cur[i*64];
-                                   char *local_dest = (char*)&clusterPrimBounds[offset];
-                                   sub_group_barrier();                                   
-                                   writeNode_subgroup(*(LocalNodeData_subgroup*)dest,((int64_t)&prev[64*offset]-(int64_t)dest)/64,rootBounds,nodeBounds,numChildren,subgroupLocalBlockID,node_type);
-                                   sub_group_barrier();
-#if 0                                   
-                                   for (uint c=0;c<2;c++)
-                                   {
-                                     uint* destCopy = sub_group_broadcast((uint*)dest,c*8); 
-                                     uint* sourceCopy = sub_group_broadcast((uint*)local_dest,c*8); 
-                                     const uint v = sourceCopy[subgroupLocalID]; 
-                                     sub_group_store(destCopy,v);                                      
-                                   }
-                                   sub_group_barrier();
-#endif                                   
-                                   clusterPrimBounds[i] = rootBounds;
-                                 }                                 
-#endif                                 
                                  sub_group_barrier();
                                  
                                  node_type = NODE_TYPE_INTERNAL;
