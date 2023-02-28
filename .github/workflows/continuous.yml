@@ -582,7 +582,7 @@ jobs:
       - linux-DG2-JIT-INTERNAL-test
       - linux-DG2-JIT-PUBLIC-test
       - linux-ATSM-JIT-PUBLIC-test
-      - linux-DG2-JIT-EMBARGO-test
+      - linux-DG2-JIT-EMBARGO
       - linux-DG2-JIT-PUBLIC-ICX-test
       - linux-PVC-1T-JIT-INTERNAL-test
       - linux-PVC-2T-JIT-INTERNAL-test
