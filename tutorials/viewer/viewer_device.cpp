@@ -9,7 +9,7 @@ RTCScene g_scene = nullptr;
 extern "C" bool g_changed;
 TutorialData data;
 
-#if defined(EMBREE_SYCL_TUTORIAL) && defined(USE_SPECIALIZATION_CONSTANTS)
+#if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION) && defined(USE_SPECIALIZATION_CONSTANTS)
 const sycl::specialization_id<RTCFeatureFlags> spec_feature_mask;
 #endif
 
@@ -294,7 +294,7 @@ extern "C" void renderFrameStandard (int* pixels,
                           const float time,
                           const ISPCCamera& camera)
 {
-#if defined(EMBREE_SYCL_TUTORIAL)
+#if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION)
   TutorialData ldata = data;
 
 #if defined(USE_SPECIALIZATION_CONSTANTS)

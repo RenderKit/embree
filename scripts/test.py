@@ -39,44 +39,6 @@ def fix_cmake_paths():
   with open('build/CMakeCache.txt', 'w') as file:
       file.write(file_content)
 
-def get_dpcpp_and_gfx_version(config, compiler, OS):
-
-  if OS == "windows":
-    DPCPP_VERSION_IDENTIFIER = "DPCPP_VERSION_WIN"
-    GFX_VERSION_IDENTIFIER = "GFX_VERSION_WIN"
-  else:
-    DPCPP_VERSION_IDENTIFIER = "DPCPP_VERSION_LINUX"
-    GFX_VERSION_IDENTIFIER = "GFX_VERSION_LINUX"
-
-  if ("gfx" in config):
-    GFX_VERSION_IDENTIFIER = GFX_VERSION_IDENTIFIER + "_" + config["gfx"]
-  else:
-    GFX_VERSION_IDENTIFIER = GFX_VERSION_IDENTIFIER + "_INTERNAL"
-    
-  DPCPP_VERSION = ""
-  if (compiler[5:] != ""):
-    DPCPP_VERSION = compiler[6:] # [6:] to parse dpcpp/
-  else:
-    # if DPCPP_VERSION is not set explicitly read version from .ci-env.yaml file
-    with open(".ci-env.yaml") as f:
-      for line in f:
-        line = line.strip()
-        if not line.startswith(DPCPP_VERSION_IDENTIFIER):
-          continue
-        key, value = line.split(":", 1)
-        DPCPP_VERSION = value.strip()
-
-  # read version from .ci-env.yaml file
-  with open(".ci-env.yaml") as f:
-    for line in f:
-      line = line.strip()
-      if not line.startswith(GFX_VERSION_IDENTIFIER):
-        continue
-      key, value = line.split(":", 1)
-      GFX_VERSION = value.strip()
-
-  return DPCPP_VERSION, GFX_VERSION
-
 # detect platform
 if sys.platform.startswith("win"):
   SEM_FAILCRITICALERRORS = 0x0001
@@ -157,7 +119,6 @@ def runConfig(config):
   #  env.append("module load cmake")
   compiler = config["compiler"]
   platform = config["platform"]
-  ispc_ext = "-vs2013"
   if OS == "windows":
     cmake_build_suffix = "-- /m /t:rebuild"
     ext = ""
@@ -167,23 +128,18 @@ def runConfig(config):
       conf.append("-G \"Visual Studio 16 2019\"")
       conf.append("-T \"V142\"")
       conf.append("-A \"x64\"")
-      ispc_ext = "-vs2015"
     elif (compiler == "V141"):
       conf.append("-G \"Visual Studio 15 2017"+ext+"\"")
       conf.append("-T \"V141\"")
-      ispc_ext = "-vs2015"
     elif (compiler == "ICC19-VC141"):
       conf.append("-G \"Visual Studio 15 2017"+ext+"\"")
       conf.append("-T \"Intel C++ Compiler 19.0\"")
-      ispc_ext = "-vs2015"
     elif (compiler == "ICC18-VC141"):
       conf.append("-G \"Visual Studio 15 2017"+ext+"\"")
       conf.append("-T \"Intel C++ Compiler 18.0\"")
-      ispc_ext = "-vs2015"
     elif (compiler == "V140"):
       conf.append("-G \"Visual Studio 14 2015"+ext+"\"")
       conf.append("-T \"V140\"")
-      ispc_ext = "-vs2015"
     elif (compiler == "V120"):
       conf.append("-G \"Visual Studio 12 2013"+ext+"\"")
       conf.append("-T \"V120\"")
@@ -193,15 +149,12 @@ def runConfig(config):
     elif (compiler == "ICC19-VC14"):
       conf.append("-G \"Visual Studio 14 2015"+ext+"\"")
       conf.append("-T \"Intel C++ Compiler 19.0\"")
-      ispc_ext = "-vs2015"
     elif (compiler == "ICC18-VC14"):
       conf.append("-G \"Visual Studio 14 2015"+ext+"\"")
       conf.append("-T \"Intel C++ Compiler 18.0\"")
-      ispc_ext = "-vs2015"
     elif (compiler == "ICC17-VC14"):
       conf.append("-G \"Visual Studio 14 2015"+ext+"\"")
       conf.append("-T \"Intel C++ Compiler 17.0\"")
-      ispc_ext = "-vs2015"
     elif (compiler == "ICC17-VC12"):
       conf.append("-G \"Visual Studio 12 2013"+ext+"\"")
       conf.append("-T \"Intel C++ Compiler 17.0\"")
@@ -218,46 +171,23 @@ def runConfig(config):
       conf.append("-G \"Visual Studio 16 2019\"")
       conf.append("-A "+platform)
       conf.append("-T \"LLVM_v142\"")
-      ispc_ext = "-vs2015"
     elif (compiler == "V141_CLANG"):
       conf.append("-G \"Visual Studio 15 2017"+ext+"\"")
       conf.append("-T \"v141_clang_c2\"")
-      ispc_ext = "-vs2015"
     elif (compiler.startswith("ICX")):
       cmake_build_suffix = ""
-      ispc_ext = "-vs2015"
       env.append('"'+ONE_API_PATH_WINDOWS+'\\'+compiler[3:]+'\\env\\vars.bat"')
       conf.append("-G Ninja -D CMAKE_CXX_COMPILER=icx -DCMAKE_C_COMPILER=icx")
     elif (compiler.startswith("dpcpp")):
-
       if os.environ["DPCPP_ROOT"] and os.environ["GFX_DRIVER_ROOT"] :
         dpcpp_dir = os.environ["DPCPP_ROOT"]
         gfx_dir = os.environ["GFX_DRIVER_ROOT"]
       else :
         print("Error DPCPP_ROOT or GFX_DRIVER_ROOT is not set")
         sys.exit(1)
-
       cmake_build_suffix=""
-      ispc_ext = "-vs2015"
-
-      conf.append("-G Ninja")
-      conf.append("-D CMAKE_CXX_COMPILER=clang++")
-      conf.append("-D CMAKE_C_COMPILER=clang")
-
-      sys.stderr.write("gfx_dir = "+gfx_dir+"\n")
-      sys.stderr.write("dpcpp_dir = "+dpcpp_dir+"\n")
-
-      env.append("call scripts\\vars.bat "+dpcpp_dir+" "+gfx_dir+"")
-      env.append("where clang++")
-
-      # set up backend
-      if "backend" in config: # opencl or level_zero
-        print("using "+config["backend"]+" backend")
-        env.append("set SYCL_DEVICE_FILTER="+config["backend"])
-      else:
-        print("using level_zero backend")
-        env.append("set SYCL_DEVICE_FILTER=level_zero")
-
+      env.append("call " + os.environ["DPCPP_ROOT"] + "\\startup.bat")
+      conf.append("-G Ninja -D CMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang")
     else:
       raise ValueError('unknown compiler: ' + compiler + '')
 
@@ -289,43 +219,6 @@ def runConfig(config):
     elif (compiler.startswith("DPCPP")):
       env.append("source "+NAS+"/intel/"+compiler[5:]+"/compiler/latest/env/vars.sh")
       conf.append("-D CMAKE_CXX_COMPILER=dpcpp -D CMAKE_C_COMPILER=icx")
-    elif (compiler.startswith("ICC")):
-      conf.append("-D CMAKE_CXX_COMPILER="+NAS+"/intel/"+compiler[3:]+"/bin/icpc -D CMAKE_C_COMPILER="+NAS+"/intel/"+compiler[3:]+"/bin/icc")
-    elif (compiler.startswith("CLANG")):
-      conf.append("-D CMAKE_CXX_COMPILER="+NAS+"/clang/v"+compiler[5:]+"/bin/clang++ -D CMAKE_C_COMPILER="+NAS+"/clang/v"+compiler[5:]+"/bin/clang")
-    elif (compiler.startswith("dpcpp")):
-
-      if os.environ["DPCPP_ROOT"] and os.environ["GFX_DRIVER_ROOT"] :
-        dpcpp_dir = os.environ["DPCPP_ROOT"]
-        gfx_dir = os.environ["GFX_DRIVER_ROOT"] + "/install"
-      else :
-        print("Error DPCPP_ROOT or GFX_DRIVER_ROOT is not set")
-        sys.exit(1)
-
-      # set up backend
-      if "backend" in config: # opencl or level_zero
-        print("using "+config["backend"]+" backend")
-        env.append("export SYCL_DEVICE_FILTER="+config["backend"])
-      else:
-        print("using level_zero backend")
-        env.append("export SYCL_DEVICE_FILTER=level_zero")
-
-      conf.append("-D CMAKE_CXX_COMPILER="+dpcpp_dir+"/bin/clang++")
-      conf.append("-D CMAKE_C_COMPILER="  +dpcpp_dir+"/bin/clang")
-
-      sys.stderr.write("gfx_dir = "+gfx_dir+"\n")
-      sys.stderr.write("dpcpp_dir = "+dpcpp_dir+"\n")
-        
-      env.append("export PATH="+dpcpp_dir+"/bin:"+dpcpp_dir+"/bin-llvm:"+gfx_dir+"/usr/bin:"+gfx_dir+"/usr/local/bin:$PATH")
-      env.append("export CPATH="+dpcpp_dir+"/include/sycl:" + dpcpp_dir+"/include")
-      LD_LIBRARY_PATH_SYCL=dpcpp_dir+"/lib:"+dpcpp_dir+"/compiler/lib/intel64_lin:"+gfx_dir+"/usr/lib/x86_64-linux-gnu:" + gfx_dir+"/usr/local/lib"
-      os.environ["LD_LIBRARY_PATH_SYCL"]=LD_LIBRARY_PATH_SYCL
-      env.append("export LD_LIBRARY_PATH="+LD_LIBRARY_PATH_SYCL+":$LD_LIBRARY_PATH")
-      env.append("export LIBRARY_PATH="+dpcpp_dir+"/lib:$LIBRARY_PATH")
-      env.append("export OCL_ICD_FILENAMES="+gfx_dir+"/usr/lib/x86_64-linux-gnu/intel-opencl/libigdrcl.so"+":"+gfx_dir+"/usr/local/lib/intel-opencl/libigdrcl.so")
-      env.append("export OCL_ICD_VENDORS="+gfx_dir+"/etc/OpenCL/vendors/intel.icd")
-      env.append("export OPENCL_INCLUDE_DIR="+dpcpp_dir+"/include/sycl")
-      env.append("export OPENCL_LIBRARY="+dpcpp_dir+"/lib/libOpenCL.so")
     else:
       raise ValueError('unknown compiler: ' + compiler + '')
 
@@ -360,7 +253,7 @@ def runConfig(config):
         elif OS == "macosx":
           conf.append("-D EMBREE_ISPC_EXECUTABLE="+NAS + "/ispc/"+ispc_version+"-osx/"+bin_folder+"ispc")
         elif OS == "windows":
-          conf.append("-D EMBREE_ISPC_EXECUTABLE="+NAS+"\\ispc\\"+ispc_version+"-windows"+ispc_ext+"\\"+bin_folder+"ispc.exe")
+          conf.append("-D EMBREE_ISPC_EXECUTABLE="+NAS+"\\ispc\\"+ispc_version+"-windows\\"+bin_folder+"ispc.exe")
         else:
           sys.stderr.write("unknown operating system "+OS)
           sys.exit(1)
@@ -541,6 +434,7 @@ def runConfig(config):
       sys.stderr.write("unknown package mode: "+OS+":"+config["package"])
       sys.exit(1)
 
+<<<<<<< HEAD
   if OS == "linux" and compiler.startswith("dpcpp"):
     # some additional debug output of gfx and dpcpp version
     which_clang = str(subprocess.check_output(escape(" && ".join(env)) + " && which clang++", shell=True, stderr=subprocess.PIPE).decode('utf-8').rstrip("\n"))
@@ -549,6 +443,8 @@ def runConfig(config):
     which_ocloc = str(subprocess.check_output(escape(" && ".join(env)) + " && which ocloc", shell=True, stderr=subprocess.PIPE).decode('utf-8').rstrip("\n"))
     print("DEBUG - GFX version:", gfx_dir, " - which ocloc: ", which_ocloc)
 
+=======
+>>>>>>> carsten/embree4_gpubuild_merge_devel_rtas_support
   if rtcore:
     conf.append("-D EMBREE_CONFIG="+(",".join(rtcore)))
 

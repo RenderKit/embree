@@ -804,7 +804,6 @@ namespace embree
       {
         double singleWG_time = 0.0f;
         singleWGBuild(gpu_queue, globals, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, numPrims, SEARCH_RADIUS_SHIFT, singleWG_time, verbose1);
-        //PRINT((float)singleWG_time);
         timer.add_to_device_timer(BuildTimer::BUILD,singleWG_time);
         numPrims = 1;
       }
@@ -816,8 +815,6 @@ namespace embree
         device_ploc_iteration_time = 0.0f;
         iteratePLOC(gpu_queue,globals,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,sync_mem,numPrims,NUM_ACTIVE_LARGE_WGS,host_device_tasks,SEARCH_RADIUS_SHIFT,device_ploc_iteration_time,ratio < BOTTOM_LEVEL_RATIO,verbose1);
         timer.add_to_device_timer(BuildTimer::BUILD,device_ploc_iteration_time);
-
-        
         const uint new_numPrims = *host_device_tasks;
         assert(new_numPrims < numPrims);
         ratio = (float)(numPrims-new_numPrims) / numPrims * 100.0f;
@@ -827,7 +824,6 @@ namespace embree
       if (unlikely(verbose2))
         PRINT5(iteration,numPrims,ratio,(float)device_ploc_iteration_time,(float)timer.get_accum_device_timer(BuildTimer::BUILD));
     }
-    
     timer.stop(BuildTimer::BUILD);        
 
     if (unlikely(verbose2))

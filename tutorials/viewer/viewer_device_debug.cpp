@@ -18,7 +18,7 @@ extern "C" bool g_changed;
 
 extern "C" float g_debug;
 
-#if defined(EMBREE_SYCL_TUTORIAL)
+#if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION)
 static const sycl::specialization_id<RTCFeatureFlags> spec_feature_mask;
 #endif
 
@@ -384,7 +384,7 @@ Vec3fa renderPixelAOShader(const DebugShaderData& data, float x, float y, const 
   return col * intensity;
 }
 
-#if defined(EMBREE_SYCL_TUTORIAL)
+#if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION)
 RENDER_FRAME_FUNCTION_SYCL(DebugShader)
 RENDER_FRAME_FUNCTION_SYCL(AOShader)
 #else

@@ -464,23 +464,23 @@ namespace embree
 
   __forceinline const RTHWIF_TRIANGLE_INDICES &getTriangleDesc(const RTHWIF_GEOMETRY_TRIANGLES_DESC& mesh, const uint triID)
   {
-    return *(RTHWIF_TRIANGLE_INDICES*)((char*)mesh.triangleBuffer + mesh.triangleStride * triID);    
+    return *(RTHWIF_TRIANGLE_INDICES*)((char*)mesh.triangleBuffer + mesh.triangleStride * uint64_t(triID));    
   }
 
   __forceinline const RTHWIF_QUAD_INDICES &getQuadDesc(const RTHWIF_GEOMETRY_QUADS_DESC& mesh, const uint triID)
   {
-    return *(RTHWIF_QUAD_INDICES*)((char*)mesh.quadBuffer + mesh.quadStride * triID);    
+    return *(RTHWIF_QUAD_INDICES*)((char*)mesh.quadBuffer + mesh.quadStride * uint64_t(triID));    
   }
     
   __forceinline Vec3f getVec3f(const RTHWIF_GEOMETRY_TRIANGLES_DESC& mesh, const uint vtxID)
   {
-    return *(Vec3f*)((char*)mesh.vertexBuffer + mesh.vertexStride * vtxID);
+    return *(Vec3f*)((char*)mesh.vertexBuffer + mesh.vertexStride * uint64_t(vtxID));
     
   }
 
   __forceinline Vec3f getVec3f(const RTHWIF_GEOMETRY_QUADS_DESC& mesh, const uint vtxID)
   {
-    return *(Vec3f*)((char*)mesh.vertexBuffer + mesh.vertexStride * vtxID);
+    return *(Vec3f*)((char*)mesh.vertexBuffer + mesh.vertexStride * uint64_t(vtxID));
     
   }
     
@@ -2282,14 +2282,15 @@ namespace embree
   }
 
 
-  __forceinline uint getNewClusterIndexCreateBVH2Node(const uint localID, const uint ID, const uint maxID, const uint local_window_start, const gpu::AABB3f *const cached_bounds, const uint *const cached_neighbor,const uint *const cached_clusterID, BVH2Ploc *const bvh2, uint *const bvh2_index_allocator, BVH2SubTreeState *const bvh2_subtree_size, const uint SEARCH_RADIUS_SHIFT)
+  __forceinline uint getNewClusterIndexCreateBVH2Node(const uint localID, const uint ID, const uint maxID, const uint local_window_start, const uint *const cluster_index_source, const gpu::AABB3f *const cached_bounds, const uint *const cached_neighbor,const uint *const cached_clusterID, BVH2Ploc *const bvh2, uint *const bvh2_index_allocator, BVH2SubTreeState *const bvh2_subtree_size, const uint SEARCH_RADIUS_SHIFT)
   {
     const uint decode_mask =  (((uint)1<<(SEARCH_RADIUS_SHIFT+1))-1);
               
     uint new_cluster_index = -1;
     if (ID < maxID)
-    {                
-      new_cluster_index = cached_clusterID[ID-local_window_start]; //cluster_index_source[ID];
+    {
+      new_cluster_index = cluster_index_source[ID]; // prevents partial writes later 
+      //new_cluster_index = cached_clusterID[ID-local_window_start]; //cluster_index_source[ID];
 #if EQUAL_DISTANCES_WORKAROUND == 1          
       uint n_i     = decodeRelativeOffset(ID -local_window_start,cached_neighbor[ID -local_window_start] & decode_mask,  ID) + local_window_start;
       uint n_i_n_i = decodeRelativeOffset(n_i-local_window_start,cached_neighbor[n_i-local_window_start] & decode_mask, n_i) + local_window_start;
@@ -2394,7 +2395,7 @@ namespace embree
               /* --- merge valid nearest neighbors and create bvh2 node --- */
               /* ---------------------------------------------------------- */
 
-              const uint new_cluster_index = getNewClusterIndexCreateBVH2Node(localID,ID,maxID,local_window_start,
+              const uint new_cluster_index = getNewClusterIndexCreateBVH2Node(localID,ID,maxID,local_window_start,cluster_index_source,
                                                                               cached_bounds.get_pointer(),cached_neighbor.get_pointer(),cached_clusterID.get_pointer(),
                                                                               bvh2,bvh2_index_allocator,bvh2_subtree_size,
                                                                               SEARCH_RADIUS_SHIFT);
@@ -2558,7 +2559,7 @@ namespace embree
         /* --- merge valid nearest neighbors and create bvh2 node --- */
         /* ---------------------------------------------------------- */
 
-        const uint new_cluster_index = getNewClusterIndexCreateBVH2Node(localID,ID,maxID,local_window_start,
+        const uint new_cluster_index = getNewClusterIndexCreateBVH2Node(localID,ID,maxID,local_window_start,cluster_index_source,
                                                                         cached_bounds,cached_neighbor,cached_clusterID,
                                                                         bvh2,bvh2_index_allocator,bvh2_subtree_size,
                                                                         SEARCH_RADIUS_SHIFT);
