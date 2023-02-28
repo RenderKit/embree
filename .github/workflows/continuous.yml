@@ -226,9 +226,29 @@ jobs:
         scripts/test.py test
 
   ########################################
+  # Linux ATS-M
+  ########################################
+
+  linux-ATSM-JIT-PUBLIC-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    needs: ["linux-DG2-JIT-PUBLIC"]
+    with:
+      image: embree/ubuntu:22.04
+      options: --device=/dev/dri:/dev/dri
+      runs-on: '[ "Linux", "docker", "atsm" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-public.env
+      artifact-in: linux-DG2-JIT-PUBLIC
+      cmd: |
+        scripts/test.py test --debug
+        scripts/test.py test
+
+
+  ########################################
   # Linux PVC
   ########################################
-  
+
   linux-PVC-JIT-INTERNAL:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
@@ -348,6 +368,19 @@ jobs:
         python scripts/test.py build
         python scripts/test.py test
 
+  windows-DG2-JIT-INTERNAL-TBB2020_3:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@devel
+    needs: [setup_gfx, setup_dpcpp]
+    with:
+      runs-on: '[ "Windows", "NAS", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
+      cmd: |
+        python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_SYCL_SUPPORT:ON sycl:none intensity:3 tasking:TBB2020.3
+        python scripts/test.py build
+        python scripts/test.py test
+
   ################################################################################
   ################################################################################
   # CPU tests
@@ -368,7 +401,7 @@ jobs:
         python scripts/test.py configure platform:x64 build:Debug compiler:ICX2023.0.0 ispc:ispc1.12.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.2.0 intensity:2 maxinstancelevelcount:4
         python scripts/test.py build
         python scripts/test.py test
- 
+
   linux-fedora32-GCC:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@devel
@@ -469,7 +502,7 @@ jobs:
         python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.17.0 isa:SSE2 tasking:TBB2020.2 intensity:2 maxinstancelevelcount:8
         python scripts/test.py build
         python scripts/test.py test
-  
+
   windows-V142:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@devel
@@ -548,13 +581,15 @@ jobs:
     needs:
       - linux-DG2-JIT-INTERNAL-test
       - linux-DG2-JIT-PUBLIC-test
-      - linux-DG2-JIT-EMBARGO-test
+      - linux-ATSM-JIT-PUBLIC-test
+      - linux-DG2-JIT-EMBARGO
       - linux-DG2-JIT-PUBLIC-ICX-test
       - linux-PVC-1T-JIT-INTERNAL-test
       - linux-PVC-2T-JIT-INTERNAL-test
       - windows-DG2-JIT-INTERNAL
       - windows-DG2-JIT-PUBLIC
       - windows-DG2-JIT-PUBLIC-ICX
+      - windows-DG2-JIT-INTERNAL-TBB2020_3
       - linux-fedora29_ICX
       - linux-fedora32-GCC
       - linux-fedora32_ICX
