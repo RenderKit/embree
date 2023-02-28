@@ -11,10 +11,233 @@
 
    \brief This file contains a Level Zero API extension to build ray
    tracing acceleration structures to be used with an OpenCL ray
-   tracing API extension
-   (https://github.com/intel-innersource/libraries.graphics.renderkit.embree/blob/master/kernels/rthwif/rthwif_production_igc.h).
+   tracing API extension.
 
- */
+
+   Ray Tracing Acceleration Structure Build API
+   ============================================
+
+   The L0 ray tracing acceleration structure build API provides
+   functionality to build acceleration structures for 3D scenes on the
+   host, which can get used for ray tracing on GPU devices.
+
+   It is the users responsibility to manage the acceleration structure
+   buffer allocation and deallocation. The required size of the
+   accleration structure buffer can be queried with the
+   zeRaytracingGetAccelSizeExt function and the acceleration structure
+   an get build on the host using the zeRaytracingBuildAccelExt
+   function.
+
+   To build an acceleration structure one first has to setup a scene
+   that consists of multiple geometry descriptors, such as
+   ze_raytracing_geometry_triangles_ext_desc_t for triangle meshes,
+   ze_raytracing_geometry_quads_ext_desc_t for quad meshes,
+   ze_raytracing_geometry_aabbs_fptr_ext_desc_t for procedural
+   primitives with attached axis aligned bounding box, and
+   ze_raytracing_geometry_instance_ext_desc_t for instances of other
+   acceleration structures.
+
+   The followign example creates an
+   ze_raytracing_geometry_triangles_ext_desc_t descriptor to specify
+   a triangle mesh with triangles indices and vertices stored
+   inside two vectors:
+
+     ze_raytracing_geometry_triangles_ext_desc_t mesh;
+     memset(&mesh,0,sizeof(mesh));
+     mesh.geometryType = ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES;
+     mesh.geometryFlags = ZE_RAYTRACING_GEOMETRY_EXT_FLAG_OPAQUE;
+     mesh.geometryMask = 0xFF;
+
+     mesh.triangleFormat = ZE_RAYTRACING_FORMAT_EXT_TRIANGLE_INDICES_UINT32;
+     mesh.triangleCount = triangles.size();
+     mesh.triangleStride = 12;
+     mesh.triangleBuffer = triangles.data();
+
+     mesh.vertexFormat = ZE_RAYTRACING_FORMAT_EXT_FLOAT3;
+     mesh.vertexCount = vertices.size();
+     mesh.vertexStride = 12;
+     mesh.vertexBuffer = vertices.data();
+   
+  The specified geometry flag ZE_RAYTRACING_GEOMETRY_EXT_FLAG_OPAQUE
+  enables a fast mode where traveral does not return to the caller of
+  ray tracing for each hit. The proper data formats of the triangle
+  and vertex buffer is specified, including the strides, and pointer
+  to first elements in these buffers.
+  
+  To refer to multiple of these geometries that make a scene, pointers to
+  these descriptors can be put into an array as follows:
+
+    std::vector<ze_raytracing_geometry_ext_desc_t*> geometries;
+    geometries.push_back((ze_raytracing_geometry_ext_desc_t*)&mesh);
+    geometries.push_back((ze_raytracing_geometry_ext_desc_t*)&mesh1);
+    ...
+
+  This completes the definition of the geometry for the scene to
+  construct the acceleration structure for. To initiate the BVH build
+  one first fills the ze_raytracing_build_accel_ext_desc_t structure
+  with all arguments required for the acceleration structure build as
+  in the following example:
+    
+    ze_raytracing_build_accel_ext_desc_t build_desc;
+    memset(&build_desc,0,sizeof(build_desc));
+    build_desc.stype = ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC;
+    build_desc.pNext = nullptr;
+    build_desc.hDevice = hDevice;
+    build_desc.geometries = geometries.data(); 
+    build_desc.numGeometries = geometries.size();
+    build_desc.quality = ZE_RAYTRACING_BUILD_QUALITY_EXT_MEDIUM;
+    build_desc.flags = ZE_RAYTRACING_BUILD_EXT_FLAG_NONE;
+
+  Besides just passing a pointer to the geometries array this sets
+  some default build flags for a medium quality acceleration
+  structure. Next the application has to query the buffer sizes
+  required for the acceleration strucuture and scratch memory required
+  for the build like in this example:
+
+    ze_raytracing_accel_size_ext_properties_t accel_size;
+    memset(&accel_size,0,sizeof(accel_size));
+    accel_size.stype = ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES;
+    accel_size.pNext = nullptr;
+
+    ze_result_t result = zeRaytracingGetAccelSizeExt( &build_desc, &accel_size );
+    assert(result == ZE_RESULT_SUCCESS);
+
+  This queries the buffer sizes for the build operation specified in
+  the provided build descriptor. Note that the sizes are only correct
+  for the provided build descriptor, thus if parameters such as the
+  build quality get changed for the actual build, calculated sizes are
+  invalid.
+
+  Now we allocate the scratch buffer:
+
+    void* scratchBuffer = malloc(accel_size.scratchBufferBytes);
+
+  and the acceleration structure buffer using the worst cast
+  estimates:
+  
+    ze_raytracing_mem_alloc_ext_desc_t rt_desc;
+    rt_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_RAYTRACING_EXT_PROPERTIES;
+    rt_desc.pNext = nullptr;
+    rt_desc.flags = 0;
+
+    ze_device_mem_alloc_desc_t device_desc;
+    device_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_MEM_ALLOC_DESC;
+    device_desc.pNext = &rt_desc;
+    device_desc.flags = ZE_DEVICE_MEM_ALLOC_FLAG_BIAS_CACHED;
+    device_desc.ordinal = 0;
+  
+    ze_host_mem_alloc_desc_t host_desc;
+    host_desc.stype = ZE_STRUCTURE_TYPE_HOST_MEM_ALLOC_DESC;
+    host_desc.pNext = nullptr;
+    host_desc.flags = ZE_HOST_MEM_ALLOC_FLAG_BIAS_CACHED;
+    
+    void* accelBuffer = nullptr;
+    ze_result_t result = zeMemAllocShared(hContext,
+                                          &device_desc, &host_desc,
+                                          accel_size.accelBufferWorstCaseBytes, 
+                                          ZE_RAYTRACING_ACCELERATION_STRUCTURE_ALIGNMENT_EXT,
+                                          hDevice,&accelBuffer);
+    assert(result == ZE_RESULT_SUCCESS);
+
+    
+  When using worst case estimate for the acceleration structure
+  buffer, the build of the acceleration structure is guaranteed not to
+  run out of memory.
+
+  To initiate the build operation we need to additionally specify the
+  just created buffers in the build descriptor:
+
+    build_desc.accelBuffer = accelBuffer;
+    build_desc.accelBufferBytes = accel_size.accelBufferWorstCaseBytes;
+
+    build_desc.scratchBuffer = scratchBuffer;
+    build_desc.scratchBufferBytes = accelsize.scratchBufferBytes;
+
+
+  Now a single threaded build on the host CPU can get initiated using
+  the zeRaytracingBuildAccelExt function:
+
+    ze_result_t result = zeRaytracingBuildAccelExt( &build_desc );    
+    assert(result == ZE_RESULT_SUCCESS);
+
+  When the build completes successfully the acceleration structure
+  buffer can get used as acceleration structure by the ray tracing
+  API.
+
+
+  Parallel Build
+  --------------
+
+  In order to speed up the build operation with multiple worker
+  thread, some parallel operation object can get attached to the build
+  and joined with application provided worker threads as in the
+  following example:
+
+     ze_raytracing_parallel_operation_ext_handle_t hParallelOperation;
+     ze_result_t result = zeRaytracingParallelOperationCreateExt(&hParallelOperation);
+     assert(result == ZE_RESULT_SUCCESS);
+
+     build_desc.parallelOperation = hParallelOperation;
+
+     result = zeRaytracingBuildAccelExt( &build_desc );    
+     assert(result == ZE_RESULT_RAYTRACING_EXT_OPERATION_DEFERRED);
+
+     uint32_t pMaxConcurrency = 0;
+     result = zeRaytracingParallelOperationGetMaxConcurrencyExt( hParallelOperation, &MaxConcurrency );
+     assert(result == ZE_RESULT_SUCCESS);
+
+     tbb::parallel_for(0u,pMaxConcurrency,1u,[&](uint32_t i) {
+       ze_result_t result = zeRaytracingParallelOperationJoinExt(hParallelOperation);
+       assert(result == ZE_RESULT_SUCCESS);
+     });
+     
+     result = zeRaytracingParallelOperationDestroyExt(hParallelOperation);
+     assert(result == ZE_RESULT_SUCCESS);
+
+
+   Conservative Acceleration Buffer Size
+   -------------------------------------
+
+   While using the conservative size estimate of the acceleration
+   structure guarantees a successfull build, the memory requirements
+   are larger than typically required. To reduce memory usage the
+   application can also use the expected acceleration buffer size and
+   re-try the build operation in case it ran out of memory. The
+   following code illustrates this concept:
+
+     void* accelBuffer = nullptr;
+     size_t accel_bytes = accel_size.accelBufferExpectedBytes;
+    
+     while (true)
+     {
+       accelBuffer = allocate_accel_buffer(accel_bytes);
+  
+       build_desc.accelBuffer = accelBuffer;
+       build_desc.accelBufferBytes = accel_bytes;
+       build_desc.accelBufferBytesOut = &accel_bytes;
+  
+       ze_result_t result = zeRaytracingBuildAccelExt( &build_desc );    
+       if (result == ZE_RESULT_SUCCESS) break;
+
+       assert(result == ZE_RESULT_RAYTRACING_EXT_RETRY_BUILD_ACCEL);
+       // accel_bytes got increased to a larger estimate for a next try
+
+       free_accel_buffer(accelBuffer);
+     }
+
+  The loop starts with the expected acceleration buffer size, for
+  which the build will mostly succeed. If the build runs out of memory
+  the ZE_RESULT_RAYTRACING_EXT_RETRY_BUILD_ACCEL result is returned
+  and the build can get re-tried with a larger acceleration structure
+  buffer.
+
+  The example above passes a pointer to the accel_bytes variable as
+  accelBufferBytesOut input to the build operation. This causes the
+  builder to write a larger acceleration structure size estimate to be
+  used in the next try into the accel_bytes variable. Alternatively,
+  the application can also increase the acceleration buffer size for
+  the next try by some percentage, or just use the worst case size for
+  a second try.
 
 
 /**
@@ -29,6 +252,7 @@ typedef enum _ze_result_t
   
   ZE_RESULT_RAYTRACING_EXT_RETRY_BUILD_ACCEL,    ///< acceleration structure build ran out of memory, app should re-try with more memory
   ZE_RESULT_RAYTRACING_EXT_OPERATION_DEFERRED,   ///< operation is deferred to a parallel operation
+  ZE_RESULT_RAYTRACING_EXT_ACCEL_INCOMPATIBLE,   ///< the tested devices have incompatible acceleration structures
   
 } ze_result_t;
 
@@ -92,7 +316,7 @@ ZE_APIEXPORT ze_result ZE_APICALL zeRaytracingParallelOperationDestroyExt( ze_ra
   \brief Returns the maximal number of threads that can join the parallel operation.
 */
 
-ZE_APIEXPORT ze_result ZE_APICALL zeRaytracingParallelOperationGetMaxConcurrencyExt( ze_raytracing_parallel_operation_ext_handle_t hParallelOperation, uint32_t* pMaxConcurency );
+ZE_APIEXPORT ze_result ZE_APICALL zeRaytracingParallelOperationGetMaxConcurrencyExt( ze_raytracing_parallel_operation_ext_handle_t hParallelOperation, uint32_t* pMaxConcurrency );
 
 
 /**
@@ -342,7 +566,7 @@ typedef struct _ze_raytracing_geometry_triangles_ext_desc_t  // 40 bytes
   void* triangleBuffer;                                 ///< pointer to array of triangle indices in specified format
   void* vertexBuffer;                                   ///< pointer to array of triangle vertices in specified format
   
-} ze_raytracing_raytracing_geometry_triangles_ext_desc_t;
+} ze_raytracing_geometry_triangles_ext_desc_t;
 
 
 /** 
@@ -380,7 +604,7 @@ typedef struct _ze_raytracing_geometry_quads_ext_desc_t // 40 bytes
   void* quadBuffer;                                 ///< pointer to an array of quad indices in specified format
   void* vertexBuffer;                               ///< pointer to an array of quad vertices in specified format
   
-} ze_raytracing_raytracing_geometry_quads_ext_desc_t;
+} ze_raytracing_geometry_quads_ext_desc_t;
 
 
 /**
@@ -519,7 +743,7 @@ typedef struct _ze_raytracing_accel_size_ext_properties_t
 
   /** [in,out][optional] must be null or a pointer to an extension-specific structure */
   void* pNext;                                    
-  
+
   /** 
       [out] The expected number of bytes required for the acceleration
       structure. When using an acceleration structure buffer of that
@@ -554,6 +778,12 @@ typedef struct _ze_raytracing_build_accel_ext_desc_t
 
   /** [in,out][optional] must be null or a pointer to an extension-specific structure */
   void* pNext;
+
+  /** [in] The device to build the acceleration structure for. The
+   * acceleration structure can also get used on other devices whose
+   * acceleration structure is compatible with the device specified
+   * here (see zeRaytracingAccelCompatibilityExt function). */
+  ze_device_handle_t hDevice;
   
   /** 
       [in] Array of pointers to geometry descriptors. This array and
@@ -721,4 +951,20 @@ ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingGetAccelSizeExt( const ze_raytra
  */
 
 ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingBuildAccelExt( const ze_raytracing_build_accel_ext_desc_t* args );
+
+
+/**
+
+  \brief Checks if the acceleration structure build for hDevice can be used on hDeviceOther.
+
+  \param hDevice: device the acceleration structure is build for
+  \param hDeviceOther: device to check acceleration structure compatibility with
+
+  If the acceleration structures are compatible the function returns
+  ZE_RESULT_SUCCESS, otherwise
+  ZE_RESULT_RAYTRACING_EXT_ACCEL_INCOMPATIBLE.
+
+*/
+
+ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingAccelCompatibilityExt( const ze_device_handle_t hDevice, ze_device_handle_t hDeviceOther );
 
