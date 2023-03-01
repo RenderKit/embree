@@ -611,7 +611,7 @@ namespace embree
         {
           /* this should never occur but is a fatal error */
           if (curRecord.depth > cfg.maxDepth)
-            throw_RTCError(RTC_ERROR_UNKNOWN,"BVH too deep");
+            throw std::runtime_error("BVH too deep");
           
           /* there should be at least one primitive and not too many */
           assert(curRecord.size() > 0);
@@ -689,7 +689,7 @@ namespace embree
         {
           /* this should never occur but is a fatal error */
           if (curRecord.depth > cfg.maxDepth)
-            throw_RTCError(RTC_ERROR_UNKNOWN,"BVH too deep");
+            throw std::runtime_error("BVH too deep");
                       
           /* all primitives have to have the same type */
           Type ty MAYBE_UNUSED = getType(prims[curRecord.begin()].geomID());
