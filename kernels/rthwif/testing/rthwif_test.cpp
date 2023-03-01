@@ -14,12 +14,12 @@
 #include <math.h>
 
 #if defined(EMBREE_SYCL_RT_VALIDATION_API)
-#  include "../rthwif_production.h"
+#  include "../rttrace/rthwif_production.h"
 #else
-#  include "../rthwif_production_igc.h"
+#  include "../rttrace/rthwif_production_igc.h"
 #endif
 
-#include "../rthwif_builder.h"
+#include "../rtbuild/rthwif_builder.h"
 
 #include <level_zero/ze_api.h>
 

@@ -115,7 +115,7 @@ if (EMBREE_BUILDER_TBB_STATIC OR NOT TASKING_TBB)
 ENDIF()
 
 IF (EMBREE_SYCL_RT_VALIDATION_API)
-  ADD_LIBRARY(embree_rthwif_sycl STATIC rthwif_production.cpp)
+  ADD_LIBRARY(embree_rthwif_sycl STATIC rttrace/rthwif_production.cpp)
   SET_PROPERTY(TARGET embree_rthwif_sycl APPEND PROPERTY COMPILE_FLAGS "-DEMBREE_SYCL_SUPPORT")
   SET_TARGET_PROPERTIES(embree_rthwif_sycl PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_SYCL})
 
@@ -125,7 +125,7 @@ IF (EMBREE_SYCL_RT_VALIDATION_API)
   SET(EMBREE_RTHWIF_SYCL embree_rthwif_sycl)
 ENDIF()
 
-ADD_LIBRARY(embree_rthwif STATIC rthwif_builder.cpp builder/qbvh6.cpp builder/statistics.cpp)
+ADD_LIBRARY(embree_rthwif STATIC rtbuild/rthwif_builder.cpp rtbuild/qbvh6.cpp rtbuild/statistics.cpp)
 TARGET_LINK_LIBRARIES(embree_rthwif PUBLIC ${EMBREE_RTHWIF_SYCL} PRIVATE ${TBB_TARGET} simd sys)
 if (EMBREE_LEVEL_ZERO)
   TARGET_LINK_LIBRARIES(embree_rthwif PUBLIC -lze_loader)

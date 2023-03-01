@@ -6,7 +6,7 @@
 #include "qbvh6.h"
 #include "statistics.h"
 #include "quadifier.h"
-#include "../rthwif_builder.h"
+#include "rthwif_builder.h"
 
 #include "../../builders/priminfo.h"
 #include "../../builders/primrefgen_presplit.h"

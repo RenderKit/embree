@@ -5,7 +5,6 @@
 
 #include "../../../common/sys/sysinfo.h"
 #include "../../../common/sys/vector.h"
-#include "../../../include/embree4/rtcore.h"
 #include "../../../common/math/vec2.h"
 #include "../../../common/math/vec3.h"
 #include "../../../common/math/bbox.h"
