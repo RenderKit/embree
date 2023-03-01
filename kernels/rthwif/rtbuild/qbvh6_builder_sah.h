@@ -9,7 +9,7 @@
 #include "rthwif_builder.h"
 
 #include "../../builders/priminfo.h"
-#include "../../builders/primrefgen_presplit.h"
+//#include "../../builders/primrefgen_presplit.h"
 #include "../../builders/heuristic_binning_array_aligned.h"
 #include "../../../common/algorithms/parallel_for_for_prefix_sum.h"
 
@@ -850,6 +850,7 @@ namespace embree
           return pinfo;
         }
 
+#if 0
         void splitTrianglePair(const PrimRef& prim, const size_t dim, const float pos, PrimRef& left_o, PrimRef& right_o) const
         {
           const uint32_t geomID = prim.geomID();
@@ -966,7 +967,8 @@ namespace embree
             subPrims[numSubPrims++] = PrimRef(bounds,geomID,(int32_t)ofs);
           }
         }
-
+#endif
+        
         float primitiveAreaTrianglePair(const PrimRef& prim)
         {
           const uint32_t geomID = prim.geomID();
@@ -1058,6 +1060,7 @@ namespace embree
           double t4 = verbose ? getSeconds() : 0.0;
           if (verbose) std::cout << "primrefgen2  : " << std::setw(10) << (t4-t3)*1000.0 << "ms, " << std::setw(10) << 1E-6*double(numPrimitives)/(t4-t3) << " Mprims/s" << std::endl;
           
+#if 0
           /* perform pre-splitting */
           if ((build_quality == RTHWIF_BUILD_QUALITY_HIGH) &&  numPrimitives)
           {
@@ -1084,6 +1087,7 @@ namespace embree
             
             pinfo = createPrimRefArray_presplit(numPrimitives, prims, pinfo, splitter1, primitiveArea1);
           }
+#endif
 
           /* exit early if scene is empty */
           if (pinfo.size() == 0) {
@@ -1127,7 +1131,9 @@ namespace embree
             }
           }
 
+#if 0
           stats.estimate_presplits(1.2);
+#endif
           size_t worstCaseBytes = stats.worst_case_bvh_bytes();
           if (accelBufferBytesOut) *accelBufferBytesOut = std::min(std::max(bytes+64,size_t(1.2*bytes)), worstCaseBytes);
 
