@@ -21,13 +21,12 @@
 #include "../geometry/triangle_intersector_moeller.h"
 #include "../geometry/triangle_intersector_pluecker.h"
 
-#include "builder/qbvh6.h"
 #include "rthwif_embree.h"
 
 #if defined(EMBREE_SYCL_RT_VALIDATION_API)
-#  include "rthwif_production.h"
+#  include "../rthwif/rthwif_production.h"
 #else
-#  include "rthwif_production_igc.h"
+#  include "../rthwif/rthwif_production_igc.h"
 #endif
 
 using namespace embree;

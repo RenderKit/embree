@@ -8,10 +8,8 @@
 #include "rthwif_embree.h"
 #include "rthwif_embree_builder.h"
 #include "../common/scene.h"
-#include "builder/qbvh6_builder_sah.h"
 #include "../builders/primrefgen.h"
-#include "rthwif_internal.h"
-#include "rthwif_builder.h"
+#include "../rthwif/rthwif_builder.h"
 
 #if defined(EMBREE_LEVEL_ZERO)
 #include <level_zero/ze_api.h>

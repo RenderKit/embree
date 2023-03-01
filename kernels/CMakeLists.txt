@@ -90,7 +90,7 @@ SET(EMBREE_LIBRARY_FILES
 
 IF (EMBREE_SYCL_SUPPORT)
   SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
-  rthwif/rthwif_embree_builder.cpp)
+  sycl/rthwif_embree_builder.cpp)
 ENDIF()
 
 IF (EMBREE_GEOMETRY_SUBDIVISION)
@@ -246,8 +246,8 @@ IF (EMBREE_SYCL_SUPPORT)
   ENDIF()
 
   ADD_LIBRARY(embree_sycl STATIC
-    common/rtcore_sycl.cpp
-    rthwif/rthwif_embree.cpp)
+    sycl/rtcore_sycl.cpp
+    sycl/rthwif_embree.cpp)
 
   SET_TARGET_PROPERTIES(embree_sycl PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_SYCL})
   IF (EMBREE_SYCL_RT_VALIDATION_API)

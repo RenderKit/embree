@@ -24,10 +24,6 @@
 
 #include "../../common/sys/alloc.h"
 
-#if defined(EMBREE_SYCL_SUPPORT)
-#include "../rthwif/rthwif_embree_builder.h"
-#endif
-
 namespace embree
 {
   /*! some global variables that can be set via rtcSetParameter1i for debugging purposes */

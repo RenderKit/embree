@@ -3,12 +3,12 @@
 
 #define RTC_EXPORT_API
 
-#include "default.h"
-#include "device.h"
-#include "scene.h"
-#include "context.h"
-#include "../rthwif/rthwif_embree.h"
+#include "../common/default.h"
+#include "../common/device.h"
+#include "../common/scene.h"
+#include "../common/context.h"
 #include "../geometry/filter.h"
+#include "rthwif_embree.h"
 using namespace embree;
 
 #define DBG(x)
