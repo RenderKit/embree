@@ -1,0 +1,5 @@
+-i round_line_segments_2.xml
+--vp 1.330996037 -4.343282223 5.097676754 --vi 0 2 0 --vu 0 1 0 --fov 45 --righthanded
+--shader uv
+#-vp 4 8 4 -vi 0 2 0 -vu 0 1 0 -fov 45
+

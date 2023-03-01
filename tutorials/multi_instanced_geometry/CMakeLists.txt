@@ -9,7 +9,7 @@ ADD_TUTORIAL_ISPC(multi_instanced_geometry scene.cpp)
 ADD_TUTORIAL_SYCL(multi_instanced_geometry scene.cpp)
 
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
-  ADD_EMBREE_TEST(multi_instanced_geometry)
+  ADD_EMBREE_TUTORIAL_TEST(multi_instanced_geometry "")
 ENDIF()
 
 ENDIF()

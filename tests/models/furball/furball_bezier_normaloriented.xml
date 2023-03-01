@@ -1,0 +1,2382 @@
+<?xml version="1.0"?>
+<scene>  <Group id="1">
+    <Transform id="2">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -41
+        0.000000 1.000000 0.000000 -32
+        0.000000 0.000000 1.000000 0
+      </AffineSpace>
+      <FurBall id="3" radius="10" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.36 0.7 0.48</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="4">
+    <Transform id="5">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 2
+        0.000000 1.000000 0.000000 -31
+        0.000000 0.000000 1.000000 1
+      </AffineSpace>
+      <FurBall id="6" radius="8" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.54 0.73 0.83</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="7">
+    <Transform id="8">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 39
+        0.000000 1.000000 0.000000 -28
+        0.000000 0.000000 1.000000 -2
+      </AffineSpace>
+      <FurBall id="9" radius="3" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.08 0.16 0.14</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="10">
+    <Transform id="11">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 81
+        0.000000 1.000000 0.000000 -32
+        0.000000 0.000000 1.000000 0
+      </AffineSpace>
+      <FurBall id="12" radius="11" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.52 0.69 0.73</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="13">
+    <Transform id="14">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 118
+        0.000000 1.000000 0.000000 -28
+        0.000000 0.000000 1.000000 1
+      </AffineSpace>
+      <FurBall id="15" radius="6" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.68 0.19 0.08</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="16">
+    <Transform id="17">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -39
+        0.000000 1.000000 0.000000 -32
+        0.000000 0.000000 1.000000 31
+      </AffineSpace>
+      <FurBall id="18" radius="7" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.65 0.74 0.45</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="19">
+    <Transform id="20">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -1
+        0.000000 1.000000 0.000000 -32
+        0.000000 0.000000 1.000000 29
+      </AffineSpace>
+      <FurBall id="21" radius="5" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.87 0.4 0.18</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="22">
+    <Transform id="23">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 40
+        0.000000 1.000000 0.000000 -32
+        0.000000 0.000000 1.000000 28
+      </AffineSpace>
+      <FurBall id="24" radius="3" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.9 0.97 0.76</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="25">
+    <Transform id="26">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 82
+        0.000000 1.000000 0.000000 -31
+        0.000000 0.000000 1.000000 29
+      </AffineSpace>
+      <FurBall id="27" radius="10" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.39 0.62 0.71</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="28">
+    <Transform id="29">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 118
+        0.000000 1.000000 0.000000 -32
+        0.000000 0.000000 1.000000 29
+      </AffineSpace>
+      <FurBall id="30" radius="3" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.47 0.11 0.85</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="31">
+    <Transform id="32">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -38
+        0.000000 1.000000 0.000000 -31
+        0.000000 0.000000 1.000000 59
+      </AffineSpace>
+      <FurBall id="33" radius="5" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.5 0.86 0.82</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="34">
+    <Transform id="35">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 0
+        0.000000 1.000000 0.000000 -32
+        0.000000 0.000000 1.000000 62
+      </AffineSpace>
+      <FurBall id="36" radius="5" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.34 0.35 0.49</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="37">
+    <Transform id="38">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 38
+        0.000000 1.000000 0.000000 -30
+        0.000000 0.000000 1.000000 60
+      </AffineSpace>
+      <FurBall id="39" radius="8" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.94 0.2 0.77</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="40">
+    <Transform id="41">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 80
+        0.000000 1.000000 0.000000 -28
+        0.000000 0.000000 1.000000 58
+      </AffineSpace>
+      <FurBall id="42" radius="11" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.67 0.91 0.5</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="43">
+    <Transform id="44">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 122
+        0.000000 1.000000 0.000000 -28
+        0.000000 0.000000 1.000000 58
+      </AffineSpace>
+      <FurBall id="45" radius="10" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.33 0.45 0.65</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="46">
+    <Transform id="47">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -39
+        0.000000 1.000000 0.000000 -32
+        0.000000 0.000000 1.000000 90
+      </AffineSpace>
+      <FurBall id="48" radius="8" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.38 0.94 0.64</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="49">
+    <Transform id="50">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 2
+        0.000000 1.000000 0.000000 -31
+        0.000000 0.000000 1.000000 91
+      </AffineSpace>
+      <FurBall id="51" radius="3" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.2 0.96 0.96</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="52">
+    <Transform id="53">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 38
+        0.000000 1.000000 0.000000 -31
+        0.000000 0.000000 1.000000 88
+      </AffineSpace>
+      <FurBall id="54" radius="9" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.18 0.09 0.15</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="55">
+    <Transform id="56">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 82
+        0.000000 1.000000 0.000000 -28
+        0.000000 0.000000 1.000000 92
+      </AffineSpace>
+      <FurBall id="57" radius="10" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.44 0.06 0.63</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="58">
+    <Transform id="59">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 119
+        0.000000 1.000000 0.000000 -30
+        0.000000 0.000000 1.000000 89
+      </AffineSpace>
+      <FurBall id="60" radius="6" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.31 0.29 0.9</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="61">
+    <Transform id="62">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -38
+        0.000000 1.000000 0.000000 -32
+        0.000000 0.000000 1.000000 121
+      </AffineSpace>
+      <FurBall id="63" radius="5" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.54 0.9 0.57</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="64">
+    <Transform id="65">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 0
+        0.000000 1.000000 0.000000 -31
+        0.000000 0.000000 1.000000 120
+      </AffineSpace>
+      <FurBall id="66" radius="5" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.76 0.46 0.9</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="67">
+    <Transform id="68">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 42
+        0.000000 1.000000 0.000000 -31
+        0.000000 0.000000 1.000000 122
+      </AffineSpace>
+      <FurBall id="69" radius="10" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.44 0.22 0.11</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="70">
+    <Transform id="71">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 78
+        0.000000 1.000000 0.000000 -31
+        0.000000 0.000000 1.000000 122
+      </AffineSpace>
+      <FurBall id="72" radius="5" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.84 0.32 0.37</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="73">
+    <Transform id="74">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 121
+        0.000000 1.000000 0.000000 -29
+        0.000000 0.000000 1.000000 121
+      </AffineSpace>
+      <FurBall id="75" radius="5" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.2 0.35 0.85</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="76">
+    <Transform id="77">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -38
+        0.000000 1.000000 0.000000 -28
+        0.000000 0.000000 1.000000 149
+      </AffineSpace>
+      <FurBall id="78" radius="3" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.94 0.34 0.72</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="79">
+    <Transform id="80">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 1
+        0.000000 1.000000 0.000000 -32
+        0.000000 0.000000 1.000000 152
+      </AffineSpace>
+      <FurBall id="81" radius="5" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.29 0.81 0.38</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="82">
+    <Transform id="83">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 40
+        0.000000 1.000000 0.000000 -28
+        0.000000 0.000000 1.000000 148
+      </AffineSpace>
+      <FurBall id="84" radius="10" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.7 0.81 0.37</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="85">
+    <Transform id="86">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 80
+        0.000000 1.000000 0.000000 -32
+        0.000000 0.000000 1.000000 149
+      </AffineSpace>
+      <FurBall id="87" radius="11" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.42 0.84 0.89</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="88">
+    <Transform id="89">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 121
+        0.000000 1.000000 0.000000 -29
+        0.000000 0.000000 1.000000 152
+      </AffineSpace>
+      <FurBall id="90" radius="9" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.62 0.09 0.6</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="91">
+    <Transform id="92">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -41
+        0.000000 1.000000 0.000000 -30
+        0.000000 0.000000 1.000000 178
+      </AffineSpace>
+      <FurBall id="93" radius="7" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.61 0.24 0.25</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="94">
+    <Transform id="95">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -1
+        0.000000 1.000000 0.000000 -30
+        0.000000 0.000000 1.000000 182
+      </AffineSpace>
+      <FurBall id="96" radius="7" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.22 0.86 0.94</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="97">
+    <Transform id="98">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 40
+        0.000000 1.000000 0.000000 -31
+        0.000000 0.000000 1.000000 180
+      </AffineSpace>
+      <FurBall id="99" radius="3" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.93 0.63 0.2</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="100">
+    <Transform id="101">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 81
+        0.000000 1.000000 0.000000 -29
+        0.000000 0.000000 1.000000 178
+      </AffineSpace>
+      <FurBall id="102" radius="6" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.1 0.7 0.33</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="103">
+    <Transform id="104">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 120
+        0.000000 1.000000 0.000000 -31
+        0.000000 0.000000 1.000000 181
+      </AffineSpace>
+      <FurBall id="105" radius="4" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.38 0.86 0.74</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="106">
+    <Transform id="107">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -39
+        0.000000 1.000000 0.000000 12
+        0.000000 0.000000 1.000000 -2
+      </AffineSpace>
+      <FurBall id="108" radius="3" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.56 0.86 0.16</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="109">
+    <Transform id="110">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 2
+        0.000000 1.000000 0.000000 12
+        0.000000 0.000000 1.000000 1
+      </AffineSpace>
+      <FurBall id="111" radius="4" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.32 0.32 0.53</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="112">
+    <Transform id="113">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 41
+        0.000000 1.000000 0.000000 9
+        0.000000 0.000000 1.000000 2
+      </AffineSpace>
+      <FurBall id="114" radius="4" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.9 0.09 0.87</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="115">
+    <Transform id="116">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 81
+        0.000000 1.000000 0.000000 8
+        0.000000 0.000000 1.000000 2
+      </AffineSpace>
+      <FurBall id="117" radius="10" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.85 0.32 0.4</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="118">
+    <Transform id="119">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 121
+        0.000000 1.000000 0.000000 8
+        0.000000 0.000000 1.000000 0
+      </AffineSpace>
+      <FurBall id="120" radius="7" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.64 0.95 0.58</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="121">
+    <Transform id="122">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -41
+        0.000000 1.000000 0.000000 9
+        0.000000 0.000000 1.000000 31
+      </AffineSpace>
+      <FurBall id="123" radius="5" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1.0 0.53 0.71</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="124">
+    <Transform id="125">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 0
+        0.000000 1.000000 0.000000 11
+        0.000000 0.000000 1.000000 29
+      </AffineSpace>
+      <FurBall id="126" radius="3" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.9 0.8 0.87</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="127">
+    <Transform id="128">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 41
+        0.000000 1.000000 0.000000 12
+        0.000000 0.000000 1.000000 32
+      </AffineSpace>
+      <FurBall id="129" radius="3" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.7 0.39 0.79</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="130">
+    <Transform id="131">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 78
+        0.000000 1.000000 0.000000 8
+        0.000000 0.000000 1.000000 32
+      </AffineSpace>
+      <FurBall id="132" radius="9" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.35 0.92 0.82</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="133">
+    <Transform id="134">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 119
+        0.000000 1.000000 0.000000 11
+        0.000000 0.000000 1.000000 29
+      </AffineSpace>
+      <FurBall id="135" radius="7" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.5 0.41 1.0</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="136">
+    <Transform id="137">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -40
+        0.000000 1.000000 0.000000 11
+        0.000000 0.000000 1.000000 60
+      </AffineSpace>
+      <FurBall id="138" radius="11" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.36 0.91 0.69</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="139">
+    <Transform id="140">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -1
+        0.000000 1.000000 0.000000 9
+        0.000000 0.000000 1.000000 59
+      </AffineSpace>
+      <FurBall id="141" radius="3" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.89 0.21 0.96</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="142">
+    <Transform id="143">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 41
+        0.000000 1.000000 0.000000 12
+        0.000000 0.000000 1.000000 62
+      </AffineSpace>
+      <FurBall id="144" radius="7" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.99 0.09 0.31</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="145">
+    <Transform id="146">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 80
+        0.000000 1.000000 0.000000 12
+        0.000000 0.000000 1.000000 61
+      </AffineSpace>
+      <FurBall id="147" radius="4" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.52 0.83 0.85</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="148">
+    <Transform id="149">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 120
+        0.000000 1.000000 0.000000 10
+        0.000000 0.000000 1.000000 60
+      </AffineSpace>
+      <FurBall id="150" radius="4" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.1 0.44 0.22</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="151">
+    <Transform id="152">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -38
+        0.000000 1.000000 0.000000 10
+        0.000000 0.000000 1.000000 91
+      </AffineSpace>
+      <FurBall id="153" radius="3" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.05 0.53 0.21</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="154">
+    <Transform id="155">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 0
+        0.000000 1.000000 0.000000 8
+        0.000000 0.000000 1.000000 90
+      </AffineSpace>
+      <FurBall id="156" radius="9" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.12 0.66 0.19</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="157">
+    <Transform id="158">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 38
+        0.000000 1.000000 0.000000 10
+        0.000000 0.000000 1.000000 91
+      </AffineSpace>
+      <FurBall id="159" radius="6" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.2 0.24 0.77</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="160">
+    <Transform id="161">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 82
+        0.000000 1.000000 0.000000 10
+        0.000000 0.000000 1.000000 89
+      </AffineSpace>
+      <FurBall id="162" radius="8" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.88 0.41 0.33</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="163">
+    <Transform id="164">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 119
+        0.000000 1.000000 0.000000 11
+        0.000000 0.000000 1.000000 89
+      </AffineSpace>
+      <FurBall id="165" radius="3" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.3 0.78 0.78</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="166">
+    <Transform id="167">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -41
+        0.000000 1.000000 0.000000 8
+        0.000000 0.000000 1.000000 122
+      </AffineSpace>
+      <FurBall id="168" radius="7" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.67 0.89 0.41</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="169">
+    <Transform id="170">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 2
+        0.000000 1.000000 0.000000 10
+        0.000000 0.000000 1.000000 118
+      </AffineSpace>
+      <FurBall id="171" radius="8" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.82 0.18 0.67</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="172">
+    <Transform id="173">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 40
+        0.000000 1.000000 0.000000 11
+        0.000000 0.000000 1.000000 118
+      </AffineSpace>
+      <FurBall id="174" radius="5" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.72 0.97 0.18</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="175">
+    <Transform id="176">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 80
+        0.000000 1.000000 0.000000 8
+        0.000000 0.000000 1.000000 118
+      </AffineSpace>
+      <FurBall id="177" radius="11" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.64 0.79 0.74</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="178">
+    <Transform id="179">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 120
+        0.000000 1.000000 0.000000 11
+        0.000000 0.000000 1.000000 120
+      </AffineSpace>
+      <FurBall id="180" radius="3" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.43 0.51 0.64</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="181">
+    <Transform id="182">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -42
+        0.000000 1.000000 0.000000 11
+        0.000000 0.000000 1.000000 151
+      </AffineSpace>
+      <FurBall id="183" radius="3" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.75 0.47 0.84</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="184">
+    <Transform id="185">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 1
+        0.000000 1.000000 0.000000 11
+        0.000000 0.000000 1.000000 148
+      </AffineSpace>
+      <FurBall id="186" radius="11" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.37 0.69 0.11</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="187">
+    <Transform id="188">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 41
+        0.000000 1.000000 0.000000 11
+        0.000000 0.000000 1.000000 149
+      </AffineSpace>
+      <FurBall id="189" radius="3" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.99 0.89 0.8</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="190">
+    <Transform id="191">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 81
+        0.000000 1.000000 0.000000 10
+        0.000000 0.000000 1.000000 148
+      </AffineSpace>
+      <FurBall id="192" radius="8" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.59 0.09 0.65</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="193">
+    <Transform id="194">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 118
+        0.000000 1.000000 0.000000 12
+        0.000000 0.000000 1.000000 148
+      </AffineSpace>
+      <FurBall id="195" radius="8" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.4 0.59 0.35</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="196">
+    <Transform id="197">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -40
+        0.000000 1.000000 0.000000 9
+        0.000000 0.000000 1.000000 182
+      </AffineSpace>
+      <FurBall id="198" radius="3" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.28 0.37 0.74</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="199">
+    <Transform id="200">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 2
+        0.000000 1.000000 0.000000 12
+        0.000000 0.000000 1.000000 179
+      </AffineSpace>
+      <FurBall id="201" radius="9" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.66 0.31 0.28</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="202">
+    <Transform id="203">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 42
+        0.000000 1.000000 0.000000 10
+        0.000000 0.000000 1.000000 180
+      </AffineSpace>
+      <FurBall id="204" radius="10" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.85 0.65 0.82</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="205">
+    <Transform id="206">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 78
+        0.000000 1.000000 0.000000 9
+        0.000000 0.000000 1.000000 181
+      </AffineSpace>
+      <FurBall id="207" radius="11" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.61 0.9 0.47</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="208">
+    <Transform id="209">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 120
+        0.000000 1.000000 0.000000 8
+        0.000000 0.000000 1.000000 178
+      </AffineSpace>
+      <FurBall id="210" radius="5" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.09 0.05 0.55</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="211">
+    <Transform id="212">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -38
+        0.000000 1.000000 0.000000 32
+        0.000000 0.000000 1.000000 2
+      </AffineSpace>
+      <FurBall id="213" radius="10" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.81 0.29 0.59</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="214">
+    <Transform id="215">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 1
+        0.000000 1.000000 0.000000 29
+        0.000000 0.000000 1.000000 -1
+      </AffineSpace>
+      <FurBall id="216" radius="11" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.23 0.97 0.57</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="217">
+    <Transform id="218">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 40
+        0.000000 1.000000 0.000000 28
+        0.000000 0.000000 1.000000 0
+      </AffineSpace>
+      <FurBall id="219" radius="9" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.38 0.98 0.08</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="220">
+    <Transform id="221">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 79
+        0.000000 1.000000 0.000000 31
+        0.000000 0.000000 1.000000 2
+      </AffineSpace>
+      <FurBall id="222" radius="8" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.2 0.17 0.21</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="223">
+    <Transform id="224">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 120
+        0.000000 1.000000 0.000000 30
+        0.000000 0.000000 1.000000 0
+      </AffineSpace>
+      <FurBall id="225" radius="8" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.87 0.61 0.77</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="226">
+    <Transform id="227">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -42
+        0.000000 1.000000 0.000000 31
+        0.000000 0.000000 1.000000 31
+      </AffineSpace>
+      <FurBall id="228" radius="5" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.81 0.58 0.47</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="229">
+    <Transform id="230">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -2
+        0.000000 1.000000 0.000000 29
+        0.000000 0.000000 1.000000 32
+      </AffineSpace>
+      <FurBall id="231" radius="11" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.37 0.12 0.41</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="232">
+    <Transform id="233">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 38
+        0.000000 1.000000 0.000000 31
+        0.000000 0.000000 1.000000 28
+      </AffineSpace>
+      <FurBall id="234" radius="7" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.39 0.98 0.13</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="235">
+    <Transform id="236">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 80
+        0.000000 1.000000 0.000000 29
+        0.000000 0.000000 1.000000 32
+      </AffineSpace>
+      <FurBall id="237" radius="8" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.29 0.76 0.71</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="238">
+    <Transform id="239">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 120
+        0.000000 1.000000 0.000000 29
+        0.000000 0.000000 1.000000 30
+      </AffineSpace>
+      <FurBall id="240" radius="11" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.64 0.89 0.09</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="241">
+    <Transform id="242">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -42
+        0.000000 1.000000 0.000000 31
+        0.000000 0.000000 1.000000 59
+      </AffineSpace>
+      <FurBall id="243" radius="4" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.46 0.42 0.48</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="244">
+    <Transform id="245">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 1
+        0.000000 1.000000 0.000000 28
+        0.000000 0.000000 1.000000 62
+      </AffineSpace>
+      <FurBall id="246" radius="7" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.5 0.27 0.51</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="247">
+    <Transform id="248">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 38
+        0.000000 1.000000 0.000000 32
+        0.000000 0.000000 1.000000 58
+      </AffineSpace>
+      <FurBall id="249" radius="11" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.24 0.63 0.05</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="250">
+    <Transform id="251">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 79
+        0.000000 1.000000 0.000000 31
+        0.000000 0.000000 1.000000 61
+      </AffineSpace>
+      <FurBall id="252" radius="3" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.59 0.86 0.33</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="253">
+    <Transform id="254">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 122
+        0.000000 1.000000 0.000000 31
+        0.000000 0.000000 1.000000 58
+      </AffineSpace>
+      <FurBall id="255" radius="3" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.07 0.31 0.97</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="256">
+    <Transform id="257">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -41
+        0.000000 1.000000 0.000000 29
+        0.000000 0.000000 1.000000 90
+      </AffineSpace>
+      <FurBall id="258" radius="7" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.57 0.22 0.56</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="259">
+    <Transform id="260">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 0
+        0.000000 1.000000 0.000000 32
+        0.000000 0.000000 1.000000 90
+      </AffineSpace>
+      <FurBall id="261" radius="9" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.94 0.2 0.76</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="262">
+    <Transform id="263">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 39
+        0.000000 1.000000 0.000000 32
+        0.000000 0.000000 1.000000 92
+      </AffineSpace>
+      <FurBall id="264" radius="9" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.23 0.91 0.22</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="265">
+    <Transform id="266">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 79
+        0.000000 1.000000 0.000000 32
+        0.000000 0.000000 1.000000 91
+      </AffineSpace>
+      <FurBall id="267" radius="10" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.91 0.8 0.17</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="268">
+    <Transform id="269">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 120
+        0.000000 1.000000 0.000000 30
+        0.000000 0.000000 1.000000 89
+      </AffineSpace>
+      <FurBall id="270" radius="9" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.74 0.8 0.38</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="271">
+    <Transform id="272">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -38
+        0.000000 1.000000 0.000000 32
+        0.000000 0.000000 1.000000 122
+      </AffineSpace>
+      <FurBall id="273" radius="3" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.16 0.39 0.91</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="274">
+    <Transform id="275">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 0
+        0.000000 1.000000 0.000000 31
+        0.000000 0.000000 1.000000 122
+      </AffineSpace>
+      <FurBall id="276" radius="11" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.62 0.33 0.53</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="277">
+    <Transform id="278">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 39
+        0.000000 1.000000 0.000000 31
+        0.000000 0.000000 1.000000 119
+      </AffineSpace>
+      <FurBall id="279" radius="10" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.74 0.54 0.53</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="280">
+    <Transform id="281">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 80
+        0.000000 1.000000 0.000000 30
+        0.000000 0.000000 1.000000 118
+      </AffineSpace>
+      <FurBall id="282" radius="6" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.1 0.5 0.49</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="283">
+    <Transform id="284">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 121
+        0.000000 1.000000 0.000000 29
+        0.000000 0.000000 1.000000 118
+      </AffineSpace>
+      <FurBall id="285" radius="4" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.16 0.44 0.44</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="286">
+    <Transform id="287">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -41
+        0.000000 1.000000 0.000000 31
+        0.000000 0.000000 1.000000 151
+      </AffineSpace>
+      <FurBall id="288" radius="7" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.21 0.35 0.74</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="289">
+    <Transform id="290">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 2
+        0.000000 1.000000 0.000000 31
+        0.000000 0.000000 1.000000 149
+      </AffineSpace>
+      <FurBall id="291" radius="6" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.94 0.11 0.88</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="292">
+    <Transform id="293">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 39
+        0.000000 1.000000 0.000000 28
+        0.000000 0.000000 1.000000 151
+      </AffineSpace>
+      <FurBall id="294" radius="8" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.4 0.58 0.86</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="295">
+    <Transform id="296">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 78
+        0.000000 1.000000 0.000000 28
+        0.000000 0.000000 1.000000 152
+      </AffineSpace>
+      <FurBall id="297" radius="4" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.93 0.57 0.26</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="298">
+    <Transform id="299">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 120
+        0.000000 1.000000 0.000000 28
+        0.000000 0.000000 1.000000 148
+      </AffineSpace>
+      <FurBall id="300" radius="4" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.19 0.86 0.3</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="301">
+    <Transform id="302">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -39
+        0.000000 1.000000 0.000000 32
+        0.000000 0.000000 1.000000 180
+      </AffineSpace>
+      <FurBall id="303" radius="8" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.86 0.13 0.27</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="304">
+    <Transform id="305">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -1
+        0.000000 1.000000 0.000000 28
+        0.000000 0.000000 1.000000 180
+      </AffineSpace>
+      <FurBall id="306" radius="6" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.18 0.42 0.3</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="307">
+    <Transform id="308">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 38
+        0.000000 1.000000 0.000000 28
+        0.000000 0.000000 1.000000 181
+      </AffineSpace>
+      <FurBall id="309" radius="6" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.1 0.08 0.4</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="310">
+    <Transform id="311">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 82
+        0.000000 1.000000 0.000000 31
+        0.000000 0.000000 1.000000 181
+      </AffineSpace>
+      <FurBall id="312" radius="4" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.45 0.34 0.34</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="313">
+    <Transform id="314">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 119
+        0.000000 1.000000 0.000000 32
+        0.000000 0.000000 1.000000 182
+      </AffineSpace>
+      <FurBall id="315" radius="10" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.6 0.22 0.46</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="316">
+    <Transform id="317">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -39
+        0.000000 1.000000 0.000000 49
+        0.000000 0.000000 1.000000 2
+      </AffineSpace>
+      <FurBall id="318" radius="7" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.94 0.21 0.67</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="319">
+    <Transform id="320">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -2
+        0.000000 1.000000 0.000000 49
+        0.000000 0.000000 1.000000 1
+      </AffineSpace>
+      <FurBall id="321" radius="8" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.48 0.07 0.96</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="322">
+    <Transform id="323">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 40
+        0.000000 1.000000 0.000000 49
+        0.000000 0.000000 1.000000 -2
+      </AffineSpace>
+      <FurBall id="324" radius="6" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.09 0.97 0.14</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="325">
+    <Transform id="326">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 78
+        0.000000 1.000000 0.000000 50
+        0.000000 0.000000 1.000000 1
+      </AffineSpace>
+      <FurBall id="327" radius="11" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.29 0.9 0.07</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="328">
+    <Transform id="329">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 119
+        0.000000 1.000000 0.000000 52
+        0.000000 0.000000 1.000000 2
+      </AffineSpace>
+      <FurBall id="330" radius="10" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.27 0.9 0.5</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="331">
+    <Transform id="332">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -41
+        0.000000 1.000000 0.000000 50
+        0.000000 0.000000 1.000000 30
+      </AffineSpace>
+      <FurBall id="333" radius="8" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.45 0.38 0.85</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="334">
+    <Transform id="335">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 2
+        0.000000 1.000000 0.000000 49
+        0.000000 0.000000 1.000000 30
+      </AffineSpace>
+      <FurBall id="336" radius="8" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.56 0.11 0.32</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="337">
+    <Transform id="338">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 41
+        0.000000 1.000000 0.000000 52
+        0.000000 0.000000 1.000000 32
+      </AffineSpace>
+      <FurBall id="339" radius="8" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.78 0.67 0.26</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="340">
+    <Transform id="341">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 81
+        0.000000 1.000000 0.000000 52
+        0.000000 0.000000 1.000000 29
+      </AffineSpace>
+      <FurBall id="342" radius="4" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.4 0.62 0.4</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="343">
+    <Transform id="344">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 122
+        0.000000 1.000000 0.000000 52
+        0.000000 0.000000 1.000000 32
+      </AffineSpace>
+      <FurBall id="345" radius="8" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.09 0.64 0.54</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="346">
+    <Transform id="347">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -39
+        0.000000 1.000000 0.000000 52
+        0.000000 0.000000 1.000000 61
+      </AffineSpace>
+      <FurBall id="348" radius="11" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.9 0.18 0.98</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="349">
+    <Transform id="350">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -2
+        0.000000 1.000000 0.000000 51
+        0.000000 0.000000 1.000000 59
+      </AffineSpace>
+      <FurBall id="351" radius="6" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.17 0.41 0.43</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="352">
+    <Transform id="353">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 38
+        0.000000 1.000000 0.000000 51
+        0.000000 0.000000 1.000000 60
+      </AffineSpace>
+      <FurBall id="354" radius="6" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.7 0.94 0.12</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="355">
+    <Transform id="356">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 78
+        0.000000 1.000000 0.000000 49
+        0.000000 0.000000 1.000000 59
+      </AffineSpace>
+      <FurBall id="357" radius="5" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.39 0.9 0.62</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="358">
+    <Transform id="359">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 119
+        0.000000 1.000000 0.000000 52
+        0.000000 0.000000 1.000000 60
+      </AffineSpace>
+      <FurBall id="360" radius="7" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.86 0.36 0.56</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="361">
+    <Transform id="362">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -40
+        0.000000 1.000000 0.000000 49
+        0.000000 0.000000 1.000000 92
+      </AffineSpace>
+      <FurBall id="363" radius="4" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.86 0.49 0.89</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="364">
+    <Transform id="365">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -1
+        0.000000 1.000000 0.000000 52
+        0.000000 0.000000 1.000000 91
+      </AffineSpace>
+      <FurBall id="366" radius="4" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.28 0.37 0.3</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="367">
+    <Transform id="368">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 39
+        0.000000 1.000000 0.000000 51
+        0.000000 0.000000 1.000000 92
+      </AffineSpace>
+      <FurBall id="369" radius="9" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.4 0.11 0.77</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="370">
+    <Transform id="371">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 81
+        0.000000 1.000000 0.000000 50
+        0.000000 0.000000 1.000000 91
+      </AffineSpace>
+      <FurBall id="372" radius="7" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.49 0.06 0.31</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="373">
+    <Transform id="374">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 120
+        0.000000 1.000000 0.000000 51
+        0.000000 0.000000 1.000000 88
+      </AffineSpace>
+      <FurBall id="375" radius="3" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.79 0.77 0.7</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="376">
+    <Transform id="377">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -42
+        0.000000 1.000000 0.000000 49
+        0.000000 0.000000 1.000000 120
+      </AffineSpace>
+      <FurBall id="378" radius="9" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.18 0.33 0.72</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="379">
+    <Transform id="380">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -2
+        0.000000 1.000000 0.000000 50
+        0.000000 0.000000 1.000000 119
+      </AffineSpace>
+      <FurBall id="381" radius="3" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.3 0.83 0.82</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="382">
+    <Transform id="383">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 42
+        0.000000 1.000000 0.000000 50
+        0.000000 0.000000 1.000000 120
+      </AffineSpace>
+      <FurBall id="384" radius="3" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.14 0.61 0.33</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="385">
+    <Transform id="386">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 81
+        0.000000 1.000000 0.000000 51
+        0.000000 0.000000 1.000000 119
+      </AffineSpace>
+      <FurBall id="387" radius="5" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.98 0.47 0.29</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="388">
+    <Transform id="389">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 119
+        0.000000 1.000000 0.000000 51
+        0.000000 0.000000 1.000000 121
+      </AffineSpace>
+      <FurBall id="390" radius="10" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.29 0.1 0.19</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="391">
+    <Transform id="392">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -39
+        0.000000 1.000000 0.000000 50
+        0.000000 0.000000 1.000000 149
+      </AffineSpace>
+      <FurBall id="393" radius="11" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.29 0.76 0.8</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="394">
+    <Transform id="395">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -2
+        0.000000 1.000000 0.000000 50
+        0.000000 0.000000 1.000000 148
+      </AffineSpace>
+      <FurBall id="396" radius="7" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.51 0.83 0.54</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="397">
+    <Transform id="398">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 40
+        0.000000 1.000000 0.000000 51
+        0.000000 0.000000 1.000000 148
+      </AffineSpace>
+      <FurBall id="399" radius="11" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.07 0.26 0.69</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="400">
+    <Transform id="401">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 82
+        0.000000 1.000000 0.000000 49
+        0.000000 0.000000 1.000000 148
+      </AffineSpace>
+      <FurBall id="402" radius="10" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.61 0.3 0.5</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="403">
+    <Transform id="404">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 119
+        0.000000 1.000000 0.000000 48
+        0.000000 0.000000 1.000000 150
+      </AffineSpace>
+      <FurBall id="405" radius="4" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.59 0.39 0.76</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="406">
+    <Transform id="407">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 -38
+        0.000000 1.000000 0.000000 48
+        0.000000 0.000000 1.000000 179
+      </AffineSpace>
+      <FurBall id="408" radius="9" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.79 0.13 0.35</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="409">
+    <Transform id="410">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 1
+        0.000000 1.000000 0.000000 48
+        0.000000 0.000000 1.000000 181
+      </AffineSpace>
+      <FurBall id="411" radius="11" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.88 0.54 0.23</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="412">
+    <Transform id="413">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 38
+        0.000000 1.000000 0.000000 50
+        0.000000 0.000000 1.000000 181
+      </AffineSpace>
+      <FurBall id="414" radius="6" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.24 0.85 0.69</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="415">
+    <Transform id="416">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 78
+        0.000000 1.000000 0.000000 52
+        0.000000 0.000000 1.000000 178
+      </AffineSpace>
+      <FurBall id="417" radius="5" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.06 0.91 0.15</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+  <Group id="418">
+    <Transform id="419">
+      <AffineSpace>
+        1.000000 0.000000 0.000000 118
+        0.000000 1.000000 0.000000 50
+        0.000000 0.000000 1.000000 180
+      </AffineSpace>
+      <FurBall id="420" radius="8" hairtype="bezier_normaloriented">
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">0.21 0.34 0.37</float3>
+          </parameters>
+        </material>
+      </FurBall>
+    </Transform>
+  </Group>
+</scene>

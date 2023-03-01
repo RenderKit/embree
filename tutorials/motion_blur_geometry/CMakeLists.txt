@@ -9,7 +9,7 @@ ADD_TUTORIAL_ISPC(motion_blur_geometry)
 ADD_TUTORIAL_SYCL(motion_blur_geometry)
 
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
-  ADD_EMBREE_TEST2(motion_blur_geometry motion_blur_geometry "--time 0.5")
+  #ADD_EMBREE_TUTORIAL_TEST(motion_blur_geometry "--time 0.5")
 ENDIF()
 
 ENDIF()

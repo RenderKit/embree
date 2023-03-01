@@ -1,0 +1,5 @@
+-i subdiv_mixed_pin.xml
+--vp 1.406008244 24.78935242 0.8114380836 --vi 1.406002045 0 0.8885438442 --vu 0 1 0 --fov 90 --righthanded
+--shader texcoords-grid
+
+

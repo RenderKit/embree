@@ -10,7 +10,7 @@ ADD_TUTORIAL_SYCL(quaternion_motion_blur)
 
 
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
-  ADD_EMBREE_TEST(quaternion_motion_blur)
+  ADD_EMBREE_TUTORIAL_TEST(quaternion_motion_blur "")
 ENDIF()
 
 ENDIF()

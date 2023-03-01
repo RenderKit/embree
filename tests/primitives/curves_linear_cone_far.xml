@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<scene>
+    <PerspectiveCamera name="frontview" from="0 0 -2e6" to="0 0 0" up="0 1 0" fov="90"/>
+    <Curves id="1" basis="linear" type="round">
+        <positions>
+            -1e6 -1e6 0 0
+            -1e6 1e6 0 0.2e6
+            1e6 1e6 0 0.3e6
+            1e6 -1e6 0 0.4e6
+        </positions>
+      <indices>
+        0 1 2
+      </indices>
+      <curveid>
+        0 1 2
+    </curveid>
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">0.8 0.8 0.8</float3>
+        </parameters>
+      </material>
+    </Curves>
+</scene>

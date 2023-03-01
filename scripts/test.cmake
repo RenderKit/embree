@@ -24,47 +24,7 @@ ENDIF()
 MESSAGE("CTEST_SOURCE_DIRECTORY = ${CTEST_SOURCE_DIRECTORY}")
 MESSAGE("CTEST_BINARY_DIRECTORY = ${CTEST_BINARY_DIRECTORY}")
 MESSAGE("TEST_MODELS_DIRECTORY = ${TEST_MODELS_DIRECTORY}")
-MESSAGE("http_proxy = $ENV{http_proxy}")
-MESSAGE("https_proxy = $ENV{https_proxy}")
-MESSAGE("no_proxy = $ENV{no_proxy}")
 MESSAGE("PATH = $ENV{PATH}")
-
-# update external model repository
-FIND_PROGRAM(CTEST_GIT_COMMAND NAMES git)
-
-MACRO(check_return_code)
-  IF (NOT "${retcode}" STREQUAL "0")
-    MESSAGE(FATAL_ERROR "error executing process")
-  ENDIF()
-ENDMACRO()
-
-# macro that updates the test models
-MACRO(update_test_models)
-  IF(NOT EXISTS "${TEST_MODELS_DIRECTORY}")
-    MESSAGE("cloning test models ...")
-    EXECUTE_PROCESS(
-      COMMAND ${CTEST_GIT_COMMAND} "clone" "git@vis-gitolite:embree-models" embree-models
-      WORKING_DIRECTORY ${TEST_MODELS_PARENT_DIRECTORY}
-      RESULT_VARIABLE retcode)
-    check_return_code()
-  ELSE()
-    MESSAGE("updating test models ...")
-    EXECUTE_PROCESS(
-      COMMAND ${CTEST_GIT_COMMAND} "fetch"
-      WORKING_DIRECTORY ${TEST_MODELS_DIRECTORY}
-      RESULT_VARIABLE retcode)
-    check_return_code()
-  ENDIF()
-  IF (NOT TEST_MODELS_HASH)
-    MESSAGE(FATAL_ERROR "no TEST_MODELS_HASH set")
-  ENDIF()
-  MESSAGE("checking out test models: ${TEST_MODELS_HASH}")
-  EXECUTE_PROCESS(
-    COMMAND ${CTEST_GIT_COMMAND} "checkout" "-f" ${TEST_MODELS_HASH}
-    WORKING_DIRECTORY ${TEST_MODELS_DIRECTORY}
-    RESULT_VARIABLE retcode)
-  check_return_code()
-ENDMACRO()
 
 ##################################
 # configure and build            #
@@ -113,11 +73,7 @@ ENDMACRO()
 MACRO(test)
   ctest_start("Continuous")
 
-  IF (EMBREE_UPDATE_MODELS AND EMBREE_TESTING_INTENSITY GREATER 0)
-    update_test_models()
-  ENDIF()
-
-  set(CTEST_CONFIGURE_COMMAND "${CMAKE_COMMAND} -DBUILD_TESTING:BOOL=ON -DEMBREE_TESTING_MODEL_DIR:PATH=${TEST_MODELS_DIRECTORY} -DEMBREE_TESTING_INTENSITY=${EMBREE_TESTING_INTENSITY} ..")
+  set(CTEST_CONFIGURE_COMMAND "${CMAKE_COMMAND} -DBUILD_TESTING:BOOL=ON -DEMBREE_TESTING_INTENSITY=${EMBREE_TESTING_INTENSITY} ..")
   ctest_configure()
 
   IF (EMBREE_TESTING_INTENSITY GREATER 0 OR EMBREE_TESTING_KLOCWORK)

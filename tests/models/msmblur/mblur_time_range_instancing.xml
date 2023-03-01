@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<scene>
+	<PerspectiveCamera name="mainCamera" from="0 0 9" to="0 0 4" up="0 1 0" fov="70"/>
+	<TimeRange time="0 1">
+		<Transform id="0">
+			<AffineSpace>
+				1 0 0 0
+				0 1 0 0
+				0 0 1 0
+			</AffineSpace>
+			<TimeRange time="0 1">
+				<QuadMesh id="1">
+					<material id="2">
+						<code>"OBJ"</code>
+						<parameters>
+							<float name="d">1</float>
+							<float3 name="Kd">1 1 1</float3>
+							<float3 name="Ks">0 0 0</float3>
+							<float name="Ns">0</float>
+						</parameters>
+					</material>
+					<animated_positions>
+						<positions ofs="0" size="8"/>
+						<positions ofs="96" size="8"/>
+					</animated_positions>
+					<indices ofs="192" size="6"/>
+				</QuadMesh>
+			</TimeRange>
+		</Transform>
+	</TimeRange>
+	<TimeRange time="0.399999 1">
+		<TransformAnimation id="3">
+			<AffineSpace>
+				1 0 0 -2
+				0 1 0 -2
+				0 0 1 0
+			</AffineSpace>
+			<AffineSpace>
+				1 0 0 2
+				0 1 0 -2
+				0 0 1 0
+			</AffineSpace>
+			<TimeRange time="0 1">
+				<QuadMesh id="4">
+					<material id="5">
+						<code>"OBJ"</code>
+						<parameters>
+							<float name="d">1</float>
+							<float3 name="Kd">1 1 1</float3>
+							<float3 name="Ks">0 0 0</float3>
+							<float name="Ns">0</float>
+						</parameters>
+					</material>
+					<positions ofs="288" size="8"/>
+					<indices ofs="384" size="6"/>
+				</QuadMesh>
+			</TimeRange>
+		</TransformAnimation>
+	</TimeRange>
+</scene>

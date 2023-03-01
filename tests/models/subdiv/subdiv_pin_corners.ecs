@@ -1,0 +1,4 @@
+-i subdiv_pin_corners.xml
+--shader texcoords-grid
+
+

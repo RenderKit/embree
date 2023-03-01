@@ -1,0 +1,2 @@
+-i furball_bspline_flat.xml
+--vp 9.999999747e-05 9.999999747e-05 -3 --vi 1.753101826 -0.1499363184 -0.5701143742 --vu 0 1 0 --fov 90 --righthanded

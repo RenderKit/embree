@@ -9,6 +9,7 @@ import os
 import ctypes
 import pickle
 import re
+import shutil
 
 cwd = os.getcwd()
 
@@ -87,9 +88,11 @@ def runConfig(config):
   if "threads" in config:
     threads = config["threads"]
 
+  # TODO: not used in any of the workflow definitions
   if "memcheck" in config:
     conf.append("-D EMBREE_TESTING_MEMCHECK="+config["memcheck"]+"")
 
+  # TODO: this is not used anywhere in embree cmake...
   if "sde" in config:
     conf.append("-D EMBREE_TESTING_SDE="+config["sde"]+"")
 
@@ -309,26 +312,13 @@ def runConfig(config):
     conf.append("-D EMBREE_API_NAMESPACE="+config["api_namespace"])
     conf.append("-D EMBREE_LIBRARY_NAME="+config["api_namespace"])  # we test different library name at the same time
     conf.append("-D EMBREE_ISPC_SUPPORT=OFF")
-  if "STATIC_LIB" in config:
-    conf.append("-D EMBREE_STATIC_LIB="+config["STATIC_LIB"])
-  if "TUTORIALS" in config:
-    conf.append("-D EMBREE_TUTORIALS="+config["TUTORIALS"])
-  if "BACKFACE_CULLING" in config:
-    conf.append("-D EMBREE_BACKFACE_CULLING="+config["BACKFACE_CULLING"])
-  if "BACKFACE_CULLING_CURVES" in config:
-    conf.append("-D EMBREE_BACKFACE_CULLING_CURVES="+config["BACKFACE_CULLING_CRUVES"])
-  if "IGNORE_INVALID_RAYS" in config:
-    conf.append("-D EMBREE_IGNORE_INVALID_RAYS="+config["IGNORE_INVALID_RAYS"])
-  if "FILTER_FUNCTION" in config:
-     conf.append("-D EMBREE_FILTER_FUNCTION="+config["FILTER_FUNCTION"])
-  if "LARGEGRF" in config:
-    conf.append("-D EMBREE_SYCL_LARGEGRF="+config["LARGEGRF"])
-  if "RAY_MASK" in config:
-    conf.append("-D EMBREE_RAY_MASK="+config["RAY_MASK"])
-  if "RAY_PACKETS" in config:
-    conf.append("-D EMBREE_RAY_PACKETS="+config["RAY_PACKETS"])
-  if "STAT_COUNTERS" in config:
-    conf.append("-D EMBREE_STAT_COUNTERS="+config["STAT_COUNTERS"])
+
+  # Add embree specific optons
+  for opt in ["STATIC_LIB", "TUTORIALS", "BACKFACE_CULLING", "BACKFACE_CULLING_CURVES", "IGNORE_INVALID_RAYS", "FILTER_FUNCTION", "LARGEGRF", "RAY_MASK", "RAY_PACKETS", "STAT_COUNTERS", "COMPACT_POLYS", "MIN_WIDTH"]:
+    if opt in config:
+      conf.append("-D EMBREE_"+opt+"="+config[opt])
+    
+  # TODO: check if we want to chonge the names of theese options, so that the pattern fits here as well
   if "TRI" in config:
     conf.append("-D EMBREE_GEOMETRY_TRIANGLE="+config["TRI"])
   if "QUAD" in config:
@@ -340,15 +330,11 @@ def runConfig(config):
   if "SUBDIV" in config:
     conf.append("-D EMBREE_GEOMETRY_SUBDIVISION="+config["SUBDIV"])
   if "USERGEOM" in config:
-      conf.append("-D EMBREE_GEOMETRY_USER="+config["USERGEOM"])
+    conf.append("-D EMBREE_GEOMETRY_USER="+config["USERGEOM"])
   if "INSTANCE" in config:
     conf.append("-D EMBREE_GEOMETRY_INSTANCE="+config["INSTANCE"])
   if "POINT" in config:
     conf.append("-D EMBREE_GEOMETRY_POINT="+config["POINT"])
-  if "COMPACT_POLYS" in config:
-    conf.append("-D EMBREE_COMPACT_POLYS="+config["COMPACT_POLYS"])
-  if "MIN_WIDTH" in config:
-    conf.append("-D EMBREE_MIN_WIDTH="+config["MIN_WIDTH"])
   if "GLFW" in config:
     conf.append("-D EMBREE_TUTORIALS_GLFW="+config["GLFW"])
   if "frequency_level" in config:
@@ -362,6 +348,10 @@ def runConfig(config):
     conf.append("-D EMBREE_SYCL_TEST="+config["sycl_test"])
   if "rt_validation_api" in config:
     conf.append("-D EMBREE_SYCL_RT_VALIDATION_API="+config["rt_validation_api"])
+  if "test_only_sycl" in config:
+    conf.append("-D EMBREE_TESTING_ONLY_SYCL_TESTS="+config["test_only_sycl"])
+  else:
+    conf.append("-D EMBREE_TESTING_ONLY_SYCL_TESTS=OFF")
 
   if "EMBREE_USE_GOOGLE_BENCHMARK" in config:
     conf.append("-D EMBREE_USE_GOOGLE_BENCHMARK="+config["EMBREE_USE_GOOGLE_BENCHMARK"])
@@ -417,15 +407,16 @@ def runConfig(config):
 
   if rtcore:
     conf.append("-D EMBREE_CONFIG="+(",".join(rtcore)))
+    
+  if "dumptests" in config:
+    conf.append("-D EMBREE_TESTING_DUMPTESTS=" + config["dumptests"])
+  if "dumpformat" in config:
+    conf.append("-D EMBREE_TESTING_DUMPFORMAT=" + config["dumpformat"])
 
   ctest_suffix = ""
   ctest_suffix += " -D EMBREE_TESTING_INTENSITY="+str(g_intensity)
   if "klocwork" in config:
     ctest_suffix += " -D EMBREE_TESTING_KLOCWORK="+config["klocwork"]
-  if "update_models" in config:
-    ctest_suffix += " -D EMBREE_UPDATE_MODELS="+config["update_models"]
-  else:
-    ctest_suffix += " -D EMBREE_UPDATE_MODELS=ON"
 
   ctest_suffix += " -D CTEST_CONFIGURATION_TYPE=\""+build+"\""
   ctest_suffix += " -D CTEST_BUILD_OPTIONS=\"" + escape(" ".join(conf))+"\""
@@ -445,8 +436,24 @@ def run(mode):
   if mode != "build" and OS == "linux":
     ctest_env += "export LD_LIBRARY_PATH="+os.getcwd()+"/build:$LD_LIBRARY_PATH && "
 
+  # pick sde executable
+  # don't use sde if no sde cpuid is specified
+  sde_cmd = ""
+  if mode == "test" and "sde" in g_config:
+    if OS == "linux":
+      sde_cmd = os.path.sep.join([NAS, 'sde', 'lin', 'sde64'])
+    elif OS == "macosx":
+      sde_cmd = os.path.sep.join([NAS, 'sde', 'mac', 'sde64'])
+    elif OS == "windows":
+      sde_cmd = os.path.sep.join([NAS, 'sde', 'win', 'sde64'])
+    else:
+      sys.stderr.write("unknown operating system "+OS)
+      sys.exit(1)
+    
+    sde_cmd = sde_cmd + " -" + g_config['sde'] + " -- "
+
   if mode == "test" or mode == "build":
-    cmd = ctest_env + "ctest -VV -S "+ os.path.join("scripts","test.cmake -DSTAGE="+mode+" -DTHREADS="+threads+" -DBUILD_SUFFIX=\""+cmake_build_suffix+"\"") + ctest_suffix
+    cmd = ctest_env + sde_cmd + "ctest -VV -S "+ os.path.join("scripts","test.cmake -DSTAGE="+mode+" -DTHREADS="+threads+" -DBUILD_SUFFIX=\""+cmake_build_suffix+"\"") + ctest_suffix
   else:
     cmd = ctest_env + os.path.join("scripts",mode)
 

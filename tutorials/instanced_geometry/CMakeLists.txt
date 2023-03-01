@@ -9,7 +9,7 @@ ADD_TUTORIAL_ISPC(instanced_geometry)
 ADD_TUTORIAL_SYCL(instanced_geometry)
 
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
-  ADD_EMBREE_TEST(instanced_geometry)
+  ADD_EMBREE_TUTORIAL_TEST(instanced_geometry "")
 ENDIF()
 
 ENDIF()

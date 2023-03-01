@@ -1,0 +1,3 @@
+-i mblur_time_range_disc.xml
+--dirlight -1 -1 1 30 30 30  --dirlight -1 -1 1 30 30 30
+

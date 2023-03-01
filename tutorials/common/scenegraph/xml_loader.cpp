@@ -1284,9 +1284,37 @@ namespace embree
   {
     Ref<SceneGraph::GroupNode> group = new SceneGraph::GroupNode;
 
-    float r = 10.0f;
-    int slices = 60;
-    int slabs = 60;
+    float r = (xml->parm("radius") != "") ? xml->parm_float("radius") : 10.0f;
+    int slices = (xml->parm("slices") != "") ? int(xml->parm_float("slices")) : 60;
+    int slabs = (xml->parm("slabs") != "") ? int(xml->parm_float("slabs")) : 60;
+    int nhairs = (xml->parm("nhairs") != "") ? int(xml->parm_float("nhairs")) : 30000;
+    float hairwidth = (xml->parm("hairwidth") != "") ? int(xml->parm_float("hairwidth")) : (r / 100.0f);
+    float hairlength = (xml->parm("hairlength") != "") ? int(xml->parm_float("hairlength")) : (r / 10.0f);
+    RTCGeometryType hairtype = RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE;
+    bool is_linear = false;
+    bool is_bezier = false;
+    bool is_bspline = false;
+    bool is_hermite = false;
+    bool is_catmulrom = false;
+    bool is_flat = false;
+    bool is_round = false;
+    bool is_normaloriented = false;
+    std::string phairtype = xml->parm("hairtype");
+    if (phairtype == "linear_flat")                    { hairtype = RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE;                  is_linear = true;     is_flat = true; }
+    else if (phairtype == "linear_round")              { hairtype = RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE;                 is_linear = true;     is_round = true; }
+    else if (phairtype == "bezier_flat")               { hairtype = RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE;                  is_bezier = true;     is_flat = true; }
+    else if (phairtype == "bezier_round")              { hairtype = RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE;                 is_bezier = true;     is_round = true; }
+    else if (phairtype == "bezier_normaloriented")     { hairtype = RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE;       is_bezier = true;     is_normaloriented = true; }
+    else if (phairtype == "bspline_flat")              { hairtype = RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE;                 is_bspline = true;    is_flat = true; }
+    else if (phairtype == "bspline_round")             { hairtype = RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE;                is_bspline = true;    is_round = true; }
+    else if (phairtype == "bspline_normaloriented")    { hairtype = RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE;      is_bspline = true;    is_normaloriented = true; }
+    else if (phairtype == "hermite_flat")              { hairtype = RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE;                 is_hermite = true;    is_flat = true; }
+    else if (phairtype == "hermite_round")             { hairtype = RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE;                is_hermite = true;    is_round = true; }
+    else if (phairtype == "hermite_normaloriented")    { hairtype = RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE;      is_hermite = true;    is_normaloriented = true; }
+    else if (phairtype == "catmulrom_flat")            { hairtype = RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE;             is_catmulrom = true;  is_flat = true; }
+    else if (phairtype == "catmulrom_round")           { hairtype = RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE;            is_catmulrom = true;  is_round = true; }
+    else if (phairtype == "catmulrom_normaloriented")  { hairtype = RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE;  is_catmulrom = true;  is_normaloriented = true; }
+    else                                               { hairtype = RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE;                 is_bezier = true;     is_round = true; }
 
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
     Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(material,BBox1f(0,1),0);
@@ -1350,45 +1378,138 @@ namespace embree
     group->add(mesh.dynamicCast<SceneGraph::Node>());
 
     // generate N random hairs
-    //Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
-    Ref<SceneGraph::HairSetNode> hairs = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE,material,BBox1f(0,1),0);
+    Ref<SceneGraph::HairSetNode> hairs = new SceneGraph::HairSetNode(hairtype,material,BBox1f(0,1),0);
 
-    int N = 30000;
+    int N = nhairs;
 
     {
-      avector<Vec3ff> data;
-      data.resize(N * 4);
+      // rand() is not consistent with linux/win/mac or other compilers, so we use a manual lcg (with similar seeds as used in glibc)
+      uint32_t rand_int = 1234;
+      uint32_t a = 1103515245;
+      uint32_t c = 12345;
+      uint32_t m = 1 << 31;
+      auto rand_float = [&rand_int, &a, &c, &m]() {
+        rand_int = (a * rand_int + c) % m;
+        return rand_int / float(m);
+      };
 
-      float theta = 2.0f * float(pi) * float(random<float>());
-      float phi = acos(1 - 2 * float(random<float>()));
+      size_t nvertices_per_curve = (is_hermite) ? 2 : 4;
+
+      avector<Vec3ff> pos;
+      avector<Vec3fa> norm;
+      avector<Vec3ff> tans;
+      avector<Vec3fa> dnorm;
+      pos.resize(N *  nvertices_per_curve);
+      norm.resize(N * nvertices_per_curve);
+      if (is_hermite) {
+        tans.resize(N * nvertices_per_curve);
+        dnorm.resize(N * nvertices_per_curve);
+      }
+
+      float theta = 2.0f * float(pi) * rand_float();
+      float phi = acos(1 - 2 * rand_float());
       Vec3fa last = Vec3fa(sin(phi) * cos(theta), cos(phi), sin(phi) * sin(theta));
 
       for (int i = 0; i < N; i++) {
-          float theta = 2.0f * float(pi) * float(random<float>());
-          float phi = acos(1 - 2 * float(random<float>()));
+          float theta = 2.0f * float(pi) * rand_float();
+          float phi = acos(1 - 2 * rand_float());
           Vec3fa d = Vec3fa(sin(phi) * cos(theta), cos(phi), sin(phi) * sin(theta));
 
           Vec3fa p = normalize(cross(d, last));
           last = p;
 
-          Vec3fa start = d * r * 0.99;
-          Vec3fa mid = d * r * 1.03;
-          Vec3fa mid2 = d * r * 1.07;
-          Vec3fa stop = d * r * (1.07 + 0.03 * random<float>()) + p * r * 0.051;
+          Vec3fa start = d * r * (1.0f - 0.01f * hairlength);
+          Vec3fa mid   = d * r * (1.0f + 0.03f * hairlength);
+          Vec3fa mid2  = d * r * (1.0f + 0.07f * hairlength);
+          Vec3fa stop  = d * r * (1.0f + 0.07f * hairlength + 0.03f * hairlength * rand_float());
 
-          data[i*4+0] = Vec3ff(start.x, start.y, start.z, 0.1);
-          data[i*4+1] = Vec3ff(mid.x, mid.y, mid.z, 0.1);
-          data[i*4+2] = Vec3ff(mid.x, mid2.y, mid2.z, 0.05);
-          data[i*4+3] = Vec3ff(stop.x, stop.y, stop.z, 0.0);
+          // Tweak positions based on curve type
+          if (is_bezier) {
+            stop = stop + p * r * 0.051f * hairlength;
+          }
+          else if (is_linear) {
+            mid  = mid  + p * r * 0.001f * hairlength;
+            mid2 = mid2 + p * r * 0.021f * hairlength;
+            stop = stop + p * r * 0.051f * hairlength;
+          }
+          else if (is_bspline) {
+            mid2 = mid2 + p * r * 0.021f * hairlength;
+            stop  = d * r * (1.0f + 0.07f * hairlength + 0.13f * hairlength * rand_float());
+            stop = stop + p * r * 0.081f * hairlength;
+          }
+
+          // Hermite only has 2 supports
+          if (is_hermite) {
+            pos[i*2  ] = Vec3ff(start.x, start.y, start.z, hairwidth);
+            pos[i*2+1] = Vec3ff(stop.x, stop.y, stop.z, 0.0f);
+
+            Vec3fa tstart = normalize(d);
+            Vec3fa tmid = normalize(p);
+
+            tans[i*2  ] = Vec3ff(tstart.x, tstart.y, tstart.z, 0.2f);
+            tans[i*2+1] = Vec3ff(tmid.x, tmid.y, tmid.z, 0.8f);
+
+            norm[i*2  ] = normalize(cross(d, p));
+            norm[i*2+1] = normalize(cross(d, p));
+
+            if (is_normaloriented) {
+              dnorm[i*2  ] = Vec3fa(0.0f, 0.0f, 0.0f);
+              dnorm[i*2+1] = Vec3fa(0.0f, 0.0f, 0.0f);
+            }
+          }
+          else {
+            pos[i*4+0] = Vec3ff(start.x, start.y, start.z, hairwidth);
+            pos[i*4+1] = Vec3ff(mid.x, mid.y, mid.z, hairwidth);
+            pos[i*4+2] = Vec3ff(mid.x, mid2.y, mid2.z, hairwidth * 0.5f);
+            pos[i*4+3] = Vec3ff(stop.x, stop.y, stop.z, 0.0f);
+          }
+
+          // normals already added, if curve type is hermite
+          if (is_normaloriented && !is_hermite) {
+            norm[i*4+0] = normalize(cross(d, p));
+            norm[i*4+1] = normalize(cross(start - mid, p));
+            norm[i*4+2] = normalize(cross(mid - mid2, p));
+            norm[i*4+3] = normalize(cross(mid2 - stop, p));
+          }
       }
 
-      hairs->positions.push_back(data);
+      hairs->positions.push_back(pos);
+      if (is_normaloriented) hairs->normals.push_back(norm);
+      if (is_hermite) hairs->tangents.push_back(tans);
+      if (is_hermite && is_normaloriented) hairs->dnormals.push_back(dnorm);
 
-      std::vector<unsigned> indices(N);
-      std::vector<unsigned> curveid(N, 0);
-      hairs->hairs.resize(indices.size());
-      for (size_t i=0; i<N; i++) {
-        hairs->hairs[i] = SceneGraph::HairSetNode::Hair(i * 4, 0);
+      // linear uses 3 segments per hair
+      if (is_linear) {
+        hairs->hairs.resize(N * 3);
+        for (size_t i=0; i<N; i++) {
+          hairs->hairs[i * 3    ] = SceneGraph::HairSetNode::Hair(i * 4    , i * 3    );
+          hairs->hairs[i * 3 + 1] = SceneGraph::HairSetNode::Hair(i * 4 + 1, i * 3 + 1);
+          hairs->hairs[i * 3 + 2] = SceneGraph::HairSetNode::Hair(i * 4 + 2, i * 3 + 2);
+        }
+      }
+      // rest uses nvertices_per_curve number of supports
+      else {
+        hairs->hairs.resize(N);
+        for (size_t i=0; i<N; i++) {
+          hairs->hairs[i] = SceneGraph::HairSetNode::Hair(i * nvertices_per_curve, i);
+        }
+      }
+
+      // tweak hairwidth of tips to make bsplines/catmulrom look slightly better
+      if (is_bspline || is_catmulrom) {
+        for (size_t i=0; i<N; i++) { 
+          hairs->positions.back()[i * 4 + 1].w = 0.5f * hairwidth;
+          hairs->positions.back()[i * 4 + 2].w = 0.01f * hairwidth;
+          hairs->positions.back()[i * 4 + 3].w = 0.0f;
+        }
+      }
+
+      if (is_bspline) {
+        std::vector<unsigned> indices;
+        indices.resize(N);
+        for (size_t i=0; i<N; i++) { indices[i] = i; }
+        for (auto& vertices : hairs->positions)
+          fix_bspline_end_points(indices,vertices);
       }
 
       hairs->verify();

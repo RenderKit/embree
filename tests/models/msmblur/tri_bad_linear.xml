@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<scene>
+    <PerspectiveCamera name="default" from=".5 -5 -5" to=".5 0 0" up="0 1 0" fov="30"/>
+    
+    <Group id="group_tri">
+    <Flatten>
+    <TransformAnimation id="trans_xform">
+        <AffineSpace translate="0 0 0"/>
+        <AffineSpace translate="0 0 -1"/>
+                <TriangleMesh id="tri">
+                    <material id="mat_tri">
+                        <code>"OBJ"</code>
+                        <parameters>
+                            <float name="d">1.000000</float>
+                            <float3 name="Kd">0.5 0.5 0.5</float3>
+                            <float3 name="Ks">0.000000 0.000000 0.000000</float3>
+                            <float name="Ns">1.000000</float>
+                        </parameters>
+                    </material>
+                    <positions>
+                        0 0 0
+                        1 0 0
+                        1 1 0
+                    </positions> 
+                    <triangles>
+                        0 1 2
+                    </triangles>
+                </TriangleMesh>
+    </TransformAnimation>
+    </Flatten>
+    </Group>
+
+    <TransformAnimation id="rot_xform">
+        <AffineSpace point="0 0 0" axis="0 1 0" angle="0"/>
+        <AffineSpace point="0 0 0" axis="0 1 0" angle="90"/>
+        <ref id="group_tri"/>
+    </TransformAnimation>
+</scene>
