@@ -8,6 +8,7 @@
 #include "buffer.h"
 #include "../common/point_query.h"
 #include "../builders/priminfo.h"
+#include "../builders/priminfo_mb.h"
 
 namespace embree
 {

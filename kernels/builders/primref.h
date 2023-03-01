@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "default.h"
+#include "../common/default.h"
 
 namespace embree
 {

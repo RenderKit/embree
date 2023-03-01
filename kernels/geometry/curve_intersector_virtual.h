@@ -5,7 +5,7 @@
 
 #include "primitive.h"
 #include "../subdiv/bezier_curve.h"
-#include "../common/primref.h"
+#include "../builders/primref.h"
 #include "curve_intersector_precalculations.h"
 #include "../bvh/node_intersector1.h"
 #include "../bvh/node_intersector_packet.h"

@@ -4,6 +4,7 @@
 #pragma once
 
 #include "priminfo.h"
+#include "priminfo_mb.h"
 #include "../../common/algorithms/parallel_reduce.h"
 #include "../../common/algorithms/parallel_partition.h"
 
