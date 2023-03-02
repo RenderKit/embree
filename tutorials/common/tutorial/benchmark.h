@@ -7,7 +7,7 @@
 
 namespace benchmark
 {
-  struct State;
+  class State;
 }
 
 namespace embree {
