@@ -1681,7 +1681,6 @@ namespace embree
   {    
     uint numTotalLCGs = 0;
     //char* dest = lcg_bvh_mem;
-    
     for (uint lcgID=0;lcgID<numGeoms;lcgID++)
     {
       if (unlikely(geometry_desc[lcgID] == nullptr)) continue;

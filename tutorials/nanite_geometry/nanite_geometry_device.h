@@ -9,6 +9,10 @@
 
 namespace embree {
 
+extern "C" int g_spp;
+extern "C" int g_max_path_length;
+extern "C" ISPCScene* g_ispc_scene;
+
   enum RenderMode {
     RENDER_PRIMARY            = 0,
     RENDER_DEBUG_GRIDS        = 1,
@@ -18,14 +22,19 @@ namespace embree {
     RENDER_DEBUG_CRACK_FIXING = 5,
     RENDER_DEBUG_CLOD         = 6,
     RENDER_DEBUG_TEXTURE      = 7,        
-    RENDER_DEBUG_CLUSTER_ID   = 8,            
+    RENDER_DEBUG_CLUSTER_ID   = 8,
+    RENDER_PATH_TRACER        = 9,            
+    
   };
   
 struct TutorialData
 {
   /* scene data */
   RTCScene g_scene;
-
+  int spp;
+  int max_path_length;
+  int accu_count;
+  ISPCScene* ispc_scene;
 };
 
 #if __SYCL_COMPILER_VERSION >= 20210801
@@ -39,7 +48,11 @@ namespace embree {
 
 inline void TutorialData_Constructor(TutorialData* This)
 {
+  This->ispc_scene = g_ispc_scene;  
   This->g_scene  = nullptr;
+  This->spp = g_spp;
+  This->max_path_length = g_max_path_length;
+  This->accu_count = 0;
 }
 
 inline void TutorialData_Destructor(TutorialData* This)

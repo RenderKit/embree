@@ -15,17 +15,26 @@
 #endif
 
 #define RELATIVE_MIN_LOD_DISTANCE_FACTOR 32.0f
+//#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 16.0f
 
 #include "../../kernels/rthwif/builder/gpu/lcgbp.h"
 #include "../../kernels/rthwif/builder/gpu/morton.h"
 
+
+#include "../common/tutorial/optics.h"
+#include "../common/lights/ambient_light.cpp"
+#include "../common/lights/directional_light.cpp"
+#include "../common/lights/point_light.cpp"
+#include "../common/lights/quad_light.cpp"
+#include "../common/lights/spot_light.cpp"
+
 namespace embree {
 
   template<typename Ty>
-    struct Averaged
+  struct Averaged
   {
     Averaged (size_t N, double dt)
-    : N(N), dt(dt) {}
+      : N(N), dt(dt) {}
 
     void add(double v)
     {
@@ -70,6 +79,12 @@ namespace embree {
 
   Averaged<double> avg_bvh_build_time(64,1.0);
   Averaged<double> avg_lod_selection_crack_fixing_time(64,1.0);
+
+#if defined(EMBREE_SYCL_TUTORIAL) && defined(USE_SPECIALIZATION_CONSTANTS)
+  const static sycl::specialization_id<RTCFeatureFlags> rtc_feature_mask(RTC_FEATURE_FLAG_ALL);
+#endif
+  
+  RTCFeatureFlags g_used_features = RTC_FEATURE_FLAG_NONE;
   
 
   __forceinline Vec3fa getTexel3f(const Texture* texture, float s, float t)
@@ -122,10 +137,10 @@ namespace embree {
     uint segment = -1;
     for (uint i=0;i<LOD_LEVELS;i++)
       if (startRange[i] <= dist_level && dist_level < endRange[i])
-        {          
-          segment = i;
-          break;
-        }
+      {          
+        segment = i;
+        break;
+      }
     float blend = 0.0f;
     if (segment == -1)
       segment = LOD_LEVELS-1;
@@ -918,6 +933,17 @@ namespace embree {
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
 
+  void renderPixelPathTracer(const TutorialData& data,
+                             int x, int y,
+                             int* pixels,
+                             const unsigned int width,
+                             const unsigned int height,
+                             const float time,
+                             const ISPCCamera& camera,
+                             RayStats& stats,
+                             const RTCFeatureFlags features);
+
+
   extern "C" void renderFrameStandard (int* pixels,
                                        const unsigned int width,
                                        const unsigned int height,
@@ -926,24 +952,57 @@ namespace embree {
   {
     /* render all pixels */
 #if defined(EMBREE_SYCL_TUTORIAL)
-    RenderMode rendering_mode = user_rendering_mode;    
-    LCG_Scene *lcgbp_scene = global_lcgbp_scene;
-    uint spp = user_spp;
-    TutorialData ldata = data;
-    sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
-                                                   const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-                                                   cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
-                                                                               const unsigned int x = item.get_global_id(1); if (x >= width ) return;
-                                                                               const unsigned int y = item.get_global_id(0); if (y >= height) return;
-                                                                               renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,lcgbp_scene,rendering_mode,spp);
-                                                                             });
-                                                 });
-    global_gpu_queue->wait_and_throw();
+    RenderMode rendering_mode = user_rendering_mode;
+    if (rendering_mode != RENDER_PATH_TRACER)
+    {
+      LCG_Scene *lcgbp_scene = global_lcgbp_scene;
+      uint spp = user_spp;
+      TutorialData ldata = data;
+      sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
+        const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+        cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
+          const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+          const unsigned int y = item.get_global_id(0); if (y >= height) return;
+          renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,lcgbp_scene,rendering_mode,spp);
+        });
+      });
+      global_gpu_queue->wait_and_throw();
+      const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();
+      const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();
+      const double dt = (t1-t0)*1E-9;
+      ((ISPCCamera*)&camera)->render_time = dt;        
+    }
+    else
+    {
+      TutorialData ldata = data;
+      ldata.spp = user_spp;
 
-    const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();
-    const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();
-    const double dt = (t1-t0)*1E-9;
-    ((ISPCCamera*)&camera)->render_time = dt;  
+      int numMaterials = ldata.ispc_scene->numMaterials;
+
+#if 0      
+      PRINT( numMaterials );
+      PRINT(  ((ISPCOBJMaterial*)ldata.ispc_scene->materials[0])->Kd );
+      PRINT(  ((ISPCOBJMaterial*)ldata.ispc_scene->materials[0])->Ks );   
+#endif
+      
+      sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh) {
+        const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+        cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
+          const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+          const unsigned int y = item.get_global_id(0); if (y >= height) return;
+          RayStats stats;
+          const RTCFeatureFlags feature_mask = RTC_FEATURE_FLAG_ALL;
+          renderPixelPathTracer(ldata,x,y,pixels,width,height,time,camera,stats,feature_mask);
+        });
+      });
+      global_gpu_queue->wait_and_throw();
+
+      const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();
+      const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();
+      const double dt = (t1-t0)*1E-9;
+      ((ISPCCamera*)&camera)->render_time = dt;
+      
+    }
 #endif
   }
 
@@ -1015,10 +1074,10 @@ namespace embree {
     
     LCG_Scene *local_lcgbp_scene = global_lcgbp_scene;
     sycl::event init_event =  global_gpu_queue->submit([&](sycl::handler &cgh) {
-                                                         cgh.single_task([=]() {
-                                                                           local_lcgbp_scene->numCurrentLCGBPStates = 0;
-                                                                         });
-                                                       });
+      cgh.single_task([=]() {
+        local_lcgbp_scene->numCurrentLCGBPStates = 0;
+      });
+    });
 
     waitOnEventAndCatchException(init_event);
 
@@ -1140,5 +1199,443 @@ namespace embree {
   {
     TutorialData_Destructor(&data);
   }
+
+  // =================================================================================================================================================================================
+  // ======================================================================== Simple Path Tracer =====================================================================================
+  // =================================================================================================================================================================================  
+
+  Light_SampleRes Lights_sample(const Light* self,
+                                const DifferentialGeometry& dg, /*! point to generate the sample for >*/
+                                const Vec2f s)                /*! random numbers to generate the sample >*/
+  {
+    TutorialLightType ty = self->type;
+    switch (ty) {
+    case LIGHT_AMBIENT    : return AmbientLight_sample(self,dg,s);
+    case LIGHT_POINT      : return PointLight_sample(self,dg,s);
+    case LIGHT_DIRECTIONAL: return DirectionalLight_sample(self,dg,s);
+    case LIGHT_SPOT       : return SpotLight_sample(self,dg,s);
+    case LIGHT_QUAD       : return QuadLight_sample(self,dg,s);
+    default: {
+      Light_SampleRes res;
+      res.weight = Vec3fa(0,0,0);
+      res.dir = Vec3fa(0,0,0);
+      res.dist = 0;
+      res.pdf = inf;
+      return res;
+    }
+    }
+  }
+  
+  Light_EvalRes Lights_eval(const Light* self,
+                            const DifferentialGeometry& dg,
+                            const Vec3fa& dir)
+  {
+    TutorialLightType ty = self->type;
+    switch (ty) {
+    case LIGHT_AMBIENT     : return AmbientLight_eval(self,dg,dir);
+    case LIGHT_POINT       : return PointLight_eval(self,dg,dir);
+    case LIGHT_DIRECTIONAL : return DirectionalLight_eval(self,dg,dir);
+    case LIGHT_SPOT        : return SpotLight_eval(self,dg,dir);
+    case LIGHT_QUAD        : return QuadLight_eval(self,dg,dir);
+    default: {
+      Light_EvalRes res;
+      res.value = Vec3fa(0,0,0);
+      res.dist = inf;
+      res.pdf = 0.f;
+      return res;
+    }
+    }
+  }
+
+////////////////////////////////////////////////////////////////////////////////
+//                                 BRDF                                       //
+////////////////////////////////////////////////////////////////////////////////
+
+  struct BRDF
+  {
+    float Ns;               /*< specular exponent */
+    float Ni;               /*< optical density for the surface (index of refraction) */
+    Vec3fa Ka;              /*< ambient reflectivity */
+    Vec3fa Kd;              /*< diffuse reflectivity */
+    Vec3fa Ks;              /*< specular reflectivity */
+    Vec3fa Kt;              /*< transmission filter */
+    float dummy[30];
+  };
+
+  struct Medium
+  {
+    Vec3fa transmission; //!< Transmissivity of medium.
+    float eta;             //!< Refraction index of medium.
+  };
+
+  inline Medium make_Medium(const Vec3fa& transmission, const float eta)
+  {
+    Medium m;
+    m.transmission = transmission;
+    m.eta = eta;
+    return m;
+  }
+
+  inline Medium make_Medium_Vacuum() {
+    return make_Medium(Vec3fa((float)1.0f),1.0f);
+  }
+
+  inline bool eq(const Medium& a, const Medium& b) {
+    return (a.eta == b.eta) && eq(a.transmission, b.transmission);
+  }
+
+  inline Vec3fa sample_component2(const Vec3fa& c0, const Sample3f& wi0, const Medium& medium0,
+                                  const Vec3fa& c1, const Sample3f& wi1, const Medium& medium1,
+                                  const Vec3fa& Lw, Sample3f& wi_o, Medium& medium_o, const float s)
+  {
+    const Vec3fa m0 = Lw*c0/wi0.pdf;
+    const Vec3fa m1 = Lw*c1/wi1.pdf;
+
+    const float C0 = wi0.pdf == 0.0f ? 0.0f : max(max(m0.x,m0.y),m0.z);
+    const float C1 = wi1.pdf == 0.0f ? 0.0f : max(max(m1.x,m1.y),m1.z);
+    const float C  = C0 + C1;
+
+    if (C == 0.0f) {
+      wi_o = make_Sample3f(Vec3fa(0,0,0),0);
+      return Vec3fa(0,0,0);
+    }
+
+    const float CP0 = C0/C;
+    const float CP1 = C1/C;
+    if (s < CP0) {
+      wi_o = make_Sample3f(wi0.v,wi0.pdf*CP0);
+      medium_o = medium0; return c0;
+    }
+    else {
+      wi_o = make_Sample3f(wi1.v,wi1.pdf*CP1);
+      medium_o = medium1; return c1;
+    }
+  }
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+//                          OBJ Material                                      //
+////////////////////////////////////////////////////////////////////////////////
+
+  void OBJMaterial__preprocess(ISPCOBJMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)
+  {
+    float d = material->d;
+    if (material->map_d) d *= getTextureTexel1f(material->map_d,dg.u,dg.v);
+    brdf.Ka = Vec3fa(material->Ka);
+    //if (material->map_Ka) { brdf.Ka *= material->map_Ka->get(dg.st); }
+    brdf.Kd = d * Vec3fa(material->Kd);
+    //if (material->map_Kd) brdf.Kd = brdf.Kd * getTextureTexel3f(material->map_Kd,dg.u,dg.v);
+    brdf.Ks = d * Vec3fa(material->Ks);
+    //if (material->map_Ks) brdf.Ks *= material->map_Ks->get(dg.st);
+    brdf.Ns = material->Ns;
+    //if (material->map_Ns) { brdf.Ns *= material->map_Ns.get(dg.st); }
+    brdf.Kt = (1.0f-d)*Vec3fa(material->Kt);
+    brdf.Ni = material->Ni;
+  }
+
+  Vec3fa OBJMaterial__eval(ISPCOBJMaterial* material, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi)
+  {
+    Vec3fa R = Vec3fa(0.0f);
+    const float Md = max(max(brdf.Kd.x,brdf.Kd.y),brdf.Kd.z);
+    const float Ms = max(max(brdf.Ks.x,brdf.Ks.y),brdf.Ks.z);
+    const float Mt = max(max(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z);
+    if (Md > 0.0f) {
+      R = R + (1.0f/float(M_PI)) * clamp(dot(wi,dg.Ns)) * brdf.Kd;
+    }
+    if (Ms > 0.0f) {
+      const Sample3f refl = make_Sample3f(reflect(wo,dg.Ns),1.0f);
+      if (dot(refl.v,wi) > 0.0f)
+        R = R + (brdf.Ns+2) * float(one_over_two_pi) * powf(max(1e-10f,dot(refl.v,wi)),brdf.Ns) * clamp(dot(wi,dg.Ns)) * brdf.Ks;
+    }
+    if (Mt > 0.0f) {
+    }
+    return R;
+  }
+
+  Vec3fa OBJMaterial__sample(ISPCOBJMaterial* material, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
+  {
+    Vec3fa cd = Vec3fa(0.0f);
+    Sample3f wid = make_Sample3f(Vec3fa(0.0f),0.0f);
+    if (max(max(brdf.Kd.x,brdf.Kd.y),brdf.Kd.z) > 0.0f) {
+      wid = cosineSampleHemisphere(s.x,s.y,dg.Ns);
+      cd = float(one_over_pi) * clamp(dot(wid.v,dg.Ns)) * brdf.Kd;
+    }
+
+    Vec3fa cs = Vec3fa(0.0f);
+    Sample3f wis = make_Sample3f(Vec3fa(0.0f),0.0f);
+    if (max(max(brdf.Ks.x,brdf.Ks.y),brdf.Ks.z) > 0.0f)
+    {
+      const Sample3f refl = make_Sample3f(reflect(wo,dg.Ns),1.0f);
+      wis.v = powerCosineSampleHemisphere(brdf.Ns,s);
+      wis.pdf = powerCosineSampleHemispherePDF(wis.v,brdf.Ns);
+      wis.v = frame(refl.v) * wis.v;
+      cs = (brdf.Ns+2) * float(one_over_two_pi) * powf(max(dot(refl.v,wis.v),1e-10f),brdf.Ns) * clamp(dot(wis.v,dg.Ns)) * brdf.Ks;
+    }
+
+    Vec3fa ct = Vec3fa(0.0f);
+    Sample3f wit = make_Sample3f(Vec3fa(0.0f),0.0f);
+    if (max(max(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) > 0.0f)
+    {
+      wit = make_Sample3f(neg(wo),1.0f);
+      ct = brdf.Kt;
+    }
+
+    const Vec3fa md = Lw*cd/wid.pdf;
+    const Vec3fa ms = Lw*cs/wis.pdf;
+    const Vec3fa mt = Lw*ct/wit.pdf;
+
+    const float Cd = wid.pdf == 0.0f ? 0.0f : max(max(md.x,md.y),md.z);
+    const float Cs = wis.pdf == 0.0f ? 0.0f : max(max(ms.x,ms.y),ms.z);
+    const float Ct = wit.pdf == 0.0f ? 0.0f : max(max(mt.x,mt.y),mt.z);
+    const float C  = Cd + Cs + Ct;
+
+    if (C == 0.0f) {
+      wi_o = make_Sample3f(Vec3fa(0,0,0),0);
+      return Vec3fa(0,0,0);
+    }
+
+    const float CPd = Cd/C;
+    const float CPs = Cs/C;
+    const float CPt = Ct/C;
+
+    if (s.x < CPd) {
+      wi_o = make_Sample3f(wid.v,wid.pdf*CPd);
+      return cd;
+    }
+    else if (s.x < CPd + CPs)
+    {
+      wi_o = make_Sample3f(wis.v,wis.pdf*CPs);
+      return cs;
+    }
+    else
+    {
+      wi_o = make_Sample3f(wit.v,wit.pdf*CPt);
+      return ct;
+    }
+  }
+
+
+////////////////////////////////////////////////////////////////////////////////
+//                              Material                                      //
+////////////////////////////////////////////////////////////////////////////////
+
+  inline void Material__preprocess(ISPCMaterial** materials, unsigned int materialID, unsigned int numMaterials, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)
+  {
+    auto id = materialID;
+    {
+      if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
+      {
+        ISPCMaterial* material = materials[id];
+
+        switch (material->type) {
+        case MATERIAL_OBJ  : OBJMaterial__preprocess  ((ISPCOBJMaterial*)  material,brdf,wo,dg,medium); break;
+        default: break;
+        }
+      }
+    }
+  }
+
+  inline Vec3fa Material__eval(ISPCMaterial** materials, unsigned int materialID, unsigned int numMaterials, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi)
+  {
+    Vec3fa c = Vec3fa(0.0f);
+    auto id = materialID;
+    {
+      if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
+      {
+        ISPCMaterial* material = materials[id];
+        switch (material->type) {
+        case MATERIAL_OBJ  : c = OBJMaterial__eval  ((ISPCOBJMaterial*)  material, brdf, wo, dg, wi); break;
+        default: c = Vec3fa(0.0f);
+        }
+      }
+    }
+    return c;
+  }
+
+  inline Vec3fa Material__sample(ISPCMaterial** materials, unsigned int materialID, unsigned int numMaterials, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
+  {
+    Vec3fa c = Vec3fa(0.0f);
+    auto id = materialID;
+    {
+      if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
+      {
+        ISPCMaterial* material = materials[id];
+        switch (material->type) {
+        case MATERIAL_OBJ  : c = OBJMaterial__sample  ((ISPCOBJMaterial*)  material, brdf, Lw, wo, dg, wi_o, medium, s); break;
+        default: wi_o = make_Sample3f(Vec3fa(0.0f),0.0f); c = Vec3fa(0.0f); break;
+        }
+      }
+    }
+    return c;
+  }
+
+    
+  inline int postIntersect(const TutorialData& data, const Ray& ray, DifferentialGeometry& dg)
+  {
+    dg.eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));   
+    int materialID = 0;
+    return materialID;
+  }
+
+  inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
+    const Vec3fa Ng = _Ng;
+    return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
+  }
+
+
+  Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSampler& sampler, const ISPCCamera& camera, RayStats& stats, const RTCFeatureFlags features)
+  {
+    /* radiance accumulator and weight */
+    Vec3fa L = Vec3fa(0.0f);
+    Vec3fa Lw = Vec3fa(1.0f);
+    Medium medium = make_Medium_Vacuum();
+    float time = RandomSampler_get1D(sampler);
+
+    /* initialize ray */
+    Ray ray(Vec3fa(camera.xfm.p),
+            Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)),0.0f,inf,time);
+
+    DifferentialGeometry dg;
+ 
+    /* iterative path tracer loop */
+    for (int i=0; i<data.max_path_length; i++)
+    {
+      /* terminate if contribution too low */
+      if (max(Lw.x,max(Lw.y,Lw.z)) < 0.01f)
+        break;
+
+      /* intersect ray with scene */
+      RayQueryContext context;
+      InitIntersectionContext(&context);
+      context.tutorialData = (void*) &data;
+    
+      RTCIntersectArguments args;
+      rtcInitIntersectArguments(&args);
+      args.context = &context.context;
+      args.feature_mask = features;
+  
+      rtcIntersect1(data.g_scene,RTCRayHit_(ray),&args);
+      RayStats_addRay(stats);
+      const Vec3fa wo = neg(ray.dir);
+
+      /* invoke environment lights if nothing hit */
+      if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
+      {
+        //L = L + Lw*Vec3fa(1.0f);
+
+        /* iterate over all lights */
+        for (unsigned int i=0; i<data.ispc_scene->numLights; i++)
+        {
+          const Light* l = data.ispc_scene->lights[i];
+          //Light_EvalRes le = l->eval(l,dg,ray.dir);
+          Light_EvalRes le = Lights_eval(l,dg,ray.dir);
+          L = L + Lw*le.value;
+        }
+
+        break;
+      }
+
+      Vec3fa Ns = normalize(ray.Ng);
+
+      /* compute differential geometry */
+    
+      dg.geomID = ray.geomID;
+      dg.primID = ray.primID;
+      dg.u = ray.u;
+      dg.v = ray.v;
+      dg.P  = ray.org+ray.tfar*ray.dir;
+      dg.Ng = ray.Ng;
+      dg.Ns = Ns;
+      int materialID = postIntersect(data,ray,dg);
+      dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
+      dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
+
+      /*! Compute  simple volumetric effect. */
+      Vec3fa c = Vec3fa(1.0f);
+      const Vec3fa transmission = medium.transmission;
+      if (ne(transmission,Vec3fa(1.0f)))
+        c = c * pow(transmission,ray.tfar);
+
+      /* calculate BRDF */
+      BRDF brdf;
+      int numMaterials = data.ispc_scene->numMaterials;
+      ISPCMaterial** material_array = &data.ispc_scene->materials[0];
+      Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
+
+      /* sample BRDF at hit point */
+      Sample3f wi1;
+      c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, RandomSampler_get2D(sampler));
+
+      /* iterate over lights */
+      for (unsigned int i=0; i<data.ispc_scene->numLights; i++)
+      {
+        const Light* l = data.ispc_scene->lights[i];
+        //Light_SampleRes ls = l->sample(l,dg,RandomSampler_get2D(sampler));
+        Light_SampleRes ls = Lights_sample(l,dg,RandomSampler_get2D(sampler));
+        if (ls.pdf <= 0.0f) continue;
+        Vec3fa transparency = Vec3fa(1.0f);
+        Ray shadow(dg.P,ls.dir,dg.eps,ls.dist,time);
+        context.userRayExt = &transparency;
+
+        RTCOccludedArguments sargs;
+        rtcInitOccludedArguments(&sargs);
+        sargs.context = &context.context;
+        sargs.feature_mask = features;
+        rtcOccluded1(data.g_scene,RTCRay_(shadow),&sargs);
+        RayStats_addShadowRay(stats);
+        if (shadow.tfar > 0.0f)
+          L = L + Lw*ls.weight*transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,ls.dir);
+      }
+
+      if (wi1.pdf <= 1E-4f /* 0.0f */) break;
+      Lw = Lw*c/wi1.pdf;
+
+      /* setup secondary ray */
+      float sign = dot(wi1.v,dg.Ng) < 0.0f ? -1.0f : 1.0f;
+      dg.P = dg.P + sign*dg.eps*dg.Ng;
+      init_Ray(ray, dg.P,normalize(wi1.v),dg.eps,inf,time);
+    }
+    return L;
+  }
+
+
+
+  void renderPixelPathTracer(const TutorialData& data,
+                             int x, int y,
+                             int* pixels,
+                             const unsigned int width,
+                             const unsigned int height,
+                             const float time,
+                             const ISPCCamera& camera,
+                             RayStats& stats,
+                             const RTCFeatureFlags features)
+  {
+    RandomSampler sampler;
+
+    Vec3fa L = Vec3fa(0.0f);
+
+    for (int i=0; i<data.spp; i++)
+    {
+      RandomSampler_init(sampler, x, y, data.spp+i);
+
+      /* calculate pixel color */
+      float fx = x + RandomSampler_get1D(sampler);
+      float fy = y + RandomSampler_get1D(sampler);
+      L = L + renderPixelFunction(data,fx,fy,sampler,camera,stats,features);
+    }
+    L = L/(float)data.spp;
+
+    /* write color to framebuffer */
+    //Vec3ff accu_color = data.accu[y*width+x] + Vec3ff(L.x,L.y,L.z,1.0f); data.accu[y*width+x] = accu_color;
+    //float f = rcp(max(0.001f,accu_color.w));
+    Vec3ff accu_color = Vec3ff(L.x,L.y,L.z,1.0f);
+    float f = 1.0f;
+    unsigned int r = (unsigned int) (255.01f * clamp(accu_color.x*f,0.0f,1.0f));
+    unsigned int g = (unsigned int) (255.01f * clamp(accu_color.y*f,0.0f,1.0f));
+    unsigned int b = (unsigned int) (255.01f * clamp(accu_color.z*f,0.0f,1.0f));
+    pixels[y*width+x] = (b << 16) + (g << 8) + r;
+  }
+  
 
 } // namespace embree

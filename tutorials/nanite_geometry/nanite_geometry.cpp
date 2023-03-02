@@ -18,7 +18,12 @@ namespace embree
   extern "C" RenderMode user_rendering_mode;
   extern "C" uint user_spp;
   
-  
+  extern "C" {
+    int g_spp = 1;
+    int g_max_path_length = 2;
+    bool g_accumulate = 1;
+  }
+
   struct Tutorial : public SceneLoadingTutorialApplication 
   {
     Tutorial()
@@ -62,7 +67,10 @@ namespace embree
       }      
       else if (key == GLFW_KEY_F9) {
         user_rendering_mode = RENDER_DEBUG_CLUSTER_ID;
-      }            
+      }
+      else if (key == GLFW_KEY_F10) {
+        user_rendering_mode = RENDER_PATH_TRACER;
+      }                  
       else if (key == GLFW_KEY_KP_SUBTRACT) {
         user_spp -= user_spp > 0 ? 1 : 0;
       }            
