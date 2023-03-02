@@ -101,7 +101,7 @@ IF (EMBREE_ISPC_SUPPORT)
   SET_PROPERTY(TARGET noise_ispc PROPERTY FOLDER tutorials/common)
   SET_PROPERTY(TARGET noise_ispc APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 
-  TARGET_LINK_LIBRARIES(tutorial_ispc benchmark)
+  TARGET_LINK_LIBRARIES(tutorial_ispc embree_benchmark)
 ENDIF()
 
 IF(WIN32)
