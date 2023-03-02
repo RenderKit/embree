@@ -21,22 +21,53 @@ ENDIF()
 option(EMBREE_USE_GOOGLE_BENCHMARK "Use google benchmark (note: set benchmark_DIR to benchmark_install_dir/lib/cmake/benchmark)" OFF)
 
 IF(EMBREE_USE_GOOGLE_BENCHMARK)
-  FIND_PACKAGE(benchmark REQUIRED)
-  IF (NOT TARGET benchmark::benchmark)
-    message(FATAL_ERROR "google benchmark not found. set benchmark_DIR to benchmark_install_dir/lib/cmake/benchmark")
+  IF (NOT EMBREE_BUILD_GOOGLE_BENCHMARK_FROM_SOURCE)
+    FIND_PACKAGE(benchmark)
+  ENDIF()
+
+  IF(NOT benchmark_FOUND)
+    CMAKE_MINIMUM_REQUIRED(VERSION 3.14)
+    MESSAGE("-- google benchmark installation not found. download and build from source")
+
+    INCLUDE(FetchContent)
+    SET(FETCHCONTENT_QUIET OFF)
+
+    OPTION(BENCHMARK_DOWNLOAD_DEPENDENCIES "when building also download dependencies" ON)
+    OPTION(BENCHMARK_ENABLE_INSTALL "dummy" OFF)
+
+    FetchContent_Declare(
+      benchmark
+      GIT_REPOSITORY https://github.com/google/benchmark.git
+      GIT_TAG v1.7.1
+    )
+
+    FetchContent_GetProperties(benchmark)
+    if(NOT benchmark_POPULATED)
+      FetchContent_Populate(benchmark)
+      # We want to build google benchmark and link statically, so no need to
+      # install it as part of the Embree install targets.
+      add_subdirectory(${benchmark_SOURCE_DIR} ${benchmark_BINARY_DIR} EXCLUDE_FROM_ALL)
+    endif()
+
+    MARK_AS_ADVANCED(FETCHCONTENT_BASE_DIR)
+    MARK_AS_ADVANCED(FETCHCONTENT_FULLY_DISCONNECTED)
+    MARK_AS_ADVANCED(FETCHCONTENT_QUIET)
+    MARK_AS_ADVANCED(FETCHCONTENT_UPDATES_DISCONNECTED)
+  ELSE()
+    MESSAGE("-- google benchmark installation at ${benchmark_DIR}.")
   ENDIF()
 ENDIF()
 
-ADD_LIBRARY(benchmark STATIC benchmark.cpp)
-SET_PROPERTY(TARGET benchmark PROPERTY FOLDER tutorials/common)
-SET_PROPERTY(TARGET benchmark APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
+ADD_LIBRARY(embree_benchmark STATIC benchmark.cpp)
+SET_PROPERTY(TARGET embree_benchmark PROPERTY FOLDER tutorials/common)
+SET_PROPERTY(TARGET embree_benchmark APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 IF(EMBREE_USE_GOOGLE_BENCHMARK)
-  TARGET_COMPILE_DEFINITIONS(benchmark PUBLIC USE_GOOGLE_BENCHMARK)
-  TARGET_LINK_LIBRARIES(benchmark benchmark::benchmark benchmark::benchmark_main)
+  TARGET_COMPILE_DEFINITIONS(embree_benchmark PUBLIC USE_GOOGLE_BENCHMARK)
+  TARGET_LINK_LIBRARIES(embree_benchmark benchmark::benchmark benchmark::benchmark_main)
 ENDIF()
-TARGET_LINK_LIBRARIES(tutorial benchmark)
+TARGET_LINK_LIBRARIES(tutorial embree_benchmark)
 IF (EMBREE_SYCL_SUPPORT)
-  TARGET_LINK_LIBRARIES(tutorial_sycl benchmark)
+  TARGET_LINK_LIBRARIES(tutorial_sycl embree_benchmark)
 ENDIF()
 
 ADD_LIBRARY(noise STATIC noise.cpp)
