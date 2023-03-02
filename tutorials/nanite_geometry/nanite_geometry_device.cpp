@@ -1253,13 +1253,7 @@ namespace embree {
 
   struct BRDF
   {
-    float Ns;               /*< specular exponent */
-    float Ni;               /*< optical density for the surface (index of refraction) */
-    Vec3fa Ka;              /*< ambient reflectivity */
     Vec3fa Kd;              /*< diffuse reflectivity */
-    Vec3fa Ks;              /*< specular reflectivity */
-    Vec3fa Kt;              /*< transmission filter */
-    float dummy[30];
   };
 
   struct Medium
@@ -1322,33 +1316,16 @@ namespace embree {
   {
     float d = material->d;
     if (material->map_d) d *= getTextureTexel1f(material->map_d,dg.u,dg.v);
-    brdf.Ka = Vec3fa(material->Ka);
-    //if (material->map_Ka) { brdf.Ka *= material->map_Ka->get(dg.st); }
     brdf.Kd = d * Vec3fa(material->Kd);
     //if (material->map_Kd) brdf.Kd = brdf.Kd * getTextureTexel3f(material->map_Kd,dg.u,dg.v);
-    brdf.Ks = d * Vec3fa(material->Ks);
-    //if (material->map_Ks) brdf.Ks *= material->map_Ks->get(dg.st);
-    brdf.Ns = material->Ns;
-    //if (material->map_Ns) { brdf.Ns *= material->map_Ns.get(dg.st); }
-    brdf.Kt = (1.0f-d)*Vec3fa(material->Kt);
-    brdf.Ni = material->Ni;
   }
 
   Vec3fa OBJMaterial__eval(ISPCOBJMaterial* material, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi)
   {
     Vec3fa R = Vec3fa(0.0f);
     const float Md = max(max(brdf.Kd.x,brdf.Kd.y),brdf.Kd.z);
-    const float Ms = max(max(brdf.Ks.x,brdf.Ks.y),brdf.Ks.z);
-    const float Mt = max(max(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z);
     if (Md > 0.0f) {
       R = R + (1.0f/float(M_PI)) * clamp(dot(wi,dg.Ns)) * brdf.Kd;
-    }
-    if (Ms > 0.0f) {
-      const Sample3f refl = make_Sample3f(reflect(wo,dg.Ns),1.0f);
-      if (dot(refl.v,wi) > 0.0f)
-        R = R + (brdf.Ns+2) * float(one_over_two_pi) * powf(max(1e-10f,dot(refl.v,wi)),brdf.Ns) * clamp(dot(wi,dg.Ns)) * brdf.Ks;
-    }
-    if (Mt > 0.0f) {
     }
     return R;
   }
@@ -1362,57 +1339,18 @@ namespace embree {
       cd = float(one_over_pi) * clamp(dot(wid.v,dg.Ns)) * brdf.Kd;
     }
 
-    Vec3fa cs = Vec3fa(0.0f);
-    Sample3f wis = make_Sample3f(Vec3fa(0.0f),0.0f);
-    if (max(max(brdf.Ks.x,brdf.Ks.y),brdf.Ks.z) > 0.0f)
-    {
-      const Sample3f refl = make_Sample3f(reflect(wo,dg.Ns),1.0f);
-      wis.v = powerCosineSampleHemisphere(brdf.Ns,s);
-      wis.pdf = powerCosineSampleHemispherePDF(wis.v,brdf.Ns);
-      wis.v = frame(refl.v) * wis.v;
-      cs = (brdf.Ns+2) * float(one_over_two_pi) * powf(max(dot(refl.v,wis.v),1e-10f),brdf.Ns) * clamp(dot(wis.v,dg.Ns)) * brdf.Ks;
-    }
-
-    Vec3fa ct = Vec3fa(0.0f);
-    Sample3f wit = make_Sample3f(Vec3fa(0.0f),0.0f);
-    if (max(max(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) > 0.0f)
-    {
-      wit = make_Sample3f(neg(wo),1.0f);
-      ct = brdf.Kt;
-    }
-
     const Vec3fa md = Lw*cd/wid.pdf;
-    const Vec3fa ms = Lw*cs/wis.pdf;
-    const Vec3fa mt = Lw*ct/wit.pdf;
 
     const float Cd = wid.pdf == 0.0f ? 0.0f : max(max(md.x,md.y),md.z);
-    const float Cs = wis.pdf == 0.0f ? 0.0f : max(max(ms.x,ms.y),ms.z);
-    const float Ct = wit.pdf == 0.0f ? 0.0f : max(max(mt.x,mt.y),mt.z);
-    const float C  = Cd + Cs + Ct;
+    const float C  = Cd;
 
     if (C == 0.0f) {
       wi_o = make_Sample3f(Vec3fa(0,0,0),0);
       return Vec3fa(0,0,0);
     }
 
-    const float CPd = Cd/C;
-    const float CPs = Cs/C;
-    const float CPt = Ct/C;
-
-    if (s.x < CPd) {
-      wi_o = make_Sample3f(wid.v,wid.pdf*CPd);
-      return cd;
-    }
-    else if (s.x < CPd + CPs)
-    {
-      wi_o = make_Sample3f(wis.v,wis.pdf*CPs);
-      return cs;
-    }
-    else
-    {
-      wi_o = make_Sample3f(wit.v,wit.pdf*CPt);
-      return ct;
-    }
+    wi_o = make_Sample3f(wid.v,wid.pdf);
+    return cd;
   }
 
 
@@ -1423,16 +1361,10 @@ namespace embree {
   inline void Material__preprocess(ISPCMaterial** materials, unsigned int materialID, unsigned int numMaterials, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)
   {
     auto id = materialID;
+    if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
-      if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
-      {
-        ISPCMaterial* material = materials[id];
-
-        switch (material->type) {
-        case MATERIAL_OBJ  : OBJMaterial__preprocess  ((ISPCOBJMaterial*)  material,brdf,wo,dg,medium); break;
-        default: break;
-        }
-      }
+      ISPCMaterial* material = materials[id];
+      OBJMaterial__preprocess  ((ISPCOBJMaterial*)  material,brdf,wo,dg,medium);
     }
   }
 
@@ -1440,15 +1372,10 @@ namespace embree {
   {
     Vec3fa c = Vec3fa(0.0f);
     auto id = materialID;
+    if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
-      if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
-      {
-        ISPCMaterial* material = materials[id];
-        switch (material->type) {
-        case MATERIAL_OBJ  : c = OBJMaterial__eval  ((ISPCOBJMaterial*)  material, brdf, wo, dg, wi); break;
-        default: c = Vec3fa(0.0f);
-        }
-      }
+      ISPCMaterial* material = materials[id];
+      c = OBJMaterial__eval  ((ISPCOBJMaterial*)  material, brdf, wo, dg, wi);
     }
     return c;
   }
@@ -1457,15 +1384,10 @@ namespace embree {
   {
     Vec3fa c = Vec3fa(0.0f);
     auto id = materialID;
+    if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
-      if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
-      {
-        ISPCMaterial* material = materials[id];
-        switch (material->type) {
-        case MATERIAL_OBJ  : c = OBJMaterial__sample  ((ISPCOBJMaterial*)  material, brdf, Lw, wo, dg, wi_o, medium, s); break;
-        default: wi_o = make_Sample3f(Vec3fa(0.0f),0.0f); c = Vec3fa(0.0f); break;
-        }
-      }
+      ISPCMaterial* material = materials[id];
+      c = OBJMaterial__sample  ((ISPCOBJMaterial*)  material, brdf, Lw, wo, dg, wi_o, medium, s);
     }
     return c;
   }
