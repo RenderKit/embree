@@ -779,46 +779,78 @@ namespace embree {
     return count;
   }
   
-  void simplifyTriangleMesh(Mesh &mesh)
+  Mesh simplifyTriangleMesh(Mesh &mesh)
   {
     const uint numVertices = mesh.vertices.size();
     const uint numTriangles = mesh.triangles.size();
+
+    bool borderVertices[numVertices];
+    for (uint i=0;i<numVertices;i++)
+      borderVertices[i] = false;
     
     bool borderTriangle[numTriangles];
 
     uint numBorderTriangles = 0;
     for (uint i=0;i<numTriangles;i++)
     {
-      PRINT(i);
+      //PRINT(i);
+      uint v0 = mesh.triangles[i].v0;
+      uint v1 = mesh.triangles[i].v1;
+      uint v2 = mesh.triangles[i].v2;
+      const uint count_v0v1= getEdgeCount(mesh,v0,v1);
+      const uint count_v1v2= getEdgeCount(mesh,v1,v2);
+      const uint count_v2v0= getEdgeCount(mesh,v2,v0);
+      //PRINT4(v0,mesh.vertices[v0].x,mesh.vertices[v0].y,mesh.vertices[v0].z);
+      //PRINT4(v1,mesh.vertices[v1].x,mesh.vertices[v1].y,mesh.vertices[v1].z);
+      //PRINT4(v2,mesh.vertices[v2].x,mesh.vertices[v2].y,mesh.vertices[v2].z);
+      
+      //PRINT3(count_v0v1,count_v1v2,count_v2v0);
+      
+      if ( count_v0v1 == 1 ) { borderVertices[v0] = true; borderVertices[v1] = true; }
+      if ( count_v1v2 == 1 ) { borderVertices[v1] = true; borderVertices[v2] = true; }
+      if ( count_v2v0 == 1 ) { borderVertices[v2] = true; borderVertices[v0] = true; }
+    }
+
+    for (uint i=0;i<numTriangles;i++)
+    {
+      //PRINT(i);
       uint v0 = mesh.triangles[i].v0;
       uint v1 = mesh.triangles[i].v1;
       uint v2 = mesh.triangles[i].v2;
       borderTriangle[i] = false;
-      const uint count_v0v1= getEdgeCount(mesh,v0,v1);
-      const uint count_v1v2= getEdgeCount(mesh,v1,v2);
-      const uint count_v2v0= getEdgeCount(mesh,v2,v0);
-      PRINT4(v0,mesh.vertices[v0].x,mesh.vertices[v0].y,mesh.vertices[v0].z);
-      PRINT4(v1,mesh.vertices[v1].x,mesh.vertices[v1].y,mesh.vertices[v1].z);
-      PRINT4(v2,mesh.vertices[v2].x,mesh.vertices[v2].y,mesh.vertices[v2].z);
       
-      PRINT3(count_v0v1,count_v1v2,count_v2v0);
-      
-      if ( count_v0v1 == 1 ) { borderTriangle[i] = true; PRINT2(v0,v1); }
-      if ( count_v1v2 == 1 ) { borderTriangle[i] = true; PRINT2(v1,v2); }
-      if ( count_v2v0 == 1 ) { borderTriangle[i] = true; PRINT2(v2,v0); }
-      if ( borderTriangle[i] ) numBorderTriangles++;     
+      if ( borderVertices[v0] || borderVertices[v1] || borderVertices[v2])
+      {
+        numBorderTriangles++;
+        borderTriangle[i] = true;
+      }
     }
     
     PRINT2(numTriangles,numBorderTriangles);
     for (uint i=0;i<numTriangles;i++)
       if (!borderTriangle[i])
       {
-        PRINT2(i,borderTriangle[i]);
+        //PRINT2(i,borderTriangle[i]);
         const CompressedVertex c = mesh.vertices[ mesh.triangles[i].v0 ];
-        //mesh.vertices[ mesh.triangles[i].v1 ] = c;
-        //mesh.vertices[ mesh.triangles[i].v2 ] = c;        
+        mesh.vertices[ mesh.triangles[i].v1 ] = c;
+        mesh.vertices[ mesh.triangles[i].v2 ] = c;        
       }
-    
+
+
+    Mesh new_mesh;
+    for (uint i=0;i<numTriangles;i++)
+    {     
+      uint v0 = findVertex(new_mesh.vertices, mesh.vertices[ mesh.triangles[i].v0 ]);
+      uint v1 = findVertex(new_mesh.vertices, mesh.vertices[ mesh.triangles[i].v1 ]);
+      uint v2 = findVertex(new_mesh.vertices, mesh.vertices[ mesh.triangles[i].v2 ]);
+
+      Triangle tri0(v0,v1,v2);
+      if (tri0.valid()) new_mesh.triangles.push_back(tri0);
+    }
+
+    PRINT(new_mesh.vertices.size());
+    PRINT(new_mesh.triangles.size());
+    return new_mesh;
   }
   
   void simplifyLossyCompressedMeshCluster(LossyCompressedMeshCluster &cluster)
@@ -830,9 +862,11 @@ namespace embree {
     
     PRINT(numQuads);
     
-    Mesh mesh = convertToTriangleMesh(cluster);
+    Mesh tri_mesh = convertToTriangleMesh(cluster);
 
-    simplifyTriangleMesh(mesh);
+    Mesh mesh = simplifyTriangleMesh(tri_mesh);
+
+    
     
     std::vector<Quad> quads = extractQuads(mesh);
     for (uint i=0;i<quads.size();i++)
