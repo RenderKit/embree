@@ -576,7 +576,7 @@ namespace embree {
         const uint new_v = (*i).second;
         lcm->compressedVertices[ globalCompressedVertexOffset + new_v ] = CompressedVertex(mesh->positions[0][old_v],geometry_lower,geometry_inv_diag);        
       }
-      
+      cluster.numVertices           = index_map.size();
       globalCompressedVertexOffset += index_map.size();
       
       if (index_map.size() > 256) FATAL("index_map"); // byte indices
@@ -638,7 +638,260 @@ namespace embree {
     return vtx;
     //return vtx + d*scale;
   }
+
+  struct Triangle {
+    uint v0,v1,v2;
+
+    __forceinline Triangle () {}
+    __forceinline Triangle (const uint v0, const uint v1, const uint v2) : v0(v0), v1(v1), v2(v2) {}
+
+    __forceinline bool valid()
+    {
+      if (v0 != v1 && v1 != v2 && v2 != v0) return true;
+      return false;
+    }
+  };
+
+  struct Quad {
+    uint v0,v1,v2,v3;
+
+    __forceinline Quad () {}
+    __forceinline Quad (const uint v0, const uint v1, const uint v2, const uint v3) : v0(v0), v1(v1), v2(v2), v3(v3)  {}
+  };
   
+  struct Mesh {
+    std::vector<Triangle> triangles;
+    std::vector<CompressedVertex> vertices;
+  };
+
+  uint findVertex(std::vector<CompressedVertex> &vertices, const CompressedVertex &cv)
+  {
+    for (uint i=0;i<vertices.size();i++)
+      if (cv == vertices[i])
+        return i;
+    vertices.push_back(cv);
+    return vertices.size()-1;
+  }
+
+  __forceinline std::pair<int,int> quad_index2(int p, int a0, int a1, int b0, int b1)
+  {
+    if      (b0 == a0) return std::make_pair(p-1,b1);
+    else if (b0 == a1) return std::make_pair(p+0,b1);
+    else if (b1 == a0) return std::make_pair(p-1,b0);
+    else if (b1 == a1) return std::make_pair(p+0,b0);
+    else return std::make_pair(0,-1);
+  }
+  
+  __forceinline std::pair<int,int> quad_index3(int a0, int a1, int a2, int b0, int b1, int b2)
+  {
+    if      (b0 == a0) return quad_index2(0,a2,a1,b1,b2);
+    else if (b0 == a1) return quad_index2(1,a0,a2,b1,b2);
+    else if (b0 == a2) return quad_index2(2,a1,a0,b1,b2);
+    else if (b1 == a0) return quad_index2(0,a2,a1,b0,b2);
+    else if (b1 == a1) return quad_index2(1,a0,a2,b0,b2);
+    else if (b1 == a2) return quad_index2(2,a1,a0,b0,b2);
+    else if (b2 == a0) return quad_index2(0,a2,a1,b0,b1);
+    else if (b2 == a1) return quad_index2(1,a0,a2,b0,b1);
+    else if (b2 == a2) return quad_index2(2,a1,a0,b0,b1);
+    else return std::make_pair(0,-1);
+  }
+  
+  std::vector<Quad> extractQuads(Mesh &mesh)
+  {
+    std::vector<Quad> quads;
+
+    for (size_t i=0; i<mesh.triangles.size(); i++)
+    {
+      const int a0 = mesh.triangles[i+0].v0;
+      const int a1 = mesh.triangles[i+0].v1;
+      const int a2 = mesh.triangles[i+0].v2;
+      if (i+1 == mesh.triangles.size()) {
+        quads.push_back(Quad(a0,a1,a2,a2));
+        continue;
+      }
+      
+      const int b0 = mesh.triangles[i+1].v0;
+      const int b1 = mesh.triangles[i+1].v1;
+      const int b2 = mesh.triangles[i+1].v2;
+      const std::pair<int,int> q = quad_index3(a0,a1,a2,b0,b1,b2);
+      const int a3 = q.second;
+      if (a3 == -1) {
+        quads.push_back(Quad(a0,a1,a2,a2));
+        continue;
+      }
+      
+      if      (q.first == -1) quads.push_back(Quad(a1,a2,a3,a0));
+      else if (q.first ==  0) quads.push_back(Quad(a3,a1,a2,a0));
+      else if (q.first ==  1) quads.push_back(Quad(a0,a1,a3,a2));
+      else if (q.first ==  2) quads.push_back(Quad(a1,a2,a3,a0)); 
+      i++;
+    }
+    return quads;
+  }
+
+  Mesh convertToTriangleMesh(LossyCompressedMeshCluster &cluster)
+  {
+    Mesh mesh;
+    uint numQuads = cluster.numQuads;
+
+    CompressedQuadIndices *compressedIndices = cluster.mesh->compressedIndices + cluster.offsetIndices;
+    CompressedVertex *compressedVertices = cluster.mesh->compressedVertices + cluster.offsetVertices;
+
+    for (uint i=0;i<numQuads;i++)
+    {
+      uint v0 = findVertex(mesh.vertices, compressedVertices[ compressedIndices[i].v0 ]);
+      uint v1 = findVertex(mesh.vertices ,compressedVertices[ compressedIndices[i].v1 ]);
+      uint v2 = findVertex(mesh.vertices, compressedVertices[ compressedIndices[i].v2 ]);
+      uint v3 = findVertex(mesh.vertices, compressedVertices[ compressedIndices[i].v3 ]);
+
+      Triangle tri0(v0,v1,v3);
+      Triangle tri1(v1,v2,v3);
+      if (tri0.valid()) mesh.triangles.push_back(tri0);
+      if (tri1.valid()) mesh.triangles.push_back(tri1);            
+    }
+
+    PRINT(mesh.vertices.size());
+    PRINT(mesh.triangles.size());
+    return mesh;
+  }
+
+  __forceinline uint64_t makeUint64Edge(uint a, uint b)
+  {
+    if (a > b) std::swap(a,b);
+    return ((uint64_t)b << 32) | a;
+    
+  }
+  
+  uint getEdgeCount(Mesh &mesh, const uint a, const uint b)
+  {
+    uint64_t edge = makeUint64Edge(a,b);
+    uint count = 0;
+    for (uint i=0;i<mesh.triangles.size();i++)
+    {
+      uint v0 = mesh.triangles[i].v0;
+      uint v1 = mesh.triangles[i].v1;
+      uint v2 = mesh.triangles[i].v2;
+
+      count += makeUint64Edge(v0,v1) == edge ? 1 : 0;
+      count += makeUint64Edge(v1,v2) == edge ? 1 : 0;
+      count += makeUint64Edge(v2,v0) == edge ? 1 : 0;
+    }
+    return count;
+  }
+  
+  void simplifyTriangleMesh(Mesh &mesh)
+  {
+    const uint numVertices = mesh.vertices.size();
+    const uint numTriangles = mesh.triangles.size();
+    
+    bool borderTriangle[numTriangles];
+
+    uint numBorderTriangles = 0;
+    for (uint i=0;i<numTriangles;i++)
+    {
+      PRINT(i);
+      uint v0 = mesh.triangles[i].v0;
+      uint v1 = mesh.triangles[i].v1;
+      uint v2 = mesh.triangles[i].v2;
+      borderTriangle[i] = false;
+      const uint count_v0v1= getEdgeCount(mesh,v0,v1);
+      const uint count_v1v2= getEdgeCount(mesh,v1,v2);
+      const uint count_v2v0= getEdgeCount(mesh,v2,v0);
+      PRINT4(v0,mesh.vertices[v0].x,mesh.vertices[v0].y,mesh.vertices[v0].z);
+      PRINT4(v1,mesh.vertices[v1].x,mesh.vertices[v1].y,mesh.vertices[v1].z);
+      PRINT4(v2,mesh.vertices[v2].x,mesh.vertices[v2].y,mesh.vertices[v2].z);
+      
+      PRINT3(count_v0v1,count_v1v2,count_v2v0);
+      
+      if ( count_v0v1 == 1 ) { borderTriangle[i] = true; PRINT2(v0,v1); }
+      if ( count_v1v2 == 1 ) { borderTriangle[i] = true; PRINT2(v1,v2); }
+      if ( count_v2v0 == 1 ) { borderTriangle[i] = true; PRINT2(v2,v0); }
+      if ( borderTriangle[i] ) numBorderTriangles++;     
+    }
+    
+    PRINT2(numTriangles,numBorderTriangles);
+    for (uint i=0;i<numTriangles;i++)
+      if (!borderTriangle[i])
+      {
+        PRINT2(i,borderTriangle[i]);
+        const CompressedVertex c = mesh.vertices[ mesh.triangles[i].v0 ];
+        //mesh.vertices[ mesh.triangles[i].v1 ] = c;
+        //mesh.vertices[ mesh.triangles[i].v2 ] = c;        
+      }
+    
+  }
+  
+  void simplifyLossyCompressedMeshCluster(LossyCompressedMeshCluster &cluster)
+  {
+    uint numQuads = cluster.numQuads;
+    uint numVertices = numQuads*4;
+    CompressedQuadIndices *compressedIndices = cluster.mesh->compressedIndices + cluster.offsetIndices;
+    CompressedVertex *compressedVertices = cluster.mesh->compressedVertices + cluster.offsetVertices;
+    
+    PRINT(numQuads);
+    
+    Mesh mesh = convertToTriangleMesh(cluster);
+
+    simplifyTriangleMesh(mesh);
+    
+    std::vector<Quad> quads = extractQuads(mesh);
+    for (uint i=0;i<quads.size();i++)
+      compressedIndices[i] = CompressedQuadIndices(quads[i].v0,quads[i].v1,quads[i].v2,quads[i].v3);
+    if (quads.size() > cluster.numQuads)
+      FATAL("quads");
+    if (mesh.vertices.size() > cluster.numVertices)
+      FATAL("vertices");
+    
+    PRINT2(cluster.numQuads,quads.size());
+    
+    cluster.numQuads = quads.size();
+    cluster.numVertices = mesh.vertices.size();
+    for (uint i=0;i<mesh.vertices.size();i++)
+      compressedVertices[i] = mesh.vertices[i];
+#if 0    
+    exit(0);
+    
+    uint numAdjacentQuadsPerVertex[numVertices];
+    bool borderQuad[numQuads];
+    
+    for (uint i=0;i<numVertices;i++) numAdjacentQuadsPerVertex[i] = 0;
+    for (uint i=0;i<numQuads;i++)
+    {
+      uint v0 = compressedIndices[i].v0;
+      uint v1 = compressedIndices[i].v1;
+      uint v2 = compressedIndices[i].v2;
+      uint v3 = compressedIndices[i].v3;
+      numAdjacentQuadsPerVertex[v0]++;
+      numAdjacentQuadsPerVertex[v1]++;
+      numAdjacentQuadsPerVertex[v2]++;
+      numAdjacentQuadsPerVertex[v3]++;      
+    }
+
+    for (uint i=0;i<numQuads;i++)
+    {
+      uint v0 = compressedIndices[i].v0;
+      uint v1 = compressedIndices[i].v1;
+      uint v2 = compressedIndices[i].v2;
+      uint v3 = compressedIndices[i].v3;
+      borderQuad[i] = false;
+      if ( numAdjacentQuadsPerVertex[v0] <= 2 ) borderQuad[i] = true;
+      if ( numAdjacentQuadsPerVertex[v1] <= 2 ) borderQuad[i] = true;
+      if ( numAdjacentQuadsPerVertex[v2] <= 2 ) borderQuad[i] = true;
+      if ( numAdjacentQuadsPerVertex[v3] <= 2 ) borderQuad[i] = true;      
+    }
+    for (uint i=0;i<numQuads;i++)
+    {
+      if (!borderQuad[i])
+      {
+        compressedIndices[i].v1 = compressedIndices[i].v2;
+        compressedIndices[i].v3 = compressedIndices[i].v2;
+
+      }
+      //PRINT2(i,numAdjacentQuadsPerVertex[i]);
+    }
+    //exit(0);
+#endif    
+  }
 
   void generateGrid(RTCScene scene, const uint gridResX, const uint gridResY)
   {
@@ -737,6 +990,10 @@ namespace embree {
       PRINT2(numQuadMeshes,numQuads);
       PRINT3(totalCompressedSize,(float)totalCompressedSize/numQuads,(float)totalCompressedSize/numQuads*0.5f);
       PRINT3(numDecompressedBlocks,numDecompressedBlocks*64,(float)numDecompressedBlocks*64/totalCompressedSize);
+
+      PRINT("Cluster Simplification");
+      for (uint i=0;i<global_lcgbp_scene->numLCMeshClusters;i++)
+        simplifyLossyCompressedMeshCluster( global_lcgbp_scene->lcm_cluster[i] );
       
     }
     

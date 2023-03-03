@@ -327,7 +327,11 @@ namespace embree {
     
   };
 
+  __forceinline bool operator ==( const CompressedVertex& a, const CompressedVertex& b ) { return a.x == b.x && a.y == b.y && a.z == b.z; }
+  __forceinline bool operator !=( const CompressedVertex& a, const CompressedVertex& b ) { return a.x != b.x || a.y == b.y || a.z == b.z; }
+  
 
+  
   __forceinline CompressedVertex min(const CompressedVertex &v0,  const CompressedVertex &v1)
   {
     return CompressedVertex(min(v0.x,v1.x),min(v0.y,v1.y),min(v0.z,v1.z));
@@ -429,10 +433,10 @@ namespace embree {
     static const uint MAX_QUADS_PER_CLUSTER = 128;
     uint numQuads;
     uint numBlocks;
+    uint numVertices;    
     uint ID;
     uint offsetIndices;
     uint offsetVertices;
-    uint tmp;
     LossyCompressedMesh *mesh;
     
     __forceinline LossyCompressedMeshCluster() {}
