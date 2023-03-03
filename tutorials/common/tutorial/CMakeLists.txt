@@ -19,6 +19,7 @@ IF (EMBREE_SYCL_SUPPORT)
 ENDIF()
 
 option(EMBREE_USE_GOOGLE_BENCHMARK "Use google benchmark (note: set benchmark_DIR to benchmark_install_dir/lib/cmake/benchmark)" OFF)
+option(EMBREE_BUILD_GOOGLE_BENCHMARK_FROM_SOURCE "Force to download, build, and staticly link Google Benchmark" OFF)
 
 IF(EMBREE_USE_GOOGLE_BENCHMARK)
   IF (NOT EMBREE_BUILD_GOOGLE_BENCHMARK_FROM_SOURCE)

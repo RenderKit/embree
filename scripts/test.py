@@ -360,6 +360,11 @@ def runConfig(config):
   if "EMBREE_GOOGLE_BENCHMARK_DIR" in config:
     conf.append("-D benchmark_DIR:PATH="+config["EMBREE_GOOGLE_BENCHMARK_DIR"])
 
+  if "EMBREE_BUILD_GOOGLE_BENCHMARK_FROM_SOURCE" in config:
+    conf.append("-D EMBREE_BUILD_GOOGLE_BENCHMARK_FROM_SOURCE=ON")
+  else:
+    conf.append("-D EMBREE_BUILD_GOOGLE_BENCHMARK_FROM_SOURCE=OFF")
+
   if "package" in config:
     SIGN_FILE = ""
     if OS == "windows":
