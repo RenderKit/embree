@@ -7,6 +7,8 @@
 #include "../common/core/differential_geometry.h"
 #include "../common/tutorial/scene_device.h"
 
+#include "meshoptimizer.h"
+
 namespace embree {
 
 extern "C" int g_spp;

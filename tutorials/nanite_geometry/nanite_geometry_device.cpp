@@ -389,7 +389,11 @@ namespace embree {
     return ID;
   }
     
-
+  void convertISPCTriangleMesh(ISPCQuadMesh* mesh, RTCScene scene, ISPCOBJMaterial *material,const uint geomID,std::vector<LossyCompressedMesh*> &lcm_ptrs,std::vector<LossyCompressedMeshCluster> &lcm_clusters, size_t &totalCompressedSize, size_t &numDecompressedBlocks)
+  {
+    
+  }
+  
   void convertISPCQuadMesh(ISPCQuadMesh* mesh, RTCScene scene, ISPCOBJMaterial *material,const uint geomID,std::vector<LossyCompressedMesh*> &lcm_ptrs,std::vector<LossyCompressedMeshCluster> &lcm_clusters, size_t &totalCompressedSize, size_t &numDecompressedBlocks)
   {
     const uint lcm_ID = lcm_ptrs.size();
@@ -856,19 +860,22 @@ namespace embree {
   void simplifyLossyCompressedMeshCluster(LossyCompressedMeshCluster &cluster)
   {
     uint numQuads = cluster.numQuads;
-    uint numVertices = numQuads*4;
+    //uint numVertices = numQuads*4;
     CompressedQuadIndices *compressedIndices = cluster.mesh->compressedIndices + cluster.offsetIndices;
     CompressedVertex *compressedVertices = cluster.mesh->compressedVertices + cluster.offsetVertices;
-    
+    const LossyCompressedMesh &lcmesh = *cluster.mesh;
+    const Vec3f lower = lcmesh.bounds.lower;
+    const Vec3f diag = lcmesh.bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
+
     PRINT(numQuads);
     
     Mesh tri_mesh = convertToTriangleMesh(cluster);
 
-    Mesh mesh = simplifyTriangleMesh(tri_mesh);
+#if 0
+    Mesh &mesh = tri_mesh;
+    //Mesh mesh = simplifyTriangleMesh(tri_mesh);
 
-    
-    
-    std::vector<Quad> quads = extractQuads(mesh);
+    std::vector<Quad> quads = extractQuads(tri_mesh);
     for (uint i=0;i<quads.size();i++)
       compressedIndices[i] = CompressedQuadIndices(quads[i].v0,quads[i].v1,quads[i].v2,quads[i].v3);
     if (quads.size() > cluster.numQuads)
@@ -882,49 +889,61 @@ namespace embree {
     cluster.numVertices = mesh.vertices.size();
     for (uint i=0;i<mesh.vertices.size();i++)
       compressedVertices[i] = mesh.vertices[i];
-#if 0    
-    exit(0);
     
-    uint numAdjacentQuadsPerVertex[numVertices];
-    bool borderQuad[numQuads];
+#else
+
+#if 1    
     
-    for (uint i=0;i<numVertices;i++) numAdjacentQuadsPerVertex[i] = 0;
-    for (uint i=0;i<numQuads;i++)
+    const uint numTriangles = tri_mesh.triangles.size();
+    const uint numVertices  = tri_mesh.vertices.size();
+    const uint numIndices   = numTriangles*3;
+    Triangle *triangles     = new Triangle[numTriangles];
+    Triangle *new_triangles = new Triangle[numTriangles];
+    Vec3f *vertices         = new Vec3f[numVertices];
+
+    for (uint i=0;i<numTriangles;i++)
+      triangles[i] = tri_mesh.triangles[i];
+
+    for (uint i=0;i<numVertices;i++)
+      vertices[i] = tri_mesh.vertices[i].decompress(lower,diag);
+    
+//        meshopt_SimplifyLockBorder = 1 << 0,
+
+    //MESHOPTIMIZER_API size_t meshopt_simplify(unsigned int* destination, const unsigned int* indices, size_t index_count, const float* vertex_positions, size_t vertex_count, size_t vertex_positions_stride, size_t target_index_count, float target_error, unsigned int options, float* result_error);
+    float result_error = 0.0f;
+    const size_t new_numIndices = meshopt_simplify((uint*)new_triangles,(uint*)triangles,numIndices,(float*)vertices,numVertices,sizeof(Vec3f),numIndices*0.5f,0.05f,meshopt_SimplifyLockBorder,&result_error);
+    PRINT(result_error);
+    PRINT2(new_numIndices,new_numIndices/3);
+
+    tri_mesh.triangles.resize(new_numIndices/3);
+    for (uint i=0;i<new_numIndices/3;i++)
     {
-      uint v0 = compressedIndices[i].v0;
-      uint v1 = compressedIndices[i].v1;
-      uint v2 = compressedIndices[i].v2;
-      uint v3 = compressedIndices[i].v3;
-      numAdjacentQuadsPerVertex[v0]++;
-      numAdjacentQuadsPerVertex[v1]++;
-      numAdjacentQuadsPerVertex[v2]++;
-      numAdjacentQuadsPerVertex[v3]++;      
+      tri_mesh.triangles[i] = new_triangles[i];
+      if (new_triangles[i].v0 >= 256 ||
+          new_triangles[i].v1 >= 256 ||
+          new_triangles[i].v2 >= 256) FATAL("HERE");
     }
 
-    for (uint i=0;i<numQuads;i++)
-    {
-      uint v0 = compressedIndices[i].v0;
-      uint v1 = compressedIndices[i].v1;
-      uint v2 = compressedIndices[i].v2;
-      uint v3 = compressedIndices[i].v3;
-      borderQuad[i] = false;
-      if ( numAdjacentQuadsPerVertex[v0] <= 2 ) borderQuad[i] = true;
-      if ( numAdjacentQuadsPerVertex[v1] <= 2 ) borderQuad[i] = true;
-      if ( numAdjacentQuadsPerVertex[v2] <= 2 ) borderQuad[i] = true;
-      if ( numAdjacentQuadsPerVertex[v3] <= 2 ) borderQuad[i] = true;      
-    }
-    for (uint i=0;i<numQuads;i++)
-    {
-      if (!borderQuad[i])
-      {
-        compressedIndices[i].v1 = compressedIndices[i].v2;
-        compressedIndices[i].v3 = compressedIndices[i].v2;
-
-      }
-      //PRINT2(i,numAdjacentQuadsPerVertex[i]);
-    }
-    //exit(0);
+    delete [] vertices;
+    delete [] triangles;    
+    delete [] new_triangles;
+    
 #endif    
+    Mesh &mesh = tri_mesh;
+
+    std::vector<Quad> quads = extractQuads(tri_mesh);  
+    PRINT(quads.size());
+    for (uint i=0;i<quads.size();i++)
+      compressedIndices[i] = CompressedQuadIndices(quads[i].v0,quads[i].v1,quads[i].v2,quads[i].v3);
+    if (quads.size() > cluster.numQuads)
+      FATAL("quads");
+    cluster.numQuads = quads.size();
+    cluster.numVertices = mesh.vertices.size();
+    for (uint i=0;i<mesh.vertices.size();i++)
+      compressedVertices[i] = mesh.vertices[i];
+    
+#endif    
+    
   }
 
   void generateGrid(RTCScene scene, const uint gridResX, const uint gridResY)
@@ -1004,6 +1023,8 @@ namespace embree {
         convertISPCGridMesh((ISPCGridMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID]);
       else if (geometry->type == QUAD_MESH)
         convertISPCQuadMesh((ISPCQuadMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID],geomID,lcm_ptrs,lcm_clusters,totalCompressedSize,numDecompressedBlocks);
+      else if (geometry->type == TRIANGLE_MESH)
+        convertISPCTriangleMesh((ISPCQuadMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID],geomID,lcm_ptrs,lcm_clusters,totalCompressedSize,numDecompressedBlocks);      
     }
     
     // === finalize quad meshes ===

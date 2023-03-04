@@ -2,6 +2,6 @@
 ## SPDX-License-Identifier: Apache-2.0
 
 INCLUDE(tutorial)
-ADD_TUTORIAL(nanite_geometry)
-ADD_TUTORIAL_SYCL(nanite_geometry)
+#ADD_TUTORIAL(nanite_geometry)
+ADD_TUTORIAL_SYCL(nanite_geometry simplifier.cpp)
 
