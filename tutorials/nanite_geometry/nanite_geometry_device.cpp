@@ -364,6 +364,195 @@ namespace embree {
   // ==============================================================================================
   // ==============================================================================================
 
+#define QUAD_MESH_LODS 2  
+
+  struct Triangle {
+    uint v0,v1,v2;
+
+    __forceinline Triangle () {}
+    __forceinline Triangle (const uint v0, const uint v1, const uint v2) : v0(v0), v1(v1), v2(v2) {}
+
+    __forceinline bool valid()
+    {
+      if (v0 != v1 && v1 != v2 && v2 != v0) return true;
+      return false;
+    }
+  };
+
+  struct Quad {
+    uint v0,v1,v2,v3;
+
+    __forceinline Quad () {}
+    __forceinline Quad (const uint v0, const uint v1, const uint v2, const uint v3) : v0(v0), v1(v1), v2(v2), v3(v3)  {}
+  };
+  
+  struct Mesh {
+    std::vector<Triangle> triangles;
+    std::vector<CompressedVertex> vertices;
+  };
+
+
+  struct TriangleMesh {
+    std::vector<Triangle> triangles;
+    std::vector<Vec3f> vertices;
+  };
+  
+  struct QuadMeshCluster {
+    uint left, right;
+    std::vector<Quad> quads;
+    std::vector<Vec3f> vertices;
+
+    __forceinline QuadMeshCluster() : left(-1), right(-1) {}
+
+    __forceinline bool isLeaf() { return left == -1 || right == -1; }    
+  };
+
+  uint findVertex(std::vector<Vec3f> &vertices, const Vec3f &cv)
+  {
+    for (uint i=0;i<vertices.size();i++)
+      if (cv == vertices[i])
+        return i;
+    vertices.push_back(cv);
+    return vertices.size()-1;
+  }
+
+  void countVertexIDs(std::vector<uint> &vertices, const uint cv)
+  {
+    for (uint i=0;i<vertices.size();i++)
+      if (cv == vertices[i])
+        return;
+    vertices.push_back(cv);
+  }
+  
+
+  __forceinline std::pair<int,int> quad_index2(int p, int a0, int a1, int b0, int b1)
+  {
+    if      (b0 == a0) return std::make_pair(p-1,b1);
+    else if (b0 == a1) return std::make_pair(p+0,b1);
+    else if (b1 == a0) return std::make_pair(p-1,b0);
+    else if (b1 == a1) return std::make_pair(p+0,b0);
+    else return std::make_pair(0,-1);
+  }
+  
+  __forceinline std::pair<int,int> quad_index3(int a0, int a1, int a2, int b0, int b1, int b2)
+  {
+    if      (b0 == a0) return quad_index2(0,a2,a1,b1,b2);
+    else if (b0 == a1) return quad_index2(1,a0,a2,b1,b2);
+    else if (b0 == a2) return quad_index2(2,a1,a0,b1,b2);
+    else if (b1 == a0) return quad_index2(0,a2,a1,b0,b2);
+    else if (b1 == a1) return quad_index2(1,a0,a2,b0,b2);
+    else if (b1 == a2) return quad_index2(2,a1,a0,b0,b2);
+    else if (b2 == a0) return quad_index2(0,a2,a1,b0,b1);
+    else if (b2 == a1) return quad_index2(1,a0,a2,b0,b1);
+    else if (b2 == a2) return quad_index2(2,a1,a0,b0,b1);
+    else return std::make_pair(0,-1);
+  }
+
+
+  bool mergeSimplifyQuadMeshCluster(QuadMeshCluster &cluster0,QuadMeshCluster &cluster1, QuadMeshCluster &quadMesh)
+  {
+    TriangleMesh mesh;
+    
+    
+    // === cluster0 ===
+    for (uint i=0;i<cluster0.quads.size();i++)
+    {
+      uint v0 = findVertex(mesh.vertices, cluster0.vertices[ cluster0.quads[i].v0 ]);
+      uint v1 = findVertex(mesh.vertices, cluster0.vertices[ cluster0.quads[i].v1 ]);
+      uint v2 = findVertex(mesh.vertices, cluster0.vertices[ cluster0.quads[i].v2 ]);
+      uint v3 = findVertex(mesh.vertices, cluster0.vertices[ cluster0.quads[i].v3 ]);
+
+      Triangle tri0(v0,v1,v3);
+      Triangle tri1(v1,v2,v3);
+      if (tri0.valid()) mesh.triangles.push_back(tri0);
+      if (tri1.valid()) mesh.triangles.push_back(tri1);            
+    }
+
+    // === cluster1 ===
+    for (uint i=0;i<cluster1.quads.size();i++)
+    {
+      uint v0 = findVertex(mesh.vertices, cluster1.vertices[ cluster1.quads[i].v0 ]);
+      uint v1 = findVertex(mesh.vertices, cluster1.vertices[ cluster1.quads[i].v1 ]);
+      uint v2 = findVertex(mesh.vertices, cluster1.vertices[ cluster1.quads[i].v2 ]);
+      uint v3 = findVertex(mesh.vertices, cluster1.vertices[ cluster1.quads[i].v3 ]);
+
+      Triangle tri0(v0,v1,v3);
+      Triangle tri1(v1,v2,v3);
+      if (tri0.valid()) mesh.triangles.push_back(tri0);
+      if (tri1.valid()) mesh.triangles.push_back(tri1);            
+    }
+    
+    PRINT(mesh.vertices.size());
+    PRINT(mesh.triangles.size());
+
+    const uint numTriangles = mesh.triangles.size();
+    const uint numVertices  = mesh.vertices.size();
+    const uint numIndices   = numTriangles*3;
+
+    Triangle *new_triangles = new Triangle[numTriangles];    
+    Triangle *triangles     = &*mesh.triangles.begin();
+    Vec3f *vertices         = &*mesh.vertices.begin();
+
+    uint expectedTriangles = LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER * 3 / 2;
+    float result_error = 0.0f;
+    const size_t new_numIndices = meshopt_simplify((uint*)new_triangles,(uint*)triangles,numIndices,(float*)vertices,numVertices,sizeof(Vec3f),expectedTriangles*3,0.05f,meshopt_SimplifyLockBorder,&result_error);
+    PRINT(result_error);
+
+    const size_t new_numTriangles = new_numIndices/3;
+    PRINT2(new_numIndices,new_numTriangles);
+
+    std::vector<uint> new_vertices;
+    for (uint i=0;i<new_numTriangles;i++)
+    {
+      countVertexIDs(new_vertices, new_triangles[i].v0);
+      countVertexIDs(new_vertices, new_triangles[i].v1);
+      countVertexIDs(new_vertices, new_triangles[i].v2);      
+    }      
+    PRINT(new_vertices.size());
+    if (new_vertices.size() > 256) FATAL("new_vertices.size()");
+
+
+    for (size_t i=0; i<new_numTriangles; i++)
+    {
+      const int a0 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+0].v0 ]);
+      const int a1 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+0].v1 ]);
+      const int a2 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+0].v2 ]);      
+      if (i+1 == new_numTriangles) {
+        quadMesh.quads.push_back(Quad(a0,a1,a2,a2));
+        continue;
+      }
+
+      const int b0 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+1].v0 ]);
+      const int b1 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+1].v1 ]);
+      const int b2 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+1].v2 ]);      
+      const std::pair<int,int> q = quad_index3(a0,a1,a2,b0,b1,b2);
+      const int a3 = q.second;
+      if (a3 == -1) {
+        quadMesh.quads.push_back(Quad(a0,a1,a2,a2));
+        continue;
+      }
+      
+      if      (q.first == -1) quadMesh.quads.push_back(Quad(a1,a2,a3,a0));
+      else if (q.first ==  0) quadMesh.quads.push_back(Quad(a3,a1,a2,a0));
+      else if (q.first ==  1) quadMesh.quads.push_back(Quad(a0,a1,a3,a2));
+      else if (q.first ==  2) quadMesh.quads.push_back(Quad(a1,a2,a3,a0)); 
+      i++;
+    }
+
+
+    PRINT2(quadMesh.quads.size(),quadMesh.vertices.size());
+    if (quadMesh.quads.size() > LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER) FATAL("quadMesh.quads.size()");
+    if (quadMesh.vertices.size() > 256) FATAL("quadMesh.vertices.size()");
+    //exit(0);
+
+    delete [] new_triangles;
+    
+    return true;
+  }
+  
+  
+  
+  
   __forceinline uint remap_vtx_index(const uint v, std::map<uint,uint> &index_map, uint &numLocalIndices)
   {
     auto e = index_map.find(v);
@@ -377,21 +566,21 @@ namespace embree {
   {
     gpu::Range range;
     uint parent, left, right;
+    uint counter, clusterID;
 
-    __forceinline HierarchyRange(const gpu::Range &range, const uint parent = -1) : range(range), parent(parent), left(-1), right(-1) {}
+    __forceinline HierarchyRange(const gpu::Range &range, const uint parent = -1) : range(range), parent(parent), left(-1), right(-1), counter(0), clusterID(-1) {}
 
     __forceinline bool isLeaf() { return left == -1 || right == -1; }
   };
 
   void extractRanges(const uint currentID, const gpu::MortonCodePrimitive64x32Bits3D *const mcodes, std::vector<HierarchyRange> &ranges, std::vector<uint> &leafIDs, ISPCQuadMesh* mesh, uint &numTotalVertices, const uint threshold)
   {
-    HierarchyRange &current = ranges[currentID];
-    if (current.range.size() < threshold)
+    if (ranges[currentID].range.size() < threshold)
     {
       std::map<uint,uint> index_map;
       uint numLocalIndices = 0;
       bool fits = true;
-      for (uint j=current.range.start;j<current.range.end;j++)
+      for (uint j=ranges[currentID].range.start;j<ranges[currentID].range.end;j++)
       {
         const uint index = mcodes[j].getIndex();
         const uint v0 = mesh->quads[index].v0;
@@ -412,7 +601,7 @@ namespace embree {
       
       if (fits)
       {
-        PRINT3(current.range.start,current.range.end,current.range.size());
+        //PRINT4(ranges[currentID].range.start,ranges[currentID].range.end,ranges[currentID].range.size(),ranges[currentID].parent);
         leafIDs.push_back(currentID);
         numTotalVertices += index_map.size();
         return;
@@ -420,15 +609,35 @@ namespace embree {
     }
     
     gpu::Range left, right;
-    splitRange(current.range,mcodes,left,right);
+    splitRange(ranges[currentID].range,mcodes,left,right);
 
     const uint leftID = ranges.size();
     ranges.push_back(HierarchyRange(left,currentID));
     const uint rightID = ranges.size();
     ranges.push_back(HierarchyRange(right,currentID));
+
+    ranges[currentID].left = leftID;
+    ranges[currentID].right = rightID;
     
     extractRanges(leftID,mcodes,ranges,leafIDs,mesh,numTotalVertices,threshold);
     extractRanges(rightID,mcodes,ranges,leafIDs,mesh,numTotalVertices,threshold);      
+  }
+
+  void extractClusterRootIDs(const uint currentID, std::vector<HierarchyRange> &ranges, std::vector<uint> &clusterRootIDs)
+  {
+    if (ranges[currentID].isLeaf() || ranges[currentID].counter == 2)
+    {
+      if (ranges[currentID].clusterID == -1) FATAL("ranges[currentID].clusterID");
+      clusterRootIDs.push_back(ranges[currentID].clusterID);
+    }
+    else
+    {
+      if (ranges[currentID].left != -1)
+        extractClusterRootIDs(ranges[currentID].left,ranges,clusterRootIDs);
+      if (ranges[currentID].right != -1)
+        extractClusterRootIDs(ranges[currentID].right,ranges,clusterRootIDs);      
+    }
+    
   }
 
     
@@ -477,6 +686,8 @@ namespace embree {
     std::vector<gpu::MortonCodePrimitive64x32Bits3D> mcodes;
     std::vector<HierarchyRange> ranges;
     std::vector<uint> leafIDs;
+    std::vector<QuadMeshCluster> clusters;
+    std::vector<uint> clusterRootIDs;
     
     for (uint i=0;i<numQuads;i++)
     {
@@ -522,49 +733,21 @@ namespace embree {
     extractRanges(0,&*mcodes.begin(),ranges,leafIDs,mesh,numTotalVertices,INITIAL_CREATE_RANGE_THRESHOLD);
     PRINT(ranges.size());
     PRINT(leafIDs.size());
-    //exit(0);
 
     const uint numRanges = leafIDs.size();
-    
 
-    // === allocate LossyCompressedMesh in USM ===
-    
-    LossyCompressedMesh *lcm = (LossyCompressedMesh *)alignedUSMMalloc(sizeof(LossyCompressedMesh),64);
-    lcm_ptrs.push_back(lcm);
-  
-    lcm->bounds             = geometryBounds;
-    lcm->numQuads           = numQuads;
-    lcm->numVertices        = mesh->numVertices;
-    lcm->geomID             = geomID; 
-    lcm->compressedVertices = (CompressedVertex*)alignedUSMMalloc(sizeof(CompressedVertex)*numTotalVertices,64); // FIXME
-    lcm->compressedIndices  = (CompressedQuadIndices*)alignedUSMMalloc(sizeof(CompressedQuadIndices)*numQuads,64); //FIXME    
-           
-    uint globalCompressedVertexOffset = 0;
-    uint globalCompressedIndexOffset = 0;
-
-    // === quantize vertices with respect to geometry bounding box ===
-    
-    const Vec3f geometry_lower    = geometryBounds.lower;
-    const Vec3f geometry_diag     = geometryBounds.size();
-    const Vec3f geometry_inv_diag = geometry_diag != Vec3fa(0.0f) ? Vec3fa(1.0f) / geometry_diag : Vec3fa(0.0f);
+    // === create leaf clusters ===
     
     for (uint i=0;i<leafIDs.size();i++)
     {
       const uint ID = leafIDs[i];
-      PRINT(ID);
-      LossyCompressedMeshCluster cluster;
-      cluster.numQuads  = ranges[ID].range.size();
-      cluster.numBlocks = LossyCompressedMeshCluster::getDecompressedSizeInBytes(ranges[ID].range.size())/64;
-      cluster.ID = i;
-      cluster.offsetIndices  = globalCompressedIndexOffset;      
-      cluster.offsetVertices = globalCompressedVertexOffset;
-      cluster.mesh = lcm;
+      QuadMeshCluster cluster;
 
       std::map<uint,uint> index_map;
       uint numLocalIndices = 0;
 
       // === remap vertices relative to cluster ===
-      PRINT2(ranges[ID].range.start,ranges[ID].range.end);
+      //PRINT2(ranges[ID].range.start,ranges[ID].range.end);
       
       for (uint j=ranges[ID].range.start;j<ranges[ID].range.end;j++)
       {
@@ -579,30 +762,120 @@ namespace embree {
         const uint remaped_v2 =  remap_vtx_index(v2,index_map,numLocalIndices);
         const uint remaped_v3 =  remap_vtx_index(v3,index_map,numLocalIndices);
 
-        lcm->compressedIndices[ globalCompressedIndexOffset++ ] = CompressedQuadIndices(remaped_v0,remaped_v1,remaped_v2,remaped_v3);
-        if ( globalCompressedIndexOffset > numQuads ) FATAL("numQuads");
+        cluster.quads.push_back(Quad(remaped_v0,remaped_v1,remaped_v2,remaped_v3));
       }
-
-      PRINT("1");
+      if (cluster.quads.size() > LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER) FATAL("cluster.quads");
+      if (numLocalIndices > 256) FATAL("cluster.vertices");
+      
+      cluster.vertices.resize(numLocalIndices);
       
       for (std::map<uint,uint>::iterator i=index_map.begin(); i != index_map.end(); i++)
       {
         const uint old_v = (*i).first;
         const uint new_v = (*i).second;
-        if ( globalCompressedVertexOffset + new_v > numTotalVertices ) FATAL("numTotalVertices");
-
-        lcm->compressedVertices[ globalCompressedVertexOffset + new_v ] = CompressedVertex(mesh->positions[0][old_v],geometry_lower,geometry_inv_diag);        
+        cluster.vertices[new_v] = mesh->positions[0][old_v];
       }
-      cluster.numVertices           = index_map.size();
-      globalCompressedVertexOffset += index_map.size();
+      ranges[ID].clusterID = clusters.size();
+      clusters.push_back(cluster);
+      //PRINT2(cluster.quads.size(),cluster.vertices.size());
+    }
 
-      PRINT("2");
+    // === bottom-up merging and creation of new clusters ===
+    
+    for (uint i=0;i<leafIDs.size();i++)
+    {
+      const uint ID = leafIDs[i];
+      const uint parentID = ranges[ID].parent;
+      //PRINT2(ID,parentID);
+      if (parentID != -1)
+      {        
+        ranges[parentID].counter++;
+        if (ranges[parentID].counter == 2)
+        {
+          const uint leftID = ranges[parentID].left;
+          const uint rightID = ranges[parentID].right;
+          //PRINT2(leftID,rightID);
+          if (leftID == -1 || rightID == -1) FATAL("leftID, rightID");
+          //PRINT5(parentID,ranges[leftID].range.start,ranges[leftID].range.end,ranges[rightID].range.start,ranges[rightID].range.end);
+          // === merge ranges ===
+          const uint  leftClusterID = ranges[ leftID].clusterID;
+          const uint rightClusterID = ranges[rightID].clusterID;
+          
+          QuadMeshCluster new_cluster;
+          mergeSimplifyQuadMeshCluster( clusters[leftClusterID], clusters[rightClusterID], new_cluster);
+          PRINT(new_cluster.quads.size());
+          PRINT(new_cluster.vertices.size());          
+          const uint mergedClusterID = clusters.size();
+          clusters.push_back(new_cluster);
+          ranges[parentID].clusterID = mergedClusterID;
+        }
+      }
+    }
+
+    extractClusterRootIDs(0,ranges,clusterRootIDs);
+    PRINT(clusterRootIDs.size());
+    
+    uint numTotalQuadsAllocate = 0;
+    uint numTotalVerticesAllocate = 0;
+
+    for (uint i=0;i<clusters.size();i++)
+    {
+      numTotalQuadsAllocate += clusters[i].quads.size();
+      numTotalVerticesAllocate += clusters[i].vertices.size();      
+    }
+    PRINT2(numTotalQuadsAllocate,numTotalVerticesAllocate);
+    
+    // === allocate LossyCompressedMesh in USM ===
+    
+    LossyCompressedMesh *lcm = (LossyCompressedMesh *)alignedUSMMalloc(sizeof(LossyCompressedMesh),64);
+    lcm_ptrs.push_back(lcm);
+  
+    lcm->bounds             = geometryBounds;
+    lcm->numQuads           = numQuads;
+    lcm->numVertices        = mesh->numVertices;
+    lcm->geomID             = geomID; 
+    lcm->compressedVertices = (CompressedVertex*)alignedUSMMalloc(sizeof(CompressedVertex)*numTotalVerticesAllocate,64); // FIXME
+    lcm->compressedIndices  = (CompressedQuadIndices*)alignedUSMMalloc(sizeof(CompressedQuadIndices)*numTotalQuadsAllocate,64); //FIXME    
+           
+    uint globalCompressedVertexOffset = 0;
+    uint globalCompressedIndexOffset = 0;
+
+    // === quantize vertices with respect to geometry bounding box ===
+    
+    const Vec3f geometry_lower    = geometryBounds.lower;
+    const Vec3f geometry_diag     = geometryBounds.size();
+    const Vec3f geometry_inv_diag = geometry_diag != Vec3fa(0.0f) ? Vec3fa(1.0f) / geometry_diag : Vec3fa(0.0f);
+    
+    for (uint c=0;c<clusters.size();c++)
+    {
+      LossyCompressedMeshCluster compressed_cluster;
+      compressed_cluster.numQuads  = clusters[c].quads.size();
+      compressed_cluster.numBlocks = LossyCompressedMeshCluster::getDecompressedSizeInBytes(compressed_cluster.numQuads)/64;
+      compressed_cluster.ID = c;
+      compressed_cluster.offsetIndices  = globalCompressedIndexOffset;      
+      compressed_cluster.offsetVertices = globalCompressedVertexOffset;
+      compressed_cluster.mesh = lcm;
+
+      for (uint i=0;i<clusters[c].quads.size();i++)
+      {
+        const uint v0 = clusters[c].quads[i].v0;
+        const uint v1 = clusters[c].quads[i].v1;
+        const uint v2 = clusters[c].quads[i].v2;
+        const uint v3 = clusters[c].quads[i].v3;        
+        lcm->compressedIndices[ globalCompressedIndexOffset++ ] = CompressedQuadIndices(v0,v1,v2,v3);
+        if ( globalCompressedIndexOffset > numTotalQuadsAllocate ) FATAL("numTotalQuadsAllocate");        
+      }
+        
+      for (uint i=0;i<clusters[c].vertices.size();i++)
+      {
+        lcm->compressedVertices[ globalCompressedVertexOffset++ ] = CompressedVertex(clusters[c].vertices[i],geometry_lower,geometry_inv_diag);
+        if ( globalCompressedVertexOffset > numTotalVerticesAllocate ) FATAL("numTotalVerticesAllocate");                
+      }
       
-      if (index_map.size() > 256) FATAL("index_map"); // byte indices
-      if (globalCompressedVertexOffset > numTotalVertices) FATAL("numTotalVertices");
-      
-      lcm_clusters.push_back(cluster);
-      numDecompressedBlocks += cluster.numBlocks;      
+      compressed_cluster.numVertices           = clusters[c].vertices.size();
+            
+      lcm_clusters.push_back(compressed_cluster);
+      numDecompressedBlocks += compressed_cluster.numBlocks;      
     }
 
     const size_t uncompressedSizeMeshBytes = mesh->numVertices * sizeof(Vec3f) + mesh->numQuads * sizeof(uint) * 4;
@@ -658,30 +931,6 @@ namespace embree {
     //return vtx + d*scale;
   }
 
-  struct Triangle {
-    uint v0,v1,v2;
-
-    __forceinline Triangle () {}
-    __forceinline Triangle (const uint v0, const uint v1, const uint v2) : v0(v0), v1(v1), v2(v2) {}
-
-    __forceinline bool valid()
-    {
-      if (v0 != v1 && v1 != v2 && v2 != v0) return true;
-      return false;
-    }
-  };
-
-  struct Quad {
-    uint v0,v1,v2,v3;
-
-    __forceinline Quad () {}
-    __forceinline Quad (const uint v0, const uint v1, const uint v2, const uint v3) : v0(v0), v1(v1), v2(v2), v3(v3)  {}
-  };
-  
-  struct Mesh {
-    std::vector<Triangle> triangles;
-    std::vector<CompressedVertex> vertices;
-  };
 
   uint findVertex(std::vector<CompressedVertex> &vertices, const CompressedVertex &cv)
   {
@@ -692,28 +941,6 @@ namespace embree {
     return vertices.size()-1;
   }
 
-  __forceinline std::pair<int,int> quad_index2(int p, int a0, int a1, int b0, int b1)
-  {
-    if      (b0 == a0) return std::make_pair(p-1,b1);
-    else if (b0 == a1) return std::make_pair(p+0,b1);
-    else if (b1 == a0) return std::make_pair(p-1,b0);
-    else if (b1 == a1) return std::make_pair(p+0,b0);
-    else return std::make_pair(0,-1);
-  }
-  
-  __forceinline std::pair<int,int> quad_index3(int a0, int a1, int a2, int b0, int b1, int b2)
-  {
-    if      (b0 == a0) return quad_index2(0,a2,a1,b1,b2);
-    else if (b0 == a1) return quad_index2(1,a0,a2,b1,b2);
-    else if (b0 == a2) return quad_index2(2,a1,a0,b1,b2);
-    else if (b1 == a0) return quad_index2(0,a2,a1,b0,b2);
-    else if (b1 == a1) return quad_index2(1,a0,a2,b0,b2);
-    else if (b1 == a2) return quad_index2(2,a1,a0,b0,b2);
-    else if (b2 == a0) return quad_index2(0,a2,a1,b0,b1);
-    else if (b2 == a1) return quad_index2(1,a0,a2,b0,b1);
-    else if (b2 == a2) return quad_index2(2,a1,a0,b0,b1);
-    else return std::make_pair(0,-1);
-  }
   
   std::vector<Quad> extractQuads(Mesh &mesh)
   {
