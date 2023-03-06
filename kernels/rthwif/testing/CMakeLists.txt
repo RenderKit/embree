@@ -1,10 +1,14 @@
 ## Copyright 2009-2022 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
-PROJECT(rthwif_testing)
-CMAKE_MINIMUM_REQUIRED(VERSION 3.1.0)
+#PROJECT(rthwif_testing)
+#CMAKE_MINIMUM_REQUIRED(VERSION 3.1.0)
 
 SET(CMAKE_CXX_STANDARD 17)
+
+IF (NOT WIN32)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")                       # generate position independent code suitable for shared libraries
+ENDIF()
 
 IF (NOT DEFINED EMBREE_SYCL_IMPLICIT_DISPATCH_GLOBALS)
   OPTION(EMBREE_SYCL_IMPLICIT_DISPATCH_GLOBALS "Using L0 allocated Dispatch Globals" ON)
@@ -36,7 +40,7 @@ TARGET_LINK_LIBRARIES(embree_rthwif_test embree_rthwif sys simd ${TBB_TARGET} ${
 SET_PROPERTY(TARGET embree_rthwif_test APPEND PROPERTY COMPILE_FLAGS "-fsycl -fsycl-targets=spir64 -DEMBREE_SYCL_SUPPORT")
 SET_PROPERTY(TARGET embree_rthwif_test APPEND PROPERTY LINK_FLAGS "-fsycl -lze_loader -fsycl-targets=spir64 -Xsycl-target-backend=spir64 \" -cl-intel-greater-than-4GB-buffer-required \"")
 
-IF (EMBREE_SYCL_IMPLICIT_DISPATCH_GLOBALS)
+IF (NOT DEFINED EMBREE_SYCL_RT_VALIDATION_API OR EMBREE_SYCL_IMPLICIT_DISPATCH_GLOBALS)
 
   IF (DEFINED EMBREE_MODEL_DIR)
     SET(CORNELL_BOX_REFERENCE "${EMBREE_MODEL_DIR}/reference/cornell_box_reference.tga")
