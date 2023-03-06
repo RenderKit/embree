@@ -1,0 +1,101 @@
+<?xml version="1.0"?>
+
+<scene>
+  <Group>
+
+    <PerspectiveCamera name="camera0" from="-0.3740053475 0.2509768307 0.9651952982" to="0.2766983211 0 0.5417134166" up="0 1 0" fov="90"/>
+    
+    <DirectionalLight>
+      <AffineSpace>
+        1 0 0 0
+        0 0 -1 0
+        0 1 0 0
+      </AffineSpace>
+      <E>3 3 3</E>
+    </DirectionalLight>
+
+    <TriangleMesh>
+      <positions>
+        -20 0 -20
+        -20 0 +20
+        +20 0 +20
+        +20 0 -20
+      </positions>
+      <triangles>
+        0 2 1
+        0 3 2
+      </triangles>
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">0.8 0.8 0.9</float3>
+        </parameters>
+      </material>
+    </TriangleMesh>
+
+    <Transform>
+      <AffineSpace translate="0 0 0"/>
+
+       <Curves basis="hermite" type="normal_oriented">
+
+        <animated_positions>
+          <positions>
+            -2 0 0 0.01
+            2 0 -1 0.01
+          </positions>
+          <positions>
+            -2 0 0 0.01
+            2 0 -1 0.01
+          </positions>
+        </animated_positions>
+
+        <animated_tangents>
+          <tangents>
+            21 9 0 0
+            21 -9 -3 0
+          </tangents>
+          <tangents>
+            30 9 0 0
+            30 -9 -3 0
+          </tangents>
+        </animated_tangents>
+
+        <animated_normals>
+          <normals>
+            0 1 0
+            0 1 0
+          </normals>
+          <normals>
+            0 1 0
+            0 1 0
+          </normals>
+        </animated_normals>
+
+        <animated_normal_derivatives>
+          <normal_derivatives>
+            0 0 0
+            0 0 0
+          </normal_derivatives>
+          <normal_derivatives>
+            0 0 0
+            0 0 0
+          </normal_derivatives>
+        </animated_normal_derivatives>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+       </Curves>
+      
+    </Transform>
+    
+  </Group>
+</scene>

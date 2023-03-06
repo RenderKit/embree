@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<scene>
+  <Group id="0">
+    <Group id="1">
+      <SubdivisionMesh id="2">
+        <material id="3">
+          <code>"OBJ"</code>
+          <parameters>
+            <float name="d">1.000000</float>
+            <float3 name="Kd">1.000000 1.000000 1.000000</float3>
+            <float3 name="Ks">0.000000 0.000000 0.000000</float3>
+            <float name="Ns">1.000000</float>
+          </parameters>
+        </material>
+        <positions ofs="0" size="16"/>
+        <normals ofs="192" size="0"/>
+        <texcoords ofs="192" size="0"/>
+        <position_indices ofs="192" size="64"/>
+        <normal_indices ofs="448" size="0"/>
+        <texcoord_indices ofs="448" size="0"/>
+        <faces ofs="448" size="16"/>
+        <holes ofs="512" size="0"/>
+        <edge_creases ofs="512" size="0"/>
+        <edge_crease_weights ofs="512" size="0"/>
+        <vertex_creases ofs="512" size="0"/>
+        <vertex_crease_weights ofs="512" size="0"/>
+      </SubdivisionMesh>
+    </Group>
+  </Group>
+</scene>

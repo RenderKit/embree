@@ -77,12 +77,13 @@ if (EMBREE_BUILDER_TBB_STATIC OR NOT TASKING_TBB)
     GIT_REPOSITORY ${EMBREE_RTHWIF_TBB_GIT_REPOSITORY}
     GIT_TAG v2021.6.0
   )
-  FetchContent_MakeAvailable(tbb_static)
 
-  # We want to build tbb_static to link it into embree_rthwif, but don't want to
-  # install it as part of the Embree install targets.
-  if (IS_DIRECTORY "${tbb_static_SOURCE_DIR}")
-    set_property(DIRECTORY ${tbb_static_SOURCE_DIR} PROPERTY EXCLUDE_FROM_ALL YES)
+  FetchContent_GetProperties(tbb_static)
+  if(NOT tbb_static_POPULATED)
+    FetchContent_Populate(tbb_static)
+    # We want to build tbb_static to link it into embree_rthwif, but don't want to
+    # install it as part of the Embree install targets.
+    add_subdirectory(${tbb_static_SOURCE_DIR} ${tbb_static_BINARY_DIR} EXCLUDE_FROM_ALL)
   endif()
 
   MARK_AS_ADVANCED(FETCHCONTENT_BASE_DIR)
@@ -114,7 +115,7 @@ if (EMBREE_BUILDER_TBB_STATIC OR NOT TASKING_TBB)
 ENDIF()
 
 IF (EMBREE_SYCL_RT_VALIDATION_API)
-  ADD_LIBRARY(embree_rthwif_sycl STATIC rthwif_production.cpp)
+  ADD_LIBRARY(embree_rthwif_sycl STATIC rttrace/rthwif_production.cpp)
   SET_PROPERTY(TARGET embree_rthwif_sycl APPEND PROPERTY COMPILE_FLAGS "-DEMBREE_SYCL_SUPPORT")
   SET_TARGET_PROPERTIES(embree_rthwif_sycl PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_SYCL})
   
@@ -124,10 +125,12 @@ IF (EMBREE_SYCL_RT_VALIDATION_API)
   SET(EMBREE_RTHWIF_SYCL embree_rthwif_sycl)
 ENDIF()
 
-ADD_LIBRARY(embree_rthwif STATIC rthwif_builder.cpp builder/qbvh6.cpp builder/statistics.cpp)
+#ADD_LIBRARY(embree_rthwif STATIC rthwif_builder.cpp builder/qbvh6.cpp builder/statistics.cpp)
+
+ADD_LIBRARY(embree_rthwif STATIC rtbuild/rthwif_builder.cpp rtbuild/qbvh6.cpp rtbuild/statistics.cpp)
 
 IF (EMBREE_SYCL_GPU_BVH_BUILDER)
-ADD_LIBRARY(embree_rthwif_gpu STATIC rthwif_embree_builder_ploc.cpp builder/qbvh6.cpp builder/statistics.cpp)
+ADD_LIBRARY(embree_rthwif_gpu STATIC rthwif_embree_builder_ploc.cpp rtbuild/qbvh6.cpp rtbuild/statistics.cpp)
 TARGET_LINK_LIBRARIES(embree_rthwif_gpu PUBLIC tbb simd sys -lze_loader)
 SET_TARGET_PROPERTIES(embree_rthwif_gpu PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_SYCL})
 ENDIF()

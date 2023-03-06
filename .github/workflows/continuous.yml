@@ -401,6 +401,7 @@ jobs:
         python scripts/test.py configure platform:x64 build:Debug compiler:ICX2023.0.0 ispc:ispc1.12.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.2.0 intensity:2 maxinstancelevelcount:4
         python scripts/test.py build
         python scripts/test.py test
+#        python scripts/test.py test sde:hsw
 
   linux-fedora32-GCC:
     secrets: inherit

@@ -4,7 +4,7 @@
 #pragma once
 
 #include "../common/scene.h"
-#include "../common/primref.h"
+#include "../builders/primref.h"
 
 namespace embree
 {

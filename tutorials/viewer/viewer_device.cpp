@@ -206,6 +206,7 @@ void renderPixelStandard(const TutorialData& data,
   rtcIntersect1(data.scene,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
+
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
     pixels[y*width+x] = 0;

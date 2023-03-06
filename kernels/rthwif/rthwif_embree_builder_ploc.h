@@ -1,12 +1,12 @@
 #pragma once
 
-#include "builder/qbvh6.h"
+#include "rtbuild/qbvh6.h"
 #include "builder/gpu/AABB3f.h"
 #include "builder/gpu/sort.h"
 #include "builder/gpu/morton.h"
 #include <memory>
 #include "../common/scene.h" 
-#include "rthwif_builder.h"
+#include "rtbuild/rthwif_builder.h"
 
 
 #if defined(EMBREE_SYCL_SUPPORT)

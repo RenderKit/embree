@@ -6,7 +6,7 @@
 #include "default.h"
 #include "device.h"
 #include "scene.h"
-#include "primref.h"
+#include "../builders/primref.h"
 
 #include "../../common/tasking/taskscheduler.h"
 

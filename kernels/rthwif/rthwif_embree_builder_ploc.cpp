@@ -1,8 +1,8 @@
-#include "rthwif_embree.h"
-#include "rthwif_embree_builder.h"
-#include "rthwif_internal.h"
+#include "../sycl/rthwif_embree.h"
+#include "../sycl/rthwif_embree_builder.h"
+#include "rttrace/rthwif_internal.h"
 #include "rthwif_embree_builder_ploc.h"
-#include "builder/qbvh6.h"
+#include "rtbuild/qbvh6.h"
 #include "../common/algorithms/parallel_reduce.h"
 
 // === less than threshold, a single workgroup is used to perform all PLOC iterations in a single kernel launch ===
@@ -953,7 +953,7 @@ namespace embree
     if (args.accelBufferBytesOut)
       *args.accelBufferBytesOut = args.accelBufferBytes;
 
-#if 0
+#if 1
     if (verbose2)
     {
       gpu::waitOnQueueAndCatchException(gpu_queue);

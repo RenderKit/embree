@@ -1,0 +1,90 @@
+<?xml version="1.0"?>
+<scene>
+  <Group id="0">
+    <Group id="1">
+      <Transform id="2">
+        <AffineSpace>
+          1.000000 0.000000 0.000000 0.000000
+          0.000000 1.000000 0.000000 0.000000
+          0.000000 0.000000 1.000000 0.000000
+        </AffineSpace>
+        <Group id="3">
+          <Group id="4">
+            <LineSegments id="8">
+              <material id="9">
+                <code>"Hair"</code>
+                <parameters>
+                  <float3 name="Kr">0.16 0.114 0.064</float3>
+                  <float3 name="Kt">0.64 0.456 0.256</float3>
+                  <float name="nx">20.000000</float>
+                  <float name="ny">2.000000</float>
+                </parameters>
+              </material>
+              <animated_positions>
+                <positions> 
+                  0 0 0 0.1
+                  0 1 1 0.1
+                  1 1 2 0.1
+                  1 0 3 0.1
+                  0 0 4 0.1
+                  0 1 5 0.1
+                  1 1 6 0.1
+                  1 0 7 0.1
+                  0 0 8 0.1
+                  0 1 9 0.1
+                  1 1 10 0.1
+                  1 0 11 0.1
+                </positions>
+                <positions> 
+                  0 1 0 0.1
+                  1 1 1 0.1
+                  1 0 2 0.1
+                  0 0 3 0.1
+                  0 1 4 0.1
+                  1 1 5 0.1
+                  1 0 6 0.1
+                  0 0 7 0.1
+                  0 1 8 0.1
+                  1 1 9 0.1
+                  1 0 10 0.1
+                  0 0 11 0.1
+                </positions>
+                <positions> 
+                  1 1 0 0.1
+                  1 0 1 0.1
+                  0 0 2 0.1
+                  0 1 3 0.1
+                  1 1 4 0.1
+                  1 0 5 0.1
+                  0 0 6 0.1
+                  0 1 7 0.1
+                  1 1 8 0.1
+                  1 0 9 0.1
+                  0 0 10 0.1
+                  0 1 11 0.1
+                </positions>
+                <positions> 
+                  1 0 0 0.1
+                  0 0 1 0.1
+                  0 1 2 0.1
+                  1 1 3 0.1
+                  1 0 4 0.1
+                  0 0 5 0.1
+                  0 1 6 0.1
+                  1 1 7 0.1
+                  1 0 8 0.1
+                  0 0 9 0.1
+                  0 1 10 0.1
+                  1 1 11 0.1
+                </positions>
+              </animated_positions>
+              <indices>
+                0 1 2 3 4 5 6 7 8 9 10
+              </indices>
+            </LineSegments>
+          </Group>
+        </Group>
+      </Transform>
+    </Group>
+  </Group>
+</scene>
