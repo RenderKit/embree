@@ -1,8 +1,8 @@
-#include "../sycl/rthwif_embree.h"
-#include "../sycl/rthwif_embree_builder.h"
-#include "rttrace/rthwif_internal.h"
+#include "../../sycl/rthwif_embree.h"
+#include "../../sycl/rthwif_embree_builder.h"
+#include "../rttrace/rthwif_internal.h"
 #include "rthwif_embree_builder_ploc.h"
-#include "rtbuild/qbvh6.h"
+#include "qbvh6.h"
 #include "../common/algorithms/parallel_reduce.h"
 
 // === less than threshold, a single workgroup is used to perform all PLOC iterations in a single kernel launch ===

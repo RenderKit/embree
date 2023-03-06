@@ -4,7 +4,7 @@
 #pragma once
 
 #if defined(EMBREE_SYCL_SUPPORT)
-#include "../../builder/gpu/common.h"
+#include "common.h"
 
 #define RADIX_SORT_BINS        256    
 #define RADIX_SORT_MAX_NUM_DSS 128

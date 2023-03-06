@@ -130,7 +130,7 @@ ENDIF()
 ADD_LIBRARY(embree_rthwif STATIC rtbuild/rthwif_builder.cpp rtbuild/qbvh6.cpp rtbuild/statistics.cpp)
 
 IF (EMBREE_SYCL_GPU_BVH_BUILDER)
-ADD_LIBRARY(embree_rthwif_gpu STATIC rthwif_embree_builder_ploc.cpp rtbuild/qbvh6.cpp rtbuild/statistics.cpp)
+ADD_LIBRARY(embree_rthwif_gpu STATIC rtbuild/rthwif_embree_builder_ploc.cpp rtbuild/qbvh6.cpp rtbuild/statistics.cpp)
 TARGET_LINK_LIBRARIES(embree_rthwif_gpu PUBLIC tbb simd sys -lze_loader)
 SET_TARGET_PROPERTIES(embree_rthwif_gpu PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_SYCL})
 ENDIF()

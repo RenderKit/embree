@@ -4,7 +4,7 @@
 #pragma once
 
 #if defined(EMBREE_SYCL_SUPPORT)
-#include "../../builder/gpu/common.h"
+#include "common.h"
 
 namespace embree
 {
