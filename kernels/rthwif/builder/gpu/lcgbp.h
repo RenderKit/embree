@@ -435,8 +435,12 @@ namespace embree {
     uint numBlocks;
     uint numVertices;    
     uint ID;
+    
+    uint lodLeftID;
+    uint lodRightID;    
     uint offsetIndices;
     uint offsetVertices;
+    
     LossyCompressedMesh *mesh;
     
     __forceinline LossyCompressedMeshCluster() {}

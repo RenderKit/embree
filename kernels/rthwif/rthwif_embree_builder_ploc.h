@@ -1702,7 +1702,8 @@ namespace embree
                                  const uint subgroupSize    = get_sub_group_size();                                           
                                  const uint ID         = item.get_group(0);
 
-                                 const LossyCompressedMeshCluster &cluster = ((LossyCompressedMeshCluster*)(geom->pLCMs))[ID];
+                                 const LossyCompressedMeshCluster &cluster = *(((LossyCompressedMeshCluster**)(geom->pLCMs))[ID]);
+                                 
                                  const LossyCompressedMesh &mesh = *cluster.mesh;
                                  const CompressedVertex *const compressedVertices = mesh.compressedVertices + cluster.offsetVertices; 
                                  const CompressedQuadIndices *const compressedIndices = mesh.compressedIndices + cluster.offsetIndices;
