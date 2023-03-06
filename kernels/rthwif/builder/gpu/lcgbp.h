@@ -445,6 +445,8 @@ namespace embree {
     
     __forceinline LossyCompressedMeshCluster() {}
 
+    __forceinline bool hasChildren() const { return lodLeftID != -1; }
+    
     static __forceinline uint getDecompressedInnerNodesSizeInBytes(const uint numQuads) 
     {
       uint numCacheLines = 0;
