@@ -364,22 +364,6 @@ namespace embree {
   // ==============================================================================================
   // ==============================================================================================
 
-
-  void extractRanges(const gpu::Range &current, const gpu::MortonCodePrimitive64x32Bits3D *const mcodes, std::vector<gpu::Range> &ranges, const uint threshold)
-  {
-    if (current.size() < threshold)
-    {
-      ranges.push_back(current);
-    }
-    else
-    {
-      gpu::Range left, right;
-      splitRange(current,mcodes,left,right);
-      extractRanges(left,mcodes,ranges,threshold);
-      extractRanges(right,mcodes,ranges,threshold);      
-    }
-  }
-
   __forceinline uint remap_vtx_index(const uint v, std::map<uint,uint> &index_map, uint &numLocalIndices)
   {
     auto e = index_map.find(v);
@@ -388,6 +372,65 @@ namespace embree {
     index_map[v] = ID;
     return ID;
   }
+
+  struct HierarchyRange
+  {
+    gpu::Range range;
+    uint parent, left, right;
+
+    __forceinline HierarchyRange(const gpu::Range &range, const uint parent = -1) : range(range), parent(parent), left(-1), right(-1) {}
+
+    __forceinline bool isLeaf() { return left == -1 || right == -1; }
+  };
+
+  void extractRanges(const uint currentID, const gpu::MortonCodePrimitive64x32Bits3D *const mcodes, std::vector<HierarchyRange> &ranges, std::vector<uint> &leafIDs, ISPCQuadMesh* mesh, uint &numTotalVertices, const uint threshold)
+  {
+    HierarchyRange &current = ranges[currentID];
+    if (current.range.size() < threshold)
+    {
+      std::map<uint,uint> index_map;
+      uint numLocalIndices = 0;
+      bool fits = true;
+      for (uint j=current.range.start;j<current.range.end;j++)
+      {
+        const uint index = mcodes[j].getIndex();
+        const uint v0 = mesh->quads[index].v0;
+        const uint v1 = mesh->quads[index].v1;
+        const uint v2 = mesh->quads[index].v2;
+        const uint v3 = mesh->quads[index].v3;
+
+        remap_vtx_index(v0,index_map,numLocalIndices);
+        remap_vtx_index(v1,index_map,numLocalIndices);
+        remap_vtx_index(v2,index_map,numLocalIndices);
+        remap_vtx_index(v3,index_map,numLocalIndices);
+        if (index_map.size() > 256)
+        {
+          fits = false;
+          break;
+        }
+      }
+      
+      if (fits)
+      {
+        PRINT3(current.range.start,current.range.end,current.range.size());
+        leafIDs.push_back(currentID);
+        numTotalVertices += index_map.size();
+        return;
+      }
+    }
+    
+    gpu::Range left, right;
+    splitRange(current.range,mcodes,left,right);
+
+    const uint leftID = ranges.size();
+    ranges.push_back(HierarchyRange(left,currentID));
+    const uint rightID = ranges.size();
+    ranges.push_back(HierarchyRange(right,currentID));
+    
+    extractRanges(leftID,mcodes,ranges,leafIDs,mesh,numTotalVertices,threshold);
+    extractRanges(rightID,mcodes,ranges,leafIDs,mesh,numTotalVertices,threshold);      
+  }
+
     
   void convertISPCTriangleMesh(ISPCQuadMesh* mesh, RTCScene scene, ISPCOBJMaterial *material,const uint geomID,std::vector<LossyCompressedMesh*> &lcm_ptrs,std::vector<LossyCompressedMeshCluster> &lcm_clusters, size_t &totalCompressedSize, size_t &numDecompressedBlocks)
   {
@@ -432,7 +475,8 @@ namespace embree {
     const Vec3f inv_diag  = diag != Vec3fa(0.0f) ? Vec3fa(1.0f) / diag : Vec3fa(0.0f);
 
     std::vector<gpu::MortonCodePrimitive64x32Bits3D> mcodes;
-    std::vector<gpu::Range> ranges;
+    std::vector<HierarchyRange> ranges;
+    std::vector<uint> leafIDs;
     
     for (uint i=0;i<numQuads;i++)
     {
@@ -471,56 +515,18 @@ namespace embree {
     
     std::sort(mcodes.begin(), mcodes.end()); 
 
-    // === extract ranges ===
-    
-    gpu::Range current(0,mcodes.size());
-    extractRanges(current,&*mcodes.begin(),ranges,INITIAL_CREATE_RANGE_THRESHOLD);
-
-    // === test range if it fullfills requirements, split if necessary ===
-
+    // === extract ranges, test range if it fullfills requirements, split if necessary ===
     uint numTotalVertices = 0;
-
-    for (uint i=0;i<ranges.size();i++)
-    {      
-      while(1)
-      {
-        std::map<uint,uint> index_map;
-        uint numLocalIndices = 0;
-        bool split = false;
-        for (uint j=ranges[i].start;j<ranges[i].end;j++)
-        {
-          const uint index = mcodes[j].getIndex();
-          const uint v0 = mesh->quads[index].v0;
-          const uint v1 = mesh->quads[index].v1;
-          const uint v2 = mesh->quads[index].v2;
-          const uint v3 = mesh->quads[index].v3;
-
-          remap_vtx_index(v0,index_map,numLocalIndices);
-          remap_vtx_index(v1,index_map,numLocalIndices);
-          remap_vtx_index(v2,index_map,numLocalIndices);
-          remap_vtx_index(v3,index_map,numLocalIndices);
-          if (index_map.size() > 256)
-          {
-            gpu::Range left,right;
-            const uint center = (ranges[i].start + ranges[i].end)/2;
-            left.start  = ranges[i].start;
-            left.end    = center;
-            right.start = center;
-            right.end = ranges[i].end;
-            ranges[i] = left;
-            ranges.push_back(right);
-            split = true;
-            break;
-          }
-        }
-        if (!split)
-        {
-          numTotalVertices += index_map.size();
-          break;
-        }
-      }      
-    }
     
+    ranges.push_back(HierarchyRange(gpu::Range(0,mcodes.size())));
+    extractRanges(0,&*mcodes.begin(),ranges,leafIDs,mesh,numTotalVertices,INITIAL_CREATE_RANGE_THRESHOLD);
+    PRINT(ranges.size());
+    PRINT(leafIDs.size());
+    //exit(0);
+
+    const uint numRanges = leafIDs.size();
+    
+
     // === allocate LossyCompressedMesh in USM ===
     
     LossyCompressedMesh *lcm = (LossyCompressedMesh *)alignedUSMMalloc(sizeof(LossyCompressedMesh),64);
@@ -542,12 +548,13 @@ namespace embree {
     const Vec3f geometry_diag     = geometryBounds.size();
     const Vec3f geometry_inv_diag = geometry_diag != Vec3fa(0.0f) ? Vec3fa(1.0f) / geometry_diag : Vec3fa(0.0f);
     
-    for (uint i=0;i<ranges.size();i++)
+    for (uint i=0;i<leafIDs.size();i++)
     {
-      
+      const uint ID = leafIDs[i];
+      PRINT(ID);
       LossyCompressedMeshCluster cluster;
-      cluster.numQuads  = ranges[i].size();
-      cluster.numBlocks = LossyCompressedMeshCluster::getDecompressedSizeInBytes(ranges[i].size())/64;
+      cluster.numQuads  = ranges[ID].range.size();
+      cluster.numBlocks = LossyCompressedMeshCluster::getDecompressedSizeInBytes(ranges[ID].range.size())/64;
       cluster.ID = i;
       cluster.offsetIndices  = globalCompressedIndexOffset;      
       cluster.offsetVertices = globalCompressedVertexOffset;
@@ -557,8 +564,9 @@ namespace embree {
       uint numLocalIndices = 0;
 
       // === remap vertices relative to cluster ===
+      PRINT2(ranges[ID].range.start,ranges[ID].range.end);
       
-      for (uint j=ranges[i].start;j<ranges[i].end;j++)
+      for (uint j=ranges[ID].range.start;j<ranges[ID].range.end;j++)
       {
         const uint index = mcodes[j].getIndex();
         const uint v0 = mesh->quads[index].v0;
@@ -572,16 +580,23 @@ namespace embree {
         const uint remaped_v3 =  remap_vtx_index(v3,index_map,numLocalIndices);
 
         lcm->compressedIndices[ globalCompressedIndexOffset++ ] = CompressedQuadIndices(remaped_v0,remaped_v1,remaped_v2,remaped_v3);
+        if ( globalCompressedIndexOffset > numQuads ) FATAL("numQuads");
       }
 
+      PRINT("1");
+      
       for (std::map<uint,uint>::iterator i=index_map.begin(); i != index_map.end(); i++)
       {
         const uint old_v = (*i).first;
         const uint new_v = (*i).second;
+        if ( globalCompressedVertexOffset + new_v > numTotalVertices ) FATAL("numTotalVertices");
+
         lcm->compressedVertices[ globalCompressedVertexOffset + new_v ] = CompressedVertex(mesh->positions[0][old_v],geometry_lower,geometry_inv_diag);        
       }
       cluster.numVertices           = index_map.size();
       globalCompressedVertexOffset += index_map.size();
+
+      PRINT("2");
       
       if (index_map.size() > 256) FATAL("index_map"); // byte indices
       if (globalCompressedVertexOffset > numTotalVertices) FATAL("numTotalVertices");
@@ -592,7 +607,7 @@ namespace embree {
 
     const size_t uncompressedSizeMeshBytes = mesh->numVertices * sizeof(Vec3f) + mesh->numQuads * sizeof(uint) * 4;
     const size_t compressedSizeMeshBytes = sizeof(CompressedVertex)*numTotalVertices + sizeof(CompressedQuadIndices)*numQuads;
-    const size_t clusterSizeBytes = ranges.size()*sizeof(LossyCompressedMeshCluster);
+    const size_t clusterSizeBytes = numRanges*sizeof(LossyCompressedMeshCluster);
     PRINT5(lcm_ID,uncompressedSizeMeshBytes,compressedSizeMeshBytes,(float)compressedSizeMeshBytes/uncompressedSizeMeshBytes,clusterSizeBytes);
 
     totalCompressedSize += compressedSizeMeshBytes + clusterSizeBytes;
