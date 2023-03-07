@@ -134,56 +134,74 @@ namespace embree {
     Vec3f *vertices         = &*mesh.vertices.begin();
 
     uint expectedTriangles = LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER * 3 / 2;
-    float result_error = 0.0f;
-    const size_t new_numIndices = meshopt_simplify((uint*)new_triangles,(uint*)triangles,numIndices,(float*)vertices,numVertices,sizeof(Vec3f),expectedTriangles*3,0.05f,meshopt_SimplifyLockBorder,&result_error);
-    PRINT(result_error);
-
-    const size_t new_numTriangles = new_numIndices/3;
-    PRINT2(new_numIndices,new_numTriangles);
-
-    std::vector<uint> new_vertices;
-    for (uint i=0;i<new_numTriangles;i++)
+    uint iterations = 0;
+    while(1)
     {
-      countVertexIDs(new_vertices, new_triangles[i].v0);
-      countVertexIDs(new_vertices, new_triangles[i].v1);
-      countVertexIDs(new_vertices, new_triangles[i].v2);      
-    }      
-    PRINT(new_vertices.size());
-    if (new_vertices.size() > 256) FATAL("new_vertices.size()");
+      iterations++;
+      if (iterations > 10) return false;
+      bool retry = false;      
+      float result_error = 0.0f;
+      const size_t new_numIndices = meshopt_simplify((uint*)new_triangles,(uint*)triangles,numIndices,(float*)vertices,numVertices,sizeof(Vec3f),expectedTriangles*3,0.05f,meshopt_SimplifyLockBorder,&result_error);
+      PRINT2(expectedTriangles,result_error);
 
+      const size_t new_numTriangles = new_numIndices/3;
 
-    for (size_t i=0; i<new_numTriangles; i++)
-    {
-      const int a0 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+0].v0 ]);
-      const int a1 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+0].v1 ]);
-      const int a2 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+0].v2 ]);      
-      if (i+1 == new_numTriangles) {
-        quadMesh.quads.push_back(Quad(a0,a1,a2,a2));
-        continue;
+      std::vector<uint> new_vertices;
+      for (uint i=0;i<new_numTriangles;i++)
+      {
+        countVertexIDs(new_vertices, new_triangles[i].v0);
+        countVertexIDs(new_vertices, new_triangles[i].v1);
+        countVertexIDs(new_vertices, new_triangles[i].v2);      
+      }      
+      if (new_vertices.size() > 256)
+      {
+        PRINT2("new_vertices.size()",new_vertices.size());
+        retry = true;
       }
 
-      const int b0 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+1].v0 ]);
-      const int b1 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+1].v1 ]);
-      const int b2 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+1].v2 ]);      
-      const std::pair<int,int> q = quad_index3(a0,a1,a2,b0,b1,b2);
-      const int a3 = q.second;
-      if (a3 == -1) {
-        quadMesh.quads.push_back(Quad(a0,a1,a2,a2));
-        continue;
-      }
+
+      for (size_t i=0; i<new_numTriangles; i++)
+      {
+        const int a0 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+0].v0 ]);
+        const int a1 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+0].v1 ]);
+        const int a2 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+0].v2 ]);      
+        if (i+1 == new_numTriangles) {
+          quadMesh.quads.push_back(Quad(a0,a1,a2,a2));
+          continue;
+        }
+
+        const int b0 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+1].v0 ]);
+        const int b1 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+1].v1 ]);
+        const int b2 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+1].v2 ]);      
+        const std::pair<int,int> q = quad_index3(a0,a1,a2,b0,b1,b2);
+        const int a3 = q.second;
+        if (a3 == -1) {
+          quadMesh.quads.push_back(Quad(a0,a1,a2,a2));
+          continue;
+        }
       
-      if      (q.first == -1) quadMesh.quads.push_back(Quad(a1,a2,a3,a0));
-      else if (q.first ==  0) quadMesh.quads.push_back(Quad(a3,a1,a2,a0));
-      else if (q.first ==  1) quadMesh.quads.push_back(Quad(a0,a1,a3,a2));
-      else if (q.first ==  2) quadMesh.quads.push_back(Quad(a1,a2,a3,a0)); 
-      i++;
+        if      (q.first == -1) quadMesh.quads.push_back(Quad(a1,a2,a3,a0));
+        else if (q.first ==  0) quadMesh.quads.push_back(Quad(a3,a1,a2,a0));
+        else if (q.first ==  1) quadMesh.quads.push_back(Quad(a0,a1,a3,a2));
+        else if (q.first ==  2) quadMesh.quads.push_back(Quad(a1,a2,a3,a0)); 
+        i++;
+      }
+
+
+      if (quadMesh.quads.size() > LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER) { PRINT2("RETRY quadMesh.quads.size()",quadMesh.quads.size()); retry = true; }
+      if (quadMesh.vertices.size() > 256) { PRINT("RETRY quadMesh.vertices.size()"); retry = true; }
+      if (retry)
+      {
+        quadMesh.vertices.clear();
+        quadMesh.quads.clear();
+        PRINT2(quadMesh.vertices.size(),quadMesh.quads.size());
+        expectedTriangles -= 2;
+      }
+      else
+        break;
     }
-
-
-    PRINT2(quadMesh.quads.size(),quadMesh.vertices.size());
-    if (quadMesh.quads.size() > LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER) FATAL("quadMesh.quads.size()");
-    if (quadMesh.vertices.size() > 256) FATAL("quadMesh.vertices.size()");
     //exit(0);
+    PRINT2(quadMesh.quads.size(),quadMesh.vertices.size());
 
     delete [] new_triangles;
     
@@ -439,14 +457,21 @@ namespace embree {
           const uint rightClusterID = ranges[rightID].clusterID;
           
           QuadMeshCluster new_cluster;
-          mergeSimplifyQuadMeshCluster( clusters[leftClusterID], clusters[rightClusterID], new_cluster);
-          PRINT(new_cluster.quads.size());
-          PRINT(new_cluster.vertices.size());          
-          const uint mergedClusterID = clusters.size();
-          new_cluster.leftID  = leftClusterID;
-          new_cluster.rightID = rightClusterID;          
-          clusters.push_back(new_cluster);
-          ranges[parentID].clusterID = mergedClusterID;
+          bool success = mergeSimplifyQuadMeshCluster( clusters[leftClusterID], clusters[rightClusterID], new_cluster);
+          if (success)
+          {
+            PRINT(new_cluster.quads.size());
+            PRINT(new_cluster.vertices.size());          
+            const uint mergedClusterID = clusters.size();
+            new_cluster.leftID  = leftClusterID;
+            new_cluster.rightID = rightClusterID;          
+            clusters.push_back(new_cluster);
+            ranges[parentID].clusterID = mergedClusterID; 
+          }
+          else
+          {
+            ranges[parentID].counter = 0;
+          }
         }
       }
     }
