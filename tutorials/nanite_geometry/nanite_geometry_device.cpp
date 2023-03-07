@@ -968,7 +968,7 @@ namespace embree {
             });
       });
       gpu::waitOnEventAndCatchException(queue_event);
-    }
+    }    
     {
       const sycl::nd_range<1> nd_range1(alignTo(local_lcgbp_scene->numLCMeshClusterRoots,wgSize),sycl::range<1>(wgSize));              
       sycl::event compute_lod_event = global_gpu_queue->submit([=](sycl::handler& cgh){
@@ -976,25 +976,89 @@ namespace embree {
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) {
           const uint i = item.get_global_id(0);
           if (i < local_lcgbp_scene->numLCMeshClusterRoots)
-          {
-#if 0            
-            if (local_lcgbp_scene->lcm_cluster_roots[i]->hasChildren() && (i%2))
+          {            
+#if 1
+            const uint LOD_LEVELS = 3;
+            const Vec3f org = camera.xfm.p;
+            CompressedVertex compressed_center = local_lcgbp_scene->lcm_cluster_roots_per_frame[0]->center;
+            LossyCompressedMesh *mesh = local_lcgbp_scene->lcm_cluster_roots_per_frame[0]->mesh;
+            const Vec3f lower = mesh->bounds.lower;
+            const Vec3f diag = mesh->bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
+            const Vec3f center = compressed_center.decompress(lower,diag);
+
+            const float minDistance = local_lcgbp_scene->minLODDistance; 
+            const uint startRange[LOD_LEVELS+1] = { 0,1,3,7};
+            const uint   endRange[LOD_LEVELS+1] = { 1,3,7,15};
+
+            const float dist = fabs(length(center-org));
+            const float dist_minDistance = dist/minDistance;
+            const uint dist_level = floorf(dist_minDistance);
+
+            uint segment = -1;
+            for (uint i=0;i<LOD_LEVELS;i++)
+              if (startRange[i] <= dist_level && dist_level < endRange[i])
+              {          
+                segment = i;
+                break;
+              }
+            segment = min(segment, LOD_LEVELS-1);
+            const uint rounds = LOD_LEVELS-1-segment;
+            
+            if (local_lcgbp_scene->lcm_cluster_roots[i]->hasChildren() && rounds >=1)
             {
               const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(uint)2);
               local_lcgbp_scene->lcm_cluster_roots_per_frame[destID+0] = &local_lcgbp_scene->lcm_cluster[ local_lcgbp_scene->lcm_cluster_roots[i]->lodLeftID ];
               local_lcgbp_scene->lcm_cluster_roots_per_frame[destID+1] = &local_lcgbp_scene->lcm_cluster[ local_lcgbp_scene->lcm_cluster_roots[i]->lodRightID ];        
             }      
             else
-#endif              
+            {
+              const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(uint)1);                            
+              local_lcgbp_scene->lcm_cluster_roots_per_frame[destID] = local_lcgbp_scene->lcm_cluster_roots[i];              
+            }
+#else              
             {
               const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(uint)1);                            
               local_lcgbp_scene->lcm_cluster_roots_per_frame[destID] = local_lcgbp_scene->lcm_cluster_roots[i];
-            }            
+            }
+#endif              
+            
           }                                                                                           
         });
       });
       waitOnEventAndCatchException(compute_lod_event);
-      
+
+      {
+        const uint LOD_LEVELS = 3;
+        const Vec3f org = camera.xfm.p;
+        CompressedVertex compressed_center = local_lcgbp_scene->lcm_cluster_roots_per_frame[0]->center;
+        LossyCompressedMesh *mesh = local_lcgbp_scene->lcm_cluster_roots_per_frame[0]->mesh;
+        const Vec3f lower = mesh->bounds.lower;
+        const Vec3f diag = mesh->bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
+        const Vec3f center = compressed_center.decompress(lower,diag);
+
+        const float minDistance = local_lcgbp_scene->minLODDistance; 
+        const uint startRange[LOD_LEVELS+1] = { 0,1,3,7};
+        const uint   endRange[LOD_LEVELS+1] = { 1,3,7,15};
+
+        const float dist = fabs(length(center-org));
+        const float dist_minDistance = dist/minDistance;
+        const uint dist_level = floorf(dist_minDistance);
+
+        uint segment = -1;
+        for (uint i=0;i<LOD_LEVELS;i++)
+          if (startRange[i] <= dist_level && dist_level < endRange[i])
+          {          
+            segment = i;
+            break;
+          }
+        segment = min(segment, LOD_LEVELS-1);
+        const uint rounds = LOD_LEVELS-1-segment;
+        
+        PRINT3(length(org-center),segment,rounds);
+        
+        
+      }
+
     }
         
 #endif

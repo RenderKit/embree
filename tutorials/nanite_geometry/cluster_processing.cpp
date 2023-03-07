@@ -46,6 +46,15 @@ namespace embree {
 
     __forceinline bool isLeaf() { return leftID == -1 || rightID == -1; }
 
+
+    __forceinline BBox3f getBBox3f()
+    {
+      BBox3f bounds(empty);
+      for (uint i=0;i<vertices.size();i++)
+        bounds.extend(vertices[i]);
+      return bounds;
+    }
+    
     void reorderMorton();
   };
 
@@ -608,6 +617,10 @@ namespace embree {
       compressed_cluster.numQuads  = clusters[c].quads.size();
       compressed_cluster.numBlocks = LossyCompressedMeshCluster::getDecompressedSizeInBytes(compressed_cluster.numQuads)/64;
       compressed_cluster.ID = c;
+      BBox3f cluster_bounds = clusters[c].getBBox3f();
+      const Vec3f center = cluster_bounds.center();
+      compressed_cluster.center = CompressedVertex(center,geometry_lower,geometry_inv_diag);
+      
       compressed_cluster.lodLeftID = (clusters[c].leftID != -1) ? global_lcm_cluster_startID + clusters[c].leftID : -1;
       compressed_cluster.lodRightID = (clusters[c].rightID != -1) ? global_lcm_cluster_startID + clusters[c].rightID : -1;
       compressed_cluster.offsetIndices  = globalCompressedIndexOffset;      
