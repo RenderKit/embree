@@ -133,7 +133,9 @@ namespace embree {
     Triangle *triangles     = &*mesh.triangles.begin();
     Vec3f *vertices         = &*mesh.vertices.begin();
 
-    uint expectedTriangles = LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER * 3 / 2;
+    const float REDUCTION_FACTOR = 0.5f;
+    uint expectedTriangles = floorf((LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER * 3) * REDUCTION_FACTOR);
+    
     uint iterations = 0;
     while(1)
     {
@@ -142,9 +144,9 @@ namespace embree {
       bool retry = false;      
       float result_error = 0.0f;
       const size_t new_numIndices = meshopt_simplify((uint*)new_triangles,(uint*)triangles,numIndices,(float*)vertices,numVertices,sizeof(Vec3f),expectedTriangles*3,0.05f,meshopt_SimplifyLockBorder,&result_error);
-      PRINT2(expectedTriangles,result_error);
 
       const size_t new_numTriangles = new_numIndices/3;
+      PRINT3(expectedTriangles,new_numTriangles,result_error);
 
       std::vector<uint> new_vertices;
       for (uint i=0;i<new_numTriangles;i++)
@@ -195,7 +197,7 @@ namespace embree {
         quadMesh.vertices.clear();
         quadMesh.quads.clear();
         PRINT2(quadMesh.vertices.size(),quadMesh.quads.size());
-        expectedTriangles -= 2;
+        expectedTriangles -= std::max((uint)2,expectedTriangles/10);
       }
       else
         break;
@@ -455,7 +457,7 @@ namespace embree {
           // === merge ranges ===
           const uint  leftClusterID = ranges[ leftID].clusterID;
           const uint rightClusterID = ranges[rightID].clusterID;
-          
+          PRINT(parentID);
           QuadMeshCluster new_cluster;
           bool success = mergeSimplifyQuadMeshCluster( clusters[leftClusterID], clusters[rightClusterID], new_cluster);
           if (success)
