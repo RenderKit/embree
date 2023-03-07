@@ -1730,14 +1730,14 @@ RTC_NAMESPACE_BEGIN;
     return nullptr;
   }
 
-  RTC_API void rtcSetLCData (RTCGeometry hgeometry, uint numLCGs, void* pLCGs, uint numLCGMs, void* pLCMs)
+RTC_API void rtcSetLCData(RTCGeometry hgeometry, uint numLCGs, void* pLCGs, void* pLCMs, uint numLCGMs, void* pLCMIDs)    
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetLCData);
     RTC_VERIFY_HANDLE(hgeometry);
     RTC_ENTER_DEVICE(hgeometry);
-    geometry->setLCData(numLCGs,pLCGs,numLCGMs,pLCMs);
+    geometry->setLCData(numLCGs,pLCGs,pLCMs,numLCGMs,pLCMIDs);
     RTC_CATCH_END2(geometry);
   }
 

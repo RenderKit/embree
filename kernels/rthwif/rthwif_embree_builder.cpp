@@ -307,7 +307,8 @@ namespace embree
     out->numLCGs = geom->numLCGs;//geom->numPrimitives;
     out->pLCGs = geom->pLCGs; //(void*)geom->userPtr;
     out->numLCMs = geom->numLCMs;    
-    out->pLCMs = geom->pLCMs;    
+    out->pLCMs = geom->pLCMs;
+    out->pLCMIDs = geom->pLCMIDs;        
   }
 
   void createGeometryDesc(RTHWIF_GEOMETRY_TRIANGLES_DESC* out, Scene* scene, TriangleMesh* geom)

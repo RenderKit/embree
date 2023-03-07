@@ -141,7 +141,8 @@ typedef struct RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC  // 32 bytes
   unsigned int numLCGs;                    // number of lossy compressed grids
   unsigned int numLCMs;                    // number of lossy compressed meshes
   void *pLCGs;                             // pointer to lossy compressed grid headers
-  void *pLCMs;                             // pointer to lossy compressed mesh headers  
+  void *pLCMs;                             // pointer to lossy compressed mesh headers
+  uint *pLCMIDs;                           // pointer to lossy compressed mesh headers
 } RTHWIF_RAYTRACING_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC;
 
 

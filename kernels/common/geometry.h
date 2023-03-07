@@ -616,7 +616,7 @@ namespace embree
     }
 
     /*! sets the number of primitives */
-    virtual void setLCData(uint numLCGs, void* pLCGs, uint numLCGMs, void* pLCMs);
+    virtual void setLCData(uint numLCGs, void* pLCGs, void* pLCMs, uint numLCGMs, void* pLCMIDs);
     
   public:
     __forceinline bool hasIntersectionFilter() const { return intersectionFilterN != nullptr; }
@@ -633,6 +633,7 @@ namespace embree
 
     void *pLCGs;
     void *pLCMs;
+    uint *pLCMIDs;
     
     
     unsigned int numTimeSteps;  //!< number of time steps

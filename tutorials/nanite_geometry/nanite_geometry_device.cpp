@@ -14,8 +14,8 @@
 
 #endif
 
-#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 32.0f
-//#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 16.0f
+#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 3.0f
+//#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 32.0f
 
 #include "../../kernels/rthwif/builder/gpu/lcgbp.h"
 #include "../../kernels/rthwif/builder/gpu/morton.h"
@@ -234,8 +234,8 @@ namespace embree {
     
     //LossyCompressedMesh *lcm;
     LossyCompressedMeshCluster  *lcm_cluster;
-    LossyCompressedMeshCluster **lcm_cluster_roots;
-    LossyCompressedMeshCluster **lcm_cluster_roots_per_frame;
+    uint *lcm_cluster_roots_IDs;
+    uint *lcm_cluster_roots_IDs_per_frame;
     
     /* --- embree geometry --- */
     RTCGeometry geometry;
@@ -269,8 +269,8 @@ namespace embree {
     numLCMeshClusterRoots = 0;
     numLCMeshClusterRootsPerFrame = 0;
     lcm_cluster = nullptr;
-    lcm_cluster_roots = nullptr;
-    lcm_cluster_roots_per_frame = nullptr;
+    lcm_cluster_roots_IDs = nullptr;
+    lcm_cluster_roots_IDs_per_frame = nullptr;
     
     if (maxNumLCGBP)
     {
@@ -461,13 +461,22 @@ namespace embree {
     uint numGridMeshes = 0;
     uint numQuadMeshes = 0;
     uint numQuads      = 0;
+    BBox3f scene_bounds(empty);
     for (unsigned int geomID=0; geomID<g_ispc_scene->numGeometries; geomID++)
     {
       ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
       if (geometry->type == GRID_MESH) numGridMeshes++;
-      else if (geometry->type == QUAD_MESH) { numQuadMeshes++; numQuads+= ((ISPCQuadMesh*)geometry)->numQuads; }
+      else if (geometry->type == QUAD_MESH) {
+        ISPCQuadMesh *mesh = (ISPCQuadMesh*)geometry;
+        numQuadMeshes++;
+        numQuads+= mesh->numQuads;
+        for (uint i=0;i<mesh->numVertices;i++)
+          scene_bounds.extend(mesh->positions[0][i]);
+      }
     }
 
+    PRINT(scene_bounds);
+    
     global_lcgbp_scene = (LCG_Scene*)alignedUSMMalloc(sizeof(LCG_Scene),64);
     new (global_lcgbp_scene) LCG_Scene(0);    
 
@@ -486,20 +495,20 @@ namespace embree {
       else if (geometry->type == QUAD_MESH)
         convertISPCQuadMesh((ISPCQuadMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID],geomID,lcm_ptrs,lcm_clusters,lcm_clusterRootIDs,totalCompressedSize,numDecompressedBlocks);
     }
-
-    PRINT( lcm_clusterRootIDs.size() );
-    
+        
     // === finalize quad meshes ===
     if (numQuadMeshes)
     {
+      global_lcgbp_scene->minLODDistance = length(scene_bounds.size()) / RELATIVE_MIN_LOD_DISTANCE_FACTOR;
+      
       global_lcgbp_scene->numLCMeshClusters = lcm_clusters.size();
       global_lcgbp_scene->numLCMeshClusterRoots = lcm_clusterRootIDs.size();
       
       global_lcgbp_scene->lcm_cluster = (LossyCompressedMeshCluster*)alignedUSMMalloc(sizeof(LossyCompressedMeshCluster)*global_lcgbp_scene->numLCMeshClusters,64,EMBREE_USM_SHARED /*EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE*/);
 
-      global_lcgbp_scene->lcm_cluster_roots = (LossyCompressedMeshCluster**)alignedUSMMalloc(sizeof(LossyCompressedMeshCluster*)*global_lcgbp_scene->numLCMeshClusterRoots,64,EMBREE_USM_SHARED /*EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE*/);
+      global_lcgbp_scene->lcm_cluster_roots_IDs = (uint*)alignedUSMMalloc(sizeof(uint)*global_lcgbp_scene->numLCMeshClusterRoots,64,EMBREE_USM_SHARED /*EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE*/);
 
-      global_lcgbp_scene->lcm_cluster_roots_per_frame = (LossyCompressedMeshCluster**)alignedUSMMalloc(sizeof(LossyCompressedMeshCluster*)*global_lcgbp_scene->numLCMeshClusters,64,EMBREE_USM_SHARED /*EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE*/);
+      global_lcgbp_scene->lcm_cluster_roots_IDs_per_frame = (uint*)alignedUSMMalloc(sizeof(uint)*global_lcgbp_scene->numLCMeshClusters,64,EMBREE_USM_SHARED /*EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE*/);
       
       
       for (uint i=0;i<global_lcgbp_scene->numLCMeshClusters;i++)
@@ -510,7 +519,7 @@ namespace embree {
       uint numLODQuads = 0;
       for (uint i=0;i<global_lcgbp_scene->numLCMeshClusterRoots;i++)
       {
-        global_lcgbp_scene->lcm_cluster_roots[i] = &global_lcgbp_scene->lcm_cluster[ lcm_clusterRootIDs[i] ];
+        global_lcgbp_scene->lcm_cluster_roots_IDs[i] =  lcm_clusterRootIDs[i] ;
         numLODQuads += global_lcgbp_scene->lcm_cluster[ lcm_clusterRootIDs[i] ].numQuads;
       }
       
@@ -944,23 +953,6 @@ namespace embree {
     
     rtcSetGeometryUserData(local_lcgbp_scene->geometry,lcg_ptr);
 
-#if 0    
-    local_lcgbp_scene->numLCMeshClusterRootsPerFrame = 0;
-    for (uint i=0;i<local_lcgbp_scene->numLCMeshClusterRoots;i++)
-    {
-      if (local_lcgbp_scene->lcm_cluster_roots[i]->hasChildren() && (i%2))
-      {
-        local_lcgbp_scene->lcm_cluster_roots_per_frame[local_lcgbp_scene->numLCMeshClusterRootsPerFrame++] = &local_lcgbp_scene->lcm_cluster[ local_lcgbp_scene->lcm_cluster_roots[i]->lodLeftID ];
-        local_lcgbp_scene->lcm_cluster_roots_per_frame[local_lcgbp_scene->numLCMeshClusterRootsPerFrame++] = &local_lcgbp_scene->lcm_cluster[ local_lcgbp_scene->lcm_cluster_roots[i]->lodRightID ];        
-      }      
-      else
-        local_lcgbp_scene->lcm_cluster_roots_per_frame[local_lcgbp_scene->numLCMeshClusterRootsPerFrame++] = local_lcgbp_scene->lcm_cluster_roots[i];
-    }
-    PRINT(local_lcgbp_scene->numLCMeshClusterRootsPerFrame);
-    
-
-
-#else
     {
       sycl::event queue_event =  global_gpu_queue->submit([&](sycl::handler &cgh) {
         cgh.single_task([=]() {
@@ -976,12 +968,14 @@ namespace embree {
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) {
           const uint i = item.get_global_id(0);
           if (i < local_lcgbp_scene->numLCMeshClusterRoots)
-          {            
+          {
+            const uint clusterID = local_lcgbp_scene->lcm_cluster_roots_IDs[i];            
 #if 1
             const uint LOD_LEVELS = 3;
             const Vec3f org = camera.xfm.p;
-            CompressedVertex compressed_center = local_lcgbp_scene->lcm_cluster_roots_per_frame[0]->center;
-            LossyCompressedMesh *mesh = local_lcgbp_scene->lcm_cluster_roots_per_frame[0]->mesh;
+            const LossyCompressedMeshCluster &cluster = local_lcgbp_scene->lcm_cluster[ clusterID ];
+            CompressedVertex compressed_center = cluster.center;
+            LossyCompressedMesh *mesh = cluster.mesh;
             const Vec3f lower = mesh->bounds.lower;
             const Vec3f diag = mesh->bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
             const Vec3f center = compressed_center.decompress(lower,diag);
@@ -1002,23 +996,42 @@ namespace embree {
                 break;
               }
             segment = min(segment, LOD_LEVELS-1);
-            const uint rounds = LOD_LEVELS-1-segment;
+            const uint rounds = LOD_LEVELS-segment;
+
             
-            if (local_lcgbp_scene->lcm_cluster_roots[i]->hasChildren() && rounds >=1)
+            if (cluster.hasChildren() && rounds >=1)
             {
-              const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(uint)2);
-              local_lcgbp_scene->lcm_cluster_roots_per_frame[destID+0] = &local_lcgbp_scene->lcm_cluster[ local_lcgbp_scene->lcm_cluster_roots[i]->lodLeftID ];
-              local_lcgbp_scene->lcm_cluster_roots_per_frame[destID+1] = &local_lcgbp_scene->lcm_cluster[ local_lcgbp_scene->lcm_cluster_roots[i]->lodRightID ];        
+              uint numRoots = 1;
+              uint roots[16];
+              roots[0] = clusterID;
+              for (uint r=0;r<rounds+1;r++)
+              {
+                const uint old_numRoots = numRoots;
+                for (uint i=0;i<old_numRoots;i++)
+                {
+                  const uint currentID = roots[i];
+                  const LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[ currentID ];
+                  if (cur.hasChildren())
+                  {
+                    roots[i] = cur.lodLeftID;
+                    roots[numRoots++] = cur.lodRightID;                    
+                  }                  
+                }
+                if (numRoots == old_numRoots) break;
+              }              
+              const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,numRoots);
+              for (uint i=0;i<numRoots;i++)
+                local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID+i] =  roots[i];
             }      
             else
             {
               const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(uint)1);                            
-              local_lcgbp_scene->lcm_cluster_roots_per_frame[destID] = local_lcgbp_scene->lcm_cluster_roots[i];              
+              local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID] = clusterID;              
             }
 #else              
             {
               const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(uint)1);                            
-              local_lcgbp_scene->lcm_cluster_roots_per_frame[destID] = local_lcgbp_scene->lcm_cluster_roots[i];
+              local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID] = clusterID;
             }
 #endif              
             
@@ -1026,12 +1039,14 @@ namespace embree {
         });
       });
       waitOnEventAndCatchException(compute_lod_event);
-
+#if 1
       {
+        const uint clusterID = local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[0];
         const uint LOD_LEVELS = 3;
         const Vec3f org = camera.xfm.p;
-        CompressedVertex compressed_center = local_lcgbp_scene->lcm_cluster_roots_per_frame[0]->center;
-        LossyCompressedMesh *mesh = local_lcgbp_scene->lcm_cluster_roots_per_frame[0]->mesh;
+        const LossyCompressedMeshCluster &cluster = local_lcgbp_scene->lcm_cluster[ clusterID ];        
+        CompressedVertex compressed_center = cluster.center;
+        LossyCompressedMesh *mesh = cluster.mesh;
         const Vec3f lower = mesh->bounds.lower;
         const Vec3f diag = mesh->bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
         const Vec3f center = compressed_center.decompress(lower,diag);
@@ -1054,15 +1069,13 @@ namespace embree {
         segment = min(segment, LOD_LEVELS-1);
         const uint rounds = LOD_LEVELS-1-segment;
         
-        PRINT3(length(org-center),segment,rounds);
-        
-        
+        PRINT3(dist_minDistance,segment,rounds);                
       }
+#endif      
 
     }
         
-#endif
-    rtcSetLCData(local_lcgbp_scene->geometry, local_lcgbp_scene->numCurrentLCGBPStates, local_lcgbp_scene->lcgbp_state, local_lcgbp_scene->numLCMeshClusterRootsPerFrame,local_lcgbp_scene->lcm_cluster_roots_per_frame);    
+    rtcSetLCData(local_lcgbp_scene->geometry, local_lcgbp_scene->numCurrentLCGBPStates, local_lcgbp_scene->lcgbp_state, local_lcgbp_scene->lcm_cluster, local_lcgbp_scene->numLCMeshClusterRootsPerFrame,local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame);    
     rtcCommitGeometry(local_lcgbp_scene->geometry);
     
     /* commit changes to scene */

@@ -63,12 +63,13 @@ namespace embree
     device->refDec();
   }
 
-  void Geometry::setLCData(uint _numLCGs, void* _pLCGs, uint _numLCMs, void* _pLCMs)
+  void Geometry::setLCData(uint _numLCGs, void* _pLCGs, void* _pLCMs, uint _numLCMs, void* _pLCMIDs)
   {
     numLCGs = _numLCGs;
     numLCMs = _numLCMs;
     pLCGs   = _pLCGs;
-    pLCMs   = _pLCMs;    
+    pLCMs   = _pLCMs;
+    pLCMIDs = (uint*)_pLCMIDs;
     numPrimitives = _numLCGs + _numLCMs;    
     Geometry::update();
   }

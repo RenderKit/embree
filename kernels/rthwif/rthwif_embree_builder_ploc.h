@@ -1691,7 +1691,8 @@ namespace embree
         
         if (geom->numLCMs)
         {
-          //for (uint ID=0;ID<geom->numGeometryPtrs;ID++)          
+          //for (uint i=0;i<geom->numLCMs;i++)
+          //  PRINT2(i,geom->pLCMIDs[i]);
           const uint wgSize = 16;        
           const sycl::nd_range<1> nd_range1(wgSize*geom->numLCMs,sycl::range<1>(wgSize));          
           sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
@@ -1701,8 +1702,9 @@ namespace embree
                                  const uint subgroupLocalID = get_sub_group_local_id();
                                  const uint subgroupSize    = get_sub_group_size();                                           
                                  const uint ID         = item.get_group(0);
-
-                                 const LossyCompressedMeshCluster &cluster = *(((LossyCompressedMeshCluster**)(geom->pLCMs))[ID]);
+                                 const LossyCompressedMeshCluster* const base = (LossyCompressedMeshCluster*)(geom->pLCMs);
+                                 const uint clusterID = geom->pLCMIDs[ID];
+                                 const LossyCompressedMeshCluster &cluster = base[ clusterID ];
                                  
                                  const LossyCompressedMesh &mesh = *cluster.mesh;
                                  const CompressedVertex *const compressedVertices = mesh.compressedVertices + cluster.offsetVertices; 
