@@ -44,8 +44,84 @@ namespace embree {
 
     __forceinline QuadMeshCluster() : leftID(-1), rightID(-1), lod_root(false) {}
 
-    __forceinline bool isLeaf() { return leftID == -1 || rightID == -1; }    
+    __forceinline bool isLeaf() { return leftID == -1 || rightID == -1; }
+
+    void reorderMorton();
   };
+
+  void QuadMeshCluster::reorderMorton()
+  {
+    const uint numQuads = quads.size();
+    Quad *new_quads = new Quad[numQuads];
+    BBox3f centroidBounds(empty);
+
+    for (uint i=0;i<numQuads;i++)
+    {
+      const uint v0 = quads[i].v0;
+      const uint v1 = quads[i].v1;
+      const uint v2 = quads[i].v2;
+      const uint v3 = quads[i].v3;
+
+      const Vec3f &vtx0 = vertices[v0];
+      const Vec3f &vtx1 = vertices[v1];
+      const Vec3f &vtx2 = vertices[v2];
+      const Vec3f &vtx3 = vertices[v3];
+
+      BBox3f quadBounds(empty);
+      quadBounds.extend(vtx0);
+      quadBounds.extend(vtx1);
+      quadBounds.extend(vtx2);
+      quadBounds.extend(vtx3);
+      centroidBounds.extend(quadBounds.center());
+    }
+
+    const Vec3f lower = centroidBounds.lower;
+    const Vec3f diag = centroidBounds.size();
+    const Vec3f inv_diag  = diag != Vec3fa(0.0f) ? Vec3fa(1.0f) / diag : Vec3fa(0.0f);
+
+    std::vector<gpu::MortonCodePrimitive64x32Bits3D> mcodes;
+
+    for (uint i=0;i<numQuads;i++)
+    {
+      const uint v0 = quads[i].v0;
+      const uint v1 = quads[i].v1;
+      const uint v2 = quads[i].v2;
+      const uint v3 = quads[i].v3;
+
+      const Vec3f &vtx0 = vertices[v0];
+      const Vec3f &vtx1 = vertices[v1];
+      const Vec3f &vtx2 = vertices[v2];
+      const Vec3f &vtx3 = vertices[v3];
+
+      BBox3fa quadBounds(empty);
+      quadBounds.extend(vtx0);
+      quadBounds.extend(vtx1);
+      quadBounds.extend(vtx2);
+      quadBounds.extend(vtx3);
+            
+      const uint grid_size = 1 << 21; // 3*21 = 63
+      const Vec3f grid_base = lower;
+      const Vec3f grid_extend = diag;
+      
+      const Vec3f grid_scale = ((float)grid_size * 0.99f) * inv_diag;
+      const Vec3f centroid =  quadBounds.center();
+
+      const Vec3f gridpos_f = (centroid-grid_base)*grid_scale;                                                                      
+      const uint gx = (uint)gridpos_f.x;
+      const uint gy = (uint)gridpos_f.y;
+      const uint gz = (uint)gridpos_f.z;
+      const uint64_t code = bitInterleave64<uint64_t>(gx,gy,gz);
+      mcodes.push_back(gpu::MortonCodePrimitive64x32Bits3D(code,i));      
+    }
+
+    std::sort(mcodes.begin(), mcodes.end()); 
+    for (uint i=0;i<numQuads;i++)
+      new_quads[i] = quads[mcodes[i].getIndex()];
+
+    for (uint i=0;i<numQuads;i++)
+      quads[i] = new_quads[i];
+    delete [] new_quads;
+  }
 
   uint findVertex(std::vector<Vec3f> &vertices, const Vec3f &cv)
   {
@@ -134,7 +210,7 @@ namespace embree {
     Vec3f *vertices         = &*mesh.vertices.begin();
 
     const float REDUCTION_FACTOR = 0.5f;
-    uint expectedTriangles = floorf((LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER * 3) * REDUCTION_FACTOR);
+    uint expectedTriangles = floorf((LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER * 4) * REDUCTION_FACTOR);
     
     uint iterations = 0;
     while(1)
@@ -143,7 +219,7 @@ namespace embree {
       if (iterations > 10) return false;
       bool retry = false;      
       float result_error = 0.0f;
-      const size_t new_numIndices = meshopt_simplify((uint*)new_triangles,(uint*)triangles,numIndices,(float*)vertices,numVertices,sizeof(Vec3f),expectedTriangles*3,0.05f,meshopt_SimplifyLockBorder,&result_error);
+      const size_t new_numIndices = meshopt_simplify((uint*)new_triangles,(uint*)triangles,numIndices,(float*)vertices,numVertices,sizeof(Vec3f),expectedTriangles*3,0.1f,meshopt_SimplifyLockBorder,&result_error);
 
       const size_t new_numTriangles = new_numIndices/3;
       PRINT3(expectedTriangles,new_numTriangles,result_error);
@@ -442,9 +518,9 @@ namespace embree {
     for (uint i=0;i<leafIDs.size();i++)
     {
       const uint ID = leafIDs[i];
-      const uint parentID = ranges[ID].parent;
+      uint parentID = ranges[ID].parent;
       //PRINT2(ID,parentID);
-      if (parentID != -1)
+      while (parentID != -1)
       {        
         ranges[parentID].counter++;
         if (ranges[parentID].counter == 2)
@@ -462,6 +538,7 @@ namespace embree {
           bool success = mergeSimplifyQuadMeshCluster( clusters[leftClusterID], clusters[rightClusterID], new_cluster);
           if (success)
           {
+            new_cluster.reorderMorton();
             PRINT(new_cluster.quads.size());
             PRINT(new_cluster.vertices.size());          
             const uint mergedClusterID = clusters.size();
@@ -473,8 +550,14 @@ namespace embree {
           else
           {
             ranges[parentID].counter = 0;
+            break;
           }
+          parentID = ranges[parentID].parent;
         }
+        else
+          break;
+        
+        
       }
     }
 
