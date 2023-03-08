@@ -219,56 +219,6 @@ namespace embree
     g_arena.reset();
   }
 
-#if defined(EMBREE_LEVEL_ZERO)
-  
-  RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(ze_device_handle_t hDevice)
-  {
-    /* check for supported device ID */
-    ze_device_properties_t device_props{ ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES };
-    ze_result_t status = zeDeviceGetProperties(hDevice, &device_props);
-    if (status != ZE_RESULT_SUCCESS)
-      return RTHWIF_FEATURES_NONE;
-
-    /* check for Intel vendor */
-    const uint32_t vendor_id = device_props.vendorId;
-    const uint32_t device_id = device_props.deviceId;
-    if (vendor_id != 0x8086) return RTHWIF_FEATURES_NONE;
-    
-    /* return supported features */
-    uint32_t features_xe = RTHWIF_FEATURES_NONE;
-    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_TRIANGLES;
-    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_QUADS;
-    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_AABBS_FPTR;
-    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_INSTANCE;
-    
-    // DG2
-    if (0x4F80 <= device_id && device_id <= 0x4F88) return (RTHWIF_FEATURES) features_xe;
-    if (0x5690 <= device_id && device_id <= 0x5698) return (RTHWIF_FEATURES) features_xe;
-    if (0x56A0 <= device_id && device_id <= 0x56A6) return (RTHWIF_FEATURES) features_xe;
-    if (0x56B0 <= device_id && device_id <= 0x56B3) return (RTHWIF_FEATURES) features_xe;
-    if (0x56C0 <= device_id && device_id <= 0x56C1) return (RTHWIF_FEATURES) features_xe;
-       
-    // PVC
-    if (0x0BD0 <= device_id && device_id <= 0x0BDB) return (RTHWIF_FEATURES) features_xe;
-    if (device_id == 0x0BE5                       ) return (RTHWIF_FEATURES) features_xe;
-
-    return RTHWIF_FEATURES_NONE;
-  }
-  
-#else
-
-  RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(ze_device_handle_t hDevice)
-  {
-    uint32_t features_xe = RTHWIF_FEATURES_NONE;
-    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_TRIANGLES;
-    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_QUADS;
-    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_AABBS_FPTR;
-    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_INSTANCE;
-    return RTHWIF_FEATURES(features_xe);
-  }
-
-#endif
-
   uint32_t getNumPrimitives(const RTHWIF_GEOMETRY_DESC* geom)
   {
     switch (geom->geometryType) {
