@@ -1742,8 +1742,8 @@ namespace embree
                                    clusterBounds.extend(quad_bounds);
 
                                    const uint geomID = lcgID;
-                                   const uint primID0 = ID;
-                                   const uint primID1 = ID;
+                                   const uint primID0 = clusterID;
+                                   const uint primID1 = clusterID;
             
                                    leaf[q] = QuadLeafData( vtx0,vtx1,vtx3,vtx2, 3,2,1, 0, geomID, primID0, primID1, GeometryFlags::OPAQUE, -1);
                                    clusterPrimBounds[q] = quad_bounds;

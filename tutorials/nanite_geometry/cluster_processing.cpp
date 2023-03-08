@@ -680,7 +680,7 @@ namespace embree {
       LossyCompressedMeshCluster compressed_cluster;      
       compressed_cluster.numQuads  = clusters[c].quads.size();
       compressed_cluster.numBlocks = LossyCompressedMeshCluster::getDecompressedSizeInBytes(compressed_cluster.numQuads)/64;
-      compressed_cluster.ID = c;
+      //compressed_cluster.ID = c;
       BBox3f cluster_bounds = clusters[c].getBBox3f();
       const Vec3f center = cluster_bounds.center();
       compressed_cluster.center = CompressedVertex(center,geometry_lower,geometry_inv_diag);
@@ -707,7 +707,7 @@ namespace embree {
         if ( globalCompressedVertexOffset > numTotalVerticesAllocate ) FATAL("numTotalVerticesAllocate");                
       }
       
-      compressed_cluster.numVertices           = clusters[c].vertices.size();
+      //compressed_cluster.numVertices           = clusters[c].vertices.size();
 
       const uint lcm_clusterID = lcm_clusters.size();      
       lcm_clusters.push_back(compressed_cluster);

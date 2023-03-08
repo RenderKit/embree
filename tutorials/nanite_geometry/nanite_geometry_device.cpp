@@ -474,12 +474,14 @@ namespace embree {
           scene_bounds.extend(mesh->positions[0][i]);
       }
     }
-
+    
     PRINT(scene_bounds);
     
     global_lcgbp_scene = (LCG_Scene*)alignedUSMMalloc(sizeof(LCG_Scene),64);
-    new (global_lcgbp_scene) LCG_Scene(0);    
-
+    new (global_lcgbp_scene) LCG_Scene(0);
+    
+    global_lcgbp_scene->bounds = scene_bounds;
+    
     std::vector<LossyCompressedMesh*> lcm_ptrs;
     std::vector<LossyCompressedMeshCluster> lcm_clusters;
     std::vector<uint> lcm_clusterRootIDs;
@@ -1084,7 +1086,7 @@ namespace embree {
     double dt0 = (getSeconds()-t0)*1000.0;
                                             
     avg_bvh_build_time.add(dt0);
-#endif    
+#endif
   }
 
 /* called by the C++ code for cleanup */
