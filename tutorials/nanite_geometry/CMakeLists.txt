@@ -3,5 +3,5 @@
 
 INCLUDE(tutorial)
 #ADD_TUTORIAL(nanite_geometry)
-ADD_TUTORIAL_SYCL(nanite_geometry simplifier.cpp cluster_processing.cpp pathtracer.cpp)
+ADD_TUTORIAL_SYCL(nanite_geometry simplifier.cpp cluster_processing.cpp pathtracer.cpp stripifier.cpp vcacheoptimizer.cpp)
 

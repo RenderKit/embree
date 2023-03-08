@@ -19,6 +19,23 @@
 
 namespace embree {
 
+  uint findVertex(std::vector<Vec3f> &vertices, const Vec3f &cv)
+  {
+    for (uint i=0;i<vertices.size();i++)
+      if (cv == vertices[i])
+        return i;
+    vertices.push_back(cv);
+    return vertices.size()-1;
+  }
+
+  void countVertexIDs(std::vector<uint> &vertices, const uint cv)
+  {
+    for (uint i=0;i<vertices.size();i++)
+      if (cv == vertices[i])
+        return;
+    vertices.push_back(cv);
+  }
+  
   struct Triangle {
     uint v0,v1,v2;
 
@@ -38,12 +55,6 @@ namespace embree {
     __forceinline Quad () {}
     __forceinline Quad (const uint v0, const uint v1, const uint v2, const uint v3) : v0(v0), v1(v1), v2(v2), v3(v3)  {}
   };
-  
-  struct Mesh {
-    std::vector<Triangle> triangles;
-    std::vector<CompressedVertex> vertices;
-  };
-
 
   struct TriangleMesh {
     std::vector<Triangle> triangles;
@@ -70,8 +81,11 @@ namespace embree {
     }
     
     void reorderMorton();
+    uint computeTriangleStrip();
+    
   };
 
+  
   void QuadMeshCluster::reorderMorton()
   {
     const uint numQuads = quads.size();
@@ -146,21 +160,41 @@ namespace embree {
     delete [] new_quads;
   }
 
-  uint findVertex(std::vector<Vec3f> &vertices, const Vec3f &cv)
+  uint QuadMeshCluster::computeTriangleStrip()
   {
-    for (uint i=0;i<vertices.size();i++)
-      if (cv == vertices[i])
-        return i;
-    vertices.push_back(cv);
-    return vertices.size()-1;
-  }
+    TriangleMesh mesh;
+        
+    // === cluster0 ===
+    for (uint i=0;i<quads.size();i++)
+    {
+      uint v0 = findVertex(mesh.vertices, vertices[ quads[i].v0 ]);
+      uint v1 = findVertex(mesh.vertices, vertices[ quads[i].v1 ]);
+      uint v2 = findVertex(mesh.vertices, vertices[ quads[i].v2 ]);
+      uint v3 = findVertex(mesh.vertices, vertices[ quads[i].v3 ]);
 
-  void countVertexIDs(std::vector<uint> &vertices, const uint cv)
-  {
-    for (uint i=0;i<vertices.size();i++)
-      if (cv == vertices[i])
-        return;
-    vertices.push_back(cv);
+      Triangle tri0(v0,v1,v3);
+      Triangle tri1(v1,v2,v3);
+      if (tri0.valid()) mesh.triangles.push_back(tri0);
+      if (tri1.valid()) mesh.triangles.push_back(tri1);            
+    }
+
+    const uint numTriangles = mesh.triangles.size();
+    const uint numVertices  = mesh.vertices.size();
+    const uint numIndices   = numTriangles*3;
+
+    uint *old_indices = (uint*)&*mesh.triangles.begin();    
+    std::vector<unsigned int> new_index_list(meshopt_stripifyBound(numIndices));
+    uint *new_indices = (uint*)&*new_index_list.begin();    
+
+#if 0
+    meshopt_optimizeVertexCacheStrip(new_indices, old_indices, numIndices, numVertices);
+    for (uint i=0;i<numIndices;i++)
+      old_indices[i] = new_indices[i];
+#endif
+    
+    unsigned int restart_index = ~0u;
+    size_t strip_size = meshopt_stripify(new_indices, old_indices, numIndices, numVertices, restart_index);
+    return strip_size;
   }
   
 
@@ -493,6 +527,8 @@ namespace embree {
     const uint numRanges = leafIDs.size();
 
     // === create leaf clusters ===
+    //size_t totalSizeMicroMesh = 0;
+    //size_t totalSizeMicroStrip = 0;
     
     for (uint i=0;i<leafIDs.size();i++)
     {
@@ -532,10 +568,24 @@ namespace embree {
         cluster.vertices[new_v] = mesh->positions[0][old_v];
       }
       ranges[ID].clusterID = clusters.size();
+
+      cluster.reorderMorton();
+
+#if 0      
+      const uint strip_indices = cluster.computeTriangleStrip();
+      const uint sizeMicroMesh = cluster.quads.size()*4 + cluster.vertices.size()*6;
+      const uint sizeMicroStrip = cluster.vertices.size()*6 + strip_indices; //strip_indices*6;
+      //PRINT4(cluster.quads.size()*4,strip_indices,sizeMicroMesh,sizeMicroStrip);
+      totalSizeMicroMesh += sizeMicroMesh;
+      totalSizeMicroStrip += sizeMicroStrip;
+#endif      
+      
       clusters.push_back(cluster);
       //DBG_PRINT2(cluster.quads.size(),cluster.vertices.size());
     }
 
+    //PRINT2(totalSizeMicroMesh,totalSizeMicroStrip);
+    
     // === bottom-up merging and creation of new clusters ===
     
     for (uint i=0;i<leafIDs.size();i++)
@@ -627,7 +677,7 @@ namespace embree {
       
     for (uint c=0;c<clusters.size();c++)
     {
-      LossyCompressedMeshCluster compressed_cluster;
+      LossyCompressedMeshCluster compressed_cluster;      
       compressed_cluster.numQuads  = clusters[c].quads.size();
       compressed_cluster.numBlocks = LossyCompressedMeshCluster::getDecompressedSizeInBytes(compressed_cluster.numQuads)/64;
       compressed_cluster.ID = c;
@@ -659,7 +709,7 @@ namespace embree {
       
       compressed_cluster.numVertices           = clusters[c].vertices.size();
 
-      const uint lcm_clusterID = lcm_clusters.size();
+      const uint lcm_clusterID = lcm_clusters.size();      
       lcm_clusters.push_back(compressed_cluster);
 
       if (clusters[c].lod_root)
@@ -689,7 +739,7 @@ namespace embree {
   }
 
   
-  std::vector<Quad> extractQuads(Mesh &mesh)
+  std::vector<Quad> extractQuads(TriangleMesh &mesh)
   {
     std::vector<Quad> quads;
 
