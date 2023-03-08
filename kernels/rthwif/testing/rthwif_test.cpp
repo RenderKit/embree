@@ -608,6 +608,8 @@ public:
       out.geometryType = RTHWIF_GEOMETRY_TYPE_TRIANGLES;
       out.geometryFlags = gflags;
       out.geometryMask = 0xFF;
+      out.triangleFormat = ZE_RAYTRACING_FORMAT_EXT_TRIANGLE_INDICES_UINT32;
+      out.vertexFormat = ZE_RAYTRACING_FORMAT_EXT_FLOAT3;
       out.triangleBuffer = (RTHWIF_TRIANGLE_INDICES*) triangles.data();
       out.triangleCount = triangles.size();
       out.triangleStride = sizeof(sycl::int4);
@@ -829,7 +831,7 @@ struct InstanceGeometryT : public Geometry
       out.instanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
       out.geometryMask = 0xFF;
       out.instanceUserID = instUserID;
-      out.transformFormat = RTHWIF_TRANSFORM_FORMAT_FLOAT4X4_COLUMN_MAJOR;
+      out.transformFormat = ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_ALIGNED_COLUMN_MAJOR;
       out.transform = (float*)&out.xfmdata;
       out.xfmdata.vx_x = local2world.vx.x();
       out.xfmdata.vx_y = local2world.vx.y();

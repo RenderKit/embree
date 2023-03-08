@@ -41,7 +41,7 @@ namespace embree
   {
     switch (geom->transformFormat)
     {
-    case RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_COLUMN_MAJOR: {
+    case ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_COLUMN_MAJOR: {
       const RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR*) geom->transform;
       return {
         { xfm->vx_x, xfm->vx_y, xfm->vx_z },
@@ -50,7 +50,7 @@ namespace embree
         { xfm-> p_x, xfm-> p_y, xfm-> p_z }
       };
     }
-    case RTHWIF_TRANSFORM_FORMAT_FLOAT4X4_COLUMN_MAJOR: {
+    case ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_ALIGNED_COLUMN_MAJOR: {
       const RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR*) geom->transform;
       return {
         { xfm->vx_x, xfm->vx_y, xfm->vx_z },
@@ -59,7 +59,7 @@ namespace embree
         { xfm-> p_x, xfm-> p_y, xfm-> p_z }
       };
     }
-    case RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_ROW_MAJOR: {
+    case ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_ROW_MAJOR: {
       const RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR*) geom->transform;
       return {
         { xfm->vx_x, xfm->vx_y, xfm->vx_z },
@@ -75,16 +75,32 @@ namespace embree
   
   inline void verifyGeometryDesc(const RTHWIF_GEOMETRY_TRIANGLES_DESC* geom)
   {
+    if (geom->triangleFormat != ZE_RAYTRACING_FORMAT_EXT_TRIANGLE_INDICES_UINT32)
+      throw std::runtime_error("triangle format must be ZE_RAYTRACING_FORMAT_EXT_TRIANGLE_INDICES_UINT32");
+    
+    if (geom->vertexFormat != ZE_RAYTRACING_FORMAT_EXT_FLOAT3)
+      throw std::runtime_error("vertex format must be ZE_RAYTRACING_FORMAT_EXT_FLOAT3");
+ 
     if (geom->reserved0 != 0) throw std::runtime_error("reserved member must be 0");
     if (geom->reserved1 != 0) throw std::runtime_error("reserved member must be 0");
+    if (geom->reserved2 != 0) throw std::runtime_error("reserved member must be 0");
+    
     if (geom->triangleCount && geom->triangleBuffer == nullptr) throw std::runtime_error("no triangle buffer specified");
     if (geom->vertexCount   && geom->vertexBuffer   == nullptr) throw std::runtime_error("no vertex buffer specified");
   }
 
   inline void verifyGeometryDesc(const RTHWIF_GEOMETRY_QUADS_DESC* geom)
   {
+    if (geom->quadFormat != ZE_RAYTRACING_FORMAT_EXT_QUAD_INDICES_UINT32)
+      throw std::runtime_error("quad format must be ZE_RAYTRACING_FORMAT_EXT_QUAD_INDICES_UINT32");
+    
+    if (geom->vertexFormat != ZE_RAYTRACING_FORMAT_EXT_FLOAT3)
+      throw std::runtime_error("vertex format must be ZE_RAYTRACING_FORMAT_EXT_FLOAT3");
+ 
     if (geom->reserved0 != 0) throw std::runtime_error("reserved member must be 0");
     if (geom->reserved1 != 0) throw std::runtime_error("reserved member must be 0");
+    if (geom->reserved2 != 0) throw std::runtime_error("reserved member must be 0");
+    
     if (geom->quadCount   && geom->quadBuffer   == nullptr) throw std::runtime_error("no quad buffer specified");
     if (geom->vertexCount && geom->vertexBuffer == nullptr) throw std::runtime_error("no vertex buffer specified");
   }
