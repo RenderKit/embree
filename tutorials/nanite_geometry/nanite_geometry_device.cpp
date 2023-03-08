@@ -1039,7 +1039,7 @@ namespace embree {
         });
       });
       waitOnEventAndCatchException(compute_lod_event);
-#if 1
+#if 0
       {
         const uint clusterID = local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[0];
         const uint LOD_LEVELS = 3;

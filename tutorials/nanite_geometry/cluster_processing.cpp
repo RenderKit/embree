@@ -2,6 +2,20 @@
 #include "../../kernels/rthwif/builder/gpu/lcgbp.h"
 #include "../../kernels/rthwif/builder/gpu/morton.h"
 
+#if 0
+#define DBG_PRINT(x) PRINT(x)
+#define DBG_PRINT2(x0,x1) PRINT2(x0,x1)
+#define DBG_PRINT3(x0,x1,x2) PRINT3(x0,x1,x2)
+#define DBG_PRINT4(x0,x1,x2,x3) PRINT4(x0,x1,x2,x3)
+#define DBG_PRINT5(x0,x1,x2,x3,x4) PRINT5(x0,x1,x2,x3,x4)
+#else
+#define DBG_PRINT(x) 
+#define DBG_PRINT2(x0,x1) 
+#define DBG_PRINT3(x0,x1,x2) 
+#define DBG_PRINT4(x0,x1,x2,x3)
+#define DBG_PRINT5(x0,x1,x2,x3,x4)
+#endif
+
 
 namespace embree {
 
@@ -207,8 +221,8 @@ namespace embree {
       if (tri1.valid()) mesh.triangles.push_back(tri1);            
     }
     
-    PRINT(mesh.vertices.size());
-    PRINT(mesh.triangles.size());
+    DBG_PRINT(mesh.vertices.size());
+    DBG_PRINT(mesh.triangles.size());
 
     const uint numTriangles = mesh.triangles.size();
     const uint numVertices  = mesh.vertices.size();
@@ -231,7 +245,7 @@ namespace embree {
       const size_t new_numIndices = meshopt_simplify((uint*)new_triangles,(uint*)triangles,numIndices,(float*)vertices,numVertices,sizeof(Vec3f),expectedTriangles*3,0.1f,meshopt_SimplifyLockBorder,&result_error);
 
       const size_t new_numTriangles = new_numIndices/3;
-      PRINT3(expectedTriangles,new_numTriangles,result_error);
+      DBG_PRINT3(expectedTriangles,new_numTriangles,result_error);
 
       std::vector<uint> new_vertices;
       for (uint i=0;i<new_numTriangles;i++)
@@ -242,7 +256,7 @@ namespace embree {
       }      
       if (new_vertices.size() > 256)
       {
-        PRINT2("new_vertices.size()",new_vertices.size());
+        DBG_PRINT2("new_vertices.size()",new_vertices.size());
         retry = true;
       }
 
@@ -275,20 +289,20 @@ namespace embree {
       }
 
 
-      if (quadMesh.quads.size() > LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER) { PRINT2("RETRY quadMesh.quads.size()",quadMesh.quads.size()); retry = true; }
-      if (quadMesh.vertices.size() > 256) { PRINT("RETRY quadMesh.vertices.size()"); retry = true; }
+      if (quadMesh.quads.size() > LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER) { DBG_PRINT2("RETRY quadMesh.quads.size()",quadMesh.quads.size()); retry = true; }
+      if (quadMesh.vertices.size() > 256) { DBG_PRINT("RETRY quadMesh.vertices.size()"); retry = true; }
       if (retry)
       {
         quadMesh.vertices.clear();
         quadMesh.quads.clear();
-        PRINT2(quadMesh.vertices.size(),quadMesh.quads.size());
+        DBG_PRINT2(quadMesh.vertices.size(),quadMesh.quads.size());
         expectedTriangles -= std::max((uint)2,expectedTriangles/10);
       }
       else
         break;
     }
     //exit(0);
-    PRINT2(quadMesh.quads.size(),quadMesh.vertices.size());
+    DBG_PRINT2(quadMesh.quads.size(),quadMesh.vertices.size());
 
     delete [] new_triangles;
     
@@ -346,7 +360,7 @@ namespace embree {
       
       if (fits)
       {
-        //PRINT4(ranges[currentID].range.start,ranges[currentID].range.end,ranges[currentID].range.size(),ranges[currentID].parent);
+        //DBG_PRINT4(ranges[currentID].range.start,ranges[currentID].range.end,ranges[currentID].range.size(),ranges[currentID].parent);
         leafIDs.push_back(currentID);
         numTotalVertices += index_map.size();
         return;
@@ -473,8 +487,8 @@ namespace embree {
     
     ranges.push_back(HierarchyRange(gpu::Range(0,mcodes.size())));
     extractRanges(0,&*mcodes.begin(),ranges,leafIDs,mesh,numTotalVertices,INITIAL_CREATE_RANGE_THRESHOLD);
-    PRINT(ranges.size());
-    PRINT(leafIDs.size());
+    DBG_PRINT(ranges.size());
+    DBG_PRINT(leafIDs.size());
 
     const uint numRanges = leafIDs.size();
 
@@ -489,7 +503,7 @@ namespace embree {
       uint numLocalIndices = 0;
 
       // === remap vertices relative to cluster ===
-      //PRINT2(ranges[ID].range.start,ranges[ID].range.end);
+      //DBG_PRINT2(ranges[ID].range.start,ranges[ID].range.end);
       
       for (uint j=ranges[ID].range.start;j<ranges[ID].range.end;j++)
       {
@@ -519,7 +533,7 @@ namespace embree {
       }
       ranges[ID].clusterID = clusters.size();
       clusters.push_back(cluster);
-      //PRINT2(cluster.quads.size(),cluster.vertices.size());
+      //DBG_PRINT2(cluster.quads.size(),cluster.vertices.size());
     }
 
     // === bottom-up merging and creation of new clusters ===
@@ -528,7 +542,7 @@ namespace embree {
     {
       const uint ID = leafIDs[i];
       uint parentID = ranges[ID].parent;
-      //PRINT2(ID,parentID);
+      //DBG_PRINT2(ID,parentID);
       while (parentID != -1)
       {        
         ranges[parentID].counter++;
@@ -536,20 +550,20 @@ namespace embree {
         {
           const uint leftID = ranges[parentID].left;
           const uint rightID = ranges[parentID].right;
-          //PRINT2(leftID,rightID);
+          //DBG_PRINT2(leftID,rightID);
           if (leftID == -1 || rightID == -1) FATAL("leftID, rightID");
-          //PRINT5(parentID,ranges[leftID].range.start,ranges[leftID].range.end,ranges[rightID].range.start,ranges[rightID].range.end);
+          //DBG_PRINT5(parentID,ranges[leftID].range.start,ranges[leftID].range.end,ranges[rightID].range.start,ranges[rightID].range.end);
           // === merge ranges ===
           const uint  leftClusterID = ranges[ leftID].clusterID;
           const uint rightClusterID = ranges[rightID].clusterID;
-          PRINT(parentID);
+          DBG_PRINT(parentID);
           QuadMeshCluster new_cluster;
           bool success = mergeSimplifyQuadMeshCluster( clusters[leftClusterID], clusters[rightClusterID], new_cluster);
           if (success)
           {
             new_cluster.reorderMorton();
-            PRINT(new_cluster.quads.size());
-            PRINT(new_cluster.vertices.size());          
+            DBG_PRINT(new_cluster.quads.size());
+            DBG_PRINT(new_cluster.vertices.size());          
             const uint mergedClusterID = clusters.size();
             new_cluster.leftID  = leftClusterID;
             new_cluster.rightID = rightClusterID;          
@@ -571,7 +585,7 @@ namespace embree {
     }
 
     extractClusterRootIDs(0,ranges,clusterRootIDs);
-    PRINT(clusterRootIDs.size());
+    DBG_PRINT(clusterRootIDs.size());
     for (uint i=0;i<clusterRootIDs.size();i++)
     {
       uint ID = clusterRootIDs[i];
@@ -586,7 +600,7 @@ namespace embree {
       numTotalQuadsAllocate += clusters[i].quads.size();
       numTotalVerticesAllocate += clusters[i].vertices.size();      
     }
-    PRINT2(numTotalQuadsAllocate,numTotalVerticesAllocate);
+    DBG_PRINT2(numTotalQuadsAllocate,numTotalVerticesAllocate);
     
     // === allocate LossyCompressedMesh in USM ===
     
@@ -659,7 +673,7 @@ namespace embree {
     const size_t uncompressedSizeMeshBytes = mesh->numVertices * sizeof(Vec3f) + mesh->numQuads * sizeof(uint) * 4;
     const size_t compressedSizeMeshBytes = sizeof(CompressedVertex)*numTotalVertices + sizeof(CompressedQuadIndices)*numQuads;
     const size_t clusterSizeBytes = numRanges*sizeof(LossyCompressedMeshCluster);
-    PRINT5(lcm_ID,uncompressedSizeMeshBytes,compressedSizeMeshBytes,(float)compressedSizeMeshBytes/uncompressedSizeMeshBytes,clusterSizeBytes);
+    DBG_PRINT5(lcm_ID,uncompressedSizeMeshBytes,compressedSizeMeshBytes,(float)compressedSizeMeshBytes/uncompressedSizeMeshBytes,clusterSizeBytes);
 
     totalCompressedSize += compressedSizeMeshBytes + clusterSizeBytes;
   }  
@@ -729,8 +743,8 @@ namespace embree {
       if (tri1.valid()) mesh.triangles.push_back(tri1);            
     }
 
-    PRINT(mesh.vertices.size());
-    PRINT(mesh.triangles.size());
+    DBG_PRINT(mesh.vertices.size());
+    DBG_PRINT(mesh.triangles.size());
     return mesh;
   }
 
@@ -772,18 +786,18 @@ namespace embree {
     uint numBorderTriangles = 0;
     for (uint i=0;i<numTriangles;i++)
     {
-      //PRINT(i);
+      //DBG_PRINT(i);
       uint v0 = mesh.triangles[i].v0;
       uint v1 = mesh.triangles[i].v1;
       uint v2 = mesh.triangles[i].v2;
       const uint count_v0v1= getEdgeCount(mesh,v0,v1);
       const uint count_v1v2= getEdgeCount(mesh,v1,v2);
       const uint count_v2v0= getEdgeCount(mesh,v2,v0);
-      //PRINT4(v0,mesh.vertices[v0].x,mesh.vertices[v0].y,mesh.vertices[v0].z);
-      //PRINT4(v1,mesh.vertices[v1].x,mesh.vertices[v1].y,mesh.vertices[v1].z);
-      //PRINT4(v2,mesh.vertices[v2].x,mesh.vertices[v2].y,mesh.vertices[v2].z);
+      //DBG_PRINT4(v0,mesh.vertices[v0].x,mesh.vertices[v0].y,mesh.vertices[v0].z);
+      //DBG_PRINT4(v1,mesh.vertices[v1].x,mesh.vertices[v1].y,mesh.vertices[v1].z);
+      //DBG_PRINT4(v2,mesh.vertices[v2].x,mesh.vertices[v2].y,mesh.vertices[v2].z);
       
-      //PRINT3(count_v0v1,count_v1v2,count_v2v0);
+      //DBG_PRINT3(count_v0v1,count_v1v2,count_v2v0);
       
       if ( count_v0v1 == 1 ) { borderVertices[v0] = true; borderVertices[v1] = true; }
       if ( count_v1v2 == 1 ) { borderVertices[v1] = true; borderVertices[v2] = true; }
@@ -792,7 +806,7 @@ namespace embree {
 
     for (uint i=0;i<numTriangles;i++)
     {
-      //PRINT(i);
+      //DBG_PRINT(i);
       uint v0 = mesh.triangles[i].v0;
       uint v1 = mesh.triangles[i].v1;
       uint v2 = mesh.triangles[i].v2;
@@ -805,11 +819,11 @@ namespace embree {
       }
     }
     
-    PRINT2(numTriangles,numBorderTriangles);
+    DBG_PRINT2(numTriangles,numBorderTriangles);
     for (uint i=0;i<numTriangles;i++)
       if (!borderTriangle[i])
       {
-        //PRINT2(i,borderTriangle[i]);
+        //DBG_PRINT2(i,borderTriangle[i]);
         const CompressedVertex c = mesh.vertices[ mesh.triangles[i].v0 ];
         mesh.vertices[ mesh.triangles[i].v1 ] = c;
         mesh.vertices[ mesh.triangles[i].v2 ] = c;        
@@ -827,8 +841,8 @@ namespace embree {
       if (tri0.valid()) new_mesh.triangles.push_back(tri0);
     }
 
-    PRINT(new_mesh.vertices.size());
-    PRINT(new_mesh.triangles.size());
+    DBG_PRINT(new_mesh.vertices.size());
+    DBG_PRINT(new_mesh.triangles.size());
     return new_mesh;
   }
   
