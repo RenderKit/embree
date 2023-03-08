@@ -18,8 +18,13 @@ typedef struct _ze_device_handle_t *ze_device_handle_t;
 #endif
 
 #if defined(_WIN32)
-#  define RTHWIF_API_IMPORT RTHWIF_API_EXTERN_C //__declspec(dllimport)
-#  define RTHWIF_API_EXPORT RTHWIF_API_EXTERN_C //__declspec(dllexport)
+#if defined(EMBREE_RTHWIF_STATIC_LIB)
+#  define RTHWIF_API_IMPORT RTHWIF_API_EXTERN_C
+#  define RTHWIF_API_EXPORT RTHWIF_API_EXTERN_C
+#else
+#  define RTHWIF_API_IMPORT RTHWIF_API_EXTERN_C __declspec(dllimport)
+#  define RTHWIF_API_EXPORT RTHWIF_API_EXTERN_C __declspec(dllexport)
+#endif
 #else
 #  define RTHWIF_API_IMPORT RTHWIF_API_EXTERN_C
 #  define RTHWIF_API_EXPORT RTHWIF_API_EXTERN_C __attribute__ ((visibility ("default")))

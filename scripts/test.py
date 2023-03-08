@@ -317,7 +317,7 @@ def runConfig(config):
   for opt in ["STATIC_LIB", "TUTORIALS", "BACKFACE_CULLING", "BACKFACE_CULLING_CURVES", "IGNORE_INVALID_RAYS", "FILTER_FUNCTION", "LARGEGRF", "RAY_MASK", "RAY_PACKETS", "STAT_COUNTERS", "COMPACT_POLYS", "MIN_WIDTH"]:
     if opt in config:
       conf.append("-D EMBREE_"+opt+"="+config[opt])
-    
+
   # TODO: check if we want to chonge the names of theese options, so that the pattern fits here as well
   if "TRI" in config:
     conf.append("-D EMBREE_GEOMETRY_TRIANGLE="+config["TRI"])
