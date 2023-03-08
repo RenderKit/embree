@@ -36,6 +36,50 @@ typedef struct _ze_device_handle_t *ze_device_handle_t;
 #  define RTHWIF_API RTHWIF_API_IMPORT
 #endif
 
+/* Return errors from API functions. */
+typedef enum RTHWIF_ERROR
+{
+  RTHWIF_ERROR_NONE  = 0x0,  // no error occured
+  RTHWIF_ERROR_RETRY = 0x1,  // build ran out of memory, app should re-try with more memory
+  RTHWIF_ERROR_OTHER = 0x2,  // some unspecified error occured
+  RTHWIF_ERROR_PARALLEL_OPERATION = 0x3,  // task executing in parallel operation
+  
+} RTHWIF_ERROR;
+
+
+/* A handle of a parallel operation that can get joined with worker threads. */
+typedef void* RTHWIF_PARALLEL_OPERATION;
+
+/*
+ * Creates a new parallel operation that can get attached to a build
+ * operation. Only a single build operation can be attached to a
+ * parallel operation at a given time.
+ */
+
+RTHWIF_API RTHWIF_PARALLEL_OPERATION rthwifNewParallelOperation();
+
+/*
+ * Destroys a parallel operation.
+ */
+
+RTHWIF_API void rthwifDeleteParallelOperation( RTHWIF_PARALLEL_OPERATION  parallelOperation );
+
+/*
+ * Returns the maximal number of threads that can join the parallel operation.
+ */
+
+RTHWIF_API uint32_t rthwifGetParallelOperationMaxConcurrency( RTHWIF_PARALLEL_OPERATION  parallelOperation );
+
+
+/* 
+ * Called by worker threads to join a parallel build operation. When
+ * the build finished, all worker threads return from this function
+ * with the same error code for the build.
+ */
+
+RTHWIF_API RTHWIF_ERROR rthwifJoinParallelOperation( RTHWIF_PARALLEL_OPERATION parallelOperation );
+
+
 /* Required alignment of acceleration structure buffers. */
 #define RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT 128
 
@@ -44,8 +88,28 @@ typedef enum RTHWIF_GEOMETRY_FLAGS : uint8_t
 {
   RTHWIF_GEOMETRY_FLAG_NONE = 0,
   RTHWIF_GEOMETRY_FLAG_OPAQUE = 0x1,                           // Opaque geometries do not invoke an anyhit shader
-  RTHWIF_GEOMETRY_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION = 0x2    // Guarantees single anyhit shader invokation for primitives.
 } RTHWIF_GEOMETRY_FLAGS;
+
+/**
+
+
+ \brief Format of elements in data buffers. 
+
+ The format is used to specify the format of elements of data buffer,
+ such as the format of transformation used for instancing, or index
+ format for triangles and quads.
+
+*/
+typedef enum _ze_raytracing_format_ext_t : uint8_t
+{
+  ZE_RAYTRACING_FORMAT_EXT_FLOAT3,                        ///< 3 component float vector (see ze_raytracing_float3_ext_t layout)
+  ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_COLUMN_MAJOR,         ///< 3x4 affine transformation in column major format (see ze_raytracing_transform_float3x4_column_major_ext_t layout)
+  ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_ALIGNED_COLUMN_MAJOR, ///< 3x4 affine transformation in column major format (see ze_raytracing_transform_float3x4_aligned_column_major_ext_t layout)
+  ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_ROW_MAJOR,            ///< 3x4 affine transformation in row    major format (see ze_raytracing_transform_float3x4_row_major_ext_t layout)
+  ZE_RAYTRACING_FORMAT_EXT_AABB,                          ///< 3 dimensional axis aligned bounding box (see ze_raytracing_aabb_ext_t layout)
+  ZE_RAYTRACING_FORMAT_EXT_TRIANGLE_INDICES_UINT32,       ///< triangle indices of uint32 type (see ze_raytracing_triangle_indices_uint32_ext_t layout)
+  ZE_RAYTRACING_FORMAT_EXT_QUAD_INDICES_UINT32,           ///< quad indices of uint32 type (see ze_raytracing_quad_indices_uint32_ext_t layout)
+} ze_raytracing_format_ext_t;
 
 
 /* A 3-component short vector type. */
@@ -113,15 +177,6 @@ typedef enum RTHWIF_GEOMETRY_TYPE : uint8_t
   RTHWIF_GEOMETRY_TYPE_INSTANCE = 3,    // instance geometry
 } RTHWIF_GEOMETRY_TYPE;
 
-/* The format of transformations supported. */
-typedef enum RTHWIF_TRANSFORM_FORMAT : uint8_t
-{
-  RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_COLUMN_MAJOR = 0,          // 3x4 affine transformation in column major format (see RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR layout)
-  RTHWIF_TRANSFORM_FORMAT_FLOAT4X4_COLUMN_MAJOR = 1,          // 4x4 affine transformation in column major format (see RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR layout)
-  RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_ROW_MAJOR = 2,             // 3x4 affine transformation in row    major format (see RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR    layout)
-
-} RTHWIF_TRANSFORM_FORMAT;
-
 
 /* Instance flags supported (identical to DXR spec) */
 typedef enum RTHWIF_INSTANCE_FLAGS : uint8_t
@@ -133,6 +188,11 @@ typedef enum RTHWIF_INSTANCE_FLAGS : uint8_t
   RTHWIF_INSTANCE_FLAG_FORCE_NON_OPAQUE = 0x8
 } RTHWIF_INSTANCE_FLAGS;
 
+/* A geometry descriptor. */
+typedef struct RTHWIF_GEOMETRY_DESC {
+  RTHWIF_GEOMETRY_TYPE geometryType;           // the first byte of a geometry descriptor is always its type and user can case to geometry descriptor structs above
+} RTHWIF_GEOMETRY_DESC;
+
 
 /* Triangle mesh geometry descriptor. */
 typedef struct RTHWIF_GEOMETRY_TRIANGLES_DESC  // 40 bytes
@@ -140,8 +200,11 @@ typedef struct RTHWIF_GEOMETRY_TRIANGLES_DESC  // 40 bytes
   RTHWIF_GEOMETRY_TYPE geometryType;       // must be RTHWIF_GEOMETRY_TYPE_TRIANGLES
   RTHWIF_GEOMETRY_FLAGS geometryFlags;     // geometry flags for all primitives of this geometry
   uint8_t geometryMask;                    // 8-bit geometry mask for ray masking
-  uint8_t reserved0;                       // must be zero
-  uint32_t reserved1;                      // must be zero
+  uint8_t reserved0;                       ///< must be zero
+  uint8_t reserved1;                       ///< must be zero
+  uint8_t reserved2;                       ///< must be zero
+  ze_raytracing_format_ext_t triangleFormat; ///< format of triangleBuffer (must be ZE_RAYTRACING_FORMAT_EXT_TRIANGLE_INDICES_UINT32)
+  ze_raytracing_format_ext_t vertexFormat;   ///< format of vertexBuffer (must be ZE_RAYTRACING_FORMAT_EXT_FLOAT3)
   unsigned int triangleCount;              // number of triangles in triangleBuffer
   unsigned int triangleStride;             // stride in bytes of triangles in triangleBuffer
   unsigned int vertexCount;                // number of vertices in vertexBuffer
@@ -162,8 +225,11 @@ typedef struct RTHWIF_GEOMETRY_QUADS_DESC // 40 bytes
   RTHWIF_GEOMETRY_TYPE geometryType;     // must be RTHWIF_GEOMETRY_TYPE_QUADS
   RTHWIF_GEOMETRY_FLAGS geometryFlags;   // geometry flags for all primitives of this geometry
   uint8_t geometryMask;                  // 8-bit geometry mask for ray masking
-  uint8_t reserved0;                     // must be zero
-  uint32_t reserved1;                    // must be zero
+  uint8_t reserved0;                                ///< must be zero
+  uint8_t reserved1;                                ///< must be zero
+  uint8_t reserved2;                                ///< must be zero
+  ze_raytracing_format_ext_t quadFormat;            ///< format of quadBuffer (must be ZE_RAYTRACING_FORMAT_EXT_QUAD_INDICES_UINT32)
+  ze_raytracing_format_ext_t vertexFormat;          ///< format of vertexBuffer (must be ZE_RAYTRACING_FORMAT_EXT_FLOAT3)
   unsigned int quadCount;                // number of quads in quadBuffer
   unsigned int quadStride;               // stride in bytes of quads in quadBuffer
   unsigned int vertexCount;              // number of vertices in vertexBuffer
@@ -202,19 +268,13 @@ typedef struct RTHWIF_GEOMETRY_INSTANCE_DESC // 32 bytes
   RTHWIF_GEOMETRY_TYPE geometryType;          // must be RTHWIF_GEOMETRY_TYPE_INSTANCE
   RTHWIF_INSTANCE_FLAGS instanceFlags;        // flags for the instance (see RTHWIF_INSTANCE_FLAGS)
   uint8_t geometryMask;                       // 8-bit geometry mask for ray masking
-  RTHWIF_TRANSFORM_FORMAT transformFormat;    // format of the specified transformation
+  ze_raytracing_format_ext_t transformFormat;              ///< format of the specified transformation
   unsigned int instanceUserID;                // a user specified identifier for the instance
   float* transform;                           // local to world instance transformation in specified format
   RTHWIF_AABB* bounds;                        // AABB of the instanced acceleration structure
   void* accel;                                // pointer to acceleration structure to instantiate
     
 } RTHWIF_GEOMETRY_INSTANCE_DESC;
-
-
-/* A geometry descriptor. */
-typedef struct RTHWIF_GEOMETRY_DESC {
-  RTHWIF_GEOMETRY_TYPE geometryType;           // the first byte of a geometry descriptor is always its type and user can case to geometry descriptor structs above
-} RTHWIF_GEOMETRY_DESC;
 
 
 /* Bitmask with features supported. */
@@ -226,17 +286,6 @@ typedef enum RTHWIF_FEATURES {
   RTHWIF_FEATURES_GEOMETRY_TYPE_INSTANCE   = 1 << 3,    // support for RTHWIF_GEOMETRY_TYPE_INSTANCE geometries
   
 } RTHWIF_FEATURES;
-
-
-/* Return errors from API functions. */
-typedef enum RTHWIF_ERROR
-{
-  RTHWIF_ERROR_NONE  = 0x0,  // no error occured
-  RTHWIF_ERROR_RETRY = 0x1,  // build ran out of memory, app should re-try with more memory
-  RTHWIF_ERROR_OTHER = 0x2,  // some unspecified error occured
-  RTHWIF_ERROR_PARALLEL_OPERATION = 0x3,  // task executing in parallel operation
-  
-} RTHWIF_ERROR;
 
 
 /* Build quality hint for acceleration structure build. */
@@ -257,10 +306,6 @@ typedef enum RTHWIF_BUILD_FLAGS
   RTHWIF_BUILD_FLAG_COMPACT                 = (1 << 1),  // build more compact acceleration structure
   
 } RTHWIF_BUILD_FLAGS;
-
-
-/* A handle of a parallel operation that can get joined with worker threads. */
-typedef void* RTHWIF_PARALLEL_OPERATION;
 
 
 /* Structure returned by rthwifGetAccelSize that contains acceleration
@@ -437,31 +482,3 @@ RTHWIF_API RTHWIF_ERROR rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS& args, 
 
 RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(const RTHWIF_BUILD_ACCEL_ARGS& args);
 
-/*
- * Creates a new parallel operation that can get attached to a build
- * operation. Only a single build operation can be attached to a
- * parallel operation at a given time.
- */
-
-RTHWIF_API RTHWIF_PARALLEL_OPERATION rthwifNewParallelOperation();
-
-/*
- * Destroys a parallel operation.
- */
-
-RTHWIF_API void rthwifDeleteParallelOperation( RTHWIF_PARALLEL_OPERATION  parallelOperation );
-
-/*
- * Returns the maximal number of threads that can join the parallel operation.
- */
-
-RTHWIF_API uint32_t rthwifGetParallelOperationMaxConcurrency( RTHWIF_PARALLEL_OPERATION  parallelOperation );
-
-
-/* 
- * Called by worker threads to join a parallel build operation. When
- * the build finished, all worker threads return from this function
- * with the same error code for the build.
- */
-
-RTHWIF_API RTHWIF_ERROR rthwifJoinParallelOperation( RTHWIF_PARALLEL_OPERATION parallelOperation );

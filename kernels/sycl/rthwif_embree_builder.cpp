@@ -297,6 +297,8 @@ namespace embree
     out->geometryType = RTHWIF_GEOMETRY_TYPE_TRIANGLES;
     out->geometryFlags = getGeometryFlags(scene,geom);
     out->geometryMask = mask32_to_mask8(geom->mask);
+    out->triangleFormat = ZE_RAYTRACING_FORMAT_EXT_TRIANGLE_INDICES_UINT32;
+    out->vertexFormat = ZE_RAYTRACING_FORMAT_EXT_FLOAT3;
     out->triangleBuffer = (RTHWIF_TRIANGLE_INDICES*) geom->triangles.getPtr();
     out->triangleCount = geom->triangles.size();
     out->triangleStride = geom->triangles.getStride();
@@ -311,6 +313,8 @@ namespace embree
     out->geometryType = RTHWIF_GEOMETRY_TYPE_QUADS;
     out->geometryFlags = getGeometryFlags(scene,geom);
     out->geometryMask = mask32_to_mask8(geom->mask);
+    out->quadFormat = ZE_RAYTRACING_FORMAT_EXT_QUAD_INDICES_UINT32;
+    out->vertexFormat = ZE_RAYTRACING_FORMAT_EXT_FLOAT3;
     out->quadBuffer = (RTHWIF_QUAD_INDICES*) geom->quads.getPtr();
     out->quadCount = geom->quads.size();
     out->quadStride = geom->quads.getStride();
@@ -384,7 +388,7 @@ namespace embree
     out->geometryMask = mask32_to_mask8(geom->mask);
     out->instanceUserID = 0;
     const AffineSpace3fa local2world = geom->getLocal2World();
-    out->transformFormat = RTHWIF_TRANSFORM_FORMAT_FLOAT4X4_COLUMN_MAJOR;
+    out->transformFormat = ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_ALIGNED_COLUMN_MAJOR;
     out->transform = (float*) &out->xfmdata;
     out->bounds = (RTHWIF_AABB*) &dynamic_cast<Scene*>(geom->object)->hwaccel_bounds;
     out->xfmdata = *(RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR*) &local2world;
@@ -400,7 +404,7 @@ namespace embree
     out->instanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
     out->geometryMask = mask32_to_mask8(geom->mask);
     out->instanceUserID = 0;
-    out->transformFormat = RTHWIF_TRANSFORM_FORMAT_FLOAT4X4_COLUMN_MAJOR;
+    out->transformFormat = ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_ALIGNED_COLUMN_MAJOR;
     out->transform = (float*) &geom->local2world[0];
     out->bounds = (RTHWIF_AABB*) &dynamic_cast<Scene*>(geom->object)->hwaccel_bounds;
     EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
