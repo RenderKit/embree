@@ -6,6 +6,7 @@ Version History
     and Skylake client CPUs by using 256 bit SIMD instructions by default.
 -   Fixed broken motion blur of RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE geometry type.
 -   Fixed bvh build retry issue for TBB 2020.3
+-   Added support for Intel® Data Center GPU Flex Series
 
 ### Embree 4.0.0
 -   This Embree release adds support for Intel® Arc™ GPUs through SYCL.

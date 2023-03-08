@@ -232,8 +232,7 @@ Embree SYCL Known Issues
   - Intel® Arc™ A730M Graphics
   - Intel® Arc™ A550M Graphics
 
-- Intel® Data Center GPU Flex Series and Intel® Data Center GPU Max
-  Series are currently not supported.
+- Intel® Data Center GPU Max Series is currently not supported.
 
 - Ahead of time compilation is currently not working properly and you
   will get this error during compilation:
