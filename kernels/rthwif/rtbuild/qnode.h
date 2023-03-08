@@ -8,6 +8,19 @@
 
 #include "leaf.h"
 
+#if defined(__INTEL_LLVM_COMPILER) && defined(WIN32)
+inline float embree_frexp(float value, int* exp)
+{
+   // using the Intel(R) oneAPI DPC++/C++ Compiler with -no-intel-libs results
+   // in an unresolved external symbol "__imp_frexp" error and therefore we
+   // provide a the manual implemetation referenced here
+   // https://en.cppreference.com/w/c/numeric/math/frexp in this case
+   static_assert(FLT_RADIX == 2, "custom implementation of frexp only works for base 2 floating point representations");
+   *exp = (value == 0) ? 0 : (int)(1 + logb(value));
+   return scalbn(value, -(*exp));
+}
+#endif
+
 namespace embree
 {
   /* The type of a node. */
@@ -431,9 +444,15 @@ namespace embree
       const float up = 1.0f + float(_ulp);
       Vec3f len = box.size() * up;
       this->lower = box.lower;
+#if defined(__INTEL_LLVM_COMPILER) && defined(WIN32)
+      int _exp_x; float mant_x = embree_frexp(len.x, &_exp_x); _exp_x += (mant_x > 255.0f / 256.0f);
+      int _exp_y; float mant_y = embree_frexp(len.y, &_exp_y); _exp_y += (mant_y > 255.0f / 256.0f);
+      int _exp_z; float mant_z = embree_frexp(len.z, &_exp_z); _exp_z += (mant_z > 255.0f / 256.0f);
+#else
       int _exp_x; float mant_x = frexp(len.x, &_exp_x); _exp_x += (mant_x > 255.0f / 256.0f);
       int _exp_y; float mant_y = frexp(len.y, &_exp_y); _exp_y += (mant_y > 255.0f / 256.0f);
       int _exp_z; float mant_z = frexp(len.z, &_exp_z); _exp_z += (mant_z > 255.0f / 256.0f);
+#endif
       _exp_x = max(-128,_exp_x); // enlarge too tight bounds
       _exp_y = max(-128,_exp_y);
       _exp_z = max(-128,_exp_z);
