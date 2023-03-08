@@ -598,9 +598,6 @@ jobs:
 
   success:
     runs-on: ubuntu-latest
-    steps:
-      - name: Success
-        run: echo Success
     needs:
       - linux-ze_raytracing
       - linux-ze_raytracing-test-DG2
@@ -631,3 +628,8 @@ jobs:
       - macosx-ARM-NEON-AVX2
       - macosx-x64-CLANG
       - linux-GCC-KLOCWORK
+    if: ${{ success() }}
+    steps:
+      - name: Success
+        run: |
+          echo "::notice title=Success::Workflow succeeded"
