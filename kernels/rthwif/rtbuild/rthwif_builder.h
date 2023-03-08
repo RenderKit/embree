@@ -270,22 +270,11 @@ typedef struct RTHWIF_GEOMETRY_INSTANCE_DESC // 32 bytes
   uint8_t geometryMask;                       // 8-bit geometry mask for ray masking
   ze_raytracing_format_ext_t transformFormat;              ///< format of the specified transformation
   unsigned int instanceUserID;                // a user specified identifier for the instance
-  float* transform;                           // local to world instance transformation in specified format
+  void* transform;                            // local to world instance transformation in specified format
   RTHWIF_AABB* bounds;                        // AABB of the instanced acceleration structure
   void* accel;                                // pointer to acceleration structure to instantiate
     
 } RTHWIF_GEOMETRY_INSTANCE_DESC;
-
-
-/* Bitmask with features supported. */
-typedef enum RTHWIF_FEATURES {
-  RTHWIF_FEATURES_NONE = 0,
-  RTHWIF_FEATURES_GEOMETRY_TYPE_TRIANGLES  = 1 << 0,    // support for RTHWIF_GEOMETRY_TYPE_TRIANGLES geometries 
-  RTHWIF_FEATURES_GEOMETRY_TYPE_QUADS      = 1 << 1,    // support for RTHWIF_GEOMETRY_TYPE_QUADS geometries
-  RTHWIF_FEATURES_GEOMETRY_TYPE_AABBS_FPTR = 1 << 2,    // support for RTHWIF_GEOMETRY_TYPE_AABBS_FPTR geometries
-  RTHWIF_FEATURES_GEOMETRY_TYPE_INSTANCE   = 1 << 3,    // support for RTHWIF_GEOMETRY_TYPE_INSTANCE geometries
-  
-} RTHWIF_FEATURES;
 
 
 /* Build quality hint for acceleration structure build. */
@@ -415,12 +404,6 @@ RTHWIF_API void rthwifInit();
  */
 
 RTHWIF_API void rthwifExit();
-
-/*
- * Returns features supported by the implementation.
- */
-
-RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(ze_device_handle_t hDevice);
 
 /*
  * The rthwifGetAccelSize function calculates the size of buffers

@@ -120,15 +120,7 @@ namespace embree
     if (!ze_extension_ray_tracing)
       return -1;
   
-#if 1
-
-    /* check if GPU device is supported */
-    ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(sycl_device);
-    const RTHWIF_FEATURES features = rthwifGetSupportedFeatures(hDevice);
-    if (features == RTHWIF_FEATURES_NONE)
-      return -1;
-
-#else
+#if 0
 
     /* check if GPU device is supported */
     ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(sycl_device);
