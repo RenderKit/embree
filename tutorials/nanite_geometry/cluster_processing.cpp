@@ -435,7 +435,7 @@ namespace embree {
 
     
   
-  void convertISPCQuadMesh(ISPCQuadMesh* mesh, RTCScene scene, ISPCOBJMaterial *material,const uint geomID,std::vector<LossyCompressedMesh*> &lcm_ptrs,std::vector<LossyCompressedMeshCluster> &lcm_clusters, std::vector<uint> &lcm_clusterRootIDs, size_t &totalCompressedSize, size_t &numDecompressedBlocks)
+  uint convertISPCQuadMesh(ISPCQuadMesh* mesh, RTCScene scene, ISPCOBJMaterial *material,const uint geomID,std::vector<LossyCompressedMesh*> &lcm_ptrs,std::vector<LossyCompressedMeshCluster> &lcm_clusters, std::vector<uint> &lcm_clusterRootIDs, size_t &totalCompressedSize, size_t &numDecompressedBlocks)
   {
     //const uint lcm_ID = lcm_ptrs.size();
     const uint numQuads = mesh->numQuads;
@@ -585,6 +585,8 @@ namespace embree {
       //DBG_PRINT2(cluster.quads.size(),cluster.vertices.size());
     }
 
+    const uint numNumClustersMaxRes = clusters.size();
+    
     //PRINT2(totalSizeMicroMesh,totalSizeMicroStrip);
     
     // === bottom-up merging and creation of new clusters ===
@@ -861,6 +863,7 @@ namespace embree {
 
     totalCompressedSize += compressedSizeMeshBytes + clusterSizeBytes;
     DBG_PRINT(maxDepth);
+    return numNumClustersMaxRes;
   }  
 
 

@@ -166,6 +166,22 @@ namespace embree
         }
       }
 
+      else if (tag == "-grid_distribute") {
+        Ref<SceneGraph::Node> object = SceneGraph::load(path + cin->getFileName());
+        BBox3fa bb = object->bounds();
+        Vec3fa center = bb.center();
+        Vec3fa length = bb.size();
+
+        const uint GRID_RES = 2;
+        for (uint i=0;i<GRID_RES;i++)
+          for (uint j=0;j<GRID_RES;j++)          
+          {
+            const AffineSpace3fa space = AffineSpace3fa::translate(Vec3fa(i*length.x,0,j*length.z));
+            g_scene->add(new SceneGraph::TransformNode(space,object));
+          }
+      }
+      
+
       /* convert triangles to quads */
       else if (tag == "-convert-triangles-to-quads") {
         g_scene->triangles_to_quads();
