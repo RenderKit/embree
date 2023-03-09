@@ -32,7 +32,7 @@ furball/furball_bspline_normaloriented.ecs
 furball/furball_bspline_round.ecs
 furball/furball_hermite_flat.ecs
 furball/furball_hermite_normaloriented.ecs
-furball/furball_hermite_round.ecs
+#furball/furball_hermite_round.ecs
 furball/furball_catmulrom_flat.ecs
 furball/furball_catmulrom_normaloriented.ecs
 furball/furball_catmulrom_round.ecs
