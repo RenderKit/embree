@@ -1133,7 +1133,8 @@ struct Scene
     RTHWIF_AABB bounds;
     RTHWIF_BUILD_ACCEL_ARGS args;
     memset(&args,0,sizeof(args));
-    args.structBytes = sizeof(args);
+    args.stype = ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC;
+    args.pNext = nullptr;
     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geom.data();
     args.numGeometries = geom.size();
     args.accelBuffer = nullptr;
@@ -1152,7 +1153,9 @@ struct Scene
     
     RTHWIF_ACCEL_SIZE size;
     memset(&size,0,sizeof(RTHWIF_ACCEL_SIZE));
-    size.structBytes = sizeof(RTHWIF_ACCEL_SIZE);
+    size.stype = ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES;
+    size.pNext = nullptr;
+    
     RTHWIF_ERROR err = rthwifGetAccelSize(args,size);
     if (err != RTHWIF_ERROR_NONE)
       throw std::runtime_error("BVH size estimate failed");

@@ -43,8 +43,21 @@ typedef enum RTHWIF_ERROR
   RTHWIF_ERROR_RETRY = 0x1,  // build ran out of memory, app should re-try with more memory
   RTHWIF_ERROR_OTHER = 0x2,  // some unspecified error occured
   RTHWIF_ERROR_PARALLEL_OPERATION = 0x3,  // task executing in parallel operation
-  
+  RTHWIF_ERROR_INVALID_ARGUMENT = 0x4,
 } RTHWIF_ERROR;
+
+/**
+
+  \brief Additional ze_structure_type_t enum fields.
+
+*/
+
+typedef enum _ze_structure_type_t_
+{
+  ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES,  ///< ze_raytracing_accel_size_ext_properties_t
+  ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC, ///< ze_raytracing_build_accel_ext_desc_t
+  
+} ze_structure_type_t_;
 
 
 /* A handle of a parallel operation that can get joined with worker threads. */
@@ -301,6 +314,12 @@ typedef enum RTHWIF_BUILD_FLAGS
  * structure size estimates. */
 typedef struct RTHWIF_ACCEL_SIZE
 {
+  /** [in] type of this structure */
+  ze_structure_type_t_ stype;
+
+  /** [in,out][optional] must be null or a pointer to an extension-specific structure */
+  void* pNext;
+  
   /* The size of this structure in bytes. */
   size_t structBytes;
 
@@ -325,8 +344,11 @@ typedef struct RTHWIF_ACCEL_SIZE
 /* Argument structure passed to rthwifBuildAccel function. */
 typedef struct RTHWIF_BUILD_ACCEL_ARGS
 {
-  /* The size of this structure in bytes */
-  size_t structBytes;
+  /** [in] type of this structure */
+  ze_structure_type_t_ stype;
+
+  /** [in,out][optional] must be null or a pointer to an extension-specific structure */
+  const void* pNext;
 
   /* Array of pointers to geometry descriptors. This array and the
    * geometry descriptors themselves can be standard host memory

@@ -543,7 +543,8 @@ namespace embree
     RTHWIF_AABB bounds;
     RTHWIF_BUILD_ACCEL_ARGS args;
     memset(&args,0,sizeof(args));
-    args.structBytes = sizeof(args);
+    args.stype = ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC;
+    args.pNext = nullptr;
     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr.data();
     args.numGeometries = geomDescr.size();
     args.accelBuffer = nullptr;
@@ -561,7 +562,8 @@ namespace embree
     
     RTHWIF_ACCEL_SIZE sizeTotal;
     memset(&sizeTotal,0,sizeof(RTHWIF_ACCEL_SIZE));
-    sizeTotal.structBytes = sizeof(RTHWIF_ACCEL_SIZE);
+    sizeTotal.stype = ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES;
+    sizeTotal.pNext = nullptr;
     RTHWIF_ERROR err = rthwifGetAccelSize(args,sizeTotal);
     if (err != RTHWIF_ERROR_NONE)
       throw_RTCError(RTC_ERROR_UNKNOWN,"BVH size estimate failed");

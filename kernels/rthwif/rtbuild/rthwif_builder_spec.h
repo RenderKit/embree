@@ -249,6 +249,7 @@ typedef enum _ze_result_t
 {
   ZE_RESULT_SUCCESS,                             ///< operation was successfull
   ZE_RESULT_ERROR_UNKNOWN,                       ///< unknown error occurred
+  ZE_RESULT_ERROR_INVALID_ARGUMENT,              ///< generic error code for invalid arguments 
   
   ZE_RESULT_RAYTRACING_EXT_RETRY_BUILD_ACCEL,    ///< acceleration structure build ran out of memory, app should re-try with more memory
   ZE_RESULT_RAYTRACING_EXT_OPERATION_DEFERRED,   ///< operation is deferred to a parallel operation
@@ -742,7 +743,7 @@ typedef struct _ze_raytracing_accel_size_ext_properties_t
   ze_structure_type_t stype;
 
   /** [in,out][optional] must be null or a pointer to an extension-specific structure */
-  void* pNext;                                    
+  const void* pNext;                                    
 
   /** 
       [out] The expected number of bytes required for the acceleration
