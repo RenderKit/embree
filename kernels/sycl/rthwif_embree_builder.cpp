@@ -542,6 +542,15 @@ namespace embree
 
     RTHWIF_PARALLEL_OPERATION parallelOperation = rthwifNewParallelOperation();
 
+    DeviceGPU* gpuDevice = dynamic_cast<DeviceGPU*>(scene->device);
+    if (gpuDevice == nullptr) throw std::runtime_error("internal error");
+    ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(gpuDevice->getGPUDevice());
+
+    ze_raytracing_accel_format_ext_t accelFormat;
+    RTHWIF_ERROR err = zeRaytracingDeviceGetAccelFormatExt(hDevice, &accelFormat );
+    if (err != RTHWIF_ERROR_NONE)
+      throw std::runtime_error("get accel format failed");
+
     /* estimate static accel size */
     BBox1f time_range(0,1);
     RTHWIF_AABB bounds;
@@ -549,6 +558,7 @@ namespace embree
     memset(&args,0,sizeof(args));
     args.stype = ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC;
     args.pNext = nullptr;
+    args.accelFormat = accelFormat;
     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr.data();
     args.numGeometries = geomDescr.size();
     args.accelBuffer = nullptr;
@@ -568,7 +578,7 @@ namespace embree
     memset(&sizeTotal,0,sizeof(RTHWIF_ACCEL_SIZE));
     sizeTotal.stype = ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES;
     sizeTotal.pNext = nullptr;
-    RTHWIF_ERROR err = rthwifGetAccelSize(args,sizeTotal);
+    err = rthwifGetAccelSize(args,sizeTotal);
     if (err != RTHWIF_ERROR_NONE)
       throw_RTCError(RTC_ERROR_UNKNOWN,"BVH size estimate failed");
 

@@ -1128,6 +1128,13 @@ struct Scene
       geom[geomID] = (const RTHWIF_GEOMETRY_DESC*) &desc[geomID];
     }
 
+    ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
+
+    ze_raytracing_accel_format_ext_t accelFormat;
+    RTHWIF_ERROR err = zeRaytracingDeviceGetAccelFormatExt(hDevice, &accelFormat );
+    if (err != RTHWIF_ERROR_NONE)
+      throw std::runtime_error("get accel format failed");
+    
     /* estimate accel size */
     size_t accelBufferBytesOut = 0;
     RTHWIF_AABB bounds;
@@ -1135,6 +1142,7 @@ struct Scene
     memset(&args,0,sizeof(args));
     args.stype = ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC;
     args.pNext = nullptr;
+    args.accelFormat = accelFormat;
     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geom.data();
     args.numGeometries = geom.size();
     args.accelBuffer = nullptr;
@@ -1156,7 +1164,7 @@ struct Scene
     size.stype = ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES;
     size.pNext = nullptr;
     
-    RTHWIF_ERROR err = rthwifGetAccelSize(args,size);
+    err = rthwifGetAccelSize(args,size);
     if (err != RTHWIF_ERROR_NONE)
       throw std::runtime_error("BVH size estimate failed");
 

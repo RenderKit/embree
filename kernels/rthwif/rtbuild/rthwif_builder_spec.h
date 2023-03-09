@@ -73,7 +73,15 @@
     ...
 
   This completes the definition of the geometry for the scene to
-  construct the acceleration structure for. To initiate the BVH build
+  construct the acceleration structure for.
+
+  Next we need to query the format of the acceleration structure of
+  the device we want to use for ray tracing:
+
+    ze_raytracing_accel_format_ext_t accelFormat;
+    ze_result_t result = zeRaytracingDeviceGetAccelFormatExt( hDevice, &accelFormat );
+
+  To initiate the BVH build
   one first fills the ze_raytracing_build_accel_ext_desc_t structure
   with all arguments required for the acceleration structure build as
   in the following example:
@@ -82,17 +90,18 @@
     memset(&build_desc,0,sizeof(build_desc));
     build_desc.stype = ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC;
     build_desc.pNext = nullptr;
-    build_desc.hDevice = hDevice;
+    build_desc.accelFormat = accelFormat;
     build_desc.geometries = geometries.data(); 
     build_desc.numGeometries = geometries.size();
     build_desc.quality = ZE_RAYTRACING_BUILD_QUALITY_EXT_MEDIUM;
     build_desc.flags = ZE_RAYTRACING_BUILD_EXT_FLAG_NONE;
 
-  Besides just passing a pointer to the geometries array this sets
-  some default build flags for a medium quality acceleration
-  structure. Next the application has to query the buffer sizes
-  required for the acceleration strucuture and scratch memory required
-  for the build like in this example:
+  Besides just passing a pointer to the geometries array this, passes
+  the desired acceleration structure format, and sets some default
+  build flags for a medium quality acceleration structure. Next the
+  application has to query the buffer sizes required for the
+  acceleration strucuture and scratch memory required for the build
+  like in this example:
 
     ze_raytracing_accel_size_ext_properties_t accel_size;
     memset(&accel_size,0,sizeof(accel_size));
@@ -291,7 +300,7 @@ typedef enum _ze_device_raytracing_ext_flag_t {
   threads to assist in building the acceleration structure.
 
 */
-typedef _ze_raytracing_parallel_operation_ext_handle_t* ze_raytracing_parallel_operation_ext_handle_t;
+typedef struct _ze_raytracing_parallel_operation_ext_handle_t* ze_raytracing_parallel_operation_ext_handle_t;
 
 
 /**
@@ -732,6 +741,52 @@ typedef enum _ze_raytracing_build_ext_flag_t
 
 /**
 
+  \brief An opaque ray tracing acceleration structure format supported
+  by some device.
+
+*/
+typedef enum _ze_raytracing_accel_format_ext_t {
+  ZE_RAYTRACING_ACCEL_FORMAT_EXT_INVALID = 0      // invalid acceleration structure format
+} ze_raytracing_accel_format_ext_t;
+
+
+/**
+
+  \brief Returns the acceleration structure format supported by the specified device.
+
+  \param hDevice: device to query the acceleration structure format for
+  \param pAccelFormat: points to destination of returned acceleration structure format
+
+  If a ray tracing is supported by this device a format is returned to
+  the memory location pointed by pAccelFormat and the result code
+  ZE_RESULT_SUCCESS is returned.
+
+*/
+
+ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingDeviceGetAccelFormatExt( const ze_device_handle_t hDevice, ze_raytracing_accel_format_ext_t* pAccelFormat );
+
+
+
+/**
+
+  \brief Checks if the acceleration structure build for hDevice can be used on hDeviceOther.
+
+  \param accelFormat: format the acceleration structure is build for
+  \param otherAccelFormat: the format to test compatibility with
+
+  The function returns ZE_RESULT_SUCCESS if an acceleration structure
+  build with format `accelFormat` can also get used on devices with
+  acceleration structure format `otherAccelFormat` Otherwise
+  ZE_RESULT_RAYTRACING_EXT_ACCEL_INCOMPATIBLE is returned.
+
+*/
+
+ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingAccelFormatCompatibilityExt( const ze_raytracing_accel_format_ext_t accelFormat, const ze_raytracing_accel_format_ext_t otherAccelFormat );
+
+
+
+/**
+
    \brief Returns information about acceleration structure size estimates
 
    This structure is returned by zeRaytracingGetAccelSizeExt and
@@ -780,11 +835,12 @@ typedef struct _ze_raytracing_build_accel_ext_desc_t
   /** [in,out][optional] must be null or a pointer to an extension-specific structure */
   const void* pNext;
 
-  /** [in] The device to build the acceleration structure for. The
-   * acceleration structure can also get used on other devices whose
-   * acceleration structure is compatible with the device specified
-   * here (see zeRaytracingAccelCompatibilityExt function). */
-  ze_device_handle_t hDevice;
+  /** [in] The acceleration structure format of a device to use for
+   * ray tracing. The acceleration structure can also get used on
+   * other devices whose acceleration structure is compatible with the
+   * device specified here (see
+   * zeRaytracingAccelFormatCompatibilityExt function). */
+  ze_raytracing_accel_format_ext_t accelFormat;
   
   /** 
       [in] Array of pointers to geometry descriptors. This array and
@@ -952,20 +1008,4 @@ ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingGetAccelSizeExt( const ze_raytra
  */
 
 ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingBuildAccelExt( const ze_raytracing_build_accel_ext_desc_t* args );
-
-
-/**
-
-  \brief Checks if the acceleration structure build for hDevice can be used on hDeviceOther.
-
-  \param hDevice: device the acceleration structure is build for
-  \param hDeviceOther: device to check acceleration structure compatibility with
-
-  If the acceleration structures are compatible the function returns
-  ZE_RESULT_SUCCESS, otherwise
-  ZE_RESULT_RAYTRACING_EXT_ACCEL_INCOMPATIBLE.
-
-*/
-
-ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingAccelCompatibilityExt( const ze_device_handle_t hDevice, ze_device_handle_t hDeviceOther );
 

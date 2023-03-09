@@ -219,6 +219,67 @@ namespace embree
     g_arena.reset();
   }
 
+  typedef enum _ze_raytracing_accel_format_internal_t {
+    ZE_RAYTRACING_ACCEL_FORMAT_EXT_INVALID = 0,      // invalid acceleration structure format
+    ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1 = 1, // acceleration structure format version 1
+    ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_2 = 2, // acceleration structure format version 2
+  } ze_raytracing_accel_format_internal_t;
+
+  RTHWIF_API RTHWIF_ERROR zeRaytracingDeviceGetAccelFormatExt( const ze_device_handle_t hDevice, ze_raytracing_accel_format_ext_t* pAccelFormat )
+  {
+    if (pAccelFormat == nullptr)
+       return RTHWIF_ERROR_INVALID_ARGUMENT;
+
+    *pAccelFormat = (ze_raytracing_accel_format_ext_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_INVALID;
+
+#if defined(EMBREE_LEVEL_ZERO)
+
+    /* check for supported device ID */
+    ze_device_properties_t device_props{ ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES };
+    ze_result_t status = zeDeviceGetProperties(hDevice, &device_props);
+    if (status != ZE_RESULT_SUCCESS)
+      return RTHWIF_ERROR_OTHER;
+
+    /* check for Intel vendor */
+    const uint32_t vendor_id = device_props.vendorId;
+    const uint32_t device_id = device_props.deviceId;
+    if (vendor_id != 0x8086) return RTHWIF_ERROR_OTHER;
+    
+    bool dg2 =
+      (0x4F80 <= device_id && device_id <= 0x4F88) ||
+      (0x5690 <= device_id && device_id <= 0x5698) ||
+      (0x56A0 <= device_id && device_id <= 0x56A6) ||
+      (0x56B0 <= device_id && device_id <= 0x56B3) ||
+      (0x56C0 <= device_id && device_id <= 0x56C1);
+
+    bool pvc =
+      (0x0BD0 <= device_id && device_id <= 0x0BDB) ||
+      (device_id == 0x0BE5                       );
+
+    if (dg2 || pvc) {
+      *pAccelFormat = (ze_raytracing_accel_format_ext_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1;
+      return RTHWIF_ERROR_NONE;
+    }        
+
+    return RTHWIF_ERROR_OTHER;
+
+#else
+
+    *pAccelFormat = (ze_raytracing_accel_format_ext_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1;
+    return RTHWIF_ERROR_NONE;
+    
+#endif
+  }
+  
+  RTHWIF_API RTHWIF_ERROR zeRaytracingAccelFormatCompatibilityExt( const ze_raytracing_accel_format_ext_t accelFormat,
+                                                                   const ze_raytracing_accel_format_ext_t otherAccelFormat )
+  {
+    if (accelFormat != otherAccelFormat)
+      return ZE_RESULT_RAYTRACING_EXT_ACCEL_INCOMPATIBLE;
+
+    return RTHWIF_ERROR_NONE;
+  }
+
   uint32_t getNumPrimitives(const RTHWIF_GEOMETRY_DESC* geom)
   {
     switch (geom->geometryType) {
@@ -266,6 +327,10 @@ namespace embree
 
     /* check valid pNext chain */
     if (!checkDescChain((zet_base_desc_t_*)&size_o))
+      return RTHWIF_ERROR_INVALID_ARGUMENT;
+
+    /* check if acceleration structure format is supported */
+    if (args.accelFormat != (ze_raytracing_accel_format_ext_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1)
       return RTHWIF_ERROR_INVALID_ARGUMENT;
     
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
@@ -458,6 +523,10 @@ namespace embree
     if (!checkDescChain((zet_base_desc_t_*)&args))
       return RTHWIF_ERROR_INVALID_ARGUMENT;
 
+    /* check if acceleration structure format is supported */
+    if (args.accelFormat != (ze_raytracing_accel_format_ext_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1)
+      return RTHWIF_ERROR_INVALID_ARGUMENT;
+    
     /* if parallel operation is provided then execute using thread arena inside task group ... */
     if (args.parallelOperation)
     {
