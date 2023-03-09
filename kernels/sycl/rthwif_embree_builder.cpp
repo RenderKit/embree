@@ -427,11 +427,15 @@ namespace embree
     }
   }
 
-  RTHWIF_BUILD_FLAGS convertBuildFlags(RTCSceneFlags scene_flags)
+  RTHWIF_BUILD_FLAGS convertBuildFlags(RTCSceneFlags scene_flags, RTCBuildQuality quality_flags)
   {
     uint32_t result = RTHWIF_BUILD_FLAG_NONE;
-    if (scene_flags & RTC_SCENE_FLAG_DYNAMIC) result |= RTHWIF_BUILD_FLAG_DYNAMIC;
     if (scene_flags & RTC_SCENE_FLAG_COMPACT) result |= RTHWIF_BUILD_FLAG_COMPACT;
+
+    /* only in high quality build mode spatial splits are allowed in Embree */
+    if (quality_flags != RTC_BUILD_QUALITY_HIGH)
+      result |= RTHWIF_BUILD_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION;
+
     return (RTHWIF_BUILD_FLAGS) result;
   }  
 
@@ -552,7 +556,7 @@ namespace embree
     args.scratchBuffer = nullptr;
     args.scratchBufferBytes = 0;
     args.quality = convertBuildQuality(scene->quality_flags);
-    args.flags = convertBuildFlags(scene->scene_flags);
+    args.flags = convertBuildFlags(scene->scene_flags,scene->quality_flags);
     args.parallelOperation = parallelOperation;
     args.boundsOut = &bounds;
     args.buildUserPtr = &time_range;

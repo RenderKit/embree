@@ -25,6 +25,11 @@ namespace embree
       /* the type of primitive that is referenced */
       enum Type { TRIANGLE=0, QUAD=1, PROCEDURAL=2, INSTANCE=3, UNKNOWN=4, NUM_TYPES=5 };
 
+      /* check when we use spatial splits */
+      static bool useSpatialSplits(RTHWIF_BUILD_QUALITY build_quality, RTHWIF_BUILD_FLAGS build_flags) {
+        return build_quality == RTHWIF_BUILD_QUALITY_HIGH && !(build_flags & RTHWIF_BUILD_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION);
+      }
+
       /* BVH allocator */
       struct Allocator
       {
@@ -307,6 +312,7 @@ namespace embree
                   const getInstanceFunc& getInstance,
                   void* scratch_ptr, size_t scratch_bytes,
                   RTHWIF_BUILD_QUALITY build_quality,
+                  RTHWIF_BUILD_FLAGS build_flags,
                   bool verbose)
           : getSize(getSize),
             getType(getType),
@@ -318,6 +324,7 @@ namespace embree
             getInstance(getInstance),
             prims(scratch_ptr,scratch_bytes),
             build_quality(build_quality),
+            build_flags(build_flags),
             verbose(verbose) {} 
         
         ReductionTy setInternalNode(char* curAddr, size_t curBytes, NodeType nodeTy, char* childAddr,
@@ -1059,7 +1066,7 @@ namespace embree
           if (verbose) std::cout << "primrefgen2  : " << std::setw(10) << (t4-t3)*1000.0 << "ms, " << std::setw(10) << 1E-6*double(numPrimitives)/(t4-t3) << " Mprims/s" << std::endl;
           
           /* perform pre-splitting */
-          if ((build_quality == RTHWIF_BUILD_QUALITY_HIGH) &&  numPrimitives)
+          if (useSpatialSplits(build_quality,build_flags) &&  numPrimitives)
           {
             auto splitter = [this] (const PrimRef& prim, const size_t dim, const float pos, PrimRef& left_o, PrimRef& right_o) {
               splitTriangleOrQuad(prim,dim,pos,left_o,right_o);
@@ -1198,10 +1205,11 @@ namespace embree
         Allocator allocator;
         std::vector<std::vector<uint16_t>> quadification;
         RTHWIF_BUILD_QUALITY build_quality;
+        RTHWIF_BUILD_FLAGS build_flags;
         bool verbose;
         
       };
-      
+
       template<typename getSizeFunc,
                typename getTypeFunc>
        
@@ -1209,6 +1217,7 @@ namespace embree
                                const getSizeFunc& getSize,
                                const getTypeFunc& getType,
                                RTHWIF_BUILD_QUALITY build_quality,
+                               RTHWIF_BUILD_FLAGS build_flags,
                                size_t& expectedBytes,
                                size_t& worstCaseBytes,
                                size_t& scratchBytes)
@@ -1228,7 +1237,7 @@ namespace embree
           };
         }
         
-        if (build_quality == RTHWIF_BUILD_QUALITY_HIGH)
+        if (useSpatialSplits(build_quality,build_flags))
           stats.estimate_presplits(1.2);
         
         worstCaseBytes = stats.worst_case_bvh_bytes();
@@ -1261,6 +1270,7 @@ namespace embree
                           BBox3f* boundsOut,
                           size_t* accelBufferBytesOut,
                           RTHWIF_BUILD_QUALITY build_quality,
+                          RTHWIF_BUILD_FLAGS build_flags,
                           bool verbose,
                           void* dispatchGlobalsPtr)
       {
@@ -1270,7 +1280,7 @@ namespace embree
           throw std::runtime_error("scratch buffer cannot get aligned");
     
         BuilderT<getSizeFunc, getTypeFunc, createPrimRefArrayFunc, getTriangleFunc, getTriangleIndicesFunc, getQuadFunc, getProceduralFunc, getInstanceFunc> builder
-          (device, getSize, getType, createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance, scratch_ptr, scratch_bytes, build_quality, verbose);
+          (device, getSize, getType, createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance, scratch_ptr, scratch_bytes, build_quality, build_flags, verbose);
         
         builder.build(numGeometries, accel_ptr, accel_bytes, boundsOut, accelBufferBytesOut, dispatchGlobalsPtr);
       }      

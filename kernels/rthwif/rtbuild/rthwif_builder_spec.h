@@ -778,7 +778,7 @@ typedef struct _ze_raytracing_build_accel_ext_desc_t
   ze_structure_type_t stype;
 
   /** [in,out][optional] must be null or a pointer to an extension-specific structure */
-  void* pNext;
+  const void* pNext;
 
   /** [in] The device to build the acceleration structure for. The
    * acceleration structure can also get used on other devices whose

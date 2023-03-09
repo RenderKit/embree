@@ -222,8 +222,8 @@ typedef struct RTHWIF_GEOMETRY_TRIANGLES_DESC  // 40 bytes
   unsigned int triangleStride;             // stride in bytes of triangles in triangleBuffer
   unsigned int vertexCount;                // number of vertices in vertexBuffer
   unsigned int vertexStride;               // stride in bytes of vertices in vertexBuffer
-  RTHWIF_TRIANGLE_INDICES* triangleBuffer; // pointer to array of triangle indices
-  RTHWIF_FLOAT3* vertexBuffer;             // pointer to array of triangle vertices
+  void* triangleBuffer;                    // pointer to array of triangle indices
+  void* vertexBuffer;                      // pointer to array of triangle vertices
   
 } RTHWIF_RAYTRACING_GEOMETRY_TRIANGLES_DESC;
 
@@ -247,8 +247,8 @@ typedef struct RTHWIF_GEOMETRY_QUADS_DESC // 40 bytes
   unsigned int quadStride;               // stride in bytes of quads in quadBuffer
   unsigned int vertexCount;              // number of vertices in vertexBuffer
   unsigned int vertexStride;             // stride in bytes of vertices in vertexBuffer
-  RTHWIF_QUAD_INDICES* quadBuffer;       // pointer to array of quad indices
-  RTHWIF_FLOAT3* vertexBuffer;           // pointer to array of quad vertices
+  void* quadBuffer;                      // pointer to array of quad indices
+  void* vertexBuffer;                    // pointer to array of quad vertices
   
 } RTHWIF_RAYTRACING_GEOMETRY_QUADS_DESC;
 
@@ -304,8 +304,8 @@ typedef enum RTHWIF_BUILD_QUALITY
 typedef enum RTHWIF_BUILD_FLAGS
 {
   RTHWIF_BUILD_FLAG_NONE                    = 0,
-  RTHWIF_BUILD_FLAG_DYNAMIC                 = (1 << 0),  // optimize for dynamic content
-  RTHWIF_BUILD_FLAG_COMPACT                 = (1 << 1),  // build more compact acceleration structure
+  RTHWIF_BUILD_FLAG_COMPACT                 = (1 << 0),  // build more compact acceleration structure
+  RTHWIF_BUILD_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION = (1 << 1), ///< guarantees single any hit shader invokation per primitive
   
 } RTHWIF_BUILD_FLAGS;
 
@@ -320,9 +320,6 @@ typedef struct RTHWIF_ACCEL_SIZE
   /** [in,out][optional] must be null or a pointer to an extension-specific structure */
   void* pNext;
   
-  /* The size of this structure in bytes. */
-  size_t structBytes;
-
   /* The expected number of bytes required for the acceleration
    * structure. When using an acceleration structure buffer of that
    * size, the build is expected to succeed mostly, but it may fail
