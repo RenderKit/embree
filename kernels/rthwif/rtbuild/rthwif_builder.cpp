@@ -230,19 +230,44 @@ namespace embree
     };
   }
   
-  /* fill all arg members that app did not know of yet */
-  RTHWIF_BUILD_ACCEL_ARGS rthwifPrepareBuildAccelArgs(const RTHWIF_BUILD_ACCEL_ARGS& args_i)
+  typedef struct _zet_base_desc_t
   {
-    RTHWIF_BUILD_ACCEL_ARGS args;
-    memset(&args,0,sizeof(RTHWIF_BUILD_ACCEL_ARGS));
-    memcpy(&args,&args_i,std::min(sizeof(RTHWIF_BUILD_ACCEL_ARGS),args_i.structBytes));
-    args.structBytes = sizeof(RTHWIF_BUILD_ACCEL_ARGS);
-    return args;
+    /** [in] type of this structure */
+    ze_structure_type_t_ stype;
+    
+    /** [in,out][optional] must be null or a pointer to an extension-specific structure */
+    const void* pNext;
+    
+  } zet_base_desc_t_;
+
+  bool checkDescChain(zet_base_desc_t_* desc)
+  {
+    /* supporting maximal 1024 to also detect cycles */
+    for (size_t i=0; i<1024; i++) {
+      if (desc->pNext == nullptr) return true;
+      desc = (zet_base_desc_t_*) desc->pNext;
+    }
+    return false;
   }
-  
-  RTHWIF_API RTHWIF_ERROR rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o)
+    
+  RTHWIF_API RTHWIF_ERROR rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS& args, RTHWIF_ACCEL_SIZE& size_o)
   {
-    RTHWIF_BUILD_ACCEL_ARGS args = rthwifPrepareBuildAccelArgs(args_i);
+    /* check if input descriptor has proper type */
+    if (args.stype != ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC)
+      return RTHWIF_ERROR_INVALID_ARGUMENT;
+
+    /* check valid pNext chain */
+    if (!checkDescChain((zet_base_desc_t_*)&args))
+      return RTHWIF_ERROR_INVALID_ARGUMENT;
+
+    /* check if return property has proper type */
+    if (size_o.stype != ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES)
+      return RTHWIF_ERROR_INVALID_ARGUMENT;
+
+    /* check valid pNext chain */
+    if (!checkDescChain((zet_base_desc_t_*)&size_o))
+      return RTHWIF_ERROR_INVALID_ARGUMENT;
+    
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
     const size_t numGeometries = args.numGeometries;
 
@@ -270,24 +295,16 @@ namespace embree
     size_t worstCaseBytes = 0;
     size_t scratchBytes = 0;
     QBVH6BuilderSAH::estimateSize(numGeometries, getSize, getType, args.quality, expectedBytes, worstCaseBytes, scratchBytes);
-                            
-    /* return size to user */
-    RTHWIF_ACCEL_SIZE size;
-    memset(&size,0,sizeof(RTHWIF_ACCEL_SIZE));
-    size.accelBufferExpectedBytes = expectedBytes;
-    size.accelBufferWorstCaseBytes = worstCaseBytes;
-    size.scratchBufferBytes = scratchBytes;
-    size_t bytes_o = size_o.structBytes;
-    memset(&size_o,0,bytes_o);
-    memcpy(&size_o,&size,bytes_o);
-    size_o.structBytes = bytes_o;
+    
+    /* fill return struct */
+    size_o.accelBufferExpectedBytes = expectedBytes;
+    size_o.accelBufferWorstCaseBytes = worstCaseBytes;
+    size_o.scratchBufferBytes = scratchBytes;
     return RTHWIF_ERROR_NONE;
   }
   
-  RTHWIF_API RTHWIF_ERROR rthwifBuildAccelInternal(const RTHWIF_BUILD_ACCEL_ARGS& args_i) try
+  RTHWIF_API RTHWIF_ERROR rthwifBuildAccelInternal(const RTHWIF_BUILD_ACCEL_ARGS& args) try
   {
-    /* prepare input arguments */
-    const RTHWIF_BUILD_ACCEL_ARGS args = rthwifPrepareBuildAccelArgs(args_i);
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
     const uint32_t numGeometries = args.numGeometries;
 
@@ -431,20 +448,28 @@ namespace embree
     tbb::task_group group;
   };
 
-  RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(const RTHWIF_BUILD_ACCEL_ARGS& args_i)
+  RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(const RTHWIF_BUILD_ACCEL_ARGS& args)
   {
+    /* check if input descriptor has proper type */
+    if (args.stype != ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC)
+      return RTHWIF_ERROR_INVALID_ARGUMENT;
+
+    /* check valid pNext chain */
+    if (!checkDescChain((zet_base_desc_t_*)&args))
+      return RTHWIF_ERROR_INVALID_ARGUMENT;
+
     /* if parallel operation is provided then execute using thread arena inside task group ... */
-    if (args_i.parallelOperation)
+    if (args.parallelOperation)
     {
-      RTHWIF_PARALLEL_OPERATION_IMPL* op = (RTHWIF_PARALLEL_OPERATION_IMPL*) args_i.parallelOperation;
-      g_arena->execute([&](){ op->group.run([=](){ op->errorCode = rthwifBuildAccelInternal(args_i); }); });
+      RTHWIF_PARALLEL_OPERATION_IMPL* op = (RTHWIF_PARALLEL_OPERATION_IMPL*) args.parallelOperation;
+      g_arena->execute([&](){ op->group.run([=](){ op->errorCode = rthwifBuildAccelInternal(args); }); });
       return RTHWIF_ERROR_PARALLEL_OPERATION;
     }
     /* ... otherwise we just execute inside task arena to avoid spawning of TBB worker threads */
     else
     {
       RTHWIF_ERROR errorCode = RTHWIF_ERROR_NONE;
-      g_arena->execute([&](){ errorCode = rthwifBuildAccelInternal(args_i); });
+      g_arena->execute([&](){ errorCode = rthwifBuildAccelInternal(args); });
       return errorCode;
     }
   }
