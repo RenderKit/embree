@@ -12,6 +12,7 @@ endif()
 
 string(REGEX REPLACE "\n$" "" intelstyle_url "${intelstyle_url}")
 string(REPLACE "embree" "intelstyle" intelstyle_url "${intelstyle_url}")
+string(REPLACE "libraries" "documentation" intelstyle_url "${intelstyle_url}")
 
 message(STATUS "Fetch intelstyle repository ${intelstyle_url}")
 include(FetchContent)

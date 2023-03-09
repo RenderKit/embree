@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 4.0.0
+% Embree: High Performance Ray Tracing Kernels 4.0.1
 % Intel Corporation
 
 Intel® Embree Overview
@@ -79,6 +79,7 @@ will get enabled soon:
 - Intel® Arc™ A770M Graphics
 - Intel® Arc™ A730M Graphics
 - Intel® Arc™ A550M Graphics
+- Intel® Data Center GPU Flex 170
 
 The code compiles with the Intel® Compiler, Intel® oneAPI DPC++
 Compiler, GCC, Clang, and the Microsoft Compiler. To use Embree on the
@@ -109,7 +110,7 @@ Windows Installation
 --------------------
 
 Embree linked against Visual Studio 2015 are provided as a ZIP file
-[embree-4.0.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v4.0.0/embree-4.0.0.x64.vc14.windows.zip). After
+[embree-4.0.1.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v4.0.1/embree-4.0.1.x64.vc14.windows.zip). After
 unpacking this ZIP file, you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree.
@@ -119,13 +120,13 @@ Linux Installation
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-4.0.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v4.0.0/embree-4.0.0.x86_64.linux.tar.gz). Unpack
+[embree-4.0.1.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v4.0.1/embree-4.0.1.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    tar xzf embree-4.0.0.x86_64.linux.tar.gz
-    source embree-4.0.0.x86_64.linux/embree-vars.sh
+    tar xzf embree-4.0.1.x86_64.linux.tar.gz
+    source embree-4.0.1.x86_64.linux/embree-vars.sh
 
 We recommend adding a relative `RPATH` to your application that points
 to the location where Embree (and TBB) can be found, e.g. `$ORIGIN/../lib`.
@@ -135,12 +136,12 @@ macOS Installation
 ------------------
 
 The macOS version of Embree is also delivered as a ZIP file:
-[embree-4.0.0.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v4.0.0/embree-4.0.0.x86_64.macosx.zip). Unpack
+[embree-4.0.1.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v4.0.1/embree-4.0.1.x86_64.macosx.zip). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    unzip embree-4.0.0.x64.macosx.zip    source embree-4.0.0.x64.macosx/embree-vars.sh
+    unzip embree-4.0.1.x64.macosx.zip    source embree-4.0.1.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided ZIP file. The library name of that Embree
@@ -165,7 +166,7 @@ set the `TBB_DIR` variable to the path containing `TBB-config.cmake` of a local
 TBB install, in case you do not have TBB installed globally on your system,
 e.g:
 
-    cmake -D embree_DIR=path_to_embree_package/lib/cmake/embree-4.0.0/ \
+    cmake -D embree_DIR=path_to_embree_package/lib/cmake/embree-4.0.1/ \
           -D TBB_DIR=path_to_tbb_package/lib/cmake/tbb/ \
           ..
 
@@ -1322,8 +1323,7 @@ Embree SYCL Known Issues
     -   Intel® Arc™ A730M Graphics
     -   Intel® Arc™ A550M Graphics
 
--   Intel® Data Center GPU Flex Series and Intel® Data Center GPU Max
-    Series are currently not supported.
+-   Intel® Data Center GPU Max Series is currently not supported.
 
 -   Ahead of time compilation is currently not working properly and you
     will get this error during compilation:
@@ -1436,8 +1436,9 @@ required:
     `RTC_SYCL_INDIRECTLY_CALLABLE` when used as filter or user geometry
     callbacks.
 
+```{=tex}
 
-
+```
 Embree API Reference
 ====================
 
@@ -1520,6 +1521,7 @@ The following configuration is supported:
 -   `frequency_level=[simd128,simd256,simd512]`: Specifies the
     frequency level the application want to run on, which can be
     either:
+
     a)  simd128 to run at highest frequency
     b)  simd256 to run at AVX2-heavy frequency level
     c)  simd512 to run at heavy AVX512 frequency level. When some
@@ -1548,8 +1550,9 @@ using `rtcGetDeviceError(NULL)`.
 
 [rtcRetainDevice], [rtcReleaseDevice], [rtcNewSYCLDevice]
 
+```{=tex}
 
-
+```
 rtcNewSYCLDevice
 ----------------
 
@@ -1598,8 +1601,9 @@ using `rtcGetDeviceError(NULL)`.
 
 [rtcRetainDevice], [rtcReleaseDevice], [rtcNewDevice]
 
+```{=tex}
 
-
+```
 rtcIsSYCLDeviceSupported
 ------------------------
 
@@ -1628,8 +1632,9 @@ using `rtcGetDeviceError`.
 
 [rtcSYCLDeviceSelector]
 
+```{=tex}
 
-
+```
 rtcSYCLDeviceSelector
 ---------------------
 
@@ -1668,8 +1673,9 @@ otherwise. On failure an error code is set that can get queried using
 
 [rtcIsSYCLDeviceSupported]
 
+```{=tex}
 
-
+```
 rtcSetDeviceSYCLDevice
 ----------------------
 
@@ -1699,8 +1705,9 @@ On failure an error code is set that can get queried using
 
 [rtcNewSYCLDevice]
 
+```{=tex}
 
-
+```
 rtcRetainDevice
 ---------------
 
@@ -1731,8 +1738,9 @@ On failure an error code is set that can be queried using
 
 [rtcNewDevice], [rtcReleaseDevice]
 
+```{=tex}
 
-
+```
 rtcReleaseDevice
 ----------------
 
@@ -1766,8 +1774,9 @@ On failure an error code is set that can be queried using
 
 [rtcNewDevice], [rtcRetainDevice]
 
+```{=tex}
 
-
+```
 rtcGetDeviceProperty
 --------------------
 
@@ -1894,8 +1903,9 @@ denotes `true`.
 On failure zero is returned and an error code is set that can be
 queried using `rtcGetDeviceError`.
 
+```{=tex}
 
-
+```
 rtcGetDeviceError
 -----------------
 
@@ -1952,8 +1962,9 @@ Returns the error code for the device.
 
 [rtcSetDeviceErrorFunction]
 
+```{=tex}
 
-
+```
 rtcSetDeviceErrorFunction
 -------------------------
 
@@ -2005,8 +2016,9 @@ On failure an error code is set that can be queried using
 
 [rtcGetDeviceError]
 
+```{=tex}
 
-
+```
 rtcSetDeviceMemoryMonitorFunction
 ---------------------------------
 
@@ -2083,8 +2095,9 @@ On failure an error code is set that can be queried using
 
 [rtcNewDevice]
 
+```{=tex}
 
-
+```
 rtcNewScene
 -----------
 
@@ -2114,8 +2127,9 @@ and an error code is set that can be queried using `rtcGetDeviceError`.
 
 [rtcRetainScene], [rtcReleaseScene]
 
+```{=tex}
 
-
+```
 rtcGetSceneDevice
 -----------------
 
@@ -2145,8 +2159,9 @@ On failure an error code is set that can be queried using
 
 [rtcReleaseDevice]
 
+```{=tex}
 
-
+```
 rtcRetainScene
 --------------
 
@@ -2177,8 +2192,9 @@ On failure an error code is set that can be queried using
 
 [rtcNewScene], [rtcReleaseScene]
 
+```{=tex}
 
-
+```
 rtcReleaseScene
 ---------------
 
@@ -2212,8 +2228,9 @@ On failure an error code is set that can be queried using
 
 [rtcNewScene], [rtcRetainScene]
 
+```{=tex}
 
-
+```
 rtcAttachGeometry
 -----------------
 
@@ -2263,8 +2280,9 @@ On failure an error code is set that can be queried using
 
 [rtcSetGeometryUserData], [rtcGetGeometryUserData]
 
+```{=tex}
 
-
+```
 rtcAttachGeometryByID
 ---------------------
 
@@ -2313,8 +2331,9 @@ On failure an error code is set that can be queried using
 
 [rtcAttachGeometry]
 
+```{=tex}
 
-
+```
 rtcDetachGeometry
 -----------------
 
@@ -2346,8 +2365,9 @@ On failure an error code is set that can be queried using
 
 [rtcAttachGeometry], [rtcAttachGeometryByID]
 
+```{=tex}
 
-
+```
 rtcGetGeometry
 --------------
 
@@ -2388,8 +2408,9 @@ queried using `rtcGetDeviceError`.
 [rtcAttachGeometry], [rtcAttachGeometryByID],
 [rtcGetGeometryThreadSafe]
 
+```{=tex}
 
-
+```
 rtcGetGeometryThreadSafe
 ------------------------
 
@@ -2426,8 +2447,9 @@ queried using `rtcGetDeviceError`.
 
 [rtcAttachGeometry], [rtcAttachGeometryByID], [rtcGetGeometry]
 
+```{=tex}
 
-
+```
 rtcCommitScene
 --------------
 
@@ -2486,8 +2508,9 @@ On failure an error code is set that can be queried using
 
 [rtcJoinCommitScene]
 
+```{=tex}
 
-
+```
 rtcJoinCommitScene
 ------------------
 
@@ -2565,8 +2588,9 @@ On failure an error code is set that can be queried using
 
 [rtcCommitScene], [rtcGetDeviceProperty]
 
+```{=tex}
 
-
+```
 rtcSetSceneProgressMonitorFunction
 ----------------------------------
 
@@ -2627,8 +2651,9 @@ On failure an error code is set that can be queried using
 
 [rtcNewScene]
 
+```{=tex}
 
-
+```
 rtcSetSceneBuildQuality
 -----------------------
 
@@ -2679,8 +2704,9 @@ On failure an error code is set that can be queried using
 
 [rtcSetGeometryBuildQuality]
 
+```{=tex}
 
-
+```
 rtcSetSceneFlags
 ----------------
 
@@ -2739,8 +2765,9 @@ On failure an error code is set that can be queried using
 
 [rtcGetSceneFlags]
 
+```{=tex}
 
-
+```
 rtcGetSceneFlags
 ----------------
 
@@ -2772,8 +2799,9 @@ that can be queried using `rtcGetDeviceError`.
 
 [rtcSetSceneFlags]
 
+```{=tex}
 
-
+```
 rtcGetSceneBounds
 -----------------
 
@@ -2817,8 +2845,9 @@ On failure an error code is set that can be queried using
 
 [rtcGetSceneLinearBounds], [rtcCommitScene], [rtcJoinCommitScene]
 
+```{=tex}
 
-
+```
 rtcGetSceneLinearBounds
 -----------------------
 
@@ -2864,8 +2893,9 @@ On failure an error code is set that can be queried using
 
 [rtcGetSceneBounds], [rtcCommitScene], [rtcJoinCommitScene]
 
+```{=tex}
 
-
+```
 rtcNewGeometry
 --------------
 
@@ -3003,8 +3033,9 @@ queried using `rtcGetDeviceError`.
 [RTC\_GEOMETRY\_TYPE\_GRID], [RTC\_GEOMETRY\_TYPE\_POINT],
 [RTC\_GEOMETRY\_TYPE\_USER], [RTC\_GEOMETRY\_TYPE\_INSTANCE]
 
+```{=tex}
 
-
+```
 RTC\_GEOMETRY\_TYPE\_TRIANGLE
 -----------------------------
 
@@ -3066,8 +3097,9 @@ queried using `rtcGetDeviceError`.
 
 [rtcNewGeometry]
 
+```{=tex}
 
-
+```
 RTC\_GEOMETRY\_TYPE\_QUAD
 -------------------------
 
@@ -3134,8 +3166,9 @@ queried using `rtcGetDeviceError`.
 
 [rtcNewGeometry]
 
+```{=tex}
 
-
+```
 RTC\_GEOMETRY\_TYPE\_GRID
 -------------------------
 
@@ -3205,8 +3238,9 @@ queried using `rtcGetDeviceError`.
 
 [rtcNewGeometry]
 
+```{=tex}
 
-
+```
 RTC\_GEOMETRY\_TYPE\_SUBDIVISION
 --------------------------------
 
@@ -3381,8 +3415,9 @@ queried using `rtcGetDeviceError`.
 
 [rtcNewGeometry]
 
+```{=tex}
 
-
+```
 RTC\_GEOMETRY\_TYPE\_CURVE
 --------------------------
 
@@ -3659,8 +3694,9 @@ queried using `rtcGetDeviceError`.
 
 [rtcNewGeometry], [RTCCurveFlags]
 
+```{=tex}
 
-
+```
 RTC\_GEOMETRY\_TYPE\_POINT
 --------------------------
 
@@ -3735,8 +3771,9 @@ queried using `rtcGetDeviceError`.
 
 [rtcNewGeometry]
 
+```{=tex}
 
-
+```
 RTC\_GEOMETRY\_TYPE\_USER
 -------------------------
 
@@ -3803,8 +3840,9 @@ queried using `rtcGetDeviceError`.
 [rtcSetGeometryUserData], [rtcSetGeometryBoundsFunction],
 [rtcSetGeometryIntersectFunction], [rtcSetGeometryOccludedFunction]
 
+```{=tex}
 
-
+```
 RTC\_GEOMETRY\_TYPE\_INSTANCE
 -----------------------------
 
@@ -3874,8 +3912,9 @@ queried using `rtcGetDeviceError`.
 [rtcNewGeometry], [rtcSetGeometryInstancedScene],
 [rtcSetGeometryTransform]
 
+```{=tex}
 
-
+```
 RTCCurveFlags
 -------------
 
@@ -3920,8 +3959,9 @@ particular when round linear curves are viewed from the inside.
 
 [RTC\_GEOMETRY\_TYPE\_CURVE]
 
+```{=tex}
 
-
+```
 rtcRetainGeometry
 -----------------
 
@@ -3952,8 +3992,9 @@ On failure an error code is set that can be queried using
 
 [rtcNewGeometry], [rtcReleaseGeometry]
 
+```{=tex}
 
-
+```
 rtcReleaseGeometry
 ------------------
 
@@ -3983,8 +4024,9 @@ On failure an error code is set that can be queried using
 
 [rtcNewGeometry], [rtcRetainGeometry]
 
+```{=tex}
 
-
+```
 rtcCommitGeometry
 -----------------
 
@@ -4015,8 +4057,9 @@ On failure an error code is set that can be queried using
 
 [rtcInterpolate], [rtcCommitScene]
 
+```{=tex}
 
-
+```
 rtcEnableGeometry
 -----------------
 
@@ -4048,8 +4091,9 @@ On failure an error code is set that can be queried using
 
 [rtcNewGeometry], [rtcDisableGeometry], [rtcCommitScene]
 
+```{=tex}
 
-
+```
 rtcDisableGeometry
 ------------------
 
@@ -4081,8 +4125,9 @@ On failure an error code is set that can be queried using
 
 [rtcNewGeometry], [rtcEnableGeometry], [rtcCommitScene]
 
+```{=tex}
 
-
+```
 rtcSetGeometryTimeStepCount
 ---------------------------
 
@@ -4133,8 +4178,9 @@ On failure an error code is set that can be queried using
 
 [rtcNewGeometry], [rtcSetGeometryTimeRange]
 
+```{=tex}
 
-
+```
 rtcSetGeometryTimeRange
 -----------------------
 
@@ -4188,8 +4234,9 @@ On failure an error code is set that can be queried using
 
 [rtcSetGeometryTimeStepCount]
 
+```{=tex}
 
-
+```
 rtcSetGeometryVertexAttributeCount
 ----------------------------------
 
@@ -4228,8 +4275,9 @@ On failure an error code is set that can be queried using
 
 [rtcNewGeometry], [RTCBufferType]
 
+```{=tex}
 
-
+```
 rtcSetGeometryMask
 ------------------
 
@@ -4267,8 +4315,9 @@ On failure an error code is set that can be queried using
 
 [RTCRay], [rtcGetDeviceProperty]
 
+```{=tex}
 
-
+```
 rtcSetGeometryBuildQuality
 --------------------------
 
@@ -4318,8 +4367,9 @@ On failure an error code is set that can be queried using
 
 [rtcSetSceneBuildQuality]
 
+```{=tex}
 
-
+```
 rtcSetGeometryMaxRadiusScale
 ----------------------------
 
@@ -4386,8 +4436,9 @@ On failure an error code is set that can be queried using
 
 [rtcInitRayQueryContext]
 
+```{=tex}
 
-
+```
 rtcSetGeometryBuffer
 --------------------
 
@@ -4437,8 +4488,9 @@ On failure an error code is set that can be queried using
 
 [rtcSetSharedGeometryBuffer], [rtcSetNewGeometryBuffer]
 
+```{=tex}
 
-
+```
 rtcSetSharedGeometryBuffer
 --------------------------
 
@@ -4503,8 +4555,9 @@ On failure an error code is set that can be queried using
 
 [rtcSetGeometryBuffer], [rtcSetNewGeometryBuffer]
 
+```{=tex}
 
-
+```
 rtcSetNewGeometryBuffer
 -----------------------
 
@@ -4551,8 +4604,9 @@ On failure an error code is set that can be queried using
 
 [rtcSetGeometryBuffer], [rtcSetSharedGeometryBuffer]
 
+```{=tex}
 
-
+```
 RTCFormat
 ---------
 
@@ -4635,8 +4689,9 @@ primitives of layout RTCGrid when creating grid geometries (see
 [rtcSetGeometryBuffer], [rtcSetSharedGeometryBuffer],
 [rtcSetNewGeometryBuffer], [rtcSetGeometryTransform]
 
+```{=tex}
 
-
+```
 RTCBufferType
 -------------
 
@@ -4710,8 +4765,9 @@ primitive of a geometry, and is currently only used for linear curves.
 [rtcSetGeometryBuffer], [rtcSetSharedGeometryBuffer],
 [rtcSetNewGeometryBuffer]
 
+```{=tex}
 
-
+```
 rtcGetGeometryBufferData
 ------------------------
 
@@ -4747,8 +4803,9 @@ On failure an error code is set that can be queried using
 [rtcSetGeometryBuffer], [rtcSetSharedGeometryBuffer],
 [rtcSetNewGeometryBuffer]
 
+```{=tex}
 
-
+```
 rtcUpdateGeometryBuffer
 -----------------------
 
@@ -4788,8 +4845,9 @@ On failure an error code is set that can be queried using
 
 [rtcNewGeometry], [rtcCommitScene]
 
+```{=tex}
 
-
+```
 rtcSetGeometryIntersectFilterFunction
 -------------------------------------
 
@@ -4899,8 +4957,9 @@ On failure an error code is set that can be queried using
 
 [rtcSetGeometryOccludedFilterFunction]
 
+```{=tex}
 
-
+```
 rtcSetGeometryOccludedFilterFunction
 ------------------------------------
 
@@ -4949,8 +5008,9 @@ On failure an error code is set that can be queried using
 
 [rtcSetGeometryIntersectFilterFunction]
 
+```{=tex}
 
-
+```
 rtcSetGeometryEnableFilterFunctionFromArguments
 -----------------------------------------------
 
@@ -4996,8 +5056,9 @@ On failure an error code is set that can get queried using
 [rtcInitIntersectArguments], [rtcInitOccludedArguments],
 [rtcSetSceneFlags]
 
+```{=tex}
 
-
+```
 rtcInvokeIntersectFilterFromGeometry
 ------------------------------------
 
@@ -5037,8 +5098,9 @@ thus will not set any error flags on failure.
 [rtcInvokeOccludedFilterFromGeometry],
 [rtcSetGeometryIntersectFunction]
 
+```{=tex}
 
-
+```
 rtcInvokeOccludedFilterFromGeometry
 -----------------------------------
 
@@ -5078,8 +5140,9 @@ thus will not set any error flags on failure.
 [rtcInvokeIntersectFilterFromGeometry],
 [rtcSetGeometryOccludedFunction]
 
+```{=tex}
 
-
+```
 rtcSetGeometryUserData
 ----------------------
 
@@ -5115,8 +5178,9 @@ On failure an error code is set that can be queried using
 
 [rtcGetGeometryUserData]
 
+```{=tex}
 
-
+```
 rtcGetGeometryUserData
 ----------------------
 
@@ -5149,8 +5213,9 @@ On failure an error code is set that can be queried using
 
 [rtcSetGeometryUserData]
 
+```{=tex}
 
-
+```
 rtcGetGeometryUserDataFromScene
 -------------------------------
 
@@ -5183,8 +5248,9 @@ On failure an error code is set that can be queried using
 
 [rtcSetGeometryUserData], [rtcGetGeometryUserData]
 
+```{=tex}
 
-
+```
 rtcSetGeometryUserPrimitiveCount
 --------------------------------
 
@@ -5217,8 +5283,9 @@ On failure an error code is set that can be queried using
 
 [RTC\_GEOMETRY\_TYPE\_USER]
 
+```{=tex}
 
-
+```
 rtcSetGeometryBoundsFunction
 ----------------------------
 
@@ -5290,8 +5357,9 @@ On failure an error code is set that can be queried using
 
 [RTC\_GEOMETRY\_TYPE\_USER]
 
+```{=tex}
 
-
+```
 rtcSetGeometryIntersectFunction
 -------------------------------
 
@@ -5398,8 +5466,9 @@ On failure an error code is set that can be queried using
 [rtcSetGeometryOccludedFunction], [rtcSetGeometryUserData],
 [rtcInvokeIntersectFilterFromGeometry]
 
+```{=tex}
 
-
+```
 rtcSetGeometryOccludedFunction
 ------------------------------
 
@@ -5498,8 +5567,9 @@ On failure an error code is set that can be queried using
 [rtcSetGeometryIntersectFunction], [rtcSetGeometryUserData],
 [rtcInvokeOccludedFilterFromGeometry]
 
+```{=tex}
 
-
+```
 rtcSetGeometryPointQueryFunction
 --------------------------------
 
@@ -5627,8 +5697,9 @@ meshes using instancing and user defined instancing see the tutorial
 
 [rtcPointQuery], [rtcInitPointQueryContext]
 
+```{=tex}
 
-
+```
 rtcGetSYCLDeviceFunctionPointer
 -------------------------------
 
@@ -5679,8 +5750,9 @@ On failure an error code is set that can be queried using
 [rtcSetGeometryIntersectFilterFunction],
 [rtcSetGeometryOccludedFilterFunction]
 
+```{=tex}
 
-
+```
 rtcSetGeometryInstancedScene
 ----------------------------
 
@@ -5713,8 +5785,9 @@ On failure an error code is set that can be queried using
 
 [RTC\_GEOMETRY\_TYPE\_INSTANCE], [rtcSetGeometryTransform]
 
+```{=tex}
 
-
+```
 rtcSetGeometryTransform
 -----------------------
 
@@ -5762,8 +5835,9 @@ On failure an error code is set that can be queried using
 
 [RTC\_GEOMETRY\_TYPE\_INSTANCE]
 
+```{=tex}
 
-
+```
 rtcSetGeometryTransformQuaternion
 ---------------------------------
 
@@ -5818,8 +5892,9 @@ On failure an error code is set that can be queried using
 
 [rtcInitQuaternionDecomposition], [rtcSetGeometryTransform]
 
+```{=tex}
 
-
+```
 rtcGetGeometryTransform
 -----------------------
 
@@ -5867,8 +5942,9 @@ On failure an error code is set that can be queried using
 
 [RTC\_GEOMETRY\_TYPE\_INSTANCE], [rtcSetGeometryTransform]
 
+```{=tex}
 
-
+```
 rtcSetGeometryTessellationRate
 ------------------------------
 
@@ -5905,8 +5981,9 @@ On failure an error code is set that can be queried using
 
 [RTC\_GEOMETRY\_TYPE\_CURVE], [RTC\_GEOMETRY\_TYPE\_SUBDIVISION]
 
+```{=tex}
 
-
+```
 rtcSetGeometryTopologyCount
 ---------------------------
 
@@ -5945,8 +6022,9 @@ On failure an error code is set that can be queried using
 
 [RTC\_GEOMETRY\_TYPE\_SUBDIVISION], [rtcSetGeometrySubdivisionMode]
 
+```{=tex}
 
-
+```
 rtcSetGeometrySubdivisionMode
 -----------------------------
 
@@ -6002,8 +6080,9 @@ On failure an error code is set that can be queried using
 
 [RTC\_GEOMETRY\_TYPE\_SUBDIVISION]
 
+```{=tex}
 
-
+```
 rtcSetGeometryVertexAttributeTopology
 -------------------------------------
 
@@ -6050,8 +6129,9 @@ On failure an error code is set that can be queried using
 [rtcSetGeometrySubdivisionMode], [rtcInterpolate],
 [rtcInterpolateN]
 
+```{=tex}
 
-
+```
 rtcSetGeometryDisplacementFunction
 ----------------------------------
 
@@ -6138,8 +6218,9 @@ On failure an error code is set that can be queried using
 
 [RTC\_GEOMETRY\_TYPE\_SUBDIVISION]
 
+```{=tex}
 
-
+```
 rtcGetGeometryFirstHalfEdge
 ---------------------------
 
@@ -6187,8 +6268,9 @@ On failure an error code is set that can be queried using
 [rtcGetGeometryOppositeHalfEdge], [rtcGetGeometryNextHalfEdge],
 [rtcGetGeometryPreviousHalfEdge]
 
+```{=tex}
 
-
+```
 rtcGetGeometryFace
 ------------------
 
@@ -6229,8 +6311,9 @@ On failure an error code is set that can be queried using
 [rtcGetGeometryOppositeHalfEdge], [rtcGetGeometryNextHalfEdge],
 [rtcGetGeometryPreviousHalfEdge]
 
+```{=tex}
 
-
+```
 rtcGetGeometryNextHalfEdge
 --------------------------
 
@@ -6270,8 +6353,9 @@ On failure an error code is set that can be queried using
 [rtcGetGeometryOppositeHalfEdge], [rtcGetGeometryNextHalfEdge],
 [rtcGetGeometryPreviousHalfEdge]
 
+```{=tex}
 
-
+```
 rtcGetGeometryPreviousHalfEdge
 ------------------------------
 
@@ -6312,8 +6396,9 @@ On failure an error code is set that can be queried using
 [rtcGetGeometryOppositeHalfEdge], [rtcGetGeometryNextHalfEdge],
 [rtcGetGeometryPreviousHalfEdge]
 
+```{=tex}
 
-
+```
 rtcGetGeometryOppositeHalfEdge
 ------------------------------
 
@@ -6359,8 +6444,9 @@ On failure an error code is set that can be queried using
 [rtcGetGeometryOppositeHalfEdge], [rtcGetGeometryNextHalfEdge],
 [rtcGetGeometryPreviousHalfEdge]
 
+```{=tex}
 
-
+```
 rtcInterpolate
 --------------
 
@@ -6446,8 +6532,9 @@ thus will not set any error flags on failure.
 
 [rtcInterpolateN]
 
+```{=tex}
 
-
+```
 rtcInterpolateN
 ---------------
 
@@ -6505,8 +6592,9 @@ thus will not set any error flags on failure.
 
 [rtcInterpolate]
 
+```{=tex}
 
-
+```
 rtcNewBuffer
 ------------
 
@@ -6549,8 +6637,9 @@ queried using `rtcGetDeviceError`.
 
 [rtcRetainBuffer], [rtcReleaseBuffer]
 
+```{=tex}
 
-
+```
 rtcNewSharedBuffer
 ------------------
 
@@ -6602,8 +6691,9 @@ queried using `rtcGetDeviceError`.
 
 [rtcRetainBuffer], [rtcReleaseBuffer]
 
+```{=tex}
 
-
+```
 rtcRetainBuffer
 ---------------
 
@@ -6634,8 +6724,9 @@ On failure an error code is set that can be queried using
 
 [rtcNewBuffer], [rtcReleaseBuffer]
 
+```{=tex}
 
-
+```
 rtcReleaseBuffer
 ----------------
 
@@ -6665,8 +6756,9 @@ On failure an error code is set that can be queried using
 
 [rtcNewBuffer], [rtcRetainBuffer]
 
+```{=tex}
 
-
+```
 rtcGetBufferData
 ----------------
 
@@ -6694,8 +6786,9 @@ On failure an error code is set that can be queried using
 
 [rtcNewBuffer]
 
+```{=tex}
 
-
+```
 RTCRay
 ------
 
@@ -6758,8 +6851,9 @@ size.
 
 [RTCHit]
 
+```{=tex}
 
-
+```
 RTCHit
 ------
 
@@ -6808,8 +6902,9 @@ packets of an arbitrary compile-time size.
 
 [RTCRay], [Multi-Level Instancing]
 
+```{=tex}
 
-
+```
 RTCRayHit
 ---------
 
@@ -6846,8 +6941,9 @@ packets of an arbitrary compile-time size.
 
 [RTCRay], [RTCHit]
 
+```{=tex}
 
-
+```
 RTCRayN
 -------
 
@@ -6899,8 +6995,9 @@ packet (`i` argument).
 
 [RTCHitN]
 
+```{=tex}
 
-
+```
 RTCHitN
 -------
 
@@ -6948,8 +7045,9 @@ component (e.g. x component of `Ng`) of the the i-th hit of the packet
 
 [RTCRayN]
 
+```{=tex}
 
-
+```
 RTCRayHitN
 ----------
 
@@ -6987,8 +7085,9 @@ parts of the structure.
 
 [RTCHitN]
 
+```{=tex}
 
-
+```
 RTCFeatureFlags
 ---------------
 
@@ -7220,8 +7319,9 @@ The following features can get enabled using feature flags:
 [rtcIntersect1], [rtcIntersect4/8/16], [rtcOccluded1],
 [rtcOccluded4/8/16],
 
+```{=tex}
 
-
+```
 rtcInitIntersectArguments
 -------------------------
 
@@ -7322,8 +7422,9 @@ No error code is set by this function.
 [rtcInitRayQueryContext], [RTC\_GEOMETRY\_TYPE\_USER],
 [rtcSetGeometryMaxRadiusScale]
 
+```{=tex}
 
-
+```
 rtcInitOccludedArguments
 ------------------------
 
@@ -7424,8 +7525,9 @@ No error code is set by this function.
 [rtcInitRayQueryContext], [RTC\_GEOMETRY\_TYPE\_USER],
 [rtcSetGeometryMaxRadiusScale]
 
+```{=tex}
 
-
+```
 rtcInitRayQueryContext
 ----------------------
 
@@ -7477,8 +7579,9 @@ No error code is set by this function.
 [rtcIntersect1], [rtcIntersect4/8/16], [rtcOccluded1],
 [rtcOccluded4/8/16]
 
+```{=tex}
 
-
+```
 rtcIntersect1
 -------------
 
@@ -7560,8 +7663,9 @@ thus will not set any error flags on failure.
 [rtcOccluded1], [rtcIntersect4/8/16], [RTCRayHit],
 [rtcInitIntersectArguments]
 
+```{=tex}
 
-
+```
 rtcOccluded1
 ------------
 
@@ -7621,8 +7725,9 @@ thus will not set any error flags on failure.
 [rtcIntersect1], [rtcOccluded4/8/16], [RTCRay],
 [rtcInitOccludedArguments]
 
+```{=tex}
 
-
+```
 rtcIntersect4/8/16
 ------------------
 
@@ -7698,8 +7803,9 @@ thus will not set any error flags on failure.
 
 [rtcIntersect1], [rtcOccluded4/8/16], [rtcInitIntersectArguments]
 
+```{=tex}
 
-
+```
 rtcOccluded4/8/16
 -----------------
 
@@ -7775,8 +7881,9 @@ thus will not set any error flags on failure.
 
 [rtcOccluded1], [rtcIntersect4/8/16], [rtcInitOccludedArguments]
 
+```{=tex}
 
-
+```
 rtcForwardIntersect1
 --------------------
 
@@ -7837,8 +7944,9 @@ thus will not set any error flags on failure.
 
 [rtcIntersect1], [RTCRay]
 
+```{=tex}
 
-
+```
 rtcForwardOccluded1
 -------------------
 
@@ -7899,8 +8007,9 @@ thus will not set any error flags on failure.
 
 [rtcOccluded1], [RTCRay]
 
+```{=tex}
 
-
+```
 rtcForwardIntersect4/8/16
 -------------------------
 
@@ -7980,8 +8089,9 @@ thus will not set any error flags on failure.
 
 [rtcIntersect4/8/16]
 
+```{=tex}
 
-
+```
 rtcForwardOccluded4/8/16
 ------------------------
 
@@ -8061,8 +8171,9 @@ thus will not set any error flags on failure.
 
 [rtcOccluded4/8/16]
 
+```{=tex}
 
-
+```
 rtcInitPointQueryContext
 ------------------------
 
@@ -8123,8 +8234,9 @@ No error code is set by this function.
 
 [rtcPointQuery], [rtcSetGeometryPointQueryFunction]
 
+```{=tex}
 
-
+```
 rtcPointQuery
 -------------
 
@@ -8227,8 +8339,9 @@ thus will not set any error flags on failure.
 
 [rtcSetGeometryPointQueryFunction], [rtcInitPointQueryContext]
 
+```{=tex}
 
-
+```
 rtcCollide
 ----------
 
@@ -8287,8 +8400,9 @@ On failure an error code is set that can be queried using
 
 #### SEE ALSO {#see-also}
 
+```{=tex}
 
-
+```
 rtcNewBVH
 ---------
 
@@ -8322,8 +8436,9 @@ On failure an error code is set that can be queried using
 
 [rtcRetainBVH], [rtcReleaseBVH], [rtcBuildBVH]
 
+```{=tex}
 
-
+```
 rtcRetainBVH
 ------------
 
@@ -8354,8 +8469,9 @@ On failure an error code is set that can be queried using
 
 [rtcNewBVH], [rtcReleaseBVH]
 
+```{=tex}
 
-
+```
 rtcReleaseBVH
 -------------
 
@@ -8384,8 +8500,9 @@ On failure an error code is set that can be queried using
 
 [rtcNewBVH], [rtcRetainBVH]
 
+```{=tex}
 
-
+```
 rtcBuildBVH
 -----------
 
@@ -8586,8 +8703,9 @@ On failure an error code is set that can be queried using
 
 [rtcNewBVH]
 
+```{=tex}
 
-
+```
 RTCQuaternionDecomposition
 --------------------------
 
@@ -8662,8 +8780,9 @@ No error code is set by this function.
 [rtcSetGeometryTransformQuaternion],
 [rtcInitQuaternionDecomposition]
 
+```{=tex}
 
-
+```
 rtcInitQuaternionDecomposition
 ------------------------------
 
@@ -8691,8 +8810,9 @@ No error code is set by this function.
 
 [rtcSetGeometryTransformQuaternion], [RTCQuaternionDecomposition]
 
+```{=tex}
 
-
+```
 CPU Performance Recommendations
 ===============================
 
@@ -8833,8 +8953,9 @@ components of a single ray (`RTCRay` type). Storing these values using
 scalar stores causes a store-to-load forwarding penalty because Embree
 is reading these components using SSE loads later on.
 
+```{=tex}
 
-
+```
 GPU Performance Recommendations
 ===============================
 
@@ -8936,12 +9057,13 @@ To work around this issue we recommend:
 
 -   Indirectly callable functions may still cause problems, even if
     your kernel does not use local memory. Thus best use SYCL pointers
-    like sycl::global\_ptr<T> and sycl::private\_ptr<T> in indirectly
-    callable functions to avoid generic address space usage.
+    like sycl::global\_ptr`<T>`{=html} and
+    sycl::private\_ptr`<T>`{=html} in indirectly callable functions to
+    avoid generic address space usage.
 
 -   You can also enforce usage of global pointers using the following
     DPC++ compile flags:
-    `-cl-intel-force-global-mem-allocation -cl-intel-no-local-to-generic`.
+    `-cl-intel-force-global-mem-allocation   -cl-intel-no-local-to-generic`.
 
 Embree Tutorials
 ================
