@@ -126,6 +126,9 @@ namespace embree
   template<typename T> __forceinline const T halfArea( const BBox<Vec3<T> >& b ) { return halfArea(b.size()); }
   template<typename T> __forceinline const T     area( const BBox<Vec3<T> >& b ) { return T(2)*halfArea(b); }
 
+  __forceinline float halfArea( const BBox<Vec3f>& b ) { return halfArea(b.size()); }
+  __forceinline float     area( const BBox<Vec3f>& b ) { return 2.0f*halfArea(b); }
+  
   __forceinline float halfArea( const BBox<Vec3fa>& b ) { return halfArea(b.size()); }
   __forceinline float     area( const BBox<Vec3fa>& b ) { return 2.0f*halfArea(b); }
 

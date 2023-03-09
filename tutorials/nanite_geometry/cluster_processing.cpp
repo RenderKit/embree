@@ -62,22 +62,21 @@ namespace embree {
   };
   
   struct QuadMeshCluster {
+    BBox3f bounds;
     bool lod_root;
     uint leftID, rightID;
     std::vector<Quad> quads;
     std::vector<Vec3f> vertices;
 
-    __forceinline QuadMeshCluster() : leftID(-1), rightID(-1), lod_root(false) {}
+    __forceinline QuadMeshCluster() : bounds(empty),lod_root(false),leftID(-1), rightID(-1) {}
 
     __forceinline bool isLeaf() { return leftID == -1 || rightID == -1; }
 
-
-    __forceinline BBox3f getBBox3f()
+    __forceinline void initBounds()
     {
-      BBox3f bounds(empty);
+      bounds = BBox3f(empty);
       for (uint i=0;i<vertices.size();i++)
         bounds.extend(vertices[i]);
-      return bounds;
     }
     
     void reorderMorton();
@@ -529,8 +528,8 @@ namespace embree {
     // === create leaf clusters ===
     //size_t totalSizeMicroMesh = 0;
     //size_t totalSizeMicroStrip = 0;
-    
-    for (uint i=0;i<leafIDs.size();i++)
+
+    for (uint i=0;i<leafIDs.size();i++) //FIXME leafIDs
     {
       const uint ID = leafIDs[i];
       QuadMeshCluster cluster;
@@ -579,7 +578,7 @@ namespace embree {
       totalSizeMicroMesh += sizeMicroMesh;
       totalSizeMicroStrip += sizeMicroStrip;
 #endif      
-      
+      cluster.initBounds();
       clusters.push_back(cluster);
       //DBG_PRINT2(cluster.quads.size(),cluster.vertices.size());
     }
@@ -587,7 +586,102 @@ namespace embree {
     //PRINT2(totalSizeMicroMesh,totalSizeMicroStrip);
     
     // === bottom-up merging and creation of new clusters ===
+
+#if 1
+    uint numClusters = clusters.size();
+    uint *index_buffer = new uint[numClusters];
+    uint *tmp_buffer = new uint[numClusters];
+    uint *nearest_neighborID = new uint[numClusters];
+
+    const int SEARCH_RADIUS = 16;
+
+    for (uint i=0;i<numClusters;i++)
+    {
+      index_buffer[i] = i;
+      clusters[i].lod_root = true;
+    }
+
+    const uint org_numClusters = numClusters;
     
+    while(numClusters > org_numClusters/3)
+    {
+      for (uint i=0;i<numClusters;i++)
+        nearest_neighborID[i] = -1;
+      
+      for (uint c=0;c<numClusters;c++)
+      {
+        // find nearest neighbor
+        const uint clusterID = index_buffer[c];
+        const BBox3f cluster_bounds = clusters[clusterID].bounds;
+        float min_area = pos_inf;
+        int nn = -1;
+        for (int i=std::max((int)c-SEARCH_RADIUS,0);i<std::min((int)c+SEARCH_RADIUS,(int)numClusters);i++)
+          if (i != c)
+          {
+            BBox3f bounds = clusters[index_buffer[i]].bounds;
+            bounds.extend(cluster_bounds);
+            const float areaBounds = area(bounds);
+            if (areaBounds < min_area)
+            {
+              min_area = areaBounds;
+              nn = i;
+            }
+          }
+        nearest_neighborID[c] = nn;        
+      }
+      
+      uint new_numClusters = 0;
+      for (uint i=0;i<numClusters;i++)
+      {
+        if (nearest_neighborID[i] != -1)
+        {
+          if ( nearest_neighborID[ nearest_neighborID[i] ] == i)
+          {
+            const uint leftClusterID = index_buffer[i];
+            const uint rightClusterID = index_buffer[nearest_neighborID[i]];
+            PRINT3("MERGE",rightClusterID,rightClusterID);
+            
+            nearest_neighborID[ nearest_neighborID[i] ] = -1;
+
+            QuadMeshCluster new_cluster;
+            bool success = mergeSimplifyQuadMeshCluster( clusters[leftClusterID], clusters[rightClusterID], new_cluster);
+            if (success)
+            {
+              clusters[leftClusterID].lod_root = false;
+              clusters[rightClusterID].lod_root = false;              
+              new_cluster.leftID  = leftClusterID;
+              new_cluster.rightID = rightClusterID;
+              new_cluster.initBounds();
+              new_cluster.lod_root = true;              
+              const uint newClusterID = clusters.size();
+              clusters.push_back(new_cluster);
+              tmp_buffer[new_numClusters++] = newClusterID;              
+            }
+            else
+            {
+              FATAL("success");
+            }                        
+          }
+          else
+          {            
+            tmp_buffer[new_numClusters++] = index_buffer[i];              
+          }
+        }        
+      }
+
+      for (uint i=0;i<new_numClusters;i++)
+        index_buffer[i] = tmp_buffer[i];
+      
+      PRINT2(new_numClusters,numClusters);
+      numClusters = new_numClusters;
+    }
+
+    //exit(0);
+    
+    delete [] nearest_neighborID;        
+    delete [] tmp_buffer;    
+    delete [] index_buffer;
+#else    
     for (uint i=0;i<leafIDs.size();i++)
     {
       const uint ID = leafIDs[i];
@@ -616,7 +710,8 @@ namespace embree {
             DBG_PRINT(new_cluster.vertices.size());          
             const uint mergedClusterID = clusters.size();
             new_cluster.leftID  = leftClusterID;
-            new_cluster.rightID = rightClusterID;          
+            new_cluster.rightID = rightClusterID;
+            new_cluster.initBounds();
             clusters.push_back(new_cluster);
             ranges[parentID].clusterID = mergedClusterID; 
           }
@@ -628,9 +723,7 @@ namespace embree {
           parentID = ranges[parentID].parent;
         }
         else
-          break;
-        
-        
+          break;                
       }
     }
 
@@ -641,6 +734,7 @@ namespace embree {
       uint ID = clusterRootIDs[i];
       clusters[ID].lod_root = true;
     }
+#endif    
     
     uint numTotalQuadsAllocate = 0;
     uint numTotalVerticesAllocate = 0;
@@ -681,7 +775,7 @@ namespace embree {
       compressed_cluster.numQuads  = clusters[c].quads.size();
       compressed_cluster.numBlocks = LossyCompressedMeshCluster::getDecompressedSizeInBytes(compressed_cluster.numQuads)/64;
       //compressed_cluster.ID = c;
-      BBox3f cluster_bounds = clusters[c].getBBox3f();
+      BBox3f cluster_bounds = clusters[c].bounds;
       const Vec3f center = cluster_bounds.center();
       compressed_cluster.center = CompressedVertex(center,geometry_lower,geometry_inv_diag);
       

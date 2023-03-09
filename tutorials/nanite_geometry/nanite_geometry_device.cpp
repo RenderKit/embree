@@ -279,8 +279,6 @@ namespace embree {
       PRINT2(numAllocatedLCGBP,numAllocatedLCGBP*sizeof(LCGBP));
       PRINT2(numAllocatedLCGBPStates,numAllocatedLCGBPStates*sizeof(LCGBP_State));
     }
-
-    PRINT(numLCMeshClusters);    
   }
 
   void LCG_Scene::addGrid(const uint gridResX, const uint gridResY, const Vec3fa *const vtx)
