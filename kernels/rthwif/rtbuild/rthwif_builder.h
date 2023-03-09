@@ -44,6 +44,7 @@ typedef enum RTHWIF_ERROR
   RTHWIF_ERROR_OTHER = 0x2,  // some unspecified error occured
   RTHWIF_ERROR_PARALLEL_OPERATION = 0x3,  // task executing in parallel operation
   RTHWIF_ERROR_INVALID_ARGUMENT = 0x4,
+   ZE_RESULT_RAYTRACING_EXT_ACCEL_INCOMPATIBLE = 0x5,   ///< the tested devices have incompatible acceleration structures
 } RTHWIF_ERROR;
 
 /**
@@ -310,6 +311,48 @@ typedef enum RTHWIF_BUILD_FLAGS
 } RTHWIF_BUILD_FLAGS;
 
 
+/**
+
+  \brief An opaque ray tracing acceleration structure format supported
+  by some device.
+
+*/
+typedef enum _ze_raytracing_accel_format_ext_t {
+  ZE_RAYTRACING_ACCEL_FORMAT_EXT_INVALID = 0      // invalid acceleration structure format
+} ze_raytracing_accel_format_ext_t;
+
+/**
+
+  \brief Returns the acceleration structure format supported by the specified device.
+
+  \param hDevice: device to query the acceleration structure format for
+  \param pAccelFormat: points to destination of returned acceleration structure format
+
+  If a ray tracing is supported by this device a format is returned to
+  the memory location pointed by pAccelFormat and the result code
+  ZE_RESULT_SUCCESS is returned.
+
+*/
+
+RTHWIF_API RTHWIF_ERROR zeRaytracingDeviceGetAccelFormatExt( const ze_device_handle_t hDevice, ze_raytracing_accel_format_ext_t* pAccelFormat );
+
+/**
+
+  \brief Checks if the acceleration structure build for hDevice can be used on hDeviceOther.
+
+  \param accelFormat: format the acceleration structure is build for
+  \param otherAccelFormat: the format to test compatibility with
+
+  The function returns ZE_RESULT_SUCCESS if an acceleration structure
+  build with format `accelFormat` can also get used on devices with
+  acceleration structure format `otherAccelFormat` Otherwise
+  ZE_RESULT_RAYTRACING_EXT_ACCEL_INCOMPATIBLE is returned.
+
+*/
+
+RTHWIF_API RTHWIF_ERROR zeRaytracingAccelFormatCompatibilityExt( const ze_raytracing_accel_format_ext_t accelFormat, const ze_raytracing_accel_format_ext_t otherAccelFormat );
+
+
 /* Structure returned by rthwifGetAccelSize that contains acceleration
  * structure size estimates. */
 typedef struct RTHWIF_ACCEL_SIZE
@@ -346,6 +389,13 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
 
   /** [in,out][optional] must be null or a pointer to an extension-specific structure */
   const void* pNext;
+
+  /** [in] The acceleration structure format of a device to use for
+   * ray tracing. The acceleration structure can also get used on
+   * other devices whose acceleration structure is compatible with the
+   * device specified here (see
+   * zeRaytracingAccelFormatCompatibilityExt function). */
+  ze_raytracing_accel_format_ext_t accelFormat;
 
   /* Array of pointers to geometry descriptors. This array and the
    * geometry descriptors themselves can be standard host memory
