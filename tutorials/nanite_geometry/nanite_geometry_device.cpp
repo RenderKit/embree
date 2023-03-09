@@ -14,7 +14,8 @@
 
 #endif
 
-#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 3.0f
+#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 4.0f
+// 3.0f
 //#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 32.0f
 
 #include "../../kernels/rthwif/builder/gpu/lcgbp.h"
@@ -486,14 +487,17 @@ namespace embree {
     
     size_t totalCompressedSize = 0;
     size_t numDecompressedBlocks = 0;
-    
+
     for (unsigned int geomID=0; geomID<g_ispc_scene->numGeometries; geomID++)
     {
       ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
       if (geometry->type == GRID_MESH)
         convertISPCGridMesh((ISPCGridMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID]);
       else if (geometry->type == QUAD_MESH)
+      {
+        std::cout << "Processing mesh " << geomID << " of " << g_ispc_scene->numGeometries << " meshes" << std::endl;
         convertISPCQuadMesh((ISPCQuadMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID],geomID,lcm_ptrs,lcm_clusters,lcm_clusterRootIDs,totalCompressedSize,numDecompressedBlocks);
+      }
     }
         
     // === finalize quad meshes ===
@@ -971,7 +975,6 @@ namespace embree {
           {
             const uint clusterID = local_lcgbp_scene->lcm_cluster_roots_IDs[i];            
 #if 1
-            const uint LOD_LEVELS = 3;
             const Vec3f org = camera.xfm.p;
             const LossyCompressedMeshCluster &cluster = local_lcgbp_scene->lcm_cluster[ clusterID ];
             CompressedVertex compressed_center = cluster.center;
@@ -981,53 +984,34 @@ namespace embree {
             const Vec3f center = compressed_center.decompress(lower,diag);
 
             const float minDistance = local_lcgbp_scene->minLODDistance; 
-            const uint startRange[LOD_LEVELS+1] = { 0,1,3,7};
-            const uint   endRange[LOD_LEVELS+1] = { 1,3,7,15};
-
             const float dist = fabs(length(center-org));
             const float dist_minDistance = dist/minDistance;
-            const uint dist_level = floorf(dist_minDistance);
+            const int dist_level = floorf(dist_minDistance);
 
-            uint segment = -1;
-            for (uint i=0;i<LOD_LEVELS;i++)
-              if (startRange[i] <= dist_level && dist_level < endRange[i])
-              {          
-                segment = i;
-                break;
-              }
-            segment = min(segment, LOD_LEVELS-1);
-            const uint rounds = LOD_LEVELS-segment;
-
+            const uint rounds = std::max(8 - dist_level,0);
             
-            if (cluster.hasChildren() && rounds >=1)
+            const uint MAX_LOD_CLUSTERS = 16;
+            uint numRoots = 1;
+            uint roots[MAX_LOD_CLUSTERS];
+            roots[0] = clusterID;
+            for (uint r=0;r<rounds;r++)
             {
-              uint numRoots = 1;
-              uint roots[16];
-              roots[0] = clusterID;
-              for (uint r=0;r<rounds+1;r++)
+              const uint old_numRoots = numRoots;
+              for (uint i=0;i<old_numRoots;i++)
               {
-                const uint old_numRoots = numRoots;
-                for (uint i=0;i<old_numRoots;i++)
+                const uint currentID = roots[i];
+                const LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[ currentID ];
+                if (cur.hasChildren() && numRoots < MAX_LOD_CLUSTERS)
                 {
-                  const uint currentID = roots[i];
-                  const LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[ currentID ];
-                  if (cur.hasChildren())
-                  {
-                    roots[i] = cur.lodLeftID;
-                    roots[numRoots++] = cur.lodRightID;                    
-                  }                  
+                  roots[i] = cur.lodLeftID;
+                  roots[numRoots++] = cur.lodRightID;                    
                 }
-                if (numRoots == old_numRoots) break;
-              }              
-              const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,numRoots);
-              for (uint i=0;i<numRoots;i++)
-                local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID+i] =  roots[i];
-            }      
-            else
-            {
-              const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(uint)1);                            
-              local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID] = clusterID;              
-            }
+              }
+              if (numRoots == old_numRoots) break;
+            }              
+            const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,numRoots);
+            for (uint i=0;i<numRoots;i++)
+              local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID+i] =  roots[i];
 #else              
             {
               const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(uint)1);                            
@@ -1039,6 +1023,9 @@ namespace embree {
         });
       });
       waitOnEventAndCatchException(compute_lod_event);
+      
+      //for (uint i=0;i<local_lcgbp_scene->numLCMeshClusterRoots;i++)
+      //  PRINT2(i,local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[i]);
 #if 0
       {
         const uint clusterID = local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[0];

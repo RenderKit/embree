@@ -443,7 +443,7 @@ namespace embree {
     
     __forceinline LossyCompressedMeshCluster() {}
 
-    __forceinline bool hasChildren() const { return lodLeftID != -1; }
+    __forceinline bool hasChildren() const { return lodLeftID != -1 && lodRightID != -1; }
     
     static __forceinline uint getDecompressedInnerNodesSizeInBytes(const uint numQuads) 
     {
