@@ -433,9 +433,7 @@ namespace embree {
     
   }
 
-    
-  std::mutex mtx;
-  
+      
   uint convertISPCQuadMesh(ISPCQuadMesh* mesh, RTCScene scene, ISPCOBJMaterial *material,const uint geomID,std::vector<LossyCompressedMesh*> &lcm_ptrs,std::vector<LossyCompressedMeshCluster> &lcm_clusters, std::vector<uint> &lcm_clusterRootIDs, size_t &totalCompressedSize, size_t &numDecompressedBlocks)
   {
     const uint numQuads = mesh->numQuads;
@@ -732,8 +730,6 @@ namespace embree {
       if (clusters[i].lod_root) numTmpRoots++;
     }
     DBG_PRINT2(numTotalQuadsAllocate,numTotalVerticesAllocate);
-
-    mtx.lock();
     
     // === allocate LossyCompressedMesh in USM ===
     
@@ -809,8 +805,6 @@ namespace embree {
 
     totalCompressedSize += compressedSizeMeshBytes + clusterSizeBytes;
     DBG_PRINT(maxDepth);
-
-    mtx.unlock();
     
     return numNumClustersMaxRes;
   }  

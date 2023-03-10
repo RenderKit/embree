@@ -531,19 +531,38 @@ namespace embree {
 #if 0
 
     parallel_for (g_ispc_scene->numGeometries, [&] (uint geomID) {
+    //for (unsigned int geomID=0; geomID<g_ispc_scene->numGeometries; geomID++)                  
         ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
         if (geometry->type == GRID_MESH)
           convertISPCGridMesh((ISPCGridMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID]);
         else if (geometry->type == QUAD_MESH)
         {
-          mtx.lock();          
-          const uint numNumClustersMaxRes = convertISPCQuadMesh((ISPCQuadMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID],geomID,lcm_ptrs,lcm_clusters,lcm_clusterRootIDs,totalCompressedSize,numDecompressedBlocks);
+          std::vector<LossyCompressedMesh*> local_lcm_ptrs;
+          std::vector<LossyCompressedMeshCluster> local_lcm_clusters;
+          std::vector<uint> local_lcm_clusterRootIDs;
+          size_t local_totalCompressedSize = 0;
+          size_t local_numDecompressedBlocks = 0;
+          
+          const uint numNumClustersMaxRes = convertISPCQuadMesh((ISPCQuadMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID],geomID,local_lcm_ptrs,local_lcm_clusters,local_lcm_clusterRootIDs,local_totalCompressedSize,local_numDecompressedBlocks);
+          //const uint numNumClustersMaxRes = convertISPCQuadMesh((ISPCQuadMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID],geomID,lcm_ptrs,lcm_clusters,lcm_clusterRootIDs,totalCompressedSize,numDecompressedBlocks);
+
+
+          mtx.lock();
+          for (uint i=0;i<local_lcm_ptrs.size();i++)
+            lcm_ptrs.push_back(local_lcm_ptrs[i]);
+          const uint lcm_clusterID = lcm_clusters.size();      
+          for (uint i=0;i<local_lcm_clusters.size();i++)
+            lcm_clusters.push_back(local_lcm_clusters[i]);
+          for (uint i=0;i<local_lcm_clusterRootIDs.size();i++)
+            lcm_clusterRootIDs.push_back(lcm_clusterID+local_lcm_clusterRootIDs[i]);
+          
           std::cout << "Processing mesh " << geomID+1 << " of " << g_ispc_scene->numGeometries << " meshes" << std::endl;        
           global_lcgbp_scene->numLCQuadsTotal += ((ISPCQuadMesh*)geometry)->numQuads;
           global_lcgbp_scene->numLCMeshClustersMaxRes += numNumClustersMaxRes;
           mtx.unlock();
-        }                
-      });
+          
+        }
+        });
     
 
 #else    
