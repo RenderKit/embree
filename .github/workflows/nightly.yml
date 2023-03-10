@@ -739,3 +739,18 @@ jobs:
         scripts/test.py configure platform:x64 build:Debug compiler:ICX2023.0.0 ispc:ispc1.17.0 isa:AVX2 frequency_level:simd128 tasking:TBB2021.1.1 intensity:4
         scripts/test.py build
         scripts/test.py test
+
+  ########################################
+  # ARM EMULATION
+  ########################################
+
+  linux-ubuntu22_04-arm64:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    with:
+      image: embree/arm64v8-ubuntu:22.04
+      runs-on: '[ "Linux", "docker-arm", "ARM64" ]'
+      cmd: |
+        python scripts/test.py configure platform:x64 build:Debug compiler:GCC isa:NONE tasking:INT intensity:2
+        python scripts/test.py build
+        python scripts/test.py test
