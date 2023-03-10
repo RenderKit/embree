@@ -1,42 +1,58 @@
 #!/bin/bash -xe
 
-wget -N -q -nv https://github.com/embree/models/releases/download/release/asian_dragon.zip
-wget -N -q -nv https://github.com/embree/models/releases/download/release/crown.zip
-unzip -u -q asian_dragon.zip
-unzip -u -q crown.zip
+export EMBREE_NO_SPLASH=1
+
+models_dir=./embree-models/
+git lfs install
+git clone https://${RENDERKIT_GITHUB_TOKEN}@github.com/intel-sandbox/embree-models.git $models_dir
+
+ecs_files=($(find $models_dir -name "*.ecs"))
+
+#config
+resolution="2048 2048"
+cpubench="3"
+gpubench="20 10"
 
 if [ "$1" != "gpu" ]; then
   echo "VIEWER CPU"
-  ./embree_viewer -c crown/crown.ecs --size 2048 2048 --benchmark 10 100 | grep avg
-  ./embree_viewer -c asian_dragon/asian_dragon.ecs --size 2048 2048 --benchmark 10 100 | grep avg
+  for ecs_file in "${ecs_files[@]}"
+  do
+    ./embree_viewer -c $ecs_file --size $resolution --benchmark $cpubench
+  done
 
   echo "PATHTRACER CPU"
-  ./embree_pathtracer -c crown/crown.ecs --size 2048 2048 --benchmark 5 40 | grep avg
-  ./embree_pathtracer -c asian_dragon/asian_dragon.ecs --size 2048 2048 --benchmark 5 40 | grep avg
+  for ecs_file in "${ecs_files[@]}"
+  do
+    ./embree_pathtracer -c $ecs_file --size $resolution --benchmark $cpubench
+  done
 fi
 
 if [ "$1" != "gpu" ]; then
   echo "VIEWER CPU-ispc"
-  ./embree_viewer_ispc -c crown/crown.ecs --size 2048 2048 --benchmark 10 100 | grep avg
-  ./embree_viewer_ispc -c asian_dragon/asian_dragon.ecs --size 2048 2048 --benchmark 10 100 | grep avg
-
+  for ecs_file in "${ecs_files[@]}"
+  do
+    ./embree_viewer_ispc -c $ecs_file --size $resolution --benchmark $cpubench
+  done
 
   echo "PATHTRACER CPU-ispc"
-  ./embree_pathtracer_ispc -c crown/crown.ecs --size 2048 2048 --benchmark 5 40 | grep avg
-  ./embree_pathtracer_ispc -c asian_dragon/asian_dragon.ecs --size 2048 2048 --benchmark 5 40 | grep avg
-
+  for ecs_file in "${ecs_files[@]}"
+  do
+    ./embree_pathtracer_ispc -c $ecs_file --size $resolution --benchmark $cpubench
+  done
 fi
-
-
 
 if [ "$1" != "cpu" ]; then
   echo "VIEWER GPU"
-  ./embree_viewer_sycl -c crown/crown.ecs --size 2048 2048 --benchmark 50 500 | grep avg
-  ./embree_viewer_sycl -c asian_dragon/asian_dragon.ecs --size 2048 2048 --benchmark 50 500 | grep avg
+  for ecs_file in "${ecs_files[@]}"
+  do
+    ./embree_viewer_sycl -c $ecs_file --size $resolution --benchmark $gpubench
+  done
 
   echo "PATHTRACER GPU"
-  ./embree_pathtracer_sycl crown/crown.ecs --size 2048 2048 --benchmark 10 100 | grep avg
-  ./embree_pathtracer_sycl asian_dragon/asian_dragon.ecs --size 2048 2048 --benchmark 10 100 | grep avg
+  for ecs_file in "${ecs_files[@]}"
+  do
+    ./embree_pathtracer_sycl -c $ecs_file --size $resolution --benchmark $gpubench
+  done
 fi
 
 
