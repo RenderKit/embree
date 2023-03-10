@@ -526,6 +526,27 @@ namespace embree {
     size_t totalCompressedSize = 0;
     size_t numDecompressedBlocks = 0;
 
+    std::mutex mtx;
+
+#if 0
+
+    parallel_for (g_ispc_scene->numGeometries, [&] (uint geomID) {
+        ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
+        if (geometry->type == GRID_MESH)
+          convertISPCGridMesh((ISPCGridMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID]);
+        else if (geometry->type == QUAD_MESH)
+        {
+          mtx.lock();          
+          const uint numNumClustersMaxRes = convertISPCQuadMesh((ISPCQuadMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID],geomID,lcm_ptrs,lcm_clusters,lcm_clusterRootIDs,totalCompressedSize,numDecompressedBlocks);
+          std::cout << "Processing mesh " << geomID+1 << " of " << g_ispc_scene->numGeometries << " meshes" << std::endl;        
+          global_lcgbp_scene->numLCQuadsTotal += ((ISPCQuadMesh*)geometry)->numQuads;
+          global_lcgbp_scene->numLCMeshClustersMaxRes += numNumClustersMaxRes;
+          mtx.unlock();
+        }                
+      });
+    
+
+#else    
     for (unsigned int geomID=0; geomID<g_ispc_scene->numGeometries; geomID++)
     {
       ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
@@ -537,8 +558,12 @@ namespace embree {
         const uint numNumClustersMaxRes = convertISPCQuadMesh((ISPCQuadMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID],geomID,lcm_ptrs,lcm_clusters,lcm_clusterRootIDs,totalCompressedSize,numDecompressedBlocks);
         global_lcgbp_scene->numLCQuadsTotal += ((ISPCQuadMesh*)geometry)->numQuads;
         global_lcgbp_scene->numLCMeshClustersMaxRes += numNumClustersMaxRes;
+        // free ISPC geometry memory
+        delete (ISPCQuadMesh*)geometry;
+        g_ispc_scene->geometries[geomID] = nullptr;
       }
     }
+#endif    
         
     // === finalize quad meshes ===
     if (numQuadMeshes)
@@ -1088,8 +1113,8 @@ namespace embree {
                   const bool subdivide = subdivideLOD(min(plane_bounds_lower,plane_bounds_upper),max(plane_bounds_lower,plane_bounds_upper),width,height);
                   if (subdivide && (numStackEntries+2 <= STACK_SIZE))
                   {
-                    stack[numStackEntries+0] = cur.lodLeftID;
-                    stack[numStackEntries+1] = cur.lodRightID;
+                    stack[numStackEntries+0] = (int)currentID + cur.lodLeftID;
+                    stack[numStackEntries+1] = (int)currentID + cur.lodRightID;
                     numStackEntries+=2;
                   }
                   else

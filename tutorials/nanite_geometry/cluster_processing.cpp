@@ -434,10 +434,10 @@ namespace embree {
   }
 
     
+  std::mutex mtx;
   
   uint convertISPCQuadMesh(ISPCQuadMesh* mesh, RTCScene scene, ISPCOBJMaterial *material,const uint geomID,std::vector<LossyCompressedMesh*> &lcm_ptrs,std::vector<LossyCompressedMeshCluster> &lcm_clusters, std::vector<uint> &lcm_clusterRootIDs, size_t &totalCompressedSize, size_t &numDecompressedBlocks)
   {
-    //const uint lcm_ID = lcm_ptrs.size();
     const uint numQuads = mesh->numQuads;
     const uint INITIAL_CREATE_RANGE_THRESHOLD = LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER;
     
@@ -474,11 +474,13 @@ namespace embree {
     const Vec3f inv_diag  = diag != Vec3fa(0.0f) ? Vec3fa(1.0f) / diag : Vec3fa(0.0f);
 
     std::vector<gpu::MortonCodePrimitive64x32Bits3D> mcodes;
-    mcodes.reserve(numQuads);
     std::vector<HierarchyRange> ranges;
     std::vector<uint> leafIDs;
     std::vector<QuadMeshCluster> clusters;
     std::vector<uint> clusterRootIDs;
+
+    mcodes.reserve(numQuads);
+    clusters.reserve(numQuads);
     
     for (uint i=0;i<numQuads;i++)
     {
@@ -609,7 +611,6 @@ namespace embree {
 
     const uint org_numClusterQuads = numClusterQuads;
     const uint dest_numClusterQuads = org_numClusterQuads/10;
-    const uint org_numClusters = numClusters;
     uint iteration = 0;
 
     const uint MAX_DEPTH_LIMIT = 16;
@@ -731,11 +732,12 @@ namespace embree {
       if (clusters[i].lod_root) numTmpRoots++;
     }
     DBG_PRINT2(numTotalQuadsAllocate,numTotalVerticesAllocate);
+
+    mtx.lock();
     
     // === allocate LossyCompressedMesh in USM ===
     
     LossyCompressedMesh *lcm = (LossyCompressedMesh *)alignedUSMMalloc(sizeof(LossyCompressedMesh),64);
-    lcm_ptrs.push_back(lcm);
   
     lcm->bounds             = geometryBounds;
     lcm->numQuads           = numQuads;
@@ -753,8 +755,6 @@ namespace embree {
     const Vec3f geometry_diag     = geometryBounds.size();
     const Vec3f geometry_inv_diag = geometry_diag != Vec3fa(0.0f) ? Vec3fa(1.0f) / geometry_diag : Vec3fa(0.0f);
 
-    const uint global_lcm_cluster_startID = lcm_clusters.size();
-
     uint maxDepth = 0;
     for (uint c=0;c<clusters.size();c++)
     {
@@ -762,9 +762,7 @@ namespace embree {
       LossyCompressedMeshCluster compressed_cluster;      
       compressed_cluster.numQuads  = clusters[c].quads.size();
       compressed_cluster.numBlocks = LossyCompressedMeshCluster::getDecompressedSizeInBytes(compressed_cluster.numQuads)/64;
-      //compressed_cluster.ID = c;
       BBox3f cluster_bounds = clusters[c].bounds;
-      const Vec3f center = cluster_bounds.center();
 
       compressed_cluster.lod_level = clusters[c].depth;
       compressed_cluster.tmp = 0;
@@ -772,8 +770,8 @@ namespace embree {
       compressed_cluster.bounds = CompressedAABB3f( CompressedVertex(cluster_bounds.lower,geometry_lower,geometry_inv_diag),
                                                     CompressedVertex(cluster_bounds.upper,geometry_lower,geometry_inv_diag) );
       
-      compressed_cluster.lodLeftID = (clusters[c].leftID != -1) ? global_lcm_cluster_startID + clusters[c].leftID : -1;
-      compressed_cluster.lodRightID = (clusters[c].rightID != -1) ? global_lcm_cluster_startID + clusters[c].rightID : -1;
+      compressed_cluster.lodLeftID = (clusters[c].leftID != -1) ? (clusters[c].leftID-c) : -1;
+      compressed_cluster.lodRightID = (clusters[c].rightID != -1) ? (clusters[c].rightID-c) : -1;
       compressed_cluster.offsetIndices  = globalCompressedIndexOffset;      
       compressed_cluster.offsetVertices = globalCompressedVertexOffset;
       compressed_cluster.mesh = lcm;
@@ -793,16 +791,13 @@ namespace embree {
         lcm->compressedVertices[ globalCompressedVertexOffset++ ] = CompressedVertex(clusters[c].vertices[i],geometry_lower,geometry_inv_diag);
         if ( globalCompressedVertexOffset > numTotalVerticesAllocate ) FATAL("numTotalVerticesAllocate");                
       }
-      
-      //compressed_cluster.numVertices           = clusters[c].vertices.size();
 
+      
+      lcm_ptrs.push_back(lcm);      
       const uint lcm_clusterID = lcm_clusters.size();      
       lcm_clusters.push_back(compressed_cluster);
-
       if (clusters[c].lod_root)
-      {
         lcm_clusterRootIDs.push_back(lcm_clusterID);
-      }
       
       numDecompressedBlocks += compressed_cluster.numBlocks;      
     }
@@ -814,6 +809,8 @@ namespace embree {
 
     totalCompressedSize += compressedSizeMeshBytes + clusterSizeBytes;
     DBG_PRINT(maxDepth);
+
+    mtx.unlock();
     
     return numNumClustersMaxRes;
   }  

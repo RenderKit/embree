@@ -316,15 +316,25 @@ namespace embree
     if (positions) {
       for (size_t i=0; i<numTimeSteps; i++) alignedUSMFree(positions[i]);
       alignedUSMFree(positions);
+      positions = nullptr;
     }
     
     if (normals) {
       for (size_t i=0; i<numTimeSteps; i++) alignedUSMFree(normals[i]);
       alignedUSMFree(normals);
+      normals = nullptr;
     }
 
-    alignedUSMFree(texcoords);
-    alignedUSMFree(quads);
+    if (texcoords)
+    {
+      alignedUSMFree(texcoords);
+      texcoords = nullptr;
+    }
+    if (quads)
+    {
+      alignedUSMFree(quads);
+      quads = nullptr;
+    }
   }
 
   void ISPCQuadMesh::commit()
