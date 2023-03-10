@@ -474,6 +474,7 @@ namespace embree {
     const Vec3f inv_diag  = diag != Vec3fa(0.0f) ? Vec3fa(1.0f) / diag : Vec3fa(0.0f);
 
     std::vector<gpu::MortonCodePrimitive64x32Bits3D> mcodes;
+    mcodes.reserve(numQuads);
     std::vector<HierarchyRange> ranges;
     std::vector<uint> leafIDs;
     std::vector<QuadMeshCluster> clusters;

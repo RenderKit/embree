@@ -159,11 +159,12 @@ namespace embree {
   __forceinline bool frustumCull(const Vec3f &lower, const Vec3f &upper, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz)
   {
     // FIXME plane normal;
+    const Vec3f vn = cross(vx,vy);
+    if (frustumCullPlane(lower,upper,vn)) return true;
     const Vec3f A = vz;
     const Vec3f B = vz + vx;
     const Vec3f C = vz + vx + vy;
     const Vec3f D = vz + vy;
-    //PRINT4(A,B,C,D);
     const Vec3f nAB = cross(A,B);
     const Vec3f nBC = cross(B,C);
     const Vec3f nCD = cross(C,D);
@@ -1154,12 +1155,10 @@ namespace embree {
         const Vec3f bounds_lower = cluster.bounds.lower.decompress(lower,diag)-org;
         const Vec3f bounds_upper = cluster.bounds.upper.decompress(lower,diag)-org;
 
-        PRINT(mesh->bounds);
-        PRINT(mesh->bounds-org);
         
         PRINT3(vx,vy,vz);
         PRINT2(bounds_lower,bounds_upper);
-        bool cull = frustumCull(bounds_lower,bounds_upper,vx*width,vy*height,vz);
+        bool cull = frustumCullPlane(bounds_lower,bounds_upper,cross(vx,vy));
 
         //bool cull = frustumCull(bounds_lower,bounds_upper,vx*width,vy*height,vz);
         
