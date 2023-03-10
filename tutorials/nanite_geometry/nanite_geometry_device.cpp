@@ -145,9 +145,38 @@ namespace embree {
     }    
     return LODPatchLevel(LOD_LEVELS-1-segment,blend);    
   }
+
+  __forceinline bool frustumCullPlane(const Vec3f &lower, const Vec3f &upper, const Vec3f &normal)
+  {
+    const Vec3f p( normal.x <= 0.0f ? lower.x : upper.x,
+                   normal.y <= 0.0f ? lower.y : upper.y,
+                   normal.z <= 0.0f ? lower.z : upper.z);
+    //PRINT4(normal,lower,upper,p);    
+    //PRINT( dot(p,normal) );
+    return dot(p,normal) < 0.0f;
+                 
+  }
+  __forceinline bool frustumCull(const Vec3f &lower, const Vec3f &upper, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz)
+  {
+    // FIXME plane normal;
+    const Vec3f A = vz;
+    const Vec3f B = vz + vx;
+    const Vec3f C = vz + vx + vy;
+    const Vec3f D = vz + vy;
+    //PRINT4(A,B,C,D);
+    const Vec3f nAB = cross(A,B);
+    const Vec3f nBC = cross(B,C);
+    const Vec3f nCD = cross(C,D);
+    const Vec3f nDA = cross(D,A);
+    if ( frustumCullPlane(lower,upper,nAB) ||
+         frustumCullPlane(lower,upper,nBC) ||
+         frustumCullPlane(lower,upper,nCD) ||
+         frustumCullPlane(lower,upper,nDA) ) return true;
+    return false;
+  }
   
 
-  __forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz, const uint width, const uint height)
+  __forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz, const uint width, const uint height, const bool clip=true)
   {
     const Vec3f vn = cross(vx,vy);    
     const float distance = (float)dot(vn,vz) / (float)dot(vn,p);
@@ -156,8 +185,11 @@ namespace embree {
       pip = vz;
     float a = dot((pip-vz),vx);
     float b = dot((pip-vz),vy);
-    a = min(max(a,0.0f),(float)width);
-    b = min(max(b,0.0f),(float)height);    
+    if (clip)
+    {
+      a = min(max(a,0.0f),(float)width);
+      b = min(max(b,0.0f),(float)height);
+    }
     return Vec2f(a,b);
   }
   
@@ -855,7 +887,16 @@ namespace embree {
       ImGui::Text("Quads:           %d (out of %d)",global_lcgbp_scene->numLCMeshClusterQuadsPerFrame,global_lcgbp_scene->numLCQuadsTotal);      
     }
   }
-  
+
+
+  __forceinline bool subdivideLOD(const Vec2f &lower, const Vec2f &upper, const int width, const int height)
+  {
+    const float THRESHOLD = 20.0f;    
+    bool subdivide = true;
+    const float l = length(upper - lower);    
+    if (l <= THRESHOLD) subdivide = false;
+    return subdivide;
+  }
   
 /* called by the C++ code to render */
   extern "C" void device_render (int* pixels,
@@ -998,9 +1039,6 @@ namespace embree {
           {
             const uint clusterID = local_lcgbp_scene->lcm_cluster_roots_IDs[i];            
 #if 1
-
-#if 1
-
             const Vec3f org = camera.xfm.p;
             const Vec3f vx = camera.xfm.l.vx;
             const Vec3f vy = camera.xfm.l.vy;
@@ -1011,103 +1049,80 @@ namespace embree {
             LossyCompressedMesh *mesh = cluster.mesh;
             const Vec3f lower = mesh->bounds.lower;
             const Vec3f diag = mesh->bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
-                        
-            const uint MAX_LOD_CLUSTERS = 32;
-            uint numRoots = 1;
-            uint roots[MAX_LOD_CLUSTERS];
-            roots[0] = clusterID;
-            while(1)
+
+            bool cull = frustumCull( cluster.bounds.lower.decompress(lower,diag)-org,cluster.bounds.upper.decompress(lower,diag)-org,vx*width,vy*height,vz);
+            if (cull)
             {
-              const uint old_numRoots = numRoots;
-              for (uint i=0;i<old_numRoots;i++)
+              const uint numQuads = cluster.numQuads;
+              gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterQuadsPerFrame,(uint)numQuads);                                          
+              const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(uint)1);                            
+              local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID] = clusterID;              
+            }
+            else
+            {
+              const uint STACK_SIZE = 16;
+              uint numStackEntries = 1;
+              uint stack[STACK_SIZE];
+              stack[0] = clusterID;
+              while(numStackEntries)
               {
-                const uint currentID = roots[i];
-                const LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[ currentID ];
-
-                const Vec3f bounds_lower = cur.bounds.lower.decompress(lower,diag);
-                const Vec3f bounds_upper = cur.bounds.upper.decompress(lower,diag);
-
-                const Vec2f plane_bounds_lower = projectVertexToPlane(bounds_lower-org,vx,vy,vz,width,height);
-                const Vec2f plane_bounds_upper = projectVertexToPlane(bounds_upper-org,vx,vy,vz,width,height);
-                const float l = length(plane_bounds_upper - plane_bounds_lower);
-
-                const float THRESHOLD = 20.0f;
-                const bool subdivide = l > THRESHOLD;
-                if (subdivide && cur.hasChildren() && numRoots < MAX_LOD_CLUSTERS)
+                numStackEntries--;
+                const uint currentID = stack[numStackEntries];
+                const LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[ currentID ];              
+                if (!cur.hasChildren()) // leaf
                 {
-                  roots[i] = cur.lodLeftID;
-                  roots[numRoots++] = cur.lodRightID;                    
+                  const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(uint)1);
+                  local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID] =  currentID;                
                 }
-              }
-              if (numRoots == old_numRoots) break;
-            }
-            
-            const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,numRoots);
-            uint numQuads = 0;
-            for (uint i=0;i<numRoots;i++)
-            {
-              const LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[ roots[i] ];              
-              numQuads += cur.numQuads;
-              local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID+i] =  roots[i];
-            }
-            gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterQuadsPerFrame,(uint)numQuads);
-            
-
-#else            
-            const Vec3f org = camera.xfm.p;
-            const LossyCompressedMeshCluster &cluster = local_lcgbp_scene->lcm_cluster[ clusterID ];
-            
-            CompressedVertex compressed_center = cluster.bounds.lower;
-            LossyCompressedMesh *mesh = cluster.mesh;
-            const Vec3f lower = mesh->bounds.lower;
-            const Vec3f diag = mesh->bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
-            const Vec3f center = compressed_center.decompress(lower,diag);
-
-            const float minDistance = local_lcgbp_scene->minLODDistance; 
-            const float dist = fabs(length(center-org));
-            const float dist_minDistance = dist/minDistance;
-            const int dist_level = floorf(dist_minDistance);
-
-            const uint rounds = std::max(8 - dist_level,0);
-            
-            const uint MAX_LOD_CLUSTERS = 16;
-            uint numRoots = 1;
-            uint roots[MAX_LOD_CLUSTERS];
-            roots[0] = clusterID;
-            for (uint r=0;r<rounds;r++)
-            {
-              const uint old_numRoots = numRoots;
-              for (uint i=0;i<old_numRoots;i++)
-              {
-                const uint currentID = roots[i];
-                const LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[ currentID ];
-                if (cur.hasChildren() && numRoots < MAX_LOD_CLUSTERS)
+                else
                 {
-                  roots[i] = cur.lodLeftID;
-                  roots[numRoots++] = cur.lodRightID;                    
-                }
+                  const LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[ currentID ];
+
+                  const Vec3f bounds_lower = cur.bounds.lower.decompress(lower,diag)-org;
+                  const Vec3f bounds_upper = cur.bounds.upper.decompress(lower,diag)-org;
+
+                  const Vec2f plane_bounds_lower = projectVertexToPlane(bounds_lower,vx,vy,vz,width,height,true);
+                  const Vec2f plane_bounds_upper = projectVertexToPlane(bounds_upper,vx,vy,vz,width,height,true);
+                
+                  const bool subdivide = subdivideLOD(min(plane_bounds_lower,plane_bounds_upper),max(plane_bounds_lower,plane_bounds_upper),width,height);
+                  if (subdivide && (numStackEntries+2 <= STACK_SIZE))
+                  {
+                    stack[numStackEntries+0] = cur.lodLeftID;
+                    stack[numStackEntries+1] = cur.lodRightID;
+                    numStackEntries+=2;
+                  }
+                  else
+                  {
+                    const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(uint)1);
+                    local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID] =  currentID;
+                  }                                
+                }              
               }
-              if (numRoots == old_numRoots) break;
-            }              
-            const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,numRoots);
-            uint numQuads = 0;
-            for (uint i=0;i<numRoots;i++)
-            {
-              const LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[ roots[i] ];              
-              numQuads += cur.numQuads;
-              local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID+i] =  roots[i];
             }
-            gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterQuadsPerFrame,(uint)numQuads);
-#endif
-            
 #else              
             {
-              const LossyCompressedMeshCluster &cluster = local_lcgbp_scene->lcm_cluster[ clusterID ];              
-              const uint numQuads = cluster.numQuads;
-              gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterQuadsPerFrame,(uint)numQuads);                            
+              const Vec3f org = camera.xfm.p;
+              const Vec3f vx = camera.xfm.l.vx;
+              const Vec3f vy = camera.xfm.l.vy;
+              const Vec3f vz = camera.xfm.l.vz;
               
-              const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(uint)1);                            
-              local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID] = clusterID;
+              const LossyCompressedMeshCluster &cluster = local_lcgbp_scene->lcm_cluster[ clusterID ];
+              LossyCompressedMesh *mesh = cluster.mesh;
+              const Vec3f lower = mesh->bounds.lower;
+              const Vec3f diag = mesh->bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
+
+              const Vec3f bounds_lower = cluster.bounds.lower.decompress(lower,diag)-org;
+              const Vec3f bounds_upper = cluster.bounds.upper.decompress(lower,diag)-org;
+
+              bool cull = frustumCull(bounds_lower,bounds_upper,vx*width,vy*height,vz);
+
+              if (!cull)
+              {
+                const uint numQuads = cluster.numQuads;
+                gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterQuadsPerFrame,(uint)numQuads);                                          
+                const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(uint)1);                            
+                local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID] = clusterID;
+              }
             }
 #endif              
             
@@ -1117,12 +1132,13 @@ namespace embree {
       waitOnEventAndCatchException(compute_lod_event);
 
       {
-        
+        waitOnQueueAndCatchException(*global_gpu_queue);        
       }
 
       rtcSetLCData(local_lcgbp_scene->geometry, local_lcgbp_scene->numCurrentLCGBPStates, local_lcgbp_scene->lcgbp_state, local_lcgbp_scene->lcm_cluster, local_lcgbp_scene->numLCMeshClusterRootsPerFrame,local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame);
 
-#if 0      
+#if 0
+      //1778 1798 1819 1839
       {
         uint clusterID = 0;
         const Vec3f org = camera.xfm.p;
@@ -1135,13 +1151,29 @@ namespace embree {
         LossyCompressedMesh *mesh = cluster.mesh;
         const Vec3f lower = mesh->bounds.lower;
         const Vec3f diag = mesh->bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
-        const Vec3f bounds_lower = cluster.bounds.lower.decompress(lower,diag);
-        const Vec3f bounds_upper = cluster.bounds.upper.decompress(lower,diag);
+        const Vec3f bounds_lower = cluster.bounds.lower.decompress(lower,diag)-org;
+        const Vec3f bounds_upper = cluster.bounds.upper.decompress(lower,diag)-org;
 
-        const Vec2f plane_bounds_lower = projectVertexToPlane(bounds_lower-org,vx,vy,vz,width,height);
-        const Vec2f plane_bounds_upper = projectVertexToPlane(bounds_upper-org,vx,vy,vz,width,height);
+        PRINT(mesh->bounds);
+        PRINT(mesh->bounds-org);
+        
+        PRINT3(vx,vy,vz);
+        PRINT2(bounds_lower,bounds_upper);
+        bool cull = frustumCull(bounds_lower,bounds_upper,vx*width,vy*height,vz);
+
+        //bool cull = frustumCull(bounds_lower,bounds_upper,vx*width,vy*height,vz);
+        
+        //bool cull = frustumCull(Vec3f(10,10,1),Vec3f(11,11,1),Vec3f(4,0,0),Vec3f(0,4,0),Vec3f(-2,-2,1));        
+        PRINT(cull);
+        //exit(0);
+        const Vec2f plane_bounds_lower = projectVertexToPlane(bounds_lower-org,vx,vy,vz,width,height,false);
+        const Vec2f plane_bounds_upper = projectVertexToPlane(bounds_upper-org,vx,vy,vz,width,height,false);
         const float l = length(plane_bounds_upper - plane_bounds_lower);
-        PRINT3(plane_bounds_lower,plane_bounds_upper,l);
+        //const Vec2f bounds2D(abs(plane_bounds_upper - plane_bounds_lower));
+        //const float l = bounds2D.x*bounds2D.y;
+        const bool subdivide = subdivideLOD(min(plane_bounds_lower,plane_bounds_upper),max(plane_bounds_lower,plane_bounds_upper),width,height);
+        //PRINT2(min(plane_bounds_lower,plane_bounds_upper),max(plane_bounds_lower,plane_bounds_upper));
+        //PRINT4(plane_bounds_lower,plane_bounds_upper,l,subdivide);
       }
 #endif
       
