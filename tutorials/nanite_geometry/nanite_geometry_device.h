@@ -25,7 +25,8 @@ extern "C" ISPCScene* g_ispc_scene;
     RENDER_DEBUG_CLOD         = 6,
     RENDER_DEBUG_TEXTURE      = 7,        
     RENDER_DEBUG_CLUSTER_ID   = 8,
-    RENDER_PATH_TRACER        = 9,            
+    RENDER_DEBUG_LOD_LEVEL    = 9,                
+    RENDER_PATH_TRACER        = 10,            
     
   };
   

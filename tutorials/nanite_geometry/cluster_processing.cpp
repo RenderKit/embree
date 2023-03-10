@@ -591,7 +591,6 @@ namespace embree {
     
     // === bottom-up merging and creation of new clusters ===
 
-#if 1
     uint numClusters = clusters.size();
     uint *index_buffer = new uint[numClusters];
     uint *tmp_buffer = new uint[numClusters];
@@ -720,60 +719,6 @@ namespace embree {
     delete [] nearest_neighborID;        
     delete [] tmp_buffer;    
     delete [] index_buffer;
-#else    
-    for (uint i=0;i<leafIDs.size();i++)
-    {
-      const uint ID = leafIDs[i];
-      uint parentID = ranges[ID].parent;
-      //DBG_PRINT2(ID,parentID);
-      while (parentID != -1)
-      {        
-        ranges[parentID].counter++;
-        if (ranges[parentID].counter == 2)
-        {
-          const uint leftID = ranges[parentID].left;
-          const uint rightID = ranges[parentID].right;
-          //DBG_PRINT2(leftID,rightID);
-          if (leftID == -1 || rightID == -1) FATAL("leftID, rightID");
-          //DBG_PRINT5(parentID,ranges[leftID].range.start,ranges[leftID].range.end,ranges[rightID].range.start,ranges[rightID].range.end);
-          // === merge ranges ===
-          const uint  leftClusterID = ranges[ leftID].clusterID;
-          const uint rightClusterID = ranges[rightID].clusterID;
-          DBG_PRINT(parentID);
-          QuadMeshCluster new_cluster;
-          bool success = mergeSimplifyQuadMeshCluster( clusters[leftClusterID], clusters[rightClusterID], new_cluster);
-          if (success)
-          {
-            new_cluster.reorderMorton();
-            DBG_PRINT(new_cluster.quads.size());
-            DBG_PRINT(new_cluster.vertices.size());          
-            const uint mergedClusterID = clusters.size();
-            new_cluster.leftID  = leftClusterID;
-            new_cluster.rightID = rightClusterID;
-            new_cluster.initBounds();
-            clusters.push_back(new_cluster);
-            ranges[parentID].clusterID = mergedClusterID; 
-          }
-          else
-          {
-            ranges[parentID].counter = 0;
-            break;
-          }
-          parentID = ranges[parentID].parent;
-        }
-        else
-          break;                
-      }
-    }
-
-    extractClusterRootIDs(0,ranges,clusterRootIDs);
-    DBG_PRINT(clusterRootIDs.size());
-    for (uint i=0;i<clusterRootIDs.size();i++)
-    {
-      uint ID = clusterRootIDs[i];
-      clusters[ID].lod_root = true;
-    }
-#endif    
     
     uint numTotalQuadsAllocate = 0;
     uint numTotalVerticesAllocate = 0;
@@ -819,7 +764,12 @@ namespace embree {
       //compressed_cluster.ID = c;
       BBox3f cluster_bounds = clusters[c].bounds;
       const Vec3f center = cluster_bounds.center();
-      compressed_cluster.center = CompressedVertex(center,geometry_lower,geometry_inv_diag);
+
+      compressed_cluster.lod_level = clusters[c].depth;
+      compressed_cluster.tmp = 0;
+      
+      compressed_cluster.bounds = CompressedAABB3f( CompressedVertex(cluster_bounds.lower,geometry_lower,geometry_inv_diag),
+                                                    CompressedVertex(cluster_bounds.upper,geometry_lower,geometry_inv_diag) );
       
       compressed_cluster.lodLeftID = (clusters[c].leftID != -1) ? global_lcm_cluster_startID + clusters[c].leftID : -1;
       compressed_cluster.lodRightID = (clusters[c].rightID != -1) ? global_lcm_cluster_startID + clusters[c].rightID : -1;
@@ -863,6 +813,7 @@ namespace embree {
 
     totalCompressedSize += compressedSizeMeshBytes + clusterSizeBytes;
     DBG_PRINT(maxDepth);
+    
     return numNumClustersMaxRes;
   }  
 

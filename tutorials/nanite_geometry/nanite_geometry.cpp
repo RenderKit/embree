@@ -69,8 +69,11 @@ namespace embree
         user_rendering_mode = RENDER_DEBUG_CLUSTER_ID;
       }
       else if (key == GLFW_KEY_F10) {
+        user_rendering_mode = RENDER_DEBUG_LOD_LEVEL;
+      }
+      else if (key == GLFW_KEY_F11) {
         user_rendering_mode = RENDER_PATH_TRACER;
-      }                  
+      }                        
       else if (key == GLFW_KEY_KP_SUBTRACT) {
         user_spp -= user_spp > 0 ? 1 : 0;
       }            

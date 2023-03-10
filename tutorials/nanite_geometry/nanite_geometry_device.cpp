@@ -698,6 +698,12 @@ namespace embree {
     {
       color =  randomColor(ray.primID);    
     }
+    else if (mode == RENDER_DEBUG_LOD_LEVEL)
+    {
+      const LossyCompressedMeshCluster &cluster = lcgbp_scene->lcm_cluster[ ray.primID ];      
+      color =  Vec3fa(1.0f / (cluster.lod_level),0,0);    
+    }
+    
     
     return Vec3fa(abs(dot(ray.dir,normalize(ray.Ng)))) * color;
   }
@@ -992,10 +998,66 @@ namespace embree {
           {
             const uint clusterID = local_lcgbp_scene->lcm_cluster_roots_IDs[i];            
 #if 1
+
+#if 1
+
+            const Vec3f org = camera.xfm.p;
+            const Vec3f vx = camera.xfm.l.vx;
+            const Vec3f vy = camera.xfm.l.vy;
+            const Vec3f vz = camera.xfm.l.vz;
+            
+            const LossyCompressedMeshCluster &cluster = local_lcgbp_scene->lcm_cluster[ clusterID ];
+        
+            LossyCompressedMesh *mesh = cluster.mesh;
+            const Vec3f lower = mesh->bounds.lower;
+            const Vec3f diag = mesh->bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
+                        
+            const uint MAX_LOD_CLUSTERS = 32;
+            uint numRoots = 1;
+            uint roots[MAX_LOD_CLUSTERS];
+            roots[0] = clusterID;
+            while(1)
+            {
+              const uint old_numRoots = numRoots;
+              for (uint i=0;i<old_numRoots;i++)
+              {
+                const uint currentID = roots[i];
+                const LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[ currentID ];
+
+                const Vec3f bounds_lower = cur.bounds.lower.decompress(lower,diag);
+                const Vec3f bounds_upper = cur.bounds.upper.decompress(lower,diag);
+
+                const Vec2f plane_bounds_lower = projectVertexToPlane(bounds_lower-org,vx,vy,vz,width,height);
+                const Vec2f plane_bounds_upper = projectVertexToPlane(bounds_upper-org,vx,vy,vz,width,height);
+                const float l = length(plane_bounds_upper - plane_bounds_lower);
+
+                const float THRESHOLD = 20.0f;
+                const bool subdivide = l > THRESHOLD;
+                if (subdivide && cur.hasChildren() && numRoots < MAX_LOD_CLUSTERS)
+                {
+                  roots[i] = cur.lodLeftID;
+                  roots[numRoots++] = cur.lodRightID;                    
+                }
+              }
+              if (numRoots == old_numRoots) break;
+            }
+            
+            const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,numRoots);
+            uint numQuads = 0;
+            for (uint i=0;i<numRoots;i++)
+            {
+              const LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[ roots[i] ];              
+              numQuads += cur.numQuads;
+              local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID+i] =  roots[i];
+            }
+            gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterQuadsPerFrame,(uint)numQuads);
+            
+
+#else            
             const Vec3f org = camera.xfm.p;
             const LossyCompressedMeshCluster &cluster = local_lcgbp_scene->lcm_cluster[ clusterID ];
             
-            CompressedVertex compressed_center = cluster.center;
+            CompressedVertex compressed_center = cluster.bounds.lower;
             LossyCompressedMesh *mesh = cluster.mesh;
             const Vec3f lower = mesh->bounds.lower;
             const Vec3f diag = mesh->bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
@@ -1035,7 +1097,9 @@ namespace embree {
               numQuads += cur.numQuads;
               local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID+i] =  roots[i];
             }
-            gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterQuadsPerFrame,(uint)numQuads);                                        
+            gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterQuadsPerFrame,(uint)numQuads);
+#endif
+            
 #else              
             {
               const LossyCompressedMeshCluster &cluster = local_lcgbp_scene->lcm_cluster[ clusterID ];              
@@ -1052,7 +1116,35 @@ namespace embree {
       });
       waitOnEventAndCatchException(compute_lod_event);
 
-      rtcSetLCData(local_lcgbp_scene->geometry, local_lcgbp_scene->numCurrentLCGBPStates, local_lcgbp_scene->lcgbp_state, local_lcgbp_scene->lcm_cluster, local_lcgbp_scene->numLCMeshClusterRootsPerFrame,local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame);          
+      {
+        
+      }
+
+      rtcSetLCData(local_lcgbp_scene->geometry, local_lcgbp_scene->numCurrentLCGBPStates, local_lcgbp_scene->lcgbp_state, local_lcgbp_scene->lcm_cluster, local_lcgbp_scene->numLCMeshClusterRootsPerFrame,local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame);
+
+#if 0      
+      {
+        uint clusterID = 0;
+        const Vec3f org = camera.xfm.p;
+        const Vec3f vx = camera.xfm.l.vx;
+        const Vec3f vy = camera.xfm.l.vy;
+        const Vec3f vz = camera.xfm.l.vz;
+        
+        const LossyCompressedMeshCluster &cluster = local_lcgbp_scene->lcm_cluster[ clusterID ];
+        
+        LossyCompressedMesh *mesh = cluster.mesh;
+        const Vec3f lower = mesh->bounds.lower;
+        const Vec3f diag = mesh->bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
+        const Vec3f bounds_lower = cluster.bounds.lower.decompress(lower,diag);
+        const Vec3f bounds_upper = cluster.bounds.upper.decompress(lower,diag);
+
+        const Vec2f plane_bounds_lower = projectVertexToPlane(bounds_lower-org,vx,vy,vz,width,height);
+        const Vec2f plane_bounds_upper = projectVertexToPlane(bounds_upper-org,vx,vy,vz,width,height);
+        const float l = length(plane_bounds_upper - plane_bounds_lower);
+        PRINT3(plane_bounds_lower,plane_bounds_upper,l);
+      }
+#endif
+      
     }
         
     rtcCommitGeometry(local_lcgbp_scene->geometry);
