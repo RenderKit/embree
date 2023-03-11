@@ -168,11 +168,12 @@ namespace embree
 
       else if (tag == "-grid_distribute") {
         Ref<SceneGraph::Node> object = SceneGraph::load(path + cin->getFileName());
+        const uint GRID_RES = cin->getInt();
+        
         BBox3fa bb = object->bounds();
         Vec3fa center = bb.center();
         Vec3fa length = bb.size();
 
-        const uint GRID_RES = 2;
         for (uint i=0;i<GRID_RES;i++)
           for (uint j=0;j<GRID_RES;j++)          
           {

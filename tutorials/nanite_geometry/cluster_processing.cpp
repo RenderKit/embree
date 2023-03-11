@@ -622,31 +622,31 @@ namespace embree {
       for (uint i=0;i<current_numClusters;i++)
         nearest_neighborID[i] = -1;
 
-      for (uint c=0;c<current_numClusters;c++)
+      parallel_for((uint)0, current_numClusters, [&] (const range<uint>& r)
       {
-        // find nearest neighbor
-        const uint clusterID = index_buffer[c];
-        const BBox3f cluster_bounds = clusters[clusterID].bounds;
-        float min_area = pos_inf;
-        int nn = -1;
-        for (int i=std::max((int)c-SEARCH_RADIUS,0);i<std::min((int)c+SEARCH_RADIUS,(int)current_numClusters);i++)
-          if (i != c && index_buffer[i] != -1)
-          {
-            BBox3f bounds = clusters[index_buffer[i]].bounds;
-            bounds.extend(cluster_bounds);
-            const float areaBounds = area(bounds);
-            if (areaBounds < min_area)
+        for (uint c=r.begin();c<r.end();c++)
+        {
+          // find nearest neighbor
+          const uint clusterID = index_buffer[c];
+          const BBox3f cluster_bounds = clusters[clusterID].bounds;
+          float min_area = pos_inf;
+          int nn = -1;
+          for (int i=std::max((int)c-SEARCH_RADIUS,0);i<std::min((int)c+SEARCH_RADIUS,(int)current_numClusters);i++)
+            if (i != c && index_buffer[i] != -1)
             {
-              min_area = areaBounds;
-              nn = i;
+              BBox3f bounds = clusters[index_buffer[i]].bounds;
+              bounds.extend(cluster_bounds);
+              const float areaBounds = area(bounds);
+              if (areaBounds < min_area)
+              {
+                min_area = areaBounds;
+                nn = i;
+              }
             }
-          }
-        nearest_neighborID[c] = nn;        
-      } //);
-
+          nearest_neighborID[c] = nn;                  
+        }
+      });
       
-      //for (uint i=0;i<current_numClusters;i++)
-
       parallel_for(current_numClusters, [&] (uint i)
         //for (uint i=0;i<current_numClusters;i++)
       {
