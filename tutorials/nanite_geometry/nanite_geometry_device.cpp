@@ -526,46 +526,7 @@ namespace embree {
     size_t totalCompressedSize = 0;
     size_t numDecompressedBlocks = 0;
 
-    std::mutex mtx;
-
-#if 0
-
-    parallel_for (g_ispc_scene->numGeometries, [&] (uint geomID) {
-    //for (unsigned int geomID=0; geomID<g_ispc_scene->numGeometries; geomID++)                  
-        ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
-        if (geometry->type == GRID_MESH)
-          convertISPCGridMesh((ISPCGridMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID]);
-        else if (geometry->type == QUAD_MESH)
-        {
-          std::vector<LossyCompressedMesh*> local_lcm_ptrs;
-          std::vector<LossyCompressedMeshCluster> local_lcm_clusters;
-          std::vector<uint> local_lcm_clusterRootIDs;
-          size_t local_totalCompressedSize = 0;
-          size_t local_numDecompressedBlocks = 0;
-          
-          const uint numNumClustersMaxRes = convertISPCQuadMesh((ISPCQuadMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID],geomID,local_lcm_ptrs,local_lcm_clusters,local_lcm_clusterRootIDs,local_totalCompressedSize,local_numDecompressedBlocks);
-          //const uint numNumClustersMaxRes = convertISPCQuadMesh((ISPCQuadMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID],geomID,lcm_ptrs,lcm_clusters,lcm_clusterRootIDs,totalCompressedSize,numDecompressedBlocks);
-
-
-          mtx.lock();
-          for (uint i=0;i<local_lcm_ptrs.size();i++)
-            lcm_ptrs.push_back(local_lcm_ptrs[i]);
-          const uint lcm_clusterID = lcm_clusters.size();      
-          for (uint i=0;i<local_lcm_clusters.size();i++)
-            lcm_clusters.push_back(local_lcm_clusters[i]);
-          for (uint i=0;i<local_lcm_clusterRootIDs.size();i++)
-            lcm_clusterRootIDs.push_back(lcm_clusterID+local_lcm_clusterRootIDs[i]);
-          
-          std::cout << "Processing mesh " << geomID+1 << " of " << g_ispc_scene->numGeometries << " meshes" << std::endl;        
-          global_lcgbp_scene->numLCQuadsTotal += ((ISPCQuadMesh*)geometry)->numQuads;
-          global_lcgbp_scene->numLCMeshClustersMaxRes += numNumClustersMaxRes;
-          mtx.unlock();
-          
-        }
-        });
-    
-
-#else    
+    double total0 = getSeconds();    
     for (unsigned int geomID=0; geomID<g_ispc_scene->numGeometries; geomID++)
     {
       ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
@@ -573,8 +534,11 @@ namespace embree {
         convertISPCGridMesh((ISPCGridMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID]);
       else if (geometry->type == QUAD_MESH)
       {
-        std::cout << "Processing mesh " << geomID << " of " << g_ispc_scene->numGeometries << " meshes" << std::endl;
+        std::cout << "Processing mesh " << geomID << " of " << g_ispc_scene->numGeometries << " meshes in " << std::flush;
+        double t0 = getSeconds();
         const uint numNumClustersMaxRes = convertISPCQuadMesh((ISPCQuadMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID],geomID,lcm_ptrs,lcm_clusters,lcm_clusterRootIDs,totalCompressedSize,numDecompressedBlocks);
+        double t1= getSeconds();
+        std::cout << (t1-t0) << " seconds" << std::endl << std::flush;
         global_lcgbp_scene->numLCQuadsTotal += ((ISPCQuadMesh*)geometry)->numQuads;
         global_lcgbp_scene->numLCMeshClustersMaxRes += numNumClustersMaxRes;
         // free ISPC geometry memory
@@ -582,7 +546,8 @@ namespace embree {
         g_ispc_scene->geometries[geomID] = nullptr;
       }
     }
-#endif    
+    double total1 = getSeconds();
+    std::cout << "Total clusters generation time " << total1-total0 << " seconds" << std::endl;
         
     // === finalize quad meshes ===
     if (numQuadMeshes)

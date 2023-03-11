@@ -470,15 +470,13 @@ namespace embree {
     const Vec3f lower = centroidBounds.lower;
     const Vec3f diag = centroidBounds.size();
     const Vec3f inv_diag  = diag != Vec3fa(0.0f) ? Vec3fa(1.0f) / diag : Vec3fa(0.0f);
-
+    
     std::vector<gpu::MortonCodePrimitive64x32Bits3D> mcodes;
     std::vector<HierarchyRange> ranges;
     std::vector<uint> leafIDs;
-    std::vector<QuadMeshCluster> clusters;
     std::vector<uint> clusterRootIDs;
 
     mcodes.reserve(numQuads);
-    clusters.reserve(numQuads);
     
     for (uint i=0;i<numQuads;i++)
     {
@@ -531,10 +529,13 @@ namespace embree {
     //size_t totalSizeMicroMesh = 0;
     //size_t totalSizeMicroStrip = 0;
 
+    QuadMeshCluster *clusters = new QuadMeshCluster[leafIDs.size()*2];
+    std::atomic<uint> numClusters(0);
+
     for (uint i=0;i<leafIDs.size();i++) //FIXME leafIDs
     {
       const uint ID = leafIDs[i];
-      QuadMeshCluster cluster;
+      QuadMeshCluster &cluster = clusters[i];
 
       std::map<uint,uint> index_map;
       uint numLocalIndices = 0;
@@ -568,7 +569,7 @@ namespace embree {
         const uint new_v = (*i).second;
         cluster.vertices[new_v] = mesh->positions[0][old_v];
       }
-      ranges[ID].clusterID = clusters.size();
+      ranges[ID].clusterID = numClusters;
 
       cluster.reorderMorton();
 
@@ -582,17 +583,18 @@ namespace embree {
 #endif      
       cluster.initBounds();
       cluster.depth = 1;
-      clusters.push_back(cluster);
       //DBG_PRINT2(cluster.quads.size(),cluster.vertices.size());
+      numClusters++;
     }
+    //PRINT(numClusters);
+    if (numClusters != leafIDs.size()) FATAL("numClusters != leafIDs.size()");
 
-    const uint numNumClustersMaxRes = clusters.size();
+    const uint numNumClustersMaxRes = numClusters;
     
     //PRINT2(totalSizeMicroMesh,totalSizeMicroStrip);
     
     // === bottom-up merging and creation of new clusters ===
 
-    uint numClusters = clusters.size();
     uint *index_buffer = new uint[numClusters];
     uint *tmp_buffer = new uint[numClusters];
     uint *nearest_neighborID = new uint[numClusters];
@@ -612,20 +614,22 @@ namespace embree {
     uint iteration = 0;
 
     const uint MAX_DEPTH_LIMIT = 16;
+
+    uint current_numClusters = numClusters;
     
-    while(numClusterQuads > dest_numClusterQuads && numClusters > 1)
+    while(numClusterQuads > dest_numClusterQuads && current_numClusters > 1)
     {      
-      for (uint i=0;i<numClusters;i++)
+      for (uint i=0;i<current_numClusters;i++)
         nearest_neighborID[i] = -1;
-      
-      for (uint c=0;c<numClusters;c++)
+
+      for (uint c=0;c<current_numClusters;c++)
       {
         // find nearest neighbor
         const uint clusterID = index_buffer[c];
         const BBox3f cluster_bounds = clusters[clusterID].bounds;
         float min_area = pos_inf;
         int nn = -1;
-        for (int i=std::max((int)c-SEARCH_RADIUS,0);i<std::min((int)c+SEARCH_RADIUS,(int)numClusters);i++)
+        for (int i=std::max((int)c-SEARCH_RADIUS,0);i<std::min((int)c+SEARCH_RADIUS,(int)current_numClusters);i++)
           if (i != c && index_buffer[i] != -1)
           {
             BBox3f bounds = clusters[index_buffer[i]].bounds;
@@ -638,9 +642,13 @@ namespace embree {
             }
           }
         nearest_neighborID[c] = nn;        
-      }
+      } //);
+
       
-      for (uint i=0;i<numClusters;i++)
+      //for (uint i=0;i<current_numClusters;i++)
+
+      parallel_for(current_numClusters, [&] (uint i)
+        //for (uint i=0;i<current_numClusters;i++)
       {
         if (nearest_neighborID[i] != -1)
         {
@@ -664,30 +672,33 @@ namespace embree {
                 new_cluster.rightID = rightClusterID;
                 new_cluster.initBounds();
                 new_cluster.lod_root = true;              
-                const uint newClusterID = clusters.size();
-                clusters.push_back(new_cluster);
-                tmp_buffer[i] = newClusterID;              
+                const uint newClusterID = numClusters.fetch_add(1);
+                clusters[newClusterID] = new_cluster;                
+                tmp_buffer[i] = newClusterID;
+                tmp_buffer[nearest_neighborID[i]] = -1;
               }
               else
               {
                 DBG_PRINT4("CANNOT MERGE", leftClusterID, rightClusterID,newDepth);
                 tmp_buffer[i] = index_buffer[i];
-                nearest_neighborID[nearest_neighborID[i]] = -1;
+                tmp_buffer[nearest_neighborID[i]] = index_buffer[nearest_neighborID[i]];
+                
+                //nearest_neighborID[nearest_neighborID[i]] = -1;
               }
             }
-            else
-              tmp_buffer[i] = -1;
+            //else
+            //  tmp_buffer[i] = -1;
           }
           else
             tmp_buffer[i] = index_buffer[i];              
         }
         else
-          tmp_buffer[i] = index_buffer[i];              
-        
-      }
+          tmp_buffer[i] = index_buffer[i];                      
+      });
 
+      
       uint new_numClusters = 0;
-      for (uint i=0;i<numClusters;i++)
+      for (uint i=0;i<current_numClusters;i++)
         if (tmp_buffer[i] != -1)
           index_buffer[new_numClusters++] = tmp_buffer[i];
 
@@ -697,20 +708,20 @@ namespace embree {
         new_numClusterQuads += clusters[ index_buffer[i] ].quads.size();
 
       uint numTmpRoots = 0;
-      for (uint i=0;i<clusters.size();i++)      
+      for (uint i=0;i<numClusters;i++)      
         if (clusters[i].lod_root) numTmpRoots++;        
           
       iteration++;
       numClusterQuads = new_numClusterQuads;
       
-      DBG_PRINT5(iteration,new_numClusters,numClusters,numClusterQuads,dest_numClusterQuads);
-      if (numClusters == new_numClusters) break; 
-      numClusters = new_numClusters;
+      DBG_PRINT5(iteration,new_numClusters,current_numClusters,numClusterQuads,dest_numClusterQuads);
+      if (current_numClusters == new_numClusters) break; 
+      current_numClusters = new_numClusters;
 
-      if (numTmpRoots != numClusters)
+      if (numTmpRoots != current_numClusters)
       {
-        PRINT2(numTmpRoots,numClusters);
-        FATAL("numTmpRoots != numClusters");
+        PRINT2(numTmpRoots,current_numClusters);
+        FATAL("numTmpRoots != current_numClusters");
       }      
     }
 
@@ -723,7 +734,7 @@ namespace embree {
     uint numTotalQuadsAllocate = 0;
     uint numTotalVerticesAllocate = 0;
     uint numTmpRoots = 0;
-    for (uint i=0;i<clusters.size();i++)
+    for (uint i=0;i<numClusters;i++)
     {
       numTotalQuadsAllocate += clusters[i].quads.size();
       numTotalVerticesAllocate += clusters[i].vertices.size();
@@ -752,7 +763,7 @@ namespace embree {
     const Vec3f geometry_inv_diag = geometry_diag != Vec3fa(0.0f) ? Vec3fa(1.0f) / geometry_diag : Vec3fa(0.0f);
 
     uint maxDepth = 0;
-    for (uint c=0;c<clusters.size();c++)
+    for (uint c=0;c<numClusters;c++)
     {
       maxDepth = std::max(clusters[c].depth,maxDepth);
       LossyCompressedMeshCluster compressed_cluster;      
@@ -805,6 +816,8 @@ namespace embree {
 
     totalCompressedSize += compressedSizeMeshBytes + clusterSizeBytes;
     DBG_PRINT(maxDepth);
+
+    delete [] clusters;
     
     return numNumClustersMaxRes;
   }  
