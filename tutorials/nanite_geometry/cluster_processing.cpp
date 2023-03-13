@@ -434,7 +434,7 @@ namespace embree {
   }
 
       
-  uint convertISPCQuadMesh(ISPCQuadMesh* mesh, RTCScene scene, ISPCOBJMaterial *material,const uint geomID,std::vector<LossyCompressedMesh*> &lcm_ptrs,std::vector<LossyCompressedMeshCluster> &lcm_clusters, std::vector<uint> &lcm_clusterRootIDs, size_t &totalCompressedSize, size_t &numDecompressedBlocks)
+  uint convertISPCQuadMesh(ISPCQuadMesh* mesh, RTCScene scene, ISPCOBJMaterial *material,const uint geomID,std::vector<LossyCompressedMesh*> &lcm_ptrs,std::vector<LossyCompressedMeshCluster> &lcm_clusters, std::vector<uint> &lcm_clusterRootIDs, size_t &totalCompressedSize, size_t &numDecompressedBlocks, sycl::queue &queue)
   {
     const uint numQuads = mesh->numQuads;
     const uint INITIAL_CREATE_RANGE_THRESHOLD = LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER;
@@ -749,9 +749,17 @@ namespace embree {
     lcm->bounds             = geometryBounds;
     lcm->numQuads           = numQuads;
     lcm->numVertices        = mesh->numVertices;
-    lcm->geomID             = geomID; 
-    lcm->compressedVertices = (CompressedVertex*)alignedUSMMalloc(sizeof(CompressedVertex)*numTotalVerticesAllocate,64,EMBREE_USM_SHARED); // FIXME
-    lcm->compressedIndices  = (CompressedQuadIndices*)alignedUSMMalloc(sizeof(CompressedQuadIndices)*numTotalQuadsAllocate,64,EMBREE_USM_SHARED); //FIXME    
+    lcm->geomID             = geomID;
+    EmbreeUSMMode mode = EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE;
+    //EmbreeUSMMode mode = EmbreeUSMMode::EMBREE_USM_SHARED;
+
+    lcm->compressedVertices = (CompressedVertex*)alignedUSMMalloc(sizeof(CompressedVertex)*numTotalVerticesAllocate,64,mode); // FIXME
+    lcm->compressedIndices  = (CompressedQuadIndices*)alignedUSMMalloc(sizeof(CompressedQuadIndices)*numTotalQuadsAllocate,64,mode); //FIXME    
+
+
+    CompressedVertex* compressedVertices = new CompressedVertex[numTotalVerticesAllocate];
+    CompressedQuadIndices *compressedIndices = new CompressedQuadIndices[numTotalQuadsAllocate];
+        
     
     uint globalCompressedVertexOffset = 0;
     uint globalCompressedIndexOffset = 0;
@@ -789,13 +797,13 @@ namespace embree {
         const uint v1 = clusters[c].quads[i].v1;
         const uint v2 = clusters[c].quads[i].v2;
         const uint v3 = clusters[c].quads[i].v3;        
-        lcm->compressedIndices[ globalCompressedIndexOffset++ ] = CompressedQuadIndices(v0,v1,v2,v3);
+        compressedIndices[ globalCompressedIndexOffset++ ] = CompressedQuadIndices(v0,v1,v2,v3);
         if ( globalCompressedIndexOffset > numTotalQuadsAllocate ) FATAL("numTotalQuadsAllocate");        
       }
         
       for (uint i=0;i<clusters[c].vertices.size();i++)
       {
-        lcm->compressedVertices[ globalCompressedVertexOffset++ ] = CompressedVertex(clusters[c].vertices[i],geometry_lower,geometry_inv_diag);
+        compressedVertices[ globalCompressedVertexOffset++ ] = CompressedVertex(clusters[c].vertices[i],geometry_lower,geometry_inv_diag);
         if ( globalCompressedVertexOffset > numTotalVerticesAllocate ) FATAL("numTotalVerticesAllocate");                
       }
 
@@ -808,15 +816,24 @@ namespace embree {
       
       numDecompressedBlocks += compressed_cluster.numBlocks;      
     }
+    if (numTotalVerticesAllocate != globalCompressedVertexOffset) FATAL("numTotalVerticesAllocate != globalCompressedVertexOffset");
+    if (numTotalQuadsAllocate    != globalCompressedIndexOffset) FATAL("numTotalQuadsAllocate != globalCompressedIndexOffset");
+    
+    queue.memcpy(lcm->compressedVertices,compressedVertices,sizeof(CompressedVertex)*globalCompressedVertexOffset);
+    queue.memcpy(lcm->compressedIndices,compressedIndices,sizeof(CompressedQuadIndices)*globalCompressedIndexOffset);
+    
+    gpu::waitOnQueueAndCatchException(*global_gpu_queue);        
 
     const size_t uncompressedSizeMeshBytes = mesh->numVertices * sizeof(Vec3f) + mesh->numQuads * sizeof(uint) * 4;
     const size_t compressedSizeMeshBytes = sizeof(CompressedVertex)*numTotalVertices + sizeof(CompressedQuadIndices)*numQuads;
-    const size_t clusterSizeBytes = numRanges*sizeof(LossyCompressedMeshCluster);
+    const size_t clusterSizeBytes = numClusters*sizeof(LossyCompressedMeshCluster);
     DBG_PRINT5(lcm_ID,uncompressedSizeMeshBytes,compressedSizeMeshBytes,(float)compressedSizeMeshBytes/uncompressedSizeMeshBytes,clusterSizeBytes);
 
     totalCompressedSize += compressedSizeMeshBytes + clusterSizeBytes;
     DBG_PRINT(maxDepth);
 
+    delete [] compressedIndices;
+    delete [] compressedVertices;    
     delete [] clusters;
     
     return numNumClustersMaxRes;

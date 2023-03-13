@@ -47,7 +47,8 @@ namespace embree
     EMBREE_USM_SHARED = 0,
     EMBREE_USM_SHARED_DEVICE_READ_WRITE = 0,
     EMBREE_USM_SHARED_DEVICE_READ_ONLY = 1,
-    EMBREE_DEVICE_READ_WRITE = 2,    
+    EMBREE_DEVICE_READ_WRITE = 2,
+    EMBREE_USM_HOST = 3
   };
   
   /*! aligned allocation */

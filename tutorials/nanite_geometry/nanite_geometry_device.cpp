@@ -393,7 +393,7 @@ namespace embree {
   // ==============================================================================================
 
 
-  uint convertISPCQuadMesh(ISPCQuadMesh* mesh, RTCScene scene, ISPCOBJMaterial *material,const uint geomID,std::vector<LossyCompressedMesh*> &lcm_ptrs,std::vector<LossyCompressedMeshCluster> &lcm_clusters, std::vector<uint> &lcm_clusterRootIDs, size_t &totalCompressedSize, size_t &numDecompressedBlocks);
+  uint convertISPCQuadMesh(ISPCQuadMesh* mesh, RTCScene scene, ISPCOBJMaterial *material,const uint geomID,std::vector<LossyCompressedMesh*> &lcm_ptrs,std::vector<LossyCompressedMeshCluster> &lcm_clusters, std::vector<uint> &lcm_clusterRootIDs, size_t &totalCompressedSize, size_t &numDecompressedBlocks, sycl::queue &queue);
   
   void convertISPCGridMesh(ISPCGridMesh* grid, RTCScene scene, ISPCOBJMaterial *material)
   {
@@ -536,7 +536,7 @@ namespace embree {
       {
         std::cout << "Processing mesh " << geomID << " of " << g_ispc_scene->numGeometries << " meshes in " << std::flush;
         double t0 = getSeconds();
-        const uint numNumClustersMaxRes = convertISPCQuadMesh((ISPCQuadMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID],geomID,lcm_ptrs,lcm_clusters,lcm_clusterRootIDs,totalCompressedSize,numDecompressedBlocks);
+        const uint numNumClustersMaxRes = convertISPCQuadMesh((ISPCQuadMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID],geomID,lcm_ptrs,lcm_clusters,lcm_clusterRootIDs,totalCompressedSize,numDecompressedBlocks,*global_gpu_queue);
         double t1= getSeconds();
         std::cout << (t1-t0) << " seconds" << std::endl << std::flush;
         global_lcgbp_scene->numLCQuadsTotal += ((ISPCQuadMesh*)geometry)->numQuads;
@@ -556,24 +556,27 @@ namespace embree {
       
       global_lcgbp_scene->numLCMeshClusters = lcm_clusters.size();
       global_lcgbp_scene->numLCMeshClusterRoots = lcm_clusterRootIDs.size();
-      
-      global_lcgbp_scene->lcm_cluster = (LossyCompressedMeshCluster*)alignedUSMMalloc(sizeof(LossyCompressedMeshCluster)*global_lcgbp_scene->numLCMeshClusters,64,EMBREE_USM_SHARED /*EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE*/);
-
-      global_lcgbp_scene->lcm_cluster_roots_IDs = (uint*)alignedUSMMalloc(sizeof(uint)*global_lcgbp_scene->numLCMeshClusterRoots,64,EMBREE_USM_SHARED /*EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE*/);
-
-      global_lcgbp_scene->lcm_cluster_roots_IDs_per_frame = (uint*)alignedUSMMalloc(sizeof(uint)*global_lcgbp_scene->numLCMeshClusters,64,EMBREE_USM_SHARED /*EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE*/);
 
       
-      for (uint i=0;i<global_lcgbp_scene->numLCMeshClusters;i++)
-        global_lcgbp_scene->lcm_cluster[i] = lcm_clusters[i];
+      EmbreeUSMMode mode = EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE;
+      //EmbreeUSMMode mode = EmbreeUSMMode::EMBREE_USM_SHARED;
+      
+      global_lcgbp_scene->lcm_cluster = (LossyCompressedMeshCluster*)alignedUSMMalloc(sizeof(LossyCompressedMeshCluster)*global_lcgbp_scene->numLCMeshClusters,64,mode);
+      global_lcgbp_scene->lcm_cluster_roots_IDs = (uint*)alignedUSMMalloc(sizeof(uint)*global_lcgbp_scene->numLCMeshClusterRoots,64,mode);
+      global_lcgbp_scene->lcm_cluster_roots_IDs_per_frame = (uint*)alignedUSMMalloc(sizeof(uint)*global_lcgbp_scene->numLCMeshClusters,64,mode);
 
+
+      global_gpu_queue->memcpy(global_lcgbp_scene->lcm_cluster,&*lcm_clusters.begin(),sizeof(LossyCompressedMeshCluster)*global_lcgbp_scene->numLCMeshClusters);
+      global_gpu_queue->memcpy(global_lcgbp_scene->lcm_cluster_roots_IDs,&*lcm_clusterRootIDs.begin(),sizeof(uint)*global_lcgbp_scene->numLCMeshClusterRoots);
+
+      gpu::waitOnQueueAndCatchException(*global_gpu_queue);        
+      
+      //for (uint i=0;i<global_lcgbp_scene->numLCMeshClusters;i++)
+      //  global_lcgbp_scene->lcm_cluster[i] = lcm_clusters[i];
 
       uint numLODQuads = 0;
       for (uint i=0;i<global_lcgbp_scene->numLCMeshClusterRoots;i++)
-      {
-        global_lcgbp_scene->lcm_cluster_roots_IDs[i] =  lcm_clusterRootIDs[i] ;
-        numLODQuads += global_lcgbp_scene->lcm_cluster[ lcm_clusterRootIDs[i] ].numQuads;
-      }
+        numLODQuads += lcm_clusters[ lcm_clusterRootIDs[i] ].numQuads;
       
       
       global_lcgbp_scene->geometry = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY);
@@ -587,10 +590,6 @@ namespace embree {
       PRINT3(numQuadMeshes,numQuads,numLODQuads);
       PRINT3(totalCompressedSize,(float)totalCompressedSize/numQuads,(float)totalCompressedSize/numQuads*0.5f);
       PRINT3(numDecompressedBlocks,numDecompressedBlocks*64,(float)numDecompressedBlocks*64/totalCompressedSize);
-
-      // PRINT("Cluster Simplification");
-      // for (uint i=0;i<global_lcgbp_scene->numLCMeshClusters;i++)
-      //   simplifyLossyCompressedMeshCluster( global_lcgbp_scene->lcm_cluster[i] );      
     }
     
 #else
@@ -598,7 +597,6 @@ namespace embree {
     const uint gridResY = 16*1024;    
     generateGrid(data.g_scene,gridResX,gridResY);
 #endif    
-    //exit(0);
     /* update scene */
     //rtcCommitScene (data.g_scene);  
   }
@@ -1079,6 +1077,8 @@ namespace embree {
                 const LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[ currentID ];              
                 if (!cur.hasChildren()) // leaf
                 {
+                  const uint numQuads = cluster.numQuads;
+                  gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterQuadsPerFrame,(uint)numQuads);                                                            
                   const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(uint)1);
                   local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID] =  currentID;                
                 }
