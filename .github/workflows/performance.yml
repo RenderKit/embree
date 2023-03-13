@@ -57,32 +57,30 @@ jobs:
       cmd: |
         source <(scripts/test.py env --debug)
         cd build
-        tar -xf *.linux.tar.gz
-        cd */
-        chmod +x embree-vars.sh
-        ./embree-vars.sh
-        cd bin
+        tar -xf embree-*.linux.tar.gz
+        cd embree-*.linux/bin
+        chmod +x ../embree-vars.sh
+        ../embree-vars.sh
         $GITHUB_WORKSPACE/scripts/run-perf.sh gpu
 
-  linux-test-DG2-A770:
+  linux-test-DG2-A770-not_perf:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     needs: ["linux-build-DG2-DPCPP"]
     with:
       image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
-      runs-on: '[ "Linux", "docker", "A770", "perf" ]'
+      runs-on: '[ "Linux", "docker", "A770" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-release.env
       artifact-in: linux-DG2-DPCPP
       cmd: |
         source <(scripts/test.py env --debug)
         cd build
-        tar -xf *.linux.tar.gz
-        cd */
-        chmod +x embree-vars.sh
-        ./embree-vars.sh
-        cd bin
+        tar -xf embree-*.linux.tar.gz
+        cd embree-*.linux/bin
+        chmod +x ../embree-vars.sh
+        ../embree-vars.sh
         $GITHUB_WORKSPACE/scripts/run-perf.sh gpu
 
 
@@ -95,8 +93,8 @@ jobs:
       artifact-in: linux-build-x86-ICX-ISPC
       cmd: |
         cd build
-        tar -xf *.linux.tar.gz
-        cd */bin
+        tar -xf embree-*.linux.tar.gz
+        cd embree-*.linux/bin
         $GITHUB_WORKSPACE/scripts/run-perf.sh cpu
 
   linux-test-x8380-1:
@@ -108,8 +106,8 @@ jobs:
       artifact-in: linux-build-x86-ICX-ISPC
       cmd: |
         cd build
-        tar -xf *.linux.tar.gz
-        cd */bin
+        tar -xf embree-*.linux.tar.gz
+        cd embree-*.linux/bin
         $GITHUB_WORKSPACE/scripts/run-perf.sh cpu
 
   linux-test-x8280-1:
@@ -121,8 +119,8 @@ jobs:
       artifact-in: linux-build-x86-ICX-ISPC
       cmd: |
         cd build
-        tar -xf *.linux.tar.gz
-        cd */bin
+        tar -xf embree-*.linux.tar.gz
+        cd embree-*.linux/bin
         $GITHUB_WORKSPACE/scripts/run-perf.sh cpu
 
   linux-test-a3970x-1:
@@ -134,7 +132,7 @@ jobs:
       artifact-in: linux-build-x86-ICX-ISPC
       cmd: |
         cd build
-        tar -xf *.linux.tar.gz
-        cd */bin
+        tar -xf embree-*.linux.tar.gz
+        cd embree-*.linux/bin
         $GITHUB_WORKSPACE/scripts/run-perf.sh cpu
 
