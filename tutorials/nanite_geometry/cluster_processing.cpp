@@ -744,15 +744,15 @@ namespace embree {
     
     // === allocate LossyCompressedMesh in USM ===
     
-    LossyCompressedMesh *lcm = (LossyCompressedMesh *)alignedUSMMalloc(sizeof(LossyCompressedMesh),64);
-  
+    LossyCompressedMesh *lcm = (LossyCompressedMesh *)alignedUSMMalloc(sizeof(LossyCompressedMesh),64,EMBREE_USM_SHARED);
+    
     lcm->bounds             = geometryBounds;
     lcm->numQuads           = numQuads;
     lcm->numVertices        = mesh->numVertices;
     lcm->geomID             = geomID; 
-    lcm->compressedVertices = (CompressedVertex*)alignedUSMMalloc(sizeof(CompressedVertex)*numTotalVerticesAllocate,64); // FIXME
-    lcm->compressedIndices  = (CompressedQuadIndices*)alignedUSMMalloc(sizeof(CompressedQuadIndices)*numTotalQuadsAllocate,64); //FIXME    
-           
+    lcm->compressedVertices = (CompressedVertex*)alignedUSMMalloc(sizeof(CompressedVertex)*numTotalVerticesAllocate,64,EMBREE_USM_SHARED); // FIXME
+    lcm->compressedIndices  = (CompressedQuadIndices*)alignedUSMMalloc(sizeof(CompressedQuadIndices)*numTotalQuadsAllocate,64,EMBREE_USM_SHARED); //FIXME    
+    
     uint globalCompressedVertexOffset = 0;
     uint globalCompressedIndexOffset = 0;
 

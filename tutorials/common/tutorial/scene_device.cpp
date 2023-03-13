@@ -55,14 +55,14 @@ namespace embree
 
   template<typename Ty>
   Ty* copyArrayToUSM(const avector<Ty>& in) {
-    Ty* out = (Ty*)alignedUSMMalloc(in.size()*sizeof(Ty));
+    Ty* out = (Ty*)alignedUSMMalloc(in.size()*sizeof(Ty),64,EMBREE_USM_SHARED);
     memcpy(out,in.data(),in.size()*sizeof(Ty));
     return out;
   }
 
   template<typename Ty>
   Ty* copyArrayToUSM(const std::vector<Ty>& in) {
-    Ty* out = (Ty*)alignedUSMMalloc(in.size()*sizeof(Ty));
+    Ty* out = (Ty*)alignedUSMMalloc(in.size()*sizeof(Ty),64,EMBREE_USM_SHARED);
     memcpy(out,in.data(),in.size()*sizeof(Ty));
     return out;
   }
@@ -90,10 +90,10 @@ namespace embree
   ISPCScene::ISPCScene(RTCDevice device, unsigned int numGeometries, unsigned int numMaterials, unsigned int numLights)
     : scene(rtcNewScene(device)), geometries(nullptr), materials(nullptr), numGeometries(numGeometries), numMaterials(numMaterials), lights(0), numLights(numLights), tutorialScene(nullptr)
   {
-    geometries = (ISPCGeometry**) alignedUSMMalloc(numGeometries*sizeof(ISPCGeometry*));
+    geometries = (ISPCGeometry**) alignedUSMMalloc(numGeometries*sizeof(ISPCGeometry*),64,EMBREE_USM_SHARED);
     for (size_t i=0; i<numGeometries; i++) geometries[i] = nullptr;
     
-    materials = (ISPCMaterial**) alignedUSMMalloc(numMaterials*sizeof(ISPCMaterial*));
+    materials = (ISPCMaterial**) alignedUSMMalloc(numMaterials*sizeof(ISPCMaterial*),64,EMBREE_USM_SHARED);
     for (size_t i=0; i<numMaterials; i++) materials[i] = nullptr;
     
     lights = (Light**) alignedUSMMalloc(numLights*sizeof(Light*));
@@ -104,14 +104,13 @@ namespace embree
     : scene(rtcNewScene(device)), tutorialScene(in)
   {
     SceneGraph::opaque_geometry_destruction = (void(*)(void*)) deleteGeometry;
-
-    geometries = (ISPCGeometry**) alignedUSMMalloc(sizeof(ISPCGeometry*)*in->geometries.size());
-
+    geometries = (ISPCGeometry**) alignedUSMMalloc(sizeof(ISPCGeometry*)*in->geometries.size(),64,EMBREE_USM_SHARED);
+    
     for (size_t i=0; i<in->geometries.size(); i++)
       geometries[i] = convertGeometry(device,in,in->geometries[i]);
     numGeometries = unsigned(in->geometries.size());
     
-    materials = (ISPCMaterial**) alignedUSMMalloc(sizeof(ISPCMaterial*)*in->materials.size());
+    materials = (ISPCMaterial**) alignedUSMMalloc(sizeof(ISPCMaterial*)*in->materials.size(),64,EMBREE_USM_SHARED);
     for (size_t i=0; i<in->materials.size(); i++)
     {
       materials[i] = (ISPCMaterial*) in->materials[i]->material();
@@ -119,13 +118,13 @@ namespace embree
     
     numMaterials = unsigned(in->materials.size());
     
-    lights = (Light**) alignedUSMMalloc(sizeof(Light*)*in->lights.size());
+    lights = (Light**) alignedUSMMalloc(sizeof(Light*)*in->lights.size(),64,EMBREE_USM_SHARED);
     numLights = 0;
     for (size_t i=0; i<in->lights.size(); i++)
     {
       Light* light = convertLight(in->lights[i]->get(0.0f));
       if (light) lights[numLights++] = light;
-    }
+    }    
   }
 
   ISPCScene::~ISPCScene()
@@ -291,16 +290,15 @@ namespace embree
   {
     geom.geometry = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD);
     
-    positions = (Vec3fa**) alignedUSMMalloc(sizeof(Vec3fa*)*in->numTimeSteps());
+    positions = (Vec3fa**) alignedUSMMalloc(sizeof(Vec3fa*)*in->numTimeSteps(),64,EMBREE_USM_SHARED);
     for (size_t i=0; i<in->numTimeSteps(); i++)
       positions[i] = copyArrayToUSM(in->positions[i]);
 
     if (in->normals.size()) {
-      normals = (Vec3fa**) alignedUSMMalloc(sizeof(Vec3fa*)*in->numTimeSteps());
+      normals = (Vec3fa**) alignedUSMMalloc(sizeof(Vec3fa*)*in->numTimeSteps(),64,EMBREE_USM_SHARED);
       for (size_t i=0; i<in->numTimeSteps(); i++)
         normals[i] = copyArrayToUSM(in->normals[i]);
     }
-    
     texcoords = copyArrayToUSM(in->texcoords);
     quads = (ISPCQuad*) copyArrayToUSM(in->quads);
     startTime = in->time_range.lower;
@@ -383,7 +381,6 @@ namespace embree
 
   void ISPCGridMesh::commit()
   {
-    PING;
     RTCGeometry g = geom.geometry;
     rtcSetGeometryTimeStepCount(g,numTimeSteps);
     rtcSetGeometryTimeRange(g,startTime,endTime);

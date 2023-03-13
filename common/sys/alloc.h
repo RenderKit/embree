@@ -28,9 +28,9 @@ namespace embree
   void operator delete[](void* ptr) { alignedFree(ptr); }
   
 #define ALIGNED_STRUCT_USM_(align)                                          \
-  void* operator new(size_t size) { return alignedUSMMalloc(size,align); }   \
+  void* operator new(size_t size) { return alignedUSMMalloc(size,align,EMBREE_USM_SHARED); } \
   void operator delete(void* ptr) { alignedUSMFree(ptr); }                   \
-  void* operator new[](size_t size) { return alignedUSMMalloc(size,align); } \
+  void* operator new[](size_t size) { return alignedUSMMalloc(size,align,EMBREE_USM_SHARED); } \
   void operator delete[](void* ptr) { alignedUSMFree(ptr); }
   
 #define ALIGNED_CLASS_(align)                                          \

@@ -412,7 +412,7 @@ namespace embree {
     PRINT(numLCGBP);
 
     /* --- allocate global LCGBP --- */
-    global_lcgbp_scene = (LCG_Scene*)alignedUSMMalloc(sizeof(LCG_Scene),64);
+    global_lcgbp_scene = (LCG_Scene*)alignedUSMMalloc(sizeof(LCG_Scene),64,EMBREE_USM_SHARED);
     new (global_lcgbp_scene) LCG_Scene(numLCGBP);
     
     /* --- fill array of LCGBP --- */
@@ -448,7 +448,7 @@ namespace embree {
     const uint numLCGBP = ((gridResX-1) / LCGBP::GRID_RES_QUAD) * ((gridResY-1) / LCGBP::GRID_RES_QUAD);
 
     /* --- allocate global LCGBP --- */
-    global_lcgbp_scene = (LCG_Scene*)alignedUSMMalloc(sizeof(LCG_Scene),64);
+    global_lcgbp_scene = (LCG_Scene*)alignedUSMMalloc(sizeof(LCG_Scene),64,EMBREE_USM_SHARED);
     new (global_lcgbp_scene) LCG_Scene(numLCGBP);
 
     const uint vertices = gridResX*gridResY;
@@ -514,7 +514,7 @@ namespace embree {
     
     PRINT3(scene_bounds,numQuadMeshes,numGridMeshes);
     
-    global_lcgbp_scene = (LCG_Scene*)alignedUSMMalloc(sizeof(LCG_Scene),64);
+    global_lcgbp_scene = (LCG_Scene*)alignedUSMMalloc(sizeof(LCG_Scene),64,EMBREE_USM_SHARED);
     new (global_lcgbp_scene) LCG_Scene(0);
     
     global_lcgbp_scene->bounds = scene_bounds;
@@ -562,12 +562,11 @@ namespace embree {
       global_lcgbp_scene->lcm_cluster_roots_IDs = (uint*)alignedUSMMalloc(sizeof(uint)*global_lcgbp_scene->numLCMeshClusterRoots,64,EMBREE_USM_SHARED /*EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE*/);
 
       global_lcgbp_scene->lcm_cluster_roots_IDs_per_frame = (uint*)alignedUSMMalloc(sizeof(uint)*global_lcgbp_scene->numLCMeshClusters,64,EMBREE_USM_SHARED /*EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE*/);
-      
+
       
       for (uint i=0;i<global_lcgbp_scene->numLCMeshClusters;i++)
         global_lcgbp_scene->lcm_cluster[i] = lcm_clusters[i];
 
-      PRINT( global_lcgbp_scene->numLCMeshClusterRoots );
 
       uint numLODQuads = 0;
       for (uint i=0;i<global_lcgbp_scene->numLCMeshClusterRoots;i++)
@@ -582,7 +581,8 @@ namespace embree {
       global_lcgbp_scene->geomID = rtcAttachGeometry(data.g_scene,global_lcgbp_scene->geometry);
       //rtcReleaseGeometry(geom);
       global_lcgbp_scene->map_Kd = nullptr;
-      
+
+      PRINT( global_lcgbp_scene->numLCMeshClusterRoots );      
       PRINT(global_lcgbp_scene->numLCMeshClusters);
       PRINT3(numQuadMeshes,numQuads,numLODQuads);
       PRINT3(totalCompressedSize,(float)totalCompressedSize/numQuads,(float)totalCompressedSize/numQuads*0.5f);
@@ -915,11 +915,11 @@ namespace embree {
                                  const float time,
                                  const ISPCCamera& camera)
   {
-#if defined(EMBREE_SYCL_TUTORIAL)
+#if defined(EMBREE_SYCL_TUTORIAL)    
     double t0 = getSeconds();
     
     const uint wgSize = 64;
-    LCG_Scene *local_lcgbp_scene = global_lcgbp_scene;    
+    LCG_Scene *local_lcgbp_scene = global_lcgbp_scene;
     const uint numLCGBP = local_lcgbp_scene->numLCGBP;
     const uint numLCMeshClusters = local_lcgbp_scene->numLCMeshClusters;
     if ( numLCGBP )
@@ -1037,8 +1037,6 @@ namespace embree {
           
             });
       });
-      //gpu::waitOnEventAndCatchException(init_event);
-      //waitOnQueueAndCatchException(*global_gpu_queue);
 
       const sycl::nd_range<1> nd_range1(alignTo(numRootsTotal,wgSize),sycl::range<1>(wgSize));              
       sycl::event compute_lod_event = global_gpu_queue->submit([=](sycl::handler& cgh){
@@ -1186,10 +1184,11 @@ namespace embree {
 #endif
       
     }
-        
-    rtcCommitGeometry(local_lcgbp_scene->geometry);
 
     waitOnQueueAndCatchException(*global_gpu_queue);
+    
+    rtcCommitGeometry(local_lcgbp_scene->geometry);
+
     
     /* commit changes to scene */
     rtcCommitScene (data.g_scene);
@@ -1197,6 +1196,8 @@ namespace embree {
     double dt0 = (getSeconds()-t0)*1000.0;
                                             
     avg_bvh_build_time.add(dt0);
+
+    
 #endif
   }
 

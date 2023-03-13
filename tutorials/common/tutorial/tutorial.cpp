@@ -149,7 +149,7 @@ namespace embree
     /* only a single instance of this class is supported */
     assert(instance == nullptr);
     instance = this;
-
+    
     /* for best performance set FTZ and DAZ flags in MXCSR control and status register */
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
@@ -1134,6 +1134,7 @@ namespace embree
 
       queue = new sycl::queue(*device, exception_handler, { sycl::property::queue::in_order(), sycl::property::queue::enable_profiling() });
       context = new sycl::context(*device);
+
       g_device = rtcNewSYCLDevice(*context,rtcore.c_str());
       error_handler(nullptr,rtcGetDeviceError(g_device));
       global_gpu_device = device;
@@ -1145,6 +1146,8 @@ namespace embree
       }
 
       enableUSMAllocTutorial(global_gpu_context, global_gpu_device);
+
+      
     }
 
     /* create standard device */
@@ -1165,6 +1168,7 @@ namespace embree
     /* parse command line options */
     parseCommandLine(argc,argv);
 
+    
     /* callback */
     postParseCommandLine();
 
@@ -1188,7 +1192,7 @@ namespace embree
   {
     /* parse command line options */
     parseCommandLine(argc,argv);
-
+    
     /* callback */
     try {
       postParseCommandLine();
@@ -1196,7 +1200,7 @@ namespace embree
     catch (const std::exception& e) {
       std::cout << "Error: " << e.what() << std::endl;
     }
-
+    
     /* create embree device */
     create_device();
     

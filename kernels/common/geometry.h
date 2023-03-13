@@ -122,7 +122,7 @@ namespace embree
   /*! Base class all geometries are derived from */
   class Geometry : public RefCount
   {
-    ALIGNED_CLASS_USM_(16);
+    ALIGNED_CLASS_USM_(64);
     
     friend class Scene;
   public:

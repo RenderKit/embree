@@ -575,9 +575,9 @@ namespace embree
     /* fill geomdesc buffers */    
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     const size_t geomDescrBytes = sizeof(RTHWIF_GEOMETRY_DESC*)*numGeometries;
-    RTHWIF_GEOMETRY_DESC** geomDescr = (RTHWIF_GEOMETRY_DESC**)sycl::aligned_alloc_shared(64,geomDescrBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::ext::oneapi::property::usm::device_read_only());
+    RTHWIF_GEOMETRY_DESC** geomDescr = (RTHWIF_GEOMETRY_DESC**)sycl::aligned_alloc_shared(64,geomDescrBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext()); //,sycl::ext::oneapi::property::usm::device_read_only());
     assert(geomDescr);        
-    char *geomDescrData = (char*)sycl::aligned_alloc_shared(64,totalBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::ext::oneapi::property::usm::device_read_only());
+    char *geomDescrData = (char*)sycl::aligned_alloc_shared(64,totalBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext()); //,sycl::ext::oneapi::property::usm::device_read_only());
     assert(geomDescrData);
 #else    
     std::vector<RTHWIF_GEOMETRY_DESC*> geomDescr(numGeometries);
@@ -773,7 +773,6 @@ namespace embree
     sycl::free(geomDescrData    ,gpu_device->getGPUContext());    
     sycl::free(scratchBuffer    ,gpu_device->getGPUContext());
 #endif
-
     return fullBounds;
   }
 
