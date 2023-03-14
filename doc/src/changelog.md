@@ -1,6 +1,9 @@
 Version History
 ---------------
 
+### Embree 4.0.2
+-   Added ARM64 Linux support
+
 ### Embree 4.0.1
 -   Improved performance for Tiger Lake, Comet Lake, Cannon Lake, Kaby Lake,
     and Skylake client CPUs by using 256 bit SIMD instructions by default.

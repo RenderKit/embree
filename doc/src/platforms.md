@@ -3,8 +3,8 @@ Supported Platforms
 
 Embree supports Windows (32-bit and 64-bit), Linux (64-bit), and macOS
 (64-bit). Under Windows, Linux and macOS x86 based CPUs are supported,
-while ARM CPUs are currently only supported under macOS (e.g. Apple
-M1). ARM support for Windows and Linux is experimental.
+while ARM CPUs are currently only supported under Linux and macOS (e.g. 
+Apple M1). ARM support for Windows experimental.
 
 Embree supports Intel GPUs based on the Xe HPG microarchitecture
 (Intel® Arc™ GPU) under Linux and Windows and Xe HPC microarchitecture
