@@ -8,6 +8,7 @@
 #include "../common/tutorial/scene_device.h"
 
 #include "meshoptimizer.h"
+#include <OpenImageDenoise/oidn.h>
 
 namespace embree {
 
@@ -27,8 +28,81 @@ extern "C" ISPCScene* g_ispc_scene;
     RENDER_DEBUG_CLUSTER_ID   = 8,
     RENDER_DEBUG_LOD_LEVEL    = 9,                
     RENDER_PATH_TRACER        = 10,            
+    RENDER_PATH_TRACER_DENOISE = 11,            
     
   };
+
+struct Denoiser
+{
+  OIDNDevice device;
+  OIDNFilter filter;
+  Vec3f *colorBuffer;
+  Vec3f *normalBuffer;  
+  Vec3f *outputBuffer;
+  uint width, height;
+
+  void checkError()
+  {
+    const char *errorMessage;    
+    if (oidnGetDeviceError(device, &errorMessage) != OIDN_ERROR_NONE) {
+      std::cerr << "OIDN error: " << errorMessage << std::endl;
+      FATAL("OIDN ERROR");
+    }
+   
+  }
+  
+  Denoiser(const uint width, const uint height) : width(width), height(height)
+  {    
+    std::cout << "Init Denoiser...";
+    device = oidnNewDevice(OIDN_DEVICE_TYPE_SYCL);
+    checkError();
+    oidnCommitDevice(device);
+    checkError();    
+    filter = oidnNewFilter(device, "RT"); // generic ray tracing filter      
+    checkError();
+
+#if 0
+    colorBuffer  = (Vec3f*)alignedUSMMalloc(sizeof(Vec3f)*width*height,64,EmbreeUSMMode::EMBREE_USM_SHARED); //DEVICE_READ_WRITE);
+    normalBuffer = (Vec3f*)alignedUSMMalloc(sizeof(Vec3f)*width*height,64,EmbreeUSMMode::EMBREE_USM_SHARED); //DEVICE_READ_WRITE);
+    outputBuffer = (Vec3f*)alignedUSMMalloc(sizeof(Vec3f)*width*height,64,EmbreeUSMMode::EMBREE_USM_SHARED); //DEVICE_READ_WRITE);
+#else
+    colorBuffer  = (Vec3f*)alignedUSMMalloc(sizeof(Vec3f)*width*height,64,EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE);
+    normalBuffer = (Vec3f*)alignedUSMMalloc(sizeof(Vec3f)*width*height,64,EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE);
+    outputBuffer = (Vec3f*)alignedUSMMalloc(sizeof(Vec3f)*width*height,64,EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE);    
+#endif    
+    oidnSetSharedFilterImage(filter, "color",  colorBuffer,
+                             OIDN_FORMAT_FLOAT3, width, height, 0, 0, 0); // beauty
+    checkError();
+
+    // oidnSetSharedFilterImage(filter, "normal",  normalBuffer,
+    //                          OIDN_FORMAT_FLOAT3, width, height, 0, 0, 0); // normal
+
+    checkError();
+    
+    oidnSetSharedFilterImage(filter, "output",  outputBuffer,
+                       OIDN_FORMAT_FLOAT3, width, height, 0, 0, 0); // denoised beauty
+    checkError();    
+    oidnSetFilter1b(filter, "ldr", true); // beauty image is HDR
+    checkError();
+
+    oidnCommitFilter(filter);
+    checkError();
+    
+    std::cout << "done" << std::endl;
+  }
+
+  __forceinline void execute()
+  {
+    oidnExecuteFilter(filter);
+    checkError();    
+  }
+
+  ~Denoiser()
+  {
+    oidnReleaseFilter(filter);    
+    oidnReleaseDevice(device);    
+  }
+};
   
 struct TutorialData
 {

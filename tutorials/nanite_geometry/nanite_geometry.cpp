@@ -73,7 +73,10 @@ namespace embree
       }
       else if (key == GLFW_KEY_F11) {
         user_rendering_mode = RENDER_PATH_TRACER;
-      }                        
+      }
+      else if (key == GLFW_KEY_F12) {
+        user_rendering_mode = RENDER_PATH_TRACER_DENOISE;
+      }                              
       else if (key == GLFW_KEY_KP_SUBTRACT) {
         user_spp -= user_spp > 0 ? 1 : 0;
       }            

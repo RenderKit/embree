@@ -217,7 +217,7 @@ namespace embree {
   }
 
 
-  Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSampler& sampler, const ISPCCamera& camera, RayStats& stats, const RTCFeatureFlags features)
+  Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSampler& sampler, const ISPCCamera& camera, Vec3f &normal, const RTCFeatureFlags features)
   {
     /* radiance accumulator and weight */
     Vec3fa L = Vec3fa(0.0f);
@@ -249,7 +249,6 @@ namespace embree {
       args.feature_mask = features;
   
       rtcIntersect1(data.g_scene,RTCRayHit_(ray),&args);
-      RayStats_addRay(stats);
       const Vec3fa wo = neg(ray.dir);
 
       /* invoke environment lights if nothing hit */
@@ -270,7 +269,8 @@ namespace embree {
       }
 
       Vec3fa Ns = normalize(ray.Ng);
-
+      if (i == 0) normal = Ns;
+      
       /* compute differential geometry */
     
       dg.geomID = ray.geomID;
@@ -316,7 +316,6 @@ namespace embree {
         sargs.context = &context.context;
         sargs.feature_mask = features;
         rtcOccluded1(data.g_scene,RTCRay_(shadow),&sargs);
-        RayStats_addShadowRay(stats);
         if (shadow.tfar > 0.0f)
           L = L + Lw*ls.weight*transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,ls.dir);
       }
@@ -334,15 +333,14 @@ namespace embree {
 
 
 
-  void renderPixelPathTracer(const TutorialData& data,
-                             int x, int y,
-                             int* pixels,
-                             const unsigned int width,
-                             const unsigned int height,
-                             const float time,
-                             const ISPCCamera& camera,
-                             RayStats& stats,
-                             const RTCFeatureFlags features)
+  Vec3f renderPixelPathTracer(const TutorialData& data,
+                              int x, int y,
+                              int* pixels,
+                              const unsigned int width,
+                              const unsigned int height,
+                              const ISPCCamera& camera,
+                              Vec3f &normal,
+                              const RTCFeatureFlags features)
   {
     RandomSampler sampler;
 
@@ -355,19 +353,11 @@ namespace embree {
       /* calculate pixel color */
       float fx = x + RandomSampler_get1D(sampler);
       float fy = y + RandomSampler_get1D(sampler);
-      L = L + renderPixelFunction(data,fx,fy,sampler,camera,stats,features);
+      L = L + renderPixelFunction(data,fx,fy,sampler,camera,normal,features);
     }
     L = L/(float)data.spp;
 
-    /* write color to framebuffer */
-    //Vec3ff accu_color = data.accu[y*width+x] + Vec3ff(L.x,L.y,L.z,1.0f); data.accu[y*width+x] = accu_color;
-    //float f = rcp(max(0.001f,accu_color.w));
-    Vec3ff accu_color = Vec3ff(L.x,L.y,L.z,1.0f);
-    float f = 1.0f;
-    unsigned int r = (unsigned int) (255.01f * clamp(accu_color.x*f,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.01f * clamp(accu_color.y*f,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.01f * clamp(accu_color.z*f,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
+    return Vec3f(L.x,L.y,L.z);
   }
   
   void renderFramePathTracer (int* pixels,
@@ -376,14 +366,16 @@ namespace embree {
                               const float time,
                               const ISPCCamera& camera,
                               TutorialData &data,
-                              uint user_spp)
+                              uint user_spp,
+                              Vec3f *color,
+                              Vec3f *normal,
+                              bool denoise)
   {
     /* render all pixels */
 #if defined(EMBREE_SYCL_TUTORIAL)
     {
       TutorialData ldata = data;
       ldata.spp = user_spp;
-
 #if 0
       int numMaterials = ldata.ispc_scene->numMaterials;      
       PRINT( numMaterials );
@@ -396,9 +388,22 @@ namespace embree {
         cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
           const unsigned int x = item.get_global_id(1); if (x >= width ) return;
           const unsigned int y = item.get_global_id(0); if (y >= height) return;
-          RayStats stats;
           const RTCFeatureFlags feature_mask = RTC_FEATURE_FLAG_ALL;
-          renderPixelPathTracer(ldata,x,y,pixels,width,height,time,camera,stats,feature_mask);
+          Vec3f Ng(1,0,0);
+          const Vec3f c = renderPixelPathTracer(ldata,x,y,pixels,width,height,camera,Ng,feature_mask);
+          if (!denoise)
+          {
+            unsigned int r = (unsigned int) (255.01f * clamp(c.x,0.0f,1.0f));
+            unsigned int g = (unsigned int) (255.01f * clamp(c.y,0.0f,1.0f));
+            unsigned int b = (unsigned int) (255.01f * clamp(c.z,0.0f,1.0f));
+            pixels[y*width+x] = (b << 16) + (g << 8) + r;  
+          }
+          else
+          {
+            normal[y*width+x] = Ng;
+            color[y*width+x] = c;                        
+          }
+          
         });
       });
       global_gpu_queue->wait_and_throw();
@@ -407,6 +412,8 @@ namespace embree {
       const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();
       const double dt = (t1-t0)*1E-9;
       ((ISPCCamera*)&camera)->render_time = dt;
+
+      
       
     }
 #endif

@@ -14,6 +14,7 @@
 
 #endif
 
+
 #define RELATIVE_MIN_LOD_DISTANCE_FACTOR 16.0f
 // 3.0f
 //#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 32.0f
@@ -67,9 +68,10 @@ namespace embree {
   RTCScene g_scene  = nullptr;
   TutorialData data;
 
-
+  Denoiser *denoiser = nullptr;
+    
   extern "C" RenderMode user_rendering_mode = RENDER_PRIMARY;
-  extern "C" uint user_spp = 1;
+  extern "C" unsigned int user_spp = 1;
 
   Averaged<double> avg_bvh_build_time(64,1.0);
   Averaged<double> avg_lod_selection_crack_fixing_time(64,1.0);
@@ -98,23 +100,23 @@ namespace embree {
   // =========================================================================================================================================================
   // =========================================================================================================================================================
   
-  static const uint LOD_LEVELS = 3;
-  //static const uint NUM_TOTAL_QUAD_NODES_PER_RTC_LCG = (1-(1<<(2*LOD_LEVELS)))/(1-4);
+  static const unsigned int LOD_LEVELS = 3;
+  //static const unsigned int NUM_TOTAL_QUAD_NODES_PER_RTC_LCG = (1-(1<<(2*LOD_LEVELS)))/(1-4);
 
   struct LODPatchLevel
   {
-    uint level;
+    unsigned int level;
     float blend;
 
-    __forceinline LODPatchLevel(const uint level, const float blend) : level(level), blend(blend) {}
+    __forceinline LODPatchLevel(const unsigned int level, const float blend) : level(level), blend(blend) {}
   };
 
 
-  __forceinline LODPatchLevel getLODPatchLevel(const float MIN_LOD_DISTANCE,LCGBP &current,const ISPCCamera& camera, const uint width, const uint height)
+  __forceinline LODPatchLevel getLODPatchLevel(const float MIN_LOD_DISTANCE,LCGBP &current,const ISPCCamera& camera, const unsigned int width, const unsigned int height)
   {
     const float minDistance = MIN_LOD_DISTANCE;
-    const uint startRange[LOD_LEVELS+1] = { 0,1,3,7};
-    const uint   endRange[LOD_LEVELS+1] = { 1,3,7,15};    
+    const unsigned int startRange[LOD_LEVELS+1] = { 0,1,3,7};
+    const unsigned int   endRange[LOD_LEVELS+1] = { 1,3,7,15};    
     
     const Vec3f v0 = current.patch.v0;
     const Vec3f v1 = current.patch.v1;
@@ -126,10 +128,10 @@ namespace embree {
 
     const float dist = fabs(length(center-org));
     const float dist_minDistance = dist/minDistance;
-    const uint dist_level = floorf(dist_minDistance);
+    const unsigned int dist_level = floorf(dist_minDistance);
 
-    uint segment = -1;
-    for (uint i=0;i<LOD_LEVELS;i++)
+    unsigned int segment = -1;
+    for (unsigned int i=0;i<LOD_LEVELS;i++)
       if (startRange[i] <= dist_level && dist_level < endRange[i])
       {          
         segment = i;
@@ -177,7 +179,7 @@ namespace embree {
   }
   
 
-  __forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz, const uint width, const uint height, const bool clip=true)
+  __forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz, const unsigned int width, const unsigned int height, const bool clip=true)
   {
     const Vec3f vn = cross(vx,vy);    
     const float distance = (float)dot(vn,vz) / (float)dot(vn,p);
@@ -194,7 +196,7 @@ namespace embree {
     return Vec2f(a,b);
   }
   
-  __forceinline LODEdgeLevel getLODEdgeLevels(LCGBP &current,const ISPCCamera& camera, const uint width, const uint height)
+  __forceinline LODEdgeLevel getLODEdgeLevels(LCGBP &current,const ISPCCamera& camera, const unsigned int width, const unsigned int height)
   {
     const Vec3f v0 = current.patch.v0;
     const Vec3f v1 = current.patch.v1;
@@ -235,10 +237,10 @@ namespace embree {
     return lod_levels;
   }
   
-  inline Vec3fa getVertex(const uint x, const uint y, const Vec3fa *const vtx, const uint grid_resX, const uint grid_resY)
+  inline Vec3fa getVertex(const unsigned int x, const unsigned int y, const Vec3fa *const vtx, const unsigned int grid_resX, const unsigned int grid_resY)
   {
-    const uint px = min(x,grid_resX-1);
-    const uint py = min(y,grid_resY-1);    
+    const unsigned int px = min(x,grid_resX-1);
+    const unsigned int py = min(y,grid_resY-1);    
     return vtx[py*grid_resX + px];
   }
   
@@ -247,35 +249,35 @@ namespace embree {
   // ==============================================================================================
   
   struct __aligned(64) LCG_Scene {
-    static const uint LOD_LEVELS = 3;
+    static const unsigned int LOD_LEVELS = 3;
 
     /* --- general data --- */
     BBox3f bounds;
     
     /* --- lossy compressed bilinear patches --- */
-    uint numAllocatedLCGBP;
-    uint numAllocatedLCGBPStates;    
-    uint numLCGBP;
-    uint numCurrentLCGBPStates;        
+    unsigned int numAllocatedLCGBP;
+    unsigned int numAllocatedLCGBPStates;    
+    unsigned int numLCGBP;
+    unsigned int numCurrentLCGBPStates;        
     LCGBP *lcgbp;
     LCGBP_State *lcgbp_state;    
-    uint numCrackFixQuadNodes;
+    unsigned int numCrackFixQuadNodes;
 
     /* --- lossy compressed meshes --- */
-    uint numLCQuadsTotal;
-    uint numLCMeshClustersMaxRes;    
-    uint numLCMeshClusters;
-    uint numLCMeshClusterRoots;
-    uint numLCMeshClusterRootsPerFrame;
-    uint numLCMeshClusterQuadsPerFrame;
+    unsigned int numLCQuadsTotal;
+    unsigned int numLCMeshClustersMaxRes;    
+    unsigned int numLCMeshClusters;
+    unsigned int numLCMeshClusterRoots;
+    unsigned int numLCMeshClusterRootsPerFrame;
+    unsigned int numLCMeshClusterQuadsPerFrame;
     //LossyCompressedMesh *lcm;
     LossyCompressedMeshCluster  *lcm_cluster;
-    uint *lcm_cluster_roots_IDs;
-    uint *lcm_cluster_roots_IDs_per_frame;
+    unsigned int *lcm_cluster_roots_IDs;
+    unsigned int *lcm_cluster_roots_IDs_per_frame;
     
     /* --- embree geometry --- */
     RTCGeometry geometry;
-    uint geomID;
+    unsigned int geomID;
 
     /* --- texture handle --- */
     Texture* map_Kd;
@@ -283,12 +285,12 @@ namespace embree {
     /* --- LOD settings --- */
     float minLODDistance;
     
-    LCG_Scene(const uint maxNumLCGBP);
+    LCG_Scene(const unsigned int maxNumLCGBP);
 
-    void addGrid(const uint gridResX, const uint gridResY, const Vec3fa *const vtx);
+    void addGrid(const unsigned int gridResX, const unsigned int gridResY, const Vec3fa *const vtx);
   };
   
-  LCG_Scene::LCG_Scene(const uint maxNumLCGBP)
+  LCG_Scene::LCG_Scene(const unsigned int maxNumLCGBP)
   {
     bounds = BBox3f(empty);
     minLODDistance = 1.0f;
@@ -320,17 +322,17 @@ namespace embree {
     }
   }
 
-  void LCG_Scene::addGrid(const uint gridResX, const uint gridResY, const Vec3fa *const vtx)
+  void LCG_Scene::addGrid(const unsigned int gridResX, const unsigned int gridResY, const Vec3fa *const vtx)
   {
     double avg_error = 0.0;
     double max_error = 0.0;
-    uint num_error = 0;
+    unsigned int num_error = 0;
 
     PRINT(gridResX);
     PRINT(gridResY);
 
-    const uint lcg_resX = ((gridResX-1) / LCGBP::GRID_RES_QUAD);
-    const uint lcg_resY = ((gridResY-1) / LCGBP::GRID_RES_QUAD);
+    const unsigned int lcg_resX = ((gridResX-1) / LCGBP::GRID_RES_QUAD);
+    const unsigned int lcg_resY = ((gridResY-1) / LCGBP::GRID_RES_QUAD);
 
     BBox3f gridBounds(empty);
     
@@ -347,8 +349,8 @@ namespace embree {
         const Vec2f u_range((float)start_x/(gridResX-1),(float)(start_x+LCGBP::GRID_RES_QUAD)/(gridResX-1));
         const Vec2f v_range((float)start_y/(gridResY-1),(float)(start_y+LCGBP::GRID_RES_QUAD)/(gridResY-1));
 
-        const uint current_x = start_x / LCGBP::GRID_RES_QUAD;
-        const uint current_y = start_y / LCGBP::GRID_RES_QUAD;        
+        const unsigned int current_x = start_x / LCGBP::GRID_RES_QUAD;
+        const unsigned int current_y = start_y / LCGBP::GRID_RES_QUAD;        
         
         const int neighbor_top    = current_y>0          ? numLCGBP-lcg_resX : -1;
         const int neighbor_right  = current_x<lcg_resX-1 ? numLCGBP+1        : -1;
@@ -393,19 +395,19 @@ namespace embree {
   // ==============================================================================================
 
 
-  uint convertISPCQuadMesh(ISPCQuadMesh* mesh, RTCScene scene, ISPCOBJMaterial *material,const uint geomID,std::vector<LossyCompressedMesh*> &lcm_ptrs,std::vector<LossyCompressedMeshCluster> &lcm_clusters, std::vector<uint> &lcm_clusterRootIDs, size_t &totalCompressedSize, size_t &numDecompressedBlocks, sycl::queue &queue);
+  unsigned int convertISPCQuadMesh(ISPCQuadMesh* mesh, RTCScene scene, ISPCOBJMaterial *material,const unsigned int geomID,std::vector<LossyCompressedMesh*> &lcm_ptrs,std::vector<LossyCompressedMeshCluster> &lcm_clusters, std::vector<unsigned int> &lcm_clusterRootIDs, size_t &totalCompressedSize, size_t &numDecompressedBlocks, sycl::queue &queue);
   
   void convertISPCGridMesh(ISPCGridMesh* grid, RTCScene scene, ISPCOBJMaterial *material)
   {
-    uint numLCGBP = 0;
+    unsigned int numLCGBP = 0;
     
     /* --- count lcgbp --- */
-    for (uint i=0;i<grid->numGrids;i++)
+    for (unsigned int i=0;i<grid->numGrids;i++)
     {
       PRINT3(i,grid->grids[i].resX,grid->grids[i].resY);      
-      const uint grid_resX = grid->grids[i].resX;
-      const uint grid_resY = grid->grids[i].resY;
-      const uint numInitialSubGrids = ((grid_resX-1) / LCGBP::GRID_RES_QUAD) * ((grid_resY-1) / LCGBP::GRID_RES_QUAD);
+      const unsigned int grid_resX = grid->grids[i].resX;
+      const unsigned int grid_resY = grid->grids[i].resY;
+      const unsigned int numInitialSubGrids = ((grid_resX-1) / LCGBP::GRID_RES_QUAD) * ((grid_resY-1) / LCGBP::GRID_RES_QUAD);
       //PRINT(numInitialSubGrids);
       numLCGBP  += numInitialSubGrids;
     }
@@ -416,7 +418,7 @@ namespace embree {
     new (global_lcgbp_scene) LCG_Scene(numLCGBP);
     
     /* --- fill array of LCGBP --- */
-    for (uint i=0;i<grid->numGrids;i++)
+    for (unsigned int i=0;i<grid->numGrids;i++)
       global_lcgbp_scene->addGrid(grid->grids[i].resX,grid->grids[i].resY,grid->positions[0]);    
 
     global_lcgbp_scene->geometry = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY);
@@ -443,23 +445,23 @@ namespace embree {
 
   
 
-  void generateGrid(RTCScene scene, const uint gridResX, const uint gridResY)
+  void generateGrid(RTCScene scene, const unsigned int gridResX, const unsigned int gridResY)
   {
-    const uint numLCGBP = ((gridResX-1) / LCGBP::GRID_RES_QUAD) * ((gridResY-1) / LCGBP::GRID_RES_QUAD);
+    const unsigned int numLCGBP = ((gridResX-1) / LCGBP::GRID_RES_QUAD) * ((gridResY-1) / LCGBP::GRID_RES_QUAD);
 
     /* --- allocate global LCGBP --- */
     global_lcgbp_scene = (LCG_Scene*)alignedUSMMalloc(sizeof(LCG_Scene),64,EMBREE_USM_SHARED);
     new (global_lcgbp_scene) LCG_Scene(numLCGBP);
 
-    const uint vertices = gridResX*gridResY;
+    const unsigned int vertices = gridResX*gridResY;
     Vec3fa *vtx = (Vec3fa*)malloc(sizeof(Vec3fa)*vertices);
 
     const FileName fileNameDisplacement("Rock_Mossy_02_height.png");
     Texture *displacement = new Texture(loadImage(fileNameDisplacement),fileNameDisplacement);
     PRINT2(displacement->width,displacement->height);
     
-    for (uint y=0;y<gridResY;y++)
-      for (uint x=0;x<gridResX;x++)
+    for (unsigned int y=0;y<gridResY;y++)
+      for (unsigned int x=0;x<gridResX;x++)
         vtx[y*gridResX+x] = generateVertex(x,y,gridResX,gridResY,displacement);
     
     global_lcgbp_scene->addGrid(gridResX,gridResY,vtx);
@@ -491,13 +493,14 @@ namespace embree {
     rtcSetSceneBuildQuality(data.g_scene,RTC_BUILD_QUALITY_LOW);
     rtcSetSceneFlags(data.g_scene,RTC_SCENE_FLAG_DYNAMIC);
 
+    
 #if 1
     PRINT(g_ispc_scene->numGeometries);
     PRINT(g_ispc_scene->numMaterials);
 
-    uint numGridMeshes = 0;
-    uint numQuadMeshes = 0;
-    uint numQuads      = 0;
+    unsigned int numGridMeshes = 0;
+    unsigned int numQuadMeshes = 0;
+    unsigned int numQuads      = 0;
     BBox3f scene_bounds(empty);
     for (unsigned int geomID=0; geomID<g_ispc_scene->numGeometries; geomID++)
     {
@@ -507,7 +510,7 @@ namespace embree {
         ISPCQuadMesh *mesh = (ISPCQuadMesh*)geometry;
         numQuadMeshes++;
         numQuads+= mesh->numQuads;
-        for (uint i=0;i<mesh->numVertices;i++)
+        for (unsigned int i=0;i<mesh->numVertices;i++)
           scene_bounds.extend(mesh->positions[0][i]);
       }
     }
@@ -521,7 +524,7 @@ namespace embree {
     
     std::vector<LossyCompressedMesh*> lcm_ptrs;
     std::vector<LossyCompressedMeshCluster> lcm_clusters;
-    std::vector<uint> lcm_clusterRootIDs;
+    std::vector<unsigned int> lcm_clusterRootIDs;
     
     size_t totalCompressedSize = 0;
     size_t numDecompressedBlocks = 0;
@@ -536,7 +539,7 @@ namespace embree {
       {
         std::cout << "Processing mesh " << geomID << " of " << g_ispc_scene->numGeometries << " meshes in " << std::flush;
         double t0 = getSeconds();
-        const uint numNumClustersMaxRes = convertISPCQuadMesh((ISPCQuadMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID],geomID,lcm_ptrs,lcm_clusters,lcm_clusterRootIDs,totalCompressedSize,numDecompressedBlocks,*global_gpu_queue);
+        const unsigned int numNumClustersMaxRes = convertISPCQuadMesh((ISPCQuadMesh*)geometry,data.g_scene, (ISPCOBJMaterial*)g_ispc_scene->materials[geomID],geomID,lcm_ptrs,lcm_clusters,lcm_clusterRootIDs,totalCompressedSize,numDecompressedBlocks,*global_gpu_queue);
         double t1= getSeconds();
         std::cout << (t1-t0) << " seconds" << std::endl << std::flush;
         global_lcgbp_scene->numLCQuadsTotal += ((ISPCQuadMesh*)geometry)->numQuads;
@@ -562,20 +565,20 @@ namespace embree {
       //EmbreeUSMMode mode = EmbreeUSMMode::EMBREE_USM_SHARED;
       
       global_lcgbp_scene->lcm_cluster = (LossyCompressedMeshCluster*)alignedUSMMalloc(sizeof(LossyCompressedMeshCluster)*global_lcgbp_scene->numLCMeshClusters,64,mode);
-      global_lcgbp_scene->lcm_cluster_roots_IDs = (uint*)alignedUSMMalloc(sizeof(uint)*global_lcgbp_scene->numLCMeshClusterRoots,64,mode);
-      global_lcgbp_scene->lcm_cluster_roots_IDs_per_frame = (uint*)alignedUSMMalloc(sizeof(uint)*global_lcgbp_scene->numLCMeshClusters,64,mode);
+      global_lcgbp_scene->lcm_cluster_roots_IDs = (unsigned int*)alignedUSMMalloc(sizeof(unsigned int)*global_lcgbp_scene->numLCMeshClusterRoots,64,mode);
+      global_lcgbp_scene->lcm_cluster_roots_IDs_per_frame = (unsigned int*)alignedUSMMalloc(sizeof(unsigned int)*global_lcgbp_scene->numLCMeshClusters,64,mode);
 
 
       global_gpu_queue->memcpy(global_lcgbp_scene->lcm_cluster,&*lcm_clusters.begin(),sizeof(LossyCompressedMeshCluster)*global_lcgbp_scene->numLCMeshClusters);
-      global_gpu_queue->memcpy(global_lcgbp_scene->lcm_cluster_roots_IDs,&*lcm_clusterRootIDs.begin(),sizeof(uint)*global_lcgbp_scene->numLCMeshClusterRoots);
+      global_gpu_queue->memcpy(global_lcgbp_scene->lcm_cluster_roots_IDs,&*lcm_clusterRootIDs.begin(),sizeof(unsigned int)*global_lcgbp_scene->numLCMeshClusterRoots);
 
       gpu::waitOnQueueAndCatchException(*global_gpu_queue);        
       
-      //for (uint i=0;i<global_lcgbp_scene->numLCMeshClusters;i++)
+      //for (unsigned int i=0;i<global_lcgbp_scene->numLCMeshClusters;i++)
       //  global_lcgbp_scene->lcm_cluster[i] = lcm_clusters[i];
 
-      uint numLODQuads = 0;
-      for (uint i=0;i<global_lcgbp_scene->numLCMeshClusterRoots;i++)
+      unsigned int numLODQuads = 0;
+      for (unsigned int i=0;i<global_lcgbp_scene->numLCMeshClusterRoots;i++)
         numLODQuads += lcm_clusters[ lcm_clusterRootIDs[i] ].numQuads;
       
       
@@ -593,8 +596,8 @@ namespace embree {
     }
     
 #else
-    const uint gridResX = 16*1024;
-    const uint gridResY = 16*1024;    
+    const unsigned int gridResX = 16*1024;
+    const unsigned int gridResY = 16*1024;    
     generateGrid(data.g_scene,gridResX,gridResY);
 #endif    
     /* update scene */
@@ -646,8 +649,8 @@ namespace embree {
 
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(1.0f,1.0f,1.0f);
 
-    const uint localID = ray.primID & (((uint)1<<RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT)-1);
-    const uint primID = ray.primID >> RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT;
+    const unsigned int localID = ray.primID & (((unsigned int)1<<RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT)-1);
+    const unsigned int primID = ray.primID >> RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT;
     
     Vec3f color(1.0f,1.0f,1.0f);
     
@@ -662,18 +665,18 @@ namespace embree {
     }
     else if (mode == RENDER_DEBUG_SUBGRIDS)
     {
-      const uint gridID = lcgbp_scene->lcgbp_state[primID].lcgbp->ID;
-      const uint subgridID = lcgbp_scene->lcgbp_state[primID].localID;    
+      const unsigned int gridID = lcgbp_scene->lcgbp_state[primID].lcgbp->ID;
+      const unsigned int subgridID = lcgbp_scene->lcgbp_state[primID].localID;    
       color = randomColor(gridID*(16+4+1)+subgridID);   
     }    
     else if (mode == RENDER_DEBUG_GRIDS)
     {
-      const uint gridID = lcgbp_scene->lcgbp_state[primID].lcgbp->ID;      
+      const unsigned int gridID = lcgbp_scene->lcgbp_state[primID].lcgbp->ID;      
       color = randomColor(gridID);   
     }
     else if (mode == RENDER_DEBUG_LOD)
     {
-      const uint step = lcgbp_scene->lcgbp_state[primID].step; 
+      const unsigned int step = lcgbp_scene->lcgbp_state[primID].step; 
       if (step == 4)
         color = Vec3fa(0,0,1);
       else if (step == 2)
@@ -683,36 +686,36 @@ namespace embree {
     }
     else if (mode == RENDER_DEBUG_CRACK_FIXING)
     {
-      const uint cracks_fixed = lcgbp_scene->lcgbp_state[primID].cracksFixed();
+      const unsigned int cracks_fixed = lcgbp_scene->lcgbp_state[primID].cracksFixed();
       if (cracks_fixed)
         color = Vec3fa(1,0,1);      
     }
     else if (mode == RENDER_DEBUG_CLOD)
     {
-      const uint step = lcgbp_scene->lcgbp_state[primID].step; 
+      const unsigned int step = lcgbp_scene->lcgbp_state[primID].step; 
       if (step == 4)
         color = Vec3fa(0,0,1);
       else if (step == 2)
         color = Vec3fa(0,1,0);
       else if (step == 1)
         color = Vec3fa(1,0,0);                  
-      const uint blend = (uint)lcgbp_scene->lcgbp_state[primID].blend;
+      const unsigned int blend = (unsigned int)lcgbp_scene->lcgbp_state[primID].blend;
       if (blend)
         color = Vec3fa(1,1,0);      
     }    
     else if (mode == RENDER_DEBUG_TEXTURE)
     {
-      const uint flip_uv = localID & 1;
-      const uint localQuadID = localID>>1;
-      const uint local_y = localQuadID /  RTC_LOSSY_COMPRESSED_GRID_QUAD_RES;
-      const uint local_x = localQuadID %  RTC_LOSSY_COMPRESSED_GRID_QUAD_RES;
+      const unsigned int flip_uv = localID & 1;
+      const unsigned int localQuadID = localID>>1;
+      const unsigned int local_y = localQuadID /  RTC_LOSSY_COMPRESSED_GRID_QUAD_RES;
+      const unsigned int local_x = localQuadID %  RTC_LOSSY_COMPRESSED_GRID_QUAD_RES;
 
       const LCGBP_State &state = lcgbp_scene->lcgbp_state[primID];
       const LCGBP &current = *state.lcgbp;
-      const uint start_x = state.start_x;
-      const uint start_y = state.start_y;
-      const uint end_x = state.start_x + state.step*8;
-      const uint end_y = state.start_y + state.step*8;
+      const unsigned int start_x = state.start_x;
+      const unsigned int start_y = state.start_y;
+      const unsigned int end_x = state.start_x + state.step*8;
+      const unsigned int end_y = state.start_y + state.step*8;
 
       const float blend_start_u = (float)start_x / LCGBP::GRID_RES_QUAD;
       const float blend_end_u   = (float)  end_x / LCGBP::GRID_RES_QUAD;
@@ -758,14 +761,14 @@ namespace embree {
                            const ISPCCamera& camera,
                            LCG_Scene *lcgbp_scene,
                            const RenderMode mode,
-                           const uint spp)
+                           const unsigned int spp)
   {
     RandomSampler sampler;
 
     Vec3fa color(0.0f);
     const float inv_spp = 1.0f / (float)spp;
     
-    for (uint i=0;i<spp;i++)
+    for (unsigned int i=0;i<spp;i++)
     {
       float fx = x; 
       float fy = y; 
@@ -791,13 +794,17 @@ namespace embree {
     pixels[y*width+x] = (b << 16) + (g << 8) + r;
   }
 
+  
   void renderFramePathTracer (int* pixels,
                               const unsigned int width,
                               const unsigned int height,
                               const float time,
                               const ISPCCamera& camera,
                               TutorialData &data,
-                              uint user_spp);
+                              unsigned int user_spp,
+                              Vec3f *color,
+                              Vec3f *normal,
+                              bool denoise);
   
   
   extern "C" void renderFrameStandard (int* pixels,
@@ -809,10 +816,10 @@ namespace embree {
     /* render all pixels */
 #if defined(EMBREE_SYCL_TUTORIAL)
     RenderMode rendering_mode = user_rendering_mode;
-    if (rendering_mode != RENDER_PATH_TRACER)
+    if (rendering_mode != RENDER_PATH_TRACER && rendering_mode != RENDER_PATH_TRACER_DENOISE)
     {
       LCG_Scene *lcgbp_scene = global_lcgbp_scene;
-      uint spp = user_spp;
+      unsigned int spp = user_spp;
       TutorialData ldata = data;
       sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
         const sycl::nd_range<2> nd_range = make_nd_range(height,width);
@@ -830,12 +837,37 @@ namespace embree {
     }
     else
     {
-      renderFramePathTracer(pixels,width,height,time,camera,data,user_spp);      
+      Vec3f *color   = denoiser->colorBuffer;
+      Vec3f *normal  = denoiser->normalBuffer;      
+      Vec3f *output  = denoiser->outputBuffer;
+
+      bool denoise = rendering_mode == RENDER_PATH_TRACER_DENOISE;
+      renderFramePathTracer(pixels,width,height,time,camera,data,user_spp,color,normal,denoise);
+      
+      if (denoise)
+      {
+        denoiser->execute();
+        
+        sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh) {
+          const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+          cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
+            const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+            const unsigned int y = item.get_global_id(0); if (y >= height) return;
+            Vec3f c = output[y*width+x];
+            unsigned int r = (unsigned int) (255.01f * clamp(c.x,0.0f,1.0f));
+            unsigned int g = (unsigned int) (255.01f * clamp(c.y,0.0f,1.0f));
+            unsigned int b = (unsigned int) (255.01f * clamp(c.z,0.0f,1.0f));
+            pixels[y*width+x] = (b << 16) + (g << 8) + r;                        
+          });
+        });
+      }
+      global_gpu_queue->wait_and_throw();
+          
     }
 #endif
   }
 
-  __forceinline size_t alignTo(const uint size, const uint alignment)
+  __forceinline size_t alignTo(const unsigned int size, const unsigned int alignment)
   {
     return ((size+alignment-1)/alignment)*alignment;
   }
@@ -870,7 +902,7 @@ namespace embree {
   }
 
   template<typename T>
-  static __forceinline uint atomic_add_global(T *dest, const T count=1)
+  static __forceinline unsigned int atomic_add_global(T *dest, const T count=1)
   {
     sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> counter(*dest);        
     return counter.fetch_add(count);      
@@ -879,8 +911,8 @@ namespace embree {
 
   extern "C" void device_gui()
   {
-    const uint numTrianglesPerGrid9x9 = 8*8*2;
-    const uint numTrianglesPerGrid33x33 = 32*32*2;
+    const unsigned int numTrianglesPerGrid9x9 = 8*8*2;
+    const unsigned int numTrianglesPerGrid33x33 = 32*32*2;
     ImGui::Text("SPP: %d",user_spp);    
     ImGui::Text("BVH Build Time: %4.4f ms",avg_bvh_build_time.get());
     if (global_lcgbp_scene->numLCGBP)
@@ -913,13 +945,16 @@ namespace embree {
                                  const float time,
                                  const ISPCCamera& camera)
   {
+    if (!denoiser)
+      denoiser = new Denoiser(width,height);
+    
 #if defined(EMBREE_SYCL_TUTORIAL)    
     double t0 = getSeconds();
     
-    const uint wgSize = 64;
+    const unsigned int wgSize = 64;
     LCG_Scene *local_lcgbp_scene = global_lcgbp_scene;
-    const uint numLCGBP = local_lcgbp_scene->numLCGBP;
-    const uint numLCMeshClusters = local_lcgbp_scene->numLCMeshClusters;
+    const unsigned int numLCGBP = local_lcgbp_scene->numLCGBP;
+    const unsigned int numLCMeshClusters = local_lcgbp_scene->numLCMeshClusters;
     if ( numLCGBP )
     {
       sycl::event init_event =  global_gpu_queue->submit([&](sycl::handler &cgh) {
@@ -931,25 +966,25 @@ namespace embree {
       waitOnEventAndCatchException(init_event);
 
       void *lcg_ptr = nullptr;
-      //uint lcg_num_prims = 0;
+      //unsigned int lcg_num_prims = 0;
     
       
       const sycl::nd_range<1> nd_range1(alignTo(numLCGBP,wgSize),sycl::range<1>(wgSize));              
       sycl::event compute_lod_event = global_gpu_queue->submit([=](sycl::handler& cgh){
         cgh.depends_on(init_event);                                                   
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) {
-          const uint i = item.get_global_id(0);
+          const unsigned int i = item.get_global_id(0);
           if (i < numLCGBP)
           {
             LCGBP &current = local_lcgbp_scene->lcgbp[i];
             const float minLODDistance = local_lcgbp_scene->minLODDistance;
             LODPatchLevel patchLevel = getLODPatchLevel(minLODDistance,current,camera,width,height);
-            const uint lod_level = patchLevel.level;
+            const unsigned int lod_level = patchLevel.level;
                                                                                              
-            uint lod_level_top    = lod_level;
-            uint lod_level_right  = lod_level;
-            uint lod_level_bottom = lod_level;
-            uint lod_level_left   = lod_level;
+            unsigned int lod_level_top    = lod_level;
+            unsigned int lod_level_right  = lod_level;
+            unsigned int lod_level_bottom = lod_level;
+            unsigned int lod_level_left   = lod_level;
 
             LODPatchLevel patchLevel_top    = patchLevel;
             LODPatchLevel patchLevel_right  = patchLevel;
@@ -987,12 +1022,12 @@ namespace embree {
             edgeLevels.bottom = min(edgeLevels.bottom,(uchar)lod_level_bottom);
             edgeLevels.left   = min(edgeLevels.left,(uchar)lod_level_left);
                                                                                              
-            uint blend = (uint)floorf(255.0f * patchLevel.blend);
+            unsigned int blend = (unsigned int)floorf(255.0f * patchLevel.blend);
                                                                                              
-            const uint numGrids9x9 = 1<<(2*lod_level);
-            //const uint offset = ((1<<(2*lod_level))-1)/(4-1);
-            const uint offset = atomic_add_global(&local_lcgbp_scene->numCurrentLCGBPStates,numGrids9x9);
-            uint index = 0;
+            const unsigned int numGrids9x9 = 1<<(2*lod_level);
+            //const unsigned int offset = ((1<<(2*lod_level))-1)/(4-1);
+            const unsigned int offset = atomic_add_global(&local_lcgbp_scene->numCurrentLCGBPStates,numGrids9x9);
+            unsigned int index = 0;
             if (lod_level == 0)
             {
               local_lcgbp_scene->lcgbp_state[offset+index] = LCGBP_State(&current,0,0,4,index,lod_level,edgeLevels,blend);
@@ -1000,8 +1035,8 @@ namespace embree {
             }
             else if (lod_level == 1)
             {
-              for (uint y=0;y<2;y++)
-                for (uint x=0;x<2;x++)
+              for (unsigned int y=0;y<2;y++)
+                for (unsigned int x=0;x<2;x++)
                 {
                   local_lcgbp_scene->lcgbp_state[offset+index] = LCGBP_State(&current,x*16,y*16,2,index,lod_level,edgeLevels,blend);
                   index++;
@@ -1009,8 +1044,8 @@ namespace embree {
             }
             else
             {
-              for (uint y=0;y<4;y++)
-                for (uint x=0;x<4;x++)
+              for (unsigned int y=0;y<4;y++)
+                for (unsigned int x=0;x<4;x++)
                 {
                   local_lcgbp_scene->lcgbp_state[offset+index] = LCGBP_State(&current,x*8,y*8,1,index,lod_level,edgeLevels,blend);
                   index++;
@@ -1026,7 +1061,7 @@ namespace embree {
 
     if (numLCMeshClusters)
     {
-      const uint numRootsTotal = local_lcgbp_scene->numLCMeshClusterRoots;
+      const unsigned int numRootsTotal = local_lcgbp_scene->numLCMeshClusterRoots;
       
       sycl::event init_event =  global_gpu_queue->submit([&](sycl::handler &cgh) {
         cgh.single_task([=]() {
@@ -1040,10 +1075,10 @@ namespace embree {
       sycl::event compute_lod_event = global_gpu_queue->submit([=](sycl::handler& cgh){
         cgh.depends_on(init_event);                                                   
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) {
-          const uint i = item.get_global_id(0);
+          const unsigned int i = item.get_global_id(0);
           if (i < local_lcgbp_scene->numLCMeshClusterRoots)
           {
-            const uint clusterID = local_lcgbp_scene->lcm_cluster_roots_IDs[i];            
+            const unsigned int clusterID = local_lcgbp_scene->lcm_cluster_roots_IDs[i];            
 #if 1
             const Vec3f org = camera.xfm.p;
             const Vec3f vx = camera.xfm.l.vx;
@@ -1059,27 +1094,27 @@ namespace embree {
             bool cull = frustumCull( cluster.bounds.lower.decompress(lower,diag)-org,cluster.bounds.upper.decompress(lower,diag)-org,vx*width,vy*height,vz);
             if (cull)
             {
-              const uint numQuads = cluster.numQuads;
-              gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterQuadsPerFrame,(uint)numQuads);                                          
-              const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(uint)1);                            
+              const unsigned int numQuads = cluster.numQuads;
+              gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterQuadsPerFrame,(unsigned int)numQuads);                                          
+              const unsigned int destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(unsigned int)1);                            
               local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID] = clusterID;              
             }
             else
             {
-              const uint STACK_SIZE = 16;
-              uint numStackEntries = 1;
-              uint stack[STACK_SIZE];
+              const unsigned int STACK_SIZE = 16;
+              unsigned int numStackEntries = 1;
+              unsigned int stack[STACK_SIZE];
               stack[0] = clusterID;
               while(numStackEntries)
               {
                 numStackEntries--;
-                const uint currentID = stack[numStackEntries];
+                const unsigned int currentID = stack[numStackEntries];
                 const LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[ currentID ];              
                 if (!cur.hasChildren()) // leaf
                 {
-                  const uint numQuads = cluster.numQuads;
-                  gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterQuadsPerFrame,(uint)numQuads);                                                            
-                  const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(uint)1);
+                  const unsigned int numQuads = cluster.numQuads;
+                  gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterQuadsPerFrame,(unsigned int)numQuads);                                                            
+                  const unsigned int destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(unsigned int)1);
                   local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID] =  currentID;                
                 }
                 else
@@ -1101,7 +1136,7 @@ namespace embree {
                   }
                   else
                   {
-                    const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(uint)1);
+                    const unsigned int destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(unsigned int)1);
                     local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID] =  currentID;
                   }                                
                 }              
@@ -1126,9 +1161,9 @@ namespace embree {
 
               if (!cull)
               {
-                const uint numQuads = cluster.numQuads;
-                gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterQuadsPerFrame,(uint)numQuads);                                          
-                const uint destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(uint)1);                            
+                const unsigned int numQuads = cluster.numQuads;
+                gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterQuadsPerFrame,(unsigned int)numQuads);                                          
+                const unsigned int destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(unsigned int)1);                            
                 local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID] = clusterID;
               }
             }
@@ -1144,44 +1179,6 @@ namespace embree {
       }
 
       rtcSetLCData(local_lcgbp_scene->geometry, local_lcgbp_scene->numCurrentLCGBPStates, local_lcgbp_scene->lcgbp_state, local_lcgbp_scene->lcm_cluster, local_lcgbp_scene->numLCMeshClusterRootsPerFrame,local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame);
-
-#if 0
-      //1778 1798 1819 1839
-      {
-        uint clusterID = 0;
-        const Vec3f org = camera.xfm.p;
-        const Vec3f vx = camera.xfm.l.vx;
-        const Vec3f vy = camera.xfm.l.vy;
-        const Vec3f vz = camera.xfm.l.vz;
-        
-        const LossyCompressedMeshCluster &cluster = local_lcgbp_scene->lcm_cluster[ clusterID ];
-        
-        LossyCompressedMesh *mesh = cluster.mesh;
-        const Vec3f lower = mesh->bounds.lower;
-        const Vec3f diag = mesh->bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
-        const Vec3f bounds_lower = cluster.bounds.lower.decompress(lower,diag)-org;
-        const Vec3f bounds_upper = cluster.bounds.upper.decompress(lower,diag)-org;
-
-        
-        PRINT3(vx,vy,vz);
-        PRINT2(bounds_lower,bounds_upper);
-        bool cull = frustumCullPlane(bounds_lower,bounds_upper,cross(vx,vy));
-
-        //bool cull = frustumCull(bounds_lower,bounds_upper,vx*width,vy*height,vz);
-        
-        //bool cull = frustumCull(Vec3f(10,10,1),Vec3f(11,11,1),Vec3f(4,0,0),Vec3f(0,4,0),Vec3f(-2,-2,1));        
-        PRINT(cull);
-        //exit(0);
-        const Vec2f plane_bounds_lower = projectVertexToPlane(bounds_lower-org,vx,vy,vz,width,height,false);
-        const Vec2f plane_bounds_upper = projectVertexToPlane(bounds_upper-org,vx,vy,vz,width,height,false);
-        const float l = length(plane_bounds_upper - plane_bounds_lower);
-        //const Vec2f bounds2D(abs(plane_bounds_upper - plane_bounds_lower));
-        //const float l = bounds2D.x*bounds2D.y;
-        const bool subdivide = subdivideLOD(min(plane_bounds_lower,plane_bounds_upper),max(plane_bounds_lower,plane_bounds_upper),width,height);
-        //PRINT2(min(plane_bounds_lower,plane_bounds_upper),max(plane_bounds_lower,plane_bounds_upper));
-        //PRINT4(plane_bounds_lower,plane_bounds_upper,l,subdivide);
-      }
-#endif
       
     }
 

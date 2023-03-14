@@ -523,8 +523,6 @@ namespace embree {
     DBG_PRINT(ranges.size());
     DBG_PRINT(leafIDs.size());
 
-    const uint numRanges = leafIDs.size();
-
     // === create leaf clusters ===
     //size_t totalSizeMicroMesh = 0;
     //size_t totalSizeMicroStrip = 0;
@@ -601,23 +599,23 @@ namespace embree {
 
     const int SEARCH_RADIUS = 16;
 
-    uint numClusterQuads = 0;
+    //uint numClusterQuads = 0;
     for (uint i=0;i<numClusters;i++)
     {
       index_buffer[i] = i;
       clusters[i].lod_root = true;
-      numClusterQuads += clusters[i].quads.size();
+      //numClusterQuads += clusters[i].quads.size();
     }
 
-    const uint org_numClusterQuads = numClusterQuads;
-    const uint dest_numClusterQuads = org_numClusterQuads/10;
+    //const uint org_numClusterQuads = numClusterQuads;
+    //const uint dest_numClusterQuads = org_numClusterQuads/20;
     uint iteration = 0;
-
+    
     const uint MAX_DEPTH_LIMIT = 16;
 
     uint current_numClusters = numClusters;
     
-    while(numClusterQuads > dest_numClusterQuads && current_numClusters > 1)
+    while(/*numClusterQuads > dest_numClusterQuads && */current_numClusters > 1)
     {      
       for (uint i=0;i<current_numClusters;i++)
         nearest_neighborID[i] = -1;
@@ -663,6 +661,7 @@ namespace embree {
             
               QuadMeshCluster new_cluster;
               bool success = mergeSimplifyQuadMeshCluster( clusters[leftClusterID], clusters[rightClusterID], new_cluster);
+              
               if (success && newDepth <= MAX_DEPTH_LIMIT)
               {
                 clusters[leftClusterID].lod_root = false;
@@ -703,19 +702,22 @@ namespace embree {
           index_buffer[new_numClusters++] = tmp_buffer[i];
 
 
-      uint new_numClusterQuads = 0;
-      for (uint i=0;i<new_numClusters;i++)
-        new_numClusterQuads += clusters[ index_buffer[i] ].quads.size();
+      // uint new_numClusterQuads = 0;
+      // for (uint i=0;i<new_numClusters;i++)
+      //   new_numClusterQuads += clusters[ index_buffer[i] ].quads.size();
 
       uint numTmpRoots = 0;
       for (uint i=0;i<numClusters;i++)      
         if (clusters[i].lod_root) numTmpRoots++;        
           
       iteration++;
-      numClusterQuads = new_numClusterQuads;
+      //numClusterQuads = new_numClusterQuads;
       
-      DBG_PRINT5(iteration,new_numClusters,current_numClusters,numClusterQuads,dest_numClusterQuads);
-      if (current_numClusters == new_numClusters) break; 
+      DBG_PRINT3(iteration,new_numClusters,current_numClusters);
+
+      
+      if (current_numClusters == new_numClusters) break; // couldn't merge any clusters anymore
+      
       current_numClusters = new_numClusters;
 
       if (numTmpRoots != current_numClusters)
@@ -725,7 +727,7 @@ namespace embree {
       }      
     }
 
-    //exit(0);
+    DBG_PRINT("MERGING DONE");    
     
     delete [] nearest_neighborID;        
     delete [] tmp_buffer;    
@@ -733,12 +735,10 @@ namespace embree {
     
     uint numTotalQuadsAllocate = 0;
     uint numTotalVerticesAllocate = 0;
-    uint numTmpRoots = 0;
     for (uint i=0;i<numClusters;i++)
     {
       numTotalQuadsAllocate += clusters[i].quads.size();
       numTotalVerticesAllocate += clusters[i].vertices.size();
-      if (clusters[i].lod_root) numTmpRoots++;
     }
     DBG_PRINT2(numTotalQuadsAllocate,numTotalVerticesAllocate);
     
@@ -818,7 +818,8 @@ namespace embree {
     }
     if (numTotalVerticesAllocate != globalCompressedVertexOffset) FATAL("numTotalVerticesAllocate != globalCompressedVertexOffset");
     if (numTotalQuadsAllocate    != globalCompressedIndexOffset) FATAL("numTotalQuadsAllocate != globalCompressedIndexOffset");
-    
+
+    DBG_PRINT2(compressedVertices,compressedVertices);
     queue.memcpy(lcm->compressedVertices,compressedVertices,sizeof(CompressedVertex)*globalCompressedVertexOffset);
     queue.memcpy(lcm->compressedIndices,compressedIndices,sizeof(CompressedQuadIndices)*globalCompressedIndexOffset);
     
@@ -827,7 +828,7 @@ namespace embree {
     const size_t uncompressedSizeMeshBytes = mesh->numVertices * sizeof(Vec3f) + mesh->numQuads * sizeof(uint) * 4;
     const size_t compressedSizeMeshBytes = sizeof(CompressedVertex)*numTotalVertices + sizeof(CompressedQuadIndices)*numQuads;
     const size_t clusterSizeBytes = numClusters*sizeof(LossyCompressedMeshCluster);
-    DBG_PRINT5(lcm_ID,uncompressedSizeMeshBytes,compressedSizeMeshBytes,(float)compressedSizeMeshBytes/uncompressedSizeMeshBytes,clusterSizeBytes);
+    DBG_PRINT4(uncompressedSizeMeshBytes,compressedSizeMeshBytes,(float)compressedSizeMeshBytes/uncompressedSizeMeshBytes,clusterSizeBytes);
 
     totalCompressedSize += compressedSizeMeshBytes + clusterSizeBytes;
     DBG_PRINT(maxDepth);
@@ -835,6 +836,8 @@ namespace embree {
     delete [] compressedIndices;
     delete [] compressedVertices;    
     delete [] clusters;
+
+    DBG_PRINT("CLUSTER PROCESSING DONE");    
     
     return numNumClustersMaxRes;
   }  
