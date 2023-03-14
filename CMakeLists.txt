@@ -434,6 +434,9 @@ IF (EMBREE_MAX_ISA STREQUAL "NONE")
     ELSE()
       OPTION(EMBREE_ISA_AVX512 "Enables AVX512 ISA." ${COMPILER_SUPPORTS_AVX512})
     ENDIF()
+    # Don't use OPTION, but still set them to OFF, so that embree-config.cmake is consisten with its definitions
+    SET(EMBREE_ISA_NEON   OFF)
+    SET(EMBREE_ISA_NEON2X OFF)
   ENDIF()
 
 ELSEIF (EMBREE_MAX_ISA STREQUAL "DEFAULT")
