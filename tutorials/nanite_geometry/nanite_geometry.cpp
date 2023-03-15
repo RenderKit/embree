@@ -18,17 +18,19 @@ namespace embree
   extern "C" RenderMode user_rendering_mode;
   extern "C" uint user_spp;
   
-  extern "C" {
-    int g_spp = 1;
-    int g_max_path_length = 2;
-    bool g_accumulate = 1;
-  }
-
   struct Tutorial : public SceneLoadingTutorialApplication 
-  {
+  {    
     Tutorial()
       : SceneLoadingTutorialApplication("nanite_geometry", FEATURES) 
     {
+      registerOption("spp", [] (Ref<ParseStream> cin, const FileName& path) {
+        user_spp = cin->getInt();
+      }, "--spp <int>: sets number of samples per pixel");
+
+      registerOption("rendering_mode", [] (Ref<ParseStream> cin, const FileName& path) {
+        user_rendering_mode = (RenderMode)cin->getInt();
+      }, "--rendering_mode <int>: sets rendering mode");
+      
       /* set default camera */
       camera.from = Vec3fa(2.5f,2.5f,2.5f);
       camera.to   = Vec3fa(0.0f,0.0f,0.0f);

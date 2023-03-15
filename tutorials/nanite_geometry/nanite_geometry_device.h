@@ -12,8 +12,8 @@
 
 namespace embree {
 
-extern "C" int g_spp;
-extern "C" int g_max_path_length;
+extern "C" uint user_spp;
+extern "C" uint g_max_path_length;
 extern "C" ISPCScene* g_ispc_scene;
 
   enum RenderMode {
@@ -169,7 +169,7 @@ inline void TutorialData_Constructor(TutorialData* This)
 {
   This->ispc_scene = g_ispc_scene;  
   This->g_scene  = nullptr;
-  This->spp = g_spp;
+  This->spp = user_spp;
   This->max_path_length = g_max_path_length;
   This->accu_count = 0;
 }
