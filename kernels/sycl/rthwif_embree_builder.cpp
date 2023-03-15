@@ -40,9 +40,9 @@ namespace embree
     Flags flags;                         // per context control flags
   };
 
-  void* rthwifInit(sycl::device device, sycl::context context)
+  void* zeRaytracingInitExt(sycl::device device, sycl::context context)
   {
-    ::rthwifInit();
+    ::zeRaytracingInitExt();
     
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
     
@@ -82,7 +82,7 @@ namespace embree
   {
     sycl::free(dispatchGlobalsPtr, context);
 
-    rthwifExit();
+    zeRaytracingExitExt();
   }
 
 #if defined(EMBREE_LEVEL_ZERO)
@@ -197,7 +197,7 @@ namespace embree
     host_desc.flags = ZE_HOST_MEM_ALLOC_FLAG_BIAS_CACHED;
     
     void* ptr = nullptr;
-    ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT,hDevice,&ptr);
+    ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,ZE_RAYTRACING_ACCELERATION_STRUCTURE_ALIGNMENT_EXT,hDevice,&ptr);
     if (result != ZE_RESULT_SUCCESS)
       throw_RTCError(RTC_ERROR_OUT_OF_MEMORY,"BVH memory allocation failed");
     _unused(result);
@@ -217,7 +217,7 @@ namespace embree
 
   void* rthwifAllocAccelBuffer(size_t bytes, sycl::device device, sycl::context context)
   {
-    void* ptr = sycl::aligned_alloc_shared(RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT, bytes, device, context);
+    void* ptr = sycl::aligned_alloc_shared(ZE_RAYTRACING_ACCELERATION_STRUCTURE_ALIGNMENT_EXT, bytes, device, context);
     if (ptr == nullptr)
       throw_RTCError(RTC_ERROR_OUT_OF_MEMORY,"BVH memory allocation failed");
     return ptr;
@@ -231,27 +231,27 @@ namespace embree
 
 #endif
 
-  struct GEOMETRY_INSTANCE_DESC : RTHWIF_GEOMETRY_INSTANCE_DESC
+  struct GEOMETRY_INSTANCE_DESC : ze_raytracing_geometry_instance_ext_desc_t
   {
-    RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR xfmdata;
+    ze_raytracing_transform_float3x4_aligned_column_major_ext_t xfmdata;
   };
 
   struct GEOMETRY_TYPE
   {
-    GEOMETRY_TYPE(RTHWIF_GEOMETRY_TYPE type, size_t extraBytes = 0)
+    GEOMETRY_TYPE(ze_raytracing_geometry_type_ext_t type, size_t extraBytes = 0)
       : type(type), extraBytes(extraBytes) {}
     
-    RTHWIF_GEOMETRY_TYPE type;
+    ze_raytracing_geometry_type_ext_t type;
     size_t extraBytes;
   };
 
   size_t sizeof_RTHWIF_GEOMETRY(GEOMETRY_TYPE type)
   {
     switch (type.type) {
-    case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return sizeof(RTHWIF_GEOMETRY_TRIANGLES_DESC)+type.extraBytes;
-    case RTHWIF_GEOMETRY_TYPE_QUADS      : return sizeof(RTHWIF_GEOMETRY_QUADS_DESC)+type.extraBytes;
-    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return sizeof(RTHWIF_GEOMETRY_AABBS_FPTR_DESC)+type.extraBytes;
-    case RTHWIF_GEOMETRY_TYPE_INSTANCE  : return sizeof(RTHWIF_GEOMETRY_INSTANCE_DESC)+type.extraBytes;
+    case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES  : return sizeof(ze_raytracing_geometry_triangles_ext_desc_t)+type.extraBytes;
+    case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS      : return sizeof(ze_raytracing_geometry_quads_ext_desc_t)+type.extraBytes;
+    case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR: return sizeof(ze_raytracing_geometry_aabbs_fptr_ext_desc_t)+type.extraBytes;
+    case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE  : return sizeof(ze_raytracing_geometry_instance_ext_desc_t)+type.extraBytes;
     default: assert(false); return 0;
     }
   }
@@ -259,63 +259,63 @@ namespace embree
   size_t alignof_RTHWIF_GEOMETRY(GEOMETRY_TYPE type)
   {
     switch (type.type) {
-    case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return alignof(RTHWIF_GEOMETRY_TRIANGLES_DESC);
-    case RTHWIF_GEOMETRY_TYPE_QUADS      : return alignof(RTHWIF_GEOMETRY_QUADS_DESC);
-    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return alignof(RTHWIF_GEOMETRY_AABBS_FPTR_DESC);
-    case RTHWIF_GEOMETRY_TYPE_INSTANCE  : return alignof(RTHWIF_GEOMETRY_INSTANCE_DESC);
+    case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES  : return alignof(ze_raytracing_geometry_triangles_ext_desc_t);
+    case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS      : return alignof(ze_raytracing_geometry_quads_ext_desc_t);
+    case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR: return alignof(ze_raytracing_geometry_aabbs_fptr_ext_desc_t);
+    case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE  : return alignof(ze_raytracing_geometry_instance_ext_desc_t);
     default: assert(false); return 0;
     }
   }
 
-  RTHWIF_GEOMETRY_FLAGS getGeometryFlags(Scene* scene, Geometry* geom)
+  ze_raytracing_geometry_ext_flag_t getGeometryFlags(Scene* scene, Geometry* geom)
   {
     /* invoke any hit callback when Embree filter functions are present */
-    RTHWIF_GEOMETRY_FLAGS gflags = RTHWIF_GEOMETRY_FLAG_OPAQUE;
+    ze_raytracing_geometry_ext_flag_t gflags = ZE_RAYTRACING_GEOMETRY_EXT_FLAG_OPAQUE;
     if (geom->hasArgumentFilterFunctions() || geom->hasGeometryFilterFunctions())
-      gflags = RTHWIF_GEOMETRY_FLAG_NONE;
+      gflags = ZE_RAYTRACING_GEOMETRY_EXT_FLAG_NONE;
     
 #if defined(EMBREE_RAY_MASK)
     /* invoke any hit callback when high mask bits are enabled */
     if (geom->mask & 0xFFFFFF80)
-      gflags = RTHWIF_GEOMETRY_FLAG_NONE;
+      gflags = ZE_RAYTRACING_GEOMETRY_EXT_FLAG_NONE;
 #endif
     
     return gflags;
   }
 
-  void createGeometryDesc(RTHWIF_GEOMETRY_TRIANGLES_DESC* out, Scene* scene, TriangleMesh* geom)
+  void createGeometryDesc(ze_raytracing_geometry_triangles_ext_desc_t* out, Scene* scene, TriangleMesh* geom)
   {
-    memset(out,0,sizeof(RTHWIF_GEOMETRY_TRIANGLES_DESC));
-    out->geometryType = RTHWIF_GEOMETRY_TYPE_TRIANGLES;
+    memset(out,0,sizeof(ze_raytracing_geometry_triangles_ext_desc_t));
+    out->geometryType = ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES;
     out->geometryFlags = getGeometryFlags(scene,geom);
     out->geometryMask = mask32_to_mask8(geom->mask);
     out->triangleFormat = ZE_RAYTRACING_FORMAT_EXT_TRIANGLE_INDICES_UINT32;
     out->vertexFormat = ZE_RAYTRACING_FORMAT_EXT_FLOAT3;
-    out->triangleBuffer = (RTHWIF_TRIANGLE_INDICES*) geom->triangles.getPtr();
+    out->triangleBuffer = (ze_raytracing_triangle_indices_uint32_ext_t*) geom->triangles.getPtr();
     out->triangleCount = geom->triangles.size();
     out->triangleStride = geom->triangles.getStride();
-    out->vertexBuffer = (RTHWIF_FLOAT3*) geom->vertices0.getPtr();
+    out->vertexBuffer = (ze_raytracing_float3_ext_t*) geom->vertices0.getPtr();
     out->vertexCount = geom->vertices0.size();
     out->vertexStride = geom->vertices0.getStride();
   }
 
-  void createGeometryDesc(RTHWIF_GEOMETRY_QUADS_DESC* out, Scene* scene, QuadMesh* geom)
+  void createGeometryDesc(ze_raytracing_geometry_quads_ext_desc_t* out, Scene* scene, QuadMesh* geom)
   {
-    memset(out,0,sizeof(RTHWIF_GEOMETRY_QUADS_DESC));
-    out->geometryType = RTHWIF_GEOMETRY_TYPE_QUADS;
+    memset(out,0,sizeof(ze_raytracing_geometry_quads_ext_desc_t));
+    out->geometryType = ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS;
     out->geometryFlags = getGeometryFlags(scene,geom);
     out->geometryMask = mask32_to_mask8(geom->mask);
     out->quadFormat = ZE_RAYTRACING_FORMAT_EXT_QUAD_INDICES_UINT32;
     out->vertexFormat = ZE_RAYTRACING_FORMAT_EXT_FLOAT3;
-    out->quadBuffer = (RTHWIF_QUAD_INDICES*) geom->quads.getPtr();
+    out->quadBuffer = (ze_raytracing_quad_indices_uint32_ext_t*) geom->quads.getPtr();
     out->quadCount = geom->quads.size();
     out->quadStride = geom->quads.getStride();
-    out->vertexBuffer = (RTHWIF_FLOAT3*) geom->vertices0.getPtr();
+    out->vertexBuffer = (ze_raytracing_float3_ext_t*) geom->vertices0.getPtr();
     out->vertexCount = geom->vertices0.size();
     out->vertexStride = geom->vertices0.getStride();
   }
 
-  void getProceduralAABB(const uint32_t primIDStart, const uint32_t primIDCount, void* geomUserPtr, void* buildUserPtr, RTHWIF_AABB* boundsOut)
+  void getProceduralAABB(const uint32_t primIDStart, const uint32_t primIDCount, void* geomUserPtr, void* buildUserPtr, ze_raytracing_aabb_ext_t* boundsOut)
   {
     BBox1f time_range = * (BBox1f*) buildUserPtr;
     Geometry* geom = (Geometry*) geomUserPtr;
@@ -356,15 +356,15 @@ namespace embree
     }
   };
 
-  void createGeometryDescProcedural(RTHWIF_GEOMETRY_AABBS_FPTR_DESC* out, Scene* scene, Geometry* geom)
+  void createGeometryDescProcedural(ze_raytracing_geometry_aabbs_fptr_ext_desc_t* out, Scene* scene, Geometry* geom)
   {
     uint32_t numPrimitives = geom->size();
     if (GridMesh* mesh = dynamic_cast<GridMesh*>(geom))
       numPrimitives = mesh->getNumTotalQuads(); // FIXME: slow
     
-    memset(out,0,sizeof(RTHWIF_GEOMETRY_AABBS_FPTR_DESC));
-    out->geometryType = RTHWIF_GEOMETRY_TYPE_AABBS_FPTR;
-    out->geometryFlags = RTHWIF_GEOMETRY_FLAG_NONE;
+    memset(out,0,sizeof(ze_raytracing_geometry_aabbs_fptr_ext_desc_t));
+    out->geometryType = ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR;
+    out->geometryFlags = ZE_RAYTRACING_GEOMETRY_EXT_FLAG_NONE;
     out->geometryMask = mask32_to_mask8(geom->mask);
     out->primCount = numPrimitives;
     out->getBounds = getProceduralAABB;
@@ -375,30 +375,30 @@ namespace embree
   {
     assert(geom->gsubtype == AccelSet::GTY_SUBTYPE_INSTANCE_QUATERNION);
     memset(out,0,sizeof(GEOMETRY_INSTANCE_DESC));
-    out->geometryType = RTHWIF_GEOMETRY_TYPE_INSTANCE;
-    out->instanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
+    out->geometryType = ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE;
+    out->instanceFlags = ZE_RAYTRACING_INSTANCE_EXT_FLAG_NONE;
     out->geometryMask = mask32_to_mask8(geom->mask);
     out->instanceUserID = 0;
     const AffineSpace3fa local2world = geom->getLocal2World();
     out->transformFormat = ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_ALIGNED_COLUMN_MAJOR;
     out->transform = (float*) &out->xfmdata;
-    out->bounds = (RTHWIF_AABB*) &dynamic_cast<Scene*>(geom->object)->hwaccel_bounds;
-    out->xfmdata = *(RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR*) &local2world;
+    out->bounds = (ze_raytracing_aabb_ext_t*) &dynamic_cast<Scene*>(geom->object)->hwaccel_bounds;
+    out->xfmdata = *(ze_raytracing_transform_float3x4_aligned_column_major_ext_t*) &local2world;
     EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
     out->accel = hwaccel->AccelTable[0];
   }
 
-  void createGeometryDesc(RTHWIF_GEOMETRY_INSTANCE_DESC* out, Scene* scene, Instance* geom)
+  void createGeometryDesc(ze_raytracing_geometry_instance_ext_desc_t* out, Scene* scene, Instance* geom)
   {
     assert(geom->gsubtype == AccelSet::GTY_SUBTYPE_DEFAULT);
-    memset(out,0,sizeof(RTHWIF_GEOMETRY_INSTANCE_DESC));
-    out->geometryType = RTHWIF_GEOMETRY_TYPE_INSTANCE;
-    out->instanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
+    memset(out,0,sizeof(ze_raytracing_geometry_instance_ext_desc_t));
+    out->geometryType = ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE;
+    out->instanceFlags = ZE_RAYTRACING_INSTANCE_EXT_FLAG_NONE;
     out->geometryMask = mask32_to_mask8(geom->mask);
     out->instanceUserID = 0;
     out->transformFormat = ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_ALIGNED_COLUMN_MAJOR;
     out->transform = (float*) &geom->local2world[0];
-    out->bounds = (RTHWIF_AABB*) &dynamic_cast<Scene*>(geom->object)->hwaccel_bounds;
+    out->bounds = (ze_raytracing_aabb_ext_t*) &dynamic_cast<Scene*>(geom->object)->hwaccel_bounds;
     EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
     out->accel = hwaccel->AccelTable[0];
   }
@@ -406,37 +406,37 @@ namespace embree
   void createGeometryDesc(char* out, Scene* scene, Geometry* geom, GEOMETRY_TYPE type)
   {
     switch (type.type) {
-    case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return createGeometryDesc((RTHWIF_GEOMETRY_TRIANGLES_DESC*)out,scene,dynamic_cast<TriangleMesh*>(geom));
-    case RTHWIF_GEOMETRY_TYPE_QUADS      : return createGeometryDesc((RTHWIF_GEOMETRY_QUADS_DESC*)out,scene,dynamic_cast<QuadMesh*>(geom));
-    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return createGeometryDescProcedural((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)out,scene,geom);
-    case RTHWIF_GEOMETRY_TYPE_INSTANCE:
+    case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES  : return createGeometryDesc((ze_raytracing_geometry_triangles_ext_desc_t*)out,scene,dynamic_cast<TriangleMesh*>(geom));
+    case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS      : return createGeometryDesc((ze_raytracing_geometry_quads_ext_desc_t*)out,scene,dynamic_cast<QuadMesh*>(geom));
+    case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR: return createGeometryDescProcedural((ze_raytracing_geometry_aabbs_fptr_ext_desc_t*)out,scene,geom);
+    case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE:
       if (type.extraBytes) return createGeometryDesc((GEOMETRY_INSTANCE_DESC*)out,scene,dynamic_cast<Instance*>(geom));
-      else                 return createGeometryDesc((RTHWIF_GEOMETRY_INSTANCE_DESC*)out,scene,dynamic_cast<Instance*>(geom));
+      else                 return createGeometryDesc((ze_raytracing_geometry_instance_ext_desc_t*)out,scene,dynamic_cast<Instance*>(geom));
     default: assert(false);
     }
   }
 
-  RTHWIF_BUILD_QUALITY convertBuildQuality(RTCBuildQuality quality_flags)
+  ze_raytracing_build_quality_ext_t convertBuildQuality(RTCBuildQuality quality_flags)
   {
     switch (quality_flags) {
-    case RTC_BUILD_QUALITY_LOW    : return RTHWIF_BUILD_QUALITY_LOW;
-    case RTC_BUILD_QUALITY_MEDIUM : return RTHWIF_BUILD_QUALITY_MEDIUM;
-    case RTC_BUILD_QUALITY_HIGH   : return RTHWIF_BUILD_QUALITY_HIGH;
-    case RTC_BUILD_QUALITY_REFIT  : return RTHWIF_BUILD_QUALITY_LOW;
-    default                       : return RTHWIF_BUILD_QUALITY_MEDIUM;
+    case RTC_BUILD_QUALITY_LOW    : return ZE_RAYTRACING_BUILD_QUALITY_EXT_LOW;
+    case RTC_BUILD_QUALITY_MEDIUM : return ZE_RAYTRACING_BUILD_QUALITY_EXT_MEDIUM;
+    case RTC_BUILD_QUALITY_HIGH   : return ZE_RAYTRACING_BUILD_QUALITY_EXT_HIGH;
+    case RTC_BUILD_QUALITY_REFIT  : return ZE_RAYTRACING_BUILD_QUALITY_EXT_LOW;
+    default                       : return ZE_RAYTRACING_BUILD_QUALITY_EXT_MEDIUM;
     }
   }
 
-  RTHWIF_BUILD_FLAGS convertBuildFlags(RTCSceneFlags scene_flags, RTCBuildQuality quality_flags)
+  ze_raytracing_build_ext_flag_t convertBuildFlags(RTCSceneFlags scene_flags, RTCBuildQuality quality_flags)
   {
-    uint32_t result = RTHWIF_BUILD_FLAG_NONE;
-    if (scene_flags & RTC_SCENE_FLAG_COMPACT) result |= RTHWIF_BUILD_FLAG_COMPACT;
+    uint32_t result = ZE_RAYTRACING_BUILD_EXT_FLAG_NONE;
+    if (scene_flags & RTC_SCENE_FLAG_COMPACT) result |= ZE_RAYTRACING_BUILD_EXT_FLAG_COMPACT;
 
     /* only in high quality build mode spatial splits are allowed in Embree */
     if (quality_flags != RTC_BUILD_QUALITY_HIGH)
-      result |= RTHWIF_BUILD_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION;
+      result |= ZE_RAYTRACING_BUILD_EXT_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION;
 
-    return (RTHWIF_BUILD_FLAGS) result;
+    return (ze_raytracing_build_ext_flag_t) result;
   }  
 
   BBox3f rthwifBuild(Scene* scene, AccelBuffer& accel)
@@ -445,58 +445,58 @@ namespace embree
     {
       /* no HW support for MB yet */
       if (scene->get(geomID)->numTimeSegments() > 0)
-        return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR;
+        return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR;
 
       switch (scene->get(geomID)->getType()) {
-      case Geometry::GTY_FLAT_LINEAR_CURVE    : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
-      case Geometry::GTY_ROUND_LINEAR_CURVE   : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
-      case Geometry::GTY_ORIENTED_LINEAR_CURVE: return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
-      case Geometry::GTY_CONE_LINEAR_CURVE    : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_FLAT_LINEAR_CURVE    : return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
+      case Geometry::GTY_ROUND_LINEAR_CURVE   : return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
+      case Geometry::GTY_ORIENTED_LINEAR_CURVE: return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
+      case Geometry::GTY_CONE_LINEAR_CURVE    : return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
       
-      case Geometry::GTY_FLAT_BEZIER_CURVE    : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
-      case Geometry::GTY_ROUND_BEZIER_CURVE   : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
-      case Geometry::GTY_ORIENTED_BEZIER_CURVE: return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_FLAT_BEZIER_CURVE    : return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
+      case Geometry::GTY_ROUND_BEZIER_CURVE   : return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
+      case Geometry::GTY_ORIENTED_BEZIER_CURVE: return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
       
-      case Geometry::GTY_FLAT_BSPLINE_CURVE    : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
-      case Geometry::GTY_ROUND_BSPLINE_CURVE   : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
-      case Geometry::GTY_ORIENTED_BSPLINE_CURVE: return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_FLAT_BSPLINE_CURVE    : return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
+      case Geometry::GTY_ROUND_BSPLINE_CURVE   : return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
+      case Geometry::GTY_ORIENTED_BSPLINE_CURVE: return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
       
-      case Geometry::GTY_FLAT_HERMITE_CURVE    : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
-      case Geometry::GTY_ROUND_HERMITE_CURVE   : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
-      case Geometry::GTY_ORIENTED_HERMITE_CURVE: return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_FLAT_HERMITE_CURVE    : return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
+      case Geometry::GTY_ROUND_HERMITE_CURVE   : return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
+      case Geometry::GTY_ORIENTED_HERMITE_CURVE: return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
       
-      case Geometry::GTY_FLAT_CATMULL_ROM_CURVE    : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
-      case Geometry::GTY_ROUND_CATMULL_ROM_CURVE   : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
-      case Geometry::GTY_ORIENTED_CATMULL_ROM_CURVE: return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_FLAT_CATMULL_ROM_CURVE    : return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
+      case Geometry::GTY_ROUND_CATMULL_ROM_CURVE   : return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
+      case Geometry::GTY_ORIENTED_CATMULL_ROM_CURVE: return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
       
-      case Geometry::GTY_TRIANGLE_MESH: return RTHWIF_GEOMETRY_TYPE_TRIANGLES; break;
-      case Geometry::GTY_QUAD_MESH    : return RTHWIF_GEOMETRY_TYPE_QUADS; break;
-      case Geometry::GTY_GRID_MESH    : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
-      case Geometry::GTY_SUBDIV_MESH  : assert(false); return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_TRIANGLE_MESH: return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES; break;
+      case Geometry::GTY_QUAD_MESH    : return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS; break;
+      case Geometry::GTY_GRID_MESH    : return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
+      case Geometry::GTY_SUBDIV_MESH  : assert(false); return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
       
-      case Geometry::GTY_SPHERE_POINT       : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
-      case Geometry::GTY_DISC_POINT         : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
-      case Geometry::GTY_ORIENTED_DISC_POINT: return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_SPHERE_POINT       : return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
+      case Geometry::GTY_DISC_POINT         : return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
+      case Geometry::GTY_ORIENTED_DISC_POINT: return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
       
-      case Geometry::GTY_USER_GEOMETRY     : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_USER_GEOMETRY     : return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
 
 #if RTC_MAX_INSTANCE_LEVEL_COUNT < 2
       case Geometry::GTY_INSTANCE_CHEAP    :
       case Geometry::GTY_INSTANCE_EXPENSIVE: {
         Instance* instance = scene->get<Instance>(geomID);
         EmbreeHWAccel* object = (EmbreeHWAccel*)((Scene*)instance->object)->hwaccel.data();
-        if (object->numTimeSegments > 1) return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; // we need to handle instances in procedural mode if instanced scene has motion blur
-        if (instance->mask & 0xFFFFFF80) return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; // we need to handle instances in procedural mode if high mask bits are set
+        if (object->numTimeSegments > 1) return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; // we need to handle instances in procedural mode if instanced scene has motion blur
+        if (instance->mask & 0xFFFFFF80) return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; // we need to handle instances in procedural mode if high mask bits are set
         else if (instance->gsubtype == AccelSet::GTY_SUBTYPE_INSTANCE_QUATERNION)
-          return GEOMETRY_TYPE(RTHWIF_GEOMETRY_TYPE_INSTANCE,sizeof(GEOMETRY_INSTANCE_DESC)-sizeof(RTHWIF_GEOMETRY_INSTANCE_DESC));
-        else return RTHWIF_GEOMETRY_TYPE_INSTANCE;
+          return GEOMETRY_TYPE(ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE,sizeof(GEOMETRY_INSTANCE_DESC)-sizeof(ze_raytracing_geometry_instance_ext_desc_t));
+        else return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE;
       }
 #else
-      case Geometry::GTY_INSTANCE_CHEAP    : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
-      case Geometry::GTY_INSTANCE_EXPENSIVE: return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_INSTANCE_CHEAP    : return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
+      case Geometry::GTY_INSTANCE_EXPENSIVE: return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR; break;
 #endif
 
-      default: assert(false); return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR;
+      default: assert(false); return ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR;
       }
     };
 
@@ -522,7 +522,7 @@ namespace embree
     }
 
     /* fill geomdesc buffers */
-    std::vector<RTHWIF_GEOMETRY_DESC*> geomDescr(scene->size());
+    std::vector<ze_raytracing_geometry_ext_desc_t*> geomDescr(scene->size());
     std::vector<char> geomDescrData(totalBytes);
 
     size_t offset = 0;
@@ -535,14 +535,14 @@ namespace embree
       const GEOMETRY_TYPE type = getType(geomID);
       align(offset,alignof_RTHWIF_GEOMETRY(type));
       createGeometryDesc(&geomDescrData[offset],scene,scene->get(geomID),type);
-      geomDescr[geomID] = (RTHWIF_GEOMETRY_DESC*) &geomDescrData[offset];
+      geomDescr[geomID] = (ze_raytracing_geometry_ext_desc_t*) &geomDescrData[offset];
       offset += sizeof_RTHWIF_GEOMETRY(type);
       assert(offset <= geomDescrData.size());
     }
 
-    RTHWIF_PARALLEL_OPERATION parallelOperation = nullptr;
-    RTHWIF_ERROR err = rthwifNewParallelOperation(&parallelOperation);
-    if (err != RTHWIF_ERROR_NONE)
+    ze_raytracing_parallel_operation_ext_handle_t parallelOperation = nullptr;
+    ze_result_t_ err = zeRaytracingParallelOperationCreateExt(&parallelOperation);
+    if (err != ZE_RESULT_SUCCESS_)
       throw std::runtime_error("parallel operation creation failed");
 
     DeviceGPU* gpuDevice = dynamic_cast<DeviceGPU*>(scene->device);
@@ -551,18 +551,18 @@ namespace embree
 
     ze_raytracing_accel_format_ext_t accelFormat;
     err = zeRaytracingDeviceGetAccelFormatExt(hDevice, &accelFormat );
-    if (err != RTHWIF_ERROR_NONE)
+    if (err != ZE_RESULT_SUCCESS_)
       throw std::runtime_error("get accel format failed");
 
     /* estimate static accel size */
     BBox1f time_range(0,1);
-    RTHWIF_AABB bounds;
-    RTHWIF_BUILD_ACCEL_ARGS args;
+    ze_raytracing_aabb_ext_t bounds;
+    ze_raytracing_build_accel_ext_desc_t args;
     memset(&args,0,sizeof(args));
     args.stype = ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC;
     args.pNext = nullptr;
     args.accelFormat = accelFormat;
-    args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr.data();
+    args.geometries = (const ze_raytracing_geometry_ext_desc_t**) geomDescr.data();
     args.numGeometries = geomDescr.size();
     args.accelBuffer = nullptr;
     args.accelBufferBytes = 0;
@@ -577,12 +577,12 @@ namespace embree
     args.dispatchGlobalsPtr = dynamic_cast<DeviceGPU*>(scene->device)->dispatchGlobalsPtr;
 #endif
     
-    RTHWIF_ACCEL_SIZE sizeTotal;
-    memset(&sizeTotal,0,sizeof(RTHWIF_ACCEL_SIZE));
+    ze_raytracing_accel_size_ext_properties_t sizeTotal;
+    memset(&sizeTotal,0,sizeof(ze_raytracing_accel_size_ext_properties_t));
     sizeTotal.stype = ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES;
     sizeTotal.pNext = nullptr;
-    err = rthwifGetAccelSize(&args,&sizeTotal);
-    if (err != RTHWIF_ERROR_NONE)
+    err = zeRaytracingGetAccelSizeExt(&args,&sizeTotal);
+    if (err != ZE_RESULT_SUCCESS_)
       throw_RTCError(RTC_ERROR_UNKNOWN,"BVH size estimate failed");
 
     /* allocate scratch buffer */
@@ -598,7 +598,7 @@ namespace embree
     while (true)
     {
       /* estimate size of all mblur BVHs */
-      RTHWIF_ACCEL_SIZE size;
+      ze_raytracing_accel_size_ext_properties_t size;
       size.accelBufferExpectedBytes  = maxTimeSegments*sizeTotal.accelBufferExpectedBytes;
       size.accelBufferWorstCaseBytes = maxTimeSegments*sizeTotal.accelBufferWorstCaseBytes;
       size_t bytes = headerBytes+size.accelBufferExpectedBytes;
@@ -614,28 +614,28 @@ namespace embree
         const float t1 = float(i+1)/float(maxTimeSegments);
         time_range = BBox1f(t0,t1);
         
-        args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr.data();
+        args.geometries = (const ze_raytracing_geometry_ext_desc_t**) geomDescr.data();
         args.numGeometries = geomDescr.size();
         args.accelBuffer = accel.data() + headerBytes + i*sizeTotal.accelBufferExpectedBytes;
         args.accelBufferBytes = sizeTotal.accelBufferExpectedBytes;
         bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };
         
-        err = rthwifBuildAccel(&args);
+        err = zeRaytracingBuildAccelExt(&args);
         if (args.parallelOperation)
         {
-          assert(err == RTHWIF_ERROR_PARALLEL_OPERATION);
+          assert(err == ZE_RESULT_RAYTRACING_EXT_OPERATION_DEFERRED);
           
           uint32_t maxThreads = 0;
-          err = rthwifGetParallelOperationMaxConcurrency(parallelOperation,&maxThreads);
-          if (err != RTHWIF_ERROR_NONE)
+          err = zeRaytracingParallelOperationGetMaxConcurrencyExt(parallelOperation,&maxThreads);
+          if (err != ZE_RESULT_SUCCESS_)
             throw std::runtime_error("get max concurrency failed");
           
-          parallel_for(maxThreads, [&](uint32_t) { err = rthwifJoinParallelOperation(parallelOperation); });
+          parallel_for(maxThreads, [&](uint32_t) { err = zeRaytracingParallelOperationJoinExt(parallelOperation); });
         }
         
         fullBounds.extend(*(BBox3f*) args.boundsOut);
 
-        if (err == RTHWIF_ERROR_RETRY)
+        if (err == ZE_RESULT_RAYTRACING_EXT_RETRY_BUILD_ACCEL)
         {
           if (sizeTotal.accelBufferExpectedBytes == sizeTotal.accelBufferWorstCaseBytes)
             throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
@@ -644,12 +644,12 @@ namespace embree
           break;
         }
         
-        if (err != RTHWIF_ERROR_NONE) break;
+        if (err != ZE_RESULT_SUCCESS_) break;
       }
-      if (err != RTHWIF_ERROR_RETRY) break;
+      if (err != ZE_RESULT_RAYTRACING_EXT_RETRY_BUILD_ACCEL) break;
     }
 
-    if (err != RTHWIF_ERROR_NONE)
+    if (err != ZE_RESULT_SUCCESS_)
       throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
 
     EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) accel.data();

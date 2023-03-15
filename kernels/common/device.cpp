@@ -594,7 +594,7 @@ namespace embree
       std::cout << std::endl;
     }
     
-    dispatchGlobalsPtr = rthwifInit(gpu_device, gpu_context);
+    dispatchGlobalsPtr = zeRaytracingInitExt(gpu_device, gpu_context);
   }
 
   DeviceGPU::~DeviceGPU()

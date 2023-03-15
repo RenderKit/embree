@@ -63,7 +63,7 @@ namespace embree
 
   typedef vector_t<char,AccelAllocator<char>> AccelBuffer;
     
-  void* rthwifInit(sycl::device device, sycl::context context);
+  void* zeRaytracingInitExt(sycl::device device, sycl::context context);
   
   void rthwifCleanup(void* dispatchGlobalsPtr, sycl::context context);
 
