@@ -26,8 +26,8 @@ namespace embree
       enum Type { TRIANGLE=0, QUAD=1, PROCEDURAL=2, INSTANCE=3, UNKNOWN=4, NUM_TYPES=5 };
 
       /* check when we use spatial splits */
-      static bool useSpatialSplits(RTHWIF_BUILD_QUALITY build_quality, RTHWIF_BUILD_FLAGS build_flags) {
-        return build_quality == RTHWIF_BUILD_QUALITY_HIGH && !(build_flags & RTHWIF_BUILD_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION);
+      static bool useSpatialSplits(ze_raytracing_build_quality_ext_t build_quality, ze_raytracing_build_ext_flags_t build_flags) {
+        return build_quality == ZE_RAYTRACING_BUILD_QUALITY_EXT_HIGH && !(build_flags & ZE_RAYTRACING_BUILD_EXT_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION);
       }
 
       /* BVH allocator */
@@ -47,7 +47,7 @@ namespace embree
 
         __forceinline void* malloc(size_t bytes, size_t align = 16)
         {
-          assert(align <= RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT);
+          assert(align <= ZE_RAYTRACING_ACCELERATION_STRUCTURE_ALIGNMENT_EXT);
           if (likely(cur.load() >= end)) throw std::bad_alloc();
           const size_t extra = (align - cur) & (align-1);
           const size_t bytes_align = bytes + extra;
@@ -311,8 +311,8 @@ namespace embree
                   const getProceduralFunc& getProcedural,
                   const getInstanceFunc& getInstance,
                   void* scratch_ptr, size_t scratch_bytes,
-                  RTHWIF_BUILD_QUALITY build_quality,
-                  RTHWIF_BUILD_FLAGS build_flags,
+                  ze_raytracing_build_quality_ext_t build_quality,
+                  ze_raytracing_build_ext_flags_t build_flags,
                   bool verbose)
           : getSize(getSize),
             getType(getType),
@@ -1204,8 +1204,8 @@ namespace embree
         evector<PrimRef> prims;
         Allocator allocator;
         std::vector<std::vector<uint16_t>> quadification;
-        RTHWIF_BUILD_QUALITY build_quality;
-        RTHWIF_BUILD_FLAGS build_flags;
+        ze_raytracing_build_quality_ext_t build_quality;
+        ze_raytracing_build_ext_flags_t build_flags;
         bool verbose;
         
       };
@@ -1216,8 +1216,8 @@ namespace embree
       static void estimateSize(size_t numGeometries,
                                const getSizeFunc& getSize,
                                const getTypeFunc& getType,
-                               RTHWIF_BUILD_QUALITY build_quality,
-                               RTHWIF_BUILD_FLAGS build_flags,
+                               ze_raytracing_build_quality_ext_t build_quality,
+                               ze_raytracing_build_ext_flags_t build_flags,
                                size_t& expectedBytes,
                                size_t& worstCaseBytes,
                                size_t& scratchBytes)
@@ -1269,8 +1269,8 @@ namespace embree
                           void* scratch_ptr, size_t scratch_bytes,
                           BBox3f* boundsOut,
                           size_t* accelBufferBytesOut,
-                          RTHWIF_BUILD_QUALITY build_quality,
-                          RTHWIF_BUILD_FLAGS build_flags,
+                          ze_raytracing_build_quality_ext_t build_quality,
+                          ze_raytracing_build_ext_flags_t build_flags,
                           bool verbose,
                           void* dispatchGlobalsPtr)
       {

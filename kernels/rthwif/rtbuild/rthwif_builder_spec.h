@@ -248,6 +248,8 @@
   the next try by some percentage, or just use the worst case size for
   a second try.
 
+**/
+
 
 /**
 
@@ -319,14 +321,14 @@ ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingParallelOperationCreateExt( ze_r
   \brief Destroy parallel operation.
 */
 
-ZE_APIEXPORT ze_result ZE_APICALL zeRaytracingParallelOperationDestroyExt( ze_raytracing_parallel_operation_ext_handle_t hParallelOperation );
+ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingParallelOperationDestroyExt( ze_raytracing_parallel_operation_ext_handle_t hParallelOperation );
 
 
 /**
   \brief Returns the maximal number of threads that can join the parallel operation.
 */
 
-ZE_APIEXPORT ze_result ZE_APICALL zeRaytracingParallelOperationGetMaxConcurrencyExt( ze_raytracing_parallel_operation_ext_handle_t hParallelOperation, uint32_t* pMaxConcurrency );
+ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingParallelOperationGetMaxConcurrencyExt( ze_raytracing_parallel_operation_ext_handle_t hParallelOperation, uint32_t* pMaxConcurrency );
 
 
 /**
