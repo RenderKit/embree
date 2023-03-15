@@ -74,7 +74,8 @@ namespace embree {
   extern "C" unsigned int user_spp = 1;
 
   Averaged<double> avg_bvh_build_time(64,1.0);
-  Averaged<double> avg_lod_selection_crack_fixing_time(64,1.0);
+  Averaged<double> avg_lod_selection_time(64,1.0);
+  Averaged<double> avg_denoising_time(64,1.0);
 
 #if defined(EMBREE_SYCL_TUTORIAL) && defined(USE_SPECIALIZATION_CONSTANTS)
   const static sycl::specialization_id<RTCFeatureFlags> rtc_feature_mask(RTC_FEATURE_FLAG_ALL);
@@ -795,77 +796,6 @@ namespace embree {
   }
 
   
-  void renderFramePathTracer (int* pixels,
-                              const unsigned int width,
-                              const unsigned int height,
-                              const float time,
-                              const ISPCCamera& camera,
-                              TutorialData &data,
-                              unsigned int user_spp,
-                              Vec3f *color,
-                              Vec3f *normal,
-                              bool denoise);
-  
-  
-  extern "C" void renderFrameStandard (int* pixels,
-                                       const unsigned int width,
-                                       const unsigned int height,
-                                       const float time,
-                                       const ISPCCamera& camera)
-  {
-    /* render all pixels */
-#if defined(EMBREE_SYCL_TUTORIAL)
-    RenderMode rendering_mode = user_rendering_mode;
-    if (rendering_mode != RENDER_PATH_TRACER && rendering_mode != RENDER_PATH_TRACER_DENOISE)
-    {
-      LCG_Scene *lcgbp_scene = global_lcgbp_scene;
-      unsigned int spp = user_spp;
-      TutorialData ldata = data;
-      sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
-        const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-        cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
-          const unsigned int x = item.get_global_id(1); if (x >= width ) return;
-          const unsigned int y = item.get_global_id(0); if (y >= height) return;
-          renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,lcgbp_scene,rendering_mode,spp);
-        });
-      });
-      global_gpu_queue->wait_and_throw();
-      const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();
-      const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();
-      const double dt = (t1-t0)*1E-9;
-      ((ISPCCamera*)&camera)->render_time = dt;        
-    }
-    else
-    {
-      Vec3f *color   = denoiser->colorBuffer;
-      Vec3f *normal  = denoiser->normalBuffer;      
-      Vec3f *output  = denoiser->outputBuffer;
-
-      bool denoise = rendering_mode == RENDER_PATH_TRACER_DENOISE;
-      renderFramePathTracer(pixels,width,height,time,camera,data,user_spp,color,normal,denoise);
-      
-      if (denoise)
-      {
-        denoiser->execute();
-        
-        sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh) {
-          const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-          cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
-            const unsigned int x = item.get_global_id(1); if (x >= width ) return;
-            const unsigned int y = item.get_global_id(0); if (y >= height) return;
-            Vec3f c = output[y*width+x];
-            unsigned int r = (unsigned int) (255.01f * clamp(c.x,0.0f,1.0f));
-            unsigned int g = (unsigned int) (255.01f * clamp(c.y,0.0f,1.0f));
-            unsigned int b = (unsigned int) (255.01f * clamp(c.z,0.0f,1.0f));
-            pixels[y*width+x] = (b << 16) + (g << 8) + r;                        
-          });
-        });
-      }
-      global_gpu_queue->wait_and_throw();
-          
-    }
-#endif
-  }
 
   __forceinline size_t alignTo(const unsigned int size, const unsigned int alignment)
   {
@@ -915,6 +845,7 @@ namespace embree {
     const unsigned int numTrianglesPerGrid33x33 = 32*32*2;
     ImGui::Text("SPP: %d",user_spp);    
     ImGui::Text("BVH Build Time: %4.4f ms",avg_bvh_build_time.get());
+    ImGui::Text("LOD Selection Time: %4.4f ms",avg_lod_selection_time.get());    
     if (global_lcgbp_scene->numLCGBP)
     {
       ImGui::Text("numGrids9x9:   %d (out of %d)",global_lcgbp_scene->numCurrentLCGBPStates,global_lcgbp_scene->numLCGBP*(1<<(LOD_LEVELS+1)));
@@ -926,6 +857,14 @@ namespace embree {
       ImGui::Text("Active Clusters: %d (out of %d)",global_lcgbp_scene->numLCMeshClusterRootsPerFrame,global_lcgbp_scene->numLCMeshClustersMaxRes);
       ImGui::Text("Quads:           %d (out of %d)",global_lcgbp_scene->numLCMeshClusterQuadsPerFrame,global_lcgbp_scene->numLCQuadsTotal);      
     }
+
+    RenderMode rendering_mode = user_rendering_mode;
+    if (rendering_mode == RENDER_PATH_TRACER_DENOISE)
+    {
+      ImGui::Text("Denoising Time: %4.4f ms",avg_bvh_build_time.get());
+      
+    }
+    
   }
 
 
@@ -947,9 +886,10 @@ namespace embree {
   {
     if (!denoiser)
       denoiser = new Denoiser(width,height);
+
+    double t0_lod = getSeconds();
     
 #if defined(EMBREE_SYCL_TUTORIAL)    
-    double t0 = getSeconds();
     
     const unsigned int wgSize = 64;
     LCG_Scene *local_lcgbp_scene = global_lcgbp_scene;
@@ -1174,15 +1114,17 @@ namespace embree {
       });
       waitOnEventAndCatchException(compute_lod_event);
 
-      {
-        waitOnQueueAndCatchException(*global_gpu_queue);        
-      }
+      waitOnQueueAndCatchException(*global_gpu_queue);        
 
       rtcSetLCData(local_lcgbp_scene->geometry, local_lcgbp_scene->numCurrentLCGBPStates, local_lcgbp_scene->lcgbp_state, local_lcgbp_scene->lcm_cluster, local_lcgbp_scene->numLCMeshClusterRootsPerFrame,local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame);
       
     }
 
-    waitOnQueueAndCatchException(*global_gpu_queue);
+
+    double dt0_lod = (getSeconds()-t0_lod)*1000.0;                                            
+    avg_lod_selection_time.add(dt0_lod);
+
+    double t0_bvh = getSeconds();
     
     rtcCommitGeometry(local_lcgbp_scene->geometry);
 
@@ -1190,13 +1132,97 @@ namespace embree {
     /* commit changes to scene */
     rtcCommitScene (data.g_scene);
 
-    double dt0 = (getSeconds()-t0)*1000.0;
+    double dt0_bvh = (getSeconds()-t0_bvh)*1000.0;
                                             
-    avg_bvh_build_time.add(dt0);
+    avg_bvh_build_time.add(dt0_bvh);
 
     
 #endif
   }
+
+
+  sycl::event renderFramePathTracer (int* pixels,
+                                     const unsigned int width,
+                                     const unsigned int height,
+                                     const float time,
+                                     const ISPCCamera& camera,
+                                     TutorialData &data,
+                                     unsigned int user_spp,
+                                     GBuffer *gbuffer,                              
+                                     bool denoise);
+  
+  
+  extern "C" void renderFrameStandard (int* pixels,
+                                       const unsigned int width,
+                                       const unsigned int height,
+                                       const float time,
+                                       const ISPCCamera& camera)
+  {
+    /* render all pixels */
+#if defined(EMBREE_SYCL_TUTORIAL)
+    RenderMode rendering_mode = user_rendering_mode;
+    if (rendering_mode != RENDER_PATH_TRACER && rendering_mode != RENDER_PATH_TRACER_DENOISE)
+    {
+      LCG_Scene *lcgbp_scene = global_lcgbp_scene;
+      unsigned int spp = user_spp;
+      TutorialData ldata = data;
+      sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
+        const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+        cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
+          const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+          const unsigned int y = item.get_global_id(0); if (y >= height) return;
+          renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,lcgbp_scene,rendering_mode,spp);
+        });
+      });
+      waitOnEventAndCatchException(event);
+      const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();
+      const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();
+      const double dt = (t1-t0)*1E-9;
+      ((ISPCCamera*)&camera)->render_time = dt;        
+    }
+    else
+    {
+      GBuffer *gBuffer  = denoiser->gBuffer;      
+      GBufferOutput *output  = denoiser->outputBuffer;
+
+      bool denoise = rendering_mode == RENDER_PATH_TRACER_DENOISE;
+      sycl::event event = renderFramePathTracer(pixels,width,height,time,camera,data,user_spp,gBuffer,denoise);
+      waitOnEventAndCatchException(event);
+      
+      const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();
+      const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();
+      const double dt = (t1-t0)*1E-9;
+      ((ISPCCamera*)&camera)->render_time = dt;
+      
+      if (denoise)
+      {
+        double t0 = getSeconds();                                                    
+        denoiser->execute();
+        
+        sycl::event event_denoising = global_gpu_queue->submit([=](sycl::handler& cgh) {
+          const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+          cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
+            const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+            const unsigned int y = item.get_global_id(0); if (y >= height) return;
+            Vec3f c = fp_convert(output[y*width+x]);
+            //Vec3f c = albedo[y*width+x];
+            
+            unsigned int r = (unsigned int) (255.01f * clamp(c.x,0.0f,1.0f));
+            unsigned int g = (unsigned int) (255.01f * clamp(c.y,0.0f,1.0f));
+            unsigned int b = (unsigned int) (255.01f * clamp(c.z,0.0f,1.0f));
+            pixels[y*width+x] = (b << 16) + (g << 8) + r;                        
+          });
+        });
+        waitOnEventAndCatchException(event_denoising);
+
+        double dt0 = (getSeconds()-t0)*1000.0;                                            
+        avg_denoising_time.add(dt0);
+        
+      }          
+    }
+#endif
+  }
+  
 
 /* called by the C++ code for cleanup */
   extern "C" void device_cleanup ()

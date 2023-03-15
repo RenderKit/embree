@@ -126,7 +126,7 @@ namespace embree {
   void OBJMaterial__preprocess(ISPCOBJMaterial* material, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)
   {
     float d = material->d;
-    if (material->map_d) d *= getTextureTexel1f(material->map_d,dg.u,dg.v);
+    //if (material->map_d) d *= getTextureTexel1f(material->map_d,dg.u,dg.v);
     brdf.Kd = d * Vec3fa(material->Kd);
     //if (material->map_Kd) brdf.Kd = brdf.Kd * getTextureTexel3f(material->map_Kd,dg.u,dg.v);
   }
@@ -217,7 +217,7 @@ namespace embree {
   }
 
 
-  Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSampler& sampler, const ISPCCamera& camera, Vec3f &normal, const RTCFeatureFlags features)
+  Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSampler& sampler, const ISPCCamera& camera, GBuffer &gb, const RTCFeatureFlags features)
   {
     /* radiance accumulator and weight */
     Vec3fa L = Vec3fa(0.0f);
@@ -269,7 +269,7 @@ namespace embree {
       }
 
       Vec3fa Ns = normalize(ray.Ng);
-      if (i == 0) normal = Ns;
+      if (i == 0) gb.normal = fp_convert(Ns);
       
       /* compute differential geometry */
     
@@ -296,6 +296,8 @@ namespace embree {
       ISPCMaterial** material_array = &data.ispc_scene->materials[0];
       Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
 
+      if (i == 0) gb.albedo = fp_convert(brdf.Kd);
+      
       /* sample BRDF at hit point */
       Sample3f wi1;
       c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, RandomSampler_get2D(sampler));
@@ -339,7 +341,7 @@ namespace embree {
                               const unsigned int width,
                               const unsigned int height,
                               const ISPCCamera& camera,
-                              Vec3f &normal,
+                              GBuffer &gb,
                               const RTCFeatureFlags features)
   {
     RandomSampler sampler;
@@ -353,23 +355,22 @@ namespace embree {
       /* calculate pixel color */
       float fx = x + RandomSampler_get1D(sampler);
       float fy = y + RandomSampler_get1D(sampler);
-      L = L + renderPixelFunction(data,fx,fy,sampler,camera,normal,features);
+      L = L + renderPixelFunction(data,fx,fy,sampler,camera,gb,features);
     }
     L = L/(float)data.spp;
 
     return Vec3f(L.x,L.y,L.z);
   }
   
-  void renderFramePathTracer (int* pixels,
-                              const unsigned int width,
-                              const unsigned int height,
-                              const float time,
-                              const ISPCCamera& camera,
-                              TutorialData &data,
-                              uint user_spp,
-                              Vec3f *color,
-                              Vec3f *normal,
-                              bool denoise)
+  sycl::event renderFramePathTracer (int* pixels,
+                                     const unsigned int width,
+                                     const unsigned int height,
+                                     const float time,
+                                     const ISPCCamera& camera,
+                                     TutorialData &data,
+                                     uint user_spp,
+                                     GBuffer *gbuffer,
+                                     bool denoise)
   {
     /* render all pixels */
 #if defined(EMBREE_SYCL_TUTORIAL)
@@ -389,8 +390,10 @@ namespace embree {
           const unsigned int x = item.get_global_id(1); if (x >= width ) return;
           const unsigned int y = item.get_global_id(0); if (y >= height) return;
           const RTCFeatureFlags feature_mask = RTC_FEATURE_FLAG_ALL;
-          Vec3f Ng(1,0,0);
-          const Vec3f c = renderPixelPathTracer(ldata,x,y,pixels,width,height,camera,Ng,feature_mask);
+          GBuffer gb;
+          gb.normal = fp_convert(Vec3f(1,0,0));
+          gb.albedo = fp_convert(Vec3f(0,0,0));
+          const Vec3f c = renderPixelPathTracer(ldata,x,y,pixels,width,height,camera,gb,feature_mask);
           if (!denoise)
           {
             unsigned int r = (unsigned int) (255.01f * clamp(c.x,0.0f,1.0f));
@@ -400,21 +403,14 @@ namespace embree {
           }
           else
           {
-            normal[y*width+x] = Ng;
-            color[y*width+x] = c;                        
+            gb.color = fp_convert(c);
+            gbuffer[y*width+x] = gb;            
           }
           
         });
       });
       global_gpu_queue->wait_and_throw();
-
-      const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();
-      const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();
-      const double dt = (t1-t0)*1E-9;
-      ((ISPCCamera*)&camera)->render_time = dt;
-
-      
-      
+      return event;
     }
 #endif
   }

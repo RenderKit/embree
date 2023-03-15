@@ -32,13 +32,47 @@ extern "C" ISPCScene* g_ispc_scene;
     
   };
 
+
+#define ENABLE_FP16_GBUFFER 0
+
+#if ENABLE_FP16_GBUFFER == 1
+  typedef sycl::vec<cl::sycl::cl_half, 3>  Vec3fp16;
+
+  __forceinline Vec3f    fp_convert(const Vec3fp16 &v) { return Vec3f((float)v.x(),(float)v.y(),(float)v.z()); }
+  __forceinline Vec3fp16 fp_convert(const Vec3f    &v) { return Vec3fp16(v.x,v.y,v.z);  }
+
+#else
+  __forceinline Vec3f    fp_convert(const Vec3f    &v) { return v; }  
+#endif
+
+
+struct GBuffer
+{
+#if ENABLE_FP16_GBUFFER == 1
+  Vec3fp16 color,normal,albedo;
+#else
+  Vec3f color;
+  Vec3f normal;
+  Vec3f albedo;
+#endif  
+};
+
+#if ENABLE_FP16_GBUFFER == 1
+  typedef Vec3fp16 GBufferOutput;
+#else
+  typedef Vec3f GBufferOutput;
+#endif
+  
 struct Denoiser
 {
   OIDNDevice device;
   OIDNFilter filter;
-  Vec3f *colorBuffer;
-  Vec3f *normalBuffer;  
-  Vec3f *outputBuffer;
+  GBuffer *gBuffer;
+#if ENABLE_FP16_GBUFFER == 1
+  Vec3fp16   *outputBuffer;  
+#else  
+  Vec3f   *outputBuffer;
+#endif  
   uint width, height;
 
   void checkError()
@@ -61,28 +95,36 @@ struct Denoiser
     filter = oidnNewFilter(device, "RT"); // generic ray tracing filter      
     checkError();
 
-#if 0
-    colorBuffer  = (Vec3f*)alignedUSMMalloc(sizeof(Vec3f)*width*height,64,EmbreeUSMMode::EMBREE_USM_SHARED); //DEVICE_READ_WRITE);
-    normalBuffer = (Vec3f*)alignedUSMMalloc(sizeof(Vec3f)*width*height,64,EmbreeUSMMode::EMBREE_USM_SHARED); //DEVICE_READ_WRITE);
-    outputBuffer = (Vec3f*)alignedUSMMalloc(sizeof(Vec3f)*width*height,64,EmbreeUSMMode::EMBREE_USM_SHARED); //DEVICE_READ_WRITE);
+#if ENABLE_FP16_GBUFFER == 0
+    OIDNFormat format = OIDN_FORMAT_FLOAT3;
 #else
-    colorBuffer  = (Vec3f*)alignedUSMMalloc(sizeof(Vec3f)*width*height,64,EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE);
-    normalBuffer = (Vec3f*)alignedUSMMalloc(sizeof(Vec3f)*width*height,64,EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE);
-    outputBuffer = (Vec3f*)alignedUSMMalloc(sizeof(Vec3f)*width*height,64,EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE);    
-#endif    
-    oidnSetSharedFilterImage(filter, "color",  colorBuffer,
-                             OIDN_FORMAT_FLOAT3, width, height, 0, 0, 0); // beauty
+    OIDNFormat format = OIDN_FORMAT_HALF3;
+#endif  
+    
+    gBuffer  = (GBuffer*)alignedUSMMalloc(sizeof(GBuffer)*width*height,64,EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE);
+    outputBuffer  = (GBufferOutput*)alignedUSMMalloc(sizeof(GBufferOutput)*width*height,64,EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE);
+
+    oidnSetSharedFilterImage(filter, "color",  gBuffer,
+                             format, width, height, offsetof(GBuffer, color), sizeof(GBuffer), sizeof(GBuffer) * width); // beauty
     checkError();
 
-    // oidnSetSharedFilterImage(filter, "normal",  normalBuffer,
-    //                          OIDN_FORMAT_FLOAT3, width, height, 0, 0, 0); // normal
+    oidnSetSharedFilterImage(filter, "normal",  gBuffer,
+                             format, width, height, offsetof(GBuffer, normal), sizeof(GBuffer), sizeof(GBuffer) * width); // normal
 
     checkError();
+
+    oidnSetSharedFilterImage(filter, "albedo",  gBuffer,
+                             format, width, height, offsetof(GBuffer, albedo), sizeof(GBuffer), sizeof(GBuffer) * width); // normal
+
+    checkError();    
     
     oidnSetSharedFilterImage(filter, "output",  outputBuffer,
-                       OIDN_FORMAT_FLOAT3, width, height, 0, 0, 0); // denoised beauty
+                             format, width, height, 0, sizeof(GBufferOutput), sizeof(GBufferOutput)*width); // denoised beauty
     checkError();    
     oidnSetFilter1b(filter, "ldr", true); // beauty image is HDR
+    //oidnSetFilter1b(filter, "hdr", true);
+    //oidnSetFilter1f(filter, "inputScale", 1.0f);  
+    
     checkError();
 
     oidnCommitFilter(filter);
