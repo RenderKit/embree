@@ -124,9 +124,19 @@ namespace embree
           img.ptr->set(x,y,c);
         }
     }
+    else if (color_type == PNG_COLOR_TYPE_GRAY && bit_depth == 8)
+    {
+      PRINT2(width,height);
+      for (size_t y=0;y<height;y++)
+        for (size_t x=0;x<width;x++)
+        {
+          unsigned char *texel = data.data() + (y * width + x);
+          Color4 c( (float)texel[0] * 1.0f/255.0f);
+          img.ptr->set(x,y,c);
+        }      
+    }
     else
       THROW_RUNTIME_ERROR("invalid color type in PNG file "+fileName.str());
-      
     return img;
   }
 }

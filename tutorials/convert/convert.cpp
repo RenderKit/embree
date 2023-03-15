@@ -55,15 +55,17 @@ namespace embree
     Ref<SceneGraph::Node> geometry()
     {
       Ref<SceneGraph::MaterialNode> mnode = new OBJMaterial(1.0f,Vec3fa(1.0f),Vec3fa(0.0f),1.0f);
-      Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(mnode,1);
-
+      Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(mnode,BBox1f(0,1),1);
+      
       const size_t width = texture->width;
       const size_t height = texture->height;
       
       mesh->positions[0].resize(height*width);
       for (size_t y=0; y<height; y++) 
-        for (size_t x=0; x<width; x++) 
+        for (size_t x=0; x<width; x++)
+        {
           mesh->positions[0][y*width+x] = at(x,y);
+        }
 
       mesh->triangles.resize(2*(height-1)*(width-1));
       for (size_t y=0; y<height-1; y++) {
@@ -236,7 +238,7 @@ namespace embree
 
       /* distribute model */
       else if (tag == "-distribute") {
-        const FileName objectFile = cin->getFileName();
+        const FileName objectFile = cin->getFileName();        
         Ref<SceneGraph::Node> object = SceneGraph::load(path + objectFile);
         if (referenceObjects) object->fileName = objectFile;
         Ref<Image> distribution = loadImage(path + cin->getFileName());
@@ -303,6 +305,8 @@ namespace embree
 
       /* output filename */
       else if (tag == "-o") {
+        float convert_tris_to_quads_prop = inf;
+        g_scene->triangles_to_quads(convert_tris_to_quads_prop);
         SceneGraph::store(g_scene.dynamicCast<SceneGraph::Node>(),path + cin->getFileName(),embedTextures,referenceMaterials,binaryFormat);
       }
 

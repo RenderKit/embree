@@ -960,7 +960,7 @@ namespace embree
           time_range(imesh->time_range),
           positions(transformMSMBlurVec3faBuffer(imesh->positions,spaces)),
           normals(transformMSMBlurNormalBuffer(imesh->normals,spaces)),
-          texcoords(imesh->texcoords), triangles(imesh->triangles), material(imesh->material) {}
+          texcoords(imesh->texcoords), triangles(imesh->triangles), material(imesh->material) { }
       
       virtual void setMaterial(Ref<MaterialNode> material) {
         this->material = material;

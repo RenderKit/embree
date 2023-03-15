@@ -848,7 +848,7 @@ namespace embree {
     ImGui::Text("SPP: %d",user_spp);    
     ImGui::Text("BVH Build Time: %4.4f ms",avg_bvh_build_time.get());
     ImGui::Text("LOD Selection Time: %4.4f ms",avg_lod_selection_time.get());
-    ImGui::DragInt("",(int*)&g_lod_threshold,1,2,60);
+    ImGui::DragInt("",(int*)&g_lod_threshold,1,2,200);
     
     if (global_lcgbp_scene->numLCGBP)
     {

@@ -75,6 +75,8 @@ namespace embree
   /*! loads an image from a file with auto-detection of format */
   Ref<Image> loadImage(const FileName& fileName, bool cache)
   {
+    PRINT(fileName);
+    
     if (!cache)
       return loadImageFromDisk(fileName);
 
