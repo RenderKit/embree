@@ -148,7 +148,7 @@ sycl::float3 RandomSampler_getFloat3(RandomSampler& self)
 
 RandomSampler rng;
 
-volatile RTHWIF_PARALLEL_OPERATION parallelOperation = nullptr;
+RTHWIF_PARALLEL_OPERATION parallelOperation = nullptr;
 
 enum class InstancingType
 {
@@ -1164,7 +1164,7 @@ struct Scene
     size.stype = ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES;
     size.pNext = nullptr;
     
-    err = rthwifGetAccelSize(args,size);
+    err = rthwifGetAccelSize(&args,&size);
     if (err != RTHWIF_ERROR_NONE)
       throw std::runtime_error("BVH size estimate failed");
 
@@ -1199,11 +1199,16 @@ struct Scene
         args.numGeometries = geom.size();
         args.accelBuffer = accel;
         args.accelBufferBytes = size.accelBufferWorstCaseBytes;
-        err = rthwifBuildAccel(args);
+        err = rthwifBuildAccel(&args);
 
-        if (args.parallelOperation) {
+        if (args.parallelOperation)
+        {
           assert(err == RTHWIF_ERROR_PARALLEL_OPERATION);
-          uint32_t maxThreads = rthwifGetParallelOperationMaxConcurrency(parallelOperation);
+          uint32_t maxThreads = 0;
+          err = rthwifGetParallelOperationMaxConcurrency(parallelOperation,&maxThreads);
+          if (err != RTHWIF_ERROR_NONE)
+            throw std::runtime_error("get max concurrency failed");
+          
           tbb::parallel_for(0u, maxThreads, 1u, [&](uint32_t) {
             err = rthwifJoinParallelOperation(parallelOperation);
           });
@@ -1238,11 +1243,17 @@ struct Scene
         args.numGeometries = geom.size();
         args.accelBuffer = accel;
         args.accelBufferBytes = accelBytes;
-        err = rthwifBuildAccel(args);
+        err = rthwifBuildAccel(&args);
 
-        if (args.parallelOperation) {
+        if (args.parallelOperation)
+        {
           assert(err == RTHWIF_ERROR_PARALLEL_OPERATION);
-          uint32_t maxThreads = rthwifGetParallelOperationMaxConcurrency(parallelOperation);
+
+          uint32_t maxThreads = 0;
+          err = rthwifGetParallelOperationMaxConcurrency(parallelOperation,&maxThreads);
+          if (err != RTHWIF_ERROR_NONE)
+            throw std::runtime_error("get max concurrency failed");
+          
           tbb::parallel_for(0u, maxThreads, 1u, [&](uint32_t) {
             err = rthwifJoinParallelOperation(parallelOperation);
           });
@@ -2096,7 +2107,9 @@ int main(int argc, char* argv[])
   /* execute test */
   RandomSampler_init(rng,0x56FE238A);
 
-  parallelOperation = rthwifNewParallelOperation();
+  RTHWIF_ERROR err = rthwifNewParallelOperation(&parallelOperation);
+  if (err != RTHWIF_ERROR_NONE)
+    throw std::runtime_error("parallel operation creation failed");
   
   uint32_t numErrors = 0;
   if (test >= TestType::BENCHMARK_TRIANGLES)

@@ -540,14 +540,17 @@ namespace embree
       assert(offset <= geomDescrData.size());
     }
 
-    RTHWIF_PARALLEL_OPERATION parallelOperation = rthwifNewParallelOperation();
+    RTHWIF_PARALLEL_OPERATION parallelOperation = nullptr;
+    RTHWIF_ERROR err = rthwifNewParallelOperation(&parallelOperation);
+    if (err != RTHWIF_ERROR_NONE)
+      throw std::runtime_error("parallel operation creation failed");
 
     DeviceGPU* gpuDevice = dynamic_cast<DeviceGPU*>(scene->device);
     if (gpuDevice == nullptr) throw std::runtime_error("internal error");
     ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(gpuDevice->getGPUDevice());
 
     ze_raytracing_accel_format_ext_t accelFormat;
-    RTHWIF_ERROR err = zeRaytracingDeviceGetAccelFormatExt(hDevice, &accelFormat );
+    err = zeRaytracingDeviceGetAccelFormatExt(hDevice, &accelFormat );
     if (err != RTHWIF_ERROR_NONE)
       throw std::runtime_error("get accel format failed");
 
@@ -578,7 +581,7 @@ namespace embree
     memset(&sizeTotal,0,sizeof(RTHWIF_ACCEL_SIZE));
     sizeTotal.stype = ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES;
     sizeTotal.pNext = nullptr;
-    err = rthwifGetAccelSize(args,sizeTotal);
+    err = rthwifGetAccelSize(&args,&sizeTotal);
     if (err != RTHWIF_ERROR_NONE)
       throw_RTCError(RTC_ERROR_UNKNOWN,"BVH size estimate failed");
 
@@ -617,10 +620,16 @@ namespace embree
         args.accelBufferBytes = sizeTotal.accelBufferExpectedBytes;
         bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };
         
-        err = rthwifBuildAccel(args);
-        if (args.parallelOperation) {
+        err = rthwifBuildAccel(&args);
+        if (args.parallelOperation)
+        {
           assert(err == RTHWIF_ERROR_PARALLEL_OPERATION);
-          uint32_t maxThreads = rthwifGetParallelOperationMaxConcurrency(parallelOperation);
+          
+          uint32_t maxThreads = 0;
+          err = rthwifGetParallelOperationMaxConcurrency(parallelOperation,&maxThreads);
+          if (err != RTHWIF_ERROR_NONE)
+            throw std::runtime_error("get max concurrency failed");
+          
           parallel_for(maxThreads, [&](uint32_t) { err = rthwifJoinParallelOperation(parallelOperation); });
         }
         
