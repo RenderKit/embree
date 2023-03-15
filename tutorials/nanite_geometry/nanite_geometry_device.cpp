@@ -73,7 +73,8 @@ namespace embree {
   extern "C" RenderMode user_rendering_mode = RENDER_PRIMARY;
   extern "C" unsigned int user_spp = 1;
   extern "C" unsigned int g_max_path_length = 2;
-
+  extern "C" unsigned int g_lod_threshold = 20;
+  
   Averaged<double> avg_bvh_build_time(64,1.0);
   Averaged<double> avg_lod_selection_time(64,1.0);
   Averaged<double> avg_denoising_time(64,1.0);
@@ -846,7 +847,9 @@ namespace embree {
     const unsigned int numTrianglesPerGrid33x33 = 32*32*2;
     ImGui::Text("SPP: %d",user_spp);    
     ImGui::Text("BVH Build Time: %4.4f ms",avg_bvh_build_time.get());
-    ImGui::Text("LOD Selection Time: %4.4f ms",avg_lod_selection_time.get());    
+    ImGui::Text("LOD Selection Time: %4.4f ms",avg_lod_selection_time.get());
+    ImGui::DragInt("",(int*)&g_lod_threshold,1,2,60);
+    
     if (global_lcgbp_scene->numLCGBP)
     {
       ImGui::Text("numGrids9x9:   %d (out of %d)",global_lcgbp_scene->numCurrentLCGBPStates,global_lcgbp_scene->numLCGBP*(1<<(LOD_LEVELS+1)));
@@ -869,9 +872,8 @@ namespace embree {
   }
 
 
-  __forceinline bool subdivideLOD(const Vec2f &lower, const Vec2f &upper, const int width, const int height)
+  __forceinline bool subdivideLOD(const Vec2f &lower, const Vec2f &upper, const int width, const int height, const float THRESHOLD)
   {
-    const float THRESHOLD = 20.0f;    
     bool subdivide = true;
     const float l = length(upper - lower);    
     if (l <= THRESHOLD) subdivide = false;
@@ -1012,6 +1014,8 @@ namespace embree {
             });
       });
 
+      const float lod_threshold = g_lod_threshold;
+
       const sycl::nd_range<1> nd_range1(alignTo(numRootsTotal,wgSize),sycl::range<1>(wgSize));              
       sycl::event compute_lod_event = global_gpu_queue->submit([=](sycl::handler& cgh){
         cgh.depends_on(init_event);                                                   
@@ -1068,7 +1072,7 @@ namespace embree {
                   const Vec2f plane_bounds_lower = projectVertexToPlane(bounds_lower,vx,vy,vz,width,height,true);
                   const Vec2f plane_bounds_upper = projectVertexToPlane(bounds_upper,vx,vy,vz,width,height,true);
                 
-                  const bool subdivide = subdivideLOD(min(plane_bounds_lower,plane_bounds_upper),max(plane_bounds_lower,plane_bounds_upper),width,height);
+                  const bool subdivide = subdivideLOD(min(plane_bounds_lower,plane_bounds_upper),max(plane_bounds_lower,plane_bounds_upper),width,height,lod_threshold);
                   if (subdivide && (numStackEntries+2 <= STACK_SIZE))
                   {
                     stack[numStackEntries+0] = (int)currentID + cur.lodLeftID;
@@ -1115,7 +1119,7 @@ namespace embree {
       });
       waitOnEventAndCatchException(compute_lod_event);
 
-      waitOnQueueAndCatchException(*global_gpu_queue);        
+      waitOnQueueAndCatchException(*global_gpu_queue);  // FIXME      
 
       rtcSetLCData(local_lcgbp_scene->geometry, local_lcgbp_scene->numCurrentLCGBPStates, local_lcgbp_scene->lcgbp_state, local_lcgbp_scene->lcm_cluster, local_lcgbp_scene->numLCMeshClusterRootsPerFrame,local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame);
       
