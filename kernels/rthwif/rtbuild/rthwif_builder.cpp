@@ -311,30 +311,38 @@ namespace embree
     return false;
   }
     
-  RTHWIF_API RTHWIF_ERROR rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS& args, RTHWIF_ACCEL_SIZE& size_o)
+  RTHWIF_API RTHWIF_ERROR rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS* args, RTHWIF_ACCEL_SIZE* size_o)
   {
+    /* check for valid pointers */
+    if (args == nullptr)
+      return RTHWIF_ERROR_OTHER;
+
+    /* check for valid pointers */
+    if (size_o == nullptr)
+      return RTHWIF_ERROR_OTHER;
+    
     /* check if input descriptor has proper type */
-    if (args.stype != ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC)
+    if (args->stype != ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC)
       return RTHWIF_ERROR_INVALID_ARGUMENT;
 
     /* check valid pNext chain */
-    if (!checkDescChain((zet_base_desc_t_*)&args))
+    if (!checkDescChain((zet_base_desc_t_*)args))
       return RTHWIF_ERROR_INVALID_ARGUMENT;
 
     /* check if return property has proper type */
-    if (size_o.stype != ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES)
+    if (size_o->stype != ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES)
       return RTHWIF_ERROR_INVALID_ARGUMENT;
 
     /* check valid pNext chain */
-    if (!checkDescChain((zet_base_desc_t_*)&size_o))
+    if (!checkDescChain((zet_base_desc_t_*)size_o))
       return RTHWIF_ERROR_INVALID_ARGUMENT;
 
     /* check if acceleration structure format is supported */
-    if (args.accelFormat != (ze_raytracing_accel_format_ext_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1)
+    if (args->accelFormat != (ze_raytracing_accel_format_ext_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1)
       return RTHWIF_ERROR_INVALID_ARGUMENT;
     
-    const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
-    const size_t numGeometries = args.numGeometries;
+    const RTHWIF_GEOMETRY_DESC** geometries = args->geometries;
+    const size_t numGeometries = args->numGeometries;
 
     auto getSize = [&](uint32_t geomID) -> size_t {
       const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
@@ -359,21 +367,21 @@ namespace embree
     size_t expectedBytes = 0;
     size_t worstCaseBytes = 0;
     size_t scratchBytes = 0;
-    QBVH6BuilderSAH::estimateSize(numGeometries, getSize, getType, args.quality, args.flags, expectedBytes, worstCaseBytes, scratchBytes);
+    QBVH6BuilderSAH::estimateSize(numGeometries, getSize, getType, args->quality, args->flags, expectedBytes, worstCaseBytes, scratchBytes);
     
     /* fill return struct */
-    size_o.accelBufferExpectedBytes = expectedBytes;
-    size_o.accelBufferWorstCaseBytes = worstCaseBytes;
-    size_o.scratchBufferBytes = scratchBytes;
+    size_o->accelBufferExpectedBytes = expectedBytes;
+    size_o->accelBufferWorstCaseBytes = worstCaseBytes;
+    size_o->scratchBufferBytes = scratchBytes;
     return RTHWIF_ERROR_NONE;
   }
   
-  RTHWIF_API RTHWIF_ERROR rthwifBuildAccelInternal(const RTHWIF_BUILD_ACCEL_ARGS& args) try
+  RTHWIF_API RTHWIF_ERROR rthwifBuildAccelInternal(const RTHWIF_BUILD_ACCEL_ARGS* args) try
   {
-    const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
-    const uint32_t numGeometries = args.numGeometries;
+    const RTHWIF_GEOMETRY_DESC** geometries = args->geometries;
+    const uint32_t numGeometries = args->numGeometries;
 
-    if (args.accelBuffer == nullptr) return RTHWIF_ERROR_OTHER;
+    if (args->accelBuffer == nullptr) return RTHWIF_ERROR_OTHER;
 
     /* verify input descriptors */
     parallel_for(numGeometries,[&](uint32_t geomID) {
@@ -414,10 +422,10 @@ namespace embree
       assert(geom);
 
       switch (geom->geometryType) {
-      case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_TRIANGLES_DESC*)geom,args.buildUserPtr,prims,r,k,geomID);
-      case RTHWIF_GEOMETRY_TYPE_QUADS      : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_QUADS_DESC*    )geom,args.buildUserPtr,prims,r,k,geomID);
-      case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return createGeometryPrimRefArray((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geom,args.buildUserPtr,prims,r,k,geomID);
-      case RTHWIF_GEOMETRY_TYPE_INSTANCE: return createGeometryPrimRefArray((RTHWIF_GEOMETRY_INSTANCE_DESC* )geom,args.buildUserPtr,prims,r,k,geomID);
+      case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_TRIANGLES_DESC*)geom,args->buildUserPtr,prims,r,k,geomID);
+      case RTHWIF_GEOMETRY_TYPE_QUADS      : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_QUADS_DESC*    )geom,args->buildUserPtr,prims,r,k,geomID);
+      case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return createGeometryPrimRefArray((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geom,args->buildUserPtr,prims,r,k,geomID);
+      case RTHWIF_GEOMETRY_TYPE_INSTANCE: return createGeometryPrimRefArray((RTHWIF_GEOMETRY_INSTANCE_DESC* )geom,args->buildUserPtr,prims,r,k,geomID);
       default: throw std::runtime_error("invalid geometry type");
       };
     };
@@ -484,17 +492,17 @@ namespace embree
     /* dispatch globals ptr for debugging purposes */
     void* dispatchGlobalsPtr = nullptr;
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
-    dispatchGlobalsPtr = args.dispatchGlobalsPtr;
+    dispatchGlobalsPtr = args->dispatchGlobalsPtr;
 #endif
 
     bool verbose = false;
     QBVH6BuilderSAH::build(numGeometries, nullptr, 
                            getSize, getType, 
                            createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance,
-                           (char*)args.accelBuffer, args.accelBufferBytes,
-                           args.scratchBuffer, args.scratchBufferBytes,
-                           (BBox3f*) args.boundsOut, args.accelBufferBytesOut,
-                           args.quality, args.flags, verbose, dispatchGlobalsPtr);
+                           (char*)args->accelBuffer, args->accelBufferBytes,
+                           args->scratchBuffer, args->scratchBufferBytes,
+                           (BBox3f*) args->boundsOut, args->accelBufferBytesOut,
+                           args->quality, args->flags, verbose, dispatchGlobalsPtr);
     return RTHWIF_ERROR_NONE;
   }
   
@@ -513,24 +521,28 @@ namespace embree
     tbb::task_group group;
   };
 
-  RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(const RTHWIF_BUILD_ACCEL_ARGS& args)
+  RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(const RTHWIF_BUILD_ACCEL_ARGS* args)
   {
+    /* check for valid pointers */
+    if (args == nullptr)
+      return RTHWIF_ERROR_OTHER;
+    
     /* check if input descriptor has proper type */
-    if (args.stype != ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC)
+    if (args->stype != ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC)
       return RTHWIF_ERROR_INVALID_ARGUMENT;
 
     /* check valid pNext chain */
-    if (!checkDescChain((zet_base_desc_t_*)&args))
+    if (!checkDescChain((zet_base_desc_t_*)args))
       return RTHWIF_ERROR_INVALID_ARGUMENT;
 
     /* check if acceleration structure format is supported */
-    if (args.accelFormat != (ze_raytracing_accel_format_ext_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1)
+    if (args->accelFormat != (ze_raytracing_accel_format_ext_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1)
       return RTHWIF_ERROR_INVALID_ARGUMENT;
     
     /* if parallel operation is provided then execute using thread arena inside task group ... */
-    if (args.parallelOperation)
+    if (args->parallelOperation)
     {
-      RTHWIF_PARALLEL_OPERATION_IMPL* op = (RTHWIF_PARALLEL_OPERATION_IMPL*) args.parallelOperation;
+      RTHWIF_PARALLEL_OPERATION_IMPL* op = (RTHWIF_PARALLEL_OPERATION_IMPL*) args->parallelOperation;
       g_arena->execute([&](){ op->group.run([=](){ op->errorCode = rthwifBuildAccelInternal(args); }); });
       return RTHWIF_ERROR_PARALLEL_OPERATION;
     }
@@ -543,23 +555,49 @@ namespace embree
     }
   }
 
-  RTHWIF_API RTHWIF_PARALLEL_OPERATION rthwifNewParallelOperation()
+  RTHWIF_API RTHWIF_ERROR rthwifNewParallelOperation(RTHWIF_PARALLEL_OPERATION* phParallelOperation)
   {
-    return (RTHWIF_PARALLEL_OPERATION) new RTHWIF_PARALLEL_OPERATION_IMPL;
+    /* check for valid pointer */
+    if (phParallelOperation == nullptr)
+      return RTHWIF_ERROR_OTHER;
+
+    /* create parallel operation object */
+    *phParallelOperation = (RTHWIF_PARALLEL_OPERATION) new RTHWIF_PARALLEL_OPERATION_IMPL;
+    return RTHWIF_ERROR_NONE;
   }
   
-  RTHWIF_API void rthwifDeleteParallelOperation( RTHWIF_PARALLEL_OPERATION  parallelOperation )
+  RTHWIF_API RTHWIF_ERROR rthwifDeleteParallelOperation( RTHWIF_PARALLEL_OPERATION parallelOperation )
   {
+    /* check for valid handle */
+    if (parallelOperation == nullptr)
+      return RTHWIF_ERROR_OTHER;
+
+    /* delete parallel operation */
     delete (RTHWIF_PARALLEL_OPERATION_IMPL*) parallelOperation;
+    return RTHWIF_ERROR_NONE;
   }
   
-  RTHWIF_API uint32_t rthwifGetParallelOperationMaxConcurrency( RTHWIF_PARALLEL_OPERATION  parallelOperation )
+  RTHWIF_API RTHWIF_ERROR rthwifGetParallelOperationMaxConcurrency( RTHWIF_PARALLEL_OPERATION parallelOperation, uint32_t* pMaxConcurrency )
   {
-    return tbb::this_task_arena::max_concurrency();
+    /* check for valid handle */
+    if (parallelOperation == nullptr)
+      return RTHWIF_ERROR_OTHER;
+
+    /* check for valid pointer */
+    if (pMaxConcurrency == nullptr)
+      return RTHWIF_ERROR_OTHER;
+
+    /* return maximal concurrency */
+    *pMaxConcurrency = tbb::this_task_arena::max_concurrency();
+    return RTHWIF_ERROR_NONE;
   }
   
   RTHWIF_API RTHWIF_ERROR rthwifJoinParallelOperation( RTHWIF_PARALLEL_OPERATION parallelOperation)
   {
+    /* check for valid handle */
+    if (parallelOperation == nullptr)
+      return RTHWIF_ERROR_OTHER;
+    
     RTHWIF_PARALLEL_OPERATION_IMPL* op = (RTHWIF_PARALLEL_OPERATION_IMPL*) parallelOperation;
     g_arena->execute([&](){ op->group.wait(); });
     return op->errorCode;

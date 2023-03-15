@@ -70,19 +70,19 @@ typedef void* RTHWIF_PARALLEL_OPERATION;
  * parallel operation at a given time.
  */
 
-RTHWIF_API RTHWIF_PARALLEL_OPERATION rthwifNewParallelOperation();
+RTHWIF_API RTHWIF_ERROR rthwifNewParallelOperation( RTHWIF_PARALLEL_OPERATION* phParallelOperation);
 
 /*
  * Destroys a parallel operation.
  */
 
-RTHWIF_API void rthwifDeleteParallelOperation( RTHWIF_PARALLEL_OPERATION  parallelOperation );
+RTHWIF_API RTHWIF_ERROR rthwifDeleteParallelOperation( RTHWIF_PARALLEL_OPERATION  parallelOperation );
 
 /*
  * Returns the maximal number of threads that can join the parallel operation.
  */
 
-RTHWIF_API uint32_t rthwifGetParallelOperationMaxConcurrency( RTHWIF_PARALLEL_OPERATION  parallelOperation );
+RTHWIF_API RTHWIF_ERROR rthwifGetParallelOperationMaxConcurrency( RTHWIF_PARALLEL_OPERATION  parallelOperation, uint32_t* pMaxConcurrency );
 
 
 /* 
@@ -489,7 +489,7 @@ RTHWIF_API void rthwifExit();
 
 */
 
-RTHWIF_API RTHWIF_ERROR rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS& args, RTHWIF_ACCEL_SIZE& sizeOut);
+RTHWIF_API RTHWIF_ERROR rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS* args, RTHWIF_ACCEL_SIZE* sizeOut);
 
 
 /*
@@ -532,5 +532,5 @@ RTHWIF_API RTHWIF_ERROR rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS& args, 
  * potentially catched by the user.
  */
 
-RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(const RTHWIF_BUILD_ACCEL_ARGS& args);
+RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(const RTHWIF_BUILD_ACCEL_ARGS* args);
 
