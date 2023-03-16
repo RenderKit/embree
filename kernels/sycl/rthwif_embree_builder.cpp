@@ -652,6 +652,11 @@ namespace embree
     if (err != ZE_RESULT_SUCCESS_)
       throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
 
+    /* destroy parallel operation */
+    err = zeRaytracingParallelOperationDestroyExt(parallelOperation);
+    if (err != ZE_RESULT_SUCCESS_)
+      throw std::runtime_error("parallel operation destruction failed");
+    
     EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) accel.data();
     hwaccel->numTimeSegments = maxTimeSegments;
 
