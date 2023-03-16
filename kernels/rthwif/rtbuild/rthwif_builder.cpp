@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #define RTHWIF_EXPORT_API
-#include "../../../common/tasking/taskscheduler.h"
 
 #include "rthwif_builder.h"
 #include "qbvh6_builder_sah.h"

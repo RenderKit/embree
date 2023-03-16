@@ -3,7 +3,11 @@
 
 #pragma once
 
+#if defined(ZE_RAYTRACING)
+#include "sys/platform.h"
+#else
 #include "../../../common/sys/platform.h"
+#endif
 
 namespace embree
 {

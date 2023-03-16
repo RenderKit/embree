@@ -3,7 +3,16 @@
 
 #pragma once
 
+#if defined(ZE_RAYTRACING)
+#include "sys/sysinfo.h"
+#include "sys/vector.h"
+#include "math/vec2.h"
+#include "math/vec3.h"
+#include "math/bbox.h"
+#include "math/affinespace.h"
+#else
 #include "../../common/default.h"
+#endif
 
 namespace embree
 {
