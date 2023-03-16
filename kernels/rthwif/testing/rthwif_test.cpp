@@ -2119,6 +2119,10 @@ int main(int argc, char* argv[])
   else
     numErrors = executeTest(device,queue,context,inst,test);
 
+  err = zeRaytracingParallelOperationDestroyExt(parallelOperation);
+  if (err != ZE_RESULT_SUCCESS_)
+    throw std::runtime_error("parallel operation destruction failed");
+
   sycl::free(dispatchGlobalsPtr, context);
 
   zeRaytracingExitExt();
