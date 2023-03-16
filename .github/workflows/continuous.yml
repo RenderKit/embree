@@ -628,8 +628,10 @@ jobs:
       - macosx-ARM-NEON-AVX2
       - macosx-x64-CLANG
       - linux-GCC-KLOCWORK
-    if: ${{ success() }}
+    if: failure() || cancelled()
     steps:
-      - name: Success
+      - name: Failure
         run: |
-          echo "::notice title=Success::Workflow succeeded"
+          echo "::notice title=Success::Workflow failed"
+          exit 1
+
