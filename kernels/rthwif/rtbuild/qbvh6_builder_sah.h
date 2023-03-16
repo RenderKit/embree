@@ -8,10 +8,17 @@
 #include "quadifier.h"
 #include "rthwif_builder.h"
 
+#if defined(ZE_RAYTRACING)
+#include "builders/priminfo.h"
+#include "builders/primrefgen_presplit.h"
+#include "builders/heuristic_binning_array_aligned.h"
+#include "algorithms/parallel_for_for_prefix_sum.h"
+#else
 #include "../../builders/priminfo.h"
 #include "../../builders/primrefgen_presplit.h"
 #include "../../builders/heuristic_binning_array_aligned.h"
 #include "../../../common/algorithms/parallel_for_for_prefix_sum.h"
+#endif
 
 namespace embree
 {

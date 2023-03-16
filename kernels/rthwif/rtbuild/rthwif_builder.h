@@ -3,6 +3,9 @@
 
 #pragma once
 
+#include <stddef.h>
+#include <stdint.h>
+
 #if !defined(EMBREE_LEVEL_ZERO)
 struct _ze_device_handle_t {};
 #else
