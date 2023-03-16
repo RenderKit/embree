@@ -289,6 +289,16 @@ namespace embree
   __forceinline bool operator ==( const Vec3fa& a, const Vec3fa& b ) { return (_mm_movemask_ps(_mm_cmpeq_ps (a.m128, b.m128)) & 7) == 7; }
   __forceinline bool operator !=( const Vec3fa& a, const Vec3fa& b ) { return (_mm_movemask_ps(_mm_cmpneq_ps(a.m128, b.m128)) & 7) != 0; }
 
+  __forceinline bool operator<( const Vec3fa& a, const Vec3fa& b ) {
+    if (a.x <= b.x)
+      return true;
+    else if (a.x == b.x && a.y <= b.y)
+      return true;
+    else if (a.x == b.x && a.y == b.y && a.z <= b.z)
+      return true;
+    return false;
+  }
+  
   __forceinline Vec3ba eq_mask( const Vec3fa& a, const Vec3fa& b ) { return _mm_cmpeq_ps (a.m128, b.m128); }
   __forceinline Vec3ba neq_mask(const Vec3fa& a, const Vec3fa& b ) { return _mm_cmpneq_ps(a.m128, b.m128); }
   __forceinline Vec3ba lt_mask( const Vec3fa& a, const Vec3fa& b ) { return _mm_cmplt_ps (a.m128, b.m128); }

@@ -16,6 +16,8 @@
 #define DBG_PRINT5(x0,x1,x2,x3,x4)
 #endif
 
+#define UNLOCK_BORDER 0
+
 
 namespace embree {
 
@@ -273,10 +275,18 @@ namespace embree {
     while(1)
     {
       iterations++;
-      if (iterations > 10) return false;
+
+      uint opts = meshopt_SimplifyLockBorder;
+#if UNLOCK_BORDER == 1
+      if (iterations > 5)
+      {
+        opts = 0;
+      }
+#endif            
+      if (iterations > 2) return false;
       bool retry = false;      
       float result_error = 0.0f;
-      const size_t new_numIndices = meshopt_simplify((uint*)new_triangles,(uint*)triangles,numIndices,(float*)vertices,numVertices,sizeof(Vec3f),expectedTriangles*3,0.1f,meshopt_SimplifyLockBorder,&result_error);
+      const size_t new_numIndices = meshopt_simplify((uint*)new_triangles,(uint*)triangles,numIndices,(float*)vertices,numVertices,sizeof(Vec3f),expectedTriangles*3,0.1f,opts,&result_error);
 
       const size_t new_numTriangles = new_numIndices/3;
       DBG_PRINT3(expectedTriangles,new_numTriangles,result_error);

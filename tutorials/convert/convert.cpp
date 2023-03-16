@@ -190,6 +190,13 @@ namespace embree
         g_scene->triangles_to_quads();
       }
 
+      else if (tag == "-displace") {
+        const int resX = cin->getInt();        
+        const int resY = cin->getInt();
+        const float distance = cin->getFloat();
+        g_scene->displace_quads(resX,resY,distance);
+      }      
+
       /* convert to subdivs */
       else if (tag == "-convert-to-subdivs") {
         g_scene->triangles_to_quads();

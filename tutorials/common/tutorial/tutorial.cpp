@@ -308,7 +308,11 @@ namespace embree
       remove_non_mblur(false),
       sceneFilename(),
       instancing_mode(SceneGraph::INSTANCING_NONE),
-      print_scene_cameras(false)
+      print_scene_cameras(false),
+      displace(false),
+      displace_resX(0),
+      displace_resY(0),
+      displace_height(0)
   {
     registerOption("i", [this] (Ref<ParseStream> cin, const FileName& path) {
         sceneFilename.push_back(path + cin->getFileName());
@@ -618,6 +622,14 @@ namespace embree
     registerOption("camera", [this] (Ref<ParseStream> cin, const FileName& path) {
         camera_name = cin->getString();
       }, "--camera: use camera with specified name");
+
+    registerOption("displace", [this] (Ref<ParseStream> cin, const FileName& path) {
+      displace = true;
+      displace_resX = min(max(cin->getInt(),1),0x7fff);
+      displace_resY = min(max(cin->getInt(),1),0x7fff);
+      displace_height = cin->getFloat();
+    }, "--displace: sets displacement res and height for quad primitive");
+    
   }
 
   void TutorialApplication::initRayStats()
@@ -1271,6 +1283,13 @@ namespace embree
       default : throw std::runtime_error("unsupported scene graph operation");
       }
     }
+    
+    if (displace)
+    {
+      PRINT("DISPLACE QUADS");
+      scene->displace_quads(displace_resX,displace_resY,displace_height);
+    }
+    
     Application::instance->log(1,"converting scene done");
 
     if (verbosity >= 1) {

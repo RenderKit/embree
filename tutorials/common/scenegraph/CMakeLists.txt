@@ -13,7 +13,8 @@ ADD_LIBRARY(scenegraph STATIC
     corona_loader.cpp
     texture.cpp
     scenegraph.cpp
-    geometry_creation.cpp)
+    geometry_creation.cpp
+    ../tutorial/noise.cpp)
 
 TARGET_LINK_LIBRARIES(scenegraph sys math lexers image embree)
 SET_PROPERTY(TARGET scenegraph PROPERTY FOLDER tutorials/common)

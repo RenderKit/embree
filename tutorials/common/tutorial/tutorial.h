@@ -255,5 +255,8 @@ namespace embree
     std::string subdiv_mode;
     bool print_scene_cameras;
     std::string camera_name;
+    bool displace;
+    unsigned int displace_resX,displace_resY;
+    float displace_height;
   };
 }
