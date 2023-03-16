@@ -17,6 +17,7 @@ namespace embree
 
   extern "C" RenderMode user_rendering_mode;
   extern "C" uint user_spp;
+  extern "C" uint g_lod_threshold;
   
   struct Tutorial : public SceneLoadingTutorialApplication 
   {    
@@ -30,7 +31,12 @@ namespace embree
       registerOption("rendering_mode", [] (Ref<ParseStream> cin, const FileName& path) {
         user_rendering_mode = (RenderMode)cin->getInt();
       }, "--rendering_mode <int>: sets rendering mode");
+
+      registerOption("lod_threshold", [] (Ref<ParseStream> cin, const FileName& path) {
+        g_lod_threshold = (RenderMode)cin->getInt();
+      }, "--lod_threshold <uint>: sets lod threshold");
       
+  
       /* set default camera */
       camera.from = Vec3fa(2.5f,2.5f,2.5f);
       camera.to   = Vec3fa(0.0f,0.0f,0.0f);

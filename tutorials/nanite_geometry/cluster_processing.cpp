@@ -283,7 +283,7 @@ namespace embree {
         opts = 0;
       }
 #endif            
-      if (iterations > 2) return false;
+      if (iterations > 10) return false;
       bool retry = false;      
       float result_error = 0.0f;
       const size_t new_numIndices = meshopt_simplify((uint*)new_triangles,(uint*)triangles,numIndices,(float*)vertices,numVertices,sizeof(Vec3f),expectedTriangles*3,0.1f,opts,&result_error);

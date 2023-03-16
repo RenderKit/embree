@@ -203,6 +203,13 @@ namespace embree
         g_scene->quads_to_subdivs();
       }
 
+      /* convert to grids */
+      else if (tag == "-merge-triangles-to-grids") {
+        g_scene->triangles_to_quads(inf);
+        g_scene->merge_quads_to_grids();
+      }
+      
+
       /* convert bezier to lines */
       else if (tag == "-convert-bezier-to-lines") {
         g_scene->bezier_to_lines();

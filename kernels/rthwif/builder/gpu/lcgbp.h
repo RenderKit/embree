@@ -47,7 +47,17 @@ namespace embree {
     __forceinline Vec3f eval(const float u, const float v) const
     {
       return lerp(lerp(v0,v1,u),lerp(v3,v2,u),v);
-    }    
+    }
+
+    __forceinline BBox3f bounds() const
+    {
+      BBox3f bounds(empty);
+      bounds.extend(v0);      
+      bounds.extend(v1);
+      bounds.extend(v2);
+      bounds.extend(v3);
+      return bounds;
+    }
   };    
   
   struct __aligned(64) LCGBP

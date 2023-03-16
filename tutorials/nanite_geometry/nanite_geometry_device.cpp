@@ -73,7 +73,7 @@ namespace embree {
   extern "C" RenderMode user_rendering_mode = RENDER_PRIMARY;
   extern "C" unsigned int user_spp = 1;
   extern "C" unsigned int g_max_path_length = 2;
-  extern "C" unsigned int g_lod_threshold = 20;
+  extern "C" unsigned int g_lod_threshold = 60;
   
   Averaged<double> avg_bvh_build_time(64,1.0);
   Averaged<double> avg_lod_selection_time(64,1.0);
@@ -102,6 +102,36 @@ namespace embree {
   // =========================================================================================================================================================
   // =========================================================================================================================================================
   // =========================================================================================================================================================
+
+  __forceinline bool frustumCullPlane(const Vec3f &lower, const Vec3f &upper, const Vec3f &normal)
+  {
+    const Vec3f p( normal.x <= 0.0f ? lower.x : upper.x,
+                   normal.y <= 0.0f ? lower.y : upper.y,
+                   normal.z <= 0.0f ? lower.z : upper.z);
+    //PRINT4(normal,lower,upper,p);    
+    //PRINT( dot(p,normal) );
+    return dot(p,normal) < 0.0f;
+                 
+  }
+  __forceinline bool frustumCull(const Vec3f &lower, const Vec3f &upper, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz)
+  {
+    // FIXME plane normal;
+    const Vec3f vn = cross(vx,vy);
+    if (frustumCullPlane(lower,upper,vn)) return true;
+    const Vec3f A = vz;
+    const Vec3f B = vz + vx;
+    const Vec3f C = vz + vx + vy;
+    const Vec3f D = vz + vy;
+    const Vec3f nAB = cross(A,B);
+    const Vec3f nBC = cross(B,C);
+    const Vec3f nCD = cross(C,D);
+    const Vec3f nDA = cross(D,A);
+    if ( frustumCullPlane(lower,upper,nAB) ||
+         frustumCullPlane(lower,upper,nBC) ||
+         frustumCullPlane(lower,upper,nCD) ||
+         frustumCullPlane(lower,upper,nDA) ) return true;
+    return false;
+  }
   
   static const unsigned int LOD_LEVELS = 3;
   //static const unsigned int NUM_TOTAL_QUAD_NODES_PER_RTC_LCG = (1-(1<<(2*LOD_LEVELS)))/(1-4);
@@ -151,35 +181,6 @@ namespace embree {
     return LODPatchLevel(LOD_LEVELS-1-segment,blend);    
   }
 
-  __forceinline bool frustumCullPlane(const Vec3f &lower, const Vec3f &upper, const Vec3f &normal)
-  {
-    const Vec3f p( normal.x <= 0.0f ? lower.x : upper.x,
-                   normal.y <= 0.0f ? lower.y : upper.y,
-                   normal.z <= 0.0f ? lower.z : upper.z);
-    //PRINT4(normal,lower,upper,p);    
-    //PRINT( dot(p,normal) );
-    return dot(p,normal) < 0.0f;
-                 
-  }
-  __forceinline bool frustumCull(const Vec3f &lower, const Vec3f &upper, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz)
-  {
-    // FIXME plane normal;
-    const Vec3f vn = cross(vx,vy);
-    if (frustumCullPlane(lower,upper,vn)) return true;
-    const Vec3f A = vz;
-    const Vec3f B = vz + vx;
-    const Vec3f C = vz + vx + vy;
-    const Vec3f D = vz + vy;
-    const Vec3f nAB = cross(A,B);
-    const Vec3f nBC = cross(B,C);
-    const Vec3f nCD = cross(C,D);
-    const Vec3f nDA = cross(D,A);
-    if ( frustumCullPlane(lower,upper,nAB) ||
-         frustumCullPlane(lower,upper,nBC) ||
-         frustumCullPlane(lower,upper,nCD) ||
-         frustumCullPlane(lower,upper,nDA) ) return true;
-    return false;
-  }
   
 
   __forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz, const unsigned int width, const unsigned int height, const bool clip=true)
@@ -389,6 +390,7 @@ namespace embree {
     PRINT2((float)(avg_error / num_error),max_error);
     bounds.extend(gridBounds);
     minLODDistance = length(bounds.size()) / RELATIVE_MIN_LOD_DISTANCE_FACTOR;
+    PRINT( minLODDistance );
   }
 
   LCG_Scene *global_lcgbp_scene = nullptr;
@@ -848,7 +850,7 @@ namespace embree {
     ImGui::Text("SPP: %d",user_spp);    
     ImGui::Text("BVH Build Time: %4.4f ms",avg_bvh_build_time.get());
     ImGui::Text("LOD Selection Time: %4.4f ms",avg_lod_selection_time.get());
-    ImGui::DragInt("",(int*)&g_lod_threshold,1,2,200);
+    ImGui::DragInt("",(int*)&g_lod_threshold,1,2,1000);
     
     if (global_lcgbp_scene->numLCGBP)
     {
@@ -911,6 +913,7 @@ namespace embree {
       void *lcg_ptr = nullptr;
       //unsigned int lcg_num_prims = 0;
     
+      const float minLODDistance = local_lcgbp_scene->minLODDistance;
       
       const sycl::nd_range<1> nd_range1(alignTo(numLCGBP,wgSize),sycl::range<1>(wgSize));              
       sycl::event compute_lod_event = global_gpu_queue->submit([=](sycl::handler& cgh){
@@ -919,9 +922,23 @@ namespace embree {
           const unsigned int i = item.get_global_id(0);
           if (i < numLCGBP)
           {
+            const Vec3f org = camera.xfm.p;
+            const Vec3f vx = camera.xfm.l.vx;
+            const Vec3f vy = camera.xfm.l.vy;
+            const Vec3f vz = camera.xfm.l.vz;
+            
             LCGBP &current = local_lcgbp_scene->lcgbp[i];
-            const float minLODDistance = local_lcgbp_scene->minLODDistance;
             LODPatchLevel patchLevel = getLODPatchLevel(minLODDistance,current,camera,width,height);
+
+            const BBox3f patch_bounds = current.patch.bounds();
+
+            bool cull = frustumCull( patch_bounds.lower-org,patch_bounds.upper-org,vx*width,vy*height,vz);
+            if (cull && 1)
+            {
+              patchLevel.level = 0;
+              patchLevel.blend = 0.0f;
+            }
+
             const unsigned int lod_level = patchLevel.level;
                                                                                              
             unsigned int lod_level_top    = lod_level;
@@ -999,7 +1016,7 @@ namespace embree {
         });
       });
       waitOnEventAndCatchException(compute_lod_event);
-      rtcSetGeometryUserData(local_lcgbp_scene->geometry,lcg_ptr);      
+      //rtcSetGeometryUserData(local_lcgbp_scene->geometry,lcg_ptr);      
     }   
 
     if (numLCMeshClusters)
@@ -1119,12 +1136,10 @@ namespace embree {
       });
       waitOnEventAndCatchException(compute_lod_event);
 
-      waitOnQueueAndCatchException(*global_gpu_queue);  // FIXME      
-
-      rtcSetLCData(local_lcgbp_scene->geometry, local_lcgbp_scene->numCurrentLCGBPStates, local_lcgbp_scene->lcgbp_state, local_lcgbp_scene->lcm_cluster, local_lcgbp_scene->numLCMeshClusterRootsPerFrame,local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame);
-      
+      waitOnQueueAndCatchException(*global_gpu_queue);  // FIXME            
     }
 
+    rtcSetLCData(local_lcgbp_scene->geometry, local_lcgbp_scene->numCurrentLCGBPStates, local_lcgbp_scene->lcgbp_state, local_lcgbp_scene->lcm_cluster, local_lcgbp_scene->numLCMeshClusterRootsPerFrame,local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame);
 
     double dt0_lod = (getSeconds()-t0_lod)*1000.0;                                            
     avg_lod_selection_time.add(dt0_lod);
@@ -1140,7 +1155,7 @@ namespace embree {
     double dt0_bvh = (getSeconds()-t0_bvh)*1000.0;
                                             
     avg_bvh_build_time.add(dt0_bvh);
-
+    
     
 #endif
   }
