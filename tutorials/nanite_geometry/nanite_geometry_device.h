@@ -10,6 +10,10 @@
 #include "meshoptimizer.h"
 #include <OpenImageDenoise/oidn.h>
 
+
+#define ENABLE_DAG 0
+#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 16.0f
+
 namespace embree {
 
 extern "C" uint user_spp;

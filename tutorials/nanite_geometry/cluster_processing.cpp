@@ -449,7 +449,7 @@ namespace embree {
 
   // ==========================================================
 
-  bool mergeSimplifyQuadMeshCluster2(QuadMeshCluster &cluster0,QuadMeshCluster &cluster1, std::vector<QuadMeshCluster> &quadMeshes)
+  bool mergeSimplifyQuadMeshClusterDAG(QuadMeshCluster &cluster0,QuadMeshCluster &cluster1, std::vector<QuadMeshCluster> &quadMeshes)
   {
     DBG_PRINT3("CLUSTER MERGING",cluster0.quads.size(),cluster1.quads.size());
     QuadMeshCluster quadMesh;
@@ -1175,7 +1175,11 @@ namespace embree {
               const uint newDepth =  std::max(clusters[leftClusterID].depth,clusters[rightClusterID].depth)+1;
             
               std::vector<QuadMeshCluster> new_clusters;
+#if ENABLE_DAG == 1
+              bool success = mergeSimplifyQuadMeshClusterDAG( clusters[leftClusterID], clusters[rightClusterID], new_clusters);              
+#else              
               bool success = mergeSimplifyQuadMeshCluster( clusters[leftClusterID], clusters[rightClusterID], new_clusters);
+#endif              
               DBG_PRINT2(success,newDepth);
               
               if (success && newDepth <= MAX_DEPTH_LIMIT)
@@ -1330,6 +1334,13 @@ namespace embree {
       compressed_cluster.numBlocks = LossyCompressedMeshCluster::getDecompressedSizeInBytes(compressed_cluster.numQuads)/64;
       BBox3f cluster_bounds = clusters[c].bounds;
 
+#if ENABLE_DAG == 1      
+      if (clusters[c].neighborID != -1)
+      {
+        cluster_bounds.extend( clusters[ clusters[c].neighborID ].bounds );
+      }
+#endif
+      
       compressed_cluster.lod_level = clusters[c].depth;
       compressed_cluster.tmp = 0;
       
@@ -1338,6 +1349,7 @@ namespace embree {
       
       compressed_cluster.lodLeftID = (clusters[c].leftID != -1) ? (clusters[c].leftID-c) : -1;
       compressed_cluster.lodRightID = (clusters[c].rightID != -1) ? (clusters[c].rightID-c) : -1;
+      compressed_cluster.neighborID = (clusters[c].neighborID != -1) ? (clusters[c].neighborID-c) : -1;      
       compressed_cluster.offsetIndices  = globalCompressedIndexOffset;      
       compressed_cluster.offsetVertices = globalCompressedVertexOffset;
       compressed_cluster.mesh = lcm;

@@ -14,11 +14,6 @@
 
 #endif
 
-
-#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 16.0f
-// 3.0f
-//#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 32.0f
-
 #include "../../kernels/rthwif/builder/gpu/lcgbp.h"
 #include "../../kernels/rthwif/builder/gpu/morton.h"
 
@@ -1074,10 +1069,24 @@ namespace embree {
                 const LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[ currentID ];              
                 if (!cur.hasChildren()) // leaf
                 {
-                  const unsigned int numQuads = cluster.numQuads;
-                  gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterQuadsPerFrame,(unsigned int)numQuads);                                                            
-                  const unsigned int destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(unsigned int)1);
-                  local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID] =  currentID;                
+#if ENABLE_DAG == 1
+                  if (cur.hasNeighbor())
+                  {                    
+                    const uint neighborID = cur.neighborID;
+                    const LossyCompressedMeshCluster &neighbor = local_lcgbp_scene->lcm_cluster[ neighborID ];                                  
+                    const uint numQuads = cur.numQuads + neighbor.numQuads;
+                    gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterQuadsPerFrame,(unsigned int)numQuads);                                                            
+                    const unsigned int destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(unsigned int)2);
+                    local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID+0] =  currentID;
+                    local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID+1] =  neighborID;                    
+                  }
+                  else                  
+#endif                  
+                  {
+                    gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterQuadsPerFrame,(unsigned int)cluster.numQuads);                                                            
+                    const unsigned int destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(unsigned int)1);
+                    local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID] =  currentID;
+                  }
                 }
                 else
                 {
@@ -1089,17 +1098,37 @@ namespace embree {
                   const Vec2f plane_bounds_lower = projectVertexToPlane(bounds_lower,vx,vy,vz,width,height,true);
                   const Vec2f plane_bounds_upper = projectVertexToPlane(bounds_upper,vx,vy,vz,width,height,true);
                 
-                  const bool subdivide = subdivideLOD(min(plane_bounds_lower,plane_bounds_upper),max(plane_bounds_lower,plane_bounds_upper),width,height,lod_threshold);
+                  bool subdivide = subdivideLOD(min(plane_bounds_lower,plane_bounds_upper),max(plane_bounds_lower,plane_bounds_upper),width,height,lod_threshold);
+                    
                   if (subdivide && (numStackEntries+2 <= STACK_SIZE))
                   {
-                    stack[numStackEntries+0] = (int)currentID + cur.lodLeftID;
-                    stack[numStackEntries+1] = (int)currentID + cur.lodRightID;
+                    const uint lID = (int)currentID + cur.lodLeftID;
+                    const uint rID = (int)currentID + cur.lodRightID;
+                    stack[numStackEntries+0] = lID;
+                    stack[numStackEntries+1] = rID;
                     numStackEntries+=2;
+                    
                   }
                   else
                   {
-                    const unsigned int destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(unsigned int)1);
-                    local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID] =  currentID;
+#if ENABLE_DAG == 1
+                    if (cur.hasNeighbor())
+                    {                    
+                      const uint neighborID = cur.neighborID;
+                      const LossyCompressedMeshCluster &neighbor = local_lcgbp_scene->lcm_cluster[ neighborID ];                                  
+                      const uint numQuads = cur.numQuads + neighbor.numQuads;
+                      gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterQuadsPerFrame,(unsigned int)numQuads);                                                            
+                      const unsigned int destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(unsigned int)2);
+                      local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID+0] =  currentID;
+                      local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID+1] =  neighborID;                    
+                    }
+                    else                    
+#endif
+                    {
+                      gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterQuadsPerFrame,(unsigned int)cluster.numQuads);                                                            
+                      const unsigned int destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(unsigned int)1);
+                      local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID] =  currentID;
+                    }
                   }                                
                 }              
               }
