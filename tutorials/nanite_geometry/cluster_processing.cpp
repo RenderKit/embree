@@ -66,12 +66,12 @@ namespace embree {
   struct QuadMeshCluster {
     BBox3f bounds;
     bool lod_root;
-    uint leftID, rightID;
+    uint leftID, rightID, neighborID;
     uint depth;
     std::vector<Quad> quads;
     std::vector<Vec3f> vertices;
 
-    __forceinline QuadMeshCluster() : bounds(empty),lod_root(false),leftID(-1), rightID(-1) {}
+    __forceinline QuadMeshCluster() : bounds(empty),lod_root(false),leftID(-1), rightID(-1), neighborID(-1), depth(0) {}
 
     __forceinline bool isLeaf() { return leftID == -1 || rightID == -1; }
 
@@ -84,6 +84,7 @@ namespace embree {
     
     void reorderMorton();
     uint computeTriangleStrip();
+    bool split(QuadMeshCluster &left, QuadMeshCluster &right);
     
   };
 
@@ -198,6 +199,39 @@ namespace embree {
     size_t strip_size = meshopt_stripify(new_indices, old_indices, numIndices, numVertices, restart_index);
     return strip_size;
   }
+
+  bool QuadMeshCluster::split(QuadMeshCluster &left, QuadMeshCluster &right)
+  {
+    reorderMorton();
+    
+    uint mid = quads.size() / 2;
+    for (uint i=0;i<mid;i++)
+    {
+      uint v0 = findVertex(left.vertices, vertices[ quads[i].v0 ]);
+      uint v1 = findVertex(left.vertices, vertices[ quads[i].v1 ]);
+      uint v2 = findVertex(left.vertices, vertices[ quads[i].v2 ]);
+      uint v3 = findVertex(left.vertices, vertices[ quads[i].v3 ]);
+
+      left.quads.push_back(Quad(v0,v1,v2,v3));
+    }
+
+    for (uint i=mid;i<quads.size();i++)
+    {
+      uint v0 = findVertex(right.vertices, vertices[ quads[i].v0 ]);
+      uint v1 = findVertex(right.vertices, vertices[ quads[i].v1 ]);
+      uint v2 = findVertex(right.vertices, vertices[ quads[i].v2 ]);
+      uint v3 = findVertex(right.vertices, vertices[ quads[i].v3 ]);
+
+      right.quads.push_back(Quad(v0,v1,v2,v3));
+    }
+
+    if (left.vertices.size() <= 256 && left.quads.size() <= LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER &&
+        right.vertices.size() <= 256 && right.quads.size() <= LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER)
+      return true;
+    else
+      return false;
+  }
+  
   
 
   __forceinline std::pair<int,int> quad_index2(int p, int a0, int a1, int b0, int b1)
@@ -224,8 +258,65 @@ namespace embree {
   }
 
 
-  bool mergeSimplifyQuadMeshCluster(QuadMeshCluster &cluster0,QuadMeshCluster &cluster1, QuadMeshCluster &quadMesh)
+  float getSimplificationRatio(QuadMeshCluster &cluster0,QuadMeshCluster &cluster1)
   {
+    TriangleMesh mesh;    
+    
+    // === cluster0 ===
+    for (uint i=0;i<cluster0.quads.size();i++)
+    {
+      uint v0 = findVertex(mesh.vertices, cluster0.vertices[ cluster0.quads[i].v0 ]);
+      uint v1 = findVertex(mesh.vertices, cluster0.vertices[ cluster0.quads[i].v1 ]);
+      uint v2 = findVertex(mesh.vertices, cluster0.vertices[ cluster0.quads[i].v2 ]);
+      uint v3 = findVertex(mesh.vertices, cluster0.vertices[ cluster0.quads[i].v3 ]);
+
+      Triangle tri0(v0,v1,v3);
+      Triangle tri1(v1,v2,v3);
+      if (tri0.valid()) mesh.triangles.push_back(tri0);
+      if (tri1.valid()) mesh.triangles.push_back(tri1);            
+    }
+
+    // === cluster1 ===
+    for (uint i=0;i<cluster1.quads.size();i++)
+    {
+      uint v0 = findVertex(mesh.vertices, cluster1.vertices[ cluster1.quads[i].v0 ]);
+      uint v1 = findVertex(mesh.vertices, cluster1.vertices[ cluster1.quads[i].v1 ]);
+      uint v2 = findVertex(mesh.vertices, cluster1.vertices[ cluster1.quads[i].v2 ]);
+      uint v3 = findVertex(mesh.vertices, cluster1.vertices[ cluster1.quads[i].v3 ]);
+
+      Triangle tri0(v0,v1,v3);
+      Triangle tri1(v1,v2,v3);
+      if (tri0.valid()) mesh.triangles.push_back(tri0);
+      if (tri1.valid()) mesh.triangles.push_back(tri1);            
+    }
+
+    const uint numTriangles = mesh.triangles.size();
+    const uint numVertices  = mesh.vertices.size();
+    const uint numIndices   = numTriangles*3;
+
+    Triangle *new_triangles = new Triangle[numTriangles];    
+    Triangle *triangles     = &*mesh.triangles.begin();
+    Vec3f *vertices         = &*mesh.vertices.begin();
+
+    const float REDUCTION_FACTOR = 0.5f;
+    const uint expectedTriangles = ceilf(numTriangles * REDUCTION_FACTOR); 
+    
+    const float max_error = 0.1f;
+    
+    float result_error = 0.0f;
+    const uint opts = meshopt_SimplifyLockBorder;
+    const size_t new_numIndices = meshopt_simplify((uint*)new_triangles,(uint*)triangles,numIndices,(float*)vertices,numVertices,sizeof(Vec3f),expectedTriangles*3,max_error,opts,&result_error);
+    const size_t new_numTriangles = new_numIndices/3;                
+    
+    delete [] new_triangles;
+
+    return (float)new_numTriangles / numTriangles;
+  }
+
+
+  bool mergeSimplifyQuadMeshCluster(QuadMeshCluster &cluster0,QuadMeshCluster &cluster1, std::vector<QuadMeshCluster> &quadMeshes)
+  {
+    QuadMeshCluster quadMesh;
     TriangleMesh mesh;
     
     
@@ -349,9 +440,169 @@ namespace embree {
     DBG_PRINT2(quadMesh.quads.size(),quadMesh.vertices.size());
 
     delete [] new_triangles;
+
+    quadMeshes.push_back(quadMesh);
+    return true;
+  }
+
+
+
+  // ==========================================================
+
+  bool mergeSimplifyQuadMeshCluster2(QuadMeshCluster &cluster0,QuadMeshCluster &cluster1, std::vector<QuadMeshCluster> &quadMeshes)
+  {
+    DBG_PRINT3("CLUSTER MERGING",cluster0.quads.size(),cluster1.quads.size());
+    QuadMeshCluster quadMesh;
+    TriangleMesh mesh;
+    
+    
+    // === cluster0 ===
+    for (uint i=0;i<cluster0.quads.size();i++)
+    {
+      uint v0 = findVertex(mesh.vertices, cluster0.vertices[ cluster0.quads[i].v0 ]);
+      uint v1 = findVertex(mesh.vertices, cluster0.vertices[ cluster0.quads[i].v1 ]);
+      uint v2 = findVertex(mesh.vertices, cluster0.vertices[ cluster0.quads[i].v2 ]);
+      uint v3 = findVertex(mesh.vertices, cluster0.vertices[ cluster0.quads[i].v3 ]);
+
+      Triangle tri0(v0,v1,v3);
+      Triangle tri1(v1,v2,v3);
+      if (tri0.valid()) mesh.triangles.push_back(tri0);
+      if (tri1.valid()) mesh.triangles.push_back(tri1);            
+    }
+
+    // === cluster1 ===
+    for (uint i=0;i<cluster1.quads.size();i++)
+    {
+      uint v0 = findVertex(mesh.vertices, cluster1.vertices[ cluster1.quads[i].v0 ]);
+      uint v1 = findVertex(mesh.vertices, cluster1.vertices[ cluster1.quads[i].v1 ]);
+      uint v2 = findVertex(mesh.vertices, cluster1.vertices[ cluster1.quads[i].v2 ]);
+      uint v3 = findVertex(mesh.vertices, cluster1.vertices[ cluster1.quads[i].v3 ]);
+
+      Triangle tri0(v0,v1,v3);
+      Triangle tri1(v1,v2,v3);
+      if (tri0.valid()) mesh.triangles.push_back(tri0);
+      if (tri1.valid()) mesh.triangles.push_back(tri1);            
+    }
+    
+    DBG_PRINT(mesh.vertices.size());
+    DBG_PRINT(mesh.triangles.size());
+
+    const uint numTriangles = mesh.triangles.size();
+    const uint numVertices  = mesh.vertices.size();
+    const uint numIndices   = numTriangles*3;
+
+    Triangle *new_triangles = new Triangle[numTriangles];    
+    Triangle *triangles     = &*mesh.triangles.begin();
+    Vec3f *vertices         = &*mesh.vertices.begin();
+
+    const float REDUCTION_FACTOR = 0.5f;
+    uint expectedTriangles = ceilf(numTriangles * REDUCTION_FACTOR); //floorf((LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER * 4) * REDUCTION_FACTOR);
+    
+    uint iterations = 0;
+    float max_error = 0.1f;
+    const float REDUCTION_THRESHOLD = 0.9f;
+    //while(1)
+    {
+      iterations++;
+
+      uint opts = meshopt_SimplifyLockBorder;
+
+      bool retry = false;
+      size_t new_numIndices = 0;
+      while(max_error < 1.0f) {
+        float result_error = 0.0f;
+        new_numIndices = meshopt_simplify((uint*)new_triangles,(uint*)triangles,numIndices,(float*)vertices,numVertices,sizeof(Vec3f),expectedTriangles*3,max_error,opts,&result_error);
+        const size_t new_numTriangles = new_numIndices/3;                
+        DBG_PRINT5("SIMPLIFY",new_numTriangles,numTriangles,expectedTriangles,(float)new_numTriangles / numTriangles);
+        if ((float)new_numTriangles / numTriangles <= REDUCTION_THRESHOLD) break;        
+        //expectedTriangles += std::max(expectedTriangles/10,(uint)1);
+        max_error *= 2;
+      } 
+
+      const size_t new_numTriangles = new_numIndices/3;
+
+      if ((float)new_numTriangles / numTriangles > REDUCTION_THRESHOLD) { PRINT4("NOT ENOUGH REDUCTION",numTriangles,new_numTriangles,expectedTriangles); return false; }
+      
+      DBG_PRINT2(expectedTriangles,new_numTriangles);
+
+      std::vector<uint> new_vertices;
+      for (uint i=0;i<new_numTriangles;i++)
+      {
+        countVertexIDs(new_vertices, new_triangles[i].v0);
+        countVertexIDs(new_vertices, new_triangles[i].v1);
+        countVertexIDs(new_vertices, new_triangles[i].v2);      
+      }      
+      if (new_vertices.size() > 256)
+      {
+        DBG_PRINT2("new_vertices.size()",new_vertices.size());
+        retry = true;
+      }
+
+
+      for (size_t i=0; i<new_numTriangles; i++)
+      {
+        const int a0 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+0].v0 ]);
+        const int a1 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+0].v1 ]);
+        const int a2 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+0].v2 ]);      
+        if (i+1 == new_numTriangles) {
+          quadMesh.quads.push_back(Quad(a0,a1,a2,a2));
+          continue;
+        }
+
+        const int b0 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+1].v0 ]);
+        const int b1 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+1].v1 ]);
+        const int b2 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+1].v2 ]);      
+        const std::pair<int,int> q = quad_index3(a0,a1,a2,b0,b1,b2);
+        const int a3 = q.second;
+        if (a3 == -1) {
+          quadMesh.quads.push_back(Quad(a0,a1,a2,a2));
+          continue;
+        }
+      
+        if      (q.first == -1) quadMesh.quads.push_back(Quad(a1,a2,a3,a0));
+        else if (q.first ==  0) quadMesh.quads.push_back(Quad(a3,a1,a2,a0));
+        else if (q.first ==  1) quadMesh.quads.push_back(Quad(a0,a1,a3,a2));
+        else if (q.first ==  2) quadMesh.quads.push_back(Quad(a1,a2,a3,a0)); 
+        i++;
+      }
+
+
+      if (quadMesh.quads.size() > LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER) { DBG_PRINT2("RETRY quadMesh.quads.size()",quadMesh.quads.size()); retry = true; }
+      if (quadMesh.vertices.size() > 256) { DBG_PRINT("RETRY quadMesh.vertices.size()"); retry = true; }
+      if (retry)
+      {
+        DBG_PRINT("SPLIT DAG");
+        QuadMeshCluster left, right;
+        const bool split_success = quadMesh.split(left,right);
+        PRINT3(split_success,left.quads.size(),right.quads.size());
+        
+        if (split_success)
+        {
+          quadMeshes.push_back(left);
+          quadMeshes.push_back(right);
+        }
+        else
+          FATAL("SPLIT FAILED");                  
+      }
+      else
+        quadMeshes.push_back(quadMesh);        
+      // else
+      //   break;
+    }
+    //exit(0);
+    DBG_PRINT(quadMeshes.size());
+      for (uint i=0;i<quadMeshes.size();i++)
+        DBG_PRINT2(quadMeshes[i].quads.size(),quadMeshes[i].vertices.size());
+
+    delete [] new_triangles;
+
     
     return true;
   }
+  
+
+
+  // ==========================================================
   
   
   
@@ -375,6 +626,229 @@ namespace embree {
 
     __forceinline bool isLeaf() { return left == -1 || right == -1; }
   };
+  
+  struct BVH2Ploc
+  {
+    BBox3f bounds;
+    uint leftID,rightID;
+    uint numLeafPrims;
+
+    BVH2Ploc() {}
+    
+    BVH2Ploc(const BBox3f &bounds, uint ID) : bounds(bounds),leftID(ID),rightID(-1),numLeafPrims(1) {}
+
+    BVH2Ploc(const BVH2Ploc &left, const BVH2Ploc &right, uint lID, uint rID) {
+      bounds = left.bounds;
+      bounds.extend(right.bounds);
+      leftID = lID;
+      rightID = rID;
+      numLeafPrims = left.numLeafPrims + right.numLeafPrims;
+    }
+    
+    __forceinline bool isLeaf() { return rightID == -1; }
+    __forceinline uint leafID() { return leftID; }
+    __forceinline uint items() { return numLeafPrims; }
+    
+  };
+
+  void extractIDs(const uint currentID, BVH2Ploc *bvh, std::vector<uint> &IDs)
+  {
+    if (bvh[currentID].isLeaf())
+    {
+      IDs.push_back(bvh[currentID].leafID());
+    }
+    else
+    {
+      extractIDs(bvh[currentID].leftID,bvh,IDs);
+      extractIDs(bvh[currentID].rightID,bvh,IDs);      
+    }
+  }
+  
+  void extractClusters(const uint currentID, BVH2Ploc *bvh, std::vector<QuadMeshCluster> &clusters, ISPCQuadMesh* mesh, const uint threshold)
+  {
+    if (bvh[currentID].items() < threshold || bvh[currentID].isLeaf())
+    {
+      std::vector<uint> IDs;
+      extractIDs(currentID,bvh,IDs);
+
+      std::map<uint,uint> index_map;
+      uint numLocalIndices = 0;
+      bool fits = true;
+      for (uint j=0;j<IDs.size();j++)
+      {
+        const uint index = IDs[j];
+        const uint v0 = mesh->quads[index].v0;
+        const uint v1 = mesh->quads[index].v1;
+        const uint v2 = mesh->quads[index].v2;
+        const uint v3 = mesh->quads[index].v3;
+
+        remap_vtx_index(v0,index_map,numLocalIndices);
+        remap_vtx_index(v1,index_map,numLocalIndices);
+        remap_vtx_index(v2,index_map,numLocalIndices);
+        remap_vtx_index(v3,index_map,numLocalIndices);
+        if (index_map.size() > 256)
+        {
+          fits = false;
+          break;
+        }
+      }
+      
+      if (fits)
+      {
+        QuadMeshCluster cluster;
+
+        for (uint j=0;j<IDs.size();j++)
+        {
+          const uint index = IDs[j];
+          const uint v0 = mesh->quads[index].v0;
+          const uint v1 = mesh->quads[index].v1;
+          const uint v2 = mesh->quads[index].v2;
+          const uint v3 = mesh->quads[index].v3;
+
+          const uint remaped_v0 =  remap_vtx_index(v0,index_map,numLocalIndices);
+          const uint remaped_v1 =  remap_vtx_index(v1,index_map,numLocalIndices);
+          const uint remaped_v2 =  remap_vtx_index(v2,index_map,numLocalIndices);
+          const uint remaped_v3 =  remap_vtx_index(v3,index_map,numLocalIndices);
+
+          cluster.quads.push_back(Quad(remaped_v0,remaped_v1,remaped_v2,remaped_v3));
+          
+        }
+
+        cluster.vertices.resize(numLocalIndices);
+      
+        for (std::map<uint,uint>::iterator i=index_map.begin(); i != index_map.end(); i++)
+        {
+          const uint old_v = (*i).first;
+          const uint new_v = (*i).second;
+          cluster.vertices[new_v] = mesh->positions[0][old_v];
+        }
+                
+        cluster.initBounds();
+        cluster.depth = 1;
+        cluster.lod_root = true;
+        
+        if (cluster.quads.size() > LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER) FATAL("cluster.quads");
+        if (numLocalIndices > 256) FATAL("cluster.vertices");
+
+        clusters.push_back(cluster);
+        return;
+      }      
+    }
+
+    extractClusters(bvh[currentID].leftID,bvh,clusters,mesh,threshold);
+    extractClusters(bvh[currentID].rightID,bvh,clusters,mesh,threshold);      
+  }  
+
+  std::vector<QuadMeshCluster> extractRangesPLOC(std::vector<gpu::MortonCodePrimitive64x32Bits3D> &mcodes,const std::vector<BBox3f> &plocBounds, ISPCQuadMesh* mesh, const uint threshold)
+  {
+    std::vector<QuadMeshCluster> clusters;
+    
+    const uint numPrims = mcodes.size();
+    PING;
+    PRINT(numPrims);
+    
+    uint *index_buffer = new uint[numPrims];
+    uint *tmp_buffer = new uint[numPrims];
+    uint *nearest_neighborID = new uint[numPrims];
+
+    BVH2Ploc *bvh2 = new BVH2Ploc[numPrims*2];
+
+    for (uint i=0;i<numPrims;i++)
+    {
+      const uint ID = mcodes[i].getIndex();
+      index_buffer[i] = i;
+      bvh2[i] = BVH2Ploc(plocBounds[ID],ID);
+    }
+
+    const int SEARCH_RADIUS = 16;
+
+    std::atomic<uint> numPrimitives(numPrims);
+
+    uint cur_numPrims = numPrims;
+    while(cur_numPrims > 1)
+    {
+      PRINT(cur_numPrims);
+      for (uint i=0;i<cur_numPrims;i++)
+        nearest_neighborID[i] = -1;
+
+      parallel_for((uint)0, cur_numPrims, [&] (const range<uint>& r)
+      {
+        for (uint c=r.begin();c<r.end();c++)
+        {
+          // find nearest neighbor
+          const uint ID = index_buffer[c];
+          const BBox3f bounds = bvh2[ID].bounds;
+          float min_area = pos_inf;
+          int nn = -1;
+          for (int i=std::max((int)c-SEARCH_RADIUS,0);i<std::min((int)c+SEARCH_RADIUS,(int)cur_numPrims);i++)
+            if (i != c && index_buffer[i] != -1)
+            {
+              const uint merge_ID = index_buffer[i];
+              BBox3f merged_bounds = bvh2[merge_ID].bounds;
+              merged_bounds.extend(bounds);
+              const float areaBounds = area(merged_bounds);
+              if (areaBounds < min_area)
+              {
+                min_area = areaBounds;
+                nn = i;
+              }
+            }
+          nearest_neighborID[c] = nn;                  
+        }
+      });
+
+      // parallel_for(cur_numPrims, [&] (uint i)
+      for (uint i=0;i<cur_numPrims;i++)
+      {
+        if (nearest_neighborID[i] != -1)
+        {
+          if ( nearest_neighborID[ nearest_neighborID[i] ] == i)
+          {
+            if ( i < nearest_neighborID[i])
+            {
+              const uint leftID = index_buffer[i];
+              const uint rightID = index_buffer[nearest_neighborID[i]];
+              const uint newID = numPrimitives.fetch_add(1);
+              bvh2[newID] = BVH2Ploc(bvh2[leftID],bvh2[rightID],leftID,rightID);
+              tmp_buffer[i] = newID;
+              tmp_buffer[nearest_neighborID[i]] = -1;              
+            }
+          }
+          else
+            tmp_buffer[i] = index_buffer[i];              
+        }
+        else
+          tmp_buffer[i] = index_buffer[i];                      
+      }//);
+      
+      uint new_cur_numPrims = 0;
+      for (uint i=0;i<cur_numPrims;i++)
+        if (tmp_buffer[i] != -1)
+          index_buffer[new_cur_numPrims++] = tmp_buffer[i];
+
+      cur_numPrims = new_cur_numPrims;      
+    }
+
+    uint rootID = index_buffer[0];
+    
+
+    PRINT("BVH2 DONE");
+
+    extractClusters(rootID, bvh2, clusters, mesh, threshold);
+
+    PRINT(clusters.size());
+    PRINT("CLUSTER EXTRACTION DONE");
+    
+    delete [] bvh2;  
+    delete [] nearest_neighborID;        
+    delete [] tmp_buffer;    
+    delete [] index_buffer;
+
+    return clusters;
+  }
+  
+  
+
 
   void extractRanges(const uint currentID, const gpu::MortonCodePrimitive64x32Bits3D *const mcodes, std::vector<HierarchyRange> &ranges, std::vector<uint> &leafIDs, ISPCQuadMesh* mesh, uint &numTotalVertices, const uint threshold)
   {
@@ -485,7 +959,7 @@ namespace embree {
     std::vector<HierarchyRange> ranges;
     std::vector<uint> leafIDs;
     std::vector<uint> clusterRootIDs;
-
+    std::vector<BBox3f> plocBounds;
     mcodes.reserve(numQuads);
     
     for (uint i=0;i<numQuads;i++)
@@ -518,7 +992,8 @@ namespace embree {
       const uint gy = (uint)gridpos_f.y;
       const uint gz = (uint)gridpos_f.z;
       const uint64_t code = bitInterleave64<uint64_t>(gx,gy,gz);
-      mcodes.push_back(gpu::MortonCodePrimitive64x32Bits3D(code,i));      
+      mcodes.push_back(gpu::MortonCodePrimitive64x32Bits3D(code,i));
+      plocBounds.push_back(quadBounds);
     }
 
     // === sort morton codes ===
@@ -527,17 +1002,18 @@ namespace embree {
 
     // === extract ranges, test range if it fullfills requirements, split if necessary ===
     uint numTotalVertices = 0;
-    
+
+#if 0
     ranges.push_back(HierarchyRange(gpu::Range(0,mcodes.size())));
     extractRanges(0,&*mcodes.begin(),ranges,leafIDs,mesh,numTotalVertices,INITIAL_CREATE_RANGE_THRESHOLD);
     DBG_PRINT(ranges.size());
     DBG_PRINT(leafIDs.size());
-
     // === create leaf clusters ===
     //size_t totalSizeMicroMesh = 0;
     //size_t totalSizeMicroStrip = 0;
 
-    QuadMeshCluster *clusters = new QuadMeshCluster[leafIDs.size()*2];
+    const uint MAX_NUM_MESH_CLUSTERS = leafIDs.size()*4;
+    QuadMeshCluster *clusters = new QuadMeshCluster[MAX_NUM_MESH_CLUSTERS]; //FIXME
     std::atomic<uint> numClusters(0);
 
     for (uint i=0;i<leafIDs.size();i++) //FIXME leafIDs
@@ -597,6 +1073,18 @@ namespace embree {
     //PRINT(numClusters);
     if (numClusters != leafIDs.size()) FATAL("numClusters != leafIDs.size()");
 
+#else
+    std::vector<QuadMeshCluster> extractClusters = extractRangesPLOC(mcodes,plocBounds,mesh,INITIAL_CREATE_RANGE_THRESHOLD);
+    const uint MAX_NUM_MESH_CLUSTERS = extractClusters.size()*4;
+    QuadMeshCluster *clusters = new QuadMeshCluster[MAX_NUM_MESH_CLUSTERS]; //FIXME
+    std::atomic<uint> numClusters(extractClusters.size());
+    
+    for (uint i=0;i<numClusters;i++)
+      clusters[i] = extractClusters[i];
+    
+#endif    
+    
+
     const uint numNumClustersMaxRes = numClusters;
     
     //PRINT2(totalSizeMicroMesh,totalSizeMicroStrip);
@@ -626,7 +1114,10 @@ namespace embree {
     uint current_numClusters = numClusters;
     
     while(/*numClusterQuads > dest_numClusterQuads && */current_numClusters > 1)
-    {      
+    {
+      std::cout << std::endl;
+      PRINT(current_numClusters);
+      
       for (uint i=0;i<current_numClusters;i++)
         nearest_neighborID[i] = -1;
 
@@ -642,10 +1133,11 @@ namespace embree {
           for (int i=std::max((int)c-SEARCH_RADIUS,0);i<std::min((int)c+SEARCH_RADIUS,(int)current_numClusters);i++)
             if (i != c && index_buffer[i] != -1)
             {
-              BBox3f bounds = clusters[index_buffer[i]].bounds;
+              const uint merge_clusterID = index_buffer[i];
+              BBox3f bounds = clusters[merge_clusterID].bounds;
               bounds.extend(cluster_bounds);
               const float areaBounds = area(bounds);
-              if (areaBounds < min_area)
+              if (areaBounds < min_area && clusters[clusterID].neighborID != merge_clusterID)
               {
                 min_area = areaBounds;
                 nn = i;
@@ -654,9 +1146,11 @@ namespace embree {
           nearest_neighborID[c] = nn;                  
         }
       });
+
+      bool merged_pair = false;
       
       parallel_for(current_numClusters, [&] (uint i)
-        //for (uint i=0;i<current_numClusters;i++)
+      //for (uint i=0;i<current_numClusters;i++)
       {
         if (nearest_neighborID[i] != -1)
         {
@@ -666,33 +1160,68 @@ namespace embree {
             {
               const uint leftClusterID = index_buffer[i];
               const uint rightClusterID = index_buffer[nearest_neighborID[i]];
-              //PRINT3("MERGE",rightClusterID,rightClusterID);
+              DBG_PRINT4("MERGE",leftClusterID,rightClusterID,getSimplificationRatio(clusters[leftClusterID], clusters[rightClusterID]));
               const uint newDepth =  std::max(clusters[leftClusterID].depth,clusters[rightClusterID].depth)+1;
             
-              QuadMeshCluster new_cluster;
-              bool success = mergeSimplifyQuadMeshCluster( clusters[leftClusterID], clusters[rightClusterID], new_cluster);
+              std::vector<QuadMeshCluster> new_clusters;
+              bool success = mergeSimplifyQuadMeshCluster( clusters[leftClusterID], clusters[rightClusterID], new_clusters);
+              DBG_PRINT2(success,newDepth);
               
               if (success && newDepth <= MAX_DEPTH_LIMIT)
               {
+                merged_pair = true;
+                
+                QuadMeshCluster &new_cluster0 = new_clusters[0];
                 clusters[leftClusterID].lod_root = false;
                 clusters[rightClusterID].lod_root = false;
-                new_cluster.depth = newDepth;
-                new_cluster.leftID  = leftClusterID;
-                new_cluster.rightID = rightClusterID;
-                new_cluster.initBounds();
-                new_cluster.lod_root = true;              
-                const uint newClusterID = numClusters.fetch_add(1);
-                clusters[newClusterID] = new_cluster;                
-                tmp_buffer[i] = newClusterID;
-                tmp_buffer[nearest_neighborID[i]] = -1;
+                
+                new_cluster0.depth = newDepth;
+                new_cluster0.leftID  = leftClusterID;
+                new_cluster0.rightID = rightClusterID;
+                new_cluster0.neighborID = -1;
+                new_cluster0.initBounds();
+                new_cluster0.lod_root = true;
+                
+                const uint newClusterID0 = numClusters.fetch_add(1);
+                if (newClusterID0 >= MAX_NUM_MESH_CLUSTERS) FATAL("MAX_NUM_MESH_CLUSTERS");
+                
+                clusters[newClusterID0] = new_cluster0;
+
+                tmp_buffer[i] = newClusterID0;
+
+
+                if (new_clusters.size() == 2)
+                {
+                  PRINT("SPLIT CASE");
+                  QuadMeshCluster &new_cluster1 = new_clusters[1];
+                  clusters[leftClusterID].lod_root = false;
+                  clusters[rightClusterID].lod_root = false;
+                  new_cluster1.depth = newDepth;
+                  new_cluster1.leftID  = leftClusterID;
+                  new_cluster1.rightID = rightClusterID;
+                  new_cluster1.neighborID = newClusterID0;
+                  new_cluster1.initBounds();
+                  new_cluster1.lod_root = true;              
+                  const uint newClusterID1 = numClusters.fetch_add(1);
+                  if (newClusterID1 >= MAX_NUM_MESH_CLUSTERS) FATAL("MAX_NUM_MESH_CLUSTERS");
+                  
+                  clusters[newClusterID1] = new_cluster1;
+                  tmp_buffer[nearest_neighborID[i]] = newClusterID1;
+
+                  /* update neighbor */
+                  clusters[newClusterID0].neighborID = newClusterID1;
+                  
+                }
+                else                                
+                  tmp_buffer[nearest_neighborID[i]] = -1;
               }
               else
               {
                 DBG_PRINT4("CANNOT MERGE", leftClusterID, rightClusterID,newDepth);
                 tmp_buffer[i] = index_buffer[i];
-                tmp_buffer[nearest_neighborID[i]] = index_buffer[nearest_neighborID[i]];
-                
+                tmp_buffer[nearest_neighborID[i]] = index_buffer[nearest_neighborID[i]];                
                 //nearest_neighborID[nearest_neighborID[i]] = -1;
+                //exit(0);
               }
             }
             //else
@@ -725,8 +1254,9 @@ namespace embree {
       
       DBG_PRINT3(iteration,new_numClusters,current_numClusters);
 
-      
-      if (current_numClusters == new_numClusters) break; // couldn't merge any clusters anymore
+
+      if (!merged_pair) break; // couldn't merge any clusters anymore
+      //if (current_numClusters == new_numClusters) break; // couldn't merge any clusters anymore
       
       current_numClusters = new_numClusters;
 
@@ -847,7 +1377,8 @@ namespace embree {
     delete [] compressedVertices;    
     delete [] clusters;
 
-    DBG_PRINT("CLUSTER PROCESSING DONE");    
+    PRINT("CLUSTER PROCESSING DONE");    
+    //exit(0);
     
     return numNumClustersMaxRes;
   }  
