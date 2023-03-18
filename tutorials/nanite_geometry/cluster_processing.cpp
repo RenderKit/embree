@@ -744,8 +744,7 @@ namespace embree {
     std::vector<QuadMeshCluster> clusters;
     
     const uint numPrims = mcodes.size();
-    PING;
-    PRINT(numPrims);
+    DBG_PRINT(numPrims);
     
     uint *index_buffer = new uint[numPrims];
     uint *tmp_buffer = new uint[numPrims];
@@ -767,7 +766,7 @@ namespace embree {
     uint cur_numPrims = numPrims;
     while(cur_numPrims > 1)
     {
-      PRINT(cur_numPrims);
+      DBG_PRINT(cur_numPrims);
       for (uint i=0;i<cur_numPrims;i++)
         nearest_neighborID[i] = -1;
 
@@ -780,7 +779,7 @@ namespace embree {
           const BBox3f bounds = bvh2[ID].bounds;
           float min_area = pos_inf;
           int nn = -1;
-          for (int i=std::max((int)c-SEARCH_RADIUS,0);i<std::min((int)c+SEARCH_RADIUS,(int)cur_numPrims);i++)
+          for (int i=std::max((int)c-SEARCH_RADIUS,0);i<std::min((int)c+SEARCH_RADIUS+1,(int)cur_numPrims);i++)
             if (i != c && index_buffer[i] != -1)
             {
               const uint merge_ID = index_buffer[i];
@@ -797,47 +796,55 @@ namespace embree {
         }
       });
 
-      // parallel_for(cur_numPrims, [&] (uint i)
-      for (uint i=0;i<cur_numPrims;i++)
+      parallel_for((uint)0, cur_numPrims, [&] (const range<uint>& r)
       {
-        if (nearest_neighborID[i] != -1)
+        for (uint i=r.begin();i<r.end();i++)
         {
-          if ( nearest_neighborID[ nearest_neighborID[i] ] == i)
+          if (nearest_neighborID[i] != -1)
           {
-            if ( i < nearest_neighborID[i])
+            if ( nearest_neighborID[ nearest_neighborID[i] ] == i)
             {
-              const uint leftID = index_buffer[i];
-              const uint rightID = index_buffer[nearest_neighborID[i]];
-              const uint newID = numPrimitives.fetch_add(1);
-              bvh2[newID] = BVH2Ploc(bvh2[leftID],bvh2[rightID],leftID,rightID);
-              tmp_buffer[i] = newID;
-              tmp_buffer[nearest_neighborID[i]] = -1;              
+              if ( i < nearest_neighborID[i])
+              {
+                const uint leftID = index_buffer[i];
+                const uint rightID = index_buffer[nearest_neighborID[i]];
+                const uint newID = numPrimitives.fetch_add(1);
+                bvh2[newID] = BVH2Ploc(bvh2[leftID],bvh2[rightID],leftID,rightID);
+                tmp_buffer[i] = newID;
+                //tmp_buffer[nearest_neighborID[i]] = -1;                            
+              }
+              else
+                tmp_buffer[i] = -1;              
+            
             }
+            else
+              tmp_buffer[i] = index_buffer[i];              
           }
           else
-            tmp_buffer[i] = index_buffer[i];              
+            tmp_buffer[i] = index_buffer[i];                      
         }
-        else
-          tmp_buffer[i] = index_buffer[i];                      
-      }//);
+      });
       
       uint new_cur_numPrims = 0;
       for (uint i=0;i<cur_numPrims;i++)
         if (tmp_buffer[i] != -1)
           index_buffer[new_cur_numPrims++] = tmp_buffer[i];
 
+      if (cur_numPrims == new_cur_numPrims)
+        FATAL("NO PLOC PRIM REDUCTION IN ITERATION");
+      
       cur_numPrims = new_cur_numPrims;      
     }
 
     uint rootID = index_buffer[0];
     
 
-    PRINT("BVH2 DONE");
+    DBG_PRINT("BVH2 DONE");
 
     extractClusters(rootID, bvh2, clusters, mesh, threshold);
 
-    PRINT(clusters.size());
-    PRINT("CLUSTER EXTRACTION DONE");
+    DBG_PRINT(clusters.size());
+    DBG_PRINT("CLUSTER EXTRACTION DONE");
     
     delete [] bvh2;  
     delete [] nearest_neighborID;        
@@ -1105,19 +1112,14 @@ namespace embree {
       //numClusterQuads += clusters[i].quads.size();
     }
 
-    //const uint org_numClusterQuads = numClusterQuads;
-    //const uint dest_numClusterQuads = org_numClusterQuads/20;
     uint iteration = 0;
     
     const uint MAX_DEPTH_LIMIT = 16;
 
     uint current_numClusters = numClusters;
     
-    while(/*numClusterQuads > dest_numClusterQuads && */current_numClusters > 1)
+    while(current_numClusters > 1)
     {
-      std::cout << std::endl;
-      PRINT(current_numClusters);
-      
       for (uint i=0;i<current_numClusters;i++)
         nearest_neighborID[i] = -1;
 
@@ -1127,22 +1129,25 @@ namespace embree {
         {
           // find nearest neighbor
           const uint clusterID = index_buffer[c];
-          const BBox3f cluster_bounds = clusters[clusterID].bounds;
+          const BBox3f cluster_bounds = clusters[clusterID].bounds;          
           float min_area = pos_inf;
           int nn = -1;
-          for (int i=std::max((int)c-SEARCH_RADIUS,0);i<std::min((int)c+SEARCH_RADIUS,(int)current_numClusters);i++)
-            if (i != c && index_buffer[i] != -1)
-            {
-              const uint merge_clusterID = index_buffer[i];
-              BBox3f bounds = clusters[merge_clusterID].bounds;
-              bounds.extend(cluster_bounds);
-              const float areaBounds = area(bounds);
-              if (areaBounds < min_area && clusters[clusterID].neighborID != merge_clusterID)
+            for (int i=std::max((int)c-SEARCH_RADIUS,0);i<std::min((int)c+SEARCH_RADIUS+1,(int)current_numClusters);i++)
+              if (i != c && index_buffer[i] != -1)
               {
-                min_area = areaBounds;
-                nn = i;
+                const uint merge_clusterID = index_buffer[i];
+                BBox3f bounds = clusters[merge_clusterID].bounds;
+                if (!intersect(cluster_bounds,bounds).empty())
+                {
+                  bounds.extend(cluster_bounds);
+                  const float areaBounds = area(bounds);
+                  if (areaBounds < min_area && clusters[clusterID].neighborID != merge_clusterID)
+                  {
+                    min_area = areaBounds;
+                    nn = i;
+                  }
+                }
               }
-            }
           nearest_neighborID[c] = nn;                  
         }
       });
@@ -1160,6 +1165,12 @@ namespace embree {
             {
               const uint leftClusterID = index_buffer[i];
               const uint rightClusterID = index_buffer[nearest_neighborID[i]];
+
+              // if (intersect(clusters[leftClusterID].bounds,clusters[rightClusterID].bounds).empty())
+              // {
+              //   PRINT2(leftClusterID,rightClusterID);
+              // }
+              
               DBG_PRINT4("MERGE",leftClusterID,rightClusterID,getSimplificationRatio(clusters[leftClusterID], clusters[rightClusterID]));
               const uint newDepth =  std::max(clusters[leftClusterID].depth,clusters[rightClusterID].depth)+1;
             
