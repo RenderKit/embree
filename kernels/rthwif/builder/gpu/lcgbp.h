@@ -448,15 +448,15 @@ namespace embree {
     CompressedAABB3f bounds;   // 12 bytes
     LossyCompressedMesh *mesh; // 8 bytes    
     
-    int lodLeftID;            
-    int lodRightID;
+    int leftID;            
+    int rightID; 
     int neighborID;
     unsigned int offsetIndices;
     unsigned int offsetVertices;       // 16 bytes
     
     __forceinline LossyCompressedMeshCluster() {}
 
-    __forceinline bool hasChildren() const { return lodLeftID != -1 && lodRightID != -1; }
+    __forceinline bool hasChildren() const { return leftID != -1; }
     __forceinline bool hasNeighbor() const { return neighborID != -1; }
     
     static __forceinline unsigned int getDecompressedInnerNodesSizeInBytes(const unsigned int numQuads) 

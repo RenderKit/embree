@@ -1207,7 +1207,7 @@ namespace embree {
 
                 if (new_clusters.size() == 2)
                 {
-                  PRINT("SPLIT CASE");
+                  DBG_PRINT("SPLIT CASE");
                   QuadMeshCluster &new_cluster1 = new_clusters[1];
                   clusters[leftClusterID].lod_root = false;
                   clusters[rightClusterID].lod_root = false;
@@ -1305,9 +1305,13 @@ namespace embree {
     lcm->numQuads           = numQuads;
     lcm->numVertices        = mesh->numVertices;
     lcm->geomID             = geomID;
+    
+#if ALLOC_DEVICE_MEMORY == 1    
     EmbreeUSMMode mode = EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE;
-    //EmbreeUSMMode mode = EmbreeUSMMode::EMBREE_USM_SHARED;
-
+#else    
+    EmbreeUSMMode mode = EmbreeUSMMode::EMBREE_USM_SHARED;
+#endif
+    
     lcm->compressedVertices = (CompressedVertex*)alignedUSMMalloc(sizeof(CompressedVertex)*numTotalVerticesAllocate,64,mode); // FIXME
     lcm->compressedIndices  = (CompressedQuadIndices*)alignedUSMMalloc(sizeof(CompressedQuadIndices)*numTotalQuadsAllocate,64,mode); //FIXME    
 
@@ -1350,9 +1354,13 @@ namespace embree {
       compressed_cluster.bounds = CompressedAABB3f( CompressedVertex(cluster_bounds.lower,geometry_lower,geometry_inv_diag),
                                                     CompressedVertex(cluster_bounds.upper,geometry_lower,geometry_inv_diag) );
       
-      compressed_cluster.lodLeftID = (clusters[c].leftID != -1) ? (clusters[c].leftID-c) : -1;
-      compressed_cluster.lodRightID = (clusters[c].rightID != -1) ? (clusters[c].rightID-c) : -1;
-      compressed_cluster.neighborID = (clusters[c].neighborID != -1) ? (clusters[c].neighborID-c) : -1;
+      compressed_cluster.leftID = (clusters[c].leftID != -1) ? clusters[c].leftID : -1;
+      compressed_cluster.rightID = (clusters[c].rightID != -1) ? clusters[c].rightID : -1;
+      compressed_cluster.neighborID = (clusters[c].neighborID != -1) ? clusters[c].neighborID : -1;
+
+      if (compressed_cluster.leftID == -1 && compressed_cluster.rightID != -1) FATAL("leftID,rightID");
+      if (compressed_cluster.leftID != -1 && compressed_cluster.rightID == -1) FATAL("rightID,leftID");
+        
       if (clusters[c].neighborID != -1 && clusters[ clusters[c].neighborID ].neighborID != c)
         FATAL("clusters[c].neighborID");
        

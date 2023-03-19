@@ -68,7 +68,7 @@ namespace embree {
   extern "C" RenderMode user_rendering_mode = RENDER_PRIMARY;
   extern "C" unsigned int user_spp = 1;
   extern "C" unsigned int g_max_path_length = 2;
-  extern "C" unsigned int g_lod_threshold = 30;
+  extern "C" unsigned int g_lod_threshold = 60;
   
   Averaged<double> avg_bvh_build_time(64,1.0);
   Averaged<double> avg_lod_selection_time(64,1.0);
@@ -194,6 +194,59 @@ namespace embree {
     }
     return Vec2f(a,b);
   }
+
+  __forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz)
+  {
+    const Vec3f vn = cross(vx,vy);    
+    const float distance = (float)dot(vn,vz) / (float)dot(vn,p);
+    Vec3f pip = p * distance;
+    if (distance < 0.0f)
+      pip = vz;
+    const float a = dot((pip-vz),vx);
+    const float b = dot((pip-vz),vy);
+    return Vec2f(a,b);    
+  }
+  
+
+  __forceinline Vec2f projectBBox3fToPlane(const BBox3f &bounds, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz, const unsigned int width, const unsigned int height, const bool clip=true)
+  {
+    const Vec3f v0(bounds.lower.x,bounds.lower.y,bounds.lower.z);
+    const Vec3f v1(bounds.upper.x,bounds.lower.y,bounds.lower.z);
+    const Vec3f v2(bounds.lower.x,bounds.upper.y,bounds.lower.z);
+    const Vec3f v3(bounds.upper.x,bounds.upper.y,bounds.lower.z);
+    const Vec3f v4(bounds.lower.x,bounds.lower.y,bounds.upper.z);
+    const Vec3f v5(bounds.upper.x,bounds.lower.y,bounds.upper.z);
+    const Vec3f v6(bounds.lower.x,bounds.upper.y,bounds.upper.z);
+    const Vec3f v7(bounds.upper.x,bounds.upper.y,bounds.upper.z);
+    
+    const Vec2f p0 = projectVertexToPlane(v0,vx,vy,vz);
+    const Vec2f p1 = projectVertexToPlane(v1,vx,vy,vz);
+    const Vec2f p2 = projectVertexToPlane(v2,vx,vy,vz);
+    const Vec2f p3 = projectVertexToPlane(v3,vx,vy,vz);
+    const Vec2f p4 = projectVertexToPlane(v4,vx,vy,vz);
+    const Vec2f p5 = projectVertexToPlane(v5,vx,vy,vz);
+    const Vec2f p6 = projectVertexToPlane(v6,vx,vy,vz);
+    const Vec2f p7 = projectVertexToPlane(v7,vx,vy,vz);
+
+    BBox2f bounds2D(empty);
+    bounds2D.extend(p0);
+    bounds2D.extend(p1);
+    bounds2D.extend(p2);
+    bounds2D.extend(p3);
+    bounds2D.extend(p4);
+    bounds2D.extend(p5);
+    bounds2D.extend(p6);
+    bounds2D.extend(p7);
+
+    BBox2f image2D(Vec2f(0,0),Vec2f(width,height));
+
+    if (clip)
+    {
+      bounds2D = intersect(bounds2D,image2D);
+    }
+    return bounds2D.size();
+  }
+  
   
   __forceinline LODEdgeLevel getLODEdgeLevels(LCGBP &current,const ISPCCamera& camera, const unsigned int width, const unsigned int height)
   {
@@ -580,8 +633,11 @@ namespace embree {
       global_lcgbp_scene->numLCMeshClusterRoots = lcm_clusterRootIDs.size();
 
       
+#if ALLOC_DEVICE_MEMORY == 1
       EmbreeUSMMode mode = EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE;
-      //EmbreeUSMMode mode = EmbreeUSMMode::EMBREE_USM_SHARED;
+#else        
+      EmbreeUSMMode mode = EmbreeUSMMode::EMBREE_USM_SHARED;
+#endif      
       
       global_lcgbp_scene->lcm_cluster = (LossyCompressedMeshCluster*)alignedUSMMalloc(sizeof(LossyCompressedMeshCluster)*global_lcgbp_scene->numLCMeshClusters,64,mode);
       global_lcgbp_scene->lcm_cluster_roots_IDs = (unsigned int*)alignedUSMMalloc(sizeof(unsigned int)*global_lcgbp_scene->numLCMeshClusterRoots,64,mode);
@@ -885,17 +941,25 @@ namespace embree {
       ImGui::Text("Denoising Time: %4.4f ms",avg_denoising_time.get());
       
     }
-    
   }
 
   
-  __forceinline bool subdivideLOD(const Vec2f &lower, const Vec2f &upper, const int width, const int height, const float THRESHOLD)
+  __forceinline bool subdivideLOD(const Vec2f &lower, const Vec2f &upper, const float THRESHOLD)
   {
     bool subdivide = true;
     const float l = length(upper - lower); //FIXME ^2   
     if (l <= THRESHOLD) subdivide = false; 
     return subdivide;
   }
+
+  __forceinline bool subdivideLOD(const BBox3f &bounds, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz, const uint width, const uint height, const float THRESHOLD)
+  {
+    const Vec2f diag = projectBBox3fToPlane( bounds, vx,vy,vz, width,height,true);
+    const float l = length(diag); //FIXME ^2   
+    if (l <= THRESHOLD) return false; 
+    return true;
+  }
+    
   
 /* called by the C++ code to render */
   extern "C" void device_render (int* pixels,
@@ -1037,6 +1101,9 @@ namespace embree {
     if (numLCMeshClusters)
     {
       const unsigned int numRootsTotal = local_lcgbp_scene->numLCMeshClusterRoots;
+
+      //for (uint i=0;i<numRootsTotal;i++)
+      //if (
       
       sycl::event init_event =  global_gpu_queue->submit([&](sycl::handler &cgh) {
         cgh.single_task([=]() {
@@ -1107,7 +1174,7 @@ namespace embree {
 #if ENABLE_DAG == 1
                   if (cur.hasNeighbor())
                   {                    
-                    const uint neighborID = currentID + cur.neighborID;
+                    const uint neighborID = cur.neighborID;
                     const LossyCompressedMeshCluster &neighbor = local_lcgbp_scene->lcm_cluster[ neighborID ];                                  
                     gpu::atomic_add_local(&quad_counter,(unsigned int)(cur.numQuads + neighbor.numQuads));
                     gpu::atomic_add_local(&block_counter,(unsigned int)(cur.numBlocks + neighbor.numBlocks));
@@ -1130,15 +1197,11 @@ namespace embree {
                   const Vec3f bounds_lower = cur.bounds.lower.decompress(lower,diag)-org;
                   const Vec3f bounds_upper = cur.bounds.upper.decompress(lower,diag)-org;
 
-                  const Vec2f plane_bounds_lower = projectVertexToPlane(bounds_lower,vx,vy,vz,width,height,true);
-                  const Vec2f plane_bounds_upper = projectVertexToPlane(bounds_upper,vx,vy,vz,width,height,true);
-                
-                  bool subdivide = subdivideLOD(min(plane_bounds_lower,plane_bounds_upper),max(plane_bounds_lower,plane_bounds_upper),width,height,lod_threshold);
-                    
+                  bool subdivide = subdivideLOD(BBox3f(bounds_lower,bounds_upper),vx,vy,vz,width,height,lod_threshold);
                   if (subdivide && (numStackEntries+2 <= STACK_SIZE))
                   {
-                    const uint lID = (int)currentID + cur.lodLeftID;
-                    const uint rID = (int)currentID + cur.lodRightID;
+                    const uint lID = cur.leftID;
+                    const uint rID = cur.rightID;
                     stack[numStackEntries+0] = lID;
                     stack[numStackEntries+1] = rID;
                     numStackEntries+=2;
@@ -1149,7 +1212,7 @@ namespace embree {
 #if ENABLE_DAG == 1
                     if (cur.hasNeighbor())
                     {                    
-                      const uint neighborID = currentID + cur.neighborID;
+                      const uint neighborID = cur.neighborID;
                       const LossyCompressedMeshCluster &neighbor = local_lcgbp_scene->lcm_cluster[ neighborID ];                                  
                       gpu::atomic_add_local(&quad_counter,(unsigned int)(cur.numQuads + neighbor.numQuads));
                       gpu::atomic_add_local(&block_counter,(unsigned int)(cur.numBlocks + neighbor.numBlocks));                      
@@ -1252,7 +1315,6 @@ namespace embree {
   extern "C" bool device_pick(const float x, const float y, const ISPCCamera& camera, Vec3fa& hitPos)
   {
     LCG_Scene *lcgbp_scene = global_lcgbp_scene;
-    hitPos = lcgbp_scene->pick_pos;
 
     TutorialData ldata = data;
     sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
@@ -1285,12 +1347,42 @@ namespace embree {
         }
       });
     });
-    waitOnEventAndCatchException(event);
-
     gpu::waitOnQueueAndCatchException(*global_gpu_queue);        
-    
-    PRINT2(lcgbp_scene->pick_primID,lcgbp_scene->pick_geomID);
-    return lcgbp_scene->pick_primID != -1;
+
+    hitPos = lcgbp_scene->pick_pos;    
+    const bool hit = lcgbp_scene->pick_primID != -1;
+    const float lod_threshold = g_lod_threshold;
+    if (hit)
+    {
+      PRINT2(lcgbp_scene->pick_primID,lcgbp_scene->pick_geomID);
+      PRINT(g_lod_threshold);
+      const Vec3f org = camera.xfm.p;
+      const Vec3f vx = camera.xfm.l.vx;
+      const Vec3f vy = camera.xfm.l.vy;
+      const Vec3f vz = camera.xfm.l.vz;
+      
+      const uint clusterID = lcgbp_scene->pick_primID;
+      const LossyCompressedMeshCluster &cluster = lcgbp_scene->lcm_cluster[ clusterID ];
+      PRINT3((int)cluster.numQuads,(int)cluster.numBlocks,(int)cluster.lod_level);
+      PRINT3((int)cluster.leftID,(int)cluster.rightID,(int)cluster.neighborID);
+
+      LossyCompressedMesh *mesh = cluster.mesh;
+      const Vec3f lower = mesh->bounds.lower;
+      const Vec3f diag = mesh->bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
+      const uint width = 1024;
+      const uint height = 1024;
+      const BBox3f cluster_bounds(cluster.bounds.lower.decompress(lower,diag),cluster.bounds.upper.decompress(lower,diag));
+      PRINT2(cluster_bounds,area(cluster_bounds));
+      bool cull = frustumCull( cluster_bounds.lower-org,cluster_bounds.upper-org,vx*width,vy*height,vz);
+      const Vec2f diag2 = projectBBox3fToPlane( BBox3f(cluster_bounds.lower-org,cluster_bounds.upper-org), vx,vy,vz, width,height,true);
+      PRINT3(diag2,length(diag2),length(diag2)<lod_threshold);
+
+      bool subdivide = subdivideLOD(BBox3f(cluster_bounds.lower-org,cluster_bounds.upper-org),vx,vy,vz, width,height,lod_threshold);
+      PRINT2(cull,subdivide);
+    }
+
+                
+    return hit;
   }
 
   extern "C" void renderFrameStandard (int* pixels,
