@@ -286,6 +286,11 @@ namespace embree {
 
     /* --- LOD settings --- */
     float minLODDistance;
+
+    /* --- pick --- */
+    uint pick_geomID;
+    uint pick_primID;
+    Vec3f pick_pos;
     
     LCG_Scene(const unsigned int maxNumLCGBP);
 
@@ -317,6 +322,10 @@ namespace embree {
     lcm_cluster = nullptr;
     lcm_cluster_roots_IDs = nullptr;
     lcm_cluster_roots_IDs_per_frame = nullptr;
+
+    pick_geomID = -1;
+    pick_primID = -1;
+    pick_pos = Vec3fa(0,0,0);
     
     if (maxNumLCGBP)
     {
@@ -879,12 +888,12 @@ namespace embree {
     
   }
 
-
+  
   __forceinline bool subdivideLOD(const Vec2f &lower, const Vec2f &upper, const int width, const int height, const float THRESHOLD)
   {
     bool subdivide = true;
-    const float l = length(upper - lower);    
-    if (l <= THRESHOLD) subdivide = false;
+    const float l = length(upper - lower); //FIXME ^2   
+    if (l <= THRESHOLD) subdivide = false; 
     return subdivide;
   }
   
@@ -1239,7 +1248,51 @@ namespace embree {
                                      GBuffer *gbuffer,                              
                                      bool denoise);
   
+
+  extern "C" bool device_pick(const float x, const float y, const ISPCCamera& camera, Vec3fa& hitPos)
+  {
+    LCG_Scene *lcgbp_scene = global_lcgbp_scene;
+    hitPos = lcgbp_scene->pick_pos;
+
+    TutorialData ldata = data;
+    sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
+      const sycl::nd_range<2> nd_range = make_nd_range(1,1);
+      cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
+
+        RTCIntersectArguments args;
+        rtcInitIntersectArguments(&args);
+        args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
   
+        /* initialize ray */
+        const Vec3fa org = Vec3fa(camera.xfm.p);
+        const Vec3fa dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
+        Ray ray(org, dir, 0.0f, inf);
+
+        /* intersect ray with scene */
+        rtcIntersect1(ldata.g_scene,RTCRayHit_(ray),&args);
+
+        if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
+        {
+          lcgbp_scene->pick_primID = ray.primID;
+          lcgbp_scene->pick_geomID = ray.geomID;
+          lcgbp_scene->pick_pos    = org + ray.tfar * dir;
+        }
+        else
+        {
+          lcgbp_scene->pick_primID = -1;
+          lcgbp_scene->pick_geomID = -1;
+          lcgbp_scene->pick_pos    = Vec3fa(0,0,0);          
+        }
+      });
+    });
+    waitOnEventAndCatchException(event);
+
+    gpu::waitOnQueueAndCatchException(*global_gpu_queue);        
+    
+    PRINT2(lcgbp_scene->pick_primID,lcgbp_scene->pick_geomID);
+    return lcgbp_scene->pick_primID != -1;
+  }
+
   extern "C" void renderFrameStandard (int* pixels,
                                        const unsigned int width,
                                        const unsigned int height,

@@ -14,9 +14,9 @@ extern "C" float g_debug;
 
 /* returns the point seen through specified pixel */
 extern "C" bool device_pick(const float x,
-                                const float y,
-                                const ISPCCamera& camera,
-                                Vec3fa& hitPos)
+                            const float y,
+                            const ISPCCamera& camera,
+                            Vec3fa& hitPos)
 {
   /* initialize ray */
   Ray1 ray;

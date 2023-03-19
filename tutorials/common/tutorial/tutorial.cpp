@@ -869,7 +869,11 @@ namespace embree
         }
       }
       else if (button == GLFW_MOUSE_BUTTON_MIDDLE) {
-        printf("pixel pos (%d, %d)\n", (int)x, (int)y);
+        ISPCCamera ispccamera = camera.getISPCCamera(width,height);
+        Vec3fa p; 
+        device_pick(float(x),float(y),ispccamera,p);
+        printf("pixel pos (%d, %d) \n", (int)x, (int)y);
+        
       }
       else
       {
