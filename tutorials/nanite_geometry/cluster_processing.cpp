@@ -1349,7 +1349,10 @@ namespace embree {
       
       compressed_cluster.lodLeftID = (clusters[c].leftID != -1) ? (clusters[c].leftID-c) : -1;
       compressed_cluster.lodRightID = (clusters[c].rightID != -1) ? (clusters[c].rightID-c) : -1;
-      compressed_cluster.neighborID = (clusters[c].neighborID != -1) ? (clusters[c].neighborID-c) : -1;      
+      compressed_cluster.neighborID = (clusters[c].neighborID != -1) ? (clusters[c].neighborID-c) : -1;
+      if (clusters[c].neighborID != -1 && clusters[ clusters[c].neighborID ].neighborID != c)
+        FATAL("clusters[c].neighborID");
+       
       compressed_cluster.offsetIndices  = globalCompressedIndexOffset;      
       compressed_cluster.offsetVertices = globalCompressedVertexOffset;
       compressed_cluster.mesh = lcm;

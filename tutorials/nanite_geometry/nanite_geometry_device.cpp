@@ -1072,7 +1072,7 @@ namespace embree {
 #if ENABLE_DAG == 1
                   if (cur.hasNeighbor())
                   {                    
-                    const uint neighborID = cur.neighborID;
+                    const uint neighborID = currentID + cur.neighborID;
                     const LossyCompressedMeshCluster &neighbor = local_lcgbp_scene->lcm_cluster[ neighborID ];                                  
                     const uint numQuads = cur.numQuads + neighbor.numQuads;
                     gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterQuadsPerFrame,(unsigned int)numQuads);                                                            
@@ -1114,7 +1114,7 @@ namespace embree {
 #if ENABLE_DAG == 1
                     if (cur.hasNeighbor())
                     {                    
-                      const uint neighborID = cur.neighborID;
+                      const uint neighborID = currentID + cur.neighborID;
                       const LossyCompressedMeshCluster &neighbor = local_lcgbp_scene->lcm_cluster[ neighborID ];                                  
                       const uint numQuads = cur.numQuads + neighbor.numQuads;
                       gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterQuadsPerFrame,(unsigned int)numQuads);                                                            
