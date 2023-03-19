@@ -925,7 +925,7 @@ namespace embree {
   }
 
       
-  uint convertISPCQuadMesh(ISPCQuadMesh* mesh, RTCScene scene, ISPCOBJMaterial *material,const uint geomID,std::vector<LossyCompressedMesh*> &lcm_ptrs,std::vector<LossyCompressedMeshCluster> &lcm_clusters, std::vector<uint> &lcm_clusterRootIDs, size_t &totalCompressedSize, size_t &numDecompressedBlocks, sycl::queue &queue)
+  Vec2i convertISPCQuadMesh(ISPCQuadMesh* mesh, RTCScene scene, ISPCOBJMaterial *material,const uint geomID,std::vector<LossyCompressedMesh*> &lcm_ptrs,std::vector<LossyCompressedMeshCluster> &lcm_clusters, std::vector<uint> &lcm_clusterRootIDs, size_t &totalCompressedSize, size_t &numDecompressedBlocks, sycl::queue &queue)
   {
     const uint numQuads = mesh->numQuads;
     const uint INITIAL_CREATE_RANGE_THRESHOLD = LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER;
@@ -1092,7 +1092,7 @@ namespace embree {
 #endif    
     
 
-    const uint numNumClustersMaxRes = numClusters;
+    const uint numClustersMaxRes = numClusters;
     
     //PRINT2(totalSizeMicroMesh,totalSizeMicroStrip);
     
@@ -1332,6 +1332,9 @@ namespace embree {
       LossyCompressedMeshCluster compressed_cluster;      
       compressed_cluster.numQuads  = clusters[c].quads.size();
       compressed_cluster.numBlocks = LossyCompressedMeshCluster::getDecompressedSizeInBytes(compressed_cluster.numQuads)/64;
+
+      PRINT2( (int)compressed_cluster.numQuads, (int)compressed_cluster.numBlocks );
+      
       BBox3f cluster_bounds = clusters[c].bounds;
 
 #if ENABLE_DAG == 1      
@@ -1406,7 +1409,7 @@ namespace embree {
     PRINT("CLUSTER PROCESSING DONE");    
     //exit(0);
     
-    return numNumClustersMaxRes;
+    return Vec2i(numClustersMaxRes,numDecompressedBlocks);
   }  
 
 
