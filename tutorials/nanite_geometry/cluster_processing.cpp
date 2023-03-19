@@ -1333,7 +1333,7 @@ namespace embree {
       compressed_cluster.numQuads  = clusters[c].quads.size();
       compressed_cluster.numBlocks = LossyCompressedMeshCluster::getDecompressedSizeInBytes(compressed_cluster.numQuads)/64;
 
-      PRINT2( (int)compressed_cluster.numQuads, (int)compressed_cluster.numBlocks );
+      //PRINT2( (int)compressed_cluster.numQuads, (int)compressed_cluster.numBlocks );
       
       BBox3f cluster_bounds = clusters[c].bounds;
 
