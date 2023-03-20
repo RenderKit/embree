@@ -1244,19 +1244,20 @@ namespace embree
     return node;
   }
 
-  int findVertex(std::map<Vec3fa,uint> &vertex_map, const Vec3fa &v, int &allocID)
+  int findVertex(std::map<Vec3f,uint> &vertex_map, const Vec3f &v, int &allocID)
   {
     auto e = vertex_map.find(v);
-    if (e != vertex_map.end()) return e->second;
+    if (e != vertex_map.end()) { return e->second; }
     int ID = allocID++;
     vertex_map.insert(std::pair(v,ID));
-    PRINT(ID);
+    //PRINT(ID);
     return ID;
   }
 
   int findVertex(avector<Vec3fa> &positions, const Vec3fa &v)
   {
-    for (uint i=std::max((int)positions.size()-1024,0);i<positions.size();i++)
+    //for (uint i=std::max((int)positions.size()-1024,0);i<positions.size();i++)
+    for (uint i=0;i<positions.size();i++)    
       if (positions[i] == v) return i;    
     int ID = positions.size();
     positions.push_back(v);
@@ -1311,10 +1312,10 @@ namespace embree
 
     Ref<SceneGraph::QuadMeshNode> displaced_qmesh = new SceneGraph::QuadMeshNode(qmesh->material,qmesh->time_range,0);
 
-
+    
     avector<Vec3fa> positions;
-    //std::map<Vec3fa,uint> vertex_map;
-    //int ID = 0;
+    std::map<Vec3f,uint> vertex_map;
+    int ID = 0;
     PRINT( qmesh->quads.size() );
     for (size_t i=0; i<qmesh->quads.size(); i++)
     {
@@ -1322,7 +1323,6 @@ namespace embree
       const int a1 = qmesh->quads[i+0].v1;
       const int a2 = qmesh->quads[i+0].v2;
       const int a3 = qmesh->quads[i+0].v3;
-
 
       const Vec3fa v0 = qmesh->positions[0][a0];
       const Vec3fa v1 = qmesh->positions[0][a1];
@@ -1344,6 +1344,7 @@ namespace embree
           if (u > 0.0f && u < 1.0f && v > 0.0f && v < 1.0f)
             p += normal * noise(Vec3f(u,v,0)) * displace_height;
           int index = findVertex(positions,p);
+          //int index = findVertex(vertex_map,p,ID);
           indices[y][x] =  index;
         }
 
@@ -1358,10 +1359,12 @@ namespace embree
         }
     }
     PRINT( displaced_qmesh->quads.size() );
-    //PRINT(positions.size());
+    PRINT(vertex_map.size());
+
+    //positions.resize(vertex_map.size());
     
-    // for (std::map<Vec3fa,uint>::iterator i=vertex_map.begin(); i != vertex_map.end(); i++)
-    //   positions.push_back((*i).first);
+    //for (std::map<Vec3f,uint>::iterator i=vertex_map.begin(); i != vertex_map.end(); i++)
+    //  positions[(*i).second] = (*i).first;
 
     displaced_qmesh->positions.push_back(positions);
     

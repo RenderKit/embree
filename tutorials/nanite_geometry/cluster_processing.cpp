@@ -1154,8 +1154,8 @@ namespace embree {
 
       bool merged_pair = false;
       
-      parallel_for(current_numClusters, [&] (uint i)
-      //for (uint i=0;i<current_numClusters;i++)
+      //parallel_for(current_numClusters, [&] (uint i)
+      for (uint i=0;i<current_numClusters;i++)
       {
         if (nearest_neighborID[i] != -1)
         {
@@ -1204,6 +1204,7 @@ namespace embree {
 
                 tmp_buffer[i] = newClusterID0;
 
+                DBG_PRINT4("MERGE",newClusterID0,leftClusterID,rightClusterID);
 
                 if (new_clusters.size() == 2)
                 {
@@ -1216,8 +1217,10 @@ namespace embree {
                   new_cluster1.rightID = rightClusterID;
                   new_cluster1.neighborID = newClusterID0;
                   new_cluster1.initBounds();
-                  new_cluster1.lod_root = true;              
+                  new_cluster1.lod_root = true; // set root flag of neighbor cluster to false to avoid duplicates on LOD selection
                   const uint newClusterID1 = numClusters.fetch_add(1);
+                  DBG_PRINT2(newClusterID0,newClusterID1);
+                  
                   if (newClusterID1 >= MAX_NUM_MESH_CLUSTERS) FATAL("MAX_NUM_MESH_CLUSTERS");
                   
                   clusters[newClusterID1] = new_cluster1;
@@ -1247,7 +1250,7 @@ namespace embree {
         }
         else
           tmp_buffer[i] = index_buffer[i];                      
-      });
+      }//);
 
       
       uint new_numClusters = 0;
@@ -1262,7 +1265,11 @@ namespace embree {
 
       uint numTmpRoots = 0;
       for (uint i=0;i<numClusters;i++)      
-        if (clusters[i].lod_root) numTmpRoots++;        
+        if (clusters[i].lod_root)
+        {
+          //PRINT2(i,clusters[i].lod_root);
+          numTmpRoots++;
+        }
           
       iteration++;
       //numClusterQuads = new_numClusterQuads;
@@ -1278,11 +1285,14 @@ namespace embree {
       if (numTmpRoots != current_numClusters)
       {
         PRINT2(numTmpRoots,current_numClusters);
+#if ENABLE_DAG == 0        
         FATAL("numTmpRoots != current_numClusters");
+#endif        
       }      
     }
 
     DBG_PRINT("MERGING DONE");    
+    // exit(0);
     
     delete [] nearest_neighborID;        
     delete [] tmp_buffer;    
@@ -1363,7 +1373,11 @@ namespace embree {
         
       if (clusters[c].neighborID != -1 && clusters[ clusters[c].neighborID ].neighborID != c)
         FATAL("clusters[c].neighborID");
-       
+
+
+      if (clusters[c].neighborID != -1 && (clusters[ clusters[c].neighborID ].leftID != clusters[c].leftID || clusters[ clusters[c].neighborID ].rightID != clusters[c].rightID))
+        FATAL("clusters[c].neighborID");
+      
       compressed_cluster.offsetIndices  = globalCompressedIndexOffset;      
       compressed_cluster.offsetVertices = globalCompressedVertexOffset;
       compressed_cluster.mesh = lcm;
@@ -1389,7 +1403,16 @@ namespace embree {
       const uint lcm_clusterID = lcm_clusters.size();      
       lcm_clusters.push_back(compressed_cluster);
       if (clusters[c].lod_root)
+      {
+#if ENABLE_DAG == 1        
+        //if (clusters[lcm_clusterID].neighborID == -1 || lcm_clusterID < clusters[lcm_clusterID].neighborID) // only push smallest index of neighbor pair to root list
+#endif        
         lcm_clusterRootIDs.push_back(lcm_clusterID);
+        // else
+        // {
+        //   PRINT4(lcm_clusterID,clusters[lcm_clusterID].neighborID,clusters[lcm_clusterID].leftID,clusters[lcm_clusterID].rightID);
+        // }
+      }
       
       numDecompressedBlocks += compressed_cluster.numBlocks;      
     }
