@@ -521,7 +521,7 @@ namespace embree {
 
       const size_t new_numTriangles = new_numIndices/3;
 
-      if ((float)new_numTriangles / numTriangles > REDUCTION_THRESHOLD) { PRINT4("NOT ENOUGH REDUCTION",numTriangles,new_numTriangles,expectedTriangles); return false; }
+      if ((float)new_numTriangles / numTriangles > REDUCTION_THRESHOLD) { DBG_PRINT4("NOT ENOUGH REDUCTION",numTriangles,new_numTriangles,expectedTriangles); return false; }
       
       DBG_PRINT2(expectedTriangles,new_numTriangles);
 
@@ -574,7 +574,7 @@ namespace embree {
         DBG_PRINT("SPLIT DAG");
         QuadMeshCluster left, right;
         const bool split_success = quadMesh.split(left,right);
-        PRINT3(split_success,left.quads.size(),right.quads.size());
+        DBG_PRINT3(split_success,left.quads.size(),right.quads.size());
         
         if (split_success)
         {
@@ -1154,8 +1154,8 @@ namespace embree {
 
       bool merged_pair = false;
       
-      //parallel_for(current_numClusters, [&] (uint i)
-      for (uint i=0;i<current_numClusters;i++)
+      parallel_for(current_numClusters, [&] (uint i)
+        //for (uint i=0;i<current_numClusters;i++)
       {
         if (nearest_neighborID[i] != -1)
         {
@@ -1250,7 +1250,7 @@ namespace embree {
         }
         else
           tmp_buffer[i] = index_buffer[i];                      
-      }//);
+      });
 
       
       uint new_numClusters = 0;

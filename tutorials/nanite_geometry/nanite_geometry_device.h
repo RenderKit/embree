@@ -10,6 +10,9 @@
 #include "meshoptimizer.h"
 #include <OpenImageDenoise/oidn.h>
 
+#include "../../kernels/rthwif/builder/gpu/lcgbp.h"
+#include "../../kernels/rthwif/builder/gpu/morton.h"
+
 
 #define ENABLE_DAG 1
 #define ALLOC_DEVICE_MEMORY 0
@@ -33,8 +36,7 @@ extern "C" ISPCScene* g_ispc_scene;
     RENDER_DEBUG_CLUSTER_ID   = 8,
     RENDER_DEBUG_LOD_LEVEL    = 9,                
     RENDER_PATH_TRACER        = 10,            
-    RENDER_PATH_TRACER_DENOISE = 11,            
-    
+    RENDER_PATH_TRACER_DENOISE = 11,                
   };
 
 
@@ -160,6 +162,109 @@ struct TutorialData
   int accu_count;
   ISPCScene* ispc_scene;
 };
+
+
+  struct __aligned(64) LCG_Scene {
+    static const unsigned int LOD_LEVELS = 3;
+
+    /* --- general data --- */
+    BBox3f bounds;
+    
+    /* --- lossy compressed bilinear patches --- */
+    unsigned int numAllocatedLCGBP;
+    unsigned int numAllocatedLCGBPStates;    
+    unsigned int numLCGBP;
+    unsigned int numCurrentLCGBPStates;        
+    LCGBP *lcgbp;
+    LCGBP_State *lcgbp_state;    
+    unsigned int numCrackFixQuadNodes;
+
+    /* --- lossy compressed meshes --- */
+    unsigned int numLCQuadsTotal;
+    unsigned int numLCBlocksTotal;    
+    unsigned int numLCMeshClustersMaxRes;    
+    unsigned int numLCMeshClusters;
+    unsigned int numLCMeshClusterRoots;
+    unsigned int numLCMeshClusterRootsPerFrame;
+    unsigned int numLCMeshClusterQuadsPerFrame;
+    unsigned int numLCMeshClusterBlocksPerFrame;
+    
+    //LossyCompressedMesh *lcm;
+    LossyCompressedMeshCluster  *lcm_cluster;
+    unsigned int *lcm_cluster_roots_IDs;
+    unsigned int *lcm_cluster_roots_IDs_per_frame;
+    uchar *lcm_cluster_active_state_per_frame;
+    
+    /* --- embree geometry --- */
+    RTCGeometry geometry;
+    unsigned int geomID;
+
+    /* --- texture handle --- */
+    Texture* map_Kd;
+
+    /* --- LOD settings --- */
+    float minLODDistance;
+
+    /* --- pick --- */
+    uint pick_geomID;
+    uint pick_primID;
+    Vec3f pick_pos;
+    
+    LCG_Scene(const unsigned int maxNumLCGBP);
+
+    void addGrid(const unsigned int gridResX, const unsigned int gridResY, const Vec3fa *const vtx);
+  };
+
+  void select_clusters_lod_grid_tree(LCG_Scene *local_lcgbp_scene,
+                                     const unsigned int width,
+                                     const unsigned int height,
+                                     const ISPCCamera& camera);
+
+  void select_clusters_lod_mesh_dag(LCG_Scene *local_lcgbp_scene,
+                                    const unsigned int width,
+                                    const unsigned int height,
+                                    const ISPCCamera& camera);
+
+  void select_clusters_lod_mesh_tree(LCG_Scene *local_lcgbp_scene,
+                                     const unsigned int width,
+                                     const unsigned int height,
+                                     const ISPCCamera& camera);
+
+  __forceinline size_t alignTo(const unsigned int size, const unsigned int alignment)
+  {
+    return ((size+alignment-1)/alignment)*alignment;
+  }
+
+  __forceinline void waitOnQueueAndCatchException(sycl::queue &gpu_queue)
+  {
+    try {
+      gpu_queue.wait_and_throw();
+    } catch (sycl::exception const& e) {
+      std::cout << "Caught synchronous SYCL exception:\n"
+                << e.what() << std::endl;
+      FATAL("SYCL Exception");     
+    }      
+  }
+
+  __forceinline void waitOnEventAndCatchException(sycl::event &event)
+  {
+    try {
+      event.wait_and_throw();
+    } catch (sycl::exception const& e) {
+      std::cout << "Caught synchronous SYCL exception:\n"
+                << e.what() << std::endl;
+      FATAL("SYCL Exception");     
+    }      
+  }
+
+  __forceinline float getDeviceExecutionTiming(sycl::event &queue_event)
+  {
+    const auto t0 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_start>();
+    const auto t1 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_end>();
+    return (float)((t1-t0)*1E-6);      
+  }
+
+#define FEATURE_MASK RTC_FEATURE_FLAG_QUAD 
 
 #if __SYCL_COMPILER_VERSION >= 20210801
 }
