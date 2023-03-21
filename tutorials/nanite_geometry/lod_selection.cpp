@@ -370,7 +370,7 @@ namespace embree {
     
 
     sycl::event memset_event = global_gpu_queue->memset(active_state,0,numLCMeshClusters);
-    waitOnEventAndCatchException(memset_event);
+    //waitOnEventAndCatchException(memset_event);
           
     // ================================================================================================================================
     // ================================================================================================================================
@@ -381,8 +381,7 @@ namespace embree {
     const sycl::nd_range<1> nd_range1(alignTo(numRootsTotal,wgSize),sycl::range<1>(wgSize));              
     sycl::event compute_lod_event = global_gpu_queue->submit([=](sycl::handler& cgh){
       cgh.depends_on(memset_event);        
-      cgh.depends_on(init_event);
-        
+      cgh.depends_on(init_event);        
       cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) {
         const unsigned int i = item.get_global_id(0);
                               
@@ -446,7 +445,7 @@ namespace embree {
         }
       });
     });
-    waitOnEventAndCatchException(compute_lod_event);
+    //waitOnEventAndCatchException(compute_lod_event);
 
     // ================================================================================================================================
     // ================================================================================================================================
@@ -500,7 +499,7 @@ namespace embree {
     });
     waitOnEventAndCatchException(select_clusterIDs_event);
     
-    
+    //PRINT3(gpu::getDeviceExecutionTiming(memset_event),gpu::getDeviceExecutionTiming(compute_lod_event),gpu::getDeviceExecutionTiming(select_clusterIDs_event));
   }
 
 

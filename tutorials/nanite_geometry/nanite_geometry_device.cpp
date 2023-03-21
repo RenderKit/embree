@@ -653,9 +653,10 @@ namespace embree {
     }
     if (global_lcgbp_scene->numLCMeshClusters)
     {
-      ImGui::Text("Active Clusters: %d (out of %d)",global_lcgbp_scene->numLCMeshClusterRootsPerFrame,global_lcgbp_scene->numLCMeshClustersMaxRes);
-      ImGui::Text("Quads:           %d (out of %d)",global_lcgbp_scene->numLCMeshClusterQuadsPerFrame,global_lcgbp_scene->numLCQuadsTotal);
-      ImGui::Text("Blocks:          %d (out of %d)",global_lcgbp_scene->numLCMeshClusterBlocksPerFrame,global_lcgbp_scene->numLCBlocksTotal);            
+      ImGui::Text("Root Clusters:           %d            ",global_lcgbp_scene->numLCMeshClusterRoots);      
+      ImGui::Text("Active Clusters / Frame: %d (out of %d)",global_lcgbp_scene->numLCMeshClusterRootsPerFrame,global_lcgbp_scene->numLCMeshClustersMaxRes);
+      ImGui::Text("Quads / Frame:           %d (out of %d)",global_lcgbp_scene->numLCMeshClusterQuadsPerFrame,global_lcgbp_scene->numLCQuadsTotal);
+      ImGui::Text("Blocks / Frame:          %d (out of %d)",global_lcgbp_scene->numLCMeshClusterBlocksPerFrame,global_lcgbp_scene->numLCBlocksTotal);            
     }
 
     RenderMode rendering_mode = user_rendering_mode;
@@ -795,10 +796,8 @@ namespace embree {
         });
       });
       waitOnEventAndCatchException(event);
-      const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();
-      const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();
-      const double dt = (t1-t0)*1E-9;
-      ((ISPCCamera*)&camera)->render_time = dt;        
+      const double dt = gpu::getDeviceExecutionTiming(event);
+      ((ISPCCamera*)&camera)->render_time = dt * 1E-3;        
     }
     else
     {
@@ -809,10 +808,8 @@ namespace embree {
       sycl::event event = renderFramePathTracer(pixels,width,height,time,camera,data,user_spp,gBuffer,denoise);
       waitOnEventAndCatchException(event);
       
-      const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();
-      const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();
-      const double dt = (t1-t0)*1E-9;
-      ((ISPCCamera*)&camera)->render_time = dt;
+      const double dt = gpu::getDeviceExecutionTiming(event);
+      ((ISPCCamera*)&camera)->render_time = dt * 1E-3;        
       
       if (denoise)
       {
