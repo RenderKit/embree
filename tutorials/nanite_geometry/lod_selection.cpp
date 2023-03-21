@@ -207,9 +207,22 @@ namespace embree {
 
   __forceinline bool subdivideLOD(const BBox3f &bounds, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz, const uint width, const uint height, const float THRESHOLD)
   {
+#if 1
     const Vec2f diag = projectBBox3fToPlane( bounds, vx,vy,vz, width,height,true);
-    const float l = length(diag); //FIXME ^2   
-    if (l <= THRESHOLD) return false; 
+    const float l = dot(diag,diag); // length^2
+    if (l <= THRESHOLD*THRESHOLD) return false;     
+#else
+    const Vec3f c = bounds.center();
+    const Vec3f delta = bounds.size(); // diagonal of AABB;
+    const float S0 = delta.y * delta.z;
+    const float S1 = delta.x * delta.z;
+    const float S2 = delta.x * delta.y;
+    const Vec3f abs_c = abs(c);
+    const float d = sqrt(dot(c,c)); // ||p-c||
+    const float scale = 1.0f / (d*d*d);
+    const float l = scale * (abs_c.x * S0 + abs_c.y * S1 + abs_c.z * S2);
+    if (l <= THRESHOLD) return false;         
+#endif    
     return true;
   }
   
