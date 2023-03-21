@@ -789,7 +789,7 @@ namespace embree {
       TutorialData ldata = data;
       sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
         const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-        cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
+        cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16) {
           const unsigned int x = item.get_global_id(1); if (x >= width ) return;
           const unsigned int y = item.get_global_id(0); if (y >= height) return;
           renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,lcgbp_scene,rendering_mode,spp);
@@ -818,7 +818,7 @@ namespace embree {
         
         sycl::event event_denoising = global_gpu_queue->submit([=](sycl::handler& cgh) {
           const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-          cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
+          cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16) {
             const unsigned int x = item.get_global_id(1); if (x >= width ) return;
             const unsigned int y = item.get_global_id(0); if (y >= height) return;
             Vec3f c = fp_convert(output[y*width+x]);

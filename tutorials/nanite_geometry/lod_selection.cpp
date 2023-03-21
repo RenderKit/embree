@@ -240,7 +240,7 @@ namespace embree {
     const sycl::nd_range<1> nd_range1(alignTo(numLCGBP,wgSize),sycl::range<1>(wgSize));              
     sycl::event compute_lod_event = global_gpu_queue->submit([=](sycl::handler& cgh){
       cgh.depends_on(init_event);                                                   
-      cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) {
+      cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16) {
         const unsigned int i = item.get_global_id(0);
         if (i < numLCGBP)
         {
@@ -340,6 +340,16 @@ namespace embree {
     waitOnEventAndCatchException(compute_lod_event);
     
   }
+
+  __forceinline uint writeSubgroup(uint *dest, const uint value, const bool cond)
+  {
+    const uint count = cond ? 1 : 0;
+    const uint exclusive_scan  = sub_group_exclusive_scan(count, std::plus<uint>());
+    const uint reduction       = sub_group_reduce(count, std::plus<uint>());
+    dest[exclusive_scan] = value;
+    sub_group_barrier();                                       
+    return reduction;
+  }
   
   void select_clusters_lod_mesh_dag(LCG_Scene *local_lcgbp_scene,
                                     const unsigned int width,
@@ -360,7 +370,7 @@ namespace embree {
       cgh.single_task([=]() {
         local_lcgbp_scene->numLCMeshClusterRootsPerFrame = 0;
         local_lcgbp_scene->numLCMeshClusterQuadsPerFrame = 0;
-        local_lcgbp_scene->numLCMeshClusterBlocksPerFrame = 0;                    
+        local_lcgbp_scene->numLCMeshClusterBlocksPerFrame = 0;
       });
     });
 
@@ -377,12 +387,96 @@ namespace embree {
     // ================================================================================================================================
 
     const float lod_threshold = g_lod_threshold;
-    
-    const sycl::nd_range<1> nd_range1(alignTo(numRootsTotal,wgSize),sycl::range<1>(wgSize));              
+
+#if 1
+
+    const uint wgSizeComputeLOD = 16;
+    const sycl::nd_range<1> nd_range1(alignTo(numRootsTotal,wgSizeComputeLOD),sycl::range<1>(wgSize));
+    sycl::event compute_lod_event = global_gpu_queue->submit([=](sycl::handler& cgh){
+      cgh.depends_on(memset_event);        
+      cgh.depends_on(init_event);
+      sycl::local_accessor< uint, 1> _localIDs(sycl::range<1>(256),cgh);
+      
+      cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16) {
+        const unsigned int i = item.get_global_id(0);
+        const uint subgroupLocalID = get_sub_group_local_id();
+        const uint subgroupSize    = get_sub_group_size();            
+
+        uint *const localIDs = _localIDs.get_pointer();
+        
+        uint clusterID = -1;
+
+        const Vec3f org = camera.xfm.p;
+        const Vec3f vx = camera.xfm.l.vx;
+        const Vec3f vy = camera.xfm.l.vy;
+        const Vec3f vz = camera.xfm.l.vz;
+        
+        if (i < local_lcgbp_scene->numLCMeshClusterRoots)
+        {
+          clusterID = local_lcgbp_scene->lcm_cluster_roots_IDs[i];            
+          const LossyCompressedMeshCluster &root_cluster = local_lcgbp_scene->lcm_cluster[ clusterID ];
+
+          LossyCompressedMesh *mesh = root_cluster.mesh;
+          const Vec3f lower = mesh->bounds.lower;
+          const Vec3f diag = mesh->bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
+
+          const bool cull = frustumCull( root_cluster.bounds.lower.decompress(lower,diag)-org,root_cluster.bounds.upper.decompress(lower,diag)-org,vx*width,vy*height,vz);
+          if (cull)
+          {
+            active_state[clusterID] = 1;                
+            if (root_cluster.hasNeighbor()) active_state[root_cluster.neighborID] = 1;
+            clusterID = -1;
+          }          
+        }
+
+        int numIDs = writeSubgroup(localIDs,clusterID,clusterID!=-1);
+        
+        while(numIDs)
+        {
+          const int cur_startID = std::max(numIDs-(int)subgroupSize,0);
+          const int cur_numIDs = numIDs-cur_startID;
+          const int cur_index = std::min(cur_startID+(int)subgroupLocalID,numIDs-1);
+          const uint currentID = localIDs[cur_index];
+          const bool active = (cur_startID + subgroupLocalID) < numIDs;
+          numIDs -= cur_numIDs;
+          
+          bool write = false;
+          const LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[ currentID ];              
+          
+          if (active)
+          {
+            LossyCompressedMesh *mesh = cur.mesh;
+            const Vec3f lower = mesh->bounds.lower;
+            const Vec3f diag = mesh->bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
+            
+            const Vec3f bounds_lower = cur.bounds.lower.decompress(lower,diag)-org;
+            const Vec3f bounds_upper = cur.bounds.upper.decompress(lower,diag)-org;
+            const bool subdivide = subdivideLOD(BBox3f(bounds_lower,bounds_upper),vx,vy,vz,width,height,lod_threshold);
+            if (subdivide && cur.hasChildren())
+              write = true;
+            //write |= cur.hasChildren();
+          }
+          
+          if (!write && active)
+          {
+            active_state[currentID] = 1;                
+            if (cur.hasNeighbor()) active_state[cur.neighborID] = 1;
+          }                        
+
+          numIDs += writeSubgroup(&localIDs[numIDs],cur.leftID,write);          
+          numIDs += writeSubgroup(&localIDs[numIDs],cur.rightID,write);
+        }
+      });
+    });
+
+
+#else    
+    const uint wgSizeComputeLOD = 16;
+    const sycl::nd_range<1> nd_range1(alignTo(numRootsTotal,wgSizeComputeLOD),sycl::range<1>(wgSize));              
     sycl::event compute_lod_event = global_gpu_queue->submit([=](sycl::handler& cgh){
       cgh.depends_on(memset_event);        
       cgh.depends_on(init_event);        
-      cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) {
+      cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16) {
         const unsigned int i = item.get_global_id(0);
                               
         if (i < local_lcgbp_scene->numLCMeshClusterRoots)
@@ -430,7 +524,7 @@ namespace embree {
               else
               {
                 active_state[currentID] = 1;                
-                if (root_cluster.hasNeighbor()) active_state[cur.neighborID] = 1;
+                if (cur.hasNeighbor()) active_state[cur.neighborID] = 1;
               }              
             }
           }
@@ -445,7 +539,7 @@ namespace embree {
         }
       });
     });
-    //waitOnEventAndCatchException(compute_lod_event);
+#endif    
 
     // ================================================================================================================================
     // ================================================================================================================================
@@ -460,7 +554,7 @@ namespace embree {
 
       cgh.depends_on(compute_lod_event);        
         
-      cgh.parallel_for(nd_range2,[=](sycl::nd_item<1> item) {
+      cgh.parallel_for(nd_range2,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16) {
         const unsigned int i = item.get_global_id(0);
         uint &cluster_counter    = *_cluster_counter.get_pointer();
         uint &quad_counter       = *_quad_counter.get_pointer();
@@ -529,7 +623,7 @@ namespace embree {
 
       cgh.depends_on(init_event);
         
-      cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) {
+      cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16) {
         const unsigned int i = item.get_global_id(0);
         uint &cluster_counter    = *_cluster_counter.get_pointer();
         uint &quad_counter       = *_quad_counter.get_pointer();
@@ -636,7 +730,7 @@ namespace embree {
     TutorialData ldata = data;
     sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
       const sycl::nd_range<2> nd_range = make_nd_range(1,1);
-      cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
+      cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16) {
 
         RTCIntersectArguments args;
         rtcInitIntersectArguments(&args);

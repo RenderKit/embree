@@ -1249,7 +1249,7 @@ namespace embree
     auto e = vertex_map.find(v);
     if (e != vertex_map.end()) { return e->second; }
     int ID = allocID++;
-    vertex_map.insert(std::pair(v,ID));
+    vertex_map.insert(std::pair<Vec3f,uint>(v,ID));
     //PRINT(ID);
     return ID;
   }
@@ -1315,7 +1315,7 @@ namespace embree
     
     avector<Vec3fa> positions;
     std::map<Vec3f,uint> vertex_map;
-    int ID = 0;
+    //int ID = 0;
     PRINT( qmesh->quads.size() );
     for (size_t i=0; i<qmesh->quads.size(); i++)
     {
