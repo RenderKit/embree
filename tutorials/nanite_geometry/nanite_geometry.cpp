@@ -22,7 +22,7 @@ namespace embree
   struct Tutorial : public SceneLoadingTutorialApplication 
   {    
     Tutorial()
-      : SceneLoadingTutorialApplication("nanite_geometry", FEATURES) 
+      : SceneLoadingTutorialApplication("Micro-Poly HW RT", FEATURES) 
     {
       registerOption("spp", [] (Ref<ParseStream> cin, const FileName& path) {
         user_spp = cin->getInt();
