@@ -608,19 +608,13 @@ namespace embree {
       const size_t new_numTriangles = new_numIndices/3;
       DBG_PRINT3(expectedTriangles,new_numTriangles,result_error);
 
-      std::vector<uint> new_vertices;
-      for (uint i=0;i<new_numTriangles;i++)
-      {
-        countVertexIDs(new_vertices, new_triangles[i].v0);
-        countVertexIDs(new_vertices, new_triangles[i].v1);
-        countVertexIDs(new_vertices, new_triangles[i].v2);      
-      }      
-      if (new_vertices.size() > 256)
-      {
-        DBG_PRINT2("new_vertices.size()",new_vertices.size());
-        retry = true;
-      }
-
+      // std::vector<uint> new_vertices;
+      // for (uint i=0;i<new_numTriangles;i++)
+      // {
+      //   countVertexIDs(new_vertices, new_triangles[i].v0);
+      //   countVertexIDs(new_vertices, new_triangles[i].v1);
+      //   countVertexIDs(new_vertices, new_triangles[i].v2);      
+      // }
 
       for (size_t i=0; i<new_numTriangles; i++)
       {
@@ -649,9 +643,13 @@ namespace embree {
         i++;
       }
 
-
       if (quadMesh.quads.size() > LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER) { DBG_PRINT2("RETRY quadMesh.quads.size()",quadMesh.quads.size()); retry = true; }
-      if (quadMesh.vertices.size() > 256) { DBG_PRINT("RETRY quadMesh.vertices.size()"); retry = true; }
+      
+      if (quadMesh.vertices.size() > 256) {
+        PRINT("RETRY quadMesh.vertices.size()");
+        retry = true;
+      }
+      
       if (retry)
       {
         quadMesh.vertices.clear();
@@ -662,13 +660,12 @@ namespace embree {
       else
         break;
     }
-    //exit(0);
+
     DBG_PRINT2(quadMesh.quads.size(),quadMesh.vertices.size());
 
     delete [] new_triangles;
 
     quadMesh.reorderPLOC();
-    
     quadMeshes.push_back(quadMesh);
     return true;
   }
@@ -753,19 +750,13 @@ namespace embree {
       
       DBG_PRINT2(expectedTriangles,new_numTriangles);
 
-      std::vector<uint> new_vertices;
-      for (uint i=0;i<new_numTriangles;i++)
-      {
-        countVertexIDs(new_vertices, new_triangles[i].v0);
-        countVertexIDs(new_vertices, new_triangles[i].v1);
-        countVertexIDs(new_vertices, new_triangles[i].v2);      
-      }      
-      if (new_vertices.size() > 256)
-      {
-        DBG_PRINT2("new_vertices.size()",new_vertices.size());
-        retry = true;
-      }
-
+      // std::vector<uint> new_vertices;
+      // for (uint i=0;i<new_numTriangles;i++)
+      // {
+      //   countVertexIDs(new_vertices, new_triangles[i].v0);
+      //   countVertexIDs(new_vertices, new_triangles[i].v1);
+      //   countVertexIDs(new_vertices, new_triangles[i].v2);      
+      // }      
 
       for (size_t i=0; i<new_numTriangles; i++)
       {
@@ -796,7 +787,12 @@ namespace embree {
 
 
       if (quadMesh.quads.size() > LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER) { DBG_PRINT2("RETRY quadMesh.quads.size()",quadMesh.quads.size()); retry = true; }
-      if (quadMesh.vertices.size() > 256) { DBG_PRINT("RETRY quadMesh.vertices.size()"); retry = true; }
+
+      if (quadMesh.vertices.size() > 256) {
+        DBG_PRINT("RETRY quadMesh.vertices.size()");
+        retry = true;
+      }
+      
       if (retry)
       {
         DBG_PRINT("SPLIT DAG");
@@ -817,7 +813,7 @@ namespace embree {
       // else
       //   break;
     }
-    //exit(0);
+
     DBG_PRINT(quadMeshes.size());
     for (uint i=0;i<quadMeshes.size();i++)
       DBG_PRINT2(quadMeshes[i].quads.size(),quadMeshes[i].vertices.size());
@@ -870,6 +866,9 @@ namespace embree {
       std::map<uint,uint> index_map;
       uint numLocalIndices = 0;
       bool fits = true;
+      int min_index_delta = 0;
+      int max_index_delta = 0;
+      
       for (uint j=0;j<IDs.size();j++)
       {
         const uint index = IDs[j];
@@ -877,16 +876,28 @@ namespace embree {
         const uint v1 = mesh->quads[index].v1;
         const uint v2 = mesh->quads[index].v2;
         const uint v3 = mesh->quads[index].v3;
+        
+        const uint new_v0 = remap_vtx_index(v0,index_map,numLocalIndices);
+        const uint new_v1 = remap_vtx_index(v1,index_map,numLocalIndices);
+        const uint new_v2 = remap_vtx_index(v2,index_map,numLocalIndices);
+        const uint new_v3 = remap_vtx_index(v3,index_map,numLocalIndices);
 
-        remap_vtx_index(v0,index_map,numLocalIndices);
-        remap_vtx_index(v1,index_map,numLocalIndices);
-        remap_vtx_index(v2,index_map,numLocalIndices);
-        remap_vtx_index(v3,index_map,numLocalIndices);
-        if (index_map.size() > 256)
-        {
-          fits = false;
-          break;
-        }
+        min_index_delta = std::min(min_index_delta,(int)new_v1 - (int)new_v0);
+        min_index_delta = std::min(min_index_delta,(int)new_v2 - (int)new_v0);
+        min_index_delta = std::min(min_index_delta,(int)new_v3 - (int)new_v0);
+
+        max_index_delta = std::max(max_index_delta,(int)new_v1 - (int)new_v0);
+        max_index_delta = std::max(max_index_delta,(int)new_v2 - (int)new_v0);
+        max_index_delta = std::max(max_index_delta,(int)new_v3 - (int)new_v0);
+        
+      }
+
+      if (index_map.size() > 256)
+      {
+        DBG_PRINT2(IDs.size(),index_map.size());
+        DBG_PRINT2(min_index_delta,max_index_delta);
+        //FATAL("256");
+        fits = false;
       }
       
       if (fits)

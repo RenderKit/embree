@@ -676,8 +676,8 @@ namespace embree
       /* allocate BVH data */
       if (accel.size() < bytes)
       {
-        std::cout << "RESIZING QBVH6 MEMORY TO " << accel.size() << " BYTES" << std::endl;
         accel.resize(bytes);
+        std::cout << "RESIZING QBVH6 MEMORY TO " << accel.size() << " BYTES" << std::endl;        
       }
       
 #if !defined(EMBREE_SYCL_GPU_BVH_BUILDER)      

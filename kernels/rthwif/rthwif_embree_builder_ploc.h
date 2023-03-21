@@ -1724,10 +1724,10 @@ namespace embree
                                  clusterBounds.init();
                                  for (uint q=subgroupLocalID;q<cluster.numQuads;q+=subgroupSize)
                                  {
-                                   const uint v0 = compressedIndices[q].v0;
-                                   const uint v1 = compressedIndices[q].v1;
-                                   const uint v2 = compressedIndices[q].v2;
-                                   const uint v3 = compressedIndices[q].v3;
+                                   const uint v0 = compressedIndices[q].v0();
+                                   const uint v1 = compressedIndices[q].v1();
+                                   const uint v2 = compressedIndices[q].v2();
+                                   const uint v3 = compressedIndices[q].v3();
 
                                    const Vec3f vtx0 = compressedVertices[v0].decompress(lower,diag);
                                    const Vec3f vtx1 = compressedVertices[v1].decompress(lower,diag);

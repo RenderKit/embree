@@ -402,10 +402,15 @@ namespace embree {
 
   struct CompressedQuadIndices
   {
-    unsigned char v0,v1,v2,v3; 
+    unsigned char _v0,_v1,_v2,_v3; 
 
+    __forceinline unsigned int v0() const { return _v0; }
+    __forceinline unsigned int v1() const { return _v1; }
+    __forceinline unsigned int v2() const { return _v2; }
+    __forceinline unsigned int v3() const { return _v3; }
+    
     __forceinline CompressedQuadIndices() {}
-    __forceinline CompressedQuadIndices(const unsigned int v0,const unsigned int v1,const unsigned int v2,const unsigned int v3) : v0(v0), v1(v1), v2(v2), v3(v3) {}
+    __forceinline CompressedQuadIndices(const unsigned int v0,const unsigned int v1,const unsigned int v2,const unsigned int v3) : _v0(v0), _v1(v1), _v2(v2), _v3(v3) {}
     
   };
 
@@ -424,10 +429,10 @@ namespace embree {
 
     __forceinline BBox3f decompressQuadBounds(const CompressedQuadIndices &indices,const Vec3f &lower, const Vec3f &diag) const
     {
-      const Vec3f vtx0 = compressedVertices[indices.v0].decompress(lower,diag);
-      const Vec3f vtx1 = compressedVertices[indices.v1].decompress(lower,diag);
-      const Vec3f vtx2 = compressedVertices[indices.v2].decompress(lower,diag);
-      const Vec3f vtx3 = compressedVertices[indices.v3].decompress(lower,diag);
+      const Vec3f vtx0 = compressedVertices[indices.v0()].decompress(lower,diag);
+      const Vec3f vtx1 = compressedVertices[indices.v1()].decompress(lower,diag);
+      const Vec3f vtx2 = compressedVertices[indices.v2()].decompress(lower,diag);
+      const Vec3f vtx3 = compressedVertices[indices.v3()].decompress(lower,diag);
       BBox3f quadBounds(empty);
       quadBounds.extend(vtx0);
       quadBounds.extend(vtx1);
