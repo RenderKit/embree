@@ -18,6 +18,7 @@
 
 #define UNLOCK_BORDER 0
 #define MIN_AREA_DISTANCE_FCT 1
+#define ENABLE_MT_PREPROCESS 1
 
 
 namespace embree {
@@ -220,6 +221,7 @@ namespace embree {
     uint *nearest_neighborID = new uint[numQuads];
     
     BBox3f centroidBounds(empty);
+    //PRINT(numQuads);
 
     for (uint i=0;i<numQuads;i++)
     {
@@ -266,6 +268,7 @@ namespace embree {
       quadBounds.extend(vtx3);
 
       bounds[i] = quadBounds;
+      //PRINT2(i,quadBounds);
             
       const uint grid_size = 1 << 21; // 3*21 = 63
       const Vec3f grid_base = lower;
@@ -374,7 +377,11 @@ namespace embree {
 
     extractIDs(rootID,bvh2,IDs);
 
-    if (IDs.size() != numQuads) FATAL("IDs.size() != numQuads");
+    if (IDs.size() != numQuads)
+    {
+      PRINT2(IDs.size(),numQuads);
+      FATAL("IDs.size() != numQuads");
+    }
     
     for (uint i=0;i<numQuads;i++)
       new_quads[i] = quads[IDs[i]];
@@ -681,7 +688,7 @@ namespace embree {
       if (quadMesh.quads.size() > LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER) { DBG_PRINT2("RETRY quadMesh.quads.size()",quadMesh.quads.size()); retry = true; }
       
       if (quadMesh.vertices.size() > 256) {
-        PRINT("RETRY quadMesh.vertices.size()");
+        //PRINT("RETRY quadMesh.vertices.size()");
         retry = true;
       }
       
@@ -1037,9 +1044,13 @@ namespace embree {
       for (uint i=0;i<cur_numPrims;i++)
         nearest_neighborID[i] = -1;
 
+#if ENABLE_MT_PREPROCESS == 1      
       parallel_for((uint)0, cur_numPrims, [&] (const range<uint>& r)
       {
         for (uint c=r.begin();c<r.end();c++)
+#else
+        for (uint c=0;c<cur_numPrims;c++)
+#endif          
         {
           // find nearest neighbor
           const uint ID = index_buffer[c];
@@ -1071,11 +1082,17 @@ namespace embree {
             }
           nearest_neighborID[c] = nn;                  
         }
+#if ENABLE_MT_PREPROCESS == 1              
       });
+#endif      
 
+#if ENABLE_MT_PREPROCESS == 1            
       parallel_for((uint)0, cur_numPrims, [&] (const range<uint>& r)
       {
         for (uint i=r.begin();i<r.end();i++)
+#else
+        for (uint i=0;i<cur_numPrims;i++)          
+#endif          
         {
           if (nearest_neighborID[i] != -1)
           {
@@ -1100,7 +1117,9 @@ namespace embree {
           else
             tmp_buffer[i] = index_buffer[i];                      
         }
+#if ENABLE_MT_PREPROCESS == 1                      
       });
+#endif      
       
       uint new_cur_numPrims = 0;
       for (uint i=0;i<cur_numPrims;i++)
@@ -1215,6 +1234,8 @@ namespace embree {
   {
     const uint numQuads = mesh->numQuads;
     const uint INITIAL_CREATE_RANGE_THRESHOLD = LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER;
+
+    const uint global_start_lcm_clusterID = lcm_clusters.size();      
     
     // === get centroid and geometry bounding boxes ===
     
@@ -1340,14 +1361,18 @@ namespace embree {
         cur_numQuads +=  clusters[clusterID].quads.size();
         //PRINT2(i,clusters[clusterID].quads.size());
       }
-      PRINT3(iteration,current_numClusters,cur_numQuads);
+      //PRINT3(iteration,current_numClusters,cur_numQuads);
       
       for (uint i=0;i<current_numClusters;i++)
         nearest_neighborID[i] = -1;
 
+#if ENABLE_MT_PREPROCESS == 1            
       parallel_for((uint)0, current_numClusters, [&] (const range<uint>& r)
       {
         for (uint c=r.begin();c<r.end();c++)
+#else
+          for (uint c=0;c<current_numClusters;c++)
+#endif          
         {
           // find nearest neighbor
           const uint clusterID = index_buffer[c];
@@ -1404,12 +1429,17 @@ namespace embree {
 #endif          
           nearest_neighborID[c] = nn;                  
         }
+#if ENABLE_MT_PREPROCESS == 1                    
       });
+#endif      
 
       bool merged_pair = false;
-      
+
+#if ENABLE_MT_PREPROCESS == 1                  
       parallel_for(current_numClusters, [&] (uint i)
-        //for (uint i=0;i<current_numClusters;i++)
+#else        
+                   for (uint i=0;i<current_numClusters;i++)
+#endif                     
       {
         if (nearest_neighborID[i] != -1)
         {
@@ -1507,7 +1537,10 @@ namespace embree {
         }
         else
           tmp_buffer[i] = index_buffer[i];                      
-      });
+      }
+#if ENABLE_MT_PREPROCESS == 1                                     
+        );
+#endif      
       
       
       uint new_numClusters = 0;
@@ -1531,7 +1564,7 @@ namespace embree {
       iteration++;
       //numClusterQuads = new_numClusterQuads;
       
-      PRINT3(iteration,new_numClusters,current_numClusters);
+      //PRINT3(iteration,new_numClusters,current_numClusters);
 
 
       if (!merged_pair) break; // couldn't merge any clusters anymore
@@ -1545,7 +1578,7 @@ namespace embree {
 #if ENABLE_DAG == 0        
         FATAL("numTmpRoots != current_numClusters");
 #endif        
-      }      
+      }
     }
 
     DBG_PRINT("MERGING DONE");    
@@ -1622,9 +1655,9 @@ namespace embree {
       compressed_cluster.bounds = CompressedAABB3f( CompressedVertex(cluster_bounds.lower,geometry_lower,geometry_inv_diag),
                                                     CompressedVertex(cluster_bounds.upper,geometry_lower,geometry_inv_diag) );
       
-      compressed_cluster.leftID = (clusters[c].leftID != -1) ? clusters[c].leftID : -1;
-      compressed_cluster.rightID = (clusters[c].rightID != -1) ? clusters[c].rightID : -1;
-      compressed_cluster.neighborID = (clusters[c].neighborID != -1) ? clusters[c].neighborID : -1;
+      compressed_cluster.leftID = (clusters[c].leftID != -1) ? global_start_lcm_clusterID+clusters[c].leftID : -1;
+      compressed_cluster.rightID = (clusters[c].rightID != -1) ? global_start_lcm_clusterID+clusters[c].rightID : -1;
+      compressed_cluster.neighborID = (clusters[c].neighborID != -1) ? global_start_lcm_clusterID+clusters[c].neighborID : -1;
 
       if (compressed_cluster.leftID == -1 && compressed_cluster.rightID != -1) FATAL("leftID,rightID");
       if (compressed_cluster.leftID != -1 && compressed_cluster.rightID == -1) FATAL("rightID,leftID");
@@ -1662,15 +1695,7 @@ namespace embree {
       lcm_clusters.push_back(compressed_cluster);
       if (clusters[c].lod_root)
       {
-#if ENABLE_DAG == 1        
-        //if (clusters[lcm_clusterID].neighborID == -1 || lcm_clusterID < clusters[lcm_clusterID].neighborID) // only push smallest index of neighbor pair to root list
-#endif        
         lcm_clusterRootIDs.push_back(lcm_clusterID);
-        // else
-        // {
-        //   PRINT4(lcm_clusterID,clusters[lcm_clusterID].neighborID,clusters[lcm_clusterID].leftID,clusters[lcm_clusterID].rightID);
-        // }
-        //PRINT3(c,roots,clusters[c].quads.size());
         roots++;
       }
       

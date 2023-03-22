@@ -62,7 +62,7 @@ namespace embree {
   extern "C" RenderMode user_rendering_mode = RENDER_PRIMARY;
   extern "C" unsigned int user_spp = 1;
   extern "C" unsigned int g_max_path_length = 2;
-  extern "C" unsigned int g_lod_threshold = 60;
+  extern "C" unsigned int g_lod_threshold = 30;
   
   Averaged<double> avg_bvh_build_time(64,1.0);
   Averaged<double> avg_lod_selection_time(64,1.0);

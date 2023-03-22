@@ -3085,7 +3085,6 @@ namespace embree
       gpu::waitOnEventAndCatchException(queue_event);
       if (unlikely(verbose)) total_time += gpu::getDeviceExecutionTiming(queue_event);
     }
-
     
     if (unlikely(host_device_tasks[0] == -1)) return false;
 
@@ -3198,11 +3197,12 @@ namespace embree
       gpu::waitOnEventAndCatchException(queue_event);
       if (unlikely(verbose)) total_time += gpu::getDeviceExecutionTiming(queue_event);
     }
-
+    
     if (unlikely(host_device_tasks[0] == -1)) return false;
     
     /* ---- Phase III: fill in mixed leafs and generate inner node for fatleaves plus storing primID, geomID pairs for final phase --- */
     const uint blocks = host_device_tasks[1];
+    
     if (blocks)
     {
       const uint wgSize = 256;
@@ -3344,7 +3344,9 @@ namespace embree
     if (unlikely(host_device_tasks[0] == -1)) return false;
 
     /* ---- Phase IV: for each primID, geomID pair generate corresponding leaf data --- */
-    const uint leaves = host_device_tasks[0]; 
+    const uint leaves = host_device_tasks[0];
+
+    
     if (leaves)
     {
       const uint wgSize = 256;
@@ -3423,6 +3425,7 @@ namespace embree
                                  PrimLeafDesc leafDesc(0,geomID,GeometryFlags::NONE /*(GeometryFlags)geom->geometryFlags*/,mask32,PrimLeafDesc::TYPE_OPACITY_CULLING_ENABLED);
                                  *dest = ProceduralLeaf(leafDesc,primID0,true);
                                }
+#if 1                               
                                else if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY)
                                {
                                  // =================================                           
@@ -3436,7 +3439,7 @@ namespace embree
                                  dest->childOffset = ((uint64_t)lcg_root + oldOffset*64 - (uint64_t)dest)/64; // FIXME with SLM
                                  //dest->childOffset = ((uint64_t)lcg_root - (uint64_t)dest)/64; // FIXME with SLM
                                }
-                               
+#endif                               
                              }
 
                            /* ================================== */                                                                      
@@ -3463,7 +3466,6 @@ namespace embree
       if (unlikely(verbose)) total_time += gpu::getDeviceExecutionTiming(queue_event);     
     }        
     conversion_device_time = (float)total_time;
-    gpu::waitOnQueueAndCatchException(gpu_queue); //exit(0);
     return true;    
   }
   

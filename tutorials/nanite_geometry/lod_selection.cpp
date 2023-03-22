@@ -238,7 +238,7 @@ namespace embree {
 
     const unsigned int wgSize = 16*1;
     const unsigned int numLCGBP = local_lcgbp_scene->numLCGBP;
-    const unsigned int numLCMeshClusters = local_lcgbp_scene->numLCMeshClusters;
+    //const unsigned int numLCMeshClusters = local_lcgbp_scene->numLCMeshClusters;
     sycl::event init_event =  global_gpu_queue->submit([&](sycl::handler &cgh) {
       cgh.single_task([=]() {
         local_lcgbp_scene->numCurrentLCGBPStates = 0;
@@ -247,7 +247,7 @@ namespace embree {
 
     waitOnEventAndCatchException(init_event);
 
-    void *lcg_ptr = nullptr;
+    //void *lcg_ptr = nullptr;
     //unsigned int lcg_num_prims = 0;
     
     const float minLODDistance = local_lcgbp_scene->minLODDistance;
@@ -788,7 +788,7 @@ namespace embree {
 
     hitPos = lcgbp_scene->pick_pos;    
     const bool hit = lcgbp_scene->pick_primID != -1;
-    const float lod_threshold = g_lod_threshold;
+    //const float lod_threshold = g_lod_threshold;
     if (hit)
     {
       PRINT2(lcgbp_scene->pick_primID,lcgbp_scene->pick_geomID);
@@ -806,14 +806,14 @@ namespace embree {
       LossyCompressedMesh *mesh = cluster.mesh;
       const Vec3f lower = mesh->bounds.lower;
       const Vec3f diag = mesh->bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
-      const uint width = 1024;
-      const uint height = 1024;
+      // const uint width = 1024;
+      // const uint height = 1024;
       const BBox3f cluster_bounds(cluster.bounds.lower.decompress(lower,diag),cluster.bounds.upper.decompress(lower,diag));
       PRINT2(cluster_bounds,area(cluster_bounds));
-      const Vec2f diag2 = projectBBox3fToPlane( BBox3f(cluster_bounds.lower-org,cluster_bounds.upper-org), vx,vy,vz, width,height,true);
-      PRINT3(diag2,length(diag2),length(diag2)<lod_threshold);
-      bool subdivide = subdivideLOD(BBox3f(cluster_bounds.lower-org,cluster_bounds.upper-org),vx,vy,vz, width,height,lod_threshold);
-      PRINT(subdivide);
+      // const Vec2f diag2 = projectBBox3fToPlane( BBox3f(cluster_bounds.lower-org,cluster_bounds.upper-org), vx,vy,vz, width,height,true);
+      // PRINT3(diag2,length(diag2),length(diag2)<lod_threshold);
+      // bool subdivide = subdivideLOD(BBox3f(cluster_bounds.lower-org,cluster_bounds.upper-org),vx,vy,vz, width,height,lod_threshold);
+      // PRINT(subdivide);
     }
 
                 

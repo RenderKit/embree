@@ -894,7 +894,7 @@ namespace embree
       gpu::waitOnEventAndCatchException(queue_event);
 
     }
-    
+
     // =============================    
     // === convert BVH2 to QBVH6 ===
     // =============================

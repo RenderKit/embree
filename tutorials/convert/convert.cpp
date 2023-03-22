@@ -170,16 +170,18 @@ namespace embree
 
       else if (tag == "-grid_distribute") {
         Ref<SceneGraph::Node> object = SceneGraph::load(path + cin->getFileName());
-        const uint GRID_RES = cin->getInt();
-        
+        const uint GRID_RES_X = cin->getInt();
+        const uint GRID_RES_Y = cin->getInt();
+                
         BBox3fa bb = object->bounds();
         Vec3fa center = bb.center();
         Vec3fa length = bb.size();
 
-        for (uint i=0;i<GRID_RES;i++)
-          for (uint j=0;j<GRID_RES;j++)          
+        for (uint i=0;i<GRID_RES_Y;i++)
+          for (uint j=0;j<GRID_RES_X;j++)          
           {
-            const AffineSpace3fa space = AffineSpace3fa::translate(Vec3fa(i*length.x,0,j*length.z));
+            //const AffineSpace3fa space = AffineSpace3fa::translate(Vec3fa(i*length.x,0,j*length.z));
+            const AffineSpace3fa space = AffineSpace3fa::translate(Vec3fa(i*length.x,j*length.y,0));
             g_scene->add(new SceneGraph::TransformNode(space,object));
           }
       }
