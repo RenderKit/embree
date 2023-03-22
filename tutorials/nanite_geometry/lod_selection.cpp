@@ -571,8 +571,8 @@ namespace embree {
     // ================================================================================================================================
     // ================================================================================================================================
     
-
-    const sycl::nd_range<1> nd_range2(alignTo(numLCMeshClusters,wgSize),sycl::range<1>(wgSize));              
+    const uint wgSize_select = 512;
+    const sycl::nd_range<1> nd_range2(alignTo(numLCMeshClusters,wgSize_select),sycl::range<1>(wgSize_select));              
     sycl::event select_clusterIDs_event = global_gpu_queue->submit([=](sycl::handler& cgh){
       sycl::local_accessor< uint      ,  0> _cluster_counter(cgh);
       sycl::local_accessor< uint      ,  0> _quad_counter(cgh);
@@ -596,7 +596,8 @@ namespace embree {
         {
           if (active_state[i])
           {
-            const unsigned int destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(unsigned int)1);
+            //const unsigned int destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(unsigned int)1);
+            const unsigned int destID = gpu::atomic_add_global_sub_group_varying(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(unsigned int)1);
             local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID] = i;            
             const LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[ i ];              
             gpu::atomic_add_local(&quad_counter,(unsigned int)cur.numQuads);

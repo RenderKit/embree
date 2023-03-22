@@ -1722,7 +1722,7 @@ namespace embree {
     delete [] compressedVertices;    
     delete [] clusters;
 
-    PRINT("CLUSTER PROCESSING DONE");    
+    DBG_PRINT("CLUSTER PROCESSING DONE");    
     //exit(0);
     
     return Vec2i(numClustersMaxRes,numDecompressedBlocks);
