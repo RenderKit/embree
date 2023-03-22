@@ -19,7 +19,11 @@
 #define UNLOCK_BORDER 0
 #define MIN_AREA_DISTANCE_FCT 1
 
+
 namespace embree {
+
+  //typedef gpu::HilbertCodePrimitive64x32Bits3D SpaceCurveType;
+  typedef gpu::MortonCodePrimitive64x32Bits3D SpaceCurveType;
 
   uint findVertex(std::vector<Vec3f> &vertices, const Vec3f &cv)
   {
@@ -58,17 +62,17 @@ namespace embree {
     __forceinline Quad (const uint v0, const uint v1, const uint v2, const uint v3) : v0(v0), v1(v1), v2(v2), v3(v3)  {}
   };
 
-  struct BVH2Ploc
+  struct BVH2Node
   {
     BBox3f bounds;
     uint leftID,rightID;
     uint numLeafPrims;
 
-    BVH2Ploc() {}
+    BVH2Node() {}
     
-    BVH2Ploc(const BBox3f &bounds, uint ID) : bounds(bounds),leftID(ID),rightID(-1),numLeafPrims(1) {}
+    BVH2Node(const BBox3f &bounds, uint ID) : bounds(bounds),leftID(ID),rightID(-1),numLeafPrims(1) {}
 
-    BVH2Ploc(const BVH2Ploc &left, const BVH2Ploc &right, uint lID, uint rID) {
+    BVH2Node(const BVH2Node &left, const BVH2Node &right, uint lID, uint rID) {
       bounds = left.bounds;
       bounds.extend(right.bounds);
       leftID = lID;
@@ -82,7 +86,7 @@ namespace embree {
     
   };
 
-  void extractIDs(const uint currentID, BVH2Ploc *bvh, std::vector<uint> &IDs)
+  void extractIDs(const uint currentID, BVH2Node *bvh, std::vector<uint> &IDs)
   {
     if (bvh[currentID].isLeaf())
     {
@@ -159,7 +163,7 @@ namespace embree {
     const Vec3f diag = centroidBounds.size();
     const Vec3f inv_diag  = diag != Vec3fa(0.0f) ? Vec3fa(1.0f) / diag : Vec3fa(0.0f);
 
-    std::vector<gpu::MortonCodePrimitive64x32Bits3D> mcodes;
+    std::vector<SpaceCurveType> mcodes;
 
     for (uint i=0;i<numQuads;i++)
     {
@@ -191,7 +195,7 @@ namespace embree {
       const uint gy = (uint)gridpos_f.y;
       const uint gz = (uint)gridpos_f.z;
       const uint64_t code = bitInterleave64<uint64_t>(gx,gy,gz);
-      mcodes.push_back(gpu::MortonCodePrimitive64x32Bits3D(code,i));      
+      mcodes.push_back(SpaceCurveType(code,i));      
     }
 
     std::sort(mcodes.begin(), mcodes.end()); 
@@ -209,7 +213,7 @@ namespace embree {
     const uint numQuads = quads.size();
     Quad  *new_quads = new Quad[numQuads];
     BBox3f   *bounds = new BBox3f[numQuads];
-    BVH2Ploc   *bvh2 = new BVH2Ploc[numQuads*2];
+    BVH2Node   *bvh2 = new BVH2Node[numQuads*2];
 
     uint *index_buffer = new uint[numQuads];
     uint *tmp_buffer = new uint[numQuads];
@@ -241,7 +245,7 @@ namespace embree {
     const Vec3f diag = centroidBounds.size();
     const Vec3f inv_diag  = diag != Vec3fa(0.0f) ? Vec3fa(1.0f) / diag : Vec3fa(0.0f);
 
-    std::vector<gpu::MortonCodePrimitive64x32Bits3D> mcodes;
+    std::vector<SpaceCurveType> mcodes;
 
     for (uint i=0;i<numQuads;i++)
     {
@@ -275,7 +279,7 @@ namespace embree {
       const uint gy = (uint)gridpos_f.y;
       const uint gz = (uint)gridpos_f.z;
       const uint64_t code = bitInterleave64<uint64_t>(gx,gy,gz);
-      mcodes.push_back(gpu::MortonCodePrimitive64x32Bits3D(code,i));      
+      mcodes.push_back(SpaceCurveType(code,i));      
     }
 
     std::sort(mcodes.begin(), mcodes.end());
@@ -289,7 +293,7 @@ namespace embree {
     {
       const uint ID = mcodes[i].getIndex();
       index_buffer[i] = i;
-      bvh2[i] = BVH2Ploc(bounds[ID],ID);
+      bvh2[i] = BVH2Node(bounds[ID],ID);
     }
 
     const int SEARCH_RADIUS = 16;
@@ -337,7 +341,7 @@ namespace embree {
               const uint leftID = index_buffer[i];
               const uint rightID = index_buffer[nearest_neighborID[i]];
               const uint newID = numPrimitivesAlloc++;
-              bvh2[newID] = BVH2Ploc(bvh2[leftID],bvh2[rightID],leftID,rightID);
+              bvh2[newID] = BVH2Node(bvh2[leftID],bvh2[rightID],leftID,rightID);
               tmp_buffer[i] = newID;
               //tmp_buffer[nearest_neighborID[i]] = -1;                            
             }
@@ -854,7 +858,10 @@ namespace embree {
           quadMeshes.push_back(right);
         }
         else
-          FATAL("SPLIT FAILED");                  
+        {
+          DBG_PRINT("SPLIT FAILED");
+          return false;
+        }
       }
       else
         quadMeshes.push_back(quadMesh);        
@@ -904,7 +911,7 @@ namespace embree {
   
 
   
-  void extractClusters(const uint currentID, BVH2Ploc *bvh, std::vector<QuadMeshCluster> &clusters, ISPCQuadMesh* mesh, const uint threshold)
+  void extractClusters(const uint currentID, BVH2Node *bvh, std::vector<QuadMeshCluster> &clusters, ISPCQuadMesh* mesh, const uint threshold)
   {
     if (bvh[currentID].items() < threshold || bvh[currentID].isLeaf())
     {
@@ -994,7 +1001,12 @@ namespace embree {
     extractClusters(bvh[currentID].rightID,bvh,clusters,mesh,threshold);      
   }  
 
-  std::vector<QuadMeshCluster> extractRangesPLOC(std::vector<gpu::MortonCodePrimitive64x32Bits3D> &mcodes,const std::vector<BBox3f> &plocBounds, ISPCQuadMesh* mesh, const uint threshold)
+  // ======================================================================================================================================================================================
+  // ======================================================================================================================================================================================
+  // ======================================================================================================================================================================================
+
+  template<typename SpaceCurveType>
+  std::vector<QuadMeshCluster> extractRangesPLOC(std::vector<SpaceCurveType> &mcodes,const std::vector<BBox3f> &plocBounds, ISPCQuadMesh* mesh, const uint threshold)
   {
     std::vector<QuadMeshCluster> clusters;
     
@@ -1005,13 +1017,13 @@ namespace embree {
     uint *tmp_buffer = new uint[numPrims];
     uint *nearest_neighborID = new uint[numPrims];
 
-    BVH2Ploc *bvh2 = new BVH2Ploc[numPrims*2];
+    BVH2Node *bvh2 = new BVH2Node[numPrims*2];
 
     for (uint i=0;i<numPrims;i++)
     {
       const uint ID = mcodes[i].getIndex();
       index_buffer[i] = i;
-      bvh2[i] = BVH2Ploc(plocBounds[ID],ID);
+      bvh2[i] = BVH2Node(plocBounds[ID],ID);
     }
 
     const int SEARCH_RADIUS = 16;
@@ -1034,7 +1046,17 @@ namespace embree {
           const BBox3f bounds = bvh2[ID].bounds;
           float min_area = pos_inf;
           int nn = -1;
-          for (int i=std::max((int)c-SEARCH_RADIUS,0);i<std::min((int)c+SEARCH_RADIUS+1,(int)cur_numPrims);i++)
+          int start = std::max((int)c-SEARCH_RADIUS,0);
+          int end   = std::min((int)c+SEARCH_RADIUS+1,(int)cur_numPrims);
+          int plus  = 1;
+          if (0) //(c % 2) && 0)
+          {
+            std::swap(start,end);
+            end--;
+            start--;
+            plus = -1;
+          }
+          for (int i=start;i!=end;i+=plus)            
             if (i != c && index_buffer[i] != -1)
             {
               const uint merge_ID = index_buffer[i];
@@ -1064,7 +1086,7 @@ namespace embree {
                 const uint leftID = index_buffer[i];
                 const uint rightID = index_buffer[nearest_neighborID[i]];
                 const uint newID = numPrimitives.fetch_add(1);
-                bvh2[newID] = BVH2Ploc(bvh2[leftID],bvh2[rightID],leftID,rightID);
+                bvh2[newID] = BVH2Node(bvh2[leftID],bvh2[rightID],leftID,rightID);
                 tmp_buffer[i] = newID;
                 //tmp_buffer[nearest_neighborID[i]] = -1;                            
               }
@@ -1111,8 +1133,17 @@ namespace embree {
   
   
 
+  // ======================================================================================================================================================================================
+  // ======================================================================================================================================================================================
+  // ======================================================================================================================================================================================
+  
 
-  void extractRanges(const uint currentID, const gpu::MortonCodePrimitive64x32Bits3D *const mcodes, std::vector<HierarchyRange> &ranges, std::vector<uint> &leafIDs, ISPCQuadMesh* mesh, uint &numTotalVertices, const uint threshold)
+
+  // ======================================================================================================================================================================================
+  // ======================================================================================================================================================================================
+  // ======================================================================================================================================================================================
+  
+  void extractRanges(const uint currentID, const SpaceCurveType *const mcodes, std::vector<HierarchyRange> &ranges, std::vector<uint> &leafIDs, ISPCQuadMesh* mesh, uint &numTotalVertices, const uint threshold)
   {
     if (ranges[currentID].range.size() < threshold)
     {
@@ -1217,7 +1248,7 @@ namespace embree {
     const Vec3f diag = centroidBounds.size();
     const Vec3f inv_diag  = diag != Vec3fa(0.0f) ? Vec3fa(1.0f) / diag : Vec3fa(0.0f);
     
-    std::vector<gpu::MortonCodePrimitive64x32Bits3D> mcodes;
+    std::vector<SpaceCurveType> mcodes;
     std::vector<HierarchyRange> ranges;
     std::vector<uint> leafIDs;
     std::vector<uint> clusterRootIDs;
@@ -1254,7 +1285,8 @@ namespace embree {
       const uint gy = (uint)gridpos_f.y;
       const uint gz = (uint)gridpos_f.z;
       const uint64_t code = bitInterleave64<uint64_t>(gx,gy,gz);
-      mcodes.push_back(gpu::MortonCodePrimitive64x32Bits3D(code,i));
+      mcodes.push_back(SpaceCurveType(code,i));
+      
       plocBounds.push_back(quadBounds);
     }
 
@@ -1265,7 +1297,7 @@ namespace embree {
     // === extract ranges, test range if it fullfills requirements, split if necessary ===
     uint numTotalVertices = 0;
 
-    std::vector<QuadMeshCluster> extractClusters = extractRangesPLOC(mcodes,plocBounds,mesh,INITIAL_CREATE_RANGE_THRESHOLD);
+    std::vector<QuadMeshCluster> extractClusters = extractRangesPLOC<SpaceCurveType>(mcodes,plocBounds,mesh,INITIAL_CREATE_RANGE_THRESHOLD);
     const uint MAX_NUM_MESH_CLUSTERS = extractClusters.size()*4;
     QuadMeshCluster *clusters = new QuadMeshCluster[MAX_NUM_MESH_CLUSTERS]; //FIXME
     std::atomic<uint> numClusters(extractClusters.size());
@@ -1299,6 +1331,8 @@ namespace embree {
     
     while(current_numClusters > 1)
     {
+      //if (iteration == 0) break;
+      
       uint cur_numQuads = 0;
       for (uint i=0;i<current_numClusters;i++)
       {
@@ -1323,11 +1357,13 @@ namespace embree {
           float min_area = pos_inf;
 
           int start = std::max((int)c-SEARCH_RADIUS,0);
-          int end   = std::min((int)c+SEARCH_RADIUS,(int)current_numClusters);
+          int end   = std::min((int)c+SEARCH_RADIUS+1,(int)current_numClusters);
           int plus  = 1;
-          if (c % 2)
+          if (0) //c % 2)
           {
             std::swap(start,end);
+            end--;
+            start--;
             plus = -1;
           }
           for (int i=start;i!=end;i+=plus)            
@@ -1472,7 +1508,7 @@ namespace embree {
         else
           tmp_buffer[i] = index_buffer[i];                      
       });
-
+      
       
       uint new_numClusters = 0;
       for (uint i=0;i<current_numClusters;i++)
@@ -1495,7 +1531,7 @@ namespace embree {
       iteration++;
       //numClusterQuads = new_numClusterQuads;
       
-      DBG_PRINT3(iteration,new_numClusters,current_numClusters);
+      PRINT3(iteration,new_numClusters,current_numClusters);
 
 
       if (!merged_pair) break; // couldn't merge any clusters anymore

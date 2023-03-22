@@ -1315,10 +1315,12 @@ namespace embree
     
     avector<Vec3fa> positions;
     std::map<Vec3f,uint> vertex_map;
-    //int ID = 0;
+    int ID = 0;
     PRINT( qmesh->quads.size() );
     for (size_t i=0; i<qmesh->quads.size(); i++)
     {
+      if ((i % (1024*1024)) == 0) PRINT2(i,qmesh->quads.size());
+      
       const int a0 = qmesh->quads[i+0].v0;
       const int a1 = qmesh->quads[i+0].v1;
       const int a2 = qmesh->quads[i+0].v2;
@@ -1328,23 +1330,38 @@ namespace embree
       const Vec3fa v1 = qmesh->positions[0][a1];
       const Vec3fa v2 = qmesh->positions[0][a2];
       const Vec3fa v3 = qmesh->positions[0][a3];
+      //const Vec3fa center = (v0+v1+v2+v3)/4;
 
       BilinearPatch bpatch(v0,v1,v2,v3);
 
-      const Vec3f Ng = cross(v1-v0,v3-v0);
-      
+      const Vec3f Ng0 = normalize(cross(v1-v0,v3-v0));
+      const Vec3f Ng1 = -normalize(cross(v1-v2,v3-v2));
+      //PRINT(displace_height);
+      //PRINT4(v0,v1,v2,v3);
       int indices[resY][resX];
       for (uint y=0;y<resY;y++)
         for (uint x=0;x<resX;x++)
         {
           const float u = (float)x / (resX-1);
           const float v = (float)y / (resY-1);
-          Vec3f p = bpatch.eval(u,v);
-          Vec3f normal = Ng; //bpatch.eval(u,v);
-          if (u > 0.0f && u < 1.0f && v > 0.0f && v < 1.0f)
-            p += normal * noise(Vec3f(u,v,0)) * displace_height;
-          int index = findVertex(positions,p);
-          //int index = findVertex(vertex_map,p,ID);
+          Vec3f p(v0); //= bpatch.eval(u,v);
+          Vec3f normal = (u+v<1.0f) ? Ng0 : Ng1; //bpatch.eval(u,v);
+          //if (u > 0.0f && u < 1.0f && v > 0.0f && v < 1.0f)
+
+          if (x == 0) p = lerp(v0,v3,v);
+          if (x == resX-1) p = lerp(v1,v2,v);
+          if (y == 0) p = lerp(v0,v1,u);
+          if (y == resY-1) p = lerp(v3,v2,u);          
+          if (x != 0 && x != resX-1 && y != 0 && y != resY-1)
+          {
+            p = bpatch.eval(u,v);
+            p += normal * abs(noise(p)) * Vec3f(displace_height);
+          }
+
+          //int index = findVertex(positions,p);
+          //PRINT4(x,y,p,index);
+          
+          int index = findVertex(vertex_map,p,ID);
           indices[y][x] =  index;
         }
 
@@ -1359,14 +1376,16 @@ namespace embree
         }
     }
     PRINT( displaced_qmesh->quads.size() );
-    PRINT(vertex_map.size());
-
-    //positions.resize(vertex_map.size());
     
-    //for (std::map<Vec3f,uint>::iterator i=vertex_map.begin(); i != vertex_map.end(); i++)
-    //  positions[(*i).second] = (*i).first;
+    //PRINT(vertex_map.size());
+
+    positions.resize(vertex_map.size());
+    
+    for (std::map<Vec3f,uint>::iterator i=vertex_map.begin(); i != vertex_map.end(); i++)
+      positions[(*i).second] = (*i).first;
 
     displaced_qmesh->positions.push_back(positions);
+    PRINT( displaced_qmesh->positions[0].size() );
     
     return displaced_qmesh.dynamicCast<SceneGraph::Node>();
   }

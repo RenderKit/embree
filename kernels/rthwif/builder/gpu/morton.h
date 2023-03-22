@@ -150,6 +150,78 @@ namespace embree
       __forceinline operator const uint64_t&()  const { return code; }    
     };
 
+
+    struct HilbertCodePrimitive64x32Bits3D
+    {
+      static const uint GRID_SHIFT = 21; // * 3 = 63
+      static const uint KEY_BITS   = 64;
+      
+      uint64_t code;
+      uint index;
+
+      uint64_t transformCurve(uint64_t in, uint64_t bits, const uint8_t* lookupTable)
+      {
+	uint64_t transform = 0;
+	uint64_t out = 0;
+
+	for (int64_t i = 3 * (bits - 1); i >= 0; i -= 3) {
+          transform = lookupTable[transform | ((in >> i) & 7)];
+          out = (out << 3) | (transform & 7);
+          transform &= ~7;
+	}
+
+	return out;
+      }
+
+      
+      __forceinline HilbertCodePrimitive64x32Bits3D() {}      
+      //__forceinline HilbertCodePrimitive64x32Bits3D(const uint3 &v, const uint _index)
+      __forceinline HilbertCodePrimitive64x32Bits3D(const uint64_t morton_code, const uint _index)        
+      {
+
+        const uint8_t mortonToHilbertTable[] = {
+          48, 33, 27, 34, 47, 78, 28, 77,
+          66, 29, 51, 52, 65, 30, 72, 63,
+          76, 95, 75, 24, 53, 54, 82, 81,
+          18,  3, 17, 80, 61,  4, 62, 15,
+          0, 59, 71, 60, 49, 50, 86, 85,
+          84, 83,  5, 90, 79, 56,  6, 89,
+          32, 23,  1, 94, 11, 12,  2, 93,
+          42, 41, 13, 14, 35, 88, 36, 31,
+          92, 37, 87, 38, 91, 74,  8, 73,
+          46, 45,  9, 10,  7, 20, 64, 19,
+          70, 25, 39, 16, 69, 26, 44, 43,
+          22, 55, 21, 68, 57, 40, 58, 67,
+        };
+        
+        //const uint64_t morton_code = gpu::bitInterleave3D_64bits(v);
+        code = transformCurve(morton_code,GRID_SHIFT,mortonToHilbertTable);
+        index = _index;          
+      }
+      
+      __forceinline bool operator < (const MortonCodePrimitive64x32Bits3D& emc) const
+      {
+      
+        if (code < emc.code)
+          return true;
+        else if (code == emc.code)
+          return index < emc.index;
+        else
+          return false;
+      }
+
+      __forceinline uint64_t getCode() const { return code; }
+      __forceinline uint64_t getMCode()  const { return code; }            
+      __forceinline uint    getIndex() const { return index; }
+      __forceinline operator const uint64_t&()  const { return code; }    
+    };
+    
+
+
+
+
+    
+
     struct MortonCodePrimitive64x32Bits4D
     {
       static const uint GRID_SHIFT = 16; // * 4 = 64

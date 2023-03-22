@@ -1,5 +1,6 @@
 #include "nanite_geometry_device.h"
 
+#define FORCE_ROOT_LEVEL 0
 
 namespace embree {
 
@@ -7,6 +8,7 @@ namespace embree {
   extern LCG_Scene *global_lcgbp_scene;
   extern TutorialData data;
 
+  
   __forceinline bool frustumCullPlane(const Vec3f &lower, const Vec3f &upper, const Vec3f &normal)
   {
     const Vec3f p( normal.x <= 0.0f ? lower.x : upper.x,
@@ -424,7 +426,7 @@ namespace embree {
         const Vec3f vy = camera.xfm.l.vy;
         const Vec3f vz = camera.xfm.l.vz;
 
-#if 1
+#if FORCE_ROOT_LEVEL == 1
         if (i < local_lcgbp_scene->numLCMeshClusterRoots)        
         {
           clusterID = local_lcgbp_scene->lcm_cluster_roots_IDs[i];            
@@ -506,7 +508,7 @@ namespace embree {
         if (i < local_lcgbp_scene->numLCMeshClusterRoots)
         {
           const unsigned int clusterID = local_lcgbp_scene->lcm_cluster_roots_IDs[i];            
-#if 1
+#if FORCE_ROOT_LEVEL == 0          
           const Vec3f org = camera.xfm.p;
           const Vec3f vx = camera.xfm.l.vx;
           const Vec3f vy = camera.xfm.l.vy;
