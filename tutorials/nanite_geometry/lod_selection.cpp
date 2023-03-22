@@ -423,7 +423,17 @@ namespace embree {
         const Vec3f vx = camera.xfm.l.vx;
         const Vec3f vy = camera.xfm.l.vy;
         const Vec3f vz = camera.xfm.l.vz;
-        
+
+#if 1
+        if (i < local_lcgbp_scene->numLCMeshClusterRoots)        
+        {
+          clusterID = local_lcgbp_scene->lcm_cluster_roots_IDs[i];            
+          const LossyCompressedMeshCluster &root_cluster = local_lcgbp_scene->lcm_cluster[ clusterID ];
+          LossyCompressedMesh *mesh = root_cluster.mesh;
+          active_state[clusterID] = 1;                
+          if (root_cluster.hasNeighbor()) active_state[root_cluster.neighborID] = 1;              
+        }
+#else        
         if (i < local_lcgbp_scene->numLCMeshClusterRoots)
         {
           clusterID = local_lcgbp_scene->lcm_cluster_roots_IDs[i];            
@@ -479,6 +489,7 @@ namespace embree {
           numIDs += writeSubgroup(&localIDs[numIDs],cur.leftID,write);          
           numIDs += writeSubgroup(&localIDs[numIDs],cur.rightID,write);
         }
+#endif        
       });
     });
 

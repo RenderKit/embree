@@ -17,7 +17,7 @@
 #endif
 
 #define UNLOCK_BORDER 0
-
+#define MIN_AREA_DISTANCE_FCT 1
 
 namespace embree {
 
@@ -483,6 +483,37 @@ namespace embree {
     else return std::make_pair(0,-1);
   }
 
+  bool findSharedVertex(const std::vector<Vec3f> &vertices, const Vec3f &cv)
+  {
+    for (uint i=0;i<vertices.size();i++)
+      if (cv == vertices[i])
+        return true;
+    return false;
+  }
+
+  uint getNumSharedBorderVertices(const QuadMeshCluster &cluster0,const QuadMeshCluster &cluster1)
+  {
+    const BBox3f sharedBounds = intersect(cluster0.bounds,cluster1.bounds);
+    if (sharedBounds.empty()) return 0;
+    
+    std::vector<Vec3f> cluster0_vertices;
+    std::vector<Vec3f> cluster1_vertices;
+
+    for (uint i=0;i<cluster0.vertices.size();i++)
+      if (inside(sharedBounds,cluster0.vertices[i]))
+        cluster0_vertices.push_back(cluster0.vertices[i]);
+
+    for (uint i=0;i<cluster1.vertices.size();i++)
+      if (inside(sharedBounds,cluster1.vertices[i]))
+        cluster1_vertices.push_back(cluster1.vertices[i]);
+
+    uint numSharedVertices = 0;
+    for (uint i=0;i<cluster0_vertices.size();i++)
+      numSharedVertices += findSharedVertex(cluster1_vertices,cluster0_vertices[i]) ? 1 : 0;
+
+    return numSharedVertices;
+  }
+  
 
   float getSimplificationRatio(QuadMeshCluster &cluster0,QuadMeshCluster &cluster1)
   {
@@ -674,6 +705,23 @@ namespace embree {
 
   // ==========================================================
 
+  void mergeQuadMeshCluster(QuadMeshCluster &cluster0,QuadMeshCluster &cluster1, std::vector<QuadMeshCluster> &quadMeshes)
+  {
+    QuadMeshCluster quadMesh = cluster0;
+
+    for (uint i=0;i<cluster1.quads.size();i++)
+    {
+      uint v0 = findVertex(quadMesh.vertices, cluster1.vertices[ cluster1.quads[i].v0 ]);
+      uint v1 = findVertex(quadMesh.vertices, cluster1.vertices[ cluster1.quads[i].v1 ]);
+      uint v2 = findVertex(quadMesh.vertices, cluster1.vertices[ cluster1.quads[i].v2 ]);
+      uint v3 = findVertex(quadMesh.vertices, cluster1.vertices[ cluster1.quads[i].v3 ]);
+
+      Quad quad(v0,v1,v2,v3);
+      quadMesh.quads.push_back(quad);
+    }
+    quadMeshes.push_back(quadMesh);
+  }
+  
   bool mergeSimplifyQuadMeshClusterDAG(QuadMeshCluster &cluster0,QuadMeshCluster &cluster1, std::vector<QuadMeshCluster> &quadMeshes)
   {
     DBG_PRINT3("CLUSTER MERGING",cluster0.quads.size(),cluster1.quads.size());
@@ -1251,6 +1299,15 @@ namespace embree {
     
     while(current_numClusters > 1)
     {
+      uint cur_numQuads = 0;
+      for (uint i=0;i<current_numClusters;i++)
+      {
+        const uint clusterID = index_buffer[i];
+        cur_numQuads +=  clusters[clusterID].quads.size();
+        //PRINT2(i,clusters[clusterID].quads.size());
+      }
+      PRINT3(iteration,current_numClusters,cur_numQuads);
+      
       for (uint i=0;i<current_numClusters;i++)
         nearest_neighborID[i] = -1;
 
@@ -1260,25 +1317,55 @@ namespace embree {
         {
           // find nearest neighbor
           const uint clusterID = index_buffer[c];
-          const BBox3f cluster_bounds = clusters[clusterID].bounds;          
-          float min_area = pos_inf;
+          const BBox3f cluster_bounds = clusters[clusterID].bounds;
           int nn = -1;
-            for (int i=std::max((int)c-SEARCH_RADIUS,0);i<std::min((int)c+SEARCH_RADIUS+1,(int)current_numClusters);i++)
-              if (i != c && index_buffer[i] != -1)
+#if MIN_AREA_DISTANCE_FCT == 1          
+          float min_area = pos_inf;
+
+          int start = std::max((int)c-SEARCH_RADIUS,0);
+          int end   = std::min((int)c+SEARCH_RADIUS,(int)current_numClusters);
+          int plus  = 1;
+          if (c % 2)
+          {
+            std::swap(start,end);
+            plus = -1;
+          }
+          for (int i=start;i!=end;i+=plus)            
+            if (i != c && index_buffer[i] != -1)
+            {
+              const uint merge_clusterID = index_buffer[i];
+              BBox3f bounds = clusters[merge_clusterID].bounds;
+              if (!intersect(cluster_bounds,bounds).empty())
               {
-                const uint merge_clusterID = index_buffer[i];
-                BBox3f bounds = clusters[merge_clusterID].bounds;
-                if (!intersect(cluster_bounds,bounds).empty())
+                bounds.extend(cluster_bounds);
+                const float areaBounds = area(bounds);
+                if (areaBounds < min_area && clusters[clusterID].neighborID != merge_clusterID)
                 {
-                  bounds.extend(cluster_bounds);
-                  const float areaBounds = area(bounds);
-                  if (areaBounds < min_area && clusters[clusterID].neighborID != merge_clusterID)
-                  {
-                    min_area = areaBounds;
-                    nn = i;
-                  }
+                  min_area = areaBounds;
+                  nn = i;
                 }
               }
+            }
+              
+#else
+          uint numSharedBorderVertices = 0;
+          for (int i=std::max((int)c-SEARCH_RADIUS,0);i<std::min((int)c+SEARCH_RADIUS+1,(int)current_numClusters);i++)
+            if (i != c && index_buffer[i] != -1)
+            {
+              const uint merge_clusterID = index_buffer[i];
+              const BBox3f bounds = clusters[merge_clusterID].bounds;
+              if (!intersect(cluster_bounds,bounds).empty() && clusters[clusterID].neighborID != merge_clusterID)
+              {
+                const uint num = getNumSharedBorderVertices(clusters[clusterID],clusters[merge_clusterID]);
+                if (num > numSharedBorderVertices)
+                {
+                  numSharedBorderVertices = num;
+                  nn = i;
+                }
+              }
+            }
+          //PRINT3(c,nn,numSharedBorderVertices);
+#endif          
           nearest_neighborID[c] = nn;                  
         }
       });
@@ -1304,7 +1391,10 @@ namespace embree {
               
               DBG_PRINT4("MERGE",leftClusterID,rightClusterID,getSimplificationRatio(clusters[leftClusterID], clusters[rightClusterID]));
               const uint newDepth =  std::max(clusters[leftClusterID].depth,clusters[rightClusterID].depth)+1;
-            
+
+
+              //PRINT3(leftClusterID,rightClusterID,getNumSharedBorderVertices(clusters[leftClusterID],clusters[rightClusterID]));
+              
               std::vector<QuadMeshCluster> new_clusters;
 #if ENABLE_DAG == 1
               bool success = mergeSimplifyQuadMeshClusterDAG( clusters[leftClusterID], clusters[rightClusterID], new_clusters);              
@@ -1470,6 +1560,7 @@ namespace embree {
     const Vec3f geometry_diag     = geometryBounds.size();
     const Vec3f geometry_inv_diag = geometry_diag != Vec3fa(0.0f) ? Vec3fa(1.0f) / geometry_diag : Vec3fa(0.0f);
 
+    uint roots = 0;
     uint maxDepth = 0;
     for (uint c=0;c<numClusters;c++)
     {
@@ -1543,6 +1634,8 @@ namespace embree {
         // {
         //   PRINT4(lcm_clusterID,clusters[lcm_clusterID].neighborID,clusters[lcm_clusterID].leftID,clusters[lcm_clusterID].rightID);
         // }
+        //PRINT3(c,roots,clusters[c].quads.size());
+        roots++;
       }
       
       numDecompressedBlocks += compressed_cluster.numBlocks;      
@@ -1562,7 +1655,7 @@ namespace embree {
     DBG_PRINT4(uncompressedSizeMeshBytes,compressedSizeMeshBytes,(float)compressedSizeMeshBytes/uncompressedSizeMeshBytes,clusterSizeBytes);
 
     totalCompressedSize += compressedSizeMeshBytes + clusterSizeBytes;
-    DBG_PRINT(maxDepth);
+    DBG_PRINT2(roots,maxDepth);
 
     delete [] compressedIndices;
     delete [] compressedVertices;    
@@ -1583,6 +1676,8 @@ namespace embree {
     vertices.push_back(cv);
     return vertices.size()-1;
   }
+
+  
 
   
   std::vector<Quad> extractQuads(TriangleMesh &mesh)
