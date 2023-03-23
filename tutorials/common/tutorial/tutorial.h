@@ -148,6 +148,7 @@ namespace embree
     unsigned width;
     unsigned height;
     unsigned* pixels;
+    unsigned* pixels_device;
 
     /* image output settings */
     FileName outputImageFilename;

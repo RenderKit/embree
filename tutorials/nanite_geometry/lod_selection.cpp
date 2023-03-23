@@ -575,16 +575,21 @@ namespace embree {
     const sycl::nd_range<1> nd_range2(alignTo(numLCMeshClusters,wgSize_select),sycl::range<1>(wgSize_select));              
     sycl::event select_clusterIDs_event = global_gpu_queue->submit([=](sycl::handler& cgh){
       sycl::local_accessor< uint      ,  0> _cluster_counter(cgh);
+      sycl::local_accessor< uint      ,  0> _global_offset(cgh);      
       sycl::local_accessor< uint      ,  0> _quad_counter(cgh);
       sycl::local_accessor< uint      ,  0> _block_counter(cgh);
+      sycl::local_accessor< uint, 1> _localIDs(sycl::range<1>(512),cgh);
+      
 
       cgh.depends_on(compute_lod_event);        
         
       cgh.parallel_for(nd_range2,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16) {
         const unsigned int i = item.get_global_id(0);
-        uint &cluster_counter    = *_cluster_counter.get_pointer();
-        uint &quad_counter       = *_quad_counter.get_pointer();
-        uint &block_counter      = *_block_counter.get_pointer();
+        uint &cluster_counter  = *_cluster_counter.get_pointer();
+        uint &global_offset    = *_global_offset.get_pointer();        
+        uint &quad_counter     = *_quad_counter.get_pointer();
+        uint &block_counter    = *_block_counter.get_pointer();
+        uint *const localIDs   = _localIDs.get_pointer();
 
         cluster_counter = 0;
         quad_counter = 0;
@@ -597,8 +602,10 @@ namespace embree {
           if (active_state[i])
           {
             //const unsigned int destID = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(unsigned int)1);
-            const unsigned int destID = gpu::atomic_add_global_sub_group_varying(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(unsigned int)1);
-            local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID] = i;            
+            //const unsigned int destID = gpu::atomic_add_global_sub_group_varying(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(unsigned int)1);
+            //local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[destID] = i;
+            const unsigned int destID = gpu::atomic_add_local(&cluster_counter,(unsigned int)1);
+            localIDs[destID] = i;
             const LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[ i ];              
             gpu::atomic_add_local(&quad_counter,(unsigned int)cur.numQuads);
             gpu::atomic_add_local(&block_counter,(unsigned int)cur.numBlocks);                                                      
@@ -608,14 +615,23 @@ namespace embree {
         item.barrier(sycl::access::fence_space::local_space);
           
         const uint localID = item.get_local_id(0);
+        const uint groupSize = wgSize_select; //item.get_group_size(0);
+
         if (localID == 0)
         {
+          if (cluster_counter)
+            global_offset = gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterRootsPerFrame,(unsigned int)cluster_counter);            
           if (quad_counter > 0)
             gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterQuadsPerFrame,(unsigned int)quad_counter);
           if (block_counter > 0)
-            gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterBlocksPerFrame,(unsigned int)block_counter);
-            
+            gpu::atomic_add_global(&local_lcgbp_scene->numLCMeshClusterBlocksPerFrame,(unsigned int)block_counter);            
         }
+
+        item.barrier(sycl::access::fence_space::local_space);
+
+        for (uint i=localID;i<cluster_counter;i+=groupSize)
+          local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[global_offset+i] = localIDs[i];
+        
       });
     });
     waitOnEventAndCatchException(select_clusterIDs_event);

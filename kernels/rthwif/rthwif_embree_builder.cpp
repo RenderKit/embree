@@ -479,7 +479,7 @@ namespace embree
   
   
   BBox3f rthwifBuild(Scene* scene, AccelBuffer& accel)
-  {    
+  {
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     DeviceGPU *gpu_device = dynamic_cast<DeviceGPU*>(scene->device);    
     sycl::device &sycl_device = gpu_device->getGPUDevice();
@@ -576,7 +576,7 @@ namespace embree
     /* fill geomdesc buffers */    
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     const size_t geomDescrBytes = sizeof(RTHWIF_GEOMETRY_DESC*)*numGeometries;
-    RTHWIF_GEOMETRY_DESC** geomDescr = (RTHWIF_GEOMETRY_DESC**)sycl::aligned_alloc_shared(64,geomDescrBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext()); //,sycl::ext::oneapi::property::usm::device_read_only());
+    RTHWIF_GEOMETRY_DESC** geomDescr = (RTHWIF_GEOMETRY_DESC**)sycl::aligned_alloc(64,geomDescrBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::usm::alloc::host); //,sycl::ext::oneapi::property::usm::device_read_only());
     assert(geomDescr);        
     char *geomDescrData = (char*)sycl::aligned_alloc_shared(64,totalBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext()); //,sycl::ext::oneapi::property::usm::device_read_only());
     assert(geomDescrData);
@@ -639,6 +639,7 @@ namespace embree
     RTHWIF_ACCEL_SIZE sizeTotal;
     memset(&sizeTotal,0,sizeof(RTHWIF_ACCEL_SIZE));
     sizeTotal.structBytes = sizeof(RTHWIF_ACCEL_SIZE);
+    
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     RTHWIF_ERROR err = rthwifGetAccelSizeGPU(args,sizeTotal,&sycl_queue,gpu_device->verbose);    
 #else    
@@ -648,7 +649,7 @@ namespace embree
       throw_RTCError(RTC_ERROR_UNKNOWN,"BVH size estimate failed");
 
     /* allocate scratch buffer */
-
+    
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     // === scratch buffer === 
     char *scratchBuffer  = (char*)sycl::aligned_alloc(64,sizeTotal.scratchBufferBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),gpu_device->verbose > 1 ? sycl::usm::alloc::shared : sycl::usm::alloc::device);
@@ -704,11 +705,10 @@ namespace embree
         bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };  // why does the host initializes the bounds
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-        err = rthwifPrefetchAccelGPU(args,&sycl_queue,gpu_device->verbose); //triggers additional USM transfers
+        //err = rthwifPrefetchAccelGPU(args,&sycl_queue,gpu_device->verbose); //triggers additional USM transfers
 #endif
         
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-        
         err = rthwifBuildAccelGPU(args,&sycl_queue,gpu_device->verbose);
         if (err == RTHWIF_ERROR_NONE && gpu_device->verbosity(2))
         {

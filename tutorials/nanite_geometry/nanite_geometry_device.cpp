@@ -686,7 +686,6 @@ namespace embree {
     if ( local_lcgbp_scene->numLCGBP )
       select_clusters_lod_grid_tree(local_lcgbp_scene,width,height,camera);
     
-
     if (local_lcgbp_scene->numLCMeshClusters)
     {
 #if ENABLE_DAG == 1
@@ -696,62 +695,21 @@ namespace embree {
 #endif      
     }
 
-#if 0    
-    for (uint i=0;i<local_lcgbp_scene->numLCMeshClusterRootsPerFrame;i++)
-      if (local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[i] == 122 || local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[i] == 123)
-        PRINT2(i,local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[i] );
-
-    for (uint i=0;i<local_lcgbp_scene->numLCMeshClusterRoots;i++)
-      if (local_lcgbp_scene->lcm_cluster_roots_IDs[i] == 164 || local_lcgbp_scene->lcm_cluster_roots_IDs[i] == 165)
-        PRINT2(i,local_lcgbp_scene->lcm_cluster_roots_IDs[i] );
-    
-    //for (uint i=0;i<local_lcgbp_scene->numLCMeshClusterRootsPerFrame;i++)
-    //{
-    //  uint cur = local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[i];
-    //  for (uint j=0;j<local_lcgbp_scene->numLCMeshClusterRootsPerFrame;j++)
-    //    if (i != j && local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[j] == cur)
-    //      PRINT4("DOUBLE", cur, i, j);
-    //}
-
-    PRINT(local_lcgbp_scene->lcm_cluster[165].neighborID);
-    PRINT(local_lcgbp_scene->lcm_cluster[165].leftID);
-    PRINT(local_lcgbp_scene->lcm_cluster[165].rightID);
-    PRINT((int)local_lcgbp_scene->lcm_cluster[165].lod_level);
-
-    PRINT(local_lcgbp_scene->lcm_cluster[122].neighborID);
-    PRINT(local_lcgbp_scene->lcm_cluster[122].leftID);
-    PRINT(local_lcgbp_scene->lcm_cluster[122].rightID);
-    PRINT((int)local_lcgbp_scene->lcm_cluster[122].lod_level);
-
-    PRINT(local_lcgbp_scene->lcm_cluster[123].neighborID);
-    PRINT(local_lcgbp_scene->lcm_cluster[123].leftID);
-    PRINT(local_lcgbp_scene->lcm_cluster[123].rightID);
-    PRINT((int)local_lcgbp_scene->lcm_cluster[123].lod_level);
-    
-    
-    
-    for (uint i=0;i<local_lcgbp_scene->numLCMeshClusterRootsPerFrame;i++)
-    {
-      if (local_lcgbp_scene->lcm_cluster[i].leftID == 165 || local_lcgbp_scene->lcm_cluster[i].rightID == 165)
-        PRINT2("CHILD",i);
-    }    
-#endif
-
     waitOnQueueAndCatchException(*global_gpu_queue);  // FIXME            
 
     rtcSetLCData(local_lcgbp_scene->geometry, local_lcgbp_scene->numCurrentLCGBPStates, local_lcgbp_scene->lcgbp_state, local_lcgbp_scene->lcm_cluster, local_lcgbp_scene->numLCMeshClusterRootsPerFrame,local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame);
 
-    double dt0_lod = (getSeconds()-t0_lod)*1000.0;                                            
+    double dt0_lod = (getSeconds()-t0_lod)*1000.0;
+    
     avg_lod_selection_time.add(dt0_lod);
-
+    
     double t0_bvh = getSeconds();
     
     rtcCommitGeometry(local_lcgbp_scene->geometry);
-
     
     /* commit changes to scene */
     rtcCommitScene (data.g_scene);
-
+    
     double dt0_bvh = (getSeconds()-t0_bvh)*1000.0;
                                             
     avg_bvh_build_time.add(dt0_bvh);

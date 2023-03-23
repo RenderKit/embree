@@ -108,6 +108,7 @@ namespace embree
       width(512),
       height(512),
       pixels(nullptr),
+      pixels_device(nullptr),
 
       outputImageFilename(""),
       referenceImageFilename(""),
@@ -274,8 +275,10 @@ namespace embree
     g_ispc_scene = nullptr;
     ispc_scene = nullptr;
     device_cleanup();
+    if (pixels) alignedUSMFree(pixels);
+    if (pixels_device) alignedUSMFree(pixels_device);    
     if (g_device) rtcReleaseDevice(g_device);
-    alignedUSMFree(pixels);
+    
     pixels = nullptr;
 
 #if defined(EMBREE_SYCL_SUPPORT)
@@ -691,7 +694,11 @@ namespace embree
     this->height = height;
       
     if (pixels) alignedUSMFree(pixels);
-    pixels = (unsigned*) alignedUSMMalloc(width*height*sizeof(unsigned),64,EMBREE_USM_SHARED_DEVICE_READ_WRITE);
+    if (pixels_device) alignedUSMFree(pixels_device);
+    
+    //pixels = (unsigned*) alignedUSMMalloc(width*height*sizeof(unsigned),64,EMBREE_USM_SHARED_DEVICE_READ_WRITE);
+    pixels = (unsigned*) alignedUSMMalloc(width*height*sizeof(unsigned),64,EMBREE_USM_HOST);
+    pixels_device = (unsigned*) alignedUSMMalloc(width*height*sizeof(unsigned),64,EMBREE_DEVICE_READ_WRITE);        
   }
 
   void TutorialApplication::set_scene (TutorialScene* in)
@@ -1066,8 +1073,21 @@ namespace embree
   
   void TutorialApplication::render(unsigned* pixels, const unsigned width, const unsigned height, const float time, const ISPCCamera& camera)
   {
+#if 0
     device_render(pixels,width,height,time,camera);
     renderFrame((int*)pixels,width,height,time,camera);
+#else    
+    device_render(pixels_device,width,height,time,camera);
+    renderFrame((int*)pixels_device,width,height,time,camera);
+    sycl::event event_memcpy = global_gpu_queue->memcpy(pixels,pixels_device,width*height*sizeof(unsigned));
+    try {
+      event_memcpy.wait_and_throw();
+    } catch (sycl::exception const& e) {
+      std::cout << "Caught synchronous SYCL exception:\n"
+                << e.what() << std::endl;
+      FATAL("SYCL Exception");     
+    }
+#endif    
   }
   
   void TutorialApplication::run(int argc, char** argv)
