@@ -66,51 +66,51 @@ namespace embree
   double pHistTimerStochHW = 0.f;
 
   void resetPhistStochHW(sycl::queue &gpu_queue, uint *phist) {
-#if USE_PHIST
-    gpu::waitOnQueueAndCatchException(gpu_queue);
-#if PHIST_MODE == 0
-    for (uint i = 0; i < PHIST_SIZE; i++)
-      phist[i] = 0;
-#else
-    pHistTimerStochHW = getSeconds();
-#endif
-#endif 
+// #if USE_PHIST
+//     gpu::waitOnQueueAndCatchException(gpu_queue);
+// #if PHIST_MODE == 0
+//     for (uint i = 0; i < PHIST_SIZE; i++)
+//       phist[i] = 0;
+// #else
+//     pHistTimerStochHW = getSeconds();
+// #endif
+// #endif 
   }
 
   void printresetPhistStochHW(const char* key, sycl::queue &gpu_queue, uint *phist) {
-#if USE_PHIST
-    gpu::waitOnQueueAndCatchException(gpu_queue);
-#if PHIST_MODE == 0
-    std::cout << "phist: " << key << "; ";
-    for (uint i = 0; i < PHIST_SIZE; i++) {
-      if (i != 0)
-        std::cout << ", ";
-      std::cout << phist[i];
-      phist[i] = 0;
-    }
-    std::cout << std::endl;
-#else
-    double newpHistTimerStochHW = getSeconds();
-    double diff = newpHistTimerStochHW - pHistTimerStochHW;
-    std::cout << "phist: " << key << "; " << diff << std::endl;
-    pHistTimerStochHW = newpHistTimerStochHW;
-#endif
-#endif 
+// #if USE_PHIST
+//     gpu::waitOnQueueAndCatchException(gpu_queue);
+// #if PHIST_MODE == 0
+//     std::cout << "phist: " << key << "; ";
+//     for (uint i = 0; i < PHIST_SIZE; i++) {
+//       if (i != 0)
+//         std::cout << ", ";
+//       std::cout << phist[i];
+//       phist[i] = 0;
+//     }
+//     std::cout << std::endl;
+// #else
+//     double newpHistTimerStochHW = getSeconds();
+//     double diff = newpHistTimerStochHW - pHistTimerStochHW;
+//     std::cout << "phist: " << key << "; " << diff << std::endl;
+//     pHistTimerStochHW = newpHistTimerStochHW;
+// #endif
+// #endif 
   }
 
   void writePHistStochHW(uint *phist, gpu::BVH2BuildRecord *bvh_nodes, uint index) {
-#if USE_PHIST && PHIST_MODE == 0
-    uint numPrims = bvh_nodes[index].end - bvh_nodes[index].start;
-    uint level = 0;
+// #if USE_PHIST && PHIST_MODE == 0
+//     uint numPrims = bvh_nodes[index].end - bvh_nodes[index].start;
+//     uint level = 0;
 
-    for (; index != 0x7fffffff; level++)
-      index = bvh_nodes[index].parent;
+//     for (; index != 0x7fffffff; level++)
+//       index = bvh_nodes[index].parent;
     
-    level--;
+//     level--;
 
-    sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> ap(phist[level]);
-    ap.fetch_add(numPrims);
-#endif 
+//     sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> ap(phist[level]);
+//     ap.fetch_add(numPrims);
+// #endif 
   }
 
   struct WeightClampingContextHW {
@@ -324,7 +324,7 @@ namespace embree
     sycl::event refit;
     union {double refitEnd = 0; double allEnd;};
 
-    void print(sycl::queue &gpu_queue) {
+    void print(sycl::queue &gpu_queue, bool detailed = true) {
       struct StackEntry {
         double time = 0;
         std::stringstream out;
@@ -371,9 +371,12 @@ namespace embree
 #if MORTON_SORT
       pK("compMortonCodes", compMortonCodes);
       push();
-      for (int i = 0; i < sortMorton.size(); i++) {
-        pK("bin " + std::to_string(i), sortMorton[i].first);
-        pK("scatter " + std::to_string(i), sortMorton[i].second);
+      if(detailed)
+      {      
+        for (int i = 0; i < sortMorton.size(); i++) {
+          pK("bin " + std::to_string(i), sortMorton[i].first);
+          pK("scatter " + std::to_string(i), sortMorton[i].second);
+        }
       }
       pop("sortMorton", sortMortonEnd - sortMortonBegin);
 #endif
@@ -395,21 +398,25 @@ namespace embree
       pop("subset", subsetEnd - subsetBegin);
       push();
       pK("InitFirstBuildRecord", topInitFirstBuildRecord, topInitFirstBuildRecordEnd - topInitFirstBuildRecordBegin);
-#if 1
       push();
-      for (int i = 0; i < topBreadthFirst.size(); i++) {
-        push();
-        pK("schedule", std::get<0>(topBreadthFirst[i]));
-        pK("init", std::get<1>(topBreadthFirst[i]));
-        pK("bin", std::get<2>(topBreadthFirst[i]));
-        pK("partition", std::get<3>(topBreadthFirst[i]));
-        pop("it " + std::to_string(i));
+      if(detailed)
+      {
+        for (int i = 0; i < topBreadthFirst.size(); i++) {
+          push();
+          pK("schedule", std::get<0>(topBreadthFirst[i]));
+          pK("init", std::get<1>(topBreadthFirst[i]));
+          pK("bin", std::get<2>(topBreadthFirst[i]));
+          pK("partition", std::get<3>(topBreadthFirst[i]));
+          pop("it " + std::to_string(i));
+        }
       }
       pop("topBreadthFirst", topBreadthFirstEnd - topBreadthFirstBegin);
       push();
-#endif
-      for (int i = 0; i < topMiddle.size(); i++) {
-        pK("it " + std::to_string(i), topMiddle[i]);
+      if(detailed)
+      {
+        for (int i = 0; i < topMiddle.size(); i++) {
+          pK("it " + std::to_string(i), topMiddle[i]);
+        }
       }
       pop("topMiddle", topMiddleEnd - topMiddleBegin);
       pK("topBottom", topBottom, topBottomEnd - topBottomBegin);
@@ -441,7 +448,7 @@ namespace embree
       pK("refit", refit, refitEnd - refitBegin);
       pop("all", allEnd - allBegin);
 
-      std::cout << "Timings:\n" << stack.top().out.str() << "endTimings\n";
+      std::cout << "Timings device (host):\n" << stack.top().out.str() << "endTimings\n";
     }
   };
 
@@ -3090,6 +3097,7 @@ namespace embree
                                                       });		  
                                                   });
       ectx.bottom = queue_event;
+      ectx.refit = queue_event;
     }
 
     printresetPhistStochHW("c", gpu_queue, ctx.phist);
@@ -3114,8 +3122,9 @@ namespace embree
     /* --- bottom-up BVH2 refit --- */
 #if 1
 
+    gpu::waitOnQueueAndCatchException(gpu_queue);        
+    double total1 = getSeconds();
     refitGeometryBoundsCalculateSAHHW(bvh2,0,primref_index,aabb); // FIXME needs GPU refit variant
-
 #else        
     {
       const uint wgSize = 32;
@@ -3169,13 +3178,16 @@ namespace embree
                                                     
                                                   });
       ectx.refit = queue_event;
+
     }
-#endif
     gpu::waitOnQueueAndCatchException(gpu_queue);        
     double total1 = getSeconds();
+#endif
     ectx.refitEnd = total1;
     double total_diff = total1 - total0;
     PRINT( (float)(total1-total0)*1000.0f);
+
+    ectx.print(gpu_queue);
 
     // =================================================================================
     // ================================= CHECK BVH2 ====================================

@@ -468,7 +468,7 @@ namespace embree
     DeviceGPU *gpu_device = dynamic_cast<DeviceGPU*>(scene->device);    
     sycl::device &sycl_device = gpu_device->getGPUDevice();
     sycl::property_list PropList;
-    if (gpu_device->verbose) PropList = { sycl::property::queue::enable_profiling() };
+    PropList = { sycl::property::queue::enable_profiling() };
     sycl::queue sycl_queue(sycl_device, exception_handler, PropList );
 #endif
     
