@@ -698,7 +698,7 @@ namespace embree {
 
     rtcSetLCData(local_lcgbp_scene->geometry, local_lcgbp_scene->numCurrentLCGBPStates, local_lcgbp_scene->lcgbp_state, local_lcgbp_scene->lcm_cluster, local_lcgbp_scene->numLCMeshClusterRootsPerFrame,local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame);
 
-#if 1
+#if 0
     uint less96 = 0;
     size_t readBytes = 0;
     for (uint i=0;i<local_lcgbp_scene->numLCMeshClusterRootsPerFrame;i++)

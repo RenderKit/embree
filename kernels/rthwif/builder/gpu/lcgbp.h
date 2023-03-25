@@ -329,16 +329,9 @@ namespace embree {
     __forceinline CompressedVertex sub_group_reduce_max() const
     {
       CompressedVertex result;
-#if 1
-      result.x = embree::sub_group_reduce((uint)x, SYCL_EXT_ONEAPI::maximum<uint>());
-      result.y = embree::sub_group_reduce((uint)y, SYCL_EXT_ONEAPI::maximum<uint>());
-      result.z = embree::sub_group_reduce((uint)z, SYCL_EXT_ONEAPI::maximum<uint>());
-
-#else      
       result.x = embree::sub_group_reduce(x, SYCL_EXT_ONEAPI::maximum<ushort>());
       result.y = embree::sub_group_reduce(y, SYCL_EXT_ONEAPI::maximum<ushort>());
       result.z = embree::sub_group_reduce(z, SYCL_EXT_ONEAPI::maximum<ushort>());
-#endif      
       return result;	
     }
     
