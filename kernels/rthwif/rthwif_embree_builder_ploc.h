@@ -1803,8 +1803,8 @@ namespace embree
           
                                  QuadLeafData *const leaf = (QuadLeafData*)(dest + (cluster.numBlocks-cluster.numQuads)*64);
                                  CompressedAABB3f *const clusterPrimBounds = _clusterPrimBounds.get_pointer();
-                                 CompressedAABB3f clusterBounds;
-                                 clusterBounds.init();
+                                 const CompressedAABB3f &clusterBounds = cluster.bounds;
+                                 //clusterBounds.init();
                                  
                                  for (uint q=subgroupLocalID;q<cluster.numQuads;q+=subgroupSize)
                                  {
@@ -1818,23 +1818,22 @@ namespace embree
                                    const Vec3f vtx2 = compressedVertices[v2].decompress(lower,diag);
                                    const Vec3f vtx3 = compressedVertices[v3].decompress(lower,diag);
 
-                                   CompressedAABB3f quad_bounds( compressedVertices[v0] );
-                                   quad_bounds.extend( compressedVertices[v1] );
-                                   quad_bounds.extend( compressedVertices[v2] );
-                                   quad_bounds.extend( compressedVertices[v3] );                                 
-                                   clusterBounds.extend(quad_bounds);
-
+                                   CompressedAABB3f quad_bounds( compressedVertices[v0] );  
+                                   quad_bounds.extend( compressedVertices[v1] );  
+                                   quad_bounds.extend( compressedVertices[v2] );  
+                                   quad_bounds.extend( compressedVertices[v3] );                                   
+                                   
                                    const uint geomID = lcgID;
                                    const uint primID0 = clusterID;
                                    const uint primID1 = clusterID;
             
                                    leaf[q] = QuadLeafData( vtx0,vtx1,vtx3,vtx2, 3,2,1, 0, geomID, primID0, primID1, GeometryFlags::OPAQUE, -1);
-                                   clusterPrimBounds[q] = quad_bounds;
+                                   clusterPrimBounds[q] = quad_bounds;                                   
                                  }
-
+                                 
                                  //PRINT6(clusterBounds.lower.x,clusterBounds.lower.y,clusterBounds.lower.z,clusterBounds.upper.x,clusterBounds.upper.y,clusterBounds.upper.z);
                                  
-                                 clusterBounds = clusterBounds.sub_group_reduce();
+                                 //clusterBounds = clusterBounds.sub_group_reduce();
 
                                  sub_group_barrier();                                                                    
                                  //PRINT6(clusterBounds.lower.x,clusterBounds.lower.y,clusterBounds.lower.z,clusterBounds.upper.x,clusterBounds.upper.y,clusterBounds.upper.z);
@@ -1876,8 +1875,6 @@ namespace embree
                                  node.store(&bvh2[prim_type_offset + ID]);
                                });
             });
-
-          gpu::waitOnQueueAndCatchException(gpu_queue);
 #else          
           const uint wgSize = 16;        
           const sycl::nd_range<1> nd_range1(wgSize*geom->numLCMs,sycl::range<1>(wgSize));          
@@ -1978,7 +1975,7 @@ namespace embree
         
           if (unlikely(verbose))
             iteration_time += gpu::getDeviceExecutionTiming(queue_event);
-          PRINT(gpu::getDeviceExecutionTiming(queue_event));
+          //PRINT(gpu::getDeviceExecutionTiming(queue_event));
           //*lcg_bvh_mem_allocator = 0;
           // }
           numTotalLCGs += geom->numLCMs;          

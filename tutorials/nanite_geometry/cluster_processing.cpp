@@ -1651,9 +1651,13 @@ namespace embree {
       
       compressed_cluster.lod_level = clusters[c].depth;
       compressed_cluster.tmp = 0;
-      
+
+#if 0      
       compressed_cluster.bounds = CompressedAABB3f( CompressedVertex(cluster_bounds.lower,geometry_lower,geometry_inv_diag),
                                                     CompressedVertex(cluster_bounds.upper,geometry_lower,geometry_inv_diag) );
+#else
+      compressed_cluster.bounds.init(); 
+#endif      
       
       compressed_cluster.leftID = (clusters[c].leftID != -1) ? global_start_lcm_clusterID+clusters[c].leftID : -1;
       compressed_cluster.rightID = (clusters[c].rightID != -1) ? global_start_lcm_clusterID+clusters[c].rightID : -1;
@@ -1685,7 +1689,10 @@ namespace embree {
       compressed_cluster.tmp =  (clusters[c].quads.size()*sizeof(CompressedQuadIndices) + clusters[c].vertices.size()*sizeof(CompressedVertex)+63)/64;
       for (uint i=0;i<clusters[c].vertices.size();i++)
       {
-        compressedVertices[ globalCompressedVertexOffset++ ] = CompressedVertex(clusters[c].vertices[i],geometry_lower,geometry_inv_diag);
+
+        const CompressedVertex v = CompressedVertex(clusters[c].vertices[i],geometry_lower,geometry_inv_diag);
+        compressed_cluster.bounds.extend(v);        
+        compressedVertices[ globalCompressedVertexOffset++ ] = v;
         if ( globalCompressedVertexOffset > numTotalVerticesAllocate ) FATAL("numTotalVerticesAllocate");                
       }
 
