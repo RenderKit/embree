@@ -640,10 +640,15 @@ namespace embree {
   {
     const unsigned int numTrianglesPerGrid9x9 = 8*8*2;
     const unsigned int numTrianglesPerGrid33x33 = 32*32*2;
-    ImGui::Text("SPP: %d",user_spp);    
     ImGui::Text("BVH Build Time: %4.4f ms",avg_bvh_build_time.get());
     ImGui::Text("LOD Selection Time: %4.4f ms",avg_lod_selection_time.get());
     ImGui::DragInt("",(int*)&g_lod_threshold,1,2,1000);
+    
+    RenderMode rendering_mode = user_rendering_mode;
+    if (rendering_mode == RENDER_PATH_TRACER_DENOISE)
+      ImGui::Text("Denoising Time: %4.4f ms",avg_denoising_time.get());
+
+    ImGui::Text("SPP: %d",user_spp);    
     
     if (global_lcgbp_scene->numLCGBP)
     {
@@ -659,12 +664,6 @@ namespace embree {
       ImGui::Text("Blocks / Frame:          %d (out of %d)",global_lcgbp_scene->numLCMeshClusterBlocksPerFrame,global_lcgbp_scene->numLCBlocksTotal);            
     }
 
-    RenderMode rendering_mode = user_rendering_mode;
-    if (rendering_mode == RENDER_PATH_TRACER_DENOISE)
-    {
-      ImGui::Text("Denoising Time: %4.4f ms",avg_denoising_time.get());
-      
-    }
   }
     
   
@@ -699,6 +698,21 @@ namespace embree {
 
     rtcSetLCData(local_lcgbp_scene->geometry, local_lcgbp_scene->numCurrentLCGBPStates, local_lcgbp_scene->lcgbp_state, local_lcgbp_scene->lcm_cluster, local_lcgbp_scene->numLCMeshClusterRootsPerFrame,local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame);
 
+#if 0
+    uint less96 = 0;
+    size_t readBytes = 0;
+    for (uint i=0;i<local_lcgbp_scene->numLCMeshClusterRootsPerFrame;i++)
+    {
+      const uint clusterID = local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[i];
+      LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[clusterID];
+      if (cur.numQuads <= 96)
+        less96++;
+      readBytes += sizeof(LossyCompressedMeshCluster);
+      readBytes += cur.tmp*64;
+    }
+    PRINT3(readBytes,less96,local_lcgbp_scene->numLCMeshClusterRootsPerFrame);
+#endif
+    
     double dt0_lod = (getSeconds()-t0_lod)*1000.0;
     
     avg_lod_selection_time.add(dt0_lod);

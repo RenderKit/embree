@@ -1675,7 +1675,88 @@ namespace embree
   {
     return gpu::AABB3f(to_float3(v.lower),to_float3(v.upper));
   }
-        
+
+
+   __forceinline void writeNodeFast(void *_dest, const int relative_block_offset, const CompressedAABB3f &parent_bounds, const uint numChildren, const CompressedAABB3f child_bounds[6], const NodeType default_type, const Vec3f &start, const Vec3f &diag)
+   {
+     uint *dest = (uint*)_dest;    
+     //PRINT3(dest,numChildren,relative_block_offset);
+
+     const float _ulp = std::numeric_limits<float>::epsilon();
+     const float up = 1.0f + float(_ulp);  
+     const gpu::AABB3f conservative_bounds = to_AABB3f(parent_bounds.decompress(start,diag)).conservativeBounds();
+     const float3 len = conservative_bounds.size() * up;
+      
+     int _exp_x; float mant_x = frexp(len.x(), &_exp_x); _exp_x += (mant_x > 255.0f / 256.0f);
+     int _exp_y; float mant_y = frexp(len.y(), &_exp_y); _exp_y += (mant_y > 255.0f / 256.0f);
+     int _exp_z; float mant_z = frexp(len.z(), &_exp_z); _exp_z += (mant_z > 255.0f / 256.0f);
+     _exp_x = max(-128,_exp_x); // enlarge too tight bounds
+     _exp_y = max(-128,_exp_y);
+     _exp_z = max(-128,_exp_z);
+
+     const float3 lower(conservative_bounds.lower_x,conservative_bounds.lower_y,conservative_bounds.lower_z);
+    
+     dest[0]  = gpu::as_uint(lower.x());
+     dest[1]  = gpu::as_uint(lower.y());
+     dest[2]  = gpu::as_uint(lower.z());
+     dest[3]  = relative_block_offset; 
+
+     uint8_t tmp[48];
+    
+     tmp[0]         = NODE_TYPE_MIXED;
+     tmp[1]         = 0;    // pad 
+     tmp[2]         = _exp_x; assert(_exp_x >= -128 && _exp_x <= 127); 
+     tmp[3]         = _exp_y; assert(_exp_y >= -128 && _exp_y <= 127);
+     tmp[4]         = _exp_z; assert(_exp_z >= -128 && _exp_z <= 127);
+     tmp[5]         = 0xff; //instanceMode ? 1 : 0xff;
+    
+#pragma nounroll
+     for (uint i=0;i<BVH_BRANCHING_FACTOR;i++)
+     {
+       //const uint index = BVH2Ploc::getIndex(indices[sycl::min(i,numChildren-1)]);
+       // === default is invalid ===
+       uint8_t lower_x = 0x80;
+       uint8_t lower_y = 0x80;
+       uint8_t lower_z = 0x80;    
+       uint8_t upper_x = 0x00;
+       uint8_t upper_y = 0x00;
+       uint8_t upper_z = 0x00;
+       uint8_t data    = 0x00;      
+       // === determine leaf type ===
+       const bool isLeaf = true; // && !forceFatLeaves;      
+       const uint numBlocks    =  1;
+       NodeType leaf_type = default_type;
+       data = (i<numChildren) ? numBlocks : 0;
+       data |= (isLeaf ? leaf_type : NODE_TYPE_INTERNAL) << 2;
+       const gpu::AABB3f childBounds = to_AABB3f(child_bounds[i].decompress(start,diag)); //.conservativeBounds();
+       // === bounds valid ? ====
+       uint equal_dims = childBounds.lower_x == childBounds.upper_x ? 1 : 0;
+       equal_dims += childBounds.lower_y == childBounds.upper_y ? 1 : 0;
+       equal_dims += childBounds.lower_z == childBounds.upper_z ? 1 : 0;
+       const bool write = (i<numChildren) && equal_dims <= 1;
+       // === quantize bounds ===
+       const gpu::AABB3f  qbounds    = QBVHNodeN::quantize_bounds(lower, _exp_x, _exp_y, _exp_z, childBounds);
+       // === updated discretized bounds ===
+       lower_x = write ? (uint8_t)qbounds.lower_x : lower_x;
+       lower_y = write ? (uint8_t)qbounds.lower_y : lower_y;
+       lower_z = write ? (uint8_t)qbounds.lower_z : lower_z;
+       upper_x = write ? (uint8_t)qbounds.upper_x : upper_x;
+       upper_y = write ? (uint8_t)qbounds.upper_y : upper_y;
+       upper_z = write ? (uint8_t)qbounds.upper_z : upper_z;
+       // === init child in node ===
+       tmp[ 6+i] = data;
+       tmp[12+i] = lower_x;
+       tmp[18+i] = upper_x;      
+       tmp[24+i] = lower_y;
+       tmp[30+i] = upper_y;      
+       tmp[36+i] = lower_z;
+       tmp[42+i] = upper_z;      
+     }
+     // === write out second part of 64 bytes node ===
+     for (uint i=0;i<12;i++)
+       dest[4+i] = tmp[i*4+0] | (tmp[i*4+1]<<8) | (tmp[i*4+2]<<16) | (tmp[i*4+3]<<24);
+   }
+   
    
    uint createLossyCompressedGeometries_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGS, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, char* lcg_bvh_mem, uint *const lcg_bvh_mem_allocator, double &iteration_time, const bool verbose)    
   {    
@@ -1692,6 +1773,112 @@ namespace embree
         {
           //for (uint i=0;i<geom->numLCMs;i++)
           //  PRINT2(i,geom->pLCMIDs[i]);
+#if 1
+          const uint wgSize = 16;        
+          const sycl::nd_range<1> nd_range1(wgSize*geom->numLCMs,sycl::range<1>(wgSize));          
+          sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+              sycl::local_accessor< CompressedAABB3f, 1> _clusterPrimBounds(sycl::range<1>(LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER),cgh);
+              cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
+                               {
+                                 const uint subgroupLocalID = get_sub_group_local_id();
+                                 const uint subgroupSize    = get_sub_group_size();                                           
+                                 const uint ID         = item.get_group(0);
+                                 const LossyCompressedMeshCluster* const base = (LossyCompressedMeshCluster*)(geom->pLCMs);
+                                 const uint clusterID = geom->pLCMIDs[ID];
+                                 const LossyCompressedMeshCluster &cluster = base[ clusterID ];                                 
+                                 const LossyCompressedMesh &mesh = *cluster.mesh;
+
+                                 
+                                 const CompressedVertex *const compressedVertices = mesh.compressedVertices + cluster.offsetVertices; 
+                                 const CompressedQuadIndices *const compressedIndices = mesh.compressedIndices + cluster.offsetIndices;
+          
+                                 const Vec3f lower = mesh.bounds.lower;
+                                 const Vec3f diag = mesh.bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
+
+                                 uint globalBlockID = 0;
+                                 if (subgroupLocalID == 0)
+                                   globalBlockID = gpu::atomic_add_global(lcg_bvh_mem_allocator,(uint)cluster.numBlocks);
+                                 globalBlockID = sub_group_broadcast(globalBlockID,0);
+                                 char *const dest = lcg_bvh_mem + globalBlockID*64;
+          
+                                 QuadLeafData *const leaf = (QuadLeafData*)(dest + (cluster.numBlocks-cluster.numQuads)*64);
+                                 CompressedAABB3f *const clusterPrimBounds = _clusterPrimBounds.get_pointer();
+                                 CompressedAABB3f clusterBounds;
+                                 clusterBounds.init();
+                                 
+                                 for (uint q=subgroupLocalID;q<cluster.numQuads;q+=subgroupSize)
+                                 {
+                                   const uint v0 = compressedIndices[q].v0();
+                                   const uint v1 = compressedIndices[q].v1();
+                                   const uint v2 = compressedIndices[q].v2();
+                                   const uint v3 = compressedIndices[q].v3();
+
+                                   const Vec3f vtx0 = compressedVertices[v0].decompress(lower,diag);
+                                   const Vec3f vtx1 = compressedVertices[v1].decompress(lower,diag);
+                                   const Vec3f vtx2 = compressedVertices[v2].decompress(lower,diag);
+                                   const Vec3f vtx3 = compressedVertices[v3].decompress(lower,diag);
+
+                                   CompressedAABB3f quad_bounds( compressedVertices[v0] );
+                                   quad_bounds.extend( compressedVertices[v1] );
+                                   quad_bounds.extend( compressedVertices[v2] );
+                                   quad_bounds.extend( compressedVertices[v3] );                                 
+                                   clusterBounds.extend(quad_bounds);
+
+                                   const uint geomID = lcgID;
+                                   const uint primID0 = clusterID;
+                                   const uint primID1 = clusterID;
+            
+                                   leaf[q] = QuadLeafData( vtx0,vtx1,vtx3,vtx2, 3,2,1, 0, geomID, primID0, primID1, GeometryFlags::OPAQUE, -1);
+                                   clusterPrimBounds[q] = quad_bounds;
+                                 }
+
+                                 //PRINT6(clusterBounds.lower.x,clusterBounds.lower.y,clusterBounds.lower.z,clusterBounds.upper.x,clusterBounds.upper.y,clusterBounds.upper.z);
+                                 
+                                 clusterBounds = clusterBounds.sub_group_reduce();
+
+                                 sub_group_barrier();                                                                    
+                                 //PRINT6(clusterBounds.lower.x,clusterBounds.lower.y,clusterBounds.lower.z,clusterBounds.upper.x,clusterBounds.upper.y,clusterBounds.upper.z);
+                                 
+                                 uint numPrims = cluster.numQuads;
+                                 uint numNodes = ((numPrims+BVH_BRANCHING_FACTOR-1)/BVH_BRANCHING_FACTOR);
+                                 char *prev = (char*)leaf;
+                                 char *cur  = prev - numNodes*64;
+                                 NodeType node_type = NODE_TYPE_QUAD;
+                                 while(numPrims > BVH_BRANCHING_FACTOR)
+                                 {
+                                   for (uint i=subgroupLocalID;i<numNodes;i+=subgroupSize)
+                                   {
+                                     CompressedAABB3f nodeBounds;
+                                     nodeBounds.init();
+                                     const uint offset = i*BVH_BRANCHING_FACTOR;
+                                     for (uint j=0;j<BVH_BRANCHING_FACTOR;j++)
+                                     {
+                                       const uint index = min(offset+j,numPrims-1);
+                                       nodeBounds.extend( clusterPrimBounds[index] );
+                                     }
+                                     const uint numChildren = min(numPrims-offset,(uint)BVH_BRANCHING_FACTOR);
+                                     writeNodeFast(&cur[i*64],((int64_t)&prev[64*offset]-(int64_t)&cur[i*64])/64,nodeBounds,numChildren,&clusterPrimBounds[offset],node_type,lower,diag);
+                                     sub_group_barrier();                                   
+                                     clusterPrimBounds[i] = nodeBounds;
+                                   }
+                                   sub_group_barrier();
+                                 
+                                   node_type = NODE_TYPE_INTERNAL;
+                                   numPrims = numNodes;
+                                   numNodes = ((numPrims+BVH_BRANCHING_FACTOR-1)/BVH_BRANCHING_FACTOR);
+                                   prev = cur;
+                                   cur -= numNodes*64;            
+                                 }
+                                 writeNodeFast(dest,((int64_t)prev-(int64_t)dest)/64,clusterBounds,numPrims,clusterPrimBounds,node_type,lower,diag);          
+                                
+                                 BVH2Ploc node;                             
+                                 node.initLeaf(lcgID,((int64_t)dest-(int64_t)lcg_bvh_mem)/64,to_AABB3f(clusterBounds.decompress(lower,diag)));                               
+                                 node.store(&bvh2[prim_type_offset + ID]);
+                               });
+            });
+
+          gpu::waitOnQueueAndCatchException(gpu_queue);
+#else          
           const uint wgSize = 16;        
           const sycl::nd_range<1> nd_range1(wgSize*geom->numLCMs,sycl::range<1>(wgSize));          
           sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
@@ -1786,12 +1973,12 @@ namespace embree
                                  node.store(&bvh2[prim_type_offset + ID]);
                                });
             });
-        
+#endif        
           gpu::waitOnEventAndCatchException(queue_event);
         
           if (unlikely(verbose))
             iteration_time += gpu::getDeviceExecutionTiming(queue_event);
-          //PRINT(gpu::getDeviceExecutionTiming(queue_event));
+          PRINT(gpu::getDeviceExecutionTiming(queue_event));
           //*lcg_bvh_mem_allocator = 0;
           // }
           numTotalLCGs += geom->numLCMs;          

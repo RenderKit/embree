@@ -1682,7 +1682,7 @@ namespace embree {
         compressedIndices[ globalCompressedIndexOffset++ ] = CompressedQuadIndices(v0,v1,v2,v3);
         if ( globalCompressedIndexOffset > numTotalQuadsAllocate ) FATAL("numTotalQuadsAllocate");        
       }
-        
+      compressed_cluster.tmp =  (clusters[c].quads.size()*sizeof(CompressedQuadIndices) + clusters[c].vertices.size()*sizeof(CompressedVertex)+63)/64;
       for (uint i=0;i<clusters[c].vertices.size();i++)
       {
         compressedVertices[ globalCompressedVertexOffset++ ] = CompressedVertex(clusters[c].vertices[i],geometry_lower,geometry_inv_diag);

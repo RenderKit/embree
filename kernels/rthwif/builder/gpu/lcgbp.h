@@ -329,9 +329,16 @@ namespace embree {
     __forceinline CompressedVertex sub_group_reduce_max() const
     {
       CompressedVertex result;
+#if 1
+      result.x = embree::sub_group_reduce((uint)x, SYCL_EXT_ONEAPI::maximum<uint>());
+      result.y = embree::sub_group_reduce((uint)y, SYCL_EXT_ONEAPI::maximum<uint>());
+      result.z = embree::sub_group_reduce((uint)z, SYCL_EXT_ONEAPI::maximum<uint>());
+
+#else      
       result.x = embree::sub_group_reduce(x, SYCL_EXT_ONEAPI::maximum<ushort>());
       result.y = embree::sub_group_reduce(y, SYCL_EXT_ONEAPI::maximum<ushort>());
       result.z = embree::sub_group_reduce(z, SYCL_EXT_ONEAPI::maximum<ushort>());
+#endif      
       return result;	
     }
     
@@ -390,10 +397,19 @@ namespace embree {
       return BBox3f(lower_f,upper_f);
     }
 
+    // __forceinline gpu::AABB3f decompressAABB3f(const Vec3f &start, const Vec3f &diag) const
+    // {
+    //   const Vec3f lower_f = lower.decompress(start,diag);
+    //   const Vec3f upper_f = upper.decompress(start,diag);
+    //   return gpu::AABB3f(to_float3(lower_f),to_float3(upper_f));
+    // }
+    
+   
+    
     __forceinline CompressedAABB3f sub_group_reduce() const
     {
       const CompressedVertex l = lower.sub_group_reduce_min();
-      const CompressedVertex u = lower.sub_group_reduce_max();      
+      const CompressedVertex u = upper.sub_group_reduce_max();      
       return CompressedAABB3f(l,u);
     }
  
