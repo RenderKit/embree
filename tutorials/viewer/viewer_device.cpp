@@ -288,6 +288,19 @@ extern "C" void device_init (char* cfg)
   old_p = Vec3fa(1E10);
 }
 
+#if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION)
+
+sycl::event renderFramePathTracer (int* pixels,
+                                     const unsigned int width,
+                                     const unsigned int height,
+                                     const float time,
+                                     const ISPCCamera& camera,
+                                     TutorialData &data,
+                                     unsigned int user_spp,
+                                     GBuffer *gbuffer,                              
+                                     bool denoise);
+#endif
+
 extern "C" void renderFrameStandard (int* pixels,
                           const unsigned int width,
                           const unsigned int height,
@@ -297,7 +310,8 @@ extern "C" void renderFrameStandard (int* pixels,
 #if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION)
   TutorialData ldata = data;
 
-#if defined(USE_SPECIALIZATION_CONSTANTS)
+#if 0 //defined(USE_SPECIALIZATION_CONSTANTS)
+  PING;
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh) {
     cgh.set_specialization_constant<spec_feature_mask>(g_feature_mask);
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);
@@ -311,6 +325,8 @@ extern "C" void renderFrameStandard (int* pixels,
   });
   global_gpu_queue->wait_and_throw();
 #else
+
+#if 0
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh) {
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);
     cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
@@ -321,6 +337,10 @@ extern "C" void renderFrameStandard (int* pixels,
       renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats,feature_mask);
     });
   });
+#else
+  sycl::event event = renderFramePathTracer(pixels,width,height,time,camera,data,1,nullptr,false);
+#endif
+  
   global_gpu_queue->wait_and_throw();
 #endif
 

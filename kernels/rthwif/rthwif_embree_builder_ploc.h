@@ -2137,7 +2137,7 @@ namespace embree
         
           if (unlikely(verbose))
             iteration_time += gpu::getDeviceExecutionTiming(queue_event);
-          PRINT(gpu::getDeviceExecutionTiming(queue_event));
+          //PRINT(gpu::getDeviceExecutionTiming(queue_event));
           //*lcg_bvh_mem_allocator = 0;
           // }
           numTotalLCGs += geom->numLCMs;          
@@ -3771,7 +3771,7 @@ namespace embree
                                  PrimLeafDesc leafDesc(0,geomID,GeometryFlags::NONE /*(GeometryFlags)geom->geometryFlags*/,mask32,PrimLeafDesc::TYPE_OPACITY_CULLING_ENABLED);
                                  *dest = ProceduralLeaf(leafDesc,primID0,true);
                                }
-#if 1                               
+#if 0                               
                                else if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY)
                                {
                                  // =================================                           

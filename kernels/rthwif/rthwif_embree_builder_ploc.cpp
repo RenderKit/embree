@@ -970,7 +970,7 @@ namespace embree
     if (args.accelBufferBytesOut)
       *args.accelBufferBytesOut = args.accelBufferBytes;
 
-#if 0
+#if 1
     if (verbose2)
     {
       gpu::waitOnQueueAndCatchException(gpu_queue);

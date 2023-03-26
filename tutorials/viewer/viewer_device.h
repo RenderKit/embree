@@ -19,6 +19,8 @@ struct TutorialData
   ISPCScene* ispc_scene;
   int instancing_mode;
   RTCRayQueryFlags iflags_coherent;
+  int spp;
+  int max_path_length;
   
   /* scene data */
   RTCScene scene;
@@ -28,7 +30,37 @@ struct TutorialData
   float min_width;
 };
 
-void TutorialData_Constructor(TutorialData* This)
+#define ENABLE_FP16_GBUFFER 0
+
+#if ENABLE_FP16_GBUFFER == 1
+  typedef sycl::vec<cl::sycl::cl_half, 3>  Vec3fp16;
+
+  __forceinline Vec3f    fp_convert(const Vec3fp16 &v) { return Vec3f((float)v.x(),(float)v.y(),(float)v.z()); }
+  __forceinline Vec3fp16 fp_convert(const Vec3f    &v) { return Vec3fp16(v.x,v.y,v.z);  }
+
+#else
+  __forceinline Vec3f    fp_convert(const Vec3f    &v) { return v; }  
+#endif
+
+
+struct GBuffer
+{
+#if ENABLE_FP16_GBUFFER == 1
+  Vec3fp16 color,normal,albedo;
+#else
+  Vec3f color;
+  Vec3f normal;
+  Vec3f albedo;
+#endif  
+};
+
+#if ENABLE_FP16_GBUFFER == 1
+  typedef Vec3fp16 GBufferOutput;
+#else
+  typedef Vec3f GBufferOutput;
+#endif
+  
+inline void TutorialData_Constructor(TutorialData* This)
 {
   This->ispc_scene = g_ispc_scene;
   This->instancing_mode = g_instancing_mode;
@@ -37,9 +69,12 @@ void TutorialData_Constructor(TutorialData* This)
   This->subdiv_mode = false;
   This->motion_blur = g_motion_blur;
   This->min_width = g_min_width;
+  This->spp = 1;
+  This->max_path_length = 2;
+  
 }
 
-void TutorialData_Destructor(TutorialData* This)
+inline void TutorialData_Destructor(TutorialData* This)
 {
   rtcReleaseScene (This->scene); This->scene = nullptr;
 }

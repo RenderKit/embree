@@ -15,7 +15,7 @@
 
 
 #define ENABLE_DAG 1
-#define ALLOC_DEVICE_MEMORY 0
+#define ALLOC_DEVICE_MEMORY 1
 #define RELATIVE_MIN_LOD_DISTANCE_FACTOR 16.0f
 
 namespace embree {
@@ -40,7 +40,7 @@ extern "C" ISPCScene* g_ispc_scene;
   };
 
 
-#define ENABLE_FP16_GBUFFER 0
+#define ENABLE_FP16_GBUFFER 1
 
 #if ENABLE_FP16_GBUFFER == 1
   typedef sycl::vec<cl::sycl::cl_half, 3>  Vec3fp16;
