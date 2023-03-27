@@ -695,7 +695,7 @@ namespace embree {
     }
 
     waitOnQueueAndCatchException(*global_gpu_queue);  // FIXME            
-
+    
     rtcSetLCData(local_lcgbp_scene->geometry, local_lcgbp_scene->numCurrentLCGBPStates, local_lcgbp_scene->lcgbp_state, local_lcgbp_scene->lcm_cluster, local_lcgbp_scene->numLCMeshClusterRootsPerFrame,local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame);
 
 #if 0
@@ -718,9 +718,10 @@ namespace embree {
     avg_lod_selection_time.add(dt0_lod);
     
     double t0_bvh = getSeconds();
+
     
     rtcCommitGeometry(local_lcgbp_scene->geometry);
-    
+
     /* commit changes to scene */
     rtcCommitScene (data.g_scene);
     

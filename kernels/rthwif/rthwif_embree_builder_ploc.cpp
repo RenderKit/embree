@@ -650,6 +650,7 @@ namespace embree
     if (numLossyCompressedGeometries)
       numLossyCompressedGeometries = createLossyCompressedGeometries_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,sync_mem,NUM_ACTIVE_LARGE_WGS,bvh2,numQuads + numProcedurals + numInstances,host_device_tasks,lcg_bvh_mem,&globals->numLeaves,create_primref_time,verbose1);
     
+
     
     // =================================================================================================    
     // === recompute actual number of primitives after quadification and removing of invalid entries ===
@@ -665,7 +666,7 @@ namespace embree
       PRINT3(node_size,leaf_size,args.accelBufferBytes);
       PRINT2(node_size/64,leaf_size/64);      
     }      
-  
+    
     // =================================================================================    
     // === test for empty scene again after all final primitive counts are available ===
     // =================================================================================
@@ -784,7 +785,8 @@ namespace embree
     double device_ploc_iteration_time = 0.0f;
         
     uint iteration = 0;
-  
+
+    
     timer.start(BuildTimer::BUILD);        
     
     // ========================            
@@ -795,7 +797,7 @@ namespace embree
 
     float ratio = 100.0f;
     for (;numPrims>1;iteration++)
-    {          
+    {
       // ==================================================            
       // ==== single kernel path if #prims < threshold ====
       // ==================================================
@@ -970,7 +972,7 @@ namespace embree
     if (args.accelBufferBytesOut)
       *args.accelBufferBytesOut = args.accelBufferBytes;
 
-#if 1
+#if 0
     if (verbose2)
     {
       gpu::waitOnQueueAndCatchException(gpu_queue);

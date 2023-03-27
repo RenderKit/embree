@@ -20,6 +20,8 @@
 #define MIN_AREA_DISTANCE_FCT 1
 #define ENABLE_MT_PREPROCESS 1
 
+#define GENERATE_LODS 1
+
 
 namespace embree {
 
@@ -1236,6 +1238,19 @@ namespace embree {
     const uint INITIAL_CREATE_RANGE_THRESHOLD = LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER;
 
     const uint global_start_lcm_clusterID = lcm_clusters.size();      
+
+    static size_t uncompressedSize = 0;
+    static size_t uncompressedTriangles = 0;
+    
+    PRINT(mesh->numQuads);
+    PRINT(mesh->numVertices);    
+    PRINT(mesh->numQuads*sizeof(ISPCTriangle)*2);
+    PRINT(mesh->numVertices*sizeof(Vec3f));
+    uncompressedSize += mesh->numQuads*sizeof(ISPCTriangle)*2;
+    uncompressedSize += mesh->numVertices*sizeof(Vec3f);
+    uncompressedTriangles += mesh->numQuads*2;
+
+    PRINT3(uncompressedTriangles,uncompressedSize,(double)uncompressedSize / uncompressedTriangles);
     
     // === get centroid and geometry bounding boxes ===
     
@@ -1350,7 +1365,13 @@ namespace embree {
 
     uint current_numClusters = numClusters;
     
-    while(current_numClusters > 1)
+#if GENERATE_LODS == 1    
+    bool generateLODs = true;
+#else
+    bool generateLODs = false;    
+#endif
+    
+    while(current_numClusters > 1 && generateLODs)
     {
       //if (iteration == 0) break;
       

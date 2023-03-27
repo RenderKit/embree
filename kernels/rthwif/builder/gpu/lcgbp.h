@@ -454,7 +454,8 @@ namespace embree {
 
   struct __aligned(8) LossyCompressedMeshCluster
   {
-    static const unsigned int MAX_QUADS_PER_CLUSTER = 128;
+    //static const unsigned int MAX_QUADS_PER_CLUSTER = 16*6; //128;
+    static const unsigned int MAX_QUADS_PER_CLUSTER = 128;    
     unsigned char numQuads;            
     unsigned char numBlocks;
     unsigned char lod_level;
