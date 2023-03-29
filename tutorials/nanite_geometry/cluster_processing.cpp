@@ -21,6 +21,7 @@
 #define ENABLE_MT_PREPROCESS 1
 
 #define GENERATE_LODS 1
+#define ENABLE_INVALID_MERGE_IDS 1
 
 
 namespace embree {
@@ -70,10 +71,11 @@ namespace embree {
     BBox3f bounds;
     uint leftID,rightID;
     uint numLeafPrims;
-
+    uint depth;
+    
     BVH2Node() {}
     
-    BVH2Node(const BBox3f &bounds, uint ID) : bounds(bounds),leftID(ID),rightID(-1),numLeafPrims(1) {}
+    BVH2Node(const BBox3f &bounds, uint ID) : bounds(bounds),leftID(ID),rightID(-1),numLeafPrims(1),depth(1) {}
 
     BVH2Node(const BVH2Node &left, const BVH2Node &right, uint lID, uint rID) {
       bounds = left.bounds;
@@ -81,6 +83,7 @@ namespace embree {
       leftID = lID;
       rightID = rID;
       numLeafPrims = left.numLeafPrims + right.numLeafPrims;
+      depth = std::max(left.depth,right.depth)+1;
     }
     
     __forceinline bool isLeaf() { return rightID == -1; }
@@ -115,7 +118,8 @@ namespace embree {
     uint depth;
     std::vector<Quad> quads;
     std::vector<Vec3f> vertices;
-
+    std::vector<uint> invalidMergeIDs;
+    
     __forceinline QuadMeshCluster() : bounds(empty),lod_root(false),leftID(-1), rightID(-1), neighborID(-1), depth(0) {}
 
     __forceinline bool isLeaf() { return leftID == -1 || rightID == -1; }
@@ -132,7 +136,14 @@ namespace embree {
     
     uint computeTriangleStrip();
     bool split(QuadMeshCluster &left, QuadMeshCluster &right);
-    
+
+    __forceinline void addInvalidMergeID(const uint ID) { invalidMergeIDs.push_back(ID); }
+    __forceinline bool isInvalidMergeID(const uint ID)
+    {
+      for (uint i=0;i<invalidMergeIDs.size();i++)
+        if (invalidMergeIDs[i] == ID) return true;
+      return false;
+    }
   };
 
   
@@ -786,7 +797,7 @@ namespace embree {
     
     uint iterations = 0;
     float max_error = 0.1f;
-    const float REDUCTION_THRESHOLD = 0.9f;
+    const float REDUCTION_THRESHOLD = 0.8f;
     //while(1)
     {
       iterations++;
@@ -1080,7 +1091,7 @@ namespace embree {
               {
                 min_area = areaBounds;
                 nn = i;
-              }
+              }              
             }
           nearest_neighborID[c] = nn;                  
         }
@@ -1416,7 +1427,7 @@ namespace embree {
             {
               const uint merge_clusterID = index_buffer[i];
               BBox3f bounds = clusters[merge_clusterID].bounds;
-              if (!intersect(cluster_bounds,bounds).empty())
+              if (!intersect(cluster_bounds,bounds).empty() && !clusters[clusterID].isInvalidMergeID(merge_clusterID))
               {
                 bounds.extend(cluster_bounds);
                 const float areaBounds = area(bounds);
@@ -1535,6 +1546,12 @@ namespace embree {
 
                   /* update neighbor */
                   clusters[newClusterID0].neighborID = newClusterID1;
+
+
+#if ENABLE_INVALID_MERGE_IDS == 1
+                  clusters[newClusterID1].addInvalidMergeID( newClusterID0 );
+                  clusters[newClusterID0].addInvalidMergeID( newClusterID1 );                  
+#endif
                   
                 }
                 else                                
@@ -1543,6 +1560,11 @@ namespace embree {
               else
               {
                 DBG_PRINT4("CANNOT MERGE", leftClusterID, rightClusterID,newDepth);
+#if ENABLE_INVALID_MERGE_IDS == 1                
+                clusters[ index_buffer[i] ].addInvalidMergeID( index_buffer[nearest_neighborID[i]] );
+                clusters[ index_buffer[nearest_neighborID[i]] ].addInvalidMergeID( index_buffer[i] );
+#endif
+                
                 tmp_buffer[i] = index_buffer[i];
                 tmp_buffer[nearest_neighborID[i]] = index_buffer[nearest_neighborID[i]];                
                 //nearest_neighborID[nearest_neighborID[i]] = -1;
@@ -1587,7 +1609,21 @@ namespace embree {
       //PRINT3(iteration,new_numClusters,current_numClusters);
 
 
-      if (!merged_pair) break; // couldn't merge any clusters anymore
+      if (!merged_pair)
+      {
+        for (uint i=0;i<current_numClusters;i++)
+        {
+          if (nearest_neighborID[i] != -1 &&  nearest_neighborID[ nearest_neighborID[i] ] == i)
+          {
+            DBG_PRINT4(i,nearest_neighborID[i],index_buffer[i],index_buffer[nearest_neighborID[i]]);
+            DBG_PRINT(clusters[index_buffer[i]].quads.size());
+            DBG_PRINT(clusters[index_buffer[nearest_neighborID[i]]].quads.size());                        
+            DBG_PRINT(clusters[index_buffer[i]].neighborID);
+          }
+          
+        }
+        break; // couldn't merge any clusters anymore
+      }
       //if (current_numClusters == new_numClusters) break; // couldn't merge any clusters anymore
       
       current_numClusters = new_numClusters;
