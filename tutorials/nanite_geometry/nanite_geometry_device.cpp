@@ -411,6 +411,10 @@ namespace embree {
       unsigned int numLODQuads = 0;
       for (unsigned int i=0;i<global_lcgbp_scene->numLCMeshClusterRoots;i++)
         numLODQuads += lcm_clusters[ lcm_clusterRootIDs[i] ].numQuads;
+
+      unsigned int numTotalLODQuads = 0;
+      for (unsigned int i=0;i<global_lcgbp_scene->numLCMeshClusters;i++)
+        numTotalLODQuads += lcm_clusters[ i ].numQuads;
       
       
       global_lcgbp_scene->geometry = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY);
@@ -421,8 +425,8 @@ namespace embree {
 
       PRINT( global_lcgbp_scene->numLCMeshClusterRoots );      
       PRINT(global_lcgbp_scene->numLCMeshClusters);
-      PRINT3(numQuadMeshes,numQuads,numLODQuads);
-      PRINT3(totalCompressedSize,(float)totalCompressedSize/numQuads,(float)totalCompressedSize/numQuads*0.5f);
+      PRINT4(numQuadMeshes,numQuads,numLODQuads,numTotalLODQuads);
+      PRINT3(totalCompressedSize,(float)totalCompressedSize/numTotalLODQuads,(float)totalCompressedSize/numTotalLODQuads*0.5f);
       PRINT3(numDecompressedBlocks,numDecompressedBlocks*64,(float)numDecompressedBlocks*64/totalCompressedSize);
     }
     
