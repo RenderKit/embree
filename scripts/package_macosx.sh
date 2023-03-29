@@ -13,6 +13,9 @@ EMBREE_SIGN_FILE=$3
 # create package
 cmake --build . --config $CONFIG --target package
 
+mv ${PACKAGE}.x86_64.macosx-embree.zip ${PACKAGE}.x86_64.macosx.zip
+mv ${PACKAGE}.x86_64.macosx-embree-testing.zip ${PACKAGE}.x86_64.macosx-testing.zip
+
 # sign PKG package
 if [ ${PACKAGE: -4} == ".pkg" ]; then
   if [ -n "${EMBREE_SIGN_FILE}" ]; then
@@ -24,7 +27,7 @@ primary_bundle_id="com.intel.embree4"
 user=$MACOS_NOTARIZATION_USER
 password=$MACOS_NOTARIZATION_PASSWORD
 
-xcrun altool --notarize-app --asc-provider 'IntelCorporationApps' --primary-bundle-id "$primary_bundle_id" --username "$user" --password "$password" --file $PACKAGE 2>&1 | tee notarization_request.log
+xcrun altool --notarize-app --asc-provider 'IntelCorporationApps' --primary-bundle-id "$primary_bundle_id" --username "$user" --password "$password" --file ${PACKAGE}.x86_64.macosx.zip 2>&1 | tee notarization_request.log
 
 # get UUID of notarization request
 uuid=`cat notarization_request.log | sed -n 's/^[ ]*RequestUUID = //p'`

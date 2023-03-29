@@ -6,6 +6,4 @@ ADD_TUTORIAL(dynamic_scene)
 ADD_TUTORIAL_ISPC(dynamic_scene)
 ADD_TUTORIAL_SYCL(dynamic_scene)
 
-IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
-  ADD_EMBREE_TUTORIAL_TEST(dynamic_scene "")
-ENDIF()
+ADD_EMBREE_TEST_ECS(dynamic_scene embree_dynamic_scene)

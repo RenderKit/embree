@@ -51,7 +51,6 @@ IF (NOT DEFINED EMBREE_SYCL_RT_VALIDATION_API OR EMBREE_SYCL_IMPLICIT_DISPATCH_G
   ADD_TEST(NAME rthwif_cornell_box
            COMMAND embree_rthwif_cornell_box --compare "${CORNELL_BOX_REFERENCE}"
            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
-
 ENDIF()
 
 ADD_TEST(NAME rthwif_test_builder_triangles_expected      COMMAND embree_rthwif_test --build_test_triangles   --build_mode_expected)
@@ -84,4 +83,3 @@ ADD_TEST(NAME rthwif_test_swinstancing_triangles_potential_hit        COMMAND em
 ADD_TEST(NAME rthwif_test_swinstancing_triangles_anyhit_shader_commit COMMAND embree_rthwif_test --sw-instancing --triangles-anyhit-shader-commit)
 ADD_TEST(NAME rthwif_test_swinstancing_triangles_anyhit_shader_reject COMMAND embree_rthwif_test --sw-instancing --triangles-anyhit-shader-reject)
 ADD_TEST(NAME rthwif_test_swinstancing_procedurals_committed_hit      COMMAND embree_rthwif_test --sw-instancing --procedurals-committed-hit)
-

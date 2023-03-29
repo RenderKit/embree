@@ -7,9 +7,6 @@ INCLUDE(tutorial)
 ADD_TUTORIAL(subdivision_geometry)
 ADD_TUTORIAL_ISPC(subdivision_geometry)
 
-SET(EMBREE_SYCL_SUPPORT OFF)
-IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
-  ADD_EMBREE_TUTORIAL_TEST(subdivision_geometry "")
 ENDIF()
 
-ENDIF()
+ADD_EMBREE_TEST_ECS(subdivision_geometry embree_subdivision_geometry)
