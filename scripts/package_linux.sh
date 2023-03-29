@@ -60,6 +60,12 @@ check_symbols lib${EMBREE_LIBRARY_NAME}.so CXXABI 1 3 11
 #make -j 16 package
 cmake --build . --target package
 
+if [ "$EMBREE_ZIP_MODE" == "ON" ]; then
+  mv embree-${EMBREE_VERSION}.x86_64.linux-embree.tar.gz embree-${EMBREE_VERSION}.x86_64.linux.tar.gz
+  mv embree-${EMBREE_VERSION}.x86_64.linux-embree-testing.tar.gz embree-${EMBREE_VERSION}.x86_64.linux-testing.tar.gz
+  rm embree-${EMBREE_VERSION}.x86_64.linux-Unspecified.tar.gz
+fi
+
 if [ "$EMBREE_ZIP_MODE" == "OFF" ]; then
 
   # sign all RPM files

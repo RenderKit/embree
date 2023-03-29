@@ -89,9 +89,7 @@ MARK_AS_ADVANCED(CLEAR CMAKE_CXX_COMPILER)
 
 SET(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake" ${CMAKE_MODULE_PATH})
 
-IF (BUILD_TESTING)
-  INCLUDE(test)
-ENDIF()
+INCLUDE(test)
 
 set(BUILD_DOC OFF CACHE INTERNAL "build documentation (internal only)")
 IF (BUILD_DOC)
@@ -711,4 +709,3 @@ ENDIF()
 ##############################################################
 
 INCLUDE(CPack)
-

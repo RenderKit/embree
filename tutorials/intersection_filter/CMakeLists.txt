@@ -8,8 +8,6 @@ ADD_TUTORIAL(intersection_filter)
 ADD_TUTORIAL_ISPC(intersection_filter)
 ADD_TUTORIAL_SYCL(intersection_filter)
 
-IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
-  ADD_EMBREE_TUTORIAL_TEST(intersection_filter "")
 ENDIF()
 
-ENDIF()
+ADD_EMBREE_TEST_ECS(intersection_filter embree_intersection_filter)

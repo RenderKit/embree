@@ -6,8 +6,6 @@ IF (EMBREE_GEOMETRY_USER)
 INCLUDE(tutorial)
 ADD_TUTORIAL(collide constraints.cpp)
 
-IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 1)
-  ADD_TEST(NAME collide COMMAND embree_collide --benchmark 0 128)
 ENDIF()
 
-ENDIF()
+ADD_EMBREE_TEST_ECS(collide embree_collide NO_REFERENCE NO_ISPC NO_SYCL ARGS --benchmark 0 128)

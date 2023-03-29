@@ -7,9 +7,6 @@ INCLUDE(tutorial)
 ADD_TUTORIAL(interpolation)
 ADD_TUTORIAL_ISPC(interpolation)
 
-SET(EMBREE_SYCL_SUPPORT OFF)
-IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
-  #ADD_EMBREE_TUTORIAL_TEST(interpolation "")
 ENDIF()
 
-ENDIF()
+ADD_EMBREE_TEST_ECS(interpolation embree_interpolation)

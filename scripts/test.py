@@ -117,6 +117,7 @@ def runConfig(config):
   if "EMBREE_SYCL_SUPPORT" in config:
     enable_sycl_support = True
     conf.append("-D EMBREE_SYCL_SUPPORT="+config["EMBREE_SYCL_SUPPORT"])
+    conf.append("-D EMBREE_TESTING_ONLY_SYCL_TESTS=ON")
 
   #if "package" in config and OS == 'linux': # we need up to date cmake for RPMs to work properly
   #  env.append("module load cmake")
@@ -375,6 +376,8 @@ def runConfig(config):
       SIGN_FILE = os.environ["SIGN_FILE_MAC"]
     conf.append("-D EMBREE_SIGN_FILE="+SIGN_FILE)
 
+    conf.append("-D BUILD_TESTING=ON")
+    conf.append("-D EMBREE_TESTING_INSTALL_TESTS=ON")
     conf.append("-D EMBREE_TESTING_PACKAGE=ON")
     conf.append("-D EMBREE_TUTORIALS_OPENIMAGEIO=OFF")
     conf.append("-D EMBREE_TUTORIALS_LIBJPEG=OFF")
@@ -388,6 +391,7 @@ def runConfig(config):
       conf.append("-D CMAKE_INSTALL_LIBDIR=lib")
       conf.append("-D CMAKE_INSTALL_DOCDIR=doc")
       conf.append("-D CMAKE_INSTALL_BINDIR=bin")
+      conf.append("-D CMAKE_INSTALL_TESTDIR=testing")
     elif OS == "macosx" and config["package"] == "ZIP":
       conf.append("-D EMBREE_INSTALL_DEPENDENCIES=ON")
       conf.append("-D EMBREE_ZIP_MODE=ON")
@@ -397,6 +401,7 @@ def runConfig(config):
       conf.append("-D CMAKE_INSTALL_LIBDIR=lib")
       conf.append("-D CMAKE_INSTALL_DOCDIR=doc")
       conf.append("-D CMAKE_INSTALL_BINDIR=bin")
+      conf.append("-D CMAKE_INSTALL_TESTDIR=testing")
     elif OS == "windows" and config["package"] == "ZIP":
       conf.append("-D EMBREE_INSTALL_DEPENDENCIES=ON")
       conf.append("-D EMBREE_BUILD_GLFW_FROM_SOURCE=ON")
@@ -406,6 +411,7 @@ def runConfig(config):
       conf.append("-D CMAKE_INSTALL_DATAROOTDIR=")
       conf.append("-D CMAKE_INSTALL_DOCDIR=doc")
       conf.append("-D CMAKE_INSTALL_BINDIR=bin")
+      conf.append("-D CMAKE_INSTALL_TESTDIR=testing")
     else:
       sys.stderr.write("unknown package mode: "+OS+":"+config["package"])
       sys.exit(1)
