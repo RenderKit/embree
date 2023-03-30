@@ -2102,7 +2102,9 @@ int main(int argc, char* argv[])
   sycl::queue queue = sycl::queue(device,exception_handler);
   context = queue.get_context();
 
+#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
   dispatchGlobalsPtr = allocDispatchGlobals(device,context);
+#endif
 
   /* execute test */
   RandomSampler_init(rng,0x56FE238A);
@@ -2123,7 +2125,9 @@ int main(int argc, char* argv[])
   if (err != ZE_RESULT_SUCCESS_)
     throw std::runtime_error("parallel operation destruction failed");
 
+#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
   sycl::free(dispatchGlobalsPtr, context);
+#endif
 
   zeRaytracingExitExt();
   
