@@ -813,6 +813,7 @@ namespace embree {
         DBG_PRINT5("SIMPLIFY",new_numTriangles,numTriangles,expectedTriangles,(float)new_numTriangles / numTriangles);
         if ((float)new_numTriangles / numTriangles <= REDUCTION_THRESHOLD) break;        
         //expectedTriangles += std::max(expectedTriangles/10,(uint)1);
+        expectedTriangles += expectedTriangles/10;
         max_error *= 2;
       } 
 

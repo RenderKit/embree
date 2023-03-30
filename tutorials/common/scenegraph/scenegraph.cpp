@@ -1291,6 +1291,70 @@ namespace embree
   };    
   
 
+   Ref<SceneGraph::Node> SceneGraph::subdivide_grids(Ref<SceneGraph::Node> node)
+  {
+    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      xfmNode->child = subdivide_grids(xfmNode->child);
+    } 
+    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
+    {
+      for (size_t i=0; i<groupNode->children.size(); i++) 
+        groupNode->children[i] = subdivide_grids(groupNode->children[i]);
+    }
+    else if (Ref<SceneGraph::GridMeshNode> qmesh = node.dynamicCast<SceneGraph::GridMeshNode>()) {
+      return subdivide_grids(qmesh);
+    }
+    return node;    
+  }
+
+  Ref<SceneGraph::Node> SceneGraph::subdivide_grids( Ref<SceneGraph::GridMeshNode> gmesh )
+  {
+    PING;
+    typedef Vec3fa Vertex;
+    SceneGraph::GridMeshNode::Grid &grid = gmesh->grids[0];
+    const uint resX = grid.resX;
+    const uint resY = grid.resY;
+    
+    PRINT4(grid.startVtx,grid.lineStride,grid.resX,grid.resY);
+    static const uint REPLICATION_FACTOR_X = 2;
+    static const uint REPLICATION_FACTOR_Y = 2;
+    
+    const uint new_resX = grid.resX*REPLICATION_FACTOR_X;
+    const uint new_resY = grid.resY*REPLICATION_FACTOR_Y;
+    const uint new_lineStride = new_resX;      
+    Ref<SceneGraph::GridMeshNode> new_gmesh = new SceneGraph::GridMeshNode(gmesh->material,gmesh->time_range,0);
+    new_gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(0,new_lineStride,new_resX,new_resY));
+    new_gmesh->positions.push_back(avector<Vertex>());      
+    avector<Vertex> &positions = new_gmesh->positions[0];
+    positions.resize(new_resX*new_resY);
+    for (uint y=0;y<new_resY;y++)
+      for (uint x=0;x<new_resX;x++)
+      {
+        const uint sx = x/REPLICATION_FACTOR_X;
+        const uint sy = y/REPLICATION_FACTOR_Y;
+        const uint sx1 = std::min(sx+1,resX-1);
+        const uint sy1 = std::min(sy+1,resY-1);
+        
+        
+        const Vec3fa v0 = gmesh->positions[0][sy*grid.lineStride+sx];
+        const Vec3fa v1 = gmesh->positions[0][sy*grid.lineStride+sx1];
+        const Vec3fa v2 = gmesh->positions[0][sy1*grid.lineStride+sx1];
+        const Vec3fa v3 = gmesh->positions[0][sy1*grid.lineStride+sx];
+        
+        BilinearPatch bpatch(v0,v1,v2,v3);
+
+        const float u = 0.0f + (x%2) * 0.5f;
+        const float v = 0.0f + (y%2) * 0.5f;
+        
+        positions[y*new_resX+x] = bpatch.eval(u,v);
+
+        //positions[y*new_resX+x].z += noise(Vec3f((float)x/(new_resX),(float)y/(new_resY),0)) * 10;
+        
+      }
+    return new_gmesh.dynamicCast<SceneGraph::Node>();
+    //return convert_grids_to_quads( new_gmesh.dynamicCast<SceneGraph::Node>() );    
+  }
+  
   Ref<SceneGraph::Node> SceneGraph::displace_quads_noise(Ref<SceneGraph::Node> node, const unsigned int resX, const unsigned int resY, const float displace_height)
   {
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
@@ -1421,6 +1485,8 @@ namespace embree
       assert(startVtx + resX * resY == gmesh->positions[0].size());
       gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(startVtx,lineStride,resX,resY));
     }
+    PRINT(gmesh->grids.size());
+    PRINT2(gmesh->grids[0].resX,gmesh->grids[0].resY);
     return gmesh.dynamicCast<SceneGraph::Node>();
   }
 
@@ -1442,6 +1508,7 @@ namespace embree
 
   Ref<SceneGraph::Node> SceneGraph::convert_grids_to_quads ( Ref<SceneGraph::GridMeshNode> gmesh )
   {
+    PING;
     Ref<SceneGraph::QuadMeshNode> qmesh = new SceneGraph::QuadMeshNode(gmesh->material,gmesh->time_range,0);
 
     for (size_t i=0; i<gmesh->numPrimitives(); i++)

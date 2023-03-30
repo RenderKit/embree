@@ -242,6 +242,7 @@ namespace embree
       CONVERT_QUADS_TO_GRIDS,
       CONVERT_GRIDS_TO_QUADS,
       CONVERT_MBLUR_TO_NONMBLUR,
+      SUBDIVIDE_GRIDS,
     };
     std::vector<SceneGraphOperations> sgop;
     std::vector<std::function<void()>> futures; // future scene graph operations

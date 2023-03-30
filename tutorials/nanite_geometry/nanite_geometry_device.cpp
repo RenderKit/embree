@@ -659,6 +659,7 @@ namespace embree {
       ImGui::Text("numGrids9x9:   %d (out of %d)",global_lcgbp_scene->numCurrentLCGBPStates,global_lcgbp_scene->numLCGBP*(1<<(LCG_Scene::LOD_LEVELS+1)));
       ImGui::Text("numGrids33x33: %d ",global_lcgbp_scene->numLCGBP);
       ImGui::Text("numTriangles:  %d (out of %d)",global_lcgbp_scene->numCurrentLCGBPStates*numTrianglesPerGrid9x9,global_lcgbp_scene->numLCGBP*numTrianglesPerGrid33x33);
+      ImGui::Text("Blocks / Frame:          %d (out of %d)",global_lcgbp_scene->numLCMeshClusterBlocksPerFrame,global_lcgbp_scene->numLCBlocksTotal);                  
     }
     if (global_lcgbp_scene->numLCMeshClusters)
     {
@@ -700,7 +701,6 @@ namespace embree {
 
     waitOnQueueAndCatchException(*global_gpu_queue);  // FIXME            
     
-    rtcSetLCData(local_lcgbp_scene->geometry, local_lcgbp_scene->numCurrentLCGBPStates, local_lcgbp_scene->lcgbp_state, local_lcgbp_scene->lcm_cluster, local_lcgbp_scene->numLCMeshClusterRootsPerFrame,local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame);
 
 #if 0
     uint less96 = 0;
@@ -718,6 +718,8 @@ namespace embree {
 #endif
     
     double dt0_lod = (getSeconds()-t0_lod)*1000.0;
+
+    rtcSetLCData(local_lcgbp_scene->geometry, local_lcgbp_scene->numCurrentLCGBPStates, local_lcgbp_scene->lcgbp_state, local_lcgbp_scene->lcm_cluster, local_lcgbp_scene->numLCMeshClusterRootsPerFrame,local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame);
     
     avg_lod_selection_time.add(dt0_lod);
     

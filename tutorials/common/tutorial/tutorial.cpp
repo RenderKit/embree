@@ -632,6 +632,10 @@ namespace embree
       displace_resY = min(max(cin->getInt(),1),0x7fff);
       displace_height = cin->getFloat();
     }, "--displace: sets displacement res and height for quad primitive");
+
+    registerOption("subdivide-grids", [this] (Ref<ParseStream> cin, const FileName& path) {
+        sgop.push_back(SUBDIVIDE_GRIDS);
+      }, "--subdivide-grids: subdivides grids");
     
   }
 
@@ -1304,6 +1308,8 @@ namespace embree
       case CONVERT_QUADS_TO_GRIDS       : scene->quads_to_grids(grid_resX,grid_resY); break;
       case CONVERT_GRIDS_TO_QUADS       : scene->grids_to_quads(); break;
       case CONVERT_MBLUR_TO_NONMBLUR    : convert_mblur_to_nonmblur(scene.dynamicCast<SceneGraph::Node>()); break;
+      case SUBDIVIDE_GRIDS              : scene->subdivide_grids_all(); break;
+        
       default : throw std::runtime_error("unsupported scene graph operation");
       }
     }

@@ -326,7 +326,7 @@ extern "C" void renderFrameStandard (int* pixels,
   global_gpu_queue->wait_and_throw();
 #else
 
-#if 1
+#if 0
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh) {
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);
     cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {

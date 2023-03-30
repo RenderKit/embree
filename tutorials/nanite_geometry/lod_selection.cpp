@@ -353,6 +353,15 @@ namespace embree {
       });
     });
     waitOnEventAndCatchException(compute_lod_event);
+
+#if 0
+    static double total_sum = 0.0f;
+    static uint entries = 0;
+    total_sum += gpu::getDeviceExecutionTiming(compute_lod_event) + gpu::getDeviceExecutionTiming(init_event);
+    entries++;
+    if (entries % 4096) PRINT(total_sum / entries);
+    //PRINT4(gpu::getDeviceExecutionTiming(memset_event),gpu::getDeviceExecutionTiming(compute_lod_event),gpu::getDeviceExecutionTiming(select_clusterIDs_event),total);
+#endif    
     
   }
 
@@ -635,8 +644,15 @@ namespace embree {
       });
     });
     waitOnEventAndCatchException(select_clusterIDs_event);
-    
-    //PRINT3(gpu::getDeviceExecutionTiming(memset_event),gpu::getDeviceExecutionTiming(compute_lod_event),gpu::getDeviceExecutionTiming(select_clusterIDs_event));
+
+#if 0
+    static double total_sum = 0.0f;
+    static uint entries = 0;
+    total_sum += gpu::getDeviceExecutionTiming(memset_event)+gpu::getDeviceExecutionTiming(compute_lod_event)+gpu::getDeviceExecutionTiming(select_clusterIDs_event);
+    entries++;
+    if (entries % 4096) PRINT(total_sum / entries);
+    //PRINT4(gpu::getDeviceExecutionTiming(memset_event),gpu::getDeviceExecutionTiming(compute_lod_event),gpu::getDeviceExecutionTiming(select_clusterIDs_event),total);
+#endif    
   }
 
 
@@ -814,23 +830,26 @@ namespace embree {
       const Vec3f vx = camera.xfm.l.vx;
       const Vec3f vy = camera.xfm.l.vy;
       const Vec3f vz = camera.xfm.l.vz;
-      
-      const uint clusterID = lcgbp_scene->pick_primID;
-      const LossyCompressedMeshCluster &cluster = lcgbp_scene->lcm_cluster[ clusterID ];
-      PRINT3((int)cluster.numQuads,(int)cluster.numBlocks,(int)cluster.lod_level);
-      PRINT3((int)cluster.leftID,(int)cluster.rightID,(int)cluster.neighborID);
 
-      LossyCompressedMesh *mesh = cluster.mesh;
-      const Vec3f lower = mesh->bounds.lower;
-      const Vec3f diag = mesh->bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
-      // const uint width = 1024;
-      // const uint height = 1024;
-      const BBox3f cluster_bounds(cluster.bounds.lower.decompress(lower,diag),cluster.bounds.upper.decompress(lower,diag));
-      PRINT2(cluster_bounds,area(cluster_bounds));
-      // const Vec2f diag2 = projectBBox3fToPlane( BBox3f(cluster_bounds.lower-org,cluster_bounds.upper-org), vx,vy,vz, width,height,true);
-      // PRINT3(diag2,length(diag2),length(diag2)<lod_threshold);
-      // bool subdivide = subdivideLOD(BBox3f(cluster_bounds.lower-org,cluster_bounds.upper-org),vx,vy,vz, width,height,lod_threshold);
-      // PRINT(subdivide);
+      if (lcgbp_scene->numLCMeshClusters)
+      {
+        const uint clusterID = lcgbp_scene->pick_primID;
+        const LossyCompressedMeshCluster &cluster = lcgbp_scene->lcm_cluster[ clusterID ];
+        PRINT3((int)cluster.numQuads,(int)cluster.numBlocks,(int)cluster.lod_level);
+        PRINT3((int)cluster.leftID,(int)cluster.rightID,(int)cluster.neighborID);
+        
+        LossyCompressedMesh *mesh = cluster.mesh;
+        const Vec3f lower = mesh->bounds.lower;
+        const Vec3f diag = mesh->bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
+        // const uint width = 1024;
+        // const uint height = 1024;
+        const BBox3f cluster_bounds(cluster.bounds.lower.decompress(lower,diag),cluster.bounds.upper.decompress(lower,diag));
+        PRINT2(cluster_bounds,area(cluster_bounds));
+        // const Vec2f diag2 = projectBBox3fToPlane( BBox3f(cluster_bounds.lower-org,cluster_bounds.upper-org), vx,vy,vz, width,height,true);
+        // PRINT3(diag2,length(diag2),length(diag2)<lod_threshold);
+        // bool subdivide = subdivideLOD(BBox3f(cluster_bounds.lower-org,cluster_bounds.upper-org),vx,vy,vz, width,height,lod_threshold);
+        // PRINT(subdivide);
+      }
     }
 
                 

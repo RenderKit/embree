@@ -46,6 +46,9 @@ namespace embree
     Ref<Node> displace_quads_noise(Ref<Node> node, const unsigned int resX, const unsigned int resY, const float displace_height);    
     Ref<Node> displace_quads_noise(Ref<QuadMeshNode> qmesh, const unsigned int resX, const unsigned int resY, const float displace_height);
 
+    Ref<Node> subdivide_grids( Ref<GridMeshNode> gmesh);
+    Ref<Node> subdivide_grids( Ref<Node> node);
+    
     Ref<Node> remove_mblur(Ref<Node> node, bool mblur);
     void convert_mblur_to_nonmblur(Ref<Node> node);
 
@@ -752,8 +755,7 @@ namespace embree
       {
         for (size_t i=0; i<children.size(); i++)
           children[i] = displace_quads_noise(children[i],resX,resY,displace_height);
-      }
-      
+      }      
 
       void quads_to_grids(unsigned int resX, unsigned int resY)
       {
@@ -820,6 +822,13 @@ namespace embree
         for (size_t i=0; i<children.size(); i++)
           SceneGraph::remove_mblur(children[i], mblur);
       }
+
+      void subdivide_grids_all()
+      {
+        for (size_t i=0; i<children.size(); i++)
+          children[i] = subdivide_grids(children[i]);
+      }
+      
 
       virtual void setMaterial(Ref<MaterialNode> material) {
         for (auto& child : children) child->setMaterial(material);
