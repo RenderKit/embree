@@ -45,6 +45,10 @@ namespace embree
     ::zeRaytracingInitExt();
     
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
+
+#if !defined(EMBREE_LEVEL_ZERO)
+#  error "Level Zero required to properly allocate RTDispatchGlobals"
+#endif
     
     size_t maxBVHLevels = RTC_MAX_INSTANCE_LEVEL_COUNT+1;
 
@@ -52,13 +56,9 @@ namespace embree
     size_t num_rtstacks = 1<<17; // this is sufficiently large also for PVC
     size_t dispatchGlobalSize = 128+num_rtstacks*rtstack_bytes;
     
-    //dispatchGlobalsPtr = this->malloc(dispatchGlobalSize, 64);
-    void* dispatchGlobalsPtr = sycl::aligned_alloc(64,dispatchGlobalSize,device,context,sycl::usm::alloc::shared);
+    void* dispatchGlobalsPtr = rthwifAllocAccelBuffer(dispatchGlobalSize,device,context);
     memset(dispatchGlobalsPtr, 0, dispatchGlobalSize);
 
-    if (((size_t)dispatchGlobalsPtr & 0xFFFF000000000000ull) != 0)
-      throw_RTCError(RTC_ERROR_UNKNOWN,"internal error in RTStack allocation");
-  
     DispatchGlobals* dg = (DispatchGlobals*) dispatchGlobalsPtr;
     dg->rtMemBasePtr = (uint64_t) dispatchGlobalsPtr + dispatchGlobalSize;
     dg->callStackHandlerKSP = 0;
@@ -80,7 +80,9 @@ namespace embree
 
   void rthwifCleanup(void* dispatchGlobalsPtr, sycl::context context)
   {
-    sycl::free(dispatchGlobalsPtr, context);
+#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
+    rthwifFreeAccelBuffer(dispatchGlobalsPtr, context);
+#endif
 
     zeRaytracingExitExt();
   }
