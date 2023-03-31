@@ -900,13 +900,8 @@ std::shared_ptr<TriangleMesh> createTrianglePlane (const sycl::float3& p0, const
   return mesh;
 }
 
-void* alloc_accel_buffer(size_t bytes, sycl::device device, sycl::context context)
+void* alloc_accel_buffer_internal(size_t bytes, sycl::device device, sycl::context context)
 {
-#if 1
-  return sycl::aligned_alloc_shared(ZE_RAYTRACING_ACCELERATION_STRUCTURE_ALIGNMENT_EXT,bytes,device,context,sycl::ext::oneapi::property::usm::device_read_only());
-  
-#else // FIXME: enable this
-  
   ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
   ze_device_handle_t  hDevice  = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
   
@@ -928,22 +923,70 @@ void* alloc_accel_buffer(size_t bytes, sycl::device device, sycl::context contex
   
   void* ptr = nullptr;
   ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,ZE_RAYTRACING_ACCELERATION_STRUCTURE_ALIGNMENT_EXT,hDevice,&ptr);
-  assert(result == ZE_RESULT_SUCCESS);
+  if (result != ZE_RESULT_SUCCESS)
+    throw std::runtime_error("accel allocation failed");
   return ptr;
-#endif
+}
+
+void free_accel_buffer_internal(void* ptr, sycl::context context)
+{
+  if (ptr == nullptr) return;
+  ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
+  ze_result_t result = zeMemFree(hContext,ptr);
+  if (result != ZE_RESULT_SUCCESS)
+    throw std::runtime_error("accel free failed");
+}
+
+struct Block {
+  Block (size_t bytes, sycl::device device, sycl::context context)
+    : base((char*)alloc_accel_buffer_internal(bytes,device,context)), total(bytes), cur(0) {}
+  ~Block() {
+    free_accel_buffer_internal((void*)base,context);
+  }
+  void* alloc(size_t bytes) {
+    bytes &= -128;
+    if (cur+bytes > total) return nullptr;
+    void* ptr = &base[cur];
+    cur += bytes;
+    return ptr;
+  }
+  char* base = nullptr;
+  size_t total = 0;
+  size_t cur = 0;
+  
+};
+
+bool g_use_accel_blocks = true;
+std::vector<std::shared_ptr<Block>> g_blocks;
+
+void* alloc_accel_buffer(size_t bytes, sycl::device device, sycl::context context)
+{
+  if (!g_use_accel_blocks)
+    return alloc_accel_buffer_internal(bytes,device,context);
+
+  if (g_blocks.size() == 0)
+    g_blocks.push_back(std::shared_ptr<Block>(new Block(1024*1024,device,context)));
+
+  if (bytes > 1024*1024) {
+    g_blocks.push_back(std::shared_ptr<Block>(new Block(bytes,device,context)));
+    void* ptr = g_blocks.back()->alloc(bytes);
+    assert(ptr);
+    return ptr;
+  }
+    
+  void* ptr = g_blocks.back()->alloc(bytes);
+  if (ptr) return ptr;
+  
+  g_blocks.push_back(std::shared_ptr<Block>(new Block(1024*1024,device,context)));
+  ptr = g_blocks.back()->alloc(bytes);
+  assert(ptr);
+  return ptr;
 }
 
 void free_accel_buffer(void* ptr, sycl::context context)
 {
-#if 1
-  sycl::free(ptr,context);
-  
-#else // FIXME: enable this
-  if (ptr == nullptr) return;
-  ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
-  ze_result_t result = zeMemFree(hContext,ptr);
-  assert(result == ZE_RESULT_SUCCESS);
-#endif
+  if (!g_use_accel_blocks)
+    return free_accel_buffer_internal(ptr,context);
 }
 
 struct Scene
@@ -1576,7 +1619,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         const float V = sycl::dot(cross(e1,v0+v1),D);
         const float W = sycl::dot(cross(e2,v1+v2),D);
         const float UVW = U+V+W;
-        bool valid = (std::min(U,std::min(V,W)) >= -0.0f) | (std::max(U,std::max(V,W)) <= 0.0f);
+        bool valid = (std::min(U,std::min(V,W)) >= -0.0f) || (std::max(U,std::max(V,W)) <= 0.0f);
         
         /* calculate geometry normal and denominator */
         const sycl::float3 Ng = sycl::cross(e2,e1);
@@ -1990,13 +2033,9 @@ void* allocDispatchGlobals(sycl::device device, sycl::context context)
   size_t num_rtstacks = 1<<17; // this is sufficiently large also for PVC
   size_t dispatchGlobalSize = 128+num_rtstacks*rtstack_bytes;
   
-  //dispatchGlobalsPtr = this->malloc(dispatchGlobalSize, 64);
-  void* dispatchGlobalsPtr = sycl::aligned_alloc(64,dispatchGlobalSize,device,context,sycl::usm::alloc::shared);
+  void* dispatchGlobalsPtr = alloc_accel_buffer(dispatchGlobalSize,device,context);
   memset(dispatchGlobalsPtr, 0, dispatchGlobalSize);
-  
-  if (((size_t)dispatchGlobalsPtr & 0xFFFF000000000000ull) != 0)
-    throw std::runtime_error("internal error in RTStack allocation");
-  
+
   DispatchGlobals* dg = (DispatchGlobals*) dispatchGlobalsPtr;
   dg->rtMemBasePtr = (uint64_t) dispatchGlobalsPtr + dispatchGlobalSize;
   dg->callStackHandlerKSP = 0;
@@ -2126,7 +2165,7 @@ int main(int argc, char* argv[])
     throw std::runtime_error("parallel operation destruction failed");
 
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
-  sycl::free(dispatchGlobalsPtr, context);
+  free_accel_buffer(dispatchGlobalsPtr, context);
 #endif
 
   zeRaytracingExitExt();

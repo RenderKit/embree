@@ -165,10 +165,6 @@ namespace embree
   {
     QuadLeaf() {}
 
-    QuadLeaf(const QuadLeaf &q) {
-      memcpy( this,&q, sizeof(QuadLeaf) );
-    }
-    
     QuadLeaf (Vec3f v0, Vec3f v1, Vec3f v2, Vec3f v3,
               uint8_t j0, uint8_t j1, uint8_t j2,
               uint32_t shaderIndex, uint32_t geomIndex, uint32_t primIndex0, uint32_t primIndex1,
