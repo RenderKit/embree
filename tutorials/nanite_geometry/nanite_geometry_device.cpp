@@ -644,15 +644,16 @@ namespace embree {
   {
     const unsigned int numTrianglesPerGrid9x9 = 8*8*2;
     const unsigned int numTrianglesPerGrid33x33 = 32*32*2;
-    ImGui::Text("BVH Build Time: %4.4f ms",avg_bvh_build_time.get());
+    //ImGui::Text("BVH Build Time: %4.4f ms",avg_bvh_build_time.get());
+    ImGui::Text("SPP:                %d",user_spp);        
+    ImGui::Text("Per Frame Overhead: %4.4f ms",avg_bvh_build_time.get());
     ImGui::Text("LOD Selection Time: %4.4f ms",avg_lod_selection_time.get());
-    ImGui::DragInt("",(int*)&g_lod_threshold,1,2,1000);
+    ImGui::DragInt("LOD Threshold",(int*)&g_lod_threshold,1,2,1000);
     
     RenderMode rendering_mode = user_rendering_mode;
     if (rendering_mode == RENDER_PATH_TRACER_DENOISE)
       ImGui::Text("Denoising Time: %4.4f ms",avg_denoising_time.get());
 
-    ImGui::Text("SPP: %d",user_spp);    
     
     if (global_lcgbp_scene->numLCGBP)
     {
@@ -663,10 +664,11 @@ namespace embree {
     }
     if (global_lcgbp_scene->numLCMeshClusters)
     {
-      ImGui::Text("Root Clusters:           %d            ",global_lcgbp_scene->numLCMeshClusterRoots);      
-      ImGui::Text("Active Clusters / Frame: %d (out of %d)",global_lcgbp_scene->numLCMeshClusterRootsPerFrame,global_lcgbp_scene->numLCMeshClustersMaxRes);
-      ImGui::Text("Quads / Frame:           %d (out of %d)",global_lcgbp_scene->numLCMeshClusterQuadsPerFrame,global_lcgbp_scene->numLCQuadsTotal);
-      ImGui::Text("Blocks / Frame:          %d (out of %d)",global_lcgbp_scene->numLCMeshClusterBlocksPerFrame,global_lcgbp_scene->numLCBlocksTotal);            
+      ImGui::Text("Root Clusters:                 %d            ",global_lcgbp_scene->numLCMeshClusterRoots);      
+      ImGui::Text("Active Clusters / Frame:       %d (out of %d)",global_lcgbp_scene->numLCMeshClusterRootsPerFrame,global_lcgbp_scene->numLCMeshClustersMaxRes);
+      ImGui::Text("Quads / Frame:                 %d (out of %d)",global_lcgbp_scene->numLCMeshClusterQuadsPerFrame,global_lcgbp_scene->numLCQuadsTotal);
+      ImGui::Text("Triangles / Frame:             %d (out of %d)",global_lcgbp_scene->numLCMeshClusterQuadsPerFrame,global_lcgbp_scene->numLCQuadsTotal*2);      
+      ImGui::Text("64-bytes QBVH6 Blocks / Frame: %d (out of %d)",global_lcgbp_scene->numLCMeshClusterBlocksPerFrame,global_lcgbp_scene->numLCBlocksTotal);            
     }
 
   }

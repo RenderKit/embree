@@ -2137,6 +2137,17 @@ namespace embree
         
           if (unlikely(verbose))
             iteration_time += gpu::getDeviceExecutionTiming(queue_event);
+
+
+ #if 0
+    static double total_sum = 0.0f;
+    static uint entries = 0;
+    total_sum += gpu::getDeviceExecutionTiming(queue_event);
+    entries++;
+    if (entries % (4*4096)) PRINT2("Decomp",total_sum / entries);
+    //PRINT4(gpu::getDeviceExecutionTiming(memset_event),gpu::getDeviceExecutionTiming(compute_lod_event),gpu::getDeviceExecutionTiming(select_clusterIDs_event),total);
+#endif    
+
           //PRINT(gpu::getDeviceExecutionTiming(queue_event));
           //*lcg_bvh_mem_allocator = 0;
           // }

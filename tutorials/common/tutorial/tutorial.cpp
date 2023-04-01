@@ -965,11 +965,11 @@ namespace embree
     
     double render_dt = avg_render_time.get();
     double render_fps = render_dt != 0.0 ? 1.0f/render_dt : 0.0;
-    ImGui::Text("Render: %4.4f ms -> %3.2f fps",1000.f*render_dt,render_fps);
+    ImGui::Text("Render Time:          %4.4f ms -> %3.2f fps",1000.f*render_dt,render_fps);
 
     double total_dt = avg_frame_time.get();
     double total_fps = total_dt != 0.0 ? 1.0f/total_dt : 0.0;
-    ImGui::Text("Total: %4.4f ms -> %3.2f fps",1000.f*total_dt,total_fps);
+    ImGui::Text("Total Time per Frame: %4.4f ms -> %3.2f fps",1000.f*total_dt,total_fps);
 
 #if defined(RAY_STATS) && !defined(EMBREE_SYCL_TUTORIAL)
     ImGui::Text("%3.2f Mray/s",avg_mrayps.get());

@@ -650,7 +650,7 @@ namespace embree {
     static uint entries = 0;
     total_sum += gpu::getDeviceExecutionTiming(memset_event)+gpu::getDeviceExecutionTiming(compute_lod_event)+gpu::getDeviceExecutionTiming(select_clusterIDs_event);
     entries++;
-    if (entries % 4096) PRINT(total_sum / entries);
+    if (entries % (4*4096)) PRINT2("LOD selection",total_sum / entries);
     //PRINT4(gpu::getDeviceExecutionTiming(memset_event),gpu::getDeviceExecutionTiming(compute_lod_event),gpu::getDeviceExecutionTiming(select_clusterIDs_event),total);
 #endif    
   }

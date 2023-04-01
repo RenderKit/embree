@@ -989,8 +989,19 @@ namespace embree
     if (host_device_tasks) sycl::free(host_device_tasks,gpu_queue.get_context());      
     
     if (unlikely(verbose1))
+#if 0
       std::cout << "=> BVH build time: host = " << timer.get_total_host_time() << " ms , device = " << timer.get_total_device_time() << " ms , numPrimitives (original) = " << expected_numPrimitives << " , numPrimitives (build) = " << numPrimitives << std::endl;
-
+#else
+    {
+    static double total_sum = 0.0f;
+    static uint entries = 0;
+    total_sum += timer.get_total_device_time();
+    entries++;
+    if (entries % (4*4096)) PRINT(total_sum / entries);
+    //PRINT4(gpu::getDeviceExecutionTiming(memset_event),gpu::getDeviceExecutionTiming(compute_lod_event),gpu::getDeviceExecutionTiming(select_clusterIDs_event),total);
+    }
+#endif    
+  
     return RTHWIF_ERROR_NONE;    
   }
 }

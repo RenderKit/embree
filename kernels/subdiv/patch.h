@@ -260,7 +260,7 @@ namespace embree
 
     template<typename Allocator>
     __noinline static Ref create(const Allocator& alloc, GeneralCatmullClarkPatch& patch, const HalfEdge* edge, const char* vertices, size_t stride, size_t depth)
-    {  
+    {      
       /* convert into standard quad patch if possible */
       if (likely(patch.isQuadPatch())) 
       {

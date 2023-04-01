@@ -784,6 +784,7 @@ namespace embree
   void SubdivMesh::commit () 
   {
     initializeHalfEdgeStructures();
+    PING;
     Geometry::commit();
   }
 
