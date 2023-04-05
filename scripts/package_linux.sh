@@ -61,8 +61,17 @@ check_symbols lib${EMBREE_LIBRARY_NAME}.so CXXABI 1 3 11
 cmake --build . --target package
 
 if [ "$EMBREE_ZIP_MODE" == "ON" ]; then
-  mv embree-${EMBREE_VERSION}.x86_64.linux-embree.tar.gz embree-${EMBREE_VERSION}.x86_64.linux.tar.gz
-  mv embree-${EMBREE_VERSION}.x86_64.linux-embree-testing.tar.gz embree-${EMBREE_VERSION}.x86_64.linux-testing.tar.gz
+  # rename packages and make sure they contain a 'parent folder', so that not a truckload of files and folders are extracted unintentionally into the working directory
+  mkdir embree-${EMBREE_VERSION}.x86_64.linux
+  tar -xzf embree-${EMBREE_VERSION}.x86_64.linux-embree.tar.gz -C embree-${EMBREE_VERSION}.x86_64.linux
+  rm embree-${EMBREE_VERSION}.x86_64.linux-embree.tar.gz
+  tar -czvf embree-${EMBREE_VERSION}.x86_64.linux.tar.gz embree-${EMBREE_VERSION}.x86_64.linux
+
+  mkdir embree-${EMBREE_VERSION}-testing.x86_64.linux
+  tar -xzf embree-${EMBREE_VERSION}.x86_64.linux-embree-testing.tar.gz -C embree-${EMBREE_VERSION}-testing.x86_64.linux
+  rm embree-${EMBREE_VERSION}.x86_64.linux-embree-testing.tar.gz
+  tar -czvf embree-${EMBREE_VERSION}-testing.x86_64.linux.tar.gz embree-${EMBREE_VERSION}-testing.x86_64.linux
+
   rm embree-${EMBREE_VERSION}.x86_64.linux-Unspecified.tar.gz
 fi
 
