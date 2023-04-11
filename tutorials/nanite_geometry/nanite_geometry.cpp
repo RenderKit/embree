@@ -18,6 +18,11 @@ namespace embree
   extern "C" RenderMode user_rendering_mode;
   extern "C" uint user_spp;
   extern "C" uint g_lod_threshold;
+  extern "C" char* camera_file;
+  extern "C" unsigned int camera_mode;
+  extern "C" unsigned int frameIndex;
+
+  FileName cameraFilename;
   
   struct Tutorial : public SceneLoadingTutorialApplication 
   {    
@@ -35,8 +40,26 @@ namespace embree
       registerOption("lod_threshold", [] (Ref<ParseStream> cin, const FileName& path) {
         g_lod_threshold = (RenderMode)cin->getInt();
       }, "--lod_threshold <uint>: sets lod threshold");
+
+      registerOption("lod_threshold", [] (Ref<ParseStream> cin, const FileName& path) {
+        g_lod_threshold = (RenderMode)cin->getInt();
+      }, "--lod_threshold <uint>: sets lod threshold");
+
+      registerOption("camera", [] (Ref<ParseStream> cin, const FileName& path) {
+        cameraFilename = cin->getFileName();
+        camera_file = (char*)cameraFilename.c_str();
+      }, "--camera file");
       
-  
+
+      registerOption("camera_record", [] (Ref<ParseStream> cin, const FileName& path) {
+        camera_mode = 1;
+      }, "--camera_record");
+
+      registerOption("camera_replay", [] (Ref<ParseStream> cin, const FileName& path) {
+        camera_mode = 2;
+      }, "--camera_replay");
+      
+      
       /* set default camera */
       camera.from = Vec3fa(2.5f,2.5f,2.5f);
       camera.to   = Vec3fa(0.0f,0.0f,0.0f);
@@ -91,7 +114,9 @@ namespace embree
       else if (key == GLFW_KEY_KP_ADD) {
         user_spp += 1;
       }            
-      
+      else if (key == GLFW_KEY_R) {
+        frameIndex = 0;
+      }      
       else
         TutorialApplication::keypressed(key);
     }

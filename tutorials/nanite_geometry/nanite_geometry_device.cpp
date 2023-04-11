@@ -63,10 +63,15 @@ namespace embree {
   extern "C" unsigned int user_spp = 1;
   extern "C" unsigned int g_max_path_length = 2;
   extern "C" unsigned int g_lod_threshold = 30;
+  extern "C" char* camera_file = nullptr;
+  extern "C" unsigned int camera_mode = 0;
   
   Averaged<double> avg_bvh_build_time(64,1.0);
   Averaged<double> avg_lod_selection_time(64,1.0);
   Averaged<double> avg_denoising_time(64,1.0);
+
+  extern "C" unsigned int frameIndex = 0;
+  std::vector<ISPCCamera> camera_path;
 
 #if defined(EMBREE_SYCL_TUTORIAL) && defined(USE_SPECIALIZATION_CONSTANTS)
   const static sycl::specialization_id<RTCFeatureFlags> rtc_feature_mask(RTC_FEATURE_FLAG_ALL);
@@ -311,6 +316,22 @@ namespace embree {
 /* called by the C++ code for initialization */
   extern "C" void device_init (char* cfg)
   {
+    if (camera_mode == 2 && camera_file)
+    {
+      std::ifstream input(camera_file,std::ios::in|std::ios::binary);
+      if (!input) FATAL("cannot open camera file");
+
+      input.seekg (0, std::ios::end);
+      size_t length = input.tellg() / sizeof(ISPCCamera);
+      PRINT(length);
+      input.seekg (0, std::ios::beg);
+      camera_path.resize(length);
+      for (uint i=0;i<camera_path.size();i++)
+        input.read((char*)&camera_path[i],sizeof(ISPCCamera));
+      input.close();
+      PRINT(camera_path.size());      
+    }
+    
     TutorialData_Constructor(&data);
     /* create scene */
     data.g_scene = g_scene = rtcNewScene(g_device);
@@ -463,9 +484,7 @@ namespace embree {
     rtcIntersect1(data.g_scene,RTCRayHit_(ray),&args);
 
     Vec3f color(1.0f,1.0f,1.0f);    
-    if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
-      color = Vec3fa(0.0f);
-    else
+    if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
       color = Vec3fa( abs(dot(ray.dir,normalize(ray.Ng))) );
     return color;
   }
@@ -612,13 +631,17 @@ namespace embree {
         RandomSampler_init(sampler, 0, 0, i);
         fx += RandomSampler_get1D(sampler);
         fy += RandomSampler_get1D(sampler);
-      }        
-    
+      }
+#if 1      
+      RenderMode new_mode = RENDER_PRIMARY;
+      if (x > width/2) new_mode = mode;
+#endif
+      
       /* calculate pixel color */
-      if (mode == RENDER_PRIMARY)
+      if (new_mode == RENDER_PRIMARY)
         color += renderPixelPrimary(data, (float)fx,(float)fy,camera, width, height, lcgbp_scene);
       else
-        color += renderPixelDebug(data, (float)fx,(float)fy,camera, width, height, lcgbp_scene, mode);
+        color += renderPixelDebug(data, (float)fx,(float)fy,camera, width, height, lcgbp_scene, new_mode);
     }
     color *= inv_spp;
     
@@ -667,7 +690,7 @@ namespace embree {
       ImGui::Text("Root Clusters:                 %d            ",global_lcgbp_scene->numLCMeshClusterRoots);      
       ImGui::Text("Active Clusters / Frame:       %d (out of %d)",global_lcgbp_scene->numLCMeshClusterRootsPerFrame,global_lcgbp_scene->numLCMeshClustersMaxRes);
       ImGui::Text("Quads / Frame:                 %d (out of %d)",global_lcgbp_scene->numLCMeshClusterQuadsPerFrame,global_lcgbp_scene->numLCQuadsTotal);
-      ImGui::Text("Triangles / Frame:             %d (out of %d)",global_lcgbp_scene->numLCMeshClusterQuadsPerFrame,global_lcgbp_scene->numLCQuadsTotal*2);      
+      ImGui::Text("Triangles / Frame:             %d (out of %d)",global_lcgbp_scene->numLCMeshClusterQuadsPerFrame*2,global_lcgbp_scene->numLCQuadsTotal*2);      
       ImGui::Text("64-bytes QBVH6 Blocks / Frame: %d (out of %d)",global_lcgbp_scene->numLCMeshClusterBlocksPerFrame,global_lcgbp_scene->numLCBlocksTotal);            
     }
 
@@ -758,8 +781,15 @@ namespace embree {
                                        const unsigned int width,
                                        const unsigned int height,
                                        const float time,
-                                       const ISPCCamera& camera)
+                                       const ISPCCamera& _camera)
   {
+    ISPCCamera camera = _camera;
+    
+    if (camera_mode == 1)
+      camera_path.push_back(_camera);
+    else if (camera_mode == 2)
+      camera = camera_path[ (frameIndex++) % camera_path.size() ];    
+        
     /* render all pixels */
 #if defined(EMBREE_SYCL_TUTORIAL)
     RenderMode rendering_mode = user_rendering_mode;
@@ -825,6 +855,18 @@ namespace embree {
 /* called by the C++ code for cleanup */
   extern "C" void device_cleanup ()
   {
+    PRINT( camera_mode );
+    if (camera_mode == 1 && camera_file)
+    {
+      PRINT(camera_path.size());
+    
+      std::ofstream output(camera_file,std::ios::out|std::ios::binary);
+      if (!output) FATAL("cannot open camera file");
+      for (uint i=0;i<camera_path.size();i++)
+        output.write((char*)&camera_path[i],sizeof(ISPCCamera));
+      output.close();
+    }
+    
     TutorialData_Destructor(&data);
   }
 

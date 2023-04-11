@@ -27,6 +27,8 @@ namespace embree
       ISPCCamera (const AffineSpace3f& xfm)
       : xfm(xfm) {}
 
+      ISPCCamera () {}
+      
     public:
       AffineSpace3f xfm;
       float render_time = 0.0f;

@@ -52,7 +52,7 @@ namespace embree
     const size_t header              = 128;
     const size_t node_size           = estimateSizeInternalNodes(numQuads,numInstances,numProcedurals,numLossyCompressedGeometries,conservative);
     const size_t leaf_size           = estimateSizeLeafNodes(numQuads,numInstances,numProcedurals,numLossyCompressedGeometries);
-    const size_t lcg_size            = estimateLossyCompressedGeometriesSize(numLossyCompressedGeometries);
+    const size_t lcg_size            = estimateLossyCompressedGeometriesSize(numLossyCompressedGeometries);    
     // PRINT(node_size);
     // PRINT(leaf_size);    
     //PRINT(lcg_size);

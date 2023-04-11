@@ -678,7 +678,11 @@ namespace embree
       /* allocate BVH data */
       if (accel.size() < bytes)
       {
+#if 1        
+        accel.resize(bytes*3/2);
+#else
         accel.resize(bytes);
+#endif        
         std::cout << "RESIZING QBVH6 MEMORY TO " << accel.size() << " BYTES" << std::endl;        
       }
       

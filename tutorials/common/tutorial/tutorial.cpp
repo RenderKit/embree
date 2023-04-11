@@ -272,6 +272,7 @@ namespace embree
 
   TutorialApplication::~TutorialApplication()
   {
+    PING;
     g_ispc_scene = nullptr;
     ispc_scene = nullptr;
     device_cleanup();
@@ -835,7 +836,9 @@ namespace embree
           
         case GLFW_KEY_ESCAPE:
         case GLFW_KEY_Q: 
-          glfwSetWindowShouldClose(window,1);
+          //glfwSetWindowShouldClose(window,1);
+          device_cleanup();
+          exit(0);
           break;
         }
       }
