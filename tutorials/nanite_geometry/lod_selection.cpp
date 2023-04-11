@@ -483,8 +483,9 @@ namespace embree {
             const Vec3f lower = mesh->bounds.lower;
             const Vec3f diag = mesh->bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
             
-            const Vec3f bounds_lower = cur.bounds.lower.decompress(lower,diag)-org;
-            const Vec3f bounds_upper = cur.bounds.upper.decompress(lower,diag)-org;
+            Vec3f bounds_lower = cur.bounds.lower.decompress(lower,diag)-org;
+            Vec3f bounds_upper = cur.bounds.upper.decompress(lower,diag)-org;
+            
             const bool subdivide = subdivideLOD(BBox3f(bounds_lower,bounds_upper),vx,vy,vz,width,height,lod_threshold);
             if (subdivide && cur.hasChildren())
               write = true;

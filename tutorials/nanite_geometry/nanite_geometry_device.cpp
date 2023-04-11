@@ -404,6 +404,14 @@ namespace embree {
     // === finalize quad meshes ===
     if (numQuadMeshes)
     {
+      // ========== make bounds of DAG2 neighbor nodes similar to cause same decision in lod selection ==============
+
+      for (uint i=0;i<lcm_clusters.size();i++)
+        if (lcm_clusters[i].hasNeighbor())
+          lcm_clusters[i].bounds.extend( lcm_clusters[lcm_clusters[i].neighborID].bounds );
+
+      // ==========
+      
       global_lcgbp_scene->minLODDistance = length(scene_bounds.size()) / RELATIVE_MIN_LOD_DISTANCE_FACTOR;
       
       global_lcgbp_scene->numLCMeshClusters = lcm_clusters.size();

@@ -91,7 +91,6 @@ namespace embree
       }
       else if (key == GLFW_KEY_F7) {
         user_rendering_mode = RENDER_DEBUG_CLOD;
-        PING;
       }
       else if (key == GLFW_KEY_F8) {
         user_rendering_mode = RENDER_DEBUG_TEXTURE;
