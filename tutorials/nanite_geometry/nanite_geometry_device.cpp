@@ -406,10 +406,11 @@ namespace embree {
     {
       // ========== make bounds of DAG2 neighbor nodes similar to cause same decision in lod selection ==============
 
+#if 1      
       for (uint i=0;i<lcm_clusters.size();i++)
         if (lcm_clusters[i].hasNeighbor())
           lcm_clusters[i].bounds.extend( lcm_clusters[lcm_clusters[i].neighborID].bounds );
-
+#endif
       // ==========
       
       global_lcgbp_scene->minLODDistance = length(scene_bounds.size()) / RELATIVE_MIN_LOD_DISTANCE_FACTOR;
@@ -710,8 +711,15 @@ namespace embree {
                                  const unsigned int width,
                                  const unsigned int height,
                                  const float time,
-                                 const ISPCCamera& camera)
+                                 const ISPCCamera& _camera)
   {
+
+    ISPCCamera camera = _camera;
+    
+    if (camera_mode == 2)
+      camera = camera_path[ frameIndex % camera_path.size() ];    
+    
+    
     if (!denoiser)
       denoiser = new Denoiser(width,height);
 
@@ -797,7 +805,9 @@ namespace embree {
       camera_path.push_back(_camera);
     else if (camera_mode == 2)
       camera = camera_path[ (frameIndex++) % camera_path.size() ];    
-        
+
+    //PRINT( frameIndex );
+    
     /* render all pixels */
 #if defined(EMBREE_SYCL_TUTORIAL)
     RenderMode rendering_mode = user_rendering_mode;

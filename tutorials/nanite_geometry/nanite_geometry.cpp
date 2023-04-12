@@ -41,10 +41,6 @@ namespace embree
         g_lod_threshold = (RenderMode)cin->getInt();
       }, "--lod_threshold <uint>: sets lod threshold");
 
-      registerOption("lod_threshold", [] (Ref<ParseStream> cin, const FileName& path) {
-        g_lod_threshold = (RenderMode)cin->getInt();
-      }, "--lod_threshold <uint>: sets lod threshold");
-
       registerOption("camera", [] (Ref<ParseStream> cin, const FileName& path) {
         cameraFilename = cin->getFileName();
         camera_file = (char*)cameraFilename.c_str();
