@@ -770,14 +770,11 @@ namespace embree {
     hitPos = lcgbp_scene->pick_pos;    
     const bool hit = lcgbp_scene->pick_primID != -1;
     //const float lod_threshold = g_lod_threshold;
+#if ALLOC_DEVICE_MEMORY  == 0    
     if (hit)
     {
       PRINT2(lcgbp_scene->pick_primID,lcgbp_scene->pick_geomID);
       PRINT(g_lod_threshold);
-      const Vec3f org = camera.xfm.p;
-      const Vec3f vx = camera.xfm.l.vx;
-      const Vec3f vy = camera.xfm.l.vy;
-      const Vec3f vz = camera.xfm.l.vz;
 
       if (lcgbp_scene->numLCMeshClusters)
       {
@@ -785,20 +782,27 @@ namespace embree {
         const LossyCompressedMeshCluster &cluster = lcgbp_scene->lcm_cluster[ clusterID ];
         PRINT3((int)cluster.numQuads,(int)cluster.numBlocks,(int)cluster.lod_level);
         PRINT3((int)cluster.leftID,(int)cluster.rightID,(int)cluster.neighborID);
-        
+#if 0        
         LossyCompressedMesh *mesh = cluster.mesh;
         const Vec3f lower = mesh->bounds.lower;
         const Vec3f diag = mesh->bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
         // const uint width = 1024;
         // const uint height = 1024;
+        const Vec3f org = camera.xfm.p;
+        const Vec3f vx = camera.xfm.l.vx;
+        const Vec3f vy = camera.xfm.l.vy;
+        const Vec3f vz = camera.xfm.l.vz;
+        
         const BBox3f cluster_bounds(cluster.bounds.lower.decompress(lower,diag),cluster.bounds.upper.decompress(lower,diag));
         PRINT2(cluster_bounds,area(cluster_bounds));
+#endif        
         // const Vec2f diag2 = projectBBox3fToPlane( BBox3f(cluster_bounds.lower-org,cluster_bounds.upper-org), vx,vy,vz, width,height,true);
         // PRINT3(diag2,length(diag2),length(diag2)<lod_threshold);
         // bool subdivide = subdivideLOD(BBox3f(cluster_bounds.lower-org,cluster_bounds.upper-org),vx,vy,vz, width,height,lod_threshold);
         // PRINT(subdivide);
       }
     }
+#endif    
 
                 
     return hit;
