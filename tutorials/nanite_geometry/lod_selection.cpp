@@ -233,11 +233,11 @@ namespace embree {
   void select_clusters_lod_grid_tree(LCG_Scene *local_lcgbp_scene,
                                      const unsigned int width,
                                      const unsigned int height,
-                                     const ISPCCamera& camera)
+                                     const ISPCCamera* const _camera)
   {
-
     const unsigned int wgSize = 16*1;
     const unsigned int numLCGBP = local_lcgbp_scene->numLCGBP;
+    const float minLODDistance = local_lcgbp_scene->minLODDistance;    
     //const unsigned int numLCMeshClusters = local_lcgbp_scene->numLCMeshClusters;
     sycl::event init_event =  global_gpu_queue->submit([&](sycl::handler &cgh) {
       cgh.single_task([=]() {
@@ -249,8 +249,6 @@ namespace embree {
 
     //void *lcg_ptr = nullptr;
     //unsigned int lcg_num_prims = 0;
-    
-    const float minLODDistance = local_lcgbp_scene->minLODDistance;
       
     const sycl::nd_range<1> nd_range1(alignTo(numLCGBP,wgSize),sycl::range<1>(wgSize));              
     sycl::event compute_lod_event = global_gpu_queue->submit([=](sycl::handler& cgh){
@@ -259,6 +257,8 @@ namespace embree {
         const unsigned int i = item.get_global_id(0);
         if (i < numLCGBP)
         {
+          const ISPCCamera& camera = *_camera;
+          
           const Vec3f org = camera.xfm.p;
           const Vec3f vx = camera.xfm.l.vx;
           const Vec3f vy = camera.xfm.l.vy;
@@ -353,7 +353,6 @@ namespace embree {
       });
     });
     waitOnEventAndCatchException(compute_lod_event);
-
 #if 0
     static double total_sum = 0.0f;
     static uint entries = 0;
@@ -362,7 +361,6 @@ namespace embree {
     if (entries % 4096) PRINT(total_sum / entries);
     //PRINT4(gpu::getDeviceExecutionTiming(memset_event),gpu::getDeviceExecutionTiming(compute_lod_event),gpu::getDeviceExecutionTiming(select_clusterIDs_event),total);
 #endif    
-    
   }
 
   __forceinline uint writeSubgroup(uint *dest, const uint value, const bool cond)
@@ -378,7 +376,7 @@ namespace embree {
   void select_clusters_lod_mesh_dag(LCG_Scene *local_lcgbp_scene,
                                     const unsigned int width,
                                     const unsigned int height,
-                                    const ISPCCamera& camera)
+                                    const ISPCCamera* const _camera)
   {
     const unsigned int wgSize = 16*1;
 
@@ -429,7 +427,7 @@ namespace embree {
         uint *const localIDs = _localIDs.get_pointer();
         
         uint clusterID = -1;
-
+        const ISPCCamera& camera = *_camera;
         const Vec3f org = camera.xfm.p;
         const Vec3f vx = camera.xfm.l.vx;
         const Vec3f vy = camera.xfm.l.vy;
@@ -514,11 +512,12 @@ namespace embree {
       cgh.depends_on(init_event);        
       cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16) {
         const unsigned int i = item.get_global_id(0);
-                              
+        
         if (i < local_lcgbp_scene->numLCMeshClusterRoots)
         {
           const unsigned int clusterID = local_lcgbp_scene->lcm_cluster_roots_IDs[i];            
-#if FORCE_ROOT_LEVEL == 0          
+#if FORCE_ROOT_LEVEL == 0
+          const ISPCCamera& camera = *_camera;          
           const Vec3f org = camera.xfm.p;
           const Vec3f vx = camera.xfm.l.vx;
           const Vec3f vy = camera.xfm.l.vy;
@@ -660,7 +659,7 @@ namespace embree {
   void select_clusters_lod_mesh_tree(LCG_Scene *local_lcgbp_scene,
                                      const unsigned int width,
                                      const unsigned int height,
-                                     const ISPCCamera& camera)
+                                     const ISPCCamera* const _camera)
   {
     const unsigned int wgSize = 16*1;
     
@@ -692,13 +691,14 @@ namespace embree {
         cluster_counter = 0;
         quad_counter = 0;
         block_counter = 0;
-
+        
         item.barrier(sycl::access::fence_space::local_space);
                               
         if (i < local_lcgbp_scene->numLCMeshClusterRoots)
         {
           const unsigned int clusterID = local_lcgbp_scene->lcm_cluster_roots_IDs[i];            
 #if 1
+          const ISPCCamera& camera = *_camera;          
           const Vec3f org = camera.xfm.p;
           const Vec3f vx = camera.xfm.l.vx;
           const Vec3f vy = camera.xfm.l.vy;

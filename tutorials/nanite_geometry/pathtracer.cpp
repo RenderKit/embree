@@ -366,7 +366,7 @@ namespace embree {
                                      const unsigned int width,
                                      const unsigned int height,
                                      const float time,
-                                     const ISPCCamera& camera,
+                                     const ISPCCamera* const local_camera,
                                      TutorialData &data,
                                      uint user_spp,
                                      GBuffer *gbuffer,
@@ -389,6 +389,7 @@ namespace embree {
         cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16) {
           const unsigned int x = item.get_global_id(1); if (x >= width ) return;
           const unsigned int y = item.get_global_id(0); if (y >= height) return;
+          const ISPCCamera &camera = *local_camera;                                   
           const RTCFeatureFlags feature_mask = RTC_FEATURE_FLAG_ALL;
           GBuffer gb;
           gb.normal = fp_convert(Vec3f(1,0,0));

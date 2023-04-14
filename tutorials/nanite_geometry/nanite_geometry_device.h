@@ -16,7 +16,8 @@
 
 #define ENABLE_DAG 1
 #define ALLOC_DEVICE_MEMORY 0
-#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 16.0f
+#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 16
+//28.0f
 
 namespace embree {
 
@@ -194,7 +195,7 @@ struct TutorialData
     unsigned int *lcm_cluster_roots_IDs;
     unsigned int *lcm_cluster_roots_IDs_per_frame;
     uchar *lcm_cluster_active_state_per_frame;
-    
+        
     /* --- embree geometry --- */
     RTCGeometry geometry;
     unsigned int geomID;
@@ -218,17 +219,17 @@ struct TutorialData
   void select_clusters_lod_grid_tree(LCG_Scene *local_lcgbp_scene,
                                      const unsigned int width,
                                      const unsigned int height,
-                                     const ISPCCamera& camera);
+                                     const ISPCCamera* const camera);
 
   void select_clusters_lod_mesh_dag(LCG_Scene *local_lcgbp_scene,
                                     const unsigned int width,
                                     const unsigned int height,
-                                    const ISPCCamera& camera);
+                                     const ISPCCamera* const camera);
 
   void select_clusters_lod_mesh_tree(LCG_Scene *local_lcgbp_scene,
                                      const unsigned int width,
                                      const unsigned int height,
-                                     const ISPCCamera& camera);
+                                     const ISPCCamera* const camera);
 
   __forceinline size_t alignTo(const unsigned int size, const unsigned int alignment)
   {

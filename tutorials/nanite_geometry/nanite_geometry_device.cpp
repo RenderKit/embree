@@ -72,6 +72,8 @@ namespace embree {
 
   extern "C" unsigned int frameIndex = 0;
   std::vector<ISPCCamera> camera_path;
+  ISPCCamera *camera_path_device = nullptr;
+  ISPCCamera *global_camera = nullptr;
 
 #if defined(EMBREE_SYCL_TUTORIAL) && defined(USE_SPECIALIZATION_CONSTANTS)
   const static sycl::specialization_id<RTCFeatureFlags> rtc_feature_mask(RTC_FEATURE_FLAG_ALL);
@@ -316,6 +318,8 @@ namespace embree {
 /* called by the C++ code for initialization */
   extern "C" void device_init (char* cfg)
   {
+    global_camera = (ISPCCamera*)alignedUSMMalloc(sizeof(ISPCCamera),64,EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE);
+    
     if (camera_mode == 2 && camera_file)
     {
       std::ifstream input(camera_file,std::ios::in|std::ios::binary);
@@ -329,7 +333,15 @@ namespace embree {
       for (uint i=0;i<camera_path.size();i++)
         input.read((char*)&camera_path[i],sizeof(ISPCCamera));
       input.close();
-      PRINT(camera_path.size());      
+      PRINT(camera_path.size());
+      EmbreeUSMMode mode = EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE;
+      camera_path_device = (ISPCCamera*)alignedUSMMalloc(sizeof(ISPCCamera)*camera_path.size(),64,mode);
+
+      sycl::event camera_event = global_gpu_queue->memcpy(camera_path_device,&*camera_path.begin(),sizeof(ISPCCamera)*camera_path.size());
+      gpu::waitOnEventAndCatchException(camera_event);      
+      
+      // for (uint i=0;i<camera_path.size();i++)
+      //   camera_path_device[i] = camera_path[i];
     }
     
     TutorialData_Constructor(&data);
@@ -641,8 +653,8 @@ namespace embree {
         fx += RandomSampler_get1D(sampler);
         fy += RandomSampler_get1D(sampler);
       }
+      RenderMode new_mode = RENDER_PRIMARY;      
 #if 1      
-      RenderMode new_mode = RENDER_PRIMARY;
       if (x > width/2) new_mode = mode;
 #endif
       
@@ -713,12 +725,23 @@ namespace embree {
                                  const float time,
                                  const ISPCCamera& _camera)
   {
+    const uint frameID = camera_path.size() ? ((frameIndex++) % camera_path.size()) : 0;
 
-    ISPCCamera camera = _camera;
-    
-    if (camera_mode == 2)
-      camera = camera_path[ frameIndex % camera_path.size() ];    
-    
+#if 1  
+    if (camera_mode == 1)
+      camera_path.push_back(_camera);
+#endif
+
+    if (camera_mode != 2)
+    {
+      sycl::event camera_event = global_gpu_queue->memcpy(global_camera,&_camera,sizeof(ISPCCamera));
+      gpu::waitOnEventAndCatchException(camera_event);      
+    }
+    else
+    {
+      sycl::event camera_event = global_gpu_queue->memcpy(global_camera,&camera_path_device[frameID],sizeof(ISPCCamera));
+      gpu::waitOnEventAndCatchException(camera_event);      
+    }
     
     if (!denoiser)
       denoiser = new Denoiser(width,height);
@@ -729,14 +752,16 @@ namespace embree {
     
     LCG_Scene *local_lcgbp_scene = global_lcgbp_scene;
     if ( local_lcgbp_scene->numLCGBP )
-      select_clusters_lod_grid_tree(local_lcgbp_scene,width,height,camera);
+    {
+      select_clusters_lod_grid_tree(local_lcgbp_scene,width,height,global_camera);
+    }
     
     if (local_lcgbp_scene->numLCMeshClusters)
     {
 #if ENABLE_DAG == 1
-      select_clusters_lod_mesh_dag(local_lcgbp_scene,width,height,camera);      
+      select_clusters_lod_mesh_dag(local_lcgbp_scene,width,height,global_camera);      
 #else
-      select_clusters_lod_mesh_tree(local_lcgbp_scene,width,height,camera);            
+      select_clusters_lod_mesh_tree(local_lcgbp_scene,width,height,global_camera);            
 #endif      
     }
 
@@ -785,7 +810,7 @@ namespace embree {
                                      const unsigned int width,
                                      const unsigned int height,
                                      const float time,
-                                     const ISPCCamera& camera,
+                                     const ISPCCamera* const _camera,
                                      TutorialData &data,
                                      unsigned int user_spp,
                                      GBuffer *gbuffer,                              
@@ -798,19 +823,11 @@ namespace embree {
                                        const unsigned int height,
                                        const float time,
                                        const ISPCCamera& _camera)
-  {
-    ISPCCamera camera = _camera;
-    
-    if (camera_mode == 1)
-      camera_path.push_back(_camera);
-    else if (camera_mode == 2)
-      camera = camera_path[ (frameIndex++) % camera_path.size() ];    
-
-    //PRINT( frameIndex );
-    
+  {   
     /* render all pixels */
 #if defined(EMBREE_SYCL_TUTORIAL)
     RenderMode rendering_mode = user_rendering_mode;
+    const ISPCCamera *const local_camera = global_camera;
     if (rendering_mode != RENDER_PATH_TRACER && rendering_mode != RENDER_PATH_TRACER_DENOISE)
     {
       LCG_Scene *lcgbp_scene = global_lcgbp_scene;
@@ -821,24 +838,25 @@ namespace embree {
         cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16) {
           const unsigned int x = item.get_global_id(1); if (x >= width ) return;
           const unsigned int y = item.get_global_id(0); if (y >= height) return;
+          const ISPCCamera &camera = *local_camera;                         
           renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,lcgbp_scene,rendering_mode,spp);
         });
       });
       waitOnEventAndCatchException(event);
       const double dt = gpu::getDeviceExecutionTiming(event);
-      ((ISPCCamera*)&camera)->render_time = dt * 1E-3;        
+      //PRINT(dt * 1E-3);
+      ((ISPCCamera*)&_camera)->render_time = dt * 1E-3;        
     }
     else
     {
       GBuffer *gBuffer  = denoiser->gBuffer;      
       GBufferOutput *output  = denoiser->outputBuffer;
-
       bool denoise = rendering_mode == RENDER_PATH_TRACER_DENOISE;
-      sycl::event event = renderFramePathTracer(pixels,width,height,time,camera,data,user_spp,gBuffer,denoise);
+      sycl::event event = renderFramePathTracer(pixels,width,height,time,local_camera,data,user_spp,gBuffer,denoise);
       waitOnEventAndCatchException(event);
       
       const double dt = gpu::getDeviceExecutionTiming(event);
-      ((ISPCCamera*)&camera)->render_time = dt * 1E-3;        
+      ((ISPCCamera*)&_camera)->render_time = dt * 1E-3;        
       
       if (denoise)
       {
