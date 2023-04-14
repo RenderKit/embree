@@ -1,7 +1,6 @@
 ## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
-
-if (BUILD_TESTING)
+if (BUILD_TESTING OR EMBREE_TESTING_INSTALL_TESTS)
 
   INCLUDE(CTest)
 
@@ -201,17 +200,16 @@ if (BUILD_TESTING)
 
     list(FIND nargs ${keyword} istart)
     if (NOT(istart EQUAL -1))
-      MATH(EXPR istart "${istart}+1")
       list(LENGTH myargs iend)
       foreach(k ${keywords})
         list(FIND myargs ${k} i)
-        if (NOT(i EQUAL -1) AND (i GREATER istart))
+        if (NOT(i EQUAL -1) AND (i GREATER istart) AND (i LESS iend))
           SET(iend ${i})
         endif()
       endforeach()
 
-      SET(i ${istart})
-      while (${i} LESS ${iend})
+      MATH(EXPR i "${istart}+1")
+      while (i LESS iend)
         list(GET myargs ${i} elem)
         list(APPEND mysublist ${elem})
         MATH(EXPR i "${i}+1")
@@ -219,7 +217,6 @@ if (BUILD_TESTING)
     endif()
 
     SET(${sublist} ${mysublist} PARENT_SCOPE)
-
   ENDFUNCTION()
 
   FUNCTION (EMBREE_ADD_TEST_PARSE_FLAG args keyword value)
