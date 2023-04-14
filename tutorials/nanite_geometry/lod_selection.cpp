@@ -493,7 +493,7 @@ namespace embree {
           if (!write && active)
           {
             active_state[currentID] = 1;                
-            if (cur.hasNeighbor()) active_state[cur.neighborID] = 1;
+            //if (cur.hasNeighbor()) active_state[cur.neighborID] = 1;
           }                        
 
           numIDs += writeSubgroup(&localIDs[numIDs],cur.leftID,write);          
@@ -579,6 +579,26 @@ namespace embree {
     // ================================================================================================================================
     // ================================================================================================================================
     // ================================================================================================================================
+
+#if 0  
+    waitOnQueueAndCatchException(*global_gpu_queue);
+    for (uint i=0;i<local_lcgbp_scene->numLCMeshClusters;i++)
+    {
+      if (active_state[i])
+      {
+        const LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[ i ];              
+        if (cur.hasChildren())
+        {
+          //const LossyCompressedMeshCluster &neighbor = local_lcgbp_scene->lcm_cluster[ cur.neighborID ];              
+          if (active_state[ cur.leftID ] || active_state[ cur.rightID ])
+          {
+            PRINT6(i,cur.neighborID,cur.leftID,cur.rightID,(uint)active_state[ cur.leftID],(uint)active_state[ cur.rightID]);
+          }
+        }
+      }
+    }
+    waitOnQueueAndCatchException(*global_gpu_queue);    
+#endif
     
     const uint wgSize_select = 512;
     const sycl::nd_range<1> nd_range2(alignTo(numLCMeshClusters,wgSize_select),sycl::range<1>(wgSize_select));              

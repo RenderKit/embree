@@ -16,7 +16,7 @@
 
 #define ENABLE_DAG 1
 #define ALLOC_DEVICE_MEMORY 0
-#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 16
+#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 32
 //28.0f
 
 namespace embree {
