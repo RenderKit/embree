@@ -318,7 +318,8 @@ namespace embree {
 /* called by the C++ code for initialization */
   extern "C" void device_init (char* cfg)
   {
-    global_camera = (ISPCCamera*)alignedUSMMalloc(sizeof(ISPCCamera),64,EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE);
+    EmbreeUSMMode mode = EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE;    
+    global_camera = (ISPCCamera*)alignedUSMMalloc(sizeof(ISPCCamera),64,mode);
     
     if (camera_mode == 2 && camera_file)
     {
@@ -334,7 +335,6 @@ namespace embree {
         input.read((char*)&camera_path[i],sizeof(ISPCCamera));
       input.close();
       PRINT(camera_path.size());
-      EmbreeUSMMode mode = EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE;
       camera_path_device = (ISPCCamera*)alignedUSMMalloc(sizeof(ISPCCamera)*camera_path.size(),64,mode);
 
       sycl::event camera_event = global_gpu_queue->memcpy(camera_path_device,&*camera_path.begin(),sizeof(ISPCCamera)*camera_path.size());

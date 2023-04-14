@@ -410,8 +410,6 @@ namespace embree {
 
     const float lod_threshold = g_lod_threshold;
 
-#if 1
-
     const uint wgSizeComputeLOD = 16;
     const sycl::nd_range<1> nd_range1(alignTo(numRootsTotal,wgSizeComputeLOD),sycl::range<1>(wgSize));
     sycl::event compute_lod_event = global_gpu_queue->submit([=](sycl::handler& cgh){
@@ -456,13 +454,11 @@ namespace embree {
           if (cull)
           {
             active_state[clusterID] = 1;                
-            if (root_cluster.hasNeighbor()) active_state[root_cluster.neighborID] = 1;
             clusterID = -1;
           }          
         }
 
         int numIDs = writeSubgroup(localIDs,clusterID,clusterID!=-1);
-        
         while(numIDs)
         {
           const int cur_startID = std::max(numIDs-(int)subgroupSize,0);
@@ -483,19 +479,19 @@ namespace embree {
             
             Vec3f bounds_lower = cur.bounds.lower.decompress(lower,diag)-org;
             Vec3f bounds_upper = cur.bounds.upper.decompress(lower,diag)-org;
-            
-            const bool subdivide = subdivideLOD(BBox3f(bounds_lower,bounds_upper),vx,vy,vz,width,height,lod_threshold);
-            if (subdivide && cur.hasChildren())
-              write = true;
-            //write |= cur.hasChildren();
+
+            const bool cull = frustumCull( cur.bounds.lower.decompress(lower,diag)-org,cur.bounds.upper.decompress(lower,diag)-org,vx*width,vy*height,vz);
+            if (!cull)
+            {
+              const bool subdivide = subdivideLOD(BBox3f(bounds_lower,bounds_upper),vx,vy,vz,width,height,lod_threshold);
+              if (subdivide && cur.hasChildren())
+                write = true;
+            }
           }
           
           if (!write && active)
-          {
             active_state[currentID] = 1;                
-            //if (cur.hasNeighbor()) active_state[cur.neighborID] = 1;
-          }                        
-
+          
           numIDs += writeSubgroup(&localIDs[numIDs],cur.leftID,write);          
           numIDs += writeSubgroup(&localIDs[numIDs],cur.rightID,write);
         }
@@ -504,89 +500,20 @@ namespace embree {
     });
 
 
-#else    
-    const uint wgSizeComputeLOD = 16;
-    const sycl::nd_range<1> nd_range1(alignTo(numRootsTotal,wgSizeComputeLOD),sycl::range<1>(wgSize));              
-    sycl::event compute_lod_event = global_gpu_queue->submit([=](sycl::handler& cgh){
-      cgh.depends_on(memset_event);        
-      cgh.depends_on(init_event);        
-      cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16) {
-        const unsigned int i = item.get_global_id(0);
-        
-        if (i < local_lcgbp_scene->numLCMeshClusterRoots)
-        {
-          const unsigned int clusterID = local_lcgbp_scene->lcm_cluster_roots_IDs[i];            
-#if FORCE_ROOT_LEVEL == 0
-          const ISPCCamera& camera = *_camera;          
-          const Vec3f org = camera.xfm.p;
-          const Vec3f vx = camera.xfm.l.vx;
-          const Vec3f vy = camera.xfm.l.vy;
-          const Vec3f vz = camera.xfm.l.vz;
-            
-          const LossyCompressedMeshCluster &root_cluster = local_lcgbp_scene->lcm_cluster[ clusterID ];
-
-          LossyCompressedMesh *mesh = root_cluster.mesh;
-          const Vec3f lower = mesh->bounds.lower;
-          const Vec3f diag = mesh->bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
-
-          bool cull = frustumCull( root_cluster.bounds.lower.decompress(lower,diag)-org,root_cluster.bounds.upper.decompress(lower,diag)-org,vx*width,vy*height,vz);
-          if (cull)
-          {
-            active_state[clusterID] = 1;                
-            if (root_cluster.hasNeighbor()) active_state[root_cluster.neighborID] = 1;
-          }
-          else
-          {
-            const unsigned int STACK_SIZE = 16;
-            unsigned int numStackEntries = 1; 
-            unsigned int stack[STACK_SIZE];
-            stack[0] = clusterID;
-            while(numStackEntries)
-            {
-              numStackEntries--;
-              const unsigned int currentID = stack[numStackEntries];
-              const LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[ currentID ];              
-
-              const Vec3f bounds_lower = cur.bounds.lower.decompress(lower,diag)-org;
-              const Vec3f bounds_upper = cur.bounds.upper.decompress(lower,diag)-org;
-              bool subdivide = subdivideLOD(BBox3f(bounds_lower,bounds_upper),vx,vy,vz,width,height,lod_threshold);
-              if (subdivide && cur.hasChildren() && (numStackEntries+2 <= STACK_SIZE))
-              {
-                stack[numStackEntries+0] = cur.leftID;
-                stack[numStackEntries+1] = cur.rightID;
-                numStackEntries+=2;
-              }                    
-              else
-              {
-                active_state[currentID] = 1;                
-                if (cur.hasNeighbor()) active_state[cur.neighborID] = 1;
-              }              
-            }
-          }
-#else              
-          {
-            const LossyCompressedMeshCluster &cluster = local_lcgbp_scene->lcm_cluster[ clusterID ];
-            LossyCompressedMesh *mesh = cluster.mesh;
-            active_state[clusterID] = 1;                
-            if (root_cluster.hasNeighbor()) active_state[root_cluster.neighborID] = 1;              
-          }
-#endif            
-        }
-      });
-    });
-#endif    
 
     // ================================================================================================================================
     // ================================================================================================================================
     // ================================================================================================================================
 
-#if 0  
+#if 0
     waitOnQueueAndCatchException(*global_gpu_queue);
+
     for (uint i=0;i<local_lcgbp_scene->numLCMeshClusters;i++)
     {
+      const LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[ i ];              
+        
       if (active_state[i])
       {
-        const LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[ i ];              
         if (cur.hasChildren())
         {
           //const LossyCompressedMeshCluster &neighbor = local_lcgbp_scene->lcm_cluster[ cur.neighborID ];              
