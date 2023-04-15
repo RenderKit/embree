@@ -2139,7 +2139,7 @@ namespace embree
             iteration_time += gpu::getDeviceExecutionTiming(queue_event);
 
 
- #if 0
+#if 0
     static double total_sum = 0.0f;
     static uint entries = 0;
     total_sum += gpu::getDeviceExecutionTiming(queue_event);

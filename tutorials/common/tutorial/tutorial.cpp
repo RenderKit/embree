@@ -668,6 +668,7 @@ namespace embree
     
     Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels);
     storeImage(image, fileName);
+    exit(0);
   }
 
   void TutorialApplication::compareToReferenceImage(const FileName& fileName)

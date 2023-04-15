@@ -1310,6 +1310,9 @@ namespace embree
   Ref<SceneGraph::Node> SceneGraph::subdivide_grids( Ref<SceneGraph::GridMeshNode> gmesh )
   {
     PING;
+    RandomSampler sampler;
+    RandomSampler_init(sampler, 0, 0, 0);
+    BBox3fa bounds(empty);
     typedef Vec3fa Vertex;
     SceneGraph::GridMeshNode::Grid &grid = gmesh->grids[0];
     const uint resX = grid.resX;
@@ -1345,12 +1348,18 @@ namespace embree
 
         const float u = 0.0f + (x%2) * 0.5f;
         const float v = 0.0f + (y%2) * 0.5f;
-        
-        positions[y*new_resX+x] = bpatch.eval(u,v);
+
+        Vec3fa p = bpatch.eval(u,v);
+        //p += RandomSampler_get1D(sampler) * Vec3fa(0,0.01,0);
+        //p += random(p) * Vec3fa(0,0.1,0);
+        positions[y*new_resX+x] = p;
 
         //positions[y*new_resX+x].z += noise(Vec3f((float)x/(new_resX),(float)y/(new_resY),0)) * 10;
-        
+        bounds.extend( positions[y*new_resX+x] );
       }
+
+    PRINT(bounds);
+    
     return new_gmesh.dynamicCast<SceneGraph::Node>();
     //return convert_grids_to_quads( new_gmesh.dynamicCast<SceneGraph::Node>() );    
   }

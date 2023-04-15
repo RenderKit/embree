@@ -62,7 +62,7 @@ namespace embree {
   extern "C" RenderMode user_rendering_mode = RENDER_PRIMARY;
   extern "C" unsigned int user_spp = 1;
   extern "C" unsigned int g_max_path_length = 2;
-  extern "C" unsigned int g_lod_threshold = 30;
+  extern "C" unsigned int g_lod_threshold = 24;
   extern "C" char* camera_file = nullptr;
   extern "C" unsigned int camera_mode = 0;
   
@@ -691,7 +691,7 @@ namespace embree {
     //ImGui::Text("BVH Build Time: %4.4f ms",avg_bvh_build_time.get());
     ImGui::Text("SPP:                %d",user_spp);        
     ImGui::Text("Per Frame Overhead: %4.4f ms",avg_bvh_build_time.get());
-    ImGui::Text("LOD Selection Time: %4.4f ms",avg_lod_selection_time.get());
+    //ImGui::Text("LOD Selection Time: %4.4f ms",avg_lod_selection_time.get());
     ImGui::DragInt("LOD Threshold",(int*)&g_lod_threshold,1,2,1000);
     
     RenderMode rendering_mode = user_rendering_mode;
