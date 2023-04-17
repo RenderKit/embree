@@ -202,6 +202,8 @@ ENDIF()
 
 OPTION(EMBREE_RAY_MASK "Enables ray mask support." ON)
 OPTION(EMBREE_BACKFACE_CULLING "Enables backface culling.")
+OPTION(EMBREE_BACKFACE_CULLING_CURVES "Enables backface culling for curve primitives." OFF)
+OPTION(EMBREE_BACKFACE_CULLING_SPHERES "Enables backface culling for sphere primitives." OFF)
 
 OPTION(EMBREE_FILTER_FUNCTION "Enables filter functions." ON)
 OPTION(EMBREE_IGNORE_INVALID_RAYS "Ignores invalid rays." OFF) # FIXME: enable by default?
