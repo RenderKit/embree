@@ -513,6 +513,14 @@ parameters that can be configured in CMake:
   surfaces facing a ray can be hit. This option is turned OFF by
   default.
 
++ `EMBREE_BACKFACE_CULLING_CURVES`: Enables backface culling for curves,
+  i.e. only surfaces facing a ray can be hit. This option is turned OFF
+  by default.
+
++ `EMBREE_BACKFACE_CULLING_SPHERES`: Enables backface culling for spheres,
+  i.e. only surfaces facing a ray can be hit. This option is turned OFF
+  by default.
+
 + `EMBREE_COMPACT_POLYS`: Enables compact tris/quads, i.e. only
   geomIDs and primIDs are stored inside the leaf nodes.  
 

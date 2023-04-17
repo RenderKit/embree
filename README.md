@@ -869,11 +869,6 @@ parameters that can be configured in CMake:
   When enabled intersections are skipped if the ray origin lies inside the
   sphere defined by the point primitive.
 
-+ `EMBREE_BACKFACE_CULLING_SPHERES`: Enables backface culling for
-  RTC_GEOMETRY_TYPE_SPHERE_POINT geometry type (OFF by default).
-  When enabled intersections are skipped if the ray hits a sphere
-  from the inside.
-
 + `EMBREE_MIN_WIDTH`: Enabled the min-width feature, which allows
   increasing the radius of curves and points to match some amount of
   pixels. See [rtcSetGeometryMaxRadiusScale] for more details.
@@ -1846,10 +1841,6 @@ Possible properties to query are:
 -   `RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED`: Queries whether
     back face culling is enabled. This is only the case if Embree is
     compiled with `EMBREE_BACKFACE_CULLING` enabled.
-
--   `RTC_DEVICE_PROPERTY_BACKFACE_CULLING_SPHERES_ENABLED`:
-    Queries whether back face culling for spehres is enabled. This is
-    only the case if Embree is compiled with `EMBREE_BACKFACE_CULLING_SPHERES` enabled.
 
 -   `RTC_DEVICE_PROPERTY_COMPACT_POLYS_ENABLED`: Queries whether
     compact polys is enabled. This is only the case if Embree is
