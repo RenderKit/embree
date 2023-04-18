@@ -495,23 +495,21 @@ namespace embree
 #endif
 
     bool verbose = false;
-    QBVH6BuilderSAH::build(numGeometries, nullptr, 
+    bool success = QBVH6BuilderSAH::build(numGeometries, nullptr, 
                            getSize, getType, 
                            createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance,
                            (char*)args->accelBuffer, args->accelBufferBytes,
                            args->scratchBuffer, args->scratchBufferBytes,
                            (BBox3f*) args->boundsOut, args->accelBufferBytesOut,
                            args->quality, args->flags, verbose, dispatchGlobalsPtr);
-    return ZE_RESULT_SUCCESS_;
-  }
-  
-  catch (std::exception& e) {
-    if (std::string(e.what()) == std::string(std::bad_alloc().what())) {
+    if (!success) {
       return ZE_RESULT_RAYTRACING_EXT_RETRY_BUILD_ACCEL;
     }
-    else {
-      return ZE_RESULT_ERROR_UNKNOWN_;
-    }
+    return ZE_RESULT_SUCCESS_;
+  }
+  catch (std::exception& e) {
+    std::cerr << "caught exception during BVH build: " << e.what() << std::endl;
+    return ZE_RESULT_ERROR_UNKNOWN_;
   }
   
   struct ze_raytracing_parallel_operation_ext_handle_t_IMPL
