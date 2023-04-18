@@ -604,7 +604,7 @@ namespace embree
       size.accelBufferExpectedBytes  = maxTimeSegments*sizeTotal.accelBufferExpectedBytes;
       size.accelBufferWorstCaseBytes = maxTimeSegments*sizeTotal.accelBufferWorstCaseBytes;
       size_t bytes = headerBytes+size.accelBufferExpectedBytes;
-        
+
       /* allocate BVH data */
       if (accel.size() < bytes) accel.resize(bytes);
       memset(accel.data(),0,accel.size()); // FIXME: not required
