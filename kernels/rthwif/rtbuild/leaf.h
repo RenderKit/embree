@@ -296,7 +296,7 @@ namespace embree
           uint32_t pad             : 9;   // unused bits
         };
       };
-      uint header[4];
+      unsigned int header[4];
     };
     
     Vec3f v0;  // first vertex of first triangle

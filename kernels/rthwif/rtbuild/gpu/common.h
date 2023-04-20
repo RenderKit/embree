@@ -84,56 +84,56 @@ namespace embree
 
 
     template<typename T>
-      static __forceinline uint atomic_add_global(T *dest, const T count=1)
+      static __forceinline unsigned int atomic_add_global(T *dest, const T count=1)
       {
         sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> counter(*dest);        
         return counter.fetch_add(count);      
       }
 
     template<typename T>
-      static __forceinline uint atomic_min_global(T *dest, const T count=1)
+      static __forceinline unsigned int atomic_min_global(T *dest, const T count=1)
       {
         sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> counter(*dest);        
         return counter.fetch_min(count);      
       }
 
     template<typename T>
-      static __forceinline uint atomic_max_global(T *dest, const T count=1)
+      static __forceinline unsigned int atomic_max_global(T *dest, const T count=1)
       {
         sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> counter(*dest);        
         return counter.fetch_max(count);      
       }
 
     template<typename T>
-      static __forceinline uint atomic_or_global(T *dest, const T count=1)
+      static __forceinline unsigned int atomic_or_global(T *dest, const T count=1)
       {
         sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> counter(*dest);        
         return counter.fetch_or(count);      
       }
     
     template<typename T>
-      static __forceinline uint atomic_add_local(T *dest, const T count=1)
+      static __forceinline unsigned int atomic_add_local(T *dest, const T count=1)
       {
         sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::work_group,sycl::access::address_space::local_space> counter(*dest);        
         return counter.fetch_add(count);      
       }
 
     template<typename T>
-      static __forceinline uint atomic_min_local(T *dest, const T count=1)
+      static __forceinline unsigned int atomic_min_local(T *dest, const T count=1)
       {
         sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::work_group,sycl::access::address_space::local_space> counter(*dest);        
         return counter.fetch_min(count);      
       }
 
     template<typename T>
-      static __forceinline uint atomic_max_local(T *dest, const T count=1)
+      static __forceinline unsigned int atomic_max_local(T *dest, const T count=1)
       {
         sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::work_group,sycl::access::address_space::local_space> counter(*dest);        
         return counter.fetch_max(count);      
       }
 
     template<typename T>
-      static __forceinline uint atomic_or_local(T *dest, const T count=1)
+      static __forceinline unsigned int atomic_or_local(T *dest, const T count=1)
       {
         sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::work_group,sycl::access::address_space::local_space> counter(*dest);        
         return counter.fetch_or(count);      
@@ -141,13 +141,13 @@ namespace embree
     
         
     template<typename T>
-      static __forceinline uint as_uint(T t)
+      static __forceinline unsigned int as_uint(T t)
       {
-	return __builtin_bit_cast(uint,t);
+	return __builtin_bit_cast(unsigned int,t);
       }
 
     template<typename T>
-      static __forceinline uint as_int(T t)
+      static __forceinline unsigned int as_int(T t)
       {
 	return __builtin_bit_cast(int,t);
       }
@@ -164,9 +164,9 @@ namespace embree
 	return __builtin_bit_cast(void*,t);
       }
     
-    __forceinline uint bitInterleave3D(const uint3 &in)
+    __forceinline unsigned int bitInterleave3D(const uint3 &in)
     {
-      uint x = in.x(), y = in.y(), z = in.z();
+      unsigned int x = in.x(), y = in.y(), z = in.z();
       x = (x | (x << 16)) & 0x030000FF;
       x = (x | (x << 8)) & 0x0300F00F;
       x = (x | (x << 4)) & 0x030C30C3;
@@ -186,9 +186,9 @@ namespace embree
     }
 
 
-    __forceinline uint bitInterleave4D(const uint4 &in)
+    __forceinline unsigned int bitInterleave4D(const uint4 &in)
     {
-      uint x = in.x(), y = in.y(), z = in.z(), w = in.w();
+      unsigned int x = in.x(), y = in.y(), z = in.z(), w = in.w();
 
       x = x & 0x000000ff;
       x = (x ^ (x << 16)) & 0x00c0003f;
@@ -221,7 +221,7 @@ namespace embree
       return (x | (y << 1) | (z << 2) | (w << 3));
     }
 
-    __forceinline uint64_t splitBy3(const uint a){
+    __forceinline uint64_t splitBy3(const unsigned int a){
       uint64_t x = a & 0x1fffff; 
       x = (x | x << 32) & 0x1f00000000ffff; 
       x = (x | x << 16) & 0x1f0000ff0000ff; 
@@ -236,34 +236,34 @@ namespace embree
     }
 
     __forceinline uint64_t bitInterleave4D_64bits(const uint4 &v){
-      const uint low  = bitInterleave4D(v>>0);
-      const uint high = bitInterleave4D(v>>8);
+      const unsigned int low  = bitInterleave4D(v>>0);
+      const unsigned int high = bitInterleave4D(v>>8);
       return (((uint64_t)high)<<32) | low;      
     }
     
     
-    __forceinline uint atomic_add_global_sub_group_shared(sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> &counter, const uint add)
+    __forceinline unsigned int atomic_add_global_sub_group_shared(sycl::atomic_ref<unsigned int, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> &counter, const unsigned int add)
     {
-      const uint subgroupLocalID = get_sub_group_local_id();    
-      const uint ballot = sub_group_ballot(true);
-      const uint first  = sycl::ctz(ballot);
-      const uint popc   = sycl::popcount(ballot);
-      const uint prefix = sycl::popcount(ballot & (((uint)1 << subgroupLocalID)-1));
-      uint index = 0;
+      const unsigned int subgroupLocalID = get_sub_group_local_id();    
+      const unsigned int ballot = sub_group_ballot(true);
+      const unsigned int first  = sycl::ctz(ballot);
+      const unsigned int popc   = sycl::popcount(ballot);
+      const unsigned int prefix = sycl::popcount(ballot & (((unsigned int)1 << subgroupLocalID)-1));
+      unsigned int index = 0;
       if (subgroupLocalID == first)
         index = counter.fetch_add(popc * add);
       index = sub_group_broadcast(index,first);
       return index + prefix;
     }
 
-    __forceinline uint atomic_add_local_sub_group_shared(sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::work_group,sycl::access::address_space::local_space> &counter, const uint add)
+    __forceinline unsigned int atomic_add_local_sub_group_shared(sycl::atomic_ref<unsigned int, sycl::memory_order::relaxed, sycl::memory_scope::work_group,sycl::access::address_space::local_space> &counter, const unsigned int add)
     {
-      const uint subgroupLocalID = get_sub_group_local_id();    
-      const uint ballot = sub_group_ballot(true);
-      const uint first  = sycl::ctz(ballot);
-      const uint popc   = sycl::popcount(ballot);
-      const uint prefix = sycl::popcount(ballot & (((uint)1 << subgroupLocalID)-1));
-      uint index = 0;
+      const unsigned int subgroupLocalID = get_sub_group_local_id();    
+      const unsigned int ballot = sub_group_ballot(true);
+      const unsigned int first  = sycl::ctz(ballot);
+      const unsigned int popc   = sycl::popcount(ballot);
+      const unsigned int prefix = sycl::popcount(ballot & (((unsigned int)1 << subgroupLocalID)-1));
+      unsigned int index = 0;
       if (subgroupLocalID == first)
         index = counter.fetch_add(popc * add);
       index = sub_group_broadcast(index,first);
@@ -271,14 +271,14 @@ namespace embree
     }
 
     template<typename T>        
-    __forceinline uint atomic_add_global_sub_group_varying(sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> &counter, const T add)
+    __forceinline unsigned int atomic_add_global_sub_group_varying(sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> &counter, const T add)
     {
-      const uint subgroupLocalID = get_sub_group_local_id();    
-      const uint ballot = sub_group_ballot(true);
-      const uint first  = sycl::ctz(ballot);
+      const unsigned int subgroupLocalID = get_sub_group_local_id();    
+      const unsigned int ballot = sub_group_ballot(true);
+      const unsigned int first  = sycl::ctz(ballot);
       const T total  = sub_group_reduce(add, SYCL_EXT_ONEAPI::plus<T>());
       const T prefix = sub_group_exclusive_scan(add, SYCL_EXT_ONEAPI::plus<T>());
-      uint index = 0;
+      unsigned int index = 0;
       if (subgroupLocalID == first)
         index = counter.fetch_add(total);
       index = sub_group_broadcast(index,first);
@@ -293,14 +293,14 @@ namespace embree
     }
 
     template<typename T>        
-    __forceinline uint atomic_add_local_sub_group_varying(sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::local_space> &counter, const T add)
+    __forceinline unsigned int atomic_add_local_sub_group_varying(sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::local_space> &counter, const T add)
     {
-      const uint subgroupLocalID = get_sub_group_local_id();    
-      const uint ballot = sub_group_ballot(true);
-      const uint first  = sycl::ctz(ballot);
+      const unsigned int subgroupLocalID = get_sub_group_local_id();    
+      const unsigned int ballot = sub_group_ballot(true);
+      const unsigned int first  = sycl::ctz(ballot);
       const T total  = sub_group_reduce(add, SYCL_EXT_ONEAPI::plus<T>());
       const T prefix = sub_group_exclusive_scan(add, SYCL_EXT_ONEAPI::plus<T>());
-      uint index = 0;
+      unsigned int index = 0;
       if (subgroupLocalID == first)
         index = counter.fetch_add(total);
       index = sub_group_broadcast(index,first);

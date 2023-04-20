@@ -113,9 +113,9 @@ namespace embree
       }
 
       
-      __forceinline void extend(const class AABB3f &aabb, const uint slot)
+      __forceinline void extend(const class AABB3f &aabb, const unsigned int slot)
       {
-        const uint subgroupLocalID = get_sub_group_local_id();
+        const unsigned int subgroupLocalID = get_sub_group_local_id();
         const bool cmp = subgroupLocalID == slot;        
         lower_x = cselect(cmp,min(lower_x,aabb.lower_x),lower_x);
         lower_y = cselect(cmp,min(lower_y,aabb.lower_y),lower_y);
@@ -370,10 +370,10 @@ namespace embree
         return result.sub_group_reduce();
       }
       
-      __forceinline AABB3f sub_group_invalidate_reduce_left(const uint pos) const
+      __forceinline AABB3f sub_group_invalidate_reduce_left(const unsigned int pos) const
       {
         AABB3f result;
-        const uint subgroupLocalID = get_sub_group_local_id();
+        const unsigned int subgroupLocalID = get_sub_group_local_id();
         const bool cmp = subgroupLocalID <= pos;
         const float _pos_inf =  INFINITY;
         const float _neg_inf = -INFINITY;
@@ -386,10 +386,10 @@ namespace embree
         return result.sub_group_reduce();
       }
 
-      __forceinline AABB3f sub_group_invalidate_reduce_right(const uint pos) const
+      __forceinline AABB3f sub_group_invalidate_reduce_right(const unsigned int pos) const
       {
         AABB3f result;
-        const uint subgroupLocalID = get_sub_group_local_id();
+        const unsigned int subgroupLocalID = get_sub_group_local_id();
         const bool cmp = subgroupLocalID > pos;
         const float _pos_inf =  INFINITY;
         const float _neg_inf = -INFINITY;        
@@ -428,9 +428,9 @@ namespace embree
         return true;
       }
 
-      __forceinline uint numEqualDims() const
+      __forceinline unsigned int numEqualDims() const
       {
-        uint equal_dims = lower_x == upper_x ? 1 : 0;
+        unsigned int equal_dims = lower_x == upper_x ? 1 : 0;
         equal_dims += lower_y == upper_y ? 1 : 0;
         equal_dims += lower_z == upper_z ? 1 : 0;
         return equal_dims;

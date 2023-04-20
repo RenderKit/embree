@@ -12,17 +12,17 @@ namespace embree
   {
 
     struct Range {
-      uint start;
-      uint end;
+      unsigned int start;
+      unsigned int end;
       __forceinline Range()
       {}
 
-      __forceinline Range(const uint start, const uint end) : start(start), end(end)
+      __forceinline Range(const unsigned int start, const unsigned int end) : start(start), end(end)
       {}
 
-      __forceinline uint size() const { return end-start; }
+      __forceinline unsigned int size() const { return end-start; }
 
-      __forceinline uint center() const { return (end+start)>>1; }
+      __forceinline unsigned int center() const { return (end+start)>>1; }
       
     };
 
@@ -34,22 +34,22 @@ namespace embree
 
     struct __aligned(8) MortonCodePrimitive40x24Bits3D
     {
-      static const uint GRID_SHIFT = 13; // * 3 = 30
+      static const unsigned int GRID_SHIFT = 13; // * 3 = 30
       
-      static const uint CODE_SHIFT = 64-(3*GRID_SHIFT+1);      
+      static const unsigned int CODE_SHIFT = 64-(3*GRID_SHIFT+1);      
       static const uint64_t INDEX_MASK = ((uint64_t)1 << CODE_SHIFT)-1;
         
       uint64_t index_code; // 64bit code + index combo
 
       __forceinline MortonCodePrimitive40x24Bits3D() {}      
-      __forceinline MortonCodePrimitive40x24Bits3D(const uint64_t code, const uint index) { index_code = (code << CODE_SHIFT) | (uint64_t)index; }
-      __forceinline MortonCodePrimitive40x24Bits3D(const uint3 &v, const uint index)
+      __forceinline MortonCodePrimitive40x24Bits3D(const uint64_t code, const unsigned int index) { index_code = (code << CODE_SHIFT) | (uint64_t)index; }
+      __forceinline MortonCodePrimitive40x24Bits3D(const uint3 &v, const unsigned int index)
       {
         const uint64_t code = gpu::bitInterleave3D(v);
         MortonCodePrimitive40x24Bits3D(code,index);
       }
 
-      __forceinline uint getIndex() const { return (uint)(index_code & INDEX_MASK); }
+      __forceinline unsigned int getIndex() const { return (unsigned int)(index_code & INDEX_MASK); }
       __forceinline uint64_t getCode()  const { return index_code; }
 
       __forceinline uint64_t getMCode()  const { return index_code & (~INDEX_MASK); }      
@@ -65,21 +65,21 @@ namespace embree
 
     struct __aligned(8) MortonCodePrimitive40x24Bits4D
     {
-      static const uint GRID_SHIFT = 10; // * 4 = 40      
-      static const uint CODE_SHIFT = 64-4*GRID_SHIFT;      
+      static const unsigned int GRID_SHIFT = 10; // * 4 = 40      
+      static const unsigned int CODE_SHIFT = 64-4*GRID_SHIFT;      
       static const uint64_t INDEX_MASK = ((uint64_t)1 << CODE_SHIFT)-1;
         
       uint64_t index_code; // 64bit code + index combo
 
       __forceinline MortonCodePrimitive40x24Bits4D() {}
-      __forceinline MortonCodePrimitive40x24Bits4D(const uint64_t code, const uint index) { index_code = (code << CODE_SHIFT) | (uint64_t)index; }
-      __forceinline MortonCodePrimitive40x24Bits4D(const uint4 &v, const uint index)
+      __forceinline MortonCodePrimitive40x24Bits4D(const uint64_t code, const unsigned int index) { index_code = (code << CODE_SHIFT) | (uint64_t)index; }
+      __forceinline MortonCodePrimitive40x24Bits4D(const uint4 &v, const unsigned int index)
       {
         const uint64_t code = gpu::bitInterleave4D(v);
         MortonCodePrimitive40x24Bits4D(code,index);
       }
       
-      __forceinline uint getIndex() const { return (uint)(index_code & INDEX_MASK); }
+      __forceinline unsigned int getIndex() const { return (unsigned int)(index_code & INDEX_MASK); }
       __forceinline uint64_t getCode()  const { return index_code; }
       __forceinline uint64_t getMCode()  const { return index_code & (~INDEX_MASK); }            
       __forceinline operator const uint64_t&()  const { return index_code; }
@@ -94,17 +94,17 @@ namespace embree
     /* used by PLOC in a two phase process */
     struct __aligned(8) MortonCodePrimitive64Bit_2x
     {
-      static const uint GRID_SHIFT = 21; // * 3 = 63
+      static const unsigned int GRID_SHIFT = 21; // * 3 = 63
       
-      static const uint CODE_SHIFT = 32;      
+      static const unsigned int CODE_SHIFT = 32;      
       static const uint64_t INDEX_MASK = ((uint64_t)1 << CODE_SHIFT)-1;
         
       uint64_t index_code; // 64bit code + index combo
 
       __forceinline MortonCodePrimitive64Bit_2x() {}
-      __forceinline MortonCodePrimitive64Bit_2x(const uint64_t code, const uint index) { index_code = (code << CODE_SHIFT) | (uint64_t)index; }
+      __forceinline MortonCodePrimitive64Bit_2x(const uint64_t code, const unsigned int index) { index_code = (code << CODE_SHIFT) | (uint64_t)index; }
 
-      __forceinline uint getIndex() const { return (uint)(index_code & INDEX_MASK); }
+      __forceinline unsigned int getIndex() const { return (unsigned int)(index_code & INDEX_MASK); }
       __forceinline uint64_t getCode()  const { return index_code; }
 
       __forceinline uint64_t getMCode()  const { return index_code & (~INDEX_MASK); }      
@@ -121,15 +121,15 @@ namespace embree
 
     struct MortonCodePrimitive64x32Bits3D
     {
-      static const uint GRID_SHIFT = 21; // * 3 = 63
-      static const uint KEY_BITS   = 64;
+      static const unsigned int GRID_SHIFT = 21; // * 3 = 63
+      static const unsigned int KEY_BITS   = 64;
       
       uint64_t code;
-      uint index;
+      unsigned int index;
 
       __forceinline MortonCodePrimitive64x32Bits3D() {}      
-      __forceinline MortonCodePrimitive64x32Bits3D(const uint64_t code, const uint index) : code(code), index(index) {}
-      __forceinline MortonCodePrimitive64x32Bits3D(const uint3 &v, const uint index) : code(gpu::bitInterleave3D_64bits(v)), index(index)
+      __forceinline MortonCodePrimitive64x32Bits3D(const uint64_t code, const unsigned int index) : code(code), index(index) {}
+      __forceinline MortonCodePrimitive64x32Bits3D(const uint3 &v, const unsigned int index) : code(gpu::bitInterleave3D_64bits(v)), index(index)
       {
       }
       
@@ -146,21 +146,21 @@ namespace embree
 
       __forceinline uint64_t getCode() const { return code; }
       __forceinline uint64_t getMCode()  const { return code; }            
-      __forceinline uint    getIndex() const { return index; }
+      __forceinline unsigned int    getIndex() const { return index; }
       __forceinline operator const uint64_t&()  const { return code; }    
     };
 
     struct MortonCodePrimitive64x32Bits4D
     {
-      static const uint GRID_SHIFT = 16; // * 4 = 64
-      static const uint KEY_BITS   = 64;
+      static const unsigned int GRID_SHIFT = 16; // * 4 = 64
+      static const unsigned int KEY_BITS   = 64;
       
       uint64_t code;
-      uint index;
+      unsigned int index;
 
       __forceinline MortonCodePrimitive64x32Bits4D() {}
-      __forceinline MortonCodePrimitive64x32Bits4D(const uint64_t code, const uint index) : code(code), index(index) {}
-      __forceinline MortonCodePrimitive64x32Bits4D(const uint4 &v, const uint index) : code( gpu::bitInterleave4D_64bits(v)), index(index)
+      __forceinline MortonCodePrimitive64x32Bits4D(const uint64_t code, const unsigned int index) : code(code), index(index) {}
+      __forceinline MortonCodePrimitive64x32Bits4D(const uint4 &v, const unsigned int index) : code( gpu::bitInterleave4D_64bits(v)), index(index)
       {
       }
       
@@ -177,7 +177,7 @@ namespace embree
 
       __forceinline uint64_t getCode() const { return code; }
       __forceinline uint64_t getMCode()  const { return code; }            
-      __forceinline uint    getIndex() const { return index; }
+      __forceinline unsigned int    getIndex() const { return index; }
       __forceinline operator const uint64_t&()  const { return code; }    
     };
     
@@ -210,18 +210,18 @@ namespace embree
       }
       else  /* if all items mapped to same morton code */
       {
-        uint bitpos = sycl::clz(morton[current.start].getIndex()^morton[current.end-1].getIndex());
+        unsigned int bitpos = sycl::clz(morton[current.start].getIndex()^morton[current.end-1].getIndex());
         
         /* split the items at the topmost different morton code bit */
-        const uint bitpos_diff = 31-bitpos;
-        const uint bitmask = (uint)1 << bitpos_diff;
+        const unsigned int bitpos_diff = 31-bitpos;
+        const unsigned int bitmask = (unsigned int)1 << bitpos_diff;
   
         /* find location where bit differs using binary search */
         unsigned int begin = current.start;
         unsigned int end   = current.end;
         while (begin + 1 != end) {
           const unsigned int mid = (begin+end)/2;
-          const uint bit = morton[mid].getIndex() & bitmask;
+          const unsigned int bit = morton[mid].getIndex() & bitmask;
           if (bit == 0) begin = mid; else end = mid;
         }
         unsigned int center = end;
@@ -230,7 +230,7 @@ namespace embree
     }
 
     template<typename type>      
-      __forceinline uint delta(const type& m0, const type& m1)
+      __forceinline unsigned int delta(const type& m0, const type& m1)
     {
       return m0.getCode() != m1 .getCode() ? (m0.getCode()^m1.getCode()) : m0.getIndex()^m1.getIndex(); //sycl::ext::intel::ctz(m0.index_code^m1.index_code);
     }
@@ -239,7 +239,7 @@ namespace embree
     template<typename type>  
       __forceinline void splitRange(const gpu::Range &current, const type *const morton, gpu::Range &left, gpu::Range &right)
     {
-      const uint split = findSplit64Bit(current,morton);
+      const unsigned int split = findSplit64Bit(current,morton);
       left.start  = current.start;
       left.end    = split;
       right.start = split;
@@ -248,13 +248,13 @@ namespace embree
 
 
     template<typename type>          
-      __forceinline int sigma(const int i1, const int i2, const type *const morton, const uint numPrimitives) 
+      __forceinline int sigma(const int i1, const int i2, const type *const morton, const unsigned int numPrimitives) 
     {
       const int left  = min(i1, i2);
       const int right = max(i1, i2);
       if (left < 0 || right >= numPrimitives) return -1;
-      const ulong left_code  = morton[left].getCode();
-      const ulong right_code = morton[right].getCode();
+      const unsigned long left_code  = morton[left].getCode();
+      const unsigned long right_code = morton[right].getCode();
       if (left_code != right_code)
         return sycl::clz(left_code ^ right_code);
       else
@@ -262,7 +262,7 @@ namespace embree
     }
 
     template<typename type>          
-      __forceinline struct gpu::Range findSegment(const unsigned int idx, const type *const mc, uint const numPrimitives)
+      __forceinline struct gpu::Range findSegment(const unsigned int idx, const type *const mc, unsigned int const numPrimitives)
     {
       const int delta = sigma(idx, idx+1, mc, numPrimitives) >= sigma(idx, idx-1, mc, numPrimitives) ? 1 : -1;
       const int sigma_min = sigma(idx, idx-delta, mc, numPrimitives);
