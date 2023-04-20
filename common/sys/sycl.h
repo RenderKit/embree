@@ -51,10 +51,11 @@ SYCL_EXTERNAL extern float atomic_min(volatile LOCAL  float *p, float val);
 SYCL_EXTERNAL extern float atomic_max(volatile GLOBAL float *p, float val);
 SYCL_EXTERNAL extern float atomic_max(volatile LOCAL  float *p, float val);
 
-SYCL_EXTERNAL extern "C" uint intel_sub_group_ballot(bool valid);
+SYCL_EXTERNAL extern "C" unsigned int intel_sub_group_ballot(bool valid);
 
 SYCL_EXTERNAL extern "C" void __builtin_IB_assume_uniform(void *p);
 
+#if 0
 // Load message caching control
 
   enum LSC_LDCC {
@@ -91,9 +92,9 @@ SYCL_EXTERNAL extern "C" void __builtin_IB_assume_uniform(void *p);
 
 ///////////////////////////////////////////////////////////////////////
 
-SYCL_EXTERNAL /* extern "C" */ uint          __builtin_IB_lsc_load_global_uchar_to_uint (const GLOBAL sycl::uchar  *base, int elemOff, enum LSC_LDCC cacheOpt);     //D8U32
-SYCL_EXTERNAL /* extern "C" */ uint          __builtin_IB_lsc_load_global_ushort_to_uint(const GLOBAL sycl::ushort *base, int elemOff, enum LSC_LDCC cacheOpt);   //D16U32
-SYCL_EXTERNAL /* extern "C" */ uint          __builtin_IB_lsc_load_global_uint  (const GLOBAL sycl::uint   *base, int elemOff, enum LSC_LDCC cacheOpt);       //D32V1
+SYCL_EXTERNAL /* extern "C" */ unsigned int          __builtin_IB_lsc_load_global_uchar_to_uint (const GLOBAL sycl::uchar  *base, int elemOff, enum LSC_LDCC cacheOpt);     //D8U32
+SYCL_EXTERNAL /* extern "C" */ unsigned int          __builtin_IB_lsc_load_global_ushort_to_uint(const GLOBAL sycl::ushort *base, int elemOff, enum LSC_LDCC cacheOpt);   //D16U32
+SYCL_EXTERNAL /* extern "C" */ unsigned int          __builtin_IB_lsc_load_global_uint  (const GLOBAL sycl::uint   *base, int elemOff, enum LSC_LDCC cacheOpt);       //D32V1
 SYCL_EXTERNAL /* extern "C" */ sycl::uint2   __builtin_IB_lsc_load_global_uint2 (const GLOBAL sycl::uint2  *base, int elemOff, enum LSC_LDCC cacheOpt);     //D32V2
 SYCL_EXTERNAL /* extern "C" */ sycl::uint3   __builtin_IB_lsc_load_global_uint3 (const GLOBAL sycl::uint3  *base, int elemOff, enum LSC_LDCC cacheOpt);     //D32V3
 SYCL_EXTERNAL /* extern "C" */ sycl::uint4   __builtin_IB_lsc_load_global_uint4 (const GLOBAL sycl::uint4  *base, int elemOff, enum LSC_LDCC cacheOpt);     //D32V4
@@ -137,6 +138,9 @@ SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_ulong3(const GLO
 SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_ulong4(const GLOBAL sycl::ulong4 *base, int immElemOff, enum LSC_LDCC cacheOpt); //D64V4
 SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_ulong8(const GLOBAL sycl::ulong8 *base, int immElemOff, enum LSC_LDCC cacheOpt); //D64V8
 
+#endif
+
+
 #else
 
 #define GLOBAL 
@@ -150,7 +154,7 @@ inline float work_group_reduce_max(float x) { return x; }
 inline float atomic_min(volatile float *p, float val) { return val; };
 inline float atomic_max(volatile float *p, float val) { return val; };
 
-inline uint intel_sub_group_ballot(bool valid) { return 0; }
+inline unsigned int intel_sub_group_ballot(bool valid) { return 0; }
 
 #endif
 
@@ -192,23 +196,23 @@ namespace embree
     return SYCL_EXPERIMENTAL::this_sub_group(); 
   }
   
-  __forceinline const uint get_sub_group_local_id() {
+  __forceinline const unsigned int get_sub_group_local_id() {
     return this_sub_group().get_local_id()[0];
   }
 
-  __forceinline const uint get_sub_group_size() {
+  __forceinline const unsigned int get_sub_group_size() {
     return this_sub_group().get_max_local_range().size();
   }
 
-  __forceinline const uint get_sub_group_id() {
+  __forceinline const unsigned int get_sub_group_id() {
     return this_sub_group().get_group_id()[0];
   }
   
-  __forceinline const uint get_num_sub_groups() {
+  __forceinline const unsigned int get_num_sub_groups() {
     return this_sub_group().get_group_range().size();
   }
   
-  __forceinline uint sub_group_ballot(bool pred) {
+  __forceinline unsigned int sub_group_ballot(bool pred) {
     return intel_sub_group_ballot(pred);
   }
 
