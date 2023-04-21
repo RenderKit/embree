@@ -322,7 +322,7 @@ namespace embree
   {
     BBox1f time_range = * (BBox1f*) buildUserPtr;
     Geometry* geom = (Geometry*) geomUserPtr;
-      
+
     for (uint32_t i=0; i<primIDCount; i++)
     {
       const uint32_t primID = primIDStart+i;
@@ -685,7 +685,8 @@ namespace embree
         const float t0 = float(i+0)/float(maxTimeSegments);
         const float t1 = float(i+1)/float(maxTimeSegments);
         time_range = BBox1f(t0,t1);
-
+        //args.buildUserPtr = &time_range;
+        
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
         args.geometries = (const ze_raytracing_geometry_ext_desc_t**) geomDescr;
         args.numGeometries = numGeometries;        

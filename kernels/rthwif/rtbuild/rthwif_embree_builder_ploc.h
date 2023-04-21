@@ -1412,6 +1412,7 @@ namespace embree
 
     BBox3f bounds;
     (geom->getBounds)(primID,1,geom->geomUserPtr,buildUserPtr,(_ze_raytracing_aabb_ext_t*)&bounds);
+
     if (unlikely(!isvalid(bounds.lower))) return false;
     if (unlikely(!isvalid(bounds.upper))) return false;
     if (unlikely(bounds.empty())) return false;
@@ -1420,10 +1421,9 @@ namespace embree
     return true;
   }
   
-   unsigned int createProcedurals_initPLOCPrimRefs(sycl::queue &gpu_queue, const _ze_raytracing_geometry_ext_desc_t **const geometry_desc, const unsigned int numGeoms, unsigned int *scratch_mem, const unsigned int MAX_WGS, BVH2Ploc *const bvh2, const unsigned int prim_type_offset, unsigned int *host_device_tasks, double &iteration_time, const bool verbose)    
+   unsigned int createProcedurals_initPLOCPrimRefs(sycl::queue &gpu_queue, const _ze_raytracing_geometry_ext_desc_t **const geometry_desc, const unsigned int numGeoms, unsigned int *scratch_mem, const unsigned int MAX_WGS, BVH2Ploc *const bvh2, const unsigned int prim_type_offset, void* buildUserPtr, unsigned int *host_device_tasks, double &iteration_time, const bool verbose)    
   {
     //FIXME: GPU version
-    
     unsigned int ID = 0;
     for (unsigned int userGeomID=0;userGeomID<numGeoms;userGeomID++)
     {
@@ -1438,11 +1438,11 @@ namespace embree
           {
             BBox3fa procedural_bounds;
             
-            if (!buildBounds(procedural,i,procedural_bounds,procedural->geomUserPtr)) continue;
+            if (!buildBounds(procedural,i,procedural_bounds,buildUserPtr)) continue;
 
             gpu::AABB3f bounds = gpu::AABB3f(procedural_bounds.lower.x,procedural_bounds.lower.y,procedural_bounds.lower.z,
                                              procedural_bounds.upper.x,procedural_bounds.upper.y,procedural_bounds.upper.z);
-            
+
             BVH2Ploc node;                             
             node.initLeaf(userGeomID,i,bounds);                               
             node.store(&bvh2[prim_type_offset + ID]);

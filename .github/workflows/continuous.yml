@@ -223,10 +223,11 @@ jobs:
     needs: [setup_gfx, setup_dpcpp]
     with:
       image: embree/ubuntu:22.04
+      options: --device=/dev/dri:/dev/dri      
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-public.env
-      install-gfx-driver: false      
+#      install-gfx-driver: false      
       artifact-out: linux-DG2-JIT-PUBLIC-GPU-BVH-BUILDER
       artifact-path: ./build .ctest_conf
       cmd: |

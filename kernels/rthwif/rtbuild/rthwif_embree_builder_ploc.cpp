@@ -617,9 +617,9 @@ RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingPrefetchAccelGPUExt( const ze_ra
     // ====================================          
     // ==== create procedural primrefs ====
     // ====================================
-
+    
     if (numProcedurals)
-      numProcedurals = createProcedurals_initPLOCPrimRefs(gpu_queue,args->geometries,numGeometries,sync_mem,NUM_ACTIVE_LARGE_WGS,bvh2,numQuads,host_device_tasks,create_primref_time,verbose1);
+      numProcedurals = createProcedurals_initPLOCPrimRefs(gpu_queue,args->geometries,numGeometries,sync_mem,NUM_ACTIVE_LARGE_WGS,bvh2,numQuads,args->buildUserPtr,host_device_tasks,create_primref_time,verbose1);
 
     // ==================================          
     // ==== create instance primrefs ====
