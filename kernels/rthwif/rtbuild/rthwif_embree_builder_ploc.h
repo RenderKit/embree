@@ -458,31 +458,31 @@ namespace embree
   // ===================================================================================================================================================================================
 
 
-  __forceinline const RTHWIF_TRIANGLE_INDICES &getTriangleDesc(const RTHWIF_GEOMETRY_TRIANGLES_DESC& mesh, const unsigned int triID)
+  __forceinline const _ze_raytracing_triangle_indices_uint32_ext_t &getTriangleDesc(const  _ze_raytracing_geometry_triangles_ext_desc_t& mesh, const unsigned int triID)
   {
-    return *(RTHWIF_TRIANGLE_INDICES*)((char*)mesh.triangleBuffer + mesh.triangleStride * uint64_t(triID));    
+    return *(_ze_raytracing_triangle_indices_uint32_ext_t*)((char*)mesh.triangleBuffer + mesh.triangleStride * uint64_t(triID));    
   }
 
-  __forceinline const RTHWIF_QUAD_INDICES &getQuadDesc(const RTHWIF_GEOMETRY_QUADS_DESC& mesh, const unsigned int triID)
+  __forceinline const _ze_raytracing_quad_indices_uint32_ext_t &getQuadDesc(const _ze_raytracing_geometry_quads_ext_desc_t& mesh, const unsigned int triID)
   {
-    return *(RTHWIF_QUAD_INDICES*)((char*)mesh.quadBuffer + mesh.quadStride * uint64_t(triID));    
+    return *(_ze_raytracing_quad_indices_uint32_ext_t*)((char*)mesh.quadBuffer + mesh.quadStride * uint64_t(triID));    
   }
     
-  __forceinline Vec3f getVec3f(const RTHWIF_GEOMETRY_TRIANGLES_DESC& mesh, const unsigned int vtxID)
+  __forceinline Vec3f getVec3f(const  _ze_raytracing_geometry_triangles_ext_desc_t& mesh, const unsigned int vtxID)
   {
     return *(Vec3f*)((char*)mesh.vertexBuffer + mesh.vertexStride * uint64_t(vtxID));
     
   }
 
-  __forceinline Vec3f getVec3f(const RTHWIF_GEOMETRY_QUADS_DESC& mesh, const unsigned int vtxID)
+  __forceinline Vec3f getVec3f(const _ze_raytracing_geometry_quads_ext_desc_t& mesh, const unsigned int vtxID)
   {
     return *(Vec3f*)((char*)mesh.vertexBuffer + mesh.vertexStride * uint64_t(vtxID));
     
   }
     
-  __forceinline bool isValidTriangle(const RTHWIF_GEOMETRY_TRIANGLES_DESC& mesh, const unsigned int i, uint3 &indices, gpu::AABB3f &bounds)
+  __forceinline bool isValidTriangle(const  _ze_raytracing_geometry_triangles_ext_desc_t& mesh, const unsigned int i, uint3 &indices, gpu::AABB3f &bounds)
   {
-    const RTHWIF_TRIANGLE_INDICES &tri = getTriangleDesc(mesh,i);
+    const _ze_raytracing_triangle_indices_uint32_ext_t &tri = getTriangleDesc(mesh,i);
     const unsigned int numVertices = mesh.vertexCount;
     indices.x() = tri.v0;
     indices.y() = tri.v1;
@@ -507,9 +507,9 @@ namespace embree
     return true;
   }
   
-  __forceinline bool isValidQuad(const RTHWIF_GEOMETRY_QUADS_DESC& mesh, const unsigned int i, uint4 &indices, gpu::AABB3f &bounds)
+  __forceinline bool isValidQuad(const _ze_raytracing_geometry_quads_ext_desc_t& mesh, const unsigned int i, uint4 &indices, gpu::AABB3f &bounds)
   {
-    const RTHWIF_QUAD_INDICES &quad = getQuadDesc(mesh,i);
+    const _ze_raytracing_quad_indices_uint32_ext_t &quad = getQuadDesc(mesh,i);
     const unsigned int numVertices = mesh.vertexCount;
     indices.x() = quad.v0;
     indices.y() = quad.v1;
@@ -593,7 +593,7 @@ namespace embree
       return false;
   }
 
-  __forceinline unsigned int getBlockQuadificationCount(const RTHWIF_GEOMETRY_TRIANGLES_DESC* const triMesh, const unsigned int localID, const unsigned int startPrimID, const unsigned int endPrimID)
+  __forceinline unsigned int getBlockQuadificationCount(const  _ze_raytracing_geometry_triangles_ext_desc_t* const triMesh, const unsigned int localID, const unsigned int startPrimID, const unsigned int endPrimID)
   {
     const unsigned int subgroupLocalID = get_sub_group_local_id();
     const unsigned int subgroupSize    = get_sub_group_size();            
@@ -638,7 +638,7 @@ namespace embree
     return numQuads;
   }
 
-  __forceinline unsigned int getMergedQuadBounds(const RTHWIF_GEOMETRY_TRIANGLES_DESC* const triMesh, const unsigned int ID, const unsigned int endPrimID, gpu::AABB3f &bounds)
+  __forceinline unsigned int getMergedQuadBounds(const  _ze_raytracing_geometry_triangles_ext_desc_t* const triMesh, const unsigned int ID, const unsigned int endPrimID, gpu::AABB3f &bounds)
   {
     const unsigned int subgroupLocalID = get_sub_group_local_id();
     const unsigned int subgroupSize    = get_sub_group_size();        
@@ -696,12 +696,12 @@ namespace embree
   // ============================================================================== Instances ==========================================================================================
   // ===================================================================================================================================================================================
 
-  __forceinline AffineSpace3fa getTransform(const RTHWIF_GEOMETRY_INSTANCE_DESC* geom)
+  __forceinline AffineSpace3fa getTransform(const _ze_raytracing_geometry_instance_ext_desc_t* geom)
   {
     switch (geom->transformFormat)
     {
-    case RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_COLUMN_MAJOR: {
-      const RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR*) geom->transform;
+    case ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_COLUMN_MAJOR: {
+      const ze_raytracing_transform_float3x4_column_major_ext_t* xfm = (const ze_raytracing_transform_float3x4_column_major_ext_t*) geom->transform;
       return {
         { xfm->vx_x, xfm->vx_y, xfm->vx_z },
         { xfm->vy_x, xfm->vy_y, xfm->vy_z },
@@ -709,8 +709,8 @@ namespace embree
         { xfm-> p_x, xfm-> p_y, xfm-> p_z }
       };
     }
-    case RTHWIF_TRANSFORM_FORMAT_FLOAT4X4_COLUMN_MAJOR: {
-      const RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR*) geom->transform;
+    case ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_ALIGNED_COLUMN_MAJOR: {
+      const ze_raytracing_transform_float3x4_aligned_column_major_ext_t* xfm = (const ze_raytracing_transform_float3x4_aligned_column_major_ext_t*) geom->transform;
       return {
         { xfm->vx_x, xfm->vx_y, xfm->vx_z },
         { xfm->vy_x, xfm->vy_y, xfm->vy_z },
@@ -718,19 +718,21 @@ namespace embree
         { xfm-> p_x, xfm-> p_y, xfm-> p_z }
       };
     }
-    case RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_ROW_MAJOR: {
-      const RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR*) geom->transform;
+    case ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_ROW_MAJOR: {
+      const ze_raytracing_transform_float3x4_row_major_ext_t* xfm = (const ze_raytracing_transform_float3x4_row_major_ext_t*) geom->transform;
       return {
         { xfm->vx_x, xfm->vx_y, xfm->vx_z },
         { xfm->vy_x, xfm->vy_y, xfm->vy_z },
         { xfm->vz_x, xfm->vz_y, xfm->vz_z },
         { xfm-> p_x, xfm-> p_y, xfm-> p_z }
-      };      
+      };
     }
+    default:
+      return AffineSpace3fa(); 
     }
   }  
 
-  __forceinline gpu::AABB3f getInstanceBounds(const RTHWIF_GEOMETRY_INSTANCE_DESC &instance)
+  __forceinline gpu::AABB3f getInstanceBounds(const _ze_raytracing_geometry_instance_ext_desc_t &instance)
   {
     const Vec3fa lower(instance.bounds->lower.x,instance.bounds->lower.y,instance.bounds->lower.z);
     const Vec3fa upper(instance.bounds->upper.x,instance.bounds->upper.y,instance.bounds->upper.z);
@@ -742,7 +744,7 @@ namespace embree
     return bounds;
   }
   
-  __forceinline bool isValidInstance(const RTHWIF_GEOMETRY_INSTANCE_DESC& instance, gpu::AABB3f &bounds)
+  __forceinline bool isValidInstance(const _ze_raytracing_geometry_instance_ext_desc_t& instance, gpu::AABB3f &bounds)
   {
     if (instance.bounds == nullptr) return false;    
     bounds = getInstanceBounds(instance);
@@ -934,7 +936,7 @@ namespace embree
   }
   
 
-  PrimitiveCounts countPrimitives(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometries, const unsigned int numGeometries, PLOCGlobals *const globals, unsigned int *blocksPerGeom, unsigned int *host_device_tasks, double &iteration_time, const bool verbose)    
+  PrimitiveCounts countPrimitives(sycl::queue &gpu_queue, const _ze_raytracing_geometry_ext_desc_t **const geometries, const unsigned int numGeometries, PLOCGlobals *const globals, unsigned int *blocksPerGeom, unsigned int *host_device_tasks, double &iteration_time, const bool verbose)    
   {
     PrimitiveCounts count;
     const unsigned int wgSize = LARGE_WG_SIZE;
@@ -968,26 +970,26 @@ namespace embree
                            if (geomID < numGeometries)
                            {
                              unsigned int numBlocks = 0;                             
-                             const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+                             const _ze_raytracing_geometry_ext_desc_t* geom = geometries[geomID];
                              if (geom != nullptr) {
                                switch (geom->geometryType)
                                {
-                               case RTHWIF_GEOMETRY_TYPE_TRIANGLES  :
+                               case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES  :
                                {
-                                 gpu::atomic_add_local(&numTriangles  , ((RTHWIF_GEOMETRY_TRIANGLES_DESC *)geom)->triangleCount);
-                                 gpu::atomic_add_local(&numQuadBlocks ,(((RTHWIF_GEOMETRY_TRIANGLES_DESC *)geom)->triangleCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE);
-                                 numBlocks += (((RTHWIF_GEOMETRY_TRIANGLES_DESC *)geom)->triangleCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE;
+                                 gpu::atomic_add_local(&numTriangles  , (( _ze_raytracing_geometry_triangles_ext_desc_t *)geom)->triangleCount);
+                                 gpu::atomic_add_local(&numQuadBlocks ,((( _ze_raytracing_geometry_triangles_ext_desc_t *)geom)->triangleCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE);
+                                 numBlocks += ((( _ze_raytracing_geometry_triangles_ext_desc_t *)geom)->triangleCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE;
                                  break;
                                }
-                               case RTHWIF_GEOMETRY_TYPE_QUADS      :
+                               case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS      :
                                {
-                                 gpu::atomic_add_local(&numQuads      , ((RTHWIF_GEOMETRY_QUADS_DESC     *)geom)->quadCount);
-                                 gpu::atomic_add_local(&numQuadBlocks ,(((RTHWIF_GEOMETRY_QUADS_DESC *)geom)->quadCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE);
-                                 numBlocks += (((RTHWIF_GEOMETRY_QUADS_DESC *)geom)->quadCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE;
+                                 gpu::atomic_add_local(&numQuads      , ((_ze_raytracing_geometry_quads_ext_desc_t     *)geom)->quadCount);
+                                 gpu::atomic_add_local(&numQuadBlocks ,(((_ze_raytracing_geometry_quads_ext_desc_t *)geom)->quadCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE);
+                                 numBlocks += (((_ze_raytracing_geometry_quads_ext_desc_t *)geom)->quadCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE;
                                  break;
                                }
-                               case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR :  gpu::atomic_add_local(&numProcedurals,((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geom)->primCount);     break;
-                               case RTHWIF_GEOMETRY_TYPE_INSTANCE   :  gpu::atomic_add_local(&numInstances  ,(unsigned int)1); break;
+                               case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR :  gpu::atomic_add_local(&numProcedurals,((_ze_raytracing_geometry_aabbs_fptr_ext_desc_t*)geom)->primCount);     break;
+                               case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE   :  gpu::atomic_add_local(&numInstances  ,(unsigned int)1); break;
                                };
                              }
                              blocksPerGeom[geomID] = numBlocks;
@@ -1033,7 +1035,7 @@ namespace embree
   }  
 
 
-  unsigned int countQuadsPerGeometryUsingBlocks(sycl::queue &gpu_queue, PLOCGlobals *const globals, const RTHWIF_GEOMETRY_DESC **const geometries, const unsigned int numGeoms, const unsigned int numQuadBlocks, unsigned int *const blocksPerGeom, unsigned int *const quadsPerBlock, unsigned int *const host_device_tasks, double &iteration_time, const bool verbose)    
+  unsigned int countQuadsPerGeometryUsingBlocks(sycl::queue &gpu_queue, PLOCGlobals *const globals, const _ze_raytracing_geometry_ext_desc_t **const geometries, const unsigned int numGeoms, const unsigned int numQuadBlocks, unsigned int *const blocksPerGeom, unsigned int *const quadsPerBlock, unsigned int *const host_device_tasks, double &iteration_time, const bool verbose)    
   {
     sycl::event initial;
     sycl::event prefix_sum_blocks_event = prefixSumOverCounts(gpu_queue,initial,numGeoms,blocksPerGeom,host_device_tasks,verbose);     
@@ -1058,15 +1060,15 @@ namespace embree
                            
                            item.barrier(sycl::access::fence_space::local_space);
                            const unsigned int blockID        = globalBlockID - blocksPerGeom[geomID];
-                           const RTHWIF_GEOMETRY_DESC *const geometryDesc = geometries[geomID];
+                           const _ze_raytracing_geometry_ext_desc_t *const geometryDesc = geometries[geomID];
                            
                            // ====================                           
                            // === TriangleMesh ===
                            // ====================
                            
-                           if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_TRIANGLES)
+                           if (geometryDesc->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES)
                            {
-                             RTHWIF_GEOMETRY_TRIANGLES_DESC* triMesh = (RTHWIF_GEOMETRY_TRIANGLES_DESC*)geometryDesc;                             
+                              _ze_raytracing_geometry_triangles_ext_desc_t* triMesh = ( _ze_raytracing_geometry_triangles_ext_desc_t*)geometryDesc;                             
                              const unsigned int numTriangles   = triMesh->triangleCount;
                              {                                                                          
                                const unsigned int startPrimID = blockID*TRIANGLE_QUAD_BLOCK_SIZE;
@@ -1079,9 +1081,9 @@ namespace embree
                            // ================                           
                            // === QuadMesh ===
                            // ================
-                           else if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_QUADS)
+                           else if (geometryDesc->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS)
                            {
-                             RTHWIF_GEOMETRY_QUADS_DESC* quadMesh = (RTHWIF_GEOMETRY_QUADS_DESC*)geometryDesc;                                                          
+                             _ze_raytracing_geometry_quads_ext_desc_t* quadMesh = (_ze_raytracing_geometry_quads_ext_desc_t*)geometryDesc;                                                          
                              const unsigned int numQuads  = quadMesh->quadCount;
                              {                                                                          
                                const unsigned int startPrimID  = blockID*TRIANGLE_QUAD_BLOCK_SIZE;
@@ -1143,7 +1145,7 @@ namespace embree
     return numMergedTrisQuads;
   }
    
-   PrimitiveCounts getEstimatedPrimitiveCounts(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometries, const unsigned int numGeoms, const bool verbose)    
+   PrimitiveCounts getEstimatedPrimitiveCounts(sycl::queue &gpu_queue, const _ze_raytracing_geometry_ext_desc_t **const geometries, const unsigned int numGeoms, const bool verbose)    
   {
     if (numGeoms == 0) return PrimitiveCounts();
 
@@ -1182,7 +1184,7 @@ namespace embree
   // ============================================================================== Create Primrefs ==========================================================================================
   // =========================================================================================================================================================================================
 
-   void createQuads_initPLOCPrimRefs(sycl::queue &gpu_queue, PLOCGlobals *const globals, const RTHWIF_GEOMETRY_DESC **const geometries, const unsigned int numGeoms, const unsigned int numQuadBlocks, const unsigned int *const scratch, BVH2Ploc *const bvh2, const unsigned int prim_type_offset, double &iteration_time, const bool verbose)    
+   void createQuads_initPLOCPrimRefs(sycl::queue &gpu_queue, PLOCGlobals *const globals, const _ze_raytracing_geometry_ext_desc_t **const geometries, const unsigned int numGeoms, const unsigned int numQuadBlocks, const unsigned int *const scratch, BVH2Ploc *const bvh2, const unsigned int prim_type_offset, double &iteration_time, const bool verbose)    
   {
     const unsigned int *const blocksPerGeom          = scratch;
     const unsigned int *const quadsPerBlockPrefixSum = scratch + numGeoms;
@@ -1208,14 +1210,14 @@ namespace embree
                            item.barrier(sycl::access::fence_space::local_space);
                            const unsigned int blockID        = globalBlockID - blocksPerGeom[geomID];
                            const unsigned int startQuadOffset = quadsPerBlockPrefixSum[globalBlockID] + prim_type_offset;
-                           const RTHWIF_GEOMETRY_DESC *const geometryDesc = geometries[geomID];
+                           const _ze_raytracing_geometry_ext_desc_t *const geometryDesc = geometries[geomID];
                                                       
                            // ====================                           
                            // === TriangleMesh ===
                            // ====================
-                           if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_TRIANGLES)
+                           if (geometryDesc->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES)
                            {
-                             RTHWIF_GEOMETRY_TRIANGLES_DESC* triMesh = (RTHWIF_GEOMETRY_TRIANGLES_DESC*)geometryDesc;                             
+                              _ze_raytracing_geometry_triangles_ext_desc_t* triMesh = ( _ze_raytracing_geometry_triangles_ext_desc_t*)geometryDesc;                             
                              const unsigned int numTriangles = triMesh->triangleCount;                                                                                                     
                              {                                                                          
                                const unsigned int startPrimID  = blockID*TRIANGLE_QUAD_BLOCK_SIZE;
@@ -1245,9 +1247,9 @@ namespace embree
                            // ================                           
                            // === QuadMesh ===
                            // ================                           
-                           else if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_QUADS)
+                           else if (geometryDesc->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS)
                            {
-                             RTHWIF_GEOMETRY_QUADS_DESC* quadMesh = (RTHWIF_GEOMETRY_QUADS_DESC*)geometryDesc;                                                          
+                             _ze_raytracing_geometry_quads_ext_desc_t* quadMesh = (_ze_raytracing_geometry_quads_ext_desc_t*)geometryDesc;                                                          
                              const unsigned int numQuads  = quadMesh->quadCount;                             
                              {                                                                          
                                const unsigned int startPrimID  = blockID*TRIANGLE_QUAD_BLOCK_SIZE;
@@ -1279,7 +1281,7 @@ namespace embree
     if (unlikely(verbose)) iteration_time += gpu::getDeviceExecutionTiming(quadification_event);
   }
        
-   unsigned int createInstances_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const unsigned int numGeoms, unsigned int *scratch_mem, const unsigned int MAX_WGS, BVH2Ploc *const bvh2, const unsigned int prim_type_offset, unsigned int *host_device_tasks, double &iteration_time, const bool verbose)    
+   unsigned int createInstances_initPLOCPrimRefs(sycl::queue &gpu_queue, const _ze_raytracing_geometry_ext_desc_t **const geometry_desc, const unsigned int numGeoms, unsigned int *scratch_mem, const unsigned int MAX_WGS, BVH2Ploc *const bvh2, const unsigned int prim_type_offset, unsigned int *host_device_tasks, double &iteration_time, const bool verbose)    
   {
     const unsigned int numWGs = min((numGeoms+LARGE_WG_SIZE-1)/LARGE_WG_SIZE,(unsigned int)MAX_WGS);
     clearScratchMem(gpu_queue,scratch_mem,0,numWGs,iteration_time,verbose);
@@ -1321,9 +1323,9 @@ namespace embree
                              {
                                const unsigned int instID = startID + ID;
                                unsigned int count = 0;
-                               if (geometry_desc[instID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE)
+                               if (geometry_desc[instID]->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE)
                                {
-                                 RTHWIF_GEOMETRY_INSTANCE_DESC *geom = (RTHWIF_GEOMETRY_INSTANCE_DESC *)geometry_desc[instID];
+                                 _ze_raytracing_geometry_instance_ext_desc_t *geom = (_ze_raytracing_geometry_instance_ext_desc_t *)geometry_desc[instID];
                                  gpu::AABB3f bounds;
                                  if (isValidInstance(*geom,bounds)) count = 1;
                                }
@@ -1369,9 +1371,9 @@ namespace embree
                              if (ID < sizeID)
                              {
                                const unsigned int instID = startID + ID;
-                               if (geometry_desc[instID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE)
+                               if (geometry_desc[instID]->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE)
                                {
-                                 RTHWIF_GEOMETRY_INSTANCE_DESC *geom = (RTHWIF_GEOMETRY_INSTANCE_DESC *)geometry_desc[instID];                                                                  
+                                 _ze_raytracing_geometry_instance_ext_desc_t *geom = (_ze_raytracing_geometry_instance_ext_desc_t *)geometry_desc[instID];                                                                  
                                  if (isValidInstance(*geom,bounds)) count = 1;
                                }
                              }
@@ -1383,7 +1385,7 @@ namespace embree
                              if (ID < sizeID)
                              {
                                const unsigned int instID = startID + ID;
-                               if (geometry_desc[instID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE && count == 1)
+                               if (geometry_desc[instID]->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE && count == 1)
                                {
                                  BVH2Ploc node;                                                                                           
                                  node.initLeaf(instID,0,bounds);                               
@@ -1403,13 +1405,13 @@ namespace embree
     return numInstances;
   }
   
-   __forceinline bool buildBounds(const RTHWIF_GEOMETRY_AABBS_FPTR_DESC* geom, unsigned int primID, BBox3fa& bbox, void* buildUserPtr)
+   __forceinline bool buildBounds(const _ze_raytracing_geometry_aabbs_fptr_ext_desc_t* geom, unsigned int primID, BBox3fa& bbox, void* buildUserPtr)
   {
     if (primID >= geom->primCount) return false;
     if (geom->getBounds == nullptr) return false;
 
     BBox3f bounds;
-    (geom->getBounds)(primID,1,geom->geomUserPtr,buildUserPtr,(RTHWIF_AABB*)&bounds);
+    (geom->getBounds)(primID,1,geom->geomUserPtr,buildUserPtr,(_ze_raytracing_aabb_ext_t*)&bounds);
     if (unlikely(!isvalid(bounds.lower))) return false;
     if (unlikely(!isvalid(bounds.upper))) return false;
     if (unlikely(bounds.empty())) return false;
@@ -1418,7 +1420,7 @@ namespace embree
     return true;
   }
   
-   unsigned int createProcedurals_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const unsigned int numGeoms, unsigned int *scratch_mem, const unsigned int MAX_WGS, BVH2Ploc *const bvh2, const unsigned int prim_type_offset, unsigned int *host_device_tasks, double &iteration_time, const bool verbose)    
+   unsigned int createProcedurals_initPLOCPrimRefs(sycl::queue &gpu_queue, const _ze_raytracing_geometry_ext_desc_t **const geometry_desc, const unsigned int numGeoms, unsigned int *scratch_mem, const unsigned int MAX_WGS, BVH2Ploc *const bvh2, const unsigned int prim_type_offset, unsigned int *host_device_tasks, double &iteration_time, const bool verbose)    
   {
     //FIXME: GPU version
     
@@ -1426,12 +1428,12 @@ namespace embree
     for (unsigned int userGeomID=0;userGeomID<numGeoms;userGeomID++)
     {
       if (unlikely(geometry_desc[userGeomID] == nullptr)) continue;
-      if (geometry_desc[userGeomID]->geometryType == RTHWIF_GEOMETRY_TYPE_AABBS_FPTR)
+      if (geometry_desc[userGeomID]->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR)
       {
-        RTHWIF_GEOMETRY_INSTANCE_DESC *geom = (RTHWIF_GEOMETRY_INSTANCE_DESC *)geometry_desc[userGeomID];
-        if (geom->geometryType == RTHWIF_GEOMETRY_TYPE_AABBS_FPTR)
+        _ze_raytracing_geometry_instance_ext_desc_t *geom = (_ze_raytracing_geometry_instance_ext_desc_t *)geometry_desc[userGeomID];
+        if (geom->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR)
         {
-          RTHWIF_GEOMETRY_AABBS_FPTR_DESC *procedural = (RTHWIF_GEOMETRY_AABBS_FPTR_DESC *)geom;
+          _ze_raytracing_geometry_aabbs_fptr_ext_desc_t *procedural = (_ze_raytracing_geometry_aabbs_fptr_ext_desc_t *)geom;
           for (unsigned int i=0;i<procedural->primCount;i++)
           {
             BBox3fa procedural_bounds;
@@ -2377,7 +2379,7 @@ namespace embree
   // =============================================================================================================================================
 
 
-   bool convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, unsigned int *host_device_tasks, const RTHWIF_GEOMETRY_DESC **const geometries, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const unsigned int numPrimitives, const bool instanceMode, const GeometryTypeRanges &geometryTypeRanges, float& conversion_device_time, const bool verbose)
+   bool convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, unsigned int *host_device_tasks, const _ze_raytracing_geometry_ext_desc_t **const geometries, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const unsigned int numPrimitives, const bool instanceMode, const GeometryTypeRanges &geometryTypeRanges, float& conversion_device_time, const bool verbose)
   {
     static const unsigned int STOP_THRESHOLD = 1296;    
     double total_time = 0.0f;    
@@ -2768,9 +2770,9 @@ namespace embree
                              {
                                qleaf = (QuadLeafData *)globals->nodeBlockPtr(leafGenData[globalID].blockID);
                                const unsigned int geomID = leafGenData[globalID].geomID & GEOMID_MASK;
-                               const RTHWIF_GEOMETRY_DESC *const geometryDesc = geometries[geomID];                                 
+                               const _ze_raytracing_geometry_ext_desc_t *const geometryDesc = geometries[geomID];                                 
 
-                               if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_TRIANGLES)
+                               if (geometryDesc->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES)
                                {
                                  
                                  // ====================                           
@@ -2779,8 +2781,8 @@ namespace embree
                                  //valid = true;                                   
                                  const unsigned int primID0 = leafGenData[globalID].primID;
                                  const unsigned int primID1 = primID0 + (leafGenData[globalID].geomID >> PAIR_OFFSET_SHIFT);                                   
-                                 RTHWIF_GEOMETRY_TRIANGLES_DESC* triMesh = (RTHWIF_GEOMETRY_TRIANGLES_DESC*)geometryDesc;
-                                 const RTHWIF_TRIANGLE_INDICES &tri = getTriangleDesc(*triMesh,primID0);
+                                  _ze_raytracing_geometry_triangles_ext_desc_t* triMesh = ( _ze_raytracing_geometry_triangles_ext_desc_t*)geometryDesc;
+                                 const _ze_raytracing_triangle_indices_uint32_ext_t &tri = getTriangleDesc(*triMesh,primID0);
                                  const Vec3f p0 = getVec3f(*triMesh,tri.v0);
                                  const Vec3f p1 = getVec3f(*triMesh,tri.v1);
                                  const Vec3f p2 = getVec3f(*triMesh,tri.v2);                                       
@@ -2790,21 +2792,21 @@ namespace embree
                                  /* handle paired triangle */
                                  if (primID0 != primID1)
                                  {
-                                   const RTHWIF_TRIANGLE_INDICES &tri1 = getTriangleDesc(*triMesh,primID1);          
+                                   const _ze_raytracing_triangle_indices_uint32_ext_t &tri1 = getTriangleDesc(*triMesh,primID1);          
                                    const unsigned int p3_index = try_pair_triangles(uint3(tri.v0,tri.v1,tri.v2),uint3(tri1.v0,tri1.v1,tri1.v2),lb0,lb1,lb2);
                                    p3 = getVec3f(*triMesh,((unsigned int*)&tri1)[p3_index]); // FIXME: might cause tri1 to store to mem first
                                  }
                                  *qleaf = QuadLeafData( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, (GeometryFlags)triMesh->geometryFlags, triMesh->geometryMask);
                                }
-                               else if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_QUADS)
+                               else if (geometryDesc->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS)
                                {
                                  // ================                           
                                  // === QuadMesh ===
                                  // ================
                                  //valid = true;                                                                    
                                  const unsigned int primID0 = leafGenData[globalID].primID;                                   
-                                 RTHWIF_GEOMETRY_QUADS_DESC* quadMesh = (RTHWIF_GEOMETRY_QUADS_DESC*)geometryDesc;                             
-                                 const RTHWIF_QUAD_INDICES &quad = getQuadDesc(*quadMesh,primID0);
+                                 _ze_raytracing_geometry_quads_ext_desc_t* quadMesh = (_ze_raytracing_geometry_quads_ext_desc_t*)geometryDesc;                             
+                                 const _ze_raytracing_quad_indices_uint32_ext_t &quad = getQuadDesc(*quadMesh,primID0);
                                  const Vec3f p0 = getVec3f(*quadMesh,quad.v0);
                                  const Vec3f p1 = getVec3f(*quadMesh,quad.v1);
                                  const Vec3f p2 = getVec3f(*quadMesh,quad.v2);                                       
@@ -2812,25 +2814,25 @@ namespace embree
                                  *qleaf = QuadLeafData( p0,p1,p3,p2, 3,2,1, 0, geomID, primID0, primID0, (GeometryFlags)quadMesh->geometryFlags, quadMesh->geometryMask);
                                }
                              
-                               else if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE)
+                               else if (geometryDesc->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE)
                                {
                                  // ================                           
                                  // === Instance ===
                                  // ================                                 
                                  const unsigned int instID = leafGenData[globalID].geomID;
-                                 const RTHWIF_GEOMETRY_INSTANCE_DESC* instance = (const RTHWIF_GEOMETRY_INSTANCE_DESC*)geometryDesc;                                 
+                                 const _ze_raytracing_geometry_instance_ext_desc_t* instance = (const _ze_raytracing_geometry_instance_ext_desc_t*)geometryDesc;                                 
                                  InstancePrimitive *dest = (InstancePrimitive *)qleaf;         
                                  const AffineSpace3fa local2world = getTransform(instance);
                                  const uint64_t root = (uint64_t)instance->accel + QBVH6_HEADER_OFFSET;
                                  *dest = InstancePrimitive(local2world,root,instance->instanceUserID,instID,mask32_to_mask8(instance->geometryMask));
                                }
-                               else if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_AABBS_FPTR)
+                               else if (geometryDesc->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR)
                                {
                                  // ==================                           
                                  // === Procedural ===
                                  // ==================                                
                                  const unsigned int primID0 = leafGenData[globalID].primID;                                 
-                                 const RTHWIF_GEOMETRY_AABBS_FPTR_DESC* geom = (const RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geometryDesc;                                 
+                                 const _ze_raytracing_geometry_aabbs_fptr_ext_desc_t* geom = (const _ze_raytracing_geometry_aabbs_fptr_ext_desc_t*)geometryDesc;                                 
                                  const unsigned int mask32 = mask32_to_mask8(geom->geometryMask);
                                  ProceduralLeaf *dest = (ProceduralLeaf *)qleaf;
                                  PrimLeafDesc leafDesc(0,geomID,GeometryFlags::NONE /*(GeometryFlags)geom->geometryFlags*/,mask32,PrimLeafDesc::TYPE_OPACITY_CULLING_ENABLED);

@@ -62,6 +62,12 @@ cmake --build . --target package
 
 cmake --build . --target package
 
+if [ "$EMBREE_ZIP_MODE" == "ON" ]; then
+  mv embree-${EMBREE_VERSION}-beta.sycl.x86_64.linux-embree.tar.gz embree-${EMBREE_VERSION}-beta.sycl.x86_64.linux.tar.gz
+  mv embree-${EMBREE_VERSION}-beta.sycl.x86_64.linux-embree-testing.tar.gz embree-${EMBREE_VERSION}-beta.sycl.x86_64.linux-testing.tar.gz
+  rm embree-${EMBREE_VERSION}-beta.sycl.x86_64.linux-Unspecified.tar.gz
+fi
+
 if [ "$EMBREE_ZIP_MODE" == "OFF" ]; then
 
   # sign all RPM files

@@ -7,9 +7,6 @@ INCLUDE(tutorial)
 ADD_TUTORIAL(closest_point)
 ADD_TUTORIAL_ISPC(closest_point)
 
-SET(EMBREE_SYCL_SUPPORT OFF)
-IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
-  ADD_EMBREE_TUTORIAL_TEST(closest_point "")
 ENDIF()
 
-ENDIF()
+ADD_EMBREE_TEST_ECS(closest_point embree_closest_point)

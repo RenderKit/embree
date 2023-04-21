@@ -214,51 +214,51 @@ namespace embree
     
   };
 
-  __forceinline unsigned int getNumPrimitives(const RTHWIF_GEOMETRY_DESC* geom)
+  __forceinline unsigned int getNumPrimitives(const _ze_raytracing_geometry_ext_desc_t* geom)
   {
     switch (geom->geometryType) {
-    case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return ((RTHWIF_GEOMETRY_TRIANGLES_DESC*)  geom)->triangleCount;
-    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR : return ((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*) geom)->primCount;
-    case RTHWIF_GEOMETRY_TYPE_QUADS      : return ((RTHWIF_GEOMETRY_QUADS_DESC*)      geom)->quadCount;
-    case RTHWIF_GEOMETRY_TYPE_INSTANCE   : return 1;
+    case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES  : return ((_ze_raytracing_geometry_triangles_ext_desc_t*)  geom)->triangleCount;
+    case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS      : return ((_ze_raytracing_geometry_quads_ext_desc_t*)      geom)->quadCount;      
+    case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR : return ((_ze_raytracing_geometry_aabbs_fptr_ext_desc_t*) geom)->primCount;
+    case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE   : return 1;
     default                              : return 0;
     };
   }
 
   /* fill all arg members that app did not know of yet */
-  __forceinline RTHWIF_BUILD_ACCEL_ARGS rthwifPrepareBuildAccelArgs(const RTHWIF_BUILD_ACCEL_ARGS& args_i)
-  {
-    RTHWIF_BUILD_ACCEL_ARGS args;
-    memset(&args,0,sizeof(RTHWIF_BUILD_ACCEL_ARGS));
-    memcpy(&args,&args_i,std::min(sizeof(RTHWIF_BUILD_ACCEL_ARGS),args_i.structBytes));
-    args.structBytes = sizeof(RTHWIF_BUILD_ACCEL_ARGS);
-    return args;
-  } 
+  // __forceinline RTHWIF_BUILD_ACCEL_ARGS rthwifPrepareBuildAccelArgs(const RTHWIF_BUILD_ACCEL_ARGS& args_i)
+  // {
+  //   RTHWIF_BUILD_ACCEL_ARGS args;
+  //   memset(&args,0,sizeof(RTHWIF_BUILD_ACCEL_ARGS));
+  //   memcpy(&args,&args_i,std::min(sizeof(RTHWIF_BUILD_ACCEL_ARGS),args_i.structBytes));
+  //   args.structBytes = sizeof(RTHWIF_BUILD_ACCEL_ARGS);
+  //   return args;
+  // } 
   
-  __forceinline PrimitiveCounts countPrimitives(const RTHWIF_GEOMETRY_DESC** geometries, const unsigned int numGeometries)
+  __forceinline PrimitiveCounts countPrimitives(const _ze_raytracing_geometry_ext_desc_t** geometries, const unsigned int numGeometries)
   {
     auto reduce = [&](const range<size_t>& r) -> PrimitiveCounts
                   {
                     PrimitiveCounts counts;
                     for (size_t geomID = r.begin(); geomID < r.end(); geomID++)
                     {
-                      const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+                      const _ze_raytracing_geometry_ext_desc_t* geom = geometries[geomID];
                       if (geom == nullptr) continue;    
                       switch (geom->geometryType) {
-                      case RTHWIF_GEOMETRY_TYPE_TRIANGLES  :
+                      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES  :
                       {
-                        counts.numTriangles   += ((RTHWIF_GEOMETRY_TRIANGLES_DESC*)  geom)->triangleCount;
-                        counts.numQuadBlocks  += (((RTHWIF_GEOMETRY_TRIANGLES_DESC *)geom)->triangleCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE;
+                        counts.numTriangles   += ((_ze_raytracing_geometry_triangles_ext_desc_t*)  geom)->triangleCount;
+                        counts.numQuadBlocks  += (((_ze_raytracing_geometry_triangles_ext_desc_t *)geom)->triangleCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE;
                         break;
                       }
-                      case RTHWIF_GEOMETRY_TYPE_QUADS      :
+                      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS      :
                       {
-                        counts.numQuads       += ((RTHWIF_GEOMETRY_QUADS_DESC*)  geom)->quadCount;
-                        counts.numQuadBlocks  += (((RTHWIF_GEOMETRY_QUADS_DESC *)geom)->quadCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE;                        
+                        counts.numQuads       += ((_ze_raytracing_geometry_quads_ext_desc_t*)  geom)->quadCount;
+                        counts.numQuadBlocks  += (((_ze_raytracing_geometry_quads_ext_desc_t *)geom)->quadCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE;                        
                         break;
                       }
-                      case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR : counts.numProcedurals += ((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*) geom)->primCount; break;
-                      case RTHWIF_GEOMETRY_TYPE_INSTANCE   : counts.numInstances   += 1; break;
+                      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR : counts.numProcedurals += ((_ze_raytracing_geometry_aabbs_fptr_ext_desc_t*) geom)->primCount; break;
+                      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE   : counts.numInstances   += 1; break;
                       default: assert(false); break;        
                       };                    
                     };
@@ -273,11 +273,11 @@ namespace embree
     return primCounts;
   }
 
-  RTHWIF_ERROR createEmptyBVH(const RTHWIF_BUILD_ACCEL_ARGS& args, sycl::queue  &gpu_queue)
+  _ze_result_t_ createEmptyBVH(const ze_raytracing_build_accel_ext_desc_t* args, sycl::queue  &gpu_queue)
   {
     sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
                                                   cgh.single_task([=]() {
-                                                                    QBVH6* qbvh  = (QBVH6*)args.accelBuffer;       
+                                                                    QBVH6* qbvh  = (QBVH6*)args->accelBuffer;       
                                                                     qbvh->bounds = BBox3f(empty);
                                                                     qbvh->numPrims       = 0;                                                                        
                                                                     qbvh->nodeDataStart  = 2;
@@ -288,21 +288,22 @@ namespace embree
                                                                   });
                                                 });
     gpu::waitOnEventAndCatchException(queue_event);    
-    if (args.accelBufferBytesOut) *args.accelBufferBytesOut = 128+64;
-    if (args.boundsOut)           { BBox3f geometryBounds (empty); *args.boundsOut = *(RTHWIF_AABB*)&geometryBounds; };
-    return RTHWIF_ERROR_NONE;    
+    if (args->accelBufferBytesOut) *args->accelBufferBytesOut = 128+64;
+    if (args->boundsOut)           { BBox3f geometryBounds (empty); *args->boundsOut = *(ze_raytracing_aabb_ext_t*)&geometryBounds; };
+    return ZE_RESULT_SUCCESS_;    
   }
 // =================================================================================================================================================================================
 // =================================================================================================================================================================================
 // =================================================================================================================================================================================
 
-  RTHWIF_API RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o, void *sycl_queue, unsigned int verbose_level=0)
+  //RTHWIF_API RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o, void *sycl_queue, unsigned int verbose_level=0)
+RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingGetAccelSizeGPUExt( const ze_raytracing_build_accel_ext_desc_t* args, ze_raytracing_accel_size_ext_properties_t* size_o, void *sycl_queue, unsigned int verbose_level )    
   {
     double time0 = getSeconds();
     
-    RTHWIF_BUILD_ACCEL_ARGS args = rthwifPrepareBuildAccelArgs(args_i);
-    const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
-    const unsigned int numGeometries = args.numGeometries;
+    //RTHWIF_BUILD_ACCEL_ARGS args = rthwifPrepareBuildAccelArgs(args_i);
+    const _ze_raytracing_geometry_ext_desc_t** geometries = args->geometries;
+    const unsigned int numGeometries = args->numGeometries;
     sycl::queue  &gpu_queue  = *(sycl::queue*)sycl_queue;
 
     // =============================================================================    
@@ -340,37 +341,32 @@ namespace embree
 
     if (verbose_level >= 2)
     {
-      PRINT5(numMergedTrisQuads,numTriangles,numQuads,numProcedurals,numInstances);      
+      PRINT6(numGeometries,numMergedTrisQuads,numTriangles,numQuads,numProcedurals,numInstances);      
       PRINT3(expectedBytes,worstCaseBytes,scratchBytes);
     }
         
     /* return size to user */
-    RTHWIF_ACCEL_SIZE size;
-    memset(&size,0,sizeof(RTHWIF_ACCEL_SIZE));
-    size.accelBufferExpectedBytes = expectedBytes;
-    size.accelBufferWorstCaseBytes = worstCaseBytes;
-    size.scratchBufferBytes = scratchBytes;
-    size_t bytes_o = size_o.structBytes;
-    memset(&size_o,0,bytes_o);
-    memcpy(&size_o,&size,bytes_o);
-    size_o.structBytes = bytes_o;
+    size_o->accelBufferExpectedBytes = expectedBytes;
+    size_o->accelBufferWorstCaseBytes = worstCaseBytes;
+    size_o->scratchBufferBytes = scratchBytes;
 
     double time1 = getSeconds();
     if (verbose_level >= 1)
       std::cout << "rthwifGetAccelSizeGPU time = " << (float)(time1-time0)*1000.0f << " ms" << std::endl;
     
-    return RTHWIF_ERROR_NONE;
+    return ZE_RESULT_SUCCESS_;
   }
 
-  RTHWIF_API RTHWIF_ERROR rthwifPrefetchAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args, void *sycl_queue, unsigned int verbose_level=0)
+  //RTHWIF_API RTHWIF_ERROR rthwifPrefetchAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args, void *sycl_queue, unsigned int verbose_level=0)
+RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingPrefetchAccelGPUExt( const ze_raytracing_build_accel_ext_desc_t* args, void *sycl_queue, unsigned int verbose_level )  
   {
     double time0 = getSeconds();
     
     sycl::queue  &gpu_queue  = *(sycl::queue*)sycl_queue;
 
 #if 0
-    const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
-    const unsigned int numGeometries                = args.numGeometries;  
+    const _ze_raytracing_geometry_ext_desc_t** geometries = args->geometries;
+    const unsigned int numGeometries                = args->numGeometries;  
     
     // ===================================    
     // === prefetch builder scene data ===
@@ -378,45 +374,45 @@ namespace embree
     
     for (size_t geomID = 0; geomID < numGeometries; geomID++)
     {
-      const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+      const ZE_RAYTRACING_GEOMETRY_DESC* geom = geometries[geomID];
       if (geom == nullptr) continue;    
       switch (geom->geometryType) {
-      case RTHWIF_GEOMETRY_TYPE_TRIANGLES  :
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES  :
       {
-        RTHWIF_GEOMETRY_TRIANGLES_DESC *t = (RTHWIF_GEOMETRY_TRIANGLES_DESC*)geom;
+        ZE_RAYTRACING_GEOMETRY_TRIANGLES_DESC *t = (ZE_RAYTRACING_GEOMETRY_TRIANGLES_DESC*)geom;
         if (t->vertexBuffer)   gpu_queue.prefetch(t->vertexBuffer,t->vertexCount*t->vertexStride);
         if (t->triangleBuffer) gpu_queue.prefetch(t->triangleBuffer,t->triangleCount*t->triangleStride);      
-        gpu_queue.prefetch(t,sizeof(RTHWIF_GEOMETRY_TRIANGLES_DESC));
+        gpu_queue.prefetch(t,sizeof(ZE_RAYTRACING_GEOMETRY_TRIANGLES_DESC));
         break;
       }
-      case RTHWIF_GEOMETRY_TYPE_QUADS      :
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS      :
       {
-        RTHWIF_GEOMETRY_QUADS_DESC *q = (RTHWIF_GEOMETRY_QUADS_DESC*)geom;
+        ZE_RAYTRACING_GEOMETRY_QUADS_DESC *q = (ZE_RAYTRACING_GEOMETRY_QUADS_DESC*)geom;
         if (q->vertexBuffer) gpu_queue.prefetch(q->vertexBuffer,q->vertexCount*q->vertexStride);
         if (q->quadBuffer) gpu_queue.prefetch(q->quadBuffer,q->quadCount*q->quadStride);      
-        gpu_queue.prefetch(q,sizeof(RTHWIF_GEOMETRY_QUADS_DESC));      
+        gpu_queue.prefetch(q,sizeof(ZE_RAYTRACING_GEOMETRY_QUADS_DESC));      
         break;
       }
-      case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR :
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR :
       {
-        RTHWIF_GEOMETRY_AABBS_FPTR_DESC *a = (RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geom;
-        gpu_queue.prefetch(a,sizeof(RTHWIF_GEOMETRY_AABBS_FPTR_DESC));
+        ZE_RAYTRACING_GEOMETRY_AABBS_FPTR_DESC *a = (ZE_RAYTRACING_GEOMETRY_AABBS_FPTR_DESC*)geom;
+        gpu_queue.prefetch(a,sizeof(ZE_RAYTRACING_GEOMETRY_AABBS_FPTR_DESC));
         break;
       }
-      case RTHWIF_GEOMETRY_TYPE_INSTANCE   :
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE   :
       {
-        RTHWIF_GEOMETRY_INSTANCE_DESC *i = (RTHWIF_GEOMETRY_INSTANCE_DESC*)geom;
-        gpu_queue.prefetch(i->bounds,sizeof(RTHWIF_AABB));      
-        gpu_queue.prefetch(i,sizeof(RTHWIF_GEOMETRY_INSTANCE_DESC));
+        ZE_RAYTRACING_GEOMETRY_INSTANCE_DESC *i = (ZE_RAYTRACING_GEOMETRY_INSTANCE_DESC*)geom;
+        gpu_queue.prefetch(i->bounds,sizeof(ze_raytracing_aabb_ext_t));      
+        gpu_queue.prefetch(i,sizeof(ZE_RAYTRACING_GEOMETRY_INSTANCE_DESC));
         break;
       }
       default: assert(false); break;        
       };                    
     };
 
-    if (geometries) gpu_queue.prefetch(geometries,sizeof(RTHWIF_GEOMETRY_DESC*)*numGeometries);
-    if (args.accelBuffer)   gpu_queue.prefetch(args.accelBuffer  ,args.accelBufferBytes);
-    if (args.scratchBuffer) gpu_queue.prefetch(args.scratchBuffer,args.scratchBufferBytes);  
+    if (geometries) gpu_queue.prefetch(geometries,sizeof(ZE_RAYTRACING_GEOMETRY_DESC*)*numGeometries);
+    if (args->accelBuffer)   gpu_queue.prefetch(args->accelBuffer  ,args->accelBufferBytes);
+    if (args->scratchBuffer) gpu_queue.prefetch(args->scratchBuffer,args->scratchBufferBytes);  
 #endif  
     // ======================================================    
     // === DUMMY KERNEL TO TRIGGER REMAINING USM TRANSFER ===
@@ -429,10 +425,11 @@ namespace embree
     if (verbose_level >= 1)
       std::cout << "rthwifPrefetchAccelGPU time = " << (float)(time1-time0)*1000.0f << " ms" << std::endl;
     
-    return RTHWIF_ERROR_NONE;      
+    return ZE_RESULT_SUCCESS_;      
   }
 
-  RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args, void *sycl_queue, unsigned int verbose_level=0)
+  //RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args, void *sycl_queue, unsigned int verbose_level=0)
+  RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingBuildAccelGPUExt( const ze_raytracing_build_accel_ext_desc_t* args, void *sycl_queue, unsigned int verbose_level)    
   {
     BuildTimer timer;
     timer.reset();
@@ -467,9 +464,9 @@ namespace embree
     // === setup scratch pointer ===
     // =============================
     
-    PLOCGlobals *globals = (PLOCGlobals *)args.scratchBuffer;
-    unsigned int *const sync_mem = (unsigned int*)((char*)args.scratchBuffer + sizeof(PLOCGlobals));
-    unsigned int *const scratch  = (unsigned int*)((char*)args.scratchBuffer + sizeof(PLOCGlobals) + sizeof(unsigned int)*MAX_LARGE_WGS);    
+    PLOCGlobals *globals = (PLOCGlobals *)args->scratchBuffer;
+    unsigned int *const sync_mem = (unsigned int*)((char*)args->scratchBuffer + sizeof(PLOCGlobals));
+    unsigned int *const scratch  = (unsigned int*)((char*)args->scratchBuffer + sizeof(PLOCGlobals) + sizeof(unsigned int)*MAX_LARGE_WGS);    
   
     // ======================          
     // ==== init globals ====
@@ -493,8 +490,8 @@ namespace embree
     // === get primitive type count from geometries, compute quad blocks per geom ===
     // ==============================================================================
   
-    const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
-    unsigned int numGeometries                = args.numGeometries;
+    const ze_raytracing_geometry_ext_desc_t** geometries = args->geometries;
+    unsigned int numGeometries                = args->numGeometries;
  
     double device_prim_counts_time = 0.0f;
   
@@ -527,7 +524,7 @@ namespace embree
 
       timer.start(BuildTimer::PRE_PROCESS);      
       double device_quadification_time = 0.0;
-      numQuads = countQuadsPerGeometryUsingBlocks(gpu_queue,globals,args.geometries,numGeometries,numQuadBlocks,scratch,scratch+numGeometries,host_device_tasks,device_quadification_time,verbose1);
+      numQuads = countQuadsPerGeometryUsingBlocks(gpu_queue,globals,args->geometries,numGeometries,numQuadBlocks,scratch,scratch+numGeometries,host_device_tasks,device_quadification_time,verbose1);
       timer.stop(BuildTimer::PRE_PROCESS);
       timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_quadification_time);
       if (unlikely(verbose2)) std::cout << "=> Count " << numQuads << " Quads " << timer.get_host_timer() << " ms (host) " << (float)device_quadification_time << " ms (device) " << std::endl;
@@ -538,7 +535,7 @@ namespace embree
     // ================================
 
     size_t numPrimitives             = numQuads + numInstances + numProcedurals;  // actual #prims can be lower due to invalid instances or procedurals but quads count is accurate at this point
-    const size_t allocated_size      = args.accelBufferBytes;
+    const size_t allocated_size      = args->accelBufferBytes;
     const size_t header              = 128;
     const size_t leaf_size           = estimateSizeLeafNodes(numQuads,numInstances,numProcedurals);
     const size_t node_size           = (header + leaf_size) <= allocated_size ? allocated_size - leaf_size - header : 0; 
@@ -556,11 +553,11 @@ namespace embree
       {
         PRINT2(required_size,allocated_size);
         PRINT2(node_size,estimateSizeInternalNodes(numQuads,numInstances,numProcedurals,false));        
-        PRINT3("RETRY BVH BUILD DUE BECAUSE OF SMALL ACCEL BUFFER ALLOCATION!!!", args.accelBufferBytes,required_size );
+        PRINT3("RETRY BVH BUILD DUE BECAUSE OF SMALL ACCEL BUFFER ALLOCATION!!!", args->accelBufferBytes,required_size );
       }
-      if (args.accelBufferBytesOut) *args.accelBufferBytesOut = required_size;
+      if (args->accelBufferBytesOut) *args->accelBufferBytesOut = required_size;
       if (host_device_tasks) sycl::free(host_device_tasks,gpu_queue.get_context());
-      return RTHWIF_ERROR_RETRY;
+      return ZE_RESULT_RAYTRACING_EXT_RETRY_BUILD_ACCEL;
     }
 
     const size_t conv_mem_size = sizeof(numPrimitives)*numPrimitives;
@@ -569,7 +566,7 @@ namespace embree
     // ===========================
     // === set up all pointers ===
     // ===========================
-    QBVH6* qbvh   = (QBVH6*)args.accelBuffer;
+    QBVH6* qbvh   = (QBVH6*)args->accelBuffer;
     char *bvh_mem = (char*)qbvh + header;
     char *const leaf_mem = (char*)qbvh + leaf_data_start;
     BVH2Ploc *const bvh2 = (BVH2Ploc*)(leaf_mem);
@@ -615,21 +612,21 @@ namespace embree
     // ===================================================
 
     if (numQuads)
-      createQuads_initPLOCPrimRefs(gpu_queue,globals,args.geometries,numGeometries,numQuadBlocks,scratch,bvh2,0,create_primref_time,verbose1);
+      createQuads_initPLOCPrimRefs(gpu_queue,globals,args->geometries,numGeometries,numQuadBlocks,scratch,bvh2,0,create_primref_time,verbose1);
     
     // ====================================          
     // ==== create procedural primrefs ====
     // ====================================
 
     if (numProcedurals)
-      numProcedurals = createProcedurals_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,sync_mem,NUM_ACTIVE_LARGE_WGS,bvh2,numQuads,host_device_tasks,create_primref_time,verbose1);
+      numProcedurals = createProcedurals_initPLOCPrimRefs(gpu_queue,args->geometries,numGeometries,sync_mem,NUM_ACTIVE_LARGE_WGS,bvh2,numQuads,host_device_tasks,create_primref_time,verbose1);
 
     // ==================================          
     // ==== create instance primrefs ====
     // ==================================
     
     if (numInstances)
-      numInstances = createInstances_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,sync_mem,NUM_ACTIVE_LARGE_WGS,bvh2,numQuads + numProcedurals,host_device_tasks,create_primref_time,verbose1);
+      numInstances = createInstances_initPLOCPrimRefs(gpu_queue,args->geometries,numGeometries,sync_mem,NUM_ACTIVE_LARGE_WGS,bvh2,numQuads + numProcedurals,host_device_tasks,create_primref_time,verbose1);
 
     // =================================================================================================    
     // === recompute actual number of primitives after quadification and removing of invalid entries ===
@@ -642,7 +639,7 @@ namespace embree
     if (unlikely(verbose2))
     {
       PRINT4(numPrimitives,numQuads,numInstances,numProcedurals);
-      PRINT3(node_size,leaf_size,args.accelBufferBytes);
+      PRINT3(node_size,leaf_size,args->accelBufferBytes);
       PRINT2(node_size/64,leaf_size/64);      
     }      
   
@@ -680,7 +677,7 @@ namespace embree
     // ==== compute morton codes ====
     // ==============================
 
-    const bool fastMCMode = numPrimitives < FAST_MC_NUM_PRIMS_THRESHOLD || (args.quality == RTHWIF_BUILD_QUALITY_LOW && numPrimitives < FAST_MC_MAX_NUM_PRIMS);    
+    const bool fastMCMode = numPrimitives < FAST_MC_NUM_PRIMS_THRESHOLD || (args->quality == ZE_RAYTRACING_BUILD_QUALITY_EXT_LOW && numPrimitives < FAST_MC_MAX_NUM_PRIMS);    
     
     timer.start(BuildTimer::PRE_PROCESS);        
     double device_compute_mc_time = 0.0f;
@@ -759,7 +756,7 @@ namespace embree
     // ===================================================================================================================================================
 
     // === 8 or 16-wide search radius dependening on compiler flags ===
-    const unsigned int SEARCH_RADIUS_SHIFT = args.quality == RTHWIF_BUILD_QUALITY_LOW ? 3 : 4;
+    const unsigned int SEARCH_RADIUS_SHIFT = args->quality == ZE_RAYTRACING_BUILD_QUALITY_EXT_LOW ? 3 : 4;
     
     double device_ploc_iteration_time = 0.0f;
         
@@ -850,9 +847,6 @@ namespace embree
     // =====================================                
     // === check and convert BVH2 (host) ===
     // =====================================
-
-    if (unlikely(verbose2))
-        PRINT2(globals->bvh2_index_allocator,2*numPrimitives);        
     
     if (unlikely(verbose2))
     {
@@ -883,7 +877,7 @@ namespace embree
     // =============================
     timer.start(BuildTimer::PRE_PROCESS);    
     float conversion_device_time = 0.0f;
-    const bool convert_success = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,args.geometries,qbvh,bvh2,leafGenData,numPrimitives,numInstances != 0,geometryTypeRanges,conversion_device_time,verbose1);
+    const bool convert_success = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,args->geometries,qbvh,bvh2,leafGenData,numPrimitives,numInstances != 0,geometryTypeRanges,conversion_device_time,verbose1);
 
     /* --- init final QBVH6 header --- */        
     {     
@@ -907,8 +901,8 @@ namespace embree
       gpu::waitOnEventAndCatchException(queue_event);
     }	    
     
-    if (args.boundsOut) *args.boundsOut = *(RTHWIF_AABB*)host_device_tasks;
-  
+    if (args->boundsOut) *args->boundsOut = *(ze_raytracing_aabb_ext_t*)host_device_tasks;
+    
     timer.stop(BuildTimer::POST_PROCESS);
     timer.add_to_device_timer(BuildTimer::POST_PROCESS,conversion_device_time);
 
@@ -933,25 +927,25 @@ namespace embree
 
     if (unlikely(convert_success == false))
     {
-      if (args.accelBufferBytesOut) *args.accelBufferBytesOut = estimateAccelBufferSize(numQuads, numInstances, numProcedurals, true); 
+      if (args->accelBufferBytesOut) *args->accelBufferBytesOut = estimateAccelBufferSize(numQuads, numInstances, numProcedurals, true); 
       if (host_device_tasks) sycl::free(host_device_tasks,gpu_queue.get_context());      
-      return RTHWIF_ERROR_RETRY;
+      return ZE_RESULT_RAYTRACING_EXT_RETRY_BUILD_ACCEL;
     }
     
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
     {
       sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
                                                     cgh.single_task([=]() {
-                                                                      HWAccel* hwaccel = (HWAccel*)args.accelBuffer;  
-                                                                      hwaccel->dispatchGlobalsPtr = (uint64_t)args.dispatchGlobalsPtr;                                                                      
+                                                                      HWAccel* hwaccel = (HWAccel*)args->accelBuffer;  
+                                                                      hwaccel->dispatchGlobalsPtr = (uint64_t)args->dispatchGlobalsPtr;                                                                      
                                                                     });
                                                   });
       gpu::waitOnEventAndCatchException(queue_event);
     }
 #endif      
 
-    if (args.accelBufferBytesOut)
-      *args.accelBufferBytesOut = args.accelBufferBytes;
+    if (args->accelBufferBytesOut)
+      *args->accelBufferBytesOut = args->accelBufferBytes;
 
 #if 1
     if (verbose2)
@@ -971,7 +965,7 @@ namespace embree
     if (unlikely(verbose1))
       std::cout << "=> BVH build time: host = " << timer.get_total_host_time() << " ms , device = " << timer.get_total_device_time() << " ms , numPrimitives (original) = " << expected_numPrimitives << " , numPrimitives (build) = " << numPrimitives << std::endl;
 
-    return RTHWIF_ERROR_NONE;    
+    return ZE_RESULT_SUCCESS_;    
   }
 }
 

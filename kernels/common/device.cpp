@@ -170,6 +170,9 @@ namespace embree
 #if defined (EMBREE_BACKFACE_CULLING_CURVES)
     v += "backfacecullingcurves ";
 #endif
+#if defined (EMBREE_BACKFACE_CULLING_SPHERES)
+    v += "backfacecullingspheres ";
+#endif
 #if defined(EMBREE_FILTER_FUNCTION)
     v += "intersection_filter ";
 #endif
@@ -477,6 +480,12 @@ namespace embree
     case RTC_DEVICE_PROPERTY_BACKFACE_CULLING_CURVES_ENABLED: return 0;
 #endif
 
+#if defined(EMBREE_BACKFACE_CULLING_SPHERES)
+    case RTC_DEVICE_PROPERTY_BACKFACE_CULLING_SPHERES_ENABLED: return 1;
+#else
+    case RTC_DEVICE_PROPERTY_BACKFACE_CULLING_SPHERES_ENABLED: return 0;
+#endif
+
 #if defined(EMBREE_COMPACT_POLYS)
     case RTC_DEVICE_PROPERTY_COMPACT_POLYS_ENABLED: return 1;
 #else
@@ -594,7 +603,7 @@ namespace embree
       std::cout << std::endl;
     }
     
-    dispatchGlobalsPtr = rthwifInit(gpu_device, gpu_context);
+    dispatchGlobalsPtr = zeRaytracingInitExt(gpu_device, gpu_context);
   }
 
   DeviceGPU::~DeviceGPU()

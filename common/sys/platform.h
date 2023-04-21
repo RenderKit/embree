@@ -447,20 +447,7 @@ namespace embree
 
     return cout;
   }
-  
-#if defined(__WIN32__) and defined(__INTEL_LLVM_COMPILER)
-  inline sycl_ostream_ operator <<(sycl_ostream_ cout, size_t i)
-  {
-    if (cout.uniform) {
-      if (get_sub_group_local_id() == SYCL_CTZ::ctz(intel_sub_group_ballot(true)))
-        sycl_printf("%i",i);
-    } else {
-      sycl_printf("%i ",i);
-    }
-    return cout;
-  }
-#endif
-  
+
   inline sycl_ostream_ operator <<(sycl_ostream_ cout, float f)
   {
     if (cout.uniform) {
@@ -483,7 +470,7 @@ namespace embree
     return cout;
   }
 
-  inline sycl_ostream_ operator <<(sycl_ostream_ cout, unsigned long l)
+  inline sycl_ostream_ operator <<(sycl_ostream_ cout, uint64_t l)
   {
     if (cout.uniform) {
       if (get_sub_group_local_id() == SYCL_CTZ::ctz(intel_sub_group_ballot(true)))

@@ -89,9 +89,7 @@ MARK_AS_ADVANCED(CLEAR CMAKE_CXX_COMPILER)
 
 SET(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake" ${CMAKE_MODULE_PATH})
 
-IF (BUILD_TESTING)
-  INCLUDE(test)
-ENDIF()
+INCLUDE(test)
 
 set(BUILD_DOC OFF CACHE INTERNAL "build documentation (internal only)")
 IF (BUILD_DOC)
@@ -192,7 +190,7 @@ IF (EMBREE_SYCL_RT_VALIDATION_API)
 ENDIF()
 
 CMAKE_DEPENDENT_OPTION(EMBREE_SYCL_IMPLICIT_DISPATCH_GLOBALS "Using L0 allocated Dispatch Globals" ON "EMBREE_SYCL_RT_VALIDATION_API" OFF)
-IF (NOT EMBREE_SYCL_IMPLICIT_DISPATCH_GLOBALS)
+IF (EMBREE_SYCL_RT_VALIDATION_API AND NOT EMBREE_SYCL_IMPLICIT_DISPATCH_GLOBALS)
   ADD_DEFINITIONS("-DEMBREE_SYCL_ALLOC_DISPATCH_GLOBALS")
 ENDIF()
 
@@ -211,6 +209,8 @@ ENDIF()
 
 OPTION(EMBREE_RAY_MASK "Enables ray mask support." ON)
 OPTION(EMBREE_BACKFACE_CULLING "Enables backface culling.")
+OPTION(EMBREE_BACKFACE_CULLING_CURVES "Enables backface culling for curve primitives." OFF)
+OPTION(EMBREE_BACKFACE_CULLING_SPHERES "Enables backface culling for sphere primitives." OFF)
 
 OPTION(EMBREE_FILTER_FUNCTION "Enables filter functions." ON)
 OPTION(EMBREE_IGNORE_INVALID_RAYS "Ignores invalid rays." OFF) # FIXME: enable by default?
@@ -418,6 +418,9 @@ IF (EMBREE_MAX_ISA STREQUAL "NONE")
     ELSE()
       OPTION(EMBREE_ISA_AVX512 "Enables AVX512 ISA." ${COMPILER_SUPPORTS_AVX512})
     ENDIF()
+    # Don't use OPTION, but still set them to OFF, so that embree-config.cmake is consisten with its definitions
+    SET(EMBREE_ISA_NEON   OFF)
+    SET(EMBREE_ISA_NEON2X OFF)
   ENDIF()
 
 ELSEIF (EMBREE_MAX_ISA STREQUAL "DEFAULT")
@@ -715,4 +718,3 @@ ENDIF()
 ##############################################################
 
 INCLUDE(CPack)
-

@@ -8,8 +8,6 @@ ADD_TUTORIAL(point_geometry)
 ADD_TUTORIAL_ISPC(point_geometry)
 ADD_TUTORIAL_SYCL(point_geometry)
 
-IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
-  ADD_EMBREE_TUTORIAL_TEST(point_geometry "")
 ENDIF()
 
-ENDIF()
+ADD_EMBREE_TEST_ECS(point_geometry embree_point_geometry)

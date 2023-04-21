@@ -8,10 +8,17 @@
 #include "quadifier.h"
 #include "rthwif_builder.h"
 
+#if defined(ZE_RAYTRACING)
+#include "builders/priminfo.h"
+#include "builders/primrefgen_presplit.h"
+#include "builders/heuristic_binning_array_aligned.h"
+#include "algorithms/parallel_for_for_prefix_sum.h"
+#else
 #include "../../builders/priminfo.h"
 #include "../../builders/primrefgen_presplit.h"
 #include "../../builders/heuristic_binning_array_aligned.h"
 #include "../../../common/algorithms/parallel_for_for_prefix_sum.h"
+#endif
 
 namespace embree
 {
@@ -24,6 +31,11 @@ namespace embree
       
       /* the type of primitive that is referenced */
       enum Type { TRIANGLE=0, QUAD=1, PROCEDURAL=2, INSTANCE=3, UNKNOWN=4, NUM_TYPES=5 };
+
+      /* check when we use spatial splits */
+      static bool useSpatialSplits(ze_raytracing_build_quality_ext_t build_quality, ze_raytracing_build_ext_flags_t build_flags) {
+        return build_quality == ZE_RAYTRACING_BUILD_QUALITY_EXT_HIGH && !(build_flags & ZE_RAYTRACING_BUILD_EXT_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION);
+      }
 
       /* BVH allocator */
       struct Allocator
@@ -42,22 +54,22 @@ namespace embree
 
         __forceinline void* malloc(size_t bytes, size_t align = 16)
         {
-          assert(align <= RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT);
-          if (likely(cur.load() >= end)) throw std::bad_alloc();
+          assert(align <= ZE_RAYTRACING_ACCELERATION_STRUCTURE_ALIGNMENT_EXT);
+          if (unlikely(cur.load() >= end)) return nullptr;
           const size_t extra = (align - cur) & (align-1);
           const size_t bytes_align = bytes + extra;
           const size_t cur_old = cur.fetch_add(bytes_align);
           const size_t cur_new = cur_old + bytes_align;
-          if (likely(cur_new > end)) throw std::bad_alloc();
+          if (unlikely(cur_new >= end)) return nullptr;
           return &ptr[cur_old + extra];
         }
-        
+
       private:
         char* ptr;                             // data buffer pointer
         size_t end;                            // size of data buffer in bytes
         __aligned(64) std::atomic<size_t> cur; // current pointer to allocate next data block from
       };
-      
+
       /* triangle data for leaf creation */
       struct Triangle
       {
@@ -226,10 +238,12 @@ namespace embree
       
       struct ReductionTy
       {
-        ReductionTy() {}
+        ReductionTy() : node(nullptr) {}
         ReductionTy (void* node, NodeType type, uint8_t nodeMask, PrimRange primRange)
           : node((char*)node), type(type), nodeMask(nodeMask), primRange(primRange) {}
-        
+
+        inline bool valid() { return node != nullptr; }
+
       public:
         char* node;
         NodeType type;
@@ -308,7 +322,8 @@ namespace embree
                   const getProceduralFunc& getProcedural,
                   const getInstanceFunc& getInstance,
                   void* scratch_ptr, size_t scratch_bytes,
-                  RTHWIF_BUILD_QUALITY build_quality,
+                  ze_raytracing_build_quality_ext_t build_quality,
+                  ze_raytracing_build_ext_flags_t build_flags,
                   bool verbose)
           : getSize(getSize),
             getType(getType),
@@ -320,6 +335,7 @@ namespace embree
             getInstance(getInstance),
             prims(scratch_ptr,scratch_bytes),
             build_quality(build_quality),
+            build_flags(build_flags),
             verbose(verbose) {} 
         
         ReductionTy setInternalNode(char* curAddr, size_t curBytes, NodeType nodeTy, char* childAddr,
@@ -395,7 +411,7 @@ namespace embree
             return QuadLeaf(quad.p0,quad.p1,quad.p3,quad.p2, 3,2,1, 0, geomID, primID, primID, quad.gflags, quad.gmask, false );
           }
         }
-        
+
         const ReductionTy createQuads(Type ty, const BuildRecord& curRecord, char* curAddr_)
         {
           QuadLeaf* curAddr = (QuadLeaf*) curAddr_;
@@ -414,17 +430,20 @@ namespace embree
         {
           /*! allocate data for all children */
           char* childData = (char*) allocator.malloc(curRecord.prims.size()*sizeof(QuadLeaf), 64);
-          
+
+          if (!childData)
+            return ReductionTy();
+
           /* create each child */
           ReductionTy values[BVH_WIDTH];
           for (size_t i=0, j=0; i<numChildren; i++) {
             values[i] = createQuads(ty,children[i],childData+j*sizeof(QuadLeaf));
             j += children[i].size();
           }
-          
+
           return setNode(curAddr,curBytes,NODE_TYPE_QUAD,childData,children,values,numChildren);
         }
-        
+
         const ReductionTy createProcedurals(const BuildRecord& curRecord, char* curAddr, size_t curBytes)
         {
           const uint32_t numPrims MAYBE_UNUSED = curRecord.size();
@@ -442,9 +461,12 @@ namespace embree
             numGeometries += desc0 != desc1;
             desc0 = desc1;
           }
-          
+
           char* childData = (char*) allocator.malloc(numGeometries*sizeof(ProceduralLeaf), 64);
-          
+
+          if (!childData)
+            return ReductionTy();
+
           ProceduralLeafBuilder procedural_leaf_builder(childData, numGeometries);
           ProceduralLeaf* first_procedural = procedural_leaf_builder.getCurProcedural();
           
@@ -476,7 +498,10 @@ namespace embree
           
           /* allocate data for all children */
           InstanceLeaf* childData = (InstanceLeaf*) allocator.malloc(numPrimitives*sizeof(InstanceLeaf), 64);
-          
+
+          if (!childData)
+            return ReductionTy();
+
           QBVH6::InternalNode6* qnode = new (curAddr) QBVH6::InternalNode6(curRecord.bounds(),NODE_TYPE_INSTANCE);
           qnode->setChildOffset(childData);
           
@@ -683,10 +708,10 @@ namespace embree
             return createInstances(curRecord,curAddr,curBytes);
           else
             assert(false);
-          
+
           return ReductionTy();
         }
-        
+
         const ReductionTy createLargeLeaf(const BuildRecord& curRecord, char* curAddr, size_t curBytes)
         {
           /* this should never occur but is a fatal error */
@@ -719,21 +744,25 @@ namespace embree
           /*! allocate data for all children */
           size_t childrenBytes = numChildren*sizeof(QBVH6::InternalNode6);
           char* childBase = (char*) allocator.malloc(childrenBytes, 64);
-          
+
+          if (!childBase)
+            return ReductionTy();
+
           /* recurse into each child  and perform reduction */
           char* childPtr = childBase;
           for (size_t i=0; i<numChildren; i++) {
             values[i] = createLargeLeaf(children[i],childPtr,sizeof(QBVH6::InternalNode6));
+            if (!values[i].valid()) return ReductionTy();
             childPtr += sizeof(QBVH6::InternalNode6);
           }
-          
+
           return setNode(curAddr,curBytes,NODE_TYPE_INTERNAL,childBase,children,values,numChildren);
         }
         
         const ReductionTy createInternalNode(BuildRecord& curRecord, char* curAddr, size_t curBytes)
         {
           /* create leaf when threshold reached or we are too deep */
-          bool createLeaf = curRecord.prims.size() <= cfg.leafSize[curRecord.type] || 
+          bool createLeaf = curRecord.prims.size() <= cfg.leafSize[curRecord.type] ||
             curRecord.depth+MIN_LARGE_LEAF_LEVELS >= cfg.maxDepth;
           
           bool performTypeSplit = !curRecord.equalType() && (createLeaf || curRecord.size() <= cfg.typeSplitSize);
@@ -787,28 +816,41 @@ namespace embree
           /*! allocate data for all children */
           size_t childrenBytes = numChildren*sizeof(QBVH6::InternalNode6);
           char* childBase = (char*) allocator.malloc(childrenBytes, 64);
-          
+
+          if (!childBase)
+            return ReductionTy();
+
           /* spawn tasks */
           if (curRecord.size() > 1024) // cfg.singleThreadThreshold
           {
+            std::atomic<bool> success = true;
             parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
+              if (!success) return;
               for (size_t i=r.begin(); i<r.end(); i++) {
-                values[i] = createInternalNode(/*nullptr,*/children[i],childBase+i*sizeof(QBVH6::InternalNode6),sizeof(QBVH6::InternalNode6));
+                values[i] = createInternalNode(children[i],childBase+i*sizeof(QBVH6::InternalNode6),sizeof(QBVH6::InternalNode6));
+                if (!values[i].valid()) {
+                  success = false;
+                  return;
+                }
               }
             });
-            
+
+            if (!success)
+              return ReductionTy();
+
             /* create node */
             return setNode(curAddr,curBytes,NODE_TYPE_INTERNAL,childBase,children,values,numChildren);
           }
-          
+
           /* recurse into each child */
           else
           {
             /* recurse into each child */
             for (size_t i=0; i<numChildren; i++) {
               values[i] = createInternalNode(children[i],childBase+i*sizeof(QBVH6::InternalNode6),sizeof(QBVH6::InternalNode6));
+              if (!values[i].valid()) return ReductionTy();
             }
-            
+
             /* create node */
             return setNode(curAddr,curBytes,NODE_TYPE_INTERNAL,childBase,children,values,numChildren);
           }
@@ -1064,7 +1106,7 @@ namespace embree
           if (verbose) std::cout << "primrefgen2  : " << std::setw(10) << (t4-t3)*1000.0 << "ms, " << std::setw(10) << 1E-6*double(numPrimitives)/(t4-t3) << " Mprims/s" << std::endl;
           
           /* perform pre-splitting */
-          if ((build_quality == RTHWIF_BUILD_QUALITY_HIGH) &&  numPrimitives)
+          if (useSpatialSplits(build_quality,build_flags) &&  numPrimitives)
           {
             PRINT("PRE-SPLITTING DISABLED");
             
@@ -1109,7 +1151,7 @@ namespace embree
           return r;
         }
 
-        void build(size_t numGeometries, char* accel, size_t bytes, BBox3f* boundsOut, size_t* accelBufferBytesOut, void* dispatchGlobalsPtr)
+        bool build(size_t numGeometries, char* accel, size_t bytes, BBox3f* boundsOut, size_t* accelBufferBytesOut, void* dispatchGlobalsPtr)
         {
           double t0 = verbose ? getSeconds() : 0.0;
 
@@ -1159,6 +1201,12 @@ namespace embree
           /* build BVH static BVH */
           QBVH6::InternalNode6* root = roots+0;
           ReductionTy r = build(numGeometries,pinfo,(char*)root);
+
+          /* check if build failed */
+          if (!r.valid()) {
+            return false;
+          }
+
           bounds.extend(pinfo.geomBounds);
 
           if (boundsOut) *boundsOut = bounds;
@@ -1232,6 +1280,7 @@ namespace embree
           }
           std::cout << std::endl << "};" << std::endl;*/
 #endif
+          return true;
         }
         
       private:
@@ -1247,18 +1296,20 @@ namespace embree
         evector<PrimRef> prims;
         Allocator allocator;
         std::vector<std::vector<uint16_t>> quadification;
-        RTHWIF_BUILD_QUALITY build_quality;
+        ze_raytracing_build_quality_ext_t build_quality;
+        ze_raytracing_build_ext_flags_t build_flags;
         bool verbose;
         
       };
-      
+
       template<typename getSizeFunc,
                typename getTypeFunc>
        
       static void estimateSize(size_t numGeometries,
                                const getSizeFunc& getSize,
                                const getTypeFunc& getType,
-                               RTHWIF_BUILD_QUALITY build_quality,
+                               ze_raytracing_build_quality_ext_t build_quality,
+                               ze_raytracing_build_ext_flags_t build_flags,
                                size_t& expectedBytes,
                                size_t& worstCaseBytes,
                                size_t& scratchBytes)
@@ -1278,7 +1329,7 @@ namespace embree
           };
         }
         
-        if (build_quality == RTHWIF_BUILD_QUALITY_HIGH)
+        if (useSpatialSplits(build_quality,build_flags))
           stats.estimate_presplits(1.2);
         
         worstCaseBytes = stats.worst_case_bvh_bytes();
@@ -1296,7 +1347,7 @@ namespace embree
                typename getProceduralFunc,
                typename getInstanceFunc>
        
-      static void build(size_t numGeometries,
+      static bool build(size_t numGeometries,
                           Device* device,
                           const getSizeFunc& getSize,
                           const getTypeFunc& getType,
@@ -1310,7 +1361,8 @@ namespace embree
                           void* scratch_ptr, size_t scratch_bytes,
                           BBox3f* boundsOut,
                           size_t* accelBufferBytesOut,
-                          RTHWIF_BUILD_QUALITY build_quality,
+                          ze_raytracing_build_quality_ext_t build_quality,
+                          ze_raytracing_build_ext_flags_t build_flags,
                           bool verbose,
                           void* dispatchGlobalsPtr)
       {
@@ -1320,10 +1372,10 @@ namespace embree
           throw std::runtime_error("scratch buffer cannot get aligned");
     
         BuilderT<getSizeFunc, getTypeFunc, createPrimRefArrayFunc, getTriangleFunc, getTriangleIndicesFunc, getQuadFunc, getProceduralFunc, getInstanceFunc> builder
-          (device, getSize, getType, createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance, scratch_ptr, scratch_bytes, build_quality, verbose);
+          (device, getSize, getType, createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance, scratch_ptr, scratch_bytes, build_quality, build_flags, verbose);
         
-        builder.build(numGeometries, accel_ptr, accel_bytes, boundsOut, accelBufferBytesOut, dispatchGlobalsPtr);
-      }      
+        return builder.build(numGeometries, accel_ptr, accel_bytes, boundsOut, accelBufferBytesOut, dispatchGlobalsPtr);
+      }
     };
   }
 }

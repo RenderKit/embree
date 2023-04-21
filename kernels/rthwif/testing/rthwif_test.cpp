@@ -150,7 +150,7 @@ sycl::float3 RandomSampler_getFloat3(RandomSampler& self)
 
 RandomSampler rng;
 
-volatile RTHWIF_PARALLEL_OPERATION parallelOperation = nullptr;
+ze_raytracing_parallel_operation_ext_handle_t parallelOperation = nullptr;
 
 enum class InstancingType
 {
@@ -418,7 +418,7 @@ struct Bounds3f
     return { sycl::float3(INFINITY), sycl::float3(-INFINITY) };
   }
 
-  operator RTHWIF_AABB () const {
+  operator ze_raytracing_aabb_ext_t () const {
     return { { lower.x(), lower.y(), lower.z() }, { upper.x(), upper.y(), upper.z() } };
   }
   
@@ -503,17 +503,17 @@ struct Hit
 };
 
 
-struct GEOMETRY_INSTANCE_DESC : RTHWIF_GEOMETRY_INSTANCE_DESC
+struct GEOMETRY_INSTANCE_DESC : ze_raytracing_geometry_instance_ext_desc_t
 {
-  RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR xfmdata;
+  ze_raytracing_transform_float3x4_aligned_column_major_ext_t xfmdata;
 };
 
 typedef union GEOMETRY_DESC
 {
-  RTHWIF_GEOMETRY_TYPE geometryType;
-  RTHWIF_GEOMETRY_TRIANGLES_DESC Triangles;
-  RTHWIF_GEOMETRY_QUADS_DESC Quads;
-  RTHWIF_GEOMETRY_AABBS_FPTR_DESC AABBs;
+  ze_raytracing_geometry_type_ext_t geometryType;
+  ze_raytracing_geometry_triangles_ext_desc_t Triangles;
+  ze_raytracing_geometry_quads_ext_desc_t Quads;
+  ze_raytracing_geometry_aabbs_fptr_ext_desc_t AABBs;
   GEOMETRY_INSTANCE_DESC Instance;
 
 } GEOMETRY_DESC;
@@ -534,7 +534,7 @@ struct Geometry
     throw std::runtime_error("Geometry::transform not implemented");
   }
 
-  virtual void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode, RTHWIF_BUILD_QUALITY quality) {
+  virtual void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode, ze_raytracing_build_quality_ext_t quality) {
   };
 
   virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map) = 0;
@@ -548,7 +548,7 @@ struct TriangleMesh : public Geometry
 {
 public:
 
-  TriangleMesh (RTHWIF_GEOMETRY_FLAGS gflags = RTHWIF_GEOMETRY_FLAG_OPAQUE, bool procedural = false)
+  TriangleMesh (ze_raytracing_geometry_ext_flag_t gflags = ZE_RAYTRACING_GEOMETRY_EXT_FLAG_OPAQUE, bool procedural = false)
     : Geometry(Type::TRIANGLE_MESH),
       gflags(gflags), procedural(procedural),
       triangles_alloc(context,device,sycl::ext::oneapi::property::usm::device_read_only()), triangles(0,triangles_alloc),
@@ -573,7 +573,7 @@ public:
       vertices[i] = xfmPoint(xfm,vertices[i]);
   }
 
-  static void getBoundsCallback (const uint32_t primIDStart, const uint32_t primIDCount, void* geomUserPtr, void* buildUserPtr, RTHWIF_AABB* boundsOut)
+  static void getBoundsCallback (const uint32_t primIDStart, const uint32_t primIDCount, void* geomUserPtr, void* buildUserPtr, ze_raytracing_aabb_ext_t* boundsOut)
   {
     const TriangleMesh* mesh = (TriangleMesh*) geomUserPtr;
 
@@ -594,9 +594,9 @@ public:
   {
     if (procedural)
     {
-      RTHWIF_GEOMETRY_AABBS_FPTR_DESC& out =  desc->AABBs;
+      ze_raytracing_geometry_aabbs_fptr_ext_desc_t& out =  desc->AABBs;
       memset(&out,0,sizeof(out));
-      out.geometryType = RTHWIF_GEOMETRY_TYPE_AABBS_FPTR;
+      out.geometryType = ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR;
       out.geometryFlags = gflags;
       out.geometryMask = 0xFF;
       out.primCount = triangles.size();
@@ -605,15 +605,17 @@ public:
     }
     else
     {
-      RTHWIF_GEOMETRY_TRIANGLES_DESC& out = desc->Triangles;
+      ze_raytracing_geometry_triangles_ext_desc_t& out = desc->Triangles;
       memset(&out,0,sizeof(out));
-      out.geometryType = RTHWIF_GEOMETRY_TYPE_TRIANGLES;
+      out.geometryType = ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES;
       out.geometryFlags = gflags;
       out.geometryMask = 0xFF;
-      out.triangleBuffer = (RTHWIF_TRIANGLE_INDICES*) triangles.data();
+      out.triangleFormat = ZE_RAYTRACING_FORMAT_EXT_TRIANGLE_INDICES_UINT32;
+      out.vertexFormat = ZE_RAYTRACING_FORMAT_EXT_FLOAT3;
+      out.triangleBuffer = (ze_raytracing_triangle_indices_uint32_ext_t*) triangles.data();
       out.triangleCount = triangles.size();
       out.triangleStride = sizeof(sycl::int4);
-      out.vertexBuffer = (RTHWIF_FLOAT3*) vertices.data();
+      out.vertexBuffer = (ze_raytracing_float3_ext_t*) vertices.data();
       out.vertexCount = vertices.size();
       out.vertexStride = sizeof(sycl::float3);
     }
@@ -765,7 +767,7 @@ public:
 
   
 public:
-  RTHWIF_GEOMETRY_FLAGS gflags = RTHWIF_GEOMETRY_FLAG_OPAQUE;
+  ze_raytracing_geometry_ext_flag_t gflags = ZE_RAYTRACING_GEOMETRY_EXT_FLAG_OPAQUE;
   bool procedural = false;
   
   typedef sycl::usm_allocator<sycl::int4, sycl::usm::alloc::shared> triangles_alloc_ty;
@@ -794,7 +796,7 @@ struct InstanceGeometryT : public Geometry
     sycl::free(ptr,context);
   }
 
-  static void getBoundsCallback (const uint32_t primIDStart, const uint32_t primIDCount, void* geomUserPtr, void* buildUserPtr, RTHWIF_AABB* boundsOut)
+  static void getBoundsCallback (const uint32_t primIDStart, const uint32_t primIDCount, void* geomUserPtr, void* buildUserPtr, ze_raytracing_aabb_ext_t* boundsOut)
   {
     assert(primIDStart == 0);
     assert(primIDCount == 1);
@@ -814,10 +816,10 @@ struct InstanceGeometryT : public Geometry
   {
     if (procedural)
     {
-      RTHWIF_GEOMETRY_AABBS_FPTR_DESC& out = desc->AABBs;
+      ze_raytracing_geometry_aabbs_fptr_ext_desc_t& out = desc->AABBs;
       memset(&out,0,sizeof(out));
-      out.geometryType = RTHWIF_GEOMETRY_TYPE_AABBS_FPTR;
-      out.geometryFlags = RTHWIF_GEOMETRY_FLAG_NONE;
+      out.geometryType = ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR;
+      out.geometryFlags = ZE_RAYTRACING_GEOMETRY_EXT_FLAG_NONE;
       out.geometryMask = 0xFF;
       out.primCount = 1;
       out.getBounds = InstanceGeometryT::getBoundsCallback;
@@ -827,11 +829,11 @@ struct InstanceGeometryT : public Geometry
     {
       GEOMETRY_INSTANCE_DESC& out = desc->Instance;
       memset(&out,0,sizeof(GEOMETRY_INSTANCE_DESC));
-      out.geometryType = RTHWIF_GEOMETRY_TYPE_INSTANCE;
-      out.instanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
+      out.geometryType = ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE;
+      out.instanceFlags = ZE_RAYTRACING_INSTANCE_EXT_FLAG_NONE;
       out.geometryMask = 0xFF;
       out.instanceUserID = instUserID;
-      out.transformFormat = RTHWIF_TRANSFORM_FORMAT_FLOAT4X4_COLUMN_MAJOR;
+      out.transformFormat = ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_ALIGNED_COLUMN_MAJOR;
       out.transform = (float*)&out.xfmdata;
       out.xfmdata.vx_x = local2world.vx.x();
       out.xfmdata.vx_y = local2world.vx.y();
@@ -854,7 +856,7 @@ struct InstanceGeometryT : public Geometry
     }
   }
 
-  virtual void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode, RTHWIF_BUILD_QUALITY quality) override {
+  virtual void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode, ze_raytracing_build_quality_ext_t quality) override {
     scene->buildAccel(device,context,buildMode);
   }
 
@@ -900,13 +902,8 @@ std::shared_ptr<TriangleMesh> createTrianglePlane (const sycl::float3& p0, const
   return mesh;
 }
 
-void* alloc_accel_buffer(size_t bytes, sycl::device device, sycl::context context)
+void* alloc_accel_buffer_internal(size_t bytes, sycl::device device, sycl::context context)
 {
-#if 1
-  return sycl::aligned_alloc_shared(RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT,bytes,device,context,sycl::ext::oneapi::property::usm::device_read_only());
-  
-#else // FIXME: enable this
-  
   ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
   ze_device_handle_t  hDevice  = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
   
@@ -927,23 +924,71 @@ void* alloc_accel_buffer(size_t bytes, sycl::device device, sycl::context contex
   host_desc.flags = ZE_HOST_MEM_ALLOC_FLAG_BIAS_CACHED;
   
   void* ptr = nullptr;
-  ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT,hDevice,&ptr);
-  assert(result == ZE_RESULT_SUCCESS);
+  ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,ZE_RAYTRACING_ACCELERATION_STRUCTURE_ALIGNMENT_EXT,hDevice,&ptr);
+  if (result != ZE_RESULT_SUCCESS)
+    throw std::runtime_error("accel allocation failed");
   return ptr;
-#endif
+}
+
+void free_accel_buffer_internal(void* ptr, sycl::context context)
+{
+  if (ptr == nullptr) return;
+  ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
+  ze_result_t result = zeMemFree(hContext,ptr);
+  if (result != ZE_RESULT_SUCCESS)
+    throw std::runtime_error("accel free failed");
+}
+
+struct Block {
+  Block (size_t bytes, sycl::device device, sycl::context context)
+    : base((char*)alloc_accel_buffer_internal(bytes,device,context)), total(bytes), cur(0) {}
+  ~Block() {
+    free_accel_buffer_internal((void*)base,context);
+  }
+  void* alloc(size_t bytes) {
+    bytes &= -128;
+    if (cur+bytes > total) return nullptr;
+    void* ptr = &base[cur];
+    cur += bytes;
+    return ptr;
+  }
+  char* base = nullptr;
+  size_t total = 0;
+  size_t cur = 0;
+  
+};
+
+bool g_use_accel_blocks = true;
+std::vector<std::shared_ptr<Block>> g_blocks;
+
+void* alloc_accel_buffer(size_t bytes, sycl::device device, sycl::context context)
+{
+  if (!g_use_accel_blocks)
+    return alloc_accel_buffer_internal(bytes,device,context);
+
+  if (g_blocks.size() == 0)
+    g_blocks.push_back(std::shared_ptr<Block>(new Block(1024*1024,device,context)));
+
+  if (bytes > 1024*1024) {
+    g_blocks.push_back(std::shared_ptr<Block>(new Block(bytes,device,context)));
+    void* ptr = g_blocks.back()->alloc(bytes);
+    assert(ptr);
+    return ptr;
+  }
+    
+  void* ptr = g_blocks.back()->alloc(bytes);
+  if (ptr) return ptr;
+  
+  g_blocks.push_back(std::shared_ptr<Block>(new Block(1024*1024,device,context)));
+  ptr = g_blocks.back()->alloc(bytes);
+  assert(ptr);
+  return ptr;
 }
 
 void free_accel_buffer(void* ptr, sycl::context context)
 {
-#if 1
-  sycl::free(ptr,context);
-  
-#else // FIXME: enable this
-  if (ptr == nullptr) return;
-  ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
-  ze_result_t result = zeMemFree(hContext,ptr);
-  assert(result == ZE_RESULT_SUCCESS);
-#endif
+  if (!g_use_accel_blocks)
+    return free_accel_buffer_internal(ptr,context);
 }
 
   
@@ -970,7 +1015,7 @@ struct Scene
     : geometries_alloc(context,device,sycl::ext::oneapi::property::usm::device_read_only()), geometries(0,geometries_alloc), bounds(Bounds3f::empty()), accel(nullptr) 
   {
     std::shared_ptr<TriangleMesh> plane = createTrianglePlane(sycl::float3(0,0,0), sycl::float3(width,0,0), sycl::float3(0,height,0), width, height);
-    plane->gflags = opaque ? RTHWIF_GEOMETRY_FLAG_OPAQUE : RTHWIF_GEOMETRY_FLAG_NONE;
+    plane->gflags = opaque ? ZE_RAYTRACING_GEOMETRY_EXT_FLAG_OPAQUE : ZE_RAYTRACING_GEOMETRY_EXT_FLAG_NONE;
     plane->procedural = procedural;
     geometries.push_back(plane);
   }
@@ -1119,7 +1164,7 @@ struct Scene
   
   void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode, bool benchmark = false)
   {
-     RTHWIF_BUILD_QUALITY quality = (RTHWIF_BUILD_QUALITY) (RandomSampler_getUInt(rng) % 3);
+     ze_raytracing_build_quality_ext_t quality = (ze_raytracing_build_quality_ext_t) (RandomSampler_getUInt(rng) % 3);
      
     /* fill geometry descriptor buffer */
     const size_t numGeometries = size();        
@@ -1130,8 +1175,7 @@ struct Scene
     RTHWIF_GEOMETRY_DESC **geom = (RTHWIF_GEOMETRY_DESC**)sycl::aligned_alloc(64,numGeometries*sizeof(RTHWIF_GEOMETRY_DESC*),device,context,sycl::usm::alloc::shared);
 #else        
     std::vector<GEOMETRY_DESC> desc(size());
-    std::vector<const RTHWIF_GEOMETRY_DESC*> geom(size());
-#endif    
+    std::vector<const ze_raytracing_geometry_ext_desc_t*> geom(size());
     size_t numPrimitives = 0;
     for (size_t geomID=0; geomID<size(); geomID++)
     {
@@ -1146,30 +1190,45 @@ struct Scene
       numPrimitives += g->getNumPrimitives();
       g->buildAccel(device,context,buildMode,quality);
       g->getDesc(&desc[geomID]);
-      geom[geomID] = (RTHWIF_GEOMETRY_DESC*) &desc[geomID];
+      geom[geomID] = (const ze_raytracing_geometry_ext_desc_t*) &desc[geomID];
     }
 
+    ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
+
+    ze_raytracing_accel_format_ext_t accelFormat;
+    ze_result_t_ err = zeRaytracingDeviceGetAccelFormatExt(hDevice, &accelFormat );
+    if (err != ZE_RESULT_SUCCESS_)
+      throw std::runtime_error("get accel format failed");
+    
     /* estimate accel size */
     size_t accelBufferBytesOut = 0;
-    RTHWIF_AABB bounds;
-    RTHWIF_BUILD_ACCEL_ARGS args;
+    ze_raytracing_aabb_ext_t bounds;
+    ze_raytracing_build_accel_ext_desc_t args;
     memset(&args,0,sizeof(args));
-    args.structBytes = sizeof(args);
-#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-    args.geometries = (const RTHWIF_GEOMETRY_DESC**) geom;    
-#else    
-    args.geometries = (const RTHWIF_GEOMETRY_DESC**) geom.data();
-#endif    
-    args.numGeometries = numGeometries; //geom.size();
+//     args.structBytes = sizeof(args);
+// #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+//     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geom;    
+// #else    
+//     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geom.data();
+// #endif    
+//     args.numGeometries = numGeometries; //geom.size();
+    args.stype = ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC;
+    args.pNext = nullptr;
+    args.accelFormat = accelFormat;
+    args.geometries = (const ze_raytracing_geometry_ext_desc_t**) geom.data();
+    args.numGeometries = geom.size();
+
     args.accelBuffer = nullptr;
     args.accelBufferBytes = 0;
     args.scratchBuffer = nullptr;
     args.scratchBufferBytes = 0;
     args.quality = quality;
-    args.flags = RTHWIF_BUILD_FLAG_NONE;
-#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-    args.parallelOperation = nullptr;
-#else    
+
+//     args.flags = RTHWIF_BUILD_FLAG_NONE;
+// #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+//     args.parallelOperation = nullptr;
+// #else    
+    args.flags = ZE_RAYTRACING_BUILD_EXT_FLAG_NONE;
     args.parallelOperation = parallelOperation;
 #endif    
     args.boundsOut = &bounds;
@@ -1179,15 +1238,22 @@ struct Scene
     args.dispatchGlobalsPtr = dispatchGlobalsPtr;
 #endif
     
-    RTHWIF_ACCEL_SIZE size;
-    memset(&size,0,sizeof(RTHWIF_ACCEL_SIZE));
-    size.structBytes = sizeof(RTHWIF_ACCEL_SIZE);
-#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-    RTHWIF_ERROR err = rthwifGetAccelSizeGPU(args,size,&queue,VERBOSE);    
-#else    
-    RTHWIF_ERROR err = rthwifGetAccelSize(args,size);
-#endif    
-    if (err != RTHWIF_ERROR_NONE)
+//     RTHWIF_ACCEL_SIZE size;
+//     memset(&size,0,sizeof(RTHWIF_ACCEL_SIZE));
+//     size.structBytes = sizeof(RTHWIF_ACCEL_SIZE);
+// #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+//     RTHWIF_ERROR err = rthwifGetAccelSizeGPU(args,size,&queue,VERBOSE);    
+// #else    
+//     RTHWIF_ERROR err = rthwifGetAccelSize(args,size);
+// #endif    
+    // if (err != RTHWIF_ERROR_NONE)
+    ze_raytracing_accel_size_ext_properties_t size;
+    memset(&size,0,sizeof(ze_raytracing_accel_size_ext_properties_t));
+    size.stype = ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES;
+    size.pNext = nullptr;
+    
+    err = zeRaytracingGetAccelSizeExt(&args,&size);
+    if (err != ZE_RESULT_SUCCESS_)
       throw std::runtime_error("BVH size estimate failed");
 
     if (size.accelBufferExpectedBytes > size.accelBufferWorstCaseBytes)
@@ -1237,22 +1303,30 @@ struct Scene
 
       for (size_t i=0; i<numIterations; i++)
       {
-        
-#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-        err = rthwifBuildAccelGPU(args,&queue,VERBOSE);        
-#else                
-        err = rthwifBuildAccel(args);
-#endif        
+// #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+//         err = rthwifBuildAccelGPU(args,&queue,VERBOSE);        
+// #else                
+//         err = rthwifBuildAccel(args);
+// #endif        
+        args.numGeometries = geom.size();
+        args.accelBuffer = accel;
+        args.accelBufferBytes = size.accelBufferWorstCaseBytes;
+        err = zeRaytracingBuildAccelExt(&args);
 
-        if (args.parallelOperation) {
-          assert(err == RTHWIF_ERROR_PARALLEL_OPERATION);
-          uint32_t maxThreads = rthwifGetParallelOperationMaxConcurrency(parallelOperation);
+        if (args.parallelOperation)
+        {
+          assert(err == ZE_RESULT_RAYTRACING_EXT_OPERATION_DEFERRED);
+          uint32_t maxThreads = 0;
+          err = zeRaytracingParallelOperationGetMaxConcurrencyExt(parallelOperation,&maxThreads);
+          if (err != ZE_RESULT_SUCCESS_)
+            throw std::runtime_error("get max concurrency failed");
+          
           tbb::parallel_for(0u, maxThreads, 1u, [&](uint32_t) {
-                                                  err = rthwifJoinParallelOperation(parallelOperation);
-                                                });
+            err = zeRaytracingParallelOperationJoinExt(parallelOperation);
+          });
         }
       
-        if (err != RTHWIF_ERROR_NONE)
+        if (err != ZE_RESULT_SUCCESS_)
           throw std::runtime_error("build error");
       }
       double t1 = embree::getSeconds();
@@ -1281,22 +1355,28 @@ struct Scene
         args.numGeometries = numGeometries; //geom.size();
         args.accelBuffer = accel;
         args.accelBufferBytes = accelBytes;
+// #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+//         err = rthwifBuildAccelGPU(args,&queue,VERBOSE);
+// #else        
+//         err = rthwifBuildAccel(args);
+// #endif        
+        err = zeRaytracingBuildAccelExt(&args);
 
-#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-        err = rthwifBuildAccelGPU(args,&queue,VERBOSE);
-#else        
-        err = rthwifBuildAccel(args);
-#endif        
+        if (args.parallelOperation)
+        {
+          assert(err == ZE_RESULT_RAYTRACING_EXT_OPERATION_DEFERRED);
 
-        if (args.parallelOperation) {
-          assert(err == RTHWIF_ERROR_PARALLEL_OPERATION);
-          uint32_t maxThreads = rthwifGetParallelOperationMaxConcurrency(parallelOperation);
+          uint32_t maxThreads = 0;
+          err = zeRaytracingParallelOperationGetMaxConcurrencyExt(parallelOperation,&maxThreads);
+          if (err != ZE_RESULT_SUCCESS_)
+            throw std::runtime_error("get max concurrency failed");
+          
           tbb::parallel_for(0u, maxThreads, 1u, [&](uint32_t) {
-                                                  err = rthwifJoinParallelOperation(parallelOperation);
-                                                });
+            err = zeRaytracingParallelOperationJoinExt(parallelOperation);
+          });
         }
         
-        if (err != RTHWIF_ERROR_RETRY)
+        if (err != ZE_RESULT_RAYTRACING_EXT_RETRY_BUILD_ACCEL)
           break;
 
         // PRINT(accelBufferBytesOut);
@@ -1311,7 +1391,7 @@ struct Scene
         bytes = accelBufferBytesOut;
       }
       
-      if (err != RTHWIF_ERROR_NONE)
+      if (err != ZE_RESULT_SUCCESS_)
         throw std::runtime_error("build error");
 
       break;
@@ -1380,7 +1460,7 @@ struct Scene
   geometries_alloc_ty geometries_alloc;
   std::vector<std::shared_ptr<Geometry>, geometries_alloc_ty> geometries;
 
-  RTHWIF_AABB bounds;
+  ze_raytracing_aabb_ext_t bounds;
   void* accel;
 };
 
@@ -1614,7 +1694,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         const float V = sycl::dot(cross(e1,v0+v1),D);
         const float W = sycl::dot(cross(e2,v1+v2),D);
         const float UVW = U+V+W;
-        bool valid = (std::min(U,std::min(V,W)) >= -0.0f) | (std::max(U,std::max(V,W)) <= 0.0f);
+        bool valid = (std::min(U,std::min(V,W)) >= -0.0f) || (std::max(U,std::max(V,W)) <= 0.0f);
         
         /* calculate geometry normal and denominator */
         const sycl::float3 Ng = sycl::cross(e2,e1);
@@ -2030,13 +2110,9 @@ void* allocDispatchGlobals(sycl::device device, sycl::context context)
   size_t num_rtstacks = 1<<17; // this is sufficiently large also for PVC
   size_t dispatchGlobalSize = 128+num_rtstacks*rtstack_bytes;
   
-  //dispatchGlobalsPtr = this->malloc(dispatchGlobalSize, 64);
-  void* dispatchGlobalsPtr = sycl::aligned_alloc(64,dispatchGlobalSize,device,context,sycl::usm::alloc::shared);
+  void* dispatchGlobalsPtr = alloc_accel_buffer(dispatchGlobalSize,device,context);
   memset(dispatchGlobalsPtr, 0, dispatchGlobalSize);
-  
-  if (((size_t)dispatchGlobalsPtr & 0xFFFF000000000000ull) != 0)
-    throw std::runtime_error("internal error in RTStack allocation");
-  
+
   DispatchGlobals* dg = (DispatchGlobals*) dispatchGlobalsPtr;
   dg->rtMemBasePtr = (uint64_t) dispatchGlobalsPtr + dispatchGlobalSize;
   dg->callStackHandlerKSP = 0;
@@ -2052,7 +2128,7 @@ void* allocDispatchGlobals(sycl::device device, sycl::context context)
 
 int main(int argc, char* argv[])
 {
-  rthwifInit();
+  zeRaytracingInitExt();
 
   TestType test = TestType::TRIANGLES_COMMITTED_HIT;
   InstancingType inst = InstancingType::NONE;
@@ -2142,12 +2218,16 @@ int main(int argc, char* argv[])
   sycl::queue queue = sycl::queue(device, exception_handler);
   context = queue.get_context();
 
+#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
   dispatchGlobalsPtr = allocDispatchGlobals(device,context);
+#endif
 
   /* execute test */
   RandomSampler_init(rng,0x56FE238A);
 
-  parallelOperation = rthwifNewParallelOperation();
+  ze_result_t_ err = zeRaytracingParallelOperationCreateExt(&parallelOperation);
+  if (err != ZE_RESULT_SUCCESS_)
+    throw std::runtime_error("parallel operation creation failed");
   
   uint32_t numErrors = 0;
   if (test >= TestType::BENCHMARK_TRIANGLES)
@@ -2163,9 +2243,16 @@ int main(int argc, char* argv[])
     numErrors = executeTest(device,queue,context,inst,test);
   }
 
-  sycl::free(dispatchGlobalsPtr, context);
+  err = zeRaytracingParallelOperationDestroyExt(parallelOperation);
+  if (err != ZE_RESULT_SUCCESS_)
+    throw std::runtime_error("parallel operation destruction failed");
 
-  rthwifExit();
+#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
+  free_accel_buffer(dispatchGlobalsPtr, context);
+#endif
+
+  zeRaytracingExitExt();
+  
   return numErrors ? 1 : 0;
 }
 

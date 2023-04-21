@@ -104,10 +104,15 @@ namespace embree
         const vfloat<M> t_back  = projC0 + td;
 
         const vbool<M> valid_front = valid & (ray.tnear() <= t_front) & (t_front <= ray.tfar);
-        const vbool<M> valid_back  = valid & (ray.tnear() <= t_back ) & (t_back  <= ray.tfar);
 
         /* check if there is a first hit */
+#if defined (EMBREE_BACKFACE_CULLING_SPHERES)
+        /* check if there is a first hit */
+        const vbool<M> valid_first = valid_front;
+#else
+        const vbool<M> valid_back  = valid & (ray.tnear() <= t_back ) & (t_back  <= ray.tfar);
         const vbool<M> valid_first = valid_front | valid_back;
+#endif
         if (unlikely(none(valid_first)))
           return false;
 
@@ -120,7 +125,10 @@ namespace embree
 
         /* invoke intersection filter for first hit */
         const bool is_hit_first = epilog(valid_first, hit);
-                
+
+#if defined (EMBREE_BACKFACE_CULLING_SPHERES)
+        return is_hit_first;
+#else
         /* check for possible second hits before potentially accepted hit */
         const vfloat<M> t_second = t_back;
         const vbool<M> valid_second = valid_front & valid_back & (t_second <= ray.tfar);
@@ -131,8 +139,8 @@ namespace embree
         const Vec3vf<M> Ng_second = td_back * ray_dir - perp;
         hit = SphereIntersectorHitM<M> (t_second, Ng_second);
         const bool is_hit_second = epilog(valid_second, hit);
-        
         return is_hit_first | is_hit_second;
+#endif
       }
 
       template<typename Epilog>
@@ -184,10 +192,14 @@ namespace embree
         const vfloat<M> t_back  = projC0 + td;
 
         const vbool<M> valid_front = valid & (ray.tnear()[k] <= t_front) & (t_front <= ray.tfar[k]);
-        const vbool<M> valid_back  = valid & (ray.tnear()[k] <= t_back ) & (t_back  <= ray.tfar[k]);
 
         /* check if there is a first hit */
+#if defined (EMBREE_BACKFACE_CULLING_SPHERES)
+        const vbool<M> valid_first = valid_front;
+#else
+        const vbool<M> valid_back  = valid & (ray.tnear()[k] <= t_back ) & (t_back  <= ray.tfar[k]);
         const vbool<M> valid_first = valid_front | valid_back;
+#endif
         if (unlikely(none(valid_first)))
           return false;
 
@@ -200,7 +212,10 @@ namespace embree
 
         /* invoke intersection filter for first hit */
         const bool is_hit_first = epilog(valid_first, hit);
-                
+
+#if defined (EMBREE_BACKFACE_CULLING_SPHERES)
+        return is_hit_first;
+#else
         /* check for possible second hits before potentially accepted hit */
         const vfloat<M> t_second = t_back;
         const vbool<M> valid_second = valid_front & valid_back & (t_second <= ray.tfar[k]);
@@ -213,6 +228,7 @@ namespace embree
         const bool is_hit_second = epilog(valid_second, hit);
         
         return is_hit_first | is_hit_second;
+#endif
       }
     };
   }  // namespace isa

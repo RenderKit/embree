@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #define RTHWIF_EXPORT_API
-#include "../../../common/tasking/taskscheduler.h"
 
 #include "rthwif_builder.h"
 #include "qbvh6_builder_sah.h"
@@ -17,32 +16,32 @@ namespace embree
 
   static std::unique_ptr<tbb::task_arena> g_arena;
   
-  inline RTHWIF_TRIANGLE_INDICES getPrimitive(const RTHWIF_GEOMETRY_TRIANGLES_DESC* geom, uint32_t primID) {
+  inline ze_raytracing_triangle_indices_uint32_ext_t getPrimitive(const ze_raytracing_geometry_triangles_ext_desc_t* geom, uint32_t primID) {
     assert(primID < geom->triangleCount);
-    return *(RTHWIF_TRIANGLE_INDICES*)((char*)geom->triangleBuffer + uint64_t(primID)*geom->triangleStride);
+    return *(ze_raytracing_triangle_indices_uint32_ext_t*)((char*)geom->triangleBuffer + uint64_t(primID)*geom->triangleStride);
   }
   
-  inline Vec3f getVertex(const RTHWIF_GEOMETRY_TRIANGLES_DESC* geom, uint32_t vertexID) {
+  inline Vec3f getVertex(const ze_raytracing_geometry_triangles_ext_desc_t* geom, uint32_t vertexID) {
     assert(vertexID < geom->vertexCount);
     return *(Vec3f*)((char*)geom->vertexBuffer + uint64_t(vertexID)*geom->vertexStride);
   }
   
-  inline RTHWIF_QUAD_INDICES getPrimitive(const RTHWIF_GEOMETRY_QUADS_DESC* geom, uint32_t primID) {
+  inline ze_raytracing_quad_indices_uint32_ext_t getPrimitive(const ze_raytracing_geometry_quads_ext_desc_t* geom, uint32_t primID) {
     assert(primID < geom->quadCount);
-    return *(RTHWIF_QUAD_INDICES*)((char*)geom->quadBuffer + uint64_t(primID)*geom->quadStride);
+    return *(ze_raytracing_quad_indices_uint32_ext_t*)((char*)geom->quadBuffer + uint64_t(primID)*geom->quadStride);
   }
   
-  inline Vec3f getVertex(const RTHWIF_GEOMETRY_QUADS_DESC* geom, uint32_t vertexID) {
+  inline Vec3f getVertex(const ze_raytracing_geometry_quads_ext_desc_t* geom, uint32_t vertexID) {
     assert(vertexID < geom->vertexCount);
     return *(Vec3f*)((char*)geom->vertexBuffer + uint64_t(vertexID)*geom->vertexStride);
   }
 
-  inline AffineSpace3fa getTransform(const RTHWIF_GEOMETRY_INSTANCE_DESC* geom)
+  inline AffineSpace3fa getTransform(const ze_raytracing_geometry_instance_ext_desc_t* geom)
   {
     switch (geom->transformFormat)
     {
-    case RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_COLUMN_MAJOR: {
-      const RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR*) geom->transform;
+    case ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_COLUMN_MAJOR: {
+      const ze_raytracing_transform_float3x4_column_major_ext_t* xfm = (const ze_raytracing_transform_float3x4_column_major_ext_t*) geom->transform;
       return {
         { xfm->vx_x, xfm->vx_y, xfm->vx_z },
         { xfm->vy_x, xfm->vy_y, xfm->vy_z },
@@ -50,8 +49,8 @@ namespace embree
         { xfm-> p_x, xfm-> p_y, xfm-> p_z }
       };
     }
-    case RTHWIF_TRANSFORM_FORMAT_FLOAT4X4_COLUMN_MAJOR: {
-      const RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR*) geom->transform;
+    case ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_ALIGNED_COLUMN_MAJOR: {
+      const ze_raytracing_transform_float3x4_aligned_column_major_ext_t* xfm = (const ze_raytracing_transform_float3x4_aligned_column_major_ext_t*) geom->transform;
       return {
         { xfm->vx_x, xfm->vx_y, xfm->vx_z },
         { xfm->vy_x, xfm->vy_y, xfm->vy_z },
@@ -59,8 +58,8 @@ namespace embree
         { xfm-> p_x, xfm-> p_y, xfm-> p_z }
       };
     }
-    case RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_ROW_MAJOR: {
-      const RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR*) geom->transform;
+    case ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_ROW_MAJOR: {
+      const ze_raytracing_transform_float3x4_row_major_ext_t* xfm = (const ze_raytracing_transform_float3x4_row_major_ext_t*) geom->transform;
       return {
         { xfm->vx_x, xfm->vx_y, xfm->vx_z },
         { xfm->vy_x, xfm->vy_y, xfm->vy_z },
@@ -73,39 +72,55 @@ namespace embree
     }
   }
   
-  inline void verifyGeometryDesc(const RTHWIF_GEOMETRY_TRIANGLES_DESC* geom)
+  inline void verifyGeometryDesc(const ze_raytracing_geometry_triangles_ext_desc_t* geom)
   {
+    if (geom->triangleFormat != ZE_RAYTRACING_FORMAT_EXT_TRIANGLE_INDICES_UINT32)
+      throw std::runtime_error("triangle format must be ZE_RAYTRACING_FORMAT_EXT_TRIANGLE_INDICES_UINT32");
+    
+    if (geom->vertexFormat != ZE_RAYTRACING_FORMAT_EXT_FLOAT3)
+      throw std::runtime_error("vertex format must be ZE_RAYTRACING_FORMAT_EXT_FLOAT3");
+ 
     if (geom->reserved0 != 0) throw std::runtime_error("reserved member must be 0");
     if (geom->reserved1 != 0) throw std::runtime_error("reserved member must be 0");
+    if (geom->reserved2 != 0) throw std::runtime_error("reserved member must be 0");
+    
     if (geom->triangleCount && geom->triangleBuffer == nullptr) throw std::runtime_error("no triangle buffer specified");
     if (geom->vertexCount   && geom->vertexBuffer   == nullptr) throw std::runtime_error("no vertex buffer specified");
   }
 
-  inline void verifyGeometryDesc(const RTHWIF_GEOMETRY_QUADS_DESC* geom)
+  inline void verifyGeometryDesc(const ze_raytracing_geometry_quads_ext_desc_t* geom)
   {
+    if (geom->quadFormat != ZE_RAYTRACING_FORMAT_EXT_QUAD_INDICES_UINT32)
+      throw std::runtime_error("quad format must be ZE_RAYTRACING_FORMAT_EXT_QUAD_INDICES_UINT32");
+    
+    if (geom->vertexFormat != ZE_RAYTRACING_FORMAT_EXT_FLOAT3)
+      throw std::runtime_error("vertex format must be ZE_RAYTRACING_FORMAT_EXT_FLOAT3");
+ 
     if (geom->reserved0 != 0) throw std::runtime_error("reserved member must be 0");
     if (geom->reserved1 != 0) throw std::runtime_error("reserved member must be 0");
+    if (geom->reserved2 != 0) throw std::runtime_error("reserved member must be 0");
+    
     if (geom->quadCount   && geom->quadBuffer   == nullptr) throw std::runtime_error("no quad buffer specified");
     if (geom->vertexCount && geom->vertexBuffer == nullptr) throw std::runtime_error("no vertex buffer specified");
   }
 
-  inline void verifyGeometryDesc(const RTHWIF_GEOMETRY_AABBS_FPTR_DESC* geom)
+  inline void verifyGeometryDesc(const ze_raytracing_geometry_aabbs_fptr_ext_desc_t* geom)
   {
     if (geom->reserved != 0) throw std::runtime_error("reserved member must be 0");
     if (geom->primCount   && geom->getBounds == nullptr) throw std::runtime_error("no bounds function specified");
   }
 
-  inline void verifyGeometryDesc(const RTHWIF_GEOMETRY_INSTANCE_DESC* geom)
+  inline void verifyGeometryDesc(const ze_raytracing_geometry_instance_ext_desc_t* geom)
   {
     if (geom->transform == nullptr) throw std::runtime_error("no instance transformation specified");
     if (geom->bounds == nullptr) throw std::runtime_error("no acceleration structure bounds specified");
     if (geom->accel == nullptr) throw std::runtime_error("no acceleration structure to instanciate specified");
   }
 
-  inline bool buildBounds(const RTHWIF_GEOMETRY_TRIANGLES_DESC* geom, uint32_t primID, BBox3fa& bbox, void* buildUserPtr)
+  inline bool buildBounds(const ze_raytracing_geometry_triangles_ext_desc_t* geom, uint32_t primID, BBox3fa& bbox, void* buildUserPtr)
   {
     if (primID >= geom->triangleCount) return false;
-    const RTHWIF_TRIANGLE_INDICES tri = getPrimitive(geom,primID);
+    const ze_raytracing_triangle_indices_uint32_ext_t tri = getPrimitive(geom,primID);
     if (unlikely(tri.v0 >= geom->vertexCount)) return false;
     if (unlikely(tri.v1 >= geom->vertexCount)) return false;
     if (unlikely(tri.v2 >= geom->vertexCount)) return false;
@@ -121,10 +136,10 @@ namespace embree
     return true;
   }
 
-  inline bool buildBounds(const RTHWIF_GEOMETRY_QUADS_DESC* geom, uint32_t primID, BBox3fa& bbox, void* buildUserPtr)
+  inline bool buildBounds(const ze_raytracing_geometry_quads_ext_desc_t* geom, uint32_t primID, BBox3fa& bbox, void* buildUserPtr)
   {
     if (primID >= geom->quadCount) return false;
-    const RTHWIF_QUAD_INDICES tri = getPrimitive(geom,primID);
+    const ze_raytracing_quad_indices_uint32_ext_t tri = getPrimitive(geom,primID);
     if (unlikely(tri.v0 >= geom->vertexCount)) return false;
     if (unlikely(tri.v1 >= geom->vertexCount)) return false;
     if (unlikely(tri.v2 >= geom->vertexCount)) return false;
@@ -143,13 +158,13 @@ namespace embree
     return true;
   }
 
-  inline bool buildBounds(const RTHWIF_GEOMETRY_AABBS_FPTR_DESC* geom, uint32_t primID, BBox3fa& bbox, void* buildUserPtr)
+  inline bool buildBounds(const ze_raytracing_geometry_aabbs_fptr_ext_desc_t* geom, uint32_t primID, BBox3fa& bbox, void* buildUserPtr)
   {
     if (primID >= geom->primCount) return false;
     if (geom->getBounds == nullptr) return false;
 
     BBox3f bounds;
-    (geom->getBounds)(primID,1,geom->geomUserPtr,buildUserPtr,(RTHWIF_AABB*)&bounds);
+    (geom->getBounds)(primID,1,geom->geomUserPtr,buildUserPtr,(ze_raytracing_aabb_ext_t*)&bounds);
     if (unlikely(!isvalid(bounds.lower))) return false;
     if (unlikely(!isvalid(bounds.upper))) return false;
     if (unlikely(bounds.empty())) return false;
@@ -158,7 +173,7 @@ namespace embree
     return true;
   }
 
-  inline bool buildBounds(const RTHWIF_GEOMETRY_INSTANCE_DESC* geom, uint32_t primID, BBox3fa& bbox, void* buildUserPtr)
+  inline bool buildBounds(const ze_raytracing_geometry_instance_ext_desc_t* geom, uint32_t primID, BBox3fa& bbox, void* buildUserPtr)
   {
     if (primID >= 1) return false;
     if (geom->accel == nullptr) return false;
@@ -192,109 +207,157 @@ namespace embree
     return pinfo;
   }
   
-  RTHWIF_API void rthwifInit()
+  RTHWIF_API void zeRaytracingInitExt()
   {
     uint32_t numThreads = tbb::this_task_arena::max_concurrency();
     g_arena.reset(new tbb::task_arena(numThreads,numThreads));
   }
   
-  RTHWIF_API void rthwifExit()
+  RTHWIF_API void zeRaytracingExitExt()
   {
     g_arena.reset();
   }
 
-#if defined(EMBREE_LEVEL_ZERO)
-  
-  RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(ze_device_handle_t hDevice)
+  typedef enum _ze_raytracing_accel_format_internal_t {
+    ZE_RAYTRACING_ACCEL_FORMAT_EXT_INVALID = 0,      // invalid acceleration structure format
+    ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1 = 1, // acceleration structure format version 1
+    ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_2 = 2, // acceleration structure format version 2
+  } ze_raytracing_accel_format_internal_t;
+
+  RTHWIF_API ze_result_t_ zeRaytracingDeviceGetAccelFormatExt( const ze_device_handle_t hDevice, ze_raytracing_accel_format_ext_t* pAccelFormat )
   {
+    if (pAccelFormat == nullptr)
+       return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+
+    *pAccelFormat = (ze_raytracing_accel_format_ext_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_INVALID;
+
+#if defined(EMBREE_LEVEL_ZERO)
+
     /* check for supported device ID */
     ze_device_properties_t device_props{ ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES };
     ze_result_t status = zeDeviceGetProperties(hDevice, &device_props);
     if (status != ZE_RESULT_SUCCESS)
-      return RTHWIF_FEATURES_NONE;
+      return ZE_RESULT_ERROR_UNKNOWN_;
 
     /* check for Intel vendor */
     const uint32_t vendor_id = device_props.vendorId;
     const uint32_t device_id = device_props.deviceId;
-    if (vendor_id != 0x8086) return RTHWIF_FEATURES_NONE;
+    if (vendor_id != 0x8086) return ZE_RESULT_ERROR_UNKNOWN_;
     
-    /* return supported features */
-    uint32_t features_xe = RTHWIF_FEATURES_NONE;
-    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_TRIANGLES;
-    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_QUADS;
-    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_AABBS_FPTR;
-    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_INSTANCE;
-    
-    // DG2
-    if (0x4F80 <= device_id && device_id <= 0x4F88) return (RTHWIF_FEATURES) features_xe;
-    if (0x5690 <= device_id && device_id <= 0x5698) return (RTHWIF_FEATURES) features_xe;
-    if (0x56A0 <= device_id && device_id <= 0x56A6) return (RTHWIF_FEATURES) features_xe;
-    if (0x56B0 <= device_id && device_id <= 0x56B3) return (RTHWIF_FEATURES) features_xe;
-    if (0x56C0 <= device_id && device_id <= 0x56C1) return (RTHWIF_FEATURES) features_xe;
-       
-    // PVC
-    if (0x0BD0 <= device_id && device_id <= 0x0BDB) return (RTHWIF_FEATURES) features_xe;
-    if (device_id == 0x0BE5                       ) return (RTHWIF_FEATURES) features_xe;
+    bool dg2 =
+      (0x4F80 <= device_id && device_id <= 0x4F88) ||
+      (0x5690 <= device_id && device_id <= 0x5698) ||
+      (0x56A0 <= device_id && device_id <= 0x56A6) ||
+      (0x56B0 <= device_id && device_id <= 0x56B3) ||
+      (0x56C0 <= device_id && device_id <= 0x56C1);
 
-    return RTHWIF_FEATURES_NONE;
-  }
-  
+    bool pvc =
+      (0x0BD0 <= device_id && device_id <= 0x0BDB) ||
+      (device_id == 0x0BE5                       );
+
+    if (dg2 || pvc) {
+      *pAccelFormat = (ze_raytracing_accel_format_ext_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1;
+      return ZE_RESULT_SUCCESS_;
+    }        
+
+    return ZE_RESULT_ERROR_UNKNOWN_;
+
 #else
 
-  RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(ze_device_handle_t hDevice)
+    *pAccelFormat = (ze_raytracing_accel_format_ext_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1;
+    return ZE_RESULT_SUCCESS_;
+    
+#endif
+  }
+  
+  RTHWIF_API ze_result_t_ zeRaytracingAccelFormatCompatibilityExt( const ze_raytracing_accel_format_ext_t accelFormat,
+                                                                   const ze_raytracing_accel_format_ext_t otherAccelFormat )
   {
-    uint32_t features_xe = RTHWIF_FEATURES_NONE;
-    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_TRIANGLES;
-    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_QUADS;
-    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_AABBS_FPTR;
-    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_INSTANCE;
-    return RTHWIF_FEATURES(features_xe);
+    if (accelFormat != otherAccelFormat)
+      return ZE_RESULT_RAYTRACING_EXT_ACCEL_INCOMPATIBLE;
+
+    return ZE_RESULT_SUCCESS_;
   }
 
-#endif
-
-  uint32_t getNumPrimitives(const RTHWIF_GEOMETRY_DESC* geom)
+  uint32_t getNumPrimitives(const ze_raytracing_geometry_ext_desc_t* geom)
   {
     switch (geom->geometryType) {
-    case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return ((RTHWIF_GEOMETRY_TRIANGLES_DESC*) geom)->triangleCount;
-    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR : return ((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*) geom)->primCount;
-    case RTHWIF_GEOMETRY_TYPE_QUADS      : return ((RTHWIF_GEOMETRY_QUADS_DESC*) geom)->quadCount;
-    case RTHWIF_GEOMETRY_TYPE_INSTANCE   : return 1;
+    case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES  : return ((ze_raytracing_geometry_triangles_ext_desc_t*) geom)->triangleCount;
+    case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR : return ((ze_raytracing_geometry_aabbs_fptr_ext_desc_t*) geom)->primCount;
+    case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS      : return ((ze_raytracing_geometry_quads_ext_desc_t*) geom)->quadCount;
+    case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE   : return 1;
     default                              : return 0;
     };
   }
   
-  /* fill all arg members that app did not know of yet */
-  RTHWIF_BUILD_ACCEL_ARGS rthwifPrepareBuildAccelArgs(const RTHWIF_BUILD_ACCEL_ARGS& args_i)
+  typedef struct _zet_base_desc_t
   {
-    RTHWIF_BUILD_ACCEL_ARGS args;
-    memset(&args,0,sizeof(RTHWIF_BUILD_ACCEL_ARGS));
-    memcpy(&args,&args_i,std::min(sizeof(RTHWIF_BUILD_ACCEL_ARGS),args_i.structBytes));
-    args.structBytes = sizeof(RTHWIF_BUILD_ACCEL_ARGS);
-    return args;
+    /** [in] type of this structure */
+    ze_structure_type_t_ stype;
+    
+    /** [in,out][optional] must be null or a pointer to an extension-specific structure */
+    const void* pNext;
+    
+  } zet_base_desc_t_;
+
+  bool checkDescChain(zet_base_desc_t_* desc)
+  {
+    /* supporting maximal 1024 to also detect cycles */
+    for (size_t i=0; i<1024; i++) {
+      if (desc->pNext == nullptr) return true;
+      desc = (zet_base_desc_t_*) desc->pNext;
+    }
+    return false;
   }
-  
-  RTHWIF_API RTHWIF_ERROR rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o)
+    
+  RTHWIF_API ze_result_t_ zeRaytracingGetAccelSizeExt(const ze_raytracing_build_accel_ext_desc_t* args, ze_raytracing_accel_size_ext_properties_t* size_o)
   {
-    RTHWIF_BUILD_ACCEL_ARGS args = rthwifPrepareBuildAccelArgs(args_i);
-    const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
-    const size_t numGeometries = args.numGeometries;
+    /* check for valid pointers */
+    if (args == nullptr)
+      return ZE_RESULT_ERROR_UNKNOWN_;
+
+    /* check for valid pointers */
+    if (size_o == nullptr)
+      return ZE_RESULT_ERROR_UNKNOWN_;
+    
+    /* check if input descriptor has proper type */
+    if (args->stype != ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC)
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+
+    /* check valid pNext chain */
+    if (!checkDescChain((zet_base_desc_t_*)args))
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+
+    /* check if return property has proper type */
+    if (size_o->stype != ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES)
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+
+    /* check valid pNext chain */
+    if (!checkDescChain((zet_base_desc_t_*)size_o))
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+
+    /* check if acceleration structure format is supported */
+    if (args->accelFormat != (ze_raytracing_accel_format_ext_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1)
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+    
+    const ze_raytracing_geometry_ext_desc_t** geometries = args->geometries;
+    const size_t numGeometries = args->numGeometries;
 
     auto getSize = [&](uint32_t geomID) -> size_t {
-      const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+      const ze_raytracing_geometry_ext_desc_t* geom = geometries[geomID];
       if (geom == nullptr) return 0;
       return getNumPrimitives(geom);
     };
     
     auto getType = [&](unsigned int geomID)
     {
-      const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+      const ze_raytracing_geometry_ext_desc_t* geom = geometries[geomID];
       assert(geom);
       switch (geom->geometryType) {
-      case RTHWIF_GEOMETRY_TYPE_TRIANGLES : return QBVH6BuilderSAH::TRIANGLE;
-      case RTHWIF_GEOMETRY_TYPE_QUADS: return QBVH6BuilderSAH::QUAD;
-      case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return QBVH6BuilderSAH::PROCEDURAL;
-      case RTHWIF_GEOMETRY_TYPE_INSTANCE: return QBVH6BuilderSAH::INSTANCE;
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES : return QBVH6BuilderSAH::TRIANGLE;
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS: return QBVH6BuilderSAH::QUAD;
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR: return QBVH6BuilderSAH::PROCEDURAL;
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE: return QBVH6BuilderSAH::INSTANCE;
       default: throw std::runtime_error("invalid geometry type");
       };
     };
@@ -303,83 +366,75 @@ namespace embree
     size_t expectedBytes = 0;
     size_t worstCaseBytes = 0;
     size_t scratchBytes = 0;
-    QBVH6BuilderSAH::estimateSize(numGeometries, getSize, getType, args.quality, expectedBytes, worstCaseBytes, scratchBytes);
-                            
-    /* return size to user */
-    RTHWIF_ACCEL_SIZE size;
-    memset(&size,0,sizeof(RTHWIF_ACCEL_SIZE));
-    size.accelBufferExpectedBytes = expectedBytes;
-    size.accelBufferWorstCaseBytes = worstCaseBytes;
-    size.scratchBufferBytes = scratchBytes;
-    size_t bytes_o = size_o.structBytes;
-    memset(&size_o,0,bytes_o);
-    memcpy(&size_o,&size,bytes_o);
-    size_o.structBytes = bytes_o;
-    return RTHWIF_ERROR_NONE;
+    QBVH6BuilderSAH::estimateSize(numGeometries, getSize, getType, args->quality, args->flags, expectedBytes, worstCaseBytes, scratchBytes);
+    
+    /* fill return struct */
+    size_o->accelBufferExpectedBytes = expectedBytes;
+    size_o->accelBufferWorstCaseBytes = worstCaseBytes;
+    size_o->scratchBufferBytes = scratchBytes;
+    return ZE_RESULT_SUCCESS_;
   }
   
-  RTHWIF_API RTHWIF_ERROR rthwifBuildAccelInternal(const RTHWIF_BUILD_ACCEL_ARGS& args_i) try
+  RTHWIF_API ze_result_t_ zeRaytracingBuildAccelExtInternal(const ze_raytracing_build_accel_ext_desc_t* args) try
   {
-    /* prepare input arguments */
-    const RTHWIF_BUILD_ACCEL_ARGS args = rthwifPrepareBuildAccelArgs(args_i);
-    const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
-    const uint32_t numGeometries = args.numGeometries;
+    const ze_raytracing_geometry_ext_desc_t** geometries = args->geometries;
+    const uint32_t numGeometries = args->numGeometries;
 
-    if (args.accelBuffer == nullptr) return RTHWIF_ERROR_OTHER;
+    if (args->accelBuffer == nullptr) return ZE_RESULT_ERROR_UNKNOWN_;
 
     /* verify input descriptors */
     parallel_for(numGeometries,[&](uint32_t geomID) {
-      const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+      const ze_raytracing_geometry_ext_desc_t* geom = geometries[geomID];
       if (geom == nullptr) return;
       
       switch (geom->geometryType) {
-      case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : verifyGeometryDesc((RTHWIF_GEOMETRY_TRIANGLES_DESC*)geom); break;
-      case RTHWIF_GEOMETRY_TYPE_QUADS      : verifyGeometryDesc((RTHWIF_GEOMETRY_QUADS_DESC*    )geom); break;
-      case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR : verifyGeometryDesc((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geom); break;
-      case RTHWIF_GEOMETRY_TYPE_INSTANCE   : verifyGeometryDesc((RTHWIF_GEOMETRY_INSTANCE_DESC* )geom); break;
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES  : verifyGeometryDesc((ze_raytracing_geometry_triangles_ext_desc_t*)geom); break;
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS      : verifyGeometryDesc((ze_raytracing_geometry_quads_ext_desc_t*    )geom); break;
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR : verifyGeometryDesc((ze_raytracing_geometry_aabbs_fptr_ext_desc_t*)geom); break;
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE   : verifyGeometryDesc((ze_raytracing_geometry_instance_ext_desc_t* )geom); break;
       default: throw std::runtime_error("invalid geometry type");
       };
     });
     
     auto getSize = [&](uint32_t geomID) -> size_t {
-      const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+      const ze_raytracing_geometry_ext_desc_t* geom = geometries[geomID];
       if (geom == nullptr) return 0;
       return getNumPrimitives(geom);
     };
     
     auto getType = [&](unsigned int geomID)
     {
-      const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+      const ze_raytracing_geometry_ext_desc_t* geom = geometries[geomID];
       assert(geom);
       switch (geom->geometryType) {
-      case RTHWIF_GEOMETRY_TYPE_TRIANGLES : return QBVH6BuilderSAH::TRIANGLE;
-      case RTHWIF_GEOMETRY_TYPE_QUADS: return QBVH6BuilderSAH::QUAD;
-      case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return QBVH6BuilderSAH::PROCEDURAL;
-      case RTHWIF_GEOMETRY_TYPE_INSTANCE: return QBVH6BuilderSAH::INSTANCE;
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES : return QBVH6BuilderSAH::TRIANGLE;
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS: return QBVH6BuilderSAH::QUAD;
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR: return QBVH6BuilderSAH::PROCEDURAL;
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE: return QBVH6BuilderSAH::INSTANCE;
       default: throw std::runtime_error("invalid geometry type");
       };
     };
     
     auto createPrimRefArray = [&] (evector<PrimRef>& prims, BBox1f time_range, const range<size_t>& r, size_t k, unsigned int geomID) -> PrimInfo
     {
-      const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+      const ze_raytracing_geometry_ext_desc_t* geom = geometries[geomID];
       assert(geom);
 
       switch (geom->geometryType) {
-      case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_TRIANGLES_DESC*)geom,args.buildUserPtr,prims,r,k,geomID);
-      case RTHWIF_GEOMETRY_TYPE_QUADS      : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_QUADS_DESC*    )geom,args.buildUserPtr,prims,r,k,geomID);
-      case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return createGeometryPrimRefArray((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geom,args.buildUserPtr,prims,r,k,geomID);
-      case RTHWIF_GEOMETRY_TYPE_INSTANCE: return createGeometryPrimRefArray((RTHWIF_GEOMETRY_INSTANCE_DESC* )geom,args.buildUserPtr,prims,r,k,geomID);
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES  : return createGeometryPrimRefArray((ze_raytracing_geometry_triangles_ext_desc_t*)geom,args->buildUserPtr,prims,r,k,geomID);
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS      : return createGeometryPrimRefArray((ze_raytracing_geometry_quads_ext_desc_t*    )geom,args->buildUserPtr,prims,r,k,geomID);
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR: return createGeometryPrimRefArray((ze_raytracing_geometry_aabbs_fptr_ext_desc_t*)geom,args->buildUserPtr,prims,r,k,geomID);
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE: return createGeometryPrimRefArray((ze_raytracing_geometry_instance_ext_desc_t* )geom,args->buildUserPtr,prims,r,k,geomID);
       default: throw std::runtime_error("invalid geometry type");
       };
     };
     
     auto getTriangle = [&](unsigned int geomID, unsigned int primID)
     {
-      const RTHWIF_GEOMETRY_TRIANGLES_DESC* geom = (const RTHWIF_GEOMETRY_TRIANGLES_DESC*) geometries[geomID];
+      const ze_raytracing_geometry_triangles_ext_desc_t* geom = (const ze_raytracing_geometry_triangles_ext_desc_t*) geometries[geomID];
       assert(geom);
       
-      const RTHWIF_TRIANGLE_INDICES tri = getPrimitive(geom,primID);
+      const ze_raytracing_triangle_indices_uint32_ext_t tri = getPrimitive(geom,primID);
       if (unlikely(tri.v0 >= geom->vertexCount)) return QBVH6BuilderSAH::Triangle();
       if (unlikely(tri.v1 >= geom->vertexCount)) return QBVH6BuilderSAH::Triangle();
       if (unlikely(tri.v2 >= geom->vertexCount)) return QBVH6BuilderSAH::Triangle();
@@ -396,18 +451,18 @@ namespace embree
     };
     
     auto getTriangleIndices = [&] (uint32_t geomID, uint32_t primID) {
-      const RTHWIF_GEOMETRY_TRIANGLES_DESC* geom = (const RTHWIF_GEOMETRY_TRIANGLES_DESC*) geometries[geomID];
+      const ze_raytracing_geometry_triangles_ext_desc_t* geom = (const ze_raytracing_geometry_triangles_ext_desc_t*) geometries[geomID];
       assert(geom);
-      const RTHWIF_TRIANGLE_INDICES tri = getPrimitive(geom,primID);
+      const ze_raytracing_triangle_indices_uint32_ext_t tri = getPrimitive(geom,primID);
       return Vec3<uint32_t>(tri.v0,tri.v1,tri.v2);
     };
     
     auto getQuad = [&](unsigned int geomID, unsigned int primID)
     {
-      const RTHWIF_GEOMETRY_QUADS_DESC* geom = (const RTHWIF_GEOMETRY_QUADS_DESC*) geometries[geomID];
+      const ze_raytracing_geometry_quads_ext_desc_t* geom = (const ze_raytracing_geometry_quads_ext_desc_t*) geometries[geomID];
       assert(geom);
                      
-      const RTHWIF_QUAD_INDICES quad = getPrimitive(geom,primID);
+      const ze_raytracing_quad_indices_uint32_ext_t quad = getPrimitive(geom,primID);
       const Vec3f p0 = getVertex(geom,quad.v0);
       const Vec3f p1 = getVertex(geom,quad.v1);
       const Vec3f p2 = getVertex(geom,quad.v2);
@@ -418,7 +473,7 @@ namespace embree
     };
     
     auto getProcedural = [&](unsigned int geomID, unsigned int primID) {
-      const RTHWIF_GEOMETRY_AABBS_FPTR_DESC* geom = (const RTHWIF_GEOMETRY_AABBS_FPTR_DESC*) geometries[geomID];
+      const ze_raytracing_geometry_aabbs_fptr_ext_desc_t* geom = (const ze_raytracing_geometry_aabbs_fptr_ext_desc_t*) geometries[geomID];
       assert(geom);
       return QBVH6BuilderSAH::Procedural(geom->geometryMask); // FIXME: pass gflags
     };
@@ -426,8 +481,8 @@ namespace embree
     auto getInstance = [&](unsigned int geomID, unsigned int primID)
     {
       assert(geometries[geomID]);
-      assert(geometries[geomID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE);
-      const RTHWIF_GEOMETRY_INSTANCE_DESC* geom = (const RTHWIF_GEOMETRY_INSTANCE_DESC*) geometries[geomID];
+      assert(geometries[geomID]->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE);
+      const ze_raytracing_geometry_instance_ext_desc_t* geom = (const ze_raytracing_geometry_instance_ext_desc_t*) geometries[geomID];
       void* accel = geom->accel;
       const AffineSpace3fa local2world = getTransform(geom);
       return QBVH6BuilderSAH::Instance(local2world,accel,geom->geometryMask,geom->instanceUserID); // FIXME: pass instance flags
@@ -436,71 +491,111 @@ namespace embree
     /* dispatch globals ptr for debugging purposes */
     void* dispatchGlobalsPtr = nullptr;
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
-    dispatchGlobalsPtr = args.dispatchGlobalsPtr;
+    dispatchGlobalsPtr = args->dispatchGlobalsPtr;
 #endif
 
     bool verbose = false;
-    QBVH6BuilderSAH::build(numGeometries, nullptr, 
+    bool success = QBVH6BuilderSAH::build(numGeometries, nullptr, 
                            getSize, getType, 
                            createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance,
-                           (char*)args.accelBuffer, args.accelBufferBytes,
-                           args.scratchBuffer, args.scratchBufferBytes,
-                           (BBox3f*) args.boundsOut, args.accelBufferBytesOut,
-                           args.quality, verbose, dispatchGlobalsPtr);
-    return RTHWIF_ERROR_NONE;
+                           (char*)args->accelBuffer, args->accelBufferBytes,
+                           args->scratchBuffer, args->scratchBufferBytes,
+                           (BBox3f*) args->boundsOut, args->accelBufferBytesOut,
+                           args->quality, args->flags, verbose, dispatchGlobalsPtr);
+    if (!success) {
+      return ZE_RESULT_RAYTRACING_EXT_RETRY_BUILD_ACCEL;
+    }
+    return ZE_RESULT_SUCCESS_;
   }
-  
   catch (std::exception& e) {
-    if (std::string(e.what()) == std::string(std::bad_alloc().what())) {
-      return RTHWIF_ERROR_RETRY;
-    }
-    else {
-      return RTHWIF_ERROR_OTHER;
-    }
+    std::cerr << "caught exception during BVH build: " << e.what() << std::endl;
+    return ZE_RESULT_ERROR_UNKNOWN_;
   }
   
-  struct RTHWIF_PARALLEL_OPERATION_IMPL
+  struct ze_raytracing_parallel_operation_ext_handle_t_IMPL
   {
-    RTHWIF_ERROR errorCode = RTHWIF_ERROR_NONE;
+    ze_result_t_ errorCode = ZE_RESULT_SUCCESS_;
     tbb::task_group group;
   };
 
-  RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(const RTHWIF_BUILD_ACCEL_ARGS& args_i)
+  RTHWIF_API ze_result_t_ zeRaytracingBuildAccelExt(const ze_raytracing_build_accel_ext_desc_t* args)
   {
+    /* check for valid pointers */
+    if (args == nullptr)
+      return ZE_RESULT_ERROR_UNKNOWN_;
+    
+    /* check if input descriptor has proper type */
+    if (args->stype != ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC)
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+
+    /* check valid pNext chain */
+    if (!checkDescChain((zet_base_desc_t_*)args))
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+
+    /* check if acceleration structure format is supported */
+    if (args->accelFormat != (ze_raytracing_accel_format_ext_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1)
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+    
     /* if parallel operation is provided then execute using thread arena inside task group ... */
-    if (args_i.parallelOperation)
+    if (args->parallelOperation)
     {
-      RTHWIF_PARALLEL_OPERATION_IMPL* op = (RTHWIF_PARALLEL_OPERATION_IMPL*) args_i.parallelOperation;
-      g_arena->execute([&](){ op->group.run([=](){ op->errorCode = rthwifBuildAccelInternal(args_i); }); });
-      return RTHWIF_ERROR_PARALLEL_OPERATION;
+      ze_raytracing_parallel_operation_ext_handle_t_IMPL* op = (ze_raytracing_parallel_operation_ext_handle_t_IMPL*) args->parallelOperation;
+      g_arena->execute([&](){ op->group.run([=](){ op->errorCode = zeRaytracingBuildAccelExtInternal(args); }); });
+      return ZE_RESULT_RAYTRACING_EXT_OPERATION_DEFERRED;
     }
     /* ... otherwise we just execute inside task arena to avoid spawning of TBB worker threads */
     else
     {
-      RTHWIF_ERROR errorCode = RTHWIF_ERROR_NONE;
-      g_arena->execute([&](){ errorCode = rthwifBuildAccelInternal(args_i); });
+      ze_result_t_ errorCode = ZE_RESULT_SUCCESS_;
+      g_arena->execute([&](){ errorCode = zeRaytracingBuildAccelExtInternal(args); });
       return errorCode;
     }
   }
 
-  RTHWIF_API RTHWIF_PARALLEL_OPERATION rthwifNewParallelOperation()
+  RTHWIF_API ze_result_t_ zeRaytracingParallelOperationCreateExt(ze_raytracing_parallel_operation_ext_handle_t* phParallelOperation)
   {
-    return (RTHWIF_PARALLEL_OPERATION) new RTHWIF_PARALLEL_OPERATION_IMPL;
+    /* check for valid pointer */
+    if (phParallelOperation == nullptr)
+      return ZE_RESULT_ERROR_UNKNOWN_;
+
+    /* create parallel operation object */
+    *phParallelOperation = (ze_raytracing_parallel_operation_ext_handle_t) new ze_raytracing_parallel_operation_ext_handle_t_IMPL;
+    return ZE_RESULT_SUCCESS_;
   }
   
-  RTHWIF_API void rthwifDeleteParallelOperation( RTHWIF_PARALLEL_OPERATION  parallelOperation )
+  RTHWIF_API ze_result_t_ zeRaytracingParallelOperationDestroyExt( ze_raytracing_parallel_operation_ext_handle_t parallelOperation )
   {
-    delete (RTHWIF_PARALLEL_OPERATION_IMPL*) parallelOperation;
+    /* check for valid handle */
+    if (parallelOperation == nullptr)
+      return ZE_RESULT_ERROR_UNKNOWN_;
+
+    /* delete parallel operation */
+    delete (ze_raytracing_parallel_operation_ext_handle_t_IMPL*) parallelOperation;
+    return ZE_RESULT_SUCCESS_;
   }
   
-  RTHWIF_API uint32_t rthwifGetParallelOperationMaxConcurrency( RTHWIF_PARALLEL_OPERATION  parallelOperation )
+  RTHWIF_API ze_result_t_ zeRaytracingParallelOperationGetMaxConcurrencyExt( ze_raytracing_parallel_operation_ext_handle_t parallelOperation, uint32_t* pMaxConcurrency )
   {
-    return tbb::this_task_arena::max_concurrency();
+    /* check for valid handle */
+    if (parallelOperation == nullptr)
+      return ZE_RESULT_ERROR_UNKNOWN_;
+
+    /* check for valid pointer */
+    if (pMaxConcurrency == nullptr)
+      return ZE_RESULT_ERROR_UNKNOWN_;
+
+    /* return maximal concurrency */
+    *pMaxConcurrency = tbb::this_task_arena::max_concurrency();
+    return ZE_RESULT_SUCCESS_;
   }
   
-  RTHWIF_API RTHWIF_ERROR rthwifJoinParallelOperation( RTHWIF_PARALLEL_OPERATION parallelOperation)
+  RTHWIF_API ze_result_t_ zeRaytracingParallelOperationJoinExt( ze_raytracing_parallel_operation_ext_handle_t parallelOperation)
   {
-    RTHWIF_PARALLEL_OPERATION_IMPL* op = (RTHWIF_PARALLEL_OPERATION_IMPL*) parallelOperation;
+    /* check for valid handle */
+    if (parallelOperation == nullptr)
+      return ZE_RESULT_ERROR_UNKNOWN_;
+    
+    ze_raytracing_parallel_operation_ext_handle_t_IMPL* op = (ze_raytracing_parallel_operation_ext_handle_t_IMPL*) parallelOperation;
     g_arena->execute([&](){ op->group.wait(); });
     return op->errorCode;
   }

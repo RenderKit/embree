@@ -3,6 +3,14 @@
 
 #pragma once
 
+#if defined(ZE_RAYTRACING)
+#include "sys/sysinfo.h"
+#include "sys/vector.h"
+#include "math/vec2.h"
+#include "math/vec3.h"
+#include "math/bbox.h"
+#include "math/affinespace.h"
+#else
 #include "../../../common/sys/sysinfo.h"
 #include "../../../common/sys/vector.h"
 #include "../../../common/math/vec2.h"
@@ -10,6 +18,7 @@
 #include "../../../common/math/bbox.h"
 #include "../../../common/math/lbbox.h"
 #include "../../../common/math/affinespace.h"
+#endif
 
 #include <map>
 #include <bitset>
@@ -159,10 +168,6 @@ namespace embree
   {
     QuadLeaf() {}
 
-    QuadLeaf(const QuadLeaf &q) {
-      memcpy( this,&q, sizeof(QuadLeaf) );
-    }
-    
     QuadLeaf (Vec3f v0, Vec3f v1, Vec3f v2, Vec3f v3,
               uint8_t j0, uint8_t j1, uint8_t j2,
               uint32_t shaderIndex, uint32_t geomIndex, uint32_t primIndex0, uint32_t primIndex1,

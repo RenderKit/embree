@@ -8,9 +8,6 @@ ADD_TUTORIAL(quaternion_motion_blur)
 ADD_TUTORIAL_ISPC(quaternion_motion_blur)
 ADD_TUTORIAL_SYCL(quaternion_motion_blur)
 
-
-IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
-  ADD_EMBREE_TUTORIAL_TEST(quaternion_motion_blur "")
 ENDIF()
 
-ENDIF()
+ADD_EMBREE_TEST_ECS(quaternion_motion_blur embree_quaternion_motion_blur)
