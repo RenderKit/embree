@@ -685,7 +685,6 @@ namespace embree
         const float t0 = float(i+0)/float(maxTimeSegments);
         const float t1 = float(i+1)/float(maxTimeSegments);
         time_range = BBox1f(t0,t1);
-        //args.buildUserPtr = &time_range;
         
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
         args.geometries = (const ze_raytracing_geometry_ext_desc_t**) geomDescr;
@@ -747,13 +746,13 @@ namespace embree
     hwaccel.numTimeSegments = maxTimeSegments;
     for (size_t i=0; i<maxTimeSegments; i++)
       hwaccel.AccelTable[i] = (char*)accel.data() + headerBytes + i*sizeTotal.accelBufferExpectedBytes;    
-    sycl::event queue_event =  sycl_queue.memcpy(accel.data(),&hwaccel,sizeof(EmbreeHWAccel));
+    sycl::event queue_event =  sycl_queue.memcpy(accel.data(),&hwaccel,sizeof(EmbreeHWAccel)+sizeof(void*)*(maxTimeSegments-1));
     queue_event.wait();
 #else    
     /* destroy parallel operation */
-    err = zeRaytracingParallelOperationDestroyExt(parallelOperation);
-    if (err != ZE_RESULT_SUCCESS_)
-      throw std::runtime_error("parallel operation destruction failed");
+    //err = zeRaytracingParallelOperationDestroyExt(parallelOperation);
+    //if (err != ZE_RESULT_SUCCESS_)
+    //  throw std::runtime_error("parallel operation destruction failed");
     
     EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) accel.data();
     hwaccel->numTimeSegments = maxTimeSegments;
