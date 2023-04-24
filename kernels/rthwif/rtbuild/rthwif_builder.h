@@ -14,6 +14,14 @@ struct _ze_device_handle_t;
 
 typedef struct _ze_device_handle_t *ze_device_handle_t;
 
+#if !defined(EMBREE_LEVEL_ZERO)
+struct _ze_driver_handle_t {};
+#else
+struct _ze_driver_handle_t;
+#endif
+
+typedef struct _ze_driver_handle_t *ze_driver_handle_t;
+
 #if defined(__cplusplus)
 #  define RTHWIF_API_EXTERN_C extern "C"
 #else
@@ -326,6 +334,30 @@ typedef enum _ze_device_raytracing_ext_flag_t_ {
 } ze_device_raytracing_ext_flag_t_;
 
 
+typedef enum _ze_rtas_builder_exp_version_t
+{
+  ZE_RTAS_BUILDER_EXP_VERSION_1_0,
+  
+} ze_rtas_builder_exp_version_t;
+
+typedef struct _ze_rtas_builder_exp_desc_t
+{
+  /** [in] type of this structure */
+  ze_structure_type_t_ stype;
+
+  /** [in,out][optional] must be null or a pointer to an extension-specific structure */
+  const void* pNext;                                    
+
+  ze_rtas_builder_exp_version_t builderVersion;
+  
+} ze_rtas_builder_exp_desc_t;
+
+typedef struct _ze_rtas_builder_exp_handle_t *ze_rtas_builder_exp_handle_t;
+
+RTHWIF_API ze_result_t_ ZE_APICALL_ zeRTASBuilderCreateExp(ze_driver_handle_t hDriver, const ze_rtas_builder_exp_desc_t *pDescriptor, ze_rtas_builder_exp_handle_t *phBuilder);
+
+RTHWIF_API ze_result_t_ ZE_APICALL_ zeRTASBuilderDestroyExp(ze_rtas_builder_exp_handle_t hBuilder);
+  
 /**
 
   \brief A handle of a parallel operation that can get joined with worker threads. 
@@ -349,7 +381,7 @@ typedef struct _ze_raytracing_parallel_operation_ext_handle_t* ze_raytracing_par
    parallel operation at a given time.
 */
 
-RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingParallelOperationCreateExt( ze_raytracing_parallel_operation_ext_handle_t* phParallelOperation );
+RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingParallelOperationCreateExt( ze_rtas_builder_exp_handle_t hBuilder, ze_raytracing_parallel_operation_ext_handle_t* phParallelOperation );
 
 
 /**
@@ -818,7 +850,7 @@ RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingDeviceGetAccelFormatExt( const z
 
 */
 
-RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingAccelFormatCompatibilityExt( const ze_raytracing_accel_format_ext_t accelFormat, const ze_raytracing_accel_format_ext_t otherAccelFormat );
+RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingAccelFormatCompatibilityExt( ze_rtas_builder_exp_handle_t hBuilder, const ze_raytracing_accel_format_ext_t accelFormat, const ze_raytracing_accel_format_ext_t otherAccelFormat );
 
 
 
@@ -986,7 +1018,7 @@ typedef struct _ze_raytracing_build_accel_ext_desc_t
 
 */
 
-RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingGetAccelSizeExt( const ze_raytracing_build_accel_ext_desc_t* args, ze_raytracing_accel_size_ext_properties_t* pAccelSizeOut );
+RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingGetAccelSizeExt( ze_rtas_builder_exp_handle_t hBuilder, const ze_raytracing_build_accel_ext_desc_t* args, ze_raytracing_accel_size_ext_properties_t* pAccelSizeOut );
 
 
 /**
@@ -1049,7 +1081,7 @@ RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingGetAccelSizeExt( const ze_raytra
 
  */
 
-RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingBuildAccelExt( const ze_raytracing_build_accel_ext_desc_t* args );
+RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingBuildAccelExt( ze_rtas_builder_exp_handle_t hBuilder, const ze_raytracing_build_accel_ext_desc_t* args );
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////

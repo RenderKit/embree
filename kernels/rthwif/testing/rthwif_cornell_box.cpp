@@ -241,6 +241,16 @@ ze_raytracing_float3_ext_t vertices[] = {
 /* builds acceleration structure */
 void* build_rtas(sycl::device device, sycl::context context)
 {
+  sycl::platform platform = device.get_platform();
+  ze_driver_handle_t hDriver = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(platform);
+    
+  /* create L0 builder object */
+  ze_rtas_builder_exp_desc_t builderDesc = {};
+  ze_rtas_builder_exp_handle_t hBuilder = nullptr;
+  ze_result_t_ err = zeRTASBuilderCreateExp(hDriver, &builderDesc, &hBuilder);
+  if (err != ZE_RESULT_SUCCESS_)
+    throw std::runtime_error("ze_rtas_builder creation failed");
+    
   /* create geometry descriptor for single triangle mesh */
   ze_raytracing_geometry_triangles_ext_desc_t mesh = {};
   mesh.geometryType = ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES;
@@ -264,13 +274,13 @@ void* build_rtas(sycl::device device, sycl::context context)
   /* get acceleration structure format for this device */
   ze_raytracing_accel_format_ext_t accelFormat;
   ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
-  ze_result_t_ err = zeRaytracingDeviceGetAccelFormatExt(hDevice, &accelFormat );
+  err = zeRaytracingDeviceGetAccelFormatExt(hDevice, &accelFormat );
   if (err != ZE_RESULT_SUCCESS_)
     throw std::runtime_error("get accel format failed");
 
   /* create parallel operation for parallel build */
   ze_raytracing_parallel_operation_ext_handle_t parallelOperation = nullptr;
-  err = zeRaytracingParallelOperationCreateExt(&parallelOperation);
+  err = zeRaytracingParallelOperationCreateExt(hBuilder, &parallelOperation);
   if (err != ZE_RESULT_SUCCESS_)
     throw std::runtime_error("parallel operation creation failed");
 
@@ -302,7 +312,7 @@ void* build_rtas(sycl::device device, sycl::context context)
   size.stype = ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES;
   size.pNext = nullptr;
     
-  err = zeRaytracingGetAccelSizeExt(&args,&size);
+  err = zeRaytracingGetAccelSizeExt(hBuilder,&args,&size);
   if (err != ZE_RESULT_SUCCESS_)
     throw std::runtime_error("BVH size estimate failed");
 
@@ -320,7 +330,7 @@ void* build_rtas(sycl::device device, sycl::context context)
   args.accelBufferBytes = size.accelBufferWorstCaseBytes;
 
   /* build acceleration strucuture multi threaded */
-  err = zeRaytracingBuildAccelExt(&args);
+  err = zeRaytracingBuildAccelExt(hBuilder,&args);
   assert(err == ZE_RESULT_RAYTRACING_EXT_OPERATION_DEFERRED);
 
   /* after the build is started one can query number of threads to use for the build */
@@ -342,6 +352,11 @@ void* build_rtas(sycl::device device, sycl::context context)
   if (err != ZE_RESULT_SUCCESS_)
     throw std::runtime_error("parallel operation destruction failed");
 
+  /* destroy rtas builder again */
+  err = zeRTASBuilderDestroyExp(hBuilder);
+  if (err != ZE_RESULT_SUCCESS_)
+    throw std::runtime_error("ze_rtas_builder destruction failed");
+  
   return accel;
 }
 

@@ -443,6 +443,21 @@ namespace embree
 
   BBox3f rthwifBuild(Scene* scene, AccelBuffer& accel)
   {
+    DeviceGPU* gpuDevice = dynamic_cast<DeviceGPU*>(scene->device);
+    if (gpuDevice == nullptr) throw std::runtime_error("internal error");
+    
+    sycl::device device = gpuDevice->getGPUDevice();
+    ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
+    sycl::platform platform = device.get_platform();
+    ze_driver_handle_t hDriver = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(platform);
+    
+    /* create L0 builder object */
+    ze_rtas_builder_exp_desc_t builderDesc = {};
+    ze_rtas_builder_exp_handle_t hBuilder = nullptr;
+    ze_result_t_ err = zeRTASBuilderCreateExp(hDriver, &builderDesc, &hBuilder);
+    if (err != ZE_RESULT_SUCCESS_)
+      throw std::runtime_error("ze_rtas_builder creation failed");
+    
     auto getType = [&](unsigned int geomID) -> GEOMETRY_TYPE
     {
       /* no HW support for MB yet */
@@ -543,13 +558,9 @@ namespace embree
     }
 
     ze_raytracing_parallel_operation_ext_handle_t parallelOperation = nullptr;
-    ze_result_t_ err = zeRaytracingParallelOperationCreateExt(&parallelOperation);
+    err = zeRaytracingParallelOperationCreateExt(hBuilder, &parallelOperation);
     if (err != ZE_RESULT_SUCCESS_)
       throw std::runtime_error("parallel operation creation failed");
-
-    DeviceGPU* gpuDevice = dynamic_cast<DeviceGPU*>(scene->device);
-    if (gpuDevice == nullptr) throw std::runtime_error("internal error");
-    ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(gpuDevice->getGPUDevice());
 
     ze_raytracing_accel_format_ext_t accelFormat;
     err = zeRaytracingDeviceGetAccelFormatExt(hDevice, &accelFormat );
@@ -583,7 +594,7 @@ namespace embree
     memset(&sizeTotal,0,sizeof(ze_raytracing_accel_size_ext_properties_t));
     sizeTotal.stype = ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES;
     sizeTotal.pNext = nullptr;
-    err = zeRaytracingGetAccelSizeExt(&args,&sizeTotal);
+    err = zeRaytracingGetAccelSizeExt(hBuilder,&args,&sizeTotal);
     if (err != ZE_RESULT_SUCCESS_)
       throw_RTCError(RTC_ERROR_UNKNOWN,"BVH size estimate failed");
 
@@ -622,7 +633,7 @@ namespace embree
         args.accelBufferBytes = sizeTotal.accelBufferExpectedBytes;
         bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };
         
-        err = zeRaytracingBuildAccelExt(&args);
+        err = zeRaytracingBuildAccelExt(hBuilder,&args);
         if (args.parallelOperation)
         {
           assert(err == ZE_RESULT_RAYTRACING_EXT_OPERATION_DEFERRED);
@@ -658,6 +669,11 @@ namespace embree
     err = zeRaytracingParallelOperationDestroyExt(parallelOperation);
     if (err != ZE_RESULT_SUCCESS_)
       throw std::runtime_error("parallel operation destruction failed");
+
+    /* destroy rtas builder again */
+    err = zeRTASBuilderDestroyExp(hBuilder);
+    if (err != ZE_RESULT_SUCCESS_)
+      throw std::runtime_error("ze_rtas_builder destruction failed");
     
     EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) accel.data();
     hwaccel->numTimeSegments = maxTimeSegments;
