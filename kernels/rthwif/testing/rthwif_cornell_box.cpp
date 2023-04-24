@@ -291,18 +291,10 @@ void* build_rtas(sycl::device device, sycl::context context)
   args.stype = ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC;
   args.pNext = nullptr;
   args.accelFormat = accelFormat;
-  args.geometries = (const ze_raytracing_geometry_ext_desc_t **) descs.data();
-  args.numGeometries = descs.size();
-  args.accelBuffer = nullptr;
-  args.accelBufferBytes = 0;
-  args.scratchBuffer = nullptr;
-  args.scratchBufferBytes = 0;
   args.quality = ZE_RAYTRACING_BUILD_QUALITY_EXT_MEDIUM;
   args.flags = ZE_RAYTRACING_BUILD_EXT_FLAG_NONE;
-  args.parallelOperation = parallelOperation;
-  args.boundsOut = &bounds;
-  args.accelBufferBytesOut = &accelBufferBytesOut;
-  args.buildUserPtr = nullptr;
+  args.geometries = (const ze_raytracing_geometry_ext_desc_t **) descs.data();
+  args.numGeometries = descs.size();
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
   args.dispatchGlobalsPtr = dispatchGlobalsPtr;
 #endif
@@ -312,25 +304,25 @@ void* build_rtas(sycl::device device, sycl::context context)
   size.stype = ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES;
   size.pNext = nullptr;
     
-  err = zeRaytracingGetAccelSizeExt(hBuilder,&args,&size);
+  err = zeRaytracingGetAccelSizeExt(hBuilder,&args,parallelOperation,&size);
   if (err != ZE_RESULT_SUCCESS_)
     throw std::runtime_error("BVH size estimate failed");
 
   /* allocate scratch buffer */
   std::vector<char> scratchBuffer(size.scratchBufferBytes);
   memset(scratchBuffer.data(),0,scratchBuffer.size());
-  args.scratchBuffer = scratchBuffer.data();
-  args.scratchBufferBytes = scratchBuffer.size();
 
   /* allocate acceleration structure buffer */
   size_t accelBytes = size.accelBufferWorstCaseBytes;
   void* accel = alloc_accel_buffer(accelBytes,device,context);
   memset(accel,0,accelBytes);
-  args.accelBuffer = accel;
-  args.accelBufferBytes = size.accelBufferWorstCaseBytes;
-
+  
   /* build acceleration strucuture multi threaded */
-  err = zeRaytracingBuildAccelExt(hBuilder,&args);
+  err = zeRaytracingBuildAccelExt(hBuilder,&args,
+                                  scratchBuffer.data(),scratchBuffer.size(),
+                                  accel, accelBytes,
+                                  parallelOperation,
+                                  nullptr, &bounds, &accelBufferBytesOut);
   assert(err == ZE_RESULT_RAYTRACING_EXT_OPERATION_DEFERRED);
 
   /* after the build is started one can query number of threads to use for the build */

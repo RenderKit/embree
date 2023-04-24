@@ -910,6 +910,16 @@ typedef struct _ze_raytracing_build_accel_ext_desc_t
    * device specified here (see
    * zeRaytracingAccelFormatCompatibilityExt function). */
   ze_raytracing_accel_format_ext_t accelFormat;
+
+  /** 
+      [in] Build quality to use (see ze_raytracing_build_quality_ext_t) 
+  */
+  ze_raytracing_build_quality_ext_t quality;
+
+  /**
+     [in] Some build flags for acceleration structure build (see ze_raytracing_build_ext_flags_t) 
+  */
+  ze_raytracing_build_ext_flags_t flags;
   
   /** 
       [in] Array of pointers to geometry descriptors. This array and
@@ -923,77 +933,6 @@ typedef struct _ze_raytracing_build_accel_ext_desc_t
      [in] Number of geometries in geometry descriptor array. 
   */
   uint32_t numGeometries;
-
-  /**
-     [out] Destination buffer for acceleration structure. This has to
-     be a shared memory allocation aligned to
-     ZE_RAYTRACING_ACCELERATION_STRUCTURE_ALIGNMENT bytes and using
-     the ray tracing allocation descriptor
-     ze_raytracing_mem_alloc_ext_desc_t in the zeMemAllocShared
-     call.
-  */
-  void* accelBuffer;
-
-  /** 
-      [in] Number of allocated bytes of the acceleration structure
-      buffer. This can be 0 in which case the build implementation may
-      just return an improved accel buffer expected size estimate by
-      looking at the scene data. 
-  */
-  size_t accelBufferBytes;
-
-  /**
-     [scratch] Scratch space buffer to be used during accleration structure
-     construction. This buffer has to be a standard host memory allocation.
-  */
-  void* scratchBuffer;
-
-  /**
-     [in] Number of allocated bytes of the scratch space buffer. 
-  */
-  size_t scratchBufferBytes;
-
-  /** 
-      [in] Build quality to use (see ze_raytracing_build_quality_ext_t) 
-  */
-  ze_raytracing_build_quality_ext_t quality;
-
-  /**
-     [in] Some build flags for acceleration structure build (see ze_raytracing_build_ext_flags_t) 
-  */
-  ze_raytracing_build_ext_flags_t flags;
-
-  /**
-     [in][optional] When parallelOperation is NULL, the build is
-     executed sequentially on the current thread. If a
-     parallelOperation is specified, then the parallel operation gets
-     attached to the parallel build handle. This handle can then get
-     joined with worker threads to perform the parallel build
-     operation. Only a single build operation can be attached to a
-     parallel build operation at a given time.
-  */
-  ze_raytracing_parallel_operation_ext_handle_t parallelOperation;
-
-  /**
-     [in,optional] A pointer passed to callbacks.
-  */
-  void* buildUserPtr;
-  
-  /**
-     [out][optional] When the pointer is NULL no data is
-     returned. When the build fails with
-     ZE_RESULT_RAYTRACING_EXT_RETRY_BUILD_ACCEL, this returns the new
-     expected acceleration structure bytes to be used for
-     re-build. When the build succeeds this returns the number of
-     bytes actually used in the acceleration structure buffer.
-  */
-  size_t* accelBufferBytesOut;
-  
-  /**
-     [out][optional] Destination address to write acceleration
-     structure bounds to. When set to NULL no data is returned.
-  */
-  ze_raytracing_aabb_ext_t* boundsOut;
 
   /* for debugging purposes use only */
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
@@ -1018,7 +957,7 @@ typedef struct _ze_raytracing_build_accel_ext_desc_t
 
 */
 
-RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingGetAccelSizeExt( ze_rtas_builder_exp_handle_t hBuilder, const ze_raytracing_build_accel_ext_desc_t* args, ze_raytracing_accel_size_ext_properties_t* pAccelSizeOut );
+RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingGetAccelSizeExt( ze_rtas_builder_exp_handle_t hBuilder, const ze_raytracing_build_accel_ext_desc_t* args, ze_raytracing_parallel_operation_ext_handle_t hParallelOperation, ze_raytracing_accel_size_ext_properties_t* pAccelSizeOut );
 
 
 /**
@@ -1081,7 +1020,8 @@ RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingGetAccelSizeExt( ze_rtas_builder
 
  */
 
-RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingBuildAccelExt( ze_rtas_builder_exp_handle_t hBuilder, const ze_raytracing_build_accel_ext_desc_t* args );
+RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingBuildAccelExt( ze_rtas_builder_exp_handle_t hBuilder, const ze_raytracing_build_accel_ext_desc_t* args,
+  void *pScratchBuffer, size_t scratchBufferSizeBytes, void *pRtasBuffer, size_t rtasBufferSizeBytes, ze_raytracing_parallel_operation_ext_handle_t hParallelOperation, void *pBuildUserPtr, ze_raytracing_aabb_ext_t *pBounds, size_t *pRtasBufferSizeBytes);
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////
