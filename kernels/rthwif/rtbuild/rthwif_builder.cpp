@@ -368,7 +368,7 @@ namespace embree
     };
   }
   
-  RTHWIF_API ze_result_t_ zeRaytracingGetAccelSizeExt(ze_rtas_builder_exp_handle_t hBuilder, const ze_raytracing_build_accel_ext_desc_t* args, ze_raytracing_accel_size_ext_properties_t* size_o)
+  RTHWIF_API ze_result_t_ zeRaytracingGetAccelSizeExt(ze_rtas_builder_exp_handle_t hBuilder, const ze_raytracing_build_accel_ext_desc_t* args, ze_raytracing_parallel_operation_ext_handle_t hParallelOperation, ze_raytracing_accel_size_ext_properties_t* size_o)
   {
     /* check for valid rtas builder */
     if (!validate(hBuilder))
@@ -437,12 +437,13 @@ namespace embree
     return ZE_RESULT_SUCCESS_;
   }
   
-  RTHWIF_API ze_result_t_ zeRaytracingBuildAccelExtInternal(const ze_raytracing_build_accel_ext_desc_t* args) try
+  RTHWIF_API ze_result_t_ zeRaytracingBuildAccelExtInternal(const ze_raytracing_build_accel_ext_desc_t* args,
+                                                            void *pScratchBuffer, size_t scratchBufferSizeBytes,
+                                                            void *pRtasBuffer, size_t rtasBufferSizeBytes,
+                                                            void *pBuildUserPtr, ze_raytracing_aabb_ext_t *pBounds, size_t *pRtasBufferSizeBytes) try
   {
     const ze_raytracing_geometry_ext_desc_t** geometries = args->geometries;
     const uint32_t numGeometries = args->numGeometries;
-
-    if (args->accelBuffer == nullptr) return ZE_RESULT_ERROR_UNKNOWN_;
 
     /* verify input descriptors */
     parallel_for(numGeometries,[&](uint32_t geomID) {
@@ -483,10 +484,10 @@ namespace embree
       assert(geom);
 
       switch (geom->geometryType) {
-      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES  : return createGeometryPrimRefArray((ze_raytracing_geometry_triangles_ext_desc_t*)geom,args->buildUserPtr,prims,r,k,geomID);
-      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS      : return createGeometryPrimRefArray((ze_raytracing_geometry_quads_ext_desc_t*    )geom,args->buildUserPtr,prims,r,k,geomID);
-      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR: return createGeometryPrimRefArray((ze_raytracing_geometry_aabbs_fptr_ext_desc_t*)geom,args->buildUserPtr,prims,r,k,geomID);
-      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE: return createGeometryPrimRefArray((ze_raytracing_geometry_instance_ext_desc_t* )geom,args->buildUserPtr,prims,r,k,geomID);
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES  : return createGeometryPrimRefArray((ze_raytracing_geometry_triangles_ext_desc_t*)geom,pBuildUserPtr,prims,r,k,geomID);
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS      : return createGeometryPrimRefArray((ze_raytracing_geometry_quads_ext_desc_t*    )geom,pBuildUserPtr,prims,r,k,geomID);
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR: return createGeometryPrimRefArray((ze_raytracing_geometry_aabbs_fptr_ext_desc_t*)geom,pBuildUserPtr,prims,r,k,geomID);
+      case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE: return createGeometryPrimRefArray((ze_raytracing_geometry_instance_ext_desc_t* )geom,pBuildUserPtr,prims,r,k,geomID);
       default: throw std::runtime_error("invalid geometry type");
       };
     };
@@ -560,9 +561,9 @@ namespace embree
     bool success = QBVH6BuilderSAH::build(numGeometries, nullptr, 
                            getSize, getType, 
                            createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance,
-                           (char*)args->accelBuffer, args->accelBufferBytes,
-                           args->scratchBuffer, args->scratchBufferBytes,
-                           (BBox3f*) args->boundsOut, args->accelBufferBytesOut,
+                           (char*)pRtasBuffer, rtasBufferSizeBytes,
+                           pScratchBuffer, scratchBufferSizeBytes,
+                           (BBox3f*) pBounds, pRtasBufferSizeBytes,
                            args->quality, args->flags, verbose, dispatchGlobalsPtr);
     if (!success) {
       return ZE_RESULT_RAYTRACING_EXT_RETRY_BUILD_ACCEL;
@@ -601,7 +602,11 @@ namespace embree
     return ((ze_raytracing_parallel_operation_ext_handle_t_IMPL*)hParallelOperation)->verify();
   }
 
-  RTHWIF_API ze_result_t_ zeRaytracingBuildAccelExt(ze_rtas_builder_exp_handle_t hBuilder, const ze_raytracing_build_accel_ext_desc_t* args)
+  RTHWIF_API ze_result_t_ zeRaytracingBuildAccelExt(ze_rtas_builder_exp_handle_t hBuilder, const ze_raytracing_build_accel_ext_desc_t* args,
+                                                    void *pScratchBuffer, size_t scratchBufferSizeBytes,
+                                                    void *pRtasBuffer, size_t rtasBufferSizeBytes,
+                                                    ze_raytracing_parallel_operation_ext_handle_t hParallelOperation,
+                                                    void *pBuildUserPtr, ze_raytracing_aabb_ext_t *pBounds, size_t *pRtasBufferSizeBytes)
   {
     /* check for valid rtas builder */
     if (!validate(hBuilder))
@@ -622,25 +627,43 @@ namespace embree
     /* check if acceleration structure format is supported */
     if (args->accelFormat != (ze_raytracing_accel_format_ext_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1)
       return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+
+    /* check scratch buffer */
+    if (pScratchBuffer == nullptr)
+      return ZE_RESULT_ERROR_UNKNOWN_;
+
+    /* check rtas buffer */
+    if (pRtasBuffer == nullptr)
+      return ZE_RESULT_ERROR_UNKNOWN_;
     
     /* if parallel operation is provided then execute using thread arena inside task group ... */
-    if (args->parallelOperation)
+    if (hParallelOperation)
     {
-      if (!validate(args->parallelOperation))
+      if (!validate(hParallelOperation))
         return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
       
-      ze_raytracing_parallel_operation_ext_handle_t_IMPL* op = (ze_raytracing_parallel_operation_ext_handle_t_IMPL*) args->parallelOperation;
+      ze_raytracing_parallel_operation_ext_handle_t_IMPL* op = (ze_raytracing_parallel_operation_ext_handle_t_IMPL*) hParallelOperation;
       if (op->hBuilder != hBuilder)
         return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
       
-      g_arena->execute([&](){ op->group.run([=](){ op->errorCode = zeRaytracingBuildAccelExtInternal(args); }); });
+      g_arena->execute([&](){ op->group.run([=](){
+         op->errorCode = zeRaytracingBuildAccelExtInternal(args,
+                                                           pScratchBuffer, scratchBufferSizeBytes,
+                                                           pRtasBuffer, rtasBufferSizeBytes,
+                                                           pBuildUserPtr, pBounds, pRtasBufferSizeBytes);
+                                            });
+                       });
       return ZE_RESULT_RAYTRACING_EXT_OPERATION_DEFERRED;
     }
     /* ... otherwise we just execute inside task arena to avoid spawning of TBB worker threads */
     else
     {
       ze_result_t_ errorCode = ZE_RESULT_SUCCESS_;
-      g_arena->execute([&](){ errorCode = zeRaytracingBuildAccelExtInternal(args); });
+      g_arena->execute([&](){ errorCode = zeRaytracingBuildAccelExtInternal(args,
+                                                                            pScratchBuffer, scratchBufferSizeBytes,
+                                                                            pRtasBuffer, rtasBufferSizeBytes,
+                                                                            pBuildUserPtr, pBounds, pRtasBufferSizeBytes);
+                       });
       return errorCode;
     }
   }

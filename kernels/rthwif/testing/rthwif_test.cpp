@@ -1187,28 +1187,19 @@ struct Scene
     args.stype = ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC;
     args.pNext = nullptr;
     args.accelFormat = accelFormat;
-    args.geometries = (const ze_raytracing_geometry_ext_desc_t**) geom.data();
-    args.numGeometries = geom.size();
-    args.accelBuffer = nullptr;
-    args.accelBufferBytes = 0;
-    args.scratchBuffer = nullptr;
-    args.scratchBufferBytes = 0;
     args.quality = quality;
     args.flags = ZE_RAYTRACING_BUILD_EXT_FLAG_NONE;
-    args.parallelOperation = parallelOperation;
-    args.boundsOut = &bounds;
-    args.accelBufferBytesOut = &accelBufferBytesOut;
-    args.buildUserPtr = nullptr;
+    args.geometries = (const ze_raytracing_geometry_ext_desc_t**) geom.data();
+    args.numGeometries = geom.size();
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
     args.dispatchGlobalsPtr = dispatchGlobalsPtr;
 #endif
     
-    ze_raytracing_accel_size_ext_properties_t size;
-    memset(&size,0,sizeof(ze_raytracing_accel_size_ext_properties_t));
+    ze_raytracing_accel_size_ext_properties_t size = {};
     size.stype = ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES;
     size.pNext = nullptr;
     
-    err = zeRaytracingGetAccelSizeExt(hBuilder,&args,&size);
+    err = zeRaytracingGetAccelSizeExt(hBuilder,&args,parallelOperation,&size);
     if (err != ZE_RESULT_SUCCESS_)
       throw std::runtime_error("BVH size estimate failed");
 
@@ -1219,8 +1210,6 @@ struct Scene
     size_t sentinelBytes = 1024; // add that many zero bytes to catch buffer overruns
     std::vector<char> scratchBuffer(size.scratchBufferBytes+sentinelBytes);
     memset(scratchBuffer.data(),0,scratchBuffer.size());
-    args.scratchBuffer = scratchBuffer.data();
-    args.scratchBufferBytes = size.scratchBufferBytes;
 
     accel = nullptr;
     size_t accelBytes = 0;
@@ -1241,11 +1230,13 @@ struct Scene
       for (size_t i=0; i<numIterations; i++)
       {
         args.numGeometries = geom.size();
-        args.accelBuffer = accel;
-        args.accelBufferBytes = size.accelBufferWorstCaseBytes;
-        err = zeRaytracingBuildAccelExt(hBuilder,&args);
+        err = zeRaytracingBuildAccelExt(hBuilder,&args,
+                                        scratchBuffer.data(),scratchBuffer.size(),
+                                        accel, accelBytes,
+                                        parallelOperation,
+                                        nullptr, &bounds, &accelBufferBytesOut);
 
-        if (args.parallelOperation)
+        if (parallelOperation)
         {
           assert(err == ZE_RESULT_RAYTRACING_EXT_OPERATION_DEFERRED);
           uint32_t maxThreads = 0;
@@ -1285,11 +1276,13 @@ struct Scene
 
         /* build accel */
         args.numGeometries = geom.size();
-        args.accelBuffer = accel;
-        args.accelBufferBytes = accelBytes;
-        err = zeRaytracingBuildAccelExt(hBuilder,&args);
+        err = zeRaytracingBuildAccelExt(hBuilder,&args,
+                                        scratchBuffer.data(),scratchBuffer.size(),
+                                        accel, accelBytes,
+                                        parallelOperation,
+                                        nullptr, &bounds, &accelBufferBytesOut);
 
-        if (args.parallelOperation)
+        if (parallelOperation)
         {
           assert(err == ZE_RESULT_RAYTRACING_EXT_OPERATION_DEFERRED);
 
@@ -1325,17 +1318,17 @@ struct Scene
     {
       /* scratch buffer bounds check */
       for (size_t i=size.scratchBufferBytes; i<size.scratchBufferBytes+sentinelBytes; i++) {
-        if (((char*)args.scratchBuffer)[i] == 0x00) continue;
+        if (scratchBuffer[i] == 0x00) continue;
         throw std::runtime_error("scratch buffer bounds check failed");
       }
       /* acceleration structure bounds check */
       for (size_t i=accelBytes; i<accelBytes+sentinelBytes; i++) {
-        if (((char*)args.accelBuffer)[i] == 0x00) continue;
+        if (((char*)accel)[i] == 0x00) continue;
         throw std::runtime_error("acceleration buffer bounds check failed");
       }
       /* check if returned size of acceleration structure is correct */
       for (size_t i=accelBufferBytesOut; i<accelBytes; i++) {
-        if (((char*)args.accelBuffer)[i] == 0x00) continue;
+        if (((char*)accel)[i] == 0x00) continue;
         throw std::runtime_error("wrong acceleration structure size returned");
       }
     }

@@ -575,17 +575,10 @@ namespace embree
     args.stype = ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC;
     args.pNext = nullptr;
     args.accelFormat = accelFormat;
-    args.geometries = (const ze_raytracing_geometry_ext_desc_t**) geomDescr.data();
-    args.numGeometries = geomDescr.size();
-    args.accelBuffer = nullptr;
-    args.accelBufferBytes = 0;
-    args.scratchBuffer = nullptr;
-    args.scratchBufferBytes = 0;
     args.quality = convertBuildQuality(scene->quality_flags);
     args.flags = convertBuildFlags(scene->scene_flags,scene->quality_flags);
-    args.parallelOperation = parallelOperation;
-    args.boundsOut = &bounds;
-    args.buildUserPtr = &time_range;
+    args.geometries = (const ze_raytracing_geometry_ext_desc_t**) geomDescr.data();
+    args.numGeometries = geomDescr.size();
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
     args.dispatchGlobalsPtr = dynamic_cast<DeviceGPU*>(scene->device)->dispatchGlobalsPtr;
 #endif
@@ -594,14 +587,12 @@ namespace embree
     memset(&sizeTotal,0,sizeof(ze_raytracing_accel_size_ext_properties_t));
     sizeTotal.stype = ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES;
     sizeTotal.pNext = nullptr;
-    err = zeRaytracingGetAccelSizeExt(hBuilder,&args,&sizeTotal);
+    err = zeRaytracingGetAccelSizeExt(hBuilder,&args,parallelOperation,&sizeTotal);
     if (err != ZE_RESULT_SUCCESS_)
       throw_RTCError(RTC_ERROR_UNKNOWN,"BVH size estimate failed");
 
     /* allocate scratch buffer */
     std::vector<char> scratchBuffer(sizeTotal.scratchBufferBytes);
-    args.scratchBuffer = scratchBuffer.data();
-    args.scratchBufferBytes = scratchBuffer.size();
 
     size_t headerBytes = sizeof(EmbreeHWAccel) + std::max(1u,maxTimeSegments)*8;
     align(headerBytes,128);
@@ -629,12 +620,16 @@ namespace embree
         
         args.geometries = (const ze_raytracing_geometry_ext_desc_t**) geomDescr.data();
         args.numGeometries = geomDescr.size();
-        args.accelBuffer = accel.data() + headerBytes + i*sizeTotal.accelBufferExpectedBytes;
-        args.accelBufferBytes = sizeTotal.accelBufferExpectedBytes;
+        void* accelBuffer = accel.data() + headerBytes + i*sizeTotal.accelBufferExpectedBytes;
+        size_t accelBufferBytes = sizeTotal.accelBufferExpectedBytes;
         bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };
         
-        err = zeRaytracingBuildAccelExt(hBuilder,&args);
-        if (args.parallelOperation)
+        err = zeRaytracingBuildAccelExt(hBuilder,&args,
+                                        scratchBuffer.data(),scratchBuffer.size(),
+                                        accelBuffer, accelBufferBytes,
+                                        parallelOperation,
+                                        &time_range, &bounds, nullptr);
+        if (parallelOperation)
         {
           assert(err == ZE_RESULT_RAYTRACING_EXT_OPERATION_DEFERRED);
           
@@ -646,7 +641,7 @@ namespace embree
           parallel_for(maxThreads, [&](uint32_t) { err = zeRaytracingParallelOperationJoinExt(parallelOperation); });
         }
         
-        fullBounds.extend(*(BBox3f*) args.boundsOut);
+        fullBounds.extend(*(BBox3f*) &bounds);
 
         if (err == ZE_RESULT_RAYTRACING_EXT_RETRY_BUILD_ACCEL)
         {
