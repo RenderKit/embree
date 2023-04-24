@@ -218,6 +218,79 @@ namespace embree
     g_arena.reset();
   }
 
+  typedef struct _zet_base_desc_t
+  {
+    /** [in] type of this structure */
+    ze_structure_type_t_ stype;
+    
+    /** [in,out][optional] must be null or a pointer to an extension-specific structure */
+    const void* pNext;
+    
+  } zet_base_desc_t_;
+
+  bool checkDescChain(zet_base_desc_t_* desc)
+  {
+    /* supporting maximal 1024 to also detect cycles */
+    for (size_t i=0; i<1024; i++) {
+      if (desc->pNext == nullptr) return true;
+      desc = (zet_base_desc_t_*) desc->pNext;
+    }
+    return false;
+  }
+
+  struct ze_rtas_builder
+  {
+    ze_rtas_builder () {
+    }
+    
+    ~ze_rtas_builder() {
+      magick = 0x0;
+    }
+
+    bool verify() const {
+      return magick == MAGICK;
+    }
+    
+    enum { MAGICK = 0x45FE67E1 };
+    uint32_t magick = MAGICK;
+  };
+
+  bool validate(ze_rtas_builder_exp_handle_t hBuilder)
+  {
+    if (hBuilder == nullptr) return false;
+    return ((ze_rtas_builder*)hBuilder)->verify();
+  }
+
+  RTHWIF_API ze_result_t_ zeRTASBuilderCreateExp(ze_driver_handle_t hDriver, const ze_rtas_builder_exp_desc_t *pDescriptor, ze_rtas_builder_exp_handle_t *phBuilder)
+  {
+    if (hDriver == nullptr)
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+
+    if (pDescriptor == nullptr)
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+
+    if (phBuilder == nullptr)
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+
+    if (!checkDescChain((zet_base_desc_t_*)pDescriptor))
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+
+    if (pDescriptor->builderVersion != ZE_RTAS_BUILDER_EXP_VERSION_1_0)
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+
+    *phBuilder = (ze_rtas_builder_exp_handle_t) new ze_rtas_builder();
+    return ZE_RESULT_SUCCESS_;
+  }
+
+  RTHWIF_API ze_result_t_ zeRTASBuilderDestroyExp(ze_rtas_builder_exp_handle_t hBuilder)
+  {
+    if (!validate(hBuilder))
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+
+    delete (ze_rtas_builder*) hBuilder;
+    return ZE_RESULT_SUCCESS_;
+  }
+
   typedef enum _ze_raytracing_accel_format_internal_t {
     ZE_RAYTRACING_ACCEL_FORMAT_EXT_INVALID = 0,      // invalid acceleration structure format
     ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1 = 1, // acceleration structure format version 1
@@ -270,9 +343,14 @@ namespace embree
 #endif
   }
   
-  RTHWIF_API ze_result_t_ zeRaytracingAccelFormatCompatibilityExt( const ze_raytracing_accel_format_ext_t accelFormat,
+  RTHWIF_API ze_result_t_ zeRaytracingAccelFormatCompatibilityExt( ze_rtas_builder_exp_handle_t hBuilder,
+                                                                   const ze_raytracing_accel_format_ext_t accelFormat,
                                                                    const ze_raytracing_accel_format_ext_t otherAccelFormat )
   {
+    /* check for valid rtas builder */
+    if (!validate(hBuilder))
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+    
     if (accelFormat != otherAccelFormat)
       return ZE_RESULT_RAYTRACING_EXT_ACCEL_INCOMPATIBLE;
 
@@ -290,28 +368,12 @@ namespace embree
     };
   }
   
-  typedef struct _zet_base_desc_t
+  RTHWIF_API ze_result_t_ zeRaytracingGetAccelSizeExt(ze_rtas_builder_exp_handle_t hBuilder, const ze_raytracing_build_accel_ext_desc_t* args, ze_raytracing_accel_size_ext_properties_t* size_o)
   {
-    /** [in] type of this structure */
-    ze_structure_type_t_ stype;
+    /* check for valid rtas builder */
+    if (!validate(hBuilder))
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
     
-    /** [in,out][optional] must be null or a pointer to an extension-specific structure */
-    const void* pNext;
-    
-  } zet_base_desc_t_;
-
-  bool checkDescChain(zet_base_desc_t_* desc)
-  {
-    /* supporting maximal 1024 to also detect cycles */
-    for (size_t i=0; i<1024; i++) {
-      if (desc->pNext == nullptr) return true;
-      desc = (zet_base_desc_t_*) desc->pNext;
-    }
-    return false;
-  }
-    
-  RTHWIF_API ze_result_t_ zeRaytracingGetAccelSizeExt(const ze_raytracing_build_accel_ext_desc_t* args, ze_raytracing_accel_size_ext_properties_t* size_o)
-  {
     /* check for valid pointers */
     if (args == nullptr)
       return ZE_RESULT_ERROR_UNKNOWN_;
@@ -514,12 +576,37 @@ namespace embree
   
   struct ze_raytracing_parallel_operation_ext_handle_t_IMPL
   {
+    ze_raytracing_parallel_operation_ext_handle_t_IMPL(ze_rtas_builder_exp_handle_t hBuilder)
+      : hBuilder(hBuilder) {}
+
+    ~ze_raytracing_parallel_operation_ext_handle_t_IMPL() {
+      magick = 0x0;
+      hBuilder = nullptr;
+    }
+
+    bool verify() const {
+      return (magick == MAGICK) && validate(hBuilder);
+    }
+    
+    enum { MAGICK = 0xE84567E1 };
+    uint32_t magick = MAGICK;
+    ze_rtas_builder_exp_handle_t hBuilder = nullptr;
     ze_result_t_ errorCode = ZE_RESULT_SUCCESS_;
     tbb::task_group group;
   };
 
-  RTHWIF_API ze_result_t_ zeRaytracingBuildAccelExt(const ze_raytracing_build_accel_ext_desc_t* args)
+  bool validate(ze_raytracing_parallel_operation_ext_handle_t hParallelOperation)
   {
+    if (hParallelOperation == nullptr) return false;
+    return ((ze_raytracing_parallel_operation_ext_handle_t_IMPL*)hParallelOperation)->verify();
+  }
+
+  RTHWIF_API ze_result_t_ zeRaytracingBuildAccelExt(ze_rtas_builder_exp_handle_t hBuilder, const ze_raytracing_build_accel_ext_desc_t* args)
+  {
+    /* check for valid rtas builder */
+    if (!validate(hBuilder))
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+    
     /* check for valid pointers */
     if (args == nullptr)
       return ZE_RESULT_ERROR_UNKNOWN_;
@@ -539,7 +626,13 @@ namespace embree
     /* if parallel operation is provided then execute using thread arena inside task group ... */
     if (args->parallelOperation)
     {
+      if (!validate(args->parallelOperation))
+        return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+      
       ze_raytracing_parallel_operation_ext_handle_t_IMPL* op = (ze_raytracing_parallel_operation_ext_handle_t_IMPL*) args->parallelOperation;
+      if (op->hBuilder != hBuilder)
+        return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+      
       g_arena->execute([&](){ op->group.run([=](){ op->errorCode = zeRaytracingBuildAccelExtInternal(args); }); });
       return ZE_RESULT_RAYTRACING_EXT_OPERATION_DEFERRED;
     }
@@ -552,21 +645,25 @@ namespace embree
     }
   }
 
-  RTHWIF_API ze_result_t_ zeRaytracingParallelOperationCreateExt(ze_raytracing_parallel_operation_ext_handle_t* phParallelOperation)
+  RTHWIF_API ze_result_t_ zeRaytracingParallelOperationCreateExt(ze_rtas_builder_exp_handle_t hBuilder, ze_raytracing_parallel_operation_ext_handle_t* phParallelOperation)
   {
+    /* check for valid rtas builder */
+    if (!validate(hBuilder))
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+    
     /* check for valid pointer */
     if (phParallelOperation == nullptr)
       return ZE_RESULT_ERROR_UNKNOWN_;
 
     /* create parallel operation object */
-    *phParallelOperation = (ze_raytracing_parallel_operation_ext_handle_t) new ze_raytracing_parallel_operation_ext_handle_t_IMPL;
+    *phParallelOperation = (ze_raytracing_parallel_operation_ext_handle_t) new ze_raytracing_parallel_operation_ext_handle_t_IMPL(hBuilder);
     return ZE_RESULT_SUCCESS_;
   }
   
   RTHWIF_API ze_result_t_ zeRaytracingParallelOperationDestroyExt( ze_raytracing_parallel_operation_ext_handle_t parallelOperation )
   {
     /* check for valid handle */
-    if (parallelOperation == nullptr)
+    if (!validate(parallelOperation))
       return ZE_RESULT_ERROR_UNKNOWN_;
 
     /* delete parallel operation */
@@ -577,7 +674,7 @@ namespace embree
   RTHWIF_API ze_result_t_ zeRaytracingParallelOperationGetMaxConcurrencyExt( ze_raytracing_parallel_operation_ext_handle_t parallelOperation, uint32_t* pMaxConcurrency )
   {
     /* check for valid handle */
-    if (parallelOperation == nullptr)
+    if (!validate(parallelOperation))
       return ZE_RESULT_ERROR_UNKNOWN_;
 
     /* check for valid pointer */
@@ -592,7 +689,7 @@ namespace embree
   RTHWIF_API ze_result_t_ zeRaytracingParallelOperationJoinExt( ze_raytracing_parallel_operation_ext_handle_t parallelOperation)
   {
     /* check for valid handle */
-    if (parallelOperation == nullptr)
+    if (!validate(parallelOperation))
       return ZE_RESULT_ERROR_UNKNOWN_;
     
     ze_raytracing_parallel_operation_ext_handle_t_IMPL* op = (ze_raytracing_parallel_operation_ext_handle_t_IMPL*) parallelOperation;

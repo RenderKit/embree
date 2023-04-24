@@ -148,6 +148,7 @@ sycl::float3 RandomSampler_getFloat3(RandomSampler& self)
 
 RandomSampler rng;
 
+ze_rtas_builder_exp_handle_t hBuilder = nullptr;
 ze_raytracing_parallel_operation_ext_handle_t parallelOperation = nullptr;
 
 enum class InstancingType
@@ -1207,7 +1208,7 @@ struct Scene
     size.stype = ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES;
     size.pNext = nullptr;
     
-    err = zeRaytracingGetAccelSizeExt(&args,&size);
+    err = zeRaytracingGetAccelSizeExt(hBuilder,&args,&size);
     if (err != ZE_RESULT_SUCCESS_)
       throw std::runtime_error("BVH size estimate failed");
 
@@ -1242,7 +1243,7 @@ struct Scene
         args.numGeometries = geom.size();
         args.accelBuffer = accel;
         args.accelBufferBytes = size.accelBufferWorstCaseBytes;
-        err = zeRaytracingBuildAccelExt(&args);
+        err = zeRaytracingBuildAccelExt(hBuilder,&args);
 
         if (args.parallelOperation)
         {
@@ -1286,7 +1287,7 @@ struct Scene
         args.numGeometries = geom.size();
         args.accelBuffer = accel;
         args.accelBufferBytes = accelBytes;
-        err = zeRaytracingBuildAccelExt(&args);
+        err = zeRaytracingBuildAccelExt(hBuilder,&args);
 
         if (args.parallelOperation)
         {
@@ -2148,7 +2149,16 @@ int main(int argc, char* argv[])
   /* execute test */
   RandomSampler_init(rng,0x56FE238A);
 
-  ze_result_t_ err = zeRaytracingParallelOperationCreateExt(&parallelOperation);
+  sycl::platform platform = device.get_platform();
+  ze_driver_handle_t hDriver = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(platform);
+    
+  /* create L0 builder object */
+  ze_rtas_builder_exp_desc_t builderDesc = {};
+  ze_result_t_ err = zeRTASBuilderCreateExp(hDriver, &builderDesc, &hBuilder);
+  if (err != ZE_RESULT_SUCCESS_)
+    throw std::runtime_error("ze_rtas_builder creation failed");
+
+  err = zeRaytracingParallelOperationCreateExt(hBuilder,&parallelOperation);
   if (err != ZE_RESULT_SUCCESS_)
     throw std::runtime_error("parallel operation creation failed");
   
@@ -2164,6 +2174,11 @@ int main(int argc, char* argv[])
   if (err != ZE_RESULT_SUCCESS_)
     throw std::runtime_error("parallel operation destruction failed");
 
+  /* destroy rtas builder again */
+  err = zeRTASBuilderDestroyExp(hBuilder);
+  if (err != ZE_RESULT_SUCCESS_)
+    throw std::runtime_error("ze_rtas_builder destruction failed");
+  
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
   free_accel_buffer(dispatchGlobalsPtr, context);
 #endif
