@@ -91,15 +91,15 @@ typedef struct _ze_driver_handle_t *ze_driver_handle_t;
      mesh.geometryFlags = ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_OPAQUE;
      mesh.geometryMask = 0xFF;
 
-     mesh.triangleFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_TRIANGLE_INDICES_UINT32;
+     mesh.triangleBufferFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_TRIANGLE_INDICES_UINT32;
      mesh.triangleCount = triangles.size();
      mesh.triangleStride = 12;
-     mesh.triangleBuffer = triangles.data();
+     mesh.pTriangleBuffer = triangles.data();
 
-     mesh.vertexFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3;
+     mesh.vertexBufferFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3;
      mesh.vertexCount = vertices.size();
      mesh.vertexStride = 12;
-     mesh.vertexBuffer = vertices.data();
+     mesh.pVertexBuffer = vertices.data();
    
   The specified geometry flag ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_OPAQUE
   enables a fast mode where traveral does not return to the caller of
@@ -136,8 +136,8 @@ typedef struct _ze_driver_handle_t *ze_driver_handle_t;
     build_desc.accelFormat = accelFormat;
     build_desc.geometries = geometries.data(); 
     build_desc.numGeometries = geometries.size();
-    build_desc.quality = ZE_RTAS_BUILDER_BUILD_QUALITY_HINT_EXP_MEDIUM;
-    build_desc.flags = ZE_RTAS_BUILDER_BUILD_OP_EXP_FLAG_NONE;
+    build_desc.buildQuality = ZE_RTAS_BUILDER_BUILD_QUALITY_HINT_EXP_MEDIUM;
+    build_desc.buildFlags = ZE_RTAS_BUILDER_BUILD_OP_EXP_FLAG_NONE;
 
   Besides just passing a pointer to the geometries array this, passes
   the desired acceleration structure format, and sets some default
@@ -650,14 +650,14 @@ typedef struct _ze_rtas_builder_triangles_geometry_info_exp_t  // 40 bytes
   uint8_t reserved0;                                    ///< must be zero
   uint8_t reserved1;                                    ///< must be zero
   uint8_t reserved2;                                    ///< must be zero
-  ze_rtas_data_buffer_format_exp_t triangleFormat;            ///< format of triangleBuffer (must be ZE_RTAS_DATA_BUFFER_FORMAT_EXP_TRIANGLE_INDICES_UINT32)
-  ze_rtas_data_buffer_format_exp_t vertexFormat;              ///< format of vertexBuffer (must be ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3)
+  ze_rtas_data_buffer_format_exp_t triangleBufferFormat;            ///< format of triangleBuffer (must be ZE_RTAS_DATA_BUFFER_FORMAT_EXP_TRIANGLE_INDICES_UINT32)
+  ze_rtas_data_buffer_format_exp_t vertexBufferFormat;              ///< format of vertexBuffer (must be ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3)
   unsigned int triangleCount;                           ///< number of triangles in triangleBuffer
   unsigned int vertexCount;                             ///< number of vertices in vertexBuffer
   unsigned int triangleStride;                          ///< stride in bytes of triangles in triangleBuffer
   unsigned int vertexStride;                            ///< stride in bytes of vertices in vertexBuffer
-  void* triangleBuffer;                                 ///< pointer to array of triangle indices in specified format
-  void* vertexBuffer;                                   ///< pointer to array of triangle vertices in specified format
+  void* pTriangleBuffer;                                 ///< pointer to array of triangle indices in specified format
+  void* pVertexBuffer;                                   ///< pointer to array of triangle vertices in specified format
   
 } ze_rtas_builder_triangles_geometry_info_exp_t;
 
@@ -688,14 +688,14 @@ typedef struct _ze_rtas_builder_quads_geometry_info_exp_t // 40 bytes
   uint8_t reserved0;                                ///< must be zero
   uint8_t reserved1;                                ///< must be zero
   uint8_t reserved2;                                ///< must be zero
-  ze_rtas_data_buffer_format_exp_t quadFormat;            ///< format of quadBuffer (must be ZE_RTAS_DATA_BUFFER_FORMAT_EXP_QUAD_INDICES_UINT32)
-  ze_rtas_data_buffer_format_exp_t vertexFormat;          ///< format of vertexBuffer (must be ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3)
+  ze_rtas_data_buffer_format_exp_t quadBufferFormat;            ///< format of quadBuffer (must be ZE_RTAS_DATA_BUFFER_FORMAT_EXP_QUAD_INDICES_UINT32)
+  ze_rtas_data_buffer_format_exp_t vertexBufferFormat;          ///< format of vertexBuffer (must be ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3)
   unsigned int quadCount;                           ///< number of quads in quadBuffer
   unsigned int vertexCount;                         ///< number of vertices in vertexBuffer
   unsigned int quadStride;                          ///< stride in bytes of quads in quadBuffer
   unsigned int vertexStride;                        ///< stride in bytes of vertices in vertexBuffer
-  void* quadBuffer;                                 ///< pointer to an array of quad indices in specified format
-  void* vertexBuffer;                               ///< pointer to an array of quad vertices in specified format
+  void* pQuadBuffer;                                 ///< pointer to an array of quad indices in specified format
+  void* pVertexBuffer;                               ///< pointer to an array of quad vertices in specified format
   
 } ze_rtas_builder_quads_geometry_info_exp_t;
 
@@ -733,8 +733,8 @@ typedef struct _ze_rtas_builder_procedural_geometry_info_exp_t // 24 bytes
   uint8_t geometryMask;                                ///< 8-bit geometry mask for ray masking
   uint8_t reserved;                                    ///< must be zero
   unsigned int primCount;                              ///< number of primitives in geometry
-  ze_rtas_geometry_aabbs_cb_exp_t getBounds;   ///< function pointer to return bounds for a range of primitives
-  void* geomUserPtr;                                   ///< geometry user pointer passed to callback
+  ze_rtas_geometry_aabbs_cb_exp_t pfnGetBoundsCb;   ///< function pointer to return bounds for a range of primitives
+  void* pGeomUserPtr;                                   ///< geometry user pointer passed to callback
   
 } ze_rtas_builder_procedural_geometry_info_exp_t;
 
@@ -756,9 +756,9 @@ typedef struct _ze_rtas_builder_instance_geometry_info_exp_t  // 32 bytes
   uint8_t geometryMask;                                    ///< 8-bit geometry mask for ray masking
   ze_rtas_data_buffer_format_exp_t transformFormat;              ///< format of the specified transformation
   unsigned int instanceUserID;                             ///< a user specified identifier for the instance
-  void* transform;                                         ///< object to world instance transformation in specified format
-  ze_rtas_aabb_exp_t* bounds;                        ///< AABB of the instanced acceleration structure
-  void* accel;                                             ///< pointer to acceleration structure to instantiate
+  void* pTransformBuffer;                                         ///< object to world instance transformation in specified format
+  ze_rtas_aabb_exp_t* pBounds;                        ///< AABB of the instanced acceleration structure
+  void* pAccelerationStructure;                                             ///< pointer to acceleration structure to instantiate
     
 } ze_rtas_builder_instance_geometry_info_exp_t;
 
@@ -913,20 +913,20 @@ typedef struct _ze_rtas_builder_exp_properties_t
       size, the build is expected to succeed mostly, but it may fail
       with ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY_. 
   */
-  size_t accelBufferExpectedBytes;
+  size_t rtasBufferSizeBytesExpected;
 
   /**
      [out] The worst case number of bytes required for the acceleration
      structure. When using an acceleration structure buffer of that
      size, the build is guaranteed to not run out of memory.
   */
-  size_t accelBufferWorstCaseBytes;
+  size_t rtasBufferSizeBytesMax;
 
   /**
      [out] The scratch buffer bytes required for the acceleration
      structure build.
   */
-  size_t scratchBufferBytes;
+  size_t scratchBufferSizeBytes;
   
 } ze_rtas_builder_exp_properties_t;
 
@@ -947,17 +947,17 @@ typedef struct _ze_rtas_builder_build_op_exp_desc_t
    * other devices whose acceleration structure is compatible with the
    * device specified here (see
    * zeRTASBuilderDeviceFormatCompatibilityCheckExp function). */
-  ze_rtas_device_format_exp_t accelFormat;
+  ze_rtas_device_format_exp_t rtasFormat;
 
   /** 
       [in] Build quality to use (see ze_rtas_builder_build_quality_hint_exp_t) 
   */
-  ze_rtas_builder_build_quality_hint_exp_t quality;
+  ze_rtas_builder_build_quality_hint_exp_t buildQuality;
 
   /**
      [in] Some build flags for acceleration structure build (see ze_rtas_builder_build_op_exp_flags_t) 
   */
-  ze_rtas_builder_build_op_exp_flags_t flags;
+  ze_rtas_builder_build_op_exp_flags_t buildFlags;
   
   /** 
       [in] Array of pointers to geometry descriptors. This array and
@@ -965,7 +965,7 @@ typedef struct _ze_rtas_builder_build_op_exp_desc_t
       memory allocations. A pointer to a geometry descriptor can be
       NULL, in which case the geometry is treated as empty.
   */
-  const ze_rtas_builder_geometry_info_exp_t** geometries;
+  const ze_rtas_builder_geometry_info_exp_t** ppGeometries;
 
   /**
      [in] Number of geometries in geometry descriptor array. 

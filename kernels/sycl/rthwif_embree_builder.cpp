@@ -296,12 +296,12 @@ namespace embree
     out->geometryType = ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_TRIANGLES;
     out->geometryFlags = getGeometryFlags(scene,geom);
     out->geometryMask = mask32_to_mask8(geom->mask);
-    out->triangleFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_TRIANGLE_INDICES_UINT32;
-    out->vertexFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3;
-    out->triangleBuffer = (ze_rtas_triangle_indices_uint32_exp_t*) geom->triangles.getPtr();
+    out->triangleBufferFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_TRIANGLE_INDICES_UINT32;
+    out->vertexBufferFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3;
+    out->pTriangleBuffer = (ze_rtas_triangle_indices_uint32_exp_t*) geom->triangles.getPtr();
     out->triangleCount = geom->triangles.size();
     out->triangleStride = geom->triangles.getStride();
-    out->vertexBuffer = (ze_rtas_float3_exp_t*) geom->vertices0.getPtr();
+    out->pVertexBuffer = (ze_rtas_float3_exp_t*) geom->vertices0.getPtr();
     out->vertexCount = geom->vertices0.size();
     out->vertexStride = geom->vertices0.getStride();
   }
@@ -312,12 +312,12 @@ namespace embree
     out->geometryType = ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_QUADS;
     out->geometryFlags = getGeometryFlags(scene,geom);
     out->geometryMask = mask32_to_mask8(geom->mask);
-    out->quadFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_QUAD_INDICES_UINT32;
-    out->vertexFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3;
-    out->quadBuffer = (ze_rtas_quad_indices_uint32_exp_t*) geom->quads.getPtr();
+    out->quadBufferFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_QUAD_INDICES_UINT32;
+    out->vertexBufferFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3;
+    out->pQuadBuffer = (ze_rtas_quad_indices_uint32_exp_t*) geom->quads.getPtr();
     out->quadCount = geom->quads.size();
     out->quadStride = geom->quads.getStride();
-    out->vertexBuffer = (ze_rtas_float3_exp_t*) geom->vertices0.getPtr();
+    out->pVertexBuffer = (ze_rtas_float3_exp_t*) geom->vertices0.getPtr();
     out->vertexCount = geom->vertices0.size();
     out->vertexStride = geom->vertices0.getStride();
   }
@@ -374,8 +374,8 @@ namespace embree
     out->geometryFlags = ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_NONE;
     out->geometryMask = mask32_to_mask8(geom->mask);
     out->primCount = numPrimitives;
-    out->getBounds = getProceduralAABB;
-    out->geomUserPtr = geom;
+    out->pfnGetBoundsCb = getProceduralAABB;
+    out->pGeomUserPtr = geom;
   }
   
   void createGeometryDesc(GEOMETRY_INSTANCE_DESC* out, Scene* scene, Instance* geom)
@@ -388,11 +388,11 @@ namespace embree
     out->instanceUserID = 0;
     const AffineSpace3fa local2world = geom->getLocal2World();
     out->transformFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3X4_ALIGNED_COLUMN_MAJOR;
-    out->transform = (float*) &out->xfmdata;
-    out->bounds = (ze_rtas_aabb_exp_t*) &dynamic_cast<Scene*>(geom->object)->hwaccel_bounds;
+    out->pTransformBuffer = (float*) &out->xfmdata;
+    out->pBounds = (ze_rtas_aabb_exp_t*) &dynamic_cast<Scene*>(geom->object)->hwaccel_bounds;
     out->xfmdata = *(ze_rtas_transform_float3x4_aligned_column_major_exp_t*) &local2world;
     EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
-    out->accel = hwaccel->AccelTable[0];
+    out->pAccelerationStructure = hwaccel->AccelTable[0];
   }
 
   void createGeometryDesc(ze_rtas_builder_instance_geometry_info_exp_t* out, Scene* scene, Instance* geom)
@@ -404,10 +404,10 @@ namespace embree
     out->geometryMask = mask32_to_mask8(geom->mask);
     out->instanceUserID = 0;
     out->transformFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3X4_ALIGNED_COLUMN_MAJOR;
-    out->transform = (float*) &geom->local2world[0];
-    out->bounds = (ze_rtas_aabb_exp_t*) &dynamic_cast<Scene*>(geom->object)->hwaccel_bounds;
+    out->pTransformBuffer = (float*) &geom->local2world[0];
+    out->pBounds = (ze_rtas_aabb_exp_t*) &dynamic_cast<Scene*>(geom->object)->hwaccel_bounds;
     EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
-    out->accel = hwaccel->AccelTable[0];
+    out->pAccelerationStructure = hwaccel->AccelTable[0];
   }
 
   void createGeometryDesc(char* out, Scene* scene, Geometry* geom, GEOMETRY_TYPE type)
@@ -579,10 +579,10 @@ namespace embree
     memset(&args,0,sizeof(args));
     args.stype = ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_EXP_DESC;
     args.pNext = nullptr;
-    args.accelFormat = rtasProp.rtasDeviceFormat;
-    args.quality = convertBuildQuality(scene->quality_flags);
-    args.flags = convertBuildFlags(scene->scene_flags,scene->quality_flags);
-    args.geometries = (const ze_rtas_builder_geometry_info_exp_t**) geomDescr.data();
+    args.rtasFormat = rtasProp.rtasDeviceFormat;
+    args.buildQuality = convertBuildQuality(scene->quality_flags);
+    args.buildFlags = convertBuildFlags(scene->scene_flags,scene->quality_flags);
+    args.ppGeometries = (const ze_rtas_builder_geometry_info_exp_t**) geomDescr.data();
     args.numGeometries = geomDescr.size();
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
     args.dispatchGlobalsPtr = dynamic_cast<DeviceGPU*>(scene->device)->dispatchGlobalsPtr;
@@ -597,7 +597,7 @@ namespace embree
       throw_RTCError(RTC_ERROR_UNKNOWN,"BVH size estimate failed");
 
     /* allocate scratch buffer */
-    std::vector<char> scratchBuffer(sizeTotal.scratchBufferBytes);
+    std::vector<char> scratchBuffer(sizeTotal.scratchBufferSizeBytes);
 
     size_t headerBytes = sizeof(EmbreeHWAccel) + std::max(1u,maxTimeSegments)*8;
     align(headerBytes,128);
@@ -608,9 +608,9 @@ namespace embree
     {
       /* estimate size of all mblur BVHs */
       ze_rtas_builder_exp_properties_t size;
-      size.accelBufferExpectedBytes  = maxTimeSegments*sizeTotal.accelBufferExpectedBytes;
-      size.accelBufferWorstCaseBytes = maxTimeSegments*sizeTotal.accelBufferWorstCaseBytes;
-      size_t bytes = headerBytes+size.accelBufferExpectedBytes;
+      size.rtasBufferSizeBytesExpected  = maxTimeSegments*sizeTotal.rtasBufferSizeBytesExpected;
+      size.rtasBufferSizeBytesMax = maxTimeSegments*sizeTotal.rtasBufferSizeBytesMax;
+      size_t bytes = headerBytes+size.rtasBufferSizeBytesExpected;
 
       /* allocate BVH data */
       if (accel.size() < bytes) accel.resize(bytes);
@@ -623,8 +623,8 @@ namespace embree
         const float t1 = float(i+1)/float(maxTimeSegments);
         time_range = BBox1f(t0,t1);
         
-        void* accelBuffer = accel.data() + headerBytes + i*sizeTotal.accelBufferExpectedBytes;
-        size_t accelBufferBytes = sizeTotal.accelBufferExpectedBytes;
+        void* accelBuffer = accel.data() + headerBytes + i*sizeTotal.rtasBufferSizeBytesExpected;
+        size_t accelBufferBytes = sizeTotal.rtasBufferSizeBytesExpected;
         bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };
         
         err = zeRTASBuilderBuildExp(hBuilder,&args,
@@ -648,10 +648,10 @@ namespace embree
 
         if (err == ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY_)
         {
-          if (sizeTotal.accelBufferExpectedBytes == sizeTotal.accelBufferWorstCaseBytes)
+          if (sizeTotal.rtasBufferSizeBytesExpected == sizeTotal.rtasBufferSizeBytesMax)
             throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
           
-          sizeTotal.accelBufferExpectedBytes = std::min(sizeTotal.accelBufferWorstCaseBytes,(size_t(1.2*sizeTotal.accelBufferExpectedBytes)+127)&-128);
+          sizeTotal.rtasBufferSizeBytesExpected = std::min(sizeTotal.rtasBufferSizeBytesMax,(size_t(1.2*sizeTotal.rtasBufferSizeBytesExpected)+127)&-128);
           break;
         }
         
@@ -677,7 +677,7 @@ namespace embree
     hwaccel->numTimeSegments = maxTimeSegments;
 
     for (size_t i=0; i<maxTimeSegments; i++)
-      hwaccel->AccelTable[i] = (char*)hwaccel + headerBytes + i*sizeTotal.accelBufferExpectedBytes;
+      hwaccel->AccelTable[i] = (char*)hwaccel + headerBytes + i*sizeTotal.rtasBufferSizeBytesExpected;
 
     return fullBounds;
   }
