@@ -33,8 +33,8 @@ namespace embree
       enum Type { TRIANGLE=0, QUAD=1, PROCEDURAL=2, INSTANCE=3, UNKNOWN=4, NUM_TYPES=5 };
 
       /* check when we use spatial splits */
-      static bool useSpatialSplits(ze_raytracing_build_quality_ext_t build_quality, ze_raytracing_build_ext_flags_t build_flags) {
-        return build_quality == ZE_RAYTRACING_BUILD_QUALITY_EXT_HIGH && !(build_flags & ZE_RAYTRACING_BUILD_EXT_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION);
+      static bool useSpatialSplits(ze_rtas_builder_build_quality_hint_exp_t build_quality, ze_rtas_builder_build_op_exp_flags_t build_flags) {
+        return build_quality == ZE_RTAS_BUILDER_BUILD_QUALITY_HINT_EXP_HIGH && !(build_flags & ZE_RTAS_BUILDER_BUILD_OP_EXP_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION);
       }
 
       /* BVH allocator */
@@ -320,8 +320,8 @@ namespace embree
                   const getProceduralFunc& getProcedural,
                   const getInstanceFunc& getInstance,
                   void* scratch_ptr, size_t scratch_bytes,
-                  ze_raytracing_build_quality_ext_t build_quality,
-                  ze_raytracing_build_ext_flags_t build_flags,
+                  ze_rtas_builder_build_quality_hint_exp_t build_quality,
+                  ze_rtas_builder_build_op_exp_flags_t build_flags,
                   bool verbose)
           : getSize(getSize),
             getType(getType),
@@ -1246,8 +1246,8 @@ namespace embree
         evector<PrimRef> prims;
         Allocator allocator;
         std::vector<std::vector<uint16_t>> quadification;
-        ze_raytracing_build_quality_ext_t build_quality;
-        ze_raytracing_build_ext_flags_t build_flags;
+        ze_rtas_builder_build_quality_hint_exp_t build_quality;
+        ze_rtas_builder_build_op_exp_flags_t build_flags;
         bool verbose;
         
       };
@@ -1258,8 +1258,8 @@ namespace embree
       static void estimateSize(size_t numGeometries,
                                const getSizeFunc& getSize,
                                const getTypeFunc& getType,
-                               ze_raytracing_build_quality_ext_t build_quality,
-                               ze_raytracing_build_ext_flags_t build_flags,
+                               ze_rtas_builder_build_quality_hint_exp_t build_quality,
+                               ze_rtas_builder_build_op_exp_flags_t build_flags,
                                size_t& expectedBytes,
                                size_t& worstCaseBytes,
                                size_t& scratchBytes)
@@ -1311,8 +1311,8 @@ namespace embree
                           void* scratch_ptr, size_t scratch_bytes,
                           BBox3f* boundsOut,
                           size_t* accelBufferBytesOut,
-                          ze_raytracing_build_quality_ext_t build_quality,
-                          ze_raytracing_build_ext_flags_t build_flags,
+                          ze_rtas_builder_build_quality_hint_exp_t build_quality,
+                          ze_rtas_builder_build_op_exp_flags_t build_flags,
                           bool verbose,
                           void* dispatchGlobalsPtr)
       {
