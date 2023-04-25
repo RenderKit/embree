@@ -618,8 +618,6 @@ namespace embree
         const float t1 = float(i+1)/float(maxTimeSegments);
         time_range = BBox1f(t0,t1);
         
-        args.geometries = (const ze_raytracing_geometry_ext_desc_t**) geomDescr.data();
-        args.numGeometries = geomDescr.size();
         void* accelBuffer = accel.data() + headerBytes + i*sizeTotal.accelBufferExpectedBytes;
         size_t accelBufferBytes = sizeTotal.accelBufferExpectedBytes;
         bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };

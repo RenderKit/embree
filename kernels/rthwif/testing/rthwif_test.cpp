@@ -1229,7 +1229,6 @@ struct Scene
 
       for (size_t i=0; i<numIterations; i++)
       {
-        args.numGeometries = geom.size();
         err = zeRaytracingBuildAccelExt(hBuilder,&args,
                                         scratchBuffer.data(),scratchBuffer.size(),
                                         accel, accelBytes,
@@ -1275,7 +1274,6 @@ struct Scene
         memset(accel,0,accelBytes+sentinelBytes);
 
         /* build accel */
-        args.numGeometries = geom.size();
         err = zeRaytracingBuildAccelExt(hBuilder,&args,
                                         scratchBuffer.data(),scratchBuffer.size(),
                                         accel, accelBytes,
