@@ -1238,12 +1238,13 @@ struct Scene
         if (parallelOperation)
         {
           assert(err == ZE_RESULT_RAYTRACING_EXT_OPERATION_DEFERRED);
-          uint32_t maxThreads = 0;
-          err = zeRaytracingParallelOperationGetMaxConcurrencyExt(parallelOperation,&maxThreads);
+          
+          ze_rtas_parallel_operation_exp_properties_t prop = { ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES };
+          err = zeRaytracingParallelOperationGetMaxConcurrencyExt(parallelOperation,&prop);
           if (err != ZE_RESULT_SUCCESS_)
             throw std::runtime_error("get max concurrency failed");
           
-          tbb::parallel_for(0u, maxThreads, 1u, [&](uint32_t) {
+          tbb::parallel_for(0u, prop.maxConcurrency, 1u, [&](uint32_t) {
             err = zeRaytracingParallelOperationJoinExt(parallelOperation);
           });
         }
@@ -1284,12 +1285,13 @@ struct Scene
         {
           assert(err == ZE_RESULT_RAYTRACING_EXT_OPERATION_DEFERRED);
 
-          uint32_t maxThreads = 0;
-          err = zeRaytracingParallelOperationGetMaxConcurrencyExt(parallelOperation,&maxThreads);
+          
+          ze_rtas_parallel_operation_exp_properties_t prop = { ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES };
+          err = zeRaytracingParallelOperationGetMaxConcurrencyExt(parallelOperation,&prop);
           if (err != ZE_RESULT_SUCCESS_)
             throw std::runtime_error("get max concurrency failed");
           
-          tbb::parallel_for(0u, maxThreads, 1u, [&](uint32_t) {
+          tbb::parallel_for(0u, prop.maxConcurrency, 1u, [&](uint32_t) {
             err = zeRaytracingParallelOperationJoinExt(parallelOperation);
           });
         }

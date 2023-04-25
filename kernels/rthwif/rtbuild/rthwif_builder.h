@@ -322,6 +322,7 @@ typedef enum _ze_structure_type_t_
 {
   ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES,  ///< ze_raytracing_accel_size_ext_properties_t
   ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC, ///< ze_raytracing_build_accel_ext_desc_t
+  ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES, ///< ze_rtas_parallel_operation_exp_properties_t
   
 } ze_structure_type_t_;
 
@@ -390,12 +391,29 @@ RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingParallelOperationCreateExt( ze_r
 
 RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingParallelOperationDestroyExt( ze_raytracing_parallel_operation_ext_handle_t hParallelOperation );
 
+typedef enum _ze_rtas_parallel_operation_exp_flags_t {
+  ZE_RTAS_PARALLEL_OPERATION_EXP_FLAG_NONE = 0, 
+} ze_rtas_parallel_operation_exp_flags_t;
+
+typedef struct _ze_rtas_parallel_operation_exp_properties_t
+{
+  /** [in] type of this structure */
+  ze_structure_type_t_ stype;
+
+  /** [in,out][optional] must be null or a pointer to an extension-specific structure */
+  const void* pNext;                                    
+
+  ze_rtas_parallel_operation_exp_flags_t flags;
+
+  uint32_t maxConcurrency;
+  
+} ze_rtas_parallel_operation_exp_properties_t;
 
 /**
   \brief Returns the maximal number of threads that can join the parallel operation.
 */
 
-RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingParallelOperationGetMaxConcurrencyExt( ze_raytracing_parallel_operation_ext_handle_t hParallelOperation, uint32_t* pMaxConcurrency );
+RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingParallelOperationGetMaxConcurrencyExt( ze_raytracing_parallel_operation_ext_handle_t hParallelOperation, ze_rtas_parallel_operation_exp_properties_t* pProperties );
 
 
 /**
