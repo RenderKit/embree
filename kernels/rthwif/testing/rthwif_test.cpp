@@ -905,6 +905,11 @@ void* alloc_accel_buffer_internal(size_t bytes, sycl::device device, sycl::conte
 {
   ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
   ze_device_handle_t  hDevice  = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
+
+  ze_rtas_device_exp_properties_t rtasProp = { ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES };
+  ze_result_t_ err = zeRaytracingDeviceGetAccelFormatExt(hDevice, &rtasProp );
+  if (err != ZE_RESULT_SUCCESS_)
+    throw std::runtime_error("get rtas device properties failed");
   
   ze_raytracing_mem_alloc_ext_desc_t rt_desc;
   rt_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_RAYTRACING_EXT_PROPERTIES;
@@ -923,7 +928,7 @@ void* alloc_accel_buffer_internal(size_t bytes, sycl::device device, sycl::conte
   host_desc.flags = ZE_HOST_MEM_ALLOC_FLAG_BIAS_CACHED;
   
   void* ptr = nullptr;
-  ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,ZE_RAYTRACING_ACCELERATION_STRUCTURE_ALIGNMENT_EXT,hDevice,&ptr);
+  ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,rtasProp.rtasBufferAlignment,hDevice,&ptr);
   if (result != ZE_RESULT_SUCCESS)
     throw std::runtime_error("accel allocation failed");
   return ptr;
@@ -1174,10 +1179,10 @@ struct Scene
 
     ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
 
-    ze_raytracing_accel_format_ext_t accelFormat;
-    ze_result_t_ err = zeRaytracingDeviceGetAccelFormatExt(hDevice, &accelFormat );
+    ze_rtas_device_exp_properties_t rtasProp = { ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES };
+    ze_result_t_ err = zeRaytracingDeviceGetAccelFormatExt(hDevice, &rtasProp );
     if (err != ZE_RESULT_SUCCESS_)
-      throw std::runtime_error("get accel format failed");
+      throw std::runtime_error("get rtas device properties failed");
     
     /* estimate accel size */
     size_t accelBufferBytesOut = 0;
@@ -1186,7 +1191,7 @@ struct Scene
     memset(&args,0,sizeof(args));
     args.stype = ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC;
     args.pNext = nullptr;
-    args.accelFormat = accelFormat;
+    args.accelFormat = rtasProp.rtasDeviceFormat;
     args.quality = quality;
     args.flags = ZE_RAYTRACING_BUILD_EXT_FLAG_NONE;
     args.geometries = (const ze_raytracing_geometry_ext_desc_t**) geom.data();

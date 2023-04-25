@@ -177,6 +177,11 @@ namespace embree
     ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
     ze_device_handle_t  hDevice  = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
 
+    ze_rtas_device_exp_properties_t rtasProp = { ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES };
+    ze_result_t_ err = zeRaytracingDeviceGetAccelFormatExt(hDevice, &rtasProp );
+    if (err != ZE_RESULT_SUCCESS_)
+      throw std::runtime_error("get rtas device properties failed");
+
     ze_raytracing_mem_alloc_ext_desc_t rt_desc;
     rt_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_RAYTRACING_EXT_PROPERTIES;
     rt_desc.pNext = nullptr;
@@ -199,10 +204,10 @@ namespace embree
     host_desc.flags = ZE_HOST_MEM_ALLOC_FLAG_BIAS_CACHED;
     
     void* ptr = nullptr;
-    ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,ZE_RAYTRACING_ACCELERATION_STRUCTURE_ALIGNMENT_EXT,hDevice,&ptr);
+    ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,rtasProp.rtasBufferAlignment,hDevice,&ptr);
     if (result != ZE_RESULT_SUCCESS)
-      throw_RTCError(RTC_ERROR_OUT_OF_MEMORY,"BVH memory allocation failed");
-    _unused(result);
+      throw_RTCError(RTC_ERROR_OUT_OF_MEMORY,"rtas memory allocation failed");
+
     return ptr;
   }
   
@@ -211,17 +216,17 @@ namespace embree
     if (ptr == nullptr) return;
     ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
     ze_result_t result = zeMemFree(hContext,ptr);
-    assert(result == ZE_RESULT_SUCCESS);
-    _unused(result);
+    if (result != ZE_RESULT_SUCCESS)
+      throw_RTCError(RTC_ERROR_OUT_OF_MEMORY,"rtas memory free failed");
   }
 
 #else
 
   void* rthwifAllocAccelBuffer(size_t bytes, sycl::device device, sycl::context context)
   {
-    void* ptr = sycl::aligned_alloc_shared(ZE_RAYTRACING_ACCELERATION_STRUCTURE_ALIGNMENT_EXT, bytes, device, context);
+    void* ptr = sycl::aligned_alloc_shared(128, bytes, device, context);
     if (ptr == nullptr)
-      throw_RTCError(RTC_ERROR_OUT_OF_MEMORY,"BVH memory allocation failed");
+      throw_RTCError(RTC_ERROR_OUT_OF_MEMORY,"rtas memory allocation failed");
     return ptr;
   }
 
@@ -562,10 +567,10 @@ namespace embree
     if (err != ZE_RESULT_SUCCESS_)
       throw std::runtime_error("parallel operation creation failed");
 
-    ze_raytracing_accel_format_ext_t accelFormat;
-    err = zeRaytracingDeviceGetAccelFormatExt(hDevice, &accelFormat );
+    ze_rtas_device_exp_properties_t rtasProp = { ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES };
+    err = zeRaytracingDeviceGetAccelFormatExt(hDevice, &rtasProp );
     if (err != ZE_RESULT_SUCCESS_)
-      throw std::runtime_error("get accel format failed");
+      throw std::runtime_error("get rtas device properties failed");
 
     /* estimate static accel size */
     BBox1f time_range(0,1);
@@ -574,7 +579,7 @@ namespace embree
     memset(&args,0,sizeof(args));
     args.stype = ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC;
     args.pNext = nullptr;
-    args.accelFormat = accelFormat;
+    args.accelFormat = rtasProp.rtasDeviceFormat;
     args.quality = convertBuildQuality(scene->quality_flags);
     args.flags = convertBuildFlags(scene->scene_flags,scene->quality_flags);
     args.geometries = (const ze_raytracing_geometry_ext_desc_t**) geomDescr.data();
