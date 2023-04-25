@@ -599,8 +599,8 @@ public:
       out.geometryFlags = gflags;
       out.geometryMask = 0xFF;
       out.primCount = triangles.size();
-      out.getBounds = TriangleMesh::getBoundsCallback;
-      out.geomUserPtr = this;
+      out.pfnGetBoundsCb = TriangleMesh::getBoundsCallback;
+      out.pGeomUserPtr = this;
     }
     else
     {
@@ -609,12 +609,12 @@ public:
       out.geometryType = ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_TRIANGLES;
       out.geometryFlags = gflags;
       out.geometryMask = 0xFF;
-      out.triangleFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_TRIANGLE_INDICES_UINT32;
-      out.vertexFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3;
-      out.triangleBuffer = (ze_rtas_triangle_indices_uint32_exp_t*) triangles.data();
+      out.triangleBufferFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_TRIANGLE_INDICES_UINT32;
+      out.vertexBufferFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3;
+      out.pTriangleBuffer = (ze_rtas_triangle_indices_uint32_exp_t*) triangles.data();
       out.triangleCount = triangles.size();
       out.triangleStride = sizeof(sycl::int4);
-      out.vertexBuffer = (ze_rtas_float3_exp_t*) vertices.data();
+      out.pVertexBuffer = (ze_rtas_float3_exp_t*) vertices.data();
       out.vertexCount = vertices.size();
       out.vertexStride = sizeof(sycl::float3);
     }
@@ -821,8 +821,8 @@ struct InstanceGeometryT : public Geometry
       out.geometryFlags = ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_NONE;
       out.geometryMask = 0xFF;
       out.primCount = 1;
-      out.getBounds = InstanceGeometryT::getBoundsCallback;
-      out.geomUserPtr = this;
+      out.pfnGetBoundsCb = InstanceGeometryT::getBoundsCallback;
+      out.pGeomUserPtr = this;
     }
     else
     {
@@ -833,7 +833,7 @@ struct InstanceGeometryT : public Geometry
       out.geometryMask = 0xFF;
       out.instanceUserID = instUserID;
       out.transformFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3X4_ALIGNED_COLUMN_MAJOR;
-      out.transform = (float*)&out.xfmdata;
+      out.pTransformBuffer = (float*)&out.xfmdata;
       out.xfmdata.vx_x = local2world.vx.x();
       out.xfmdata.vx_y = local2world.vx.y();
       out.xfmdata.vx_z = local2world.vx.z();
@@ -850,8 +850,8 @@ struct InstanceGeometryT : public Geometry
       out.xfmdata.p_y  = local2world.p.y();
       out.xfmdata.p_z  = local2world.p.z();
       out.xfmdata.pad3  = 0.0f;
-      out.bounds = &scene->bounds;
-      out.accel = scene->getAccel();
+      out.pBounds = &scene->bounds;
+      out.pAccelerationStructure = scene->getAccel();
     }
   }
 
@@ -1191,10 +1191,10 @@ struct Scene
     memset(&args,0,sizeof(args));
     args.stype = ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_EXP_DESC;
     args.pNext = nullptr;
-    args.accelFormat = rtasProp.rtasDeviceFormat;
-    args.quality = quality;
-    args.flags = ZE_RTAS_BUILDER_BUILD_OP_EXP_FLAG_NONE;
-    args.geometries = (const ze_rtas_builder_geometry_info_exp_t**) geom.data();
+    args.rtasFormat = rtasProp.rtasDeviceFormat;
+    args.buildQuality = quality;
+    args.buildFlags = ZE_RTAS_BUILDER_BUILD_OP_EXP_FLAG_NONE;
+    args.ppGeometries = (const ze_rtas_builder_geometry_info_exp_t**) geom.data();
     args.numGeometries = geom.size();
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
     args.dispatchGlobalsPtr = dispatchGlobalsPtr;
@@ -1208,12 +1208,12 @@ struct Scene
     if (err != ZE_RESULT_SUCCESS_)
       throw std::runtime_error("BVH size estimate failed");
 
-    if (size.accelBufferExpectedBytes > size.accelBufferWorstCaseBytes)
+    if (size.rtasBufferSizeBytesExpected > size.rtasBufferSizeBytesMax)
       throw std::runtime_error("expected larger than worst case");
 
     /* allocate scratch buffer */
     size_t sentinelBytes = 1024; // add that many zero bytes to catch buffer overruns
-    std::vector<char> scratchBuffer(size.scratchBufferBytes+sentinelBytes);
+    std::vector<char> scratchBuffer(size.scratchBufferSizeBytes+sentinelBytes);
     memset(scratchBuffer.data(),0,scratchBuffer.size());
 
     accel = nullptr;
@@ -1224,7 +1224,7 @@ struct Scene
     {
     case BuildMode::BUILD_WORST_CASE_SIZE: {
 
-      accelBytes = size.accelBufferWorstCaseBytes;
+      accelBytes = size.rtasBufferSizeBytesMax;
       accel = alloc_accel_buffer(accelBytes+sentinelBytes,device,context);
       memset(accel,0,accelBytes+sentinelBytes);
 
@@ -1267,7 +1267,7 @@ struct Scene
     }
     case BuildMode::BUILD_EXPECTED_SIZE: {
       
-      size_t bytes = size.accelBufferExpectedBytes;
+      size_t bytes = size.rtasBufferSizeBytesExpected;
       for (size_t i=0; i<=16; i++) // FIXME: reduce worst cast iteration number
       {
         if (i == 16)
@@ -1304,7 +1304,7 @@ struct Scene
         if (err != ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY_)
           break;
 
-        if (accelBufferBytesOut < bytes || size.accelBufferWorstCaseBytes < accelBufferBytesOut )
+        if (accelBufferBytesOut < bytes || size.rtasBufferSizeBytesMax < accelBufferBytesOut )
           throw std::runtime_error("failed build returned wrong new estimate");
 
         bytes = accelBufferBytesOut;
@@ -1322,7 +1322,7 @@ struct Scene
     if (!benchmark)
     {
       /* scratch buffer bounds check */
-      for (size_t i=size.scratchBufferBytes; i<size.scratchBufferBytes+sentinelBytes; i++) {
+      for (size_t i=size.scratchBufferSizeBytes; i<size.scratchBufferSizeBytes+sentinelBytes; i++) {
         if (scratchBuffer[i] == 0x00) continue;
         throw std::runtime_error("scratch buffer bounds check failed");
       }

@@ -262,15 +262,15 @@ void* build_rtas(sycl::device device, sycl::context context)
   mesh.geometryFlags = ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_OPAQUE;
   mesh.geometryMask = 0xFF;
   
-  mesh.triangleFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_TRIANGLE_INDICES_UINT32;
+  mesh.triangleBufferFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_TRIANGLE_INDICES_UINT32;
   mesh.triangleCount = sizeof(indices)/sizeof(ze_rtas_triangle_indices_uint32_exp_t);
   mesh.triangleStride = sizeof(ze_rtas_triangle_indices_uint32_exp_t);
-  mesh.triangleBuffer = indices;
+  mesh.pTriangleBuffer = indices;
 
-  mesh.vertexFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3;
+  mesh.vertexBufferFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3;
   mesh.vertexCount = sizeof(vertices)/sizeof(ze_rtas_float3_exp_t);
   mesh.vertexStride = sizeof(ze_rtas_float3_exp_t);
-  mesh.vertexBuffer = vertices;
+  mesh.pVertexBuffer = vertices;
 
   /* fill geometry descriptor array with pointer to single geometry descriptor */
   std::vector<ze_rtas_builder_geometry_info_exp_t*> descs;
@@ -295,10 +295,10 @@ void* build_rtas(sycl::device device, sycl::context context)
   ze_rtas_builder_build_op_exp_desc_t args = {};
   args.stype = ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_EXP_DESC;
   args.pNext = nullptr;
-  args.accelFormat = rtasProp.rtasDeviceFormat;
-  args.quality = ZE_RTAS_BUILDER_BUILD_QUALITY_HINT_EXP_MEDIUM;
-  args.flags = ZE_RTAS_BUILDER_BUILD_OP_EXP_FLAG_NONE;
-  args.geometries = (const ze_rtas_builder_geometry_info_exp_t **) descs.data();
+  args.rtasFormat = rtasProp.rtasDeviceFormat;
+  args.buildQuality = ZE_RTAS_BUILDER_BUILD_QUALITY_HINT_EXP_MEDIUM;
+  args.buildFlags = ZE_RTAS_BUILDER_BUILD_OP_EXP_FLAG_NONE;
+  args.ppGeometries = (const ze_rtas_builder_geometry_info_exp_t **) descs.data();
   args.numGeometries = descs.size();
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
   args.dispatchGlobalsPtr = dispatchGlobalsPtr;
@@ -314,11 +314,11 @@ void* build_rtas(sycl::device device, sycl::context context)
     throw std::runtime_error("BVH size estimate failed");
 
   /* allocate scratch buffer */
-  std::vector<char> scratchBuffer(size.scratchBufferBytes);
+  std::vector<char> scratchBuffer(size.scratchBufferSizeBytes);
   memset(scratchBuffer.data(),0,scratchBuffer.size());
 
   /* allocate acceleration structure buffer */
-  size_t accelBytes = size.accelBufferWorstCaseBytes;
+  size_t accelBytes = size.rtasBufferSizeBytesMax;
   void* accel = alloc_accel_buffer(accelBytes,device,context);
   memset(accel,0,accelBytes);
   

@@ -18,22 +18,22 @@ namespace embree
   
   inline ze_rtas_triangle_indices_uint32_exp_t getPrimitive(const ze_rtas_builder_triangles_geometry_info_exp_t* geom, uint32_t primID) {
     assert(primID < geom->triangleCount);
-    return *(ze_rtas_triangle_indices_uint32_exp_t*)((char*)geom->triangleBuffer + uint64_t(primID)*geom->triangleStride);
+    return *(ze_rtas_triangle_indices_uint32_exp_t*)((char*)geom->pTriangleBuffer + uint64_t(primID)*geom->triangleStride);
   }
   
   inline Vec3f getVertex(const ze_rtas_builder_triangles_geometry_info_exp_t* geom, uint32_t vertexID) {
     assert(vertexID < geom->vertexCount);
-    return *(Vec3f*)((char*)geom->vertexBuffer + uint64_t(vertexID)*geom->vertexStride);
+    return *(Vec3f*)((char*)geom->pVertexBuffer + uint64_t(vertexID)*geom->vertexStride);
   }
   
   inline ze_rtas_quad_indices_uint32_exp_t getPrimitive(const ze_rtas_builder_quads_geometry_info_exp_t* geom, uint32_t primID) {
     assert(primID < geom->quadCount);
-    return *(ze_rtas_quad_indices_uint32_exp_t*)((char*)geom->quadBuffer + uint64_t(primID)*geom->quadStride);
+    return *(ze_rtas_quad_indices_uint32_exp_t*)((char*)geom->pQuadBuffer + uint64_t(primID)*geom->quadStride);
   }
   
   inline Vec3f getVertex(const ze_rtas_builder_quads_geometry_info_exp_t* geom, uint32_t vertexID) {
     assert(vertexID < geom->vertexCount);
-    return *(Vec3f*)((char*)geom->vertexBuffer + uint64_t(vertexID)*geom->vertexStride);
+    return *(Vec3f*)((char*)geom->pVertexBuffer + uint64_t(vertexID)*geom->vertexStride);
   }
 
   inline AffineSpace3fa getTransform(const ze_rtas_builder_instance_geometry_info_exp_t* geom)
@@ -41,7 +41,7 @@ namespace embree
     switch (geom->transformFormat)
     {
     case ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3X4_COLUMN_MAJOR: {
-      const ze_rtas_transform_float3x4_column_major_exp_t* xfm = (const ze_rtas_transform_float3x4_column_major_exp_t*) geom->transform;
+      const ze_rtas_transform_float3x4_column_major_exp_t* xfm = (const ze_rtas_transform_float3x4_column_major_exp_t*) geom->pTransformBuffer;
       return {
         { xfm->vx_x, xfm->vx_y, xfm->vx_z },
         { xfm->vy_x, xfm->vy_y, xfm->vy_z },
@@ -50,7 +50,7 @@ namespace embree
       };
     }
     case ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3X4_ALIGNED_COLUMN_MAJOR: {
-      const ze_rtas_transform_float3x4_aligned_column_major_exp_t* xfm = (const ze_rtas_transform_float3x4_aligned_column_major_exp_t*) geom->transform;
+      const ze_rtas_transform_float3x4_aligned_column_major_exp_t* xfm = (const ze_rtas_transform_float3x4_aligned_column_major_exp_t*) geom->pTransformBuffer;
       return {
         { xfm->vx_x, xfm->vx_y, xfm->vx_z },
         { xfm->vy_x, xfm->vy_y, xfm->vy_z },
@@ -59,7 +59,7 @@ namespace embree
       };
     }
     case ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3X4_ROW_MAJOR: {
-      const ze_rtas_transform_float3x4_row_major_exp_t* xfm = (const ze_rtas_transform_float3x4_row_major_exp_t*) geom->transform;
+      const ze_rtas_transform_float3x4_row_major_exp_t* xfm = (const ze_rtas_transform_float3x4_row_major_exp_t*) geom->pTransformBuffer;
       return {
         { xfm->vx_x, xfm->vx_y, xfm->vx_z },
         { xfm->vy_x, xfm->vy_y, xfm->vy_z },
@@ -74,47 +74,47 @@ namespace embree
   
   inline void verifyGeometryDesc(const ze_rtas_builder_triangles_geometry_info_exp_t* geom)
   {
-    if (geom->triangleFormat != ZE_RTAS_DATA_BUFFER_FORMAT_EXP_TRIANGLE_INDICES_UINT32)
+    if (geom->triangleBufferFormat != ZE_RTAS_DATA_BUFFER_FORMAT_EXP_TRIANGLE_INDICES_UINT32)
       throw std::runtime_error("triangle format must be ZE_RTAS_DATA_BUFFER_FORMAT_EXP_TRIANGLE_INDICES_UINT32");
     
-    if (geom->vertexFormat != ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3)
+    if (geom->vertexBufferFormat != ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3)
       throw std::runtime_error("vertex format must be ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3");
  
     if (geom->reserved0 != 0) throw std::runtime_error("reserved member must be 0");
     if (geom->reserved1 != 0) throw std::runtime_error("reserved member must be 0");
     if (geom->reserved2 != 0) throw std::runtime_error("reserved member must be 0");
     
-    if (geom->triangleCount && geom->triangleBuffer == nullptr) throw std::runtime_error("no triangle buffer specified");
-    if (geom->vertexCount   && geom->vertexBuffer   == nullptr) throw std::runtime_error("no vertex buffer specified");
+    if (geom->triangleCount && geom->pTriangleBuffer == nullptr) throw std::runtime_error("no triangle buffer specified");
+    if (geom->vertexCount   && geom->pVertexBuffer   == nullptr) throw std::runtime_error("no vertex buffer specified");
   }
 
   inline void verifyGeometryDesc(const ze_rtas_builder_quads_geometry_info_exp_t* geom)
   {
-    if (geom->quadFormat != ZE_RTAS_DATA_BUFFER_FORMAT_EXP_QUAD_INDICES_UINT32)
+    if (geom->quadBufferFormat != ZE_RTAS_DATA_BUFFER_FORMAT_EXP_QUAD_INDICES_UINT32)
       throw std::runtime_error("quad format must be ZE_RTAS_DATA_BUFFER_FORMAT_EXP_QUAD_INDICES_UINT32");
     
-    if (geom->vertexFormat != ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3)
+    if (geom->vertexBufferFormat != ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3)
       throw std::runtime_error("vertex format must be ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3");
  
     if (geom->reserved0 != 0) throw std::runtime_error("reserved member must be 0");
     if (geom->reserved1 != 0) throw std::runtime_error("reserved member must be 0");
     if (geom->reserved2 != 0) throw std::runtime_error("reserved member must be 0");
     
-    if (geom->quadCount   && geom->quadBuffer   == nullptr) throw std::runtime_error("no quad buffer specified");
-    if (geom->vertexCount && geom->vertexBuffer == nullptr) throw std::runtime_error("no vertex buffer specified");
+    if (geom->quadCount   && geom->pQuadBuffer   == nullptr) throw std::runtime_error("no quad buffer specified");
+    if (geom->vertexCount && geom->pVertexBuffer == nullptr) throw std::runtime_error("no vertex buffer specified");
   }
 
   inline void verifyGeometryDesc(const ze_rtas_builder_procedural_geometry_info_exp_t* geom)
   {
     if (geom->reserved != 0) throw std::runtime_error("reserved member must be 0");
-    if (geom->primCount   && geom->getBounds == nullptr) throw std::runtime_error("no bounds function specified");
+    if (geom->primCount   && geom->pfnGetBoundsCb == nullptr) throw std::runtime_error("no bounds function specified");
   }
 
   inline void verifyGeometryDesc(const ze_rtas_builder_instance_geometry_info_exp_t* geom)
   {
-    if (geom->transform == nullptr) throw std::runtime_error("no instance transformation specified");
-    if (geom->bounds == nullptr) throw std::runtime_error("no acceleration structure bounds specified");
-    if (geom->accel == nullptr) throw std::runtime_error("no acceleration structure to instanciate specified");
+    if (geom->pTransformBuffer == nullptr) throw std::runtime_error("no instance transformation specified");
+    if (geom->pBounds == nullptr) throw std::runtime_error("no acceleration structure bounds specified");
+    if (geom->pAccelerationStructure == nullptr) throw std::runtime_error("no acceleration structure to instanciate specified");
   }
 
   inline bool buildBounds(const ze_rtas_builder_triangles_geometry_info_exp_t* geom, uint32_t primID, BBox3fa& bbox, void* buildUserPtr)
@@ -161,10 +161,10 @@ namespace embree
   inline bool buildBounds(const ze_rtas_builder_procedural_geometry_info_exp_t* geom, uint32_t primID, BBox3fa& bbox, void* buildUserPtr)
   {
     if (primID >= geom->primCount) return false;
-    if (geom->getBounds == nullptr) return false;
+    if (geom->pfnGetBoundsCb == nullptr) return false;
 
     BBox3f bounds;
-    (geom->getBounds)(primID,1,geom->geomUserPtr,buildUserPtr,(ze_rtas_aabb_exp_t*)&bounds);
+    (geom->pfnGetBoundsCb)(primID,1,geom->pGeomUserPtr,buildUserPtr,(ze_rtas_aabb_exp_t*)&bounds);
     if (unlikely(!isvalid(bounds.lower))) return false;
     if (unlikely(!isvalid(bounds.upper))) return false;
     if (unlikely(bounds.empty())) return false;
@@ -176,12 +176,12 @@ namespace embree
   inline bool buildBounds(const ze_rtas_builder_instance_geometry_info_exp_t* geom, uint32_t primID, BBox3fa& bbox, void* buildUserPtr)
   {
     if (primID >= 1) return false;
-    if (geom->accel == nullptr) return false;
-    if (geom->transform == nullptr) return false;
+    if (geom->pAccelerationStructure == nullptr) return false;
+    if (geom->pTransformBuffer == nullptr) return false;
     
     const AffineSpace3fa local2world = getTransform(geom);
-    const Vec3fa lower(geom->bounds->lower.x,geom->bounds->lower.y,geom->bounds->lower.z);
-    const Vec3fa upper(geom->bounds->upper.x,geom->bounds->upper.y,geom->bounds->upper.z);
+    const Vec3fa lower(geom->pBounds->lower.x,geom->pBounds->lower.y,geom->pBounds->lower.z);
+    const Vec3fa upper(geom->pBounds->upper.x,geom->pBounds->upper.y,geom->pBounds->upper.z);
     const BBox3fa bounds = xfmBounds(local2world,BBox3fa(lower,upper));
      
     if (unlikely(!isvalid(bounds.lower))) return false;
@@ -293,8 +293,8 @@ namespace embree
 
   typedef enum _ze_raytracing_accel_format_internal_t {
     ZE_RTAS_DEVICE_FORMAT_EXP_INVALID = 0,      // invalid acceleration structure format
-    ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1 = 1, // acceleration structure format version 1
-    ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_2 = 2, // acceleration structure format version 2
+    ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1 = 1, // acceleration structure format version 1
+    ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_2 = 2, // acceleration structure format version 2
   } ze_raytracing_accel_format_internal_t;
 
   RTHWIF_API ze_result_t_ zeDeviceGetRTASPropertiesExp( const ze_device_handle_t hDevice, ze_rtas_device_exp_properties_t* pProperties )
@@ -340,7 +340,7 @@ namespace embree
       (device_id == 0x0BE5                       );
 
     if (dg2 || pvc) {
-      pProperties->rtasDeviceFormat = (ze_rtas_device_format_exp_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1;
+      pProperties->rtasDeviceFormat = (ze_rtas_device_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1;
       return ZE_RESULT_SUCCESS_;
     }        
 
@@ -348,7 +348,7 @@ namespace embree
 
 #else
 
-    pProperties->rtasDeviceFormat = (ze_rtas_device_format_exp_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1;
+    pProperties->rtasDeviceFormat = (ze_rtas_device_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1;
     return ZE_RESULT_SUCCESS_;
     
 #endif
@@ -410,10 +410,10 @@ namespace embree
       return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
 
     /* check if acceleration structure format is supported */
-    if (args->accelFormat != (ze_rtas_device_format_exp_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1)
+    if (args->rtasFormat != (ze_rtas_device_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1)
       return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
     
-    const ze_rtas_builder_geometry_info_exp_t** geometries = args->geometries;
+    const ze_rtas_builder_geometry_info_exp_t** geometries = args->ppGeometries;
     const size_t numGeometries = args->numGeometries;
 
     auto getSize = [&](uint32_t geomID) -> size_t {
@@ -439,12 +439,12 @@ namespace embree
     size_t expectedBytes = 0;
     size_t worstCaseBytes = 0;
     size_t scratchBytes = 0;
-    QBVH6BuilderSAH::estimateSize(numGeometries, getSize, getType, args->quality, args->flags, expectedBytes, worstCaseBytes, scratchBytes);
+    QBVH6BuilderSAH::estimateSize(numGeometries, getSize, getType, args->buildQuality, args->buildFlags, expectedBytes, worstCaseBytes, scratchBytes);
     
     /* fill return struct */
-    size_o->accelBufferExpectedBytes = expectedBytes;
-    size_o->accelBufferWorstCaseBytes = worstCaseBytes;
-    size_o->scratchBufferBytes = scratchBytes;
+    size_o->rtasBufferSizeBytesExpected = expectedBytes;
+    size_o->rtasBufferSizeBytesMax = worstCaseBytes;
+    size_o->scratchBufferSizeBytes = scratchBytes;
     return ZE_RESULT_SUCCESS_;
   }
   
@@ -453,7 +453,7 @@ namespace embree
                                                             void *pRtasBuffer, size_t rtasBufferSizeBytes,
                                                             void *pBuildUserPtr, ze_rtas_aabb_exp_t *pBounds, size_t *pRtasBufferSizeBytes) try
   {
-    const ze_rtas_builder_geometry_info_exp_t** geometries = args->geometries;
+    const ze_rtas_builder_geometry_info_exp_t** geometries = args->ppGeometries;
     const uint32_t numGeometries = args->numGeometries;
 
     /* verify input descriptors */
@@ -557,7 +557,7 @@ namespace embree
       assert(geometries[geomID]);
       assert(geometries[geomID]->geometryType == ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_INSTANCE);
       const ze_rtas_builder_instance_geometry_info_exp_t* geom = (const ze_rtas_builder_instance_geometry_info_exp_t*) geometries[geomID];
-      void* accel = geom->accel;
+      void* accel = geom->pAccelerationStructure;
       const AffineSpace3fa local2world = getTransform(geom);
       return QBVH6BuilderSAH::Instance(local2world,accel,geom->geometryMask,geom->instanceUserID); // FIXME: pass instance flags
     };
@@ -575,7 +575,7 @@ namespace embree
                            (char*)pRtasBuffer, rtasBufferSizeBytes,
                            pScratchBuffer, scratchBufferSizeBytes,
                            (BBox3f*) pBounds, pRtasBufferSizeBytes,
-                           args->quality, args->flags, verbose, dispatchGlobalsPtr);
+                           args->buildQuality, args->buildFlags, verbose, dispatchGlobalsPtr);
     if (!success) {
       return ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY_;
     }
@@ -636,7 +636,7 @@ namespace embree
       return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
 
     /* check if acceleration structure format is supported */
-    if (args->accelFormat != (ze_rtas_device_format_exp_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1)
+    if (args->rtasFormat != (ze_rtas_device_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1)
       return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
 
     /* check scratch buffer */
