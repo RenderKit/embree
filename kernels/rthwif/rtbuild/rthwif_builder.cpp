@@ -694,18 +694,27 @@ namespace embree
     return ZE_RESULT_SUCCESS_;
   }
   
-  RTHWIF_API ze_result_t_ zeRaytracingParallelOperationGetMaxConcurrencyExt( ze_raytracing_parallel_operation_ext_handle_t parallelOperation, uint32_t* pMaxConcurrency )
+  RTHWIF_API ze_result_t_ zeRaytracingParallelOperationGetMaxConcurrencyExt( ze_raytracing_parallel_operation_ext_handle_t parallelOperation, ze_rtas_parallel_operation_exp_properties_t* pProperties )
   {
     /* check for valid handle */
     if (!validate(parallelOperation))
       return ZE_RESULT_ERROR_UNKNOWN_;
 
     /* check for valid pointer */
-    if (pMaxConcurrency == nullptr)
+    if (pProperties == nullptr)
       return ZE_RESULT_ERROR_UNKNOWN_;
 
-    /* return maximal concurrency */
-    *pMaxConcurrency = tbb::this_task_arena::max_concurrency();
+    /* check for proper property */
+    if (pProperties->stype != ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES)
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+
+    /* check valid pNext chain */
+    if (!checkDescChain((zet_base_desc_t_*)pProperties))
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+
+    /* return properties */
+    pProperties->flags = ZE_RTAS_PARALLEL_OPERATION_EXP_FLAG_NONE;
+    pProperties->maxConcurrency = tbb::this_task_arena::max_concurrency();
     return ZE_RESULT_SUCCESS_;
   }
   

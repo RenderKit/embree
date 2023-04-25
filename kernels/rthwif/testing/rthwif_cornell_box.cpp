@@ -326,13 +326,13 @@ void* build_rtas(sycl::device device, sycl::context context)
   assert(err == ZE_RESULT_RAYTRACING_EXT_OPERATION_DEFERRED);
 
   /* after the build is started one can query number of threads to use for the build */
-  uint32_t maxThreads = 0;
-  err = zeRaytracingParallelOperationGetMaxConcurrencyExt(parallelOperation,&maxThreads);
+  ze_rtas_parallel_operation_exp_properties_t prop = { ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES };
+  err = zeRaytracingParallelOperationGetMaxConcurrencyExt(parallelOperation,&prop);
   if (err != ZE_RESULT_SUCCESS_)
     throw std::runtime_error("get max concurrency failed");
 
   /* build in parallel using maximal number of build threads */
-  tbb::parallel_for(0u, maxThreads, 1u, [&](uint32_t) {
+  tbb::parallel_for(0u, prop.maxConcurrency, 1u, [&](uint32_t) {
     err = zeRaytracingParallelOperationJoinExt(parallelOperation);
   });
   
