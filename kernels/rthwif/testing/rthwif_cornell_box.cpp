@@ -97,7 +97,7 @@ void* alloc_accel_buffer(size_t bytes, sycl::device device, sycl::context contex
   ze_device_handle_t  hDevice  = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
 
   ze_rtas_device_exp_properties_t rtasProp = { ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES };
-  ze_result_t_ err = zeRaytracingDeviceGetAccelFormatExt(hDevice, &rtasProp );
+  ze_result_t_ err = zeDeviceGetRTASPropertiesExp(hDevice, &rtasProp );
   if (err != ZE_RESULT_SUCCESS_)
     throw std::runtime_error("get rtas device properties failed");
   
@@ -134,7 +134,7 @@ void free_accel_buffer(void* ptr, sycl::context context)
 }
 
 /* vertex indices for cornell_box model */
-ze_raytracing_triangle_indices_uint32_ext_t indices[] = {
+ze_rtas_triangle_indices_uint32_exp_t indices[] = {
   { 0, 1, 2 },
   { 0, 2, 3 },
   { 4, 5, 6 },
@@ -172,7 +172,7 @@ ze_raytracing_triangle_indices_uint32_ext_t indices[] = {
 };
 
 /* vertex positions for cornell_box model */
-ze_raytracing_float3_ext_t vertices[] = {
+ze_rtas_float3_exp_t vertices[] = {
   { 552.8, 0, 0 },
   { 0, 0, 0 },
   { 0, 0, 559.2 },
@@ -257,59 +257,59 @@ void* build_rtas(sycl::device device, sycl::context context)
     throw std::runtime_error("ze_rtas_builder creation failed");
     
   /* create geometry descriptor for single triangle mesh */
-  ze_raytracing_geometry_triangles_ext_desc_t mesh = {};
-  mesh.geometryType = ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES;
-  mesh.geometryFlags = ZE_RAYTRACING_GEOMETRY_EXT_FLAG_OPAQUE;
+  ze_rtas_builder_triangles_geometry_info_exp_t mesh = {};
+  mesh.geometryType = ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_TRIANGLES;
+  mesh.geometryFlags = ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_OPAQUE;
   mesh.geometryMask = 0xFF;
   
-  mesh.triangleFormat = ZE_RAYTRACING_FORMAT_EXT_TRIANGLE_INDICES_UINT32;
-  mesh.triangleCount = sizeof(indices)/sizeof(ze_raytracing_triangle_indices_uint32_ext_t);
-  mesh.triangleStride = sizeof(ze_raytracing_triangle_indices_uint32_ext_t);
+  mesh.triangleFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_TRIANGLE_INDICES_UINT32;
+  mesh.triangleCount = sizeof(indices)/sizeof(ze_rtas_triangle_indices_uint32_exp_t);
+  mesh.triangleStride = sizeof(ze_rtas_triangle_indices_uint32_exp_t);
   mesh.triangleBuffer = indices;
 
-  mesh.vertexFormat = ZE_RAYTRACING_FORMAT_EXT_FLOAT3;
-  mesh.vertexCount = sizeof(vertices)/sizeof(ze_raytracing_float3_ext_t);
-  mesh.vertexStride = sizeof(ze_raytracing_float3_ext_t);
+  mesh.vertexFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3;
+  mesh.vertexCount = sizeof(vertices)/sizeof(ze_rtas_float3_exp_t);
+  mesh.vertexStride = sizeof(ze_rtas_float3_exp_t);
   mesh.vertexBuffer = vertices;
 
   /* fill geometry descriptor array with pointer to single geometry descriptor */
-  std::vector<ze_raytracing_geometry_ext_desc_t*> descs;
-  descs.push_back((ze_raytracing_geometry_ext_desc_t*)&mesh);
+  std::vector<ze_rtas_builder_geometry_info_exp_t*> descs;
+  descs.push_back((ze_rtas_builder_geometry_info_exp_t*)&mesh);
   
   /* get acceleration structure format for this device */
   ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
   ze_rtas_device_exp_properties_t rtasProp = { ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES };
-  err = zeRaytracingDeviceGetAccelFormatExt(hDevice, &rtasProp );
+  err = zeDeviceGetRTASPropertiesExp(hDevice, &rtasProp );
   if (err != ZE_RESULT_SUCCESS_)
     throw std::runtime_error("get rtas device properties failed");
 
   /* create parallel operation for parallel build */
-  ze_raytracing_parallel_operation_ext_handle_t parallelOperation = nullptr;
-  err = zeRaytracingParallelOperationCreateExt(hBuilder, &parallelOperation);
+  ze_rtas_parallel_operation_exp_handle_t parallelOperation = nullptr;
+  err = zeRTASParallelOperationCreateExp(hBuilder, &parallelOperation);
   if (err != ZE_RESULT_SUCCESS_)
     throw std::runtime_error("parallel operation creation failed");
 
   /* create descriptor of build operation */
   size_t accelBufferBytesOut = 0;
-  ze_raytracing_aabb_ext_t bounds;
-  ze_raytracing_build_accel_ext_desc_t args = {};
-  args.stype = ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC;
+  ze_rtas_aabb_exp_t bounds;
+  ze_rtas_builder_build_op_exp_desc_t args = {};
+  args.stype = ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_EXP_DESC;
   args.pNext = nullptr;
   args.accelFormat = rtasProp.rtasDeviceFormat;
-  args.quality = ZE_RAYTRACING_BUILD_QUALITY_EXT_MEDIUM;
-  args.flags = ZE_RAYTRACING_BUILD_EXT_FLAG_NONE;
-  args.geometries = (const ze_raytracing_geometry_ext_desc_t **) descs.data();
+  args.quality = ZE_RTAS_BUILDER_BUILD_QUALITY_HINT_EXP_MEDIUM;
+  args.flags = ZE_RTAS_BUILDER_BUILD_OP_EXP_FLAG_NONE;
+  args.geometries = (const ze_rtas_builder_geometry_info_exp_t **) descs.data();
   args.numGeometries = descs.size();
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
   args.dispatchGlobalsPtr = dispatchGlobalsPtr;
 #endif
 
   /* query required buffer sizes */
-  ze_raytracing_accel_size_ext_properties_t size = {};
-  size.stype = ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES;
+  ze_rtas_builder_exp_properties_t size = {};
+  size.stype = ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES;
   size.pNext = nullptr;
     
-  err = zeRaytracingGetAccelSizeExt(hBuilder,&args,parallelOperation,&size);
+  err = zeRTASBuilderGetBuildPropertiesExp(hBuilder,&args,parallelOperation,&size);
   if (err != ZE_RESULT_SUCCESS_)
     throw std::runtime_error("BVH size estimate failed");
 
@@ -323,29 +323,29 @@ void* build_rtas(sycl::device device, sycl::context context)
   memset(accel,0,accelBytes);
   
   /* build acceleration strucuture multi threaded */
-  err = zeRaytracingBuildAccelExt(hBuilder,&args,
+  err = zeRTASBuilderBuildExp(hBuilder,&args,
                                   scratchBuffer.data(),scratchBuffer.size(),
                                   accel, accelBytes,
                                   parallelOperation,
                                   nullptr, &bounds, &accelBufferBytesOut);
-  assert(err == ZE_RESULT_RAYTRACING_EXT_OPERATION_DEFERRED);
+  assert(err == ZE_RESULT_RTAS_EXP_OPERATION_DEFERRED);
 
   /* after the build is started one can query number of threads to use for the build */
   ze_rtas_parallel_operation_exp_properties_t prop = { ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES };
-  err = zeRaytracingParallelOperationGetMaxConcurrencyExt(parallelOperation,&prop);
+  err = zeRTASParallelOperationGetPropertiesExp(parallelOperation,&prop);
   if (err != ZE_RESULT_SUCCESS_)
     throw std::runtime_error("get max concurrency failed");
 
   /* build in parallel using maximal number of build threads */
   tbb::parallel_for(0u, prop.maxConcurrency, 1u, [&](uint32_t) {
-    err = zeRaytracingParallelOperationJoinExt(parallelOperation);
+    err = zeRTASParallelOperationJoinExp(parallelOperation);
   });
   
   if (err != ZE_RESULT_SUCCESS_)
     throw std::runtime_error("build error");
 
   /* destroy parallel operation again */
-  err = zeRaytracingParallelOperationDestroyExt(parallelOperation);
+  err = zeRTASParallelOperationDestroyExp(parallelOperation);
   if (err != ZE_RESULT_SUCCESS_)
     throw std::runtime_error("parallel operation destruction failed");
 
@@ -417,7 +417,7 @@ int main(int argc, char* argv[])
   sycl::context context = queue.get_context();
 
   /* initialize L0 ray tracing extension */
-  zeRaytracingInitExt();
+  zeRTASInitExp();
 
   /* build acceleration structure */
   void* bvh = build_rtas(device,context);
@@ -442,7 +442,7 @@ int main(int argc, char* argv[])
   free_accel_buffer(bvh,context);
 
   /* cleanup L0 ray tracing extension */
-  zeRaytracingExitExt();
+  zeRTASExitExp();
 
   /* store image to disk */
   storeTga(pixels,width,height,"cornell_box.tga");
