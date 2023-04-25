@@ -95,6 +95,11 @@ void* alloc_accel_buffer(size_t bytes, sycl::device device, sycl::context contex
 {
   ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
   ze_device_handle_t  hDevice  = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
+
+  ze_rtas_device_exp_properties_t rtasProp = { ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES };
+  ze_result_t_ err = zeRaytracingDeviceGetAccelFormatExt(hDevice, &rtasProp );
+  if (err != ZE_RESULT_SUCCESS_)
+    throw std::runtime_error("get rtas device properties failed");
   
   ze_raytracing_mem_alloc_ext_desc_t rt_desc;
   rt_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_RAYTRACING_EXT_PROPERTIES;
@@ -113,7 +118,7 @@ void* alloc_accel_buffer(size_t bytes, sycl::device device, sycl::context contex
   host_desc.flags = ZE_HOST_MEM_ALLOC_FLAG_BIAS_CACHED;
   
   void* ptr = nullptr;
-  ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,ZE_RAYTRACING_ACCELERATION_STRUCTURE_ALIGNMENT_EXT,hDevice,&ptr);
+  ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,rtasProp.rtasBufferAlignment,hDevice,&ptr);
   if (result != ZE_RESULT_SUCCESS)
     throw std::runtime_error("acceleration buffer allocation failed");
 
@@ -272,11 +277,11 @@ void* build_rtas(sycl::device device, sycl::context context)
   descs.push_back((ze_raytracing_geometry_ext_desc_t*)&mesh);
   
   /* get acceleration structure format for this device */
-  ze_raytracing_accel_format_ext_t accelFormat;
   ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
-  err = zeRaytracingDeviceGetAccelFormatExt(hDevice, &accelFormat );
+  ze_rtas_device_exp_properties_t rtasProp = { ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES };
+  err = zeRaytracingDeviceGetAccelFormatExt(hDevice, &rtasProp );
   if (err != ZE_RESULT_SUCCESS_)
-    throw std::runtime_error("get accel format failed");
+    throw std::runtime_error("get rtas device properties failed");
 
   /* create parallel operation for parallel build */
   ze_raytracing_parallel_operation_ext_handle_t parallelOperation = nullptr;
@@ -290,7 +295,7 @@ void* build_rtas(sycl::device device, sycl::context context)
   ze_raytracing_build_accel_ext_desc_t args = {};
   args.stype = ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC;
   args.pNext = nullptr;
-  args.accelFormat = accelFormat;
+  args.accelFormat = rtasProp.rtasDeviceFormat;
   args.quality = ZE_RAYTRACING_BUILD_QUALITY_EXT_MEDIUM;
   args.flags = ZE_RAYTRACING_BUILD_EXT_FLAG_NONE;
   args.geometries = (const ze_raytracing_geometry_ext_desc_t **) descs.data();

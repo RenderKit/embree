@@ -323,6 +323,7 @@ typedef enum _ze_structure_type_t_
   ZE_STRUCTURE_TYPE_RAYTRACING_ACCEL_SIZE_EXT_PROPERTIES,  ///< ze_raytracing_accel_size_ext_properties_t
   ZE_STRUCTURE_TYPE_RAYTRACING_BUILD_ACCEL_EXT_DESC, ///< ze_raytracing_build_accel_ext_desc_t
   ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES, ///< ze_rtas_parallel_operation_exp_properties_t
+  ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES, ///< ze_rtas_device_exp_properties_t
   
 } ze_structure_type_t_;
 
@@ -426,10 +427,6 @@ RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingParallelOperationGetMaxConcurren
 
 RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingParallelOperationJoinExt( ze_raytracing_parallel_operation_ext_handle_t hParallelOperation );
 
-
-
-/** Required alignment of acceleration structure buffer. */
-#define ZE_RAYTRACING_ACCELERATION_STRUCTURE_ALIGNMENT_EXT 128
 
 
 /**
@@ -837,6 +834,30 @@ typedef enum _ze_raytracing_accel_format_ext_t {
 } ze_raytracing_accel_format_ext_t;
 
 
+typedef uint32_t ze_rtas_device_exp_flags_t;
+typedef enum _ze_rtas_device_exp_flag_t
+{
+  ZE_RTAS_DEVICE_EXP_FLAG_NONE    = 0,
+  
+} ze_rtas_device_exp_flag_t;
+
+typedef struct _ze_rtas_device_exp_properties_t
+{
+  /** [in] type of this structure */
+  ze_structure_type_t_ stype;
+
+  /** [in,out][optional] must be null or a pointer to an extension-specific structure */
+  const void* pNext;                                    
+
+  ze_rtas_device_exp_flags_t flags;
+  
+  ze_raytracing_accel_format_ext_t rtasDeviceFormat;
+
+  uint32_t rtasBufferAlignment;
+  
+} ze_rtas_device_exp_properties_t;
+
+
 /**
 
   \brief Returns the acceleration structure format supported by the specified device.
@@ -850,7 +871,7 @@ typedef enum _ze_raytracing_accel_format_ext_t {
 
 */
 
-RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingDeviceGetAccelFormatExt( const ze_device_handle_t hDevice, ze_raytracing_accel_format_ext_t* pAccelFormat );
+RTHWIF_API ze_result_t_ ZE_APICALL_ zeRaytracingDeviceGetAccelFormatExt( const ze_device_handle_t hDevice, ze_rtas_device_exp_properties_t* pRtasProp );
 
 
 

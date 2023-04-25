@@ -54,7 +54,7 @@ namespace embree
 
         __forceinline void* malloc(size_t bytes, size_t align = 16)
         {
-          assert(align <= ZE_RAYTRACING_ACCELERATION_STRUCTURE_ALIGNMENT_EXT);
+          assert(align <= 128); //ZE_RAYTRACING_ACCELERATION_STRUCTURE_ALIGNMENT_EXT
           if (unlikely(cur.load() >= end)) return nullptr;
           const size_t extra = (align - cur) & (align-1);
           const size_t bytes_align = bytes + extra;

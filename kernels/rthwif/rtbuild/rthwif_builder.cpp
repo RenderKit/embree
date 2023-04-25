@@ -297,12 +297,23 @@ namespace embree
     ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_2 = 2, // acceleration structure format version 2
   } ze_raytracing_accel_format_internal_t;
 
-  RTHWIF_API ze_result_t_ zeRaytracingDeviceGetAccelFormatExt( const ze_device_handle_t hDevice, ze_raytracing_accel_format_ext_t* pAccelFormat )
+  RTHWIF_API ze_result_t_ zeRaytracingDeviceGetAccelFormatExt( const ze_device_handle_t hDevice, ze_rtas_device_exp_properties_t* pProperties )
   {
-    if (pAccelFormat == nullptr)
-       return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+    if (pProperties == nullptr)
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
 
-    *pAccelFormat = (ze_raytracing_accel_format_ext_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_INVALID;
+    /* check valid pNext chain */
+    if (!checkDescChain((zet_base_desc_t_*)pProperties))
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+    
+    /* check for proper property */
+    if (pProperties->stype != ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES)
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT_;
+
+    /* fill properties */
+    pProperties->flags = ZE_RTAS_DEVICE_EXP_FLAG_NONE;
+    pProperties->rtasDeviceFormat = (ze_raytracing_accel_format_ext_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_INVALID;
+    pProperties->rtasBufferAlignment = 128;
 
 #if defined(EMBREE_LEVEL_ZERO)
 
@@ -329,7 +340,7 @@ namespace embree
       (device_id == 0x0BE5                       );
 
     if (dg2 || pvc) {
-      *pAccelFormat = (ze_raytracing_accel_format_ext_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1;
+      pProperties->rtasDeviceFormat = (ze_raytracing_accel_format_ext_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1;
       return ZE_RESULT_SUCCESS_;
     }        
 
@@ -337,7 +348,7 @@ namespace embree
 
 #else
 
-    *pAccelFormat = (ze_raytracing_accel_format_ext_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1;
+    pProperties->rtasDeviceFormat = (ze_raytracing_accel_format_ext_t) ZE_RAYTRACING_ACCEL_FORMAT_EXT_VERSION_1;
     return ZE_RESULT_SUCCESS_;
     
 #endif
