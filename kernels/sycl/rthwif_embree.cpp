@@ -24,9 +24,9 @@
 #include "rthwif_embree.h"
 
 #if defined(EMBREE_SYCL_RT_VALIDATION_API)
-#  include "../rthwif/rttrace/rthwif_production.h"
+#  include "../rthwif/rttrace/rttrace_validation.h"
 #else
-#  include "../rthwif/rttrace/rthwif_production_igc.h"
+#  include "../rthwif/rttrace/rttrace.h"
 #endif
 
 using namespace embree;

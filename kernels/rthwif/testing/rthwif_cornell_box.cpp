@@ -5,11 +5,11 @@
 #include "tbb/tbb.h"
 
 #if defined(EMBREE_SYCL_RT_VALIDATION_API)
-#  include "../rttrace/rthwif_production.h"
+#  include "../rttrace/rttrace_validation.h"
 #else
-#  include "../rttrace/rthwif_production_igc.h"
+#  include "../rttrace/rttrace.h"
 #endif
-#include "../rtbuild/rthwif_builder.h"
+#include "../rtbuild/rtbuild.h"
 
 #include <level_zero/ze_api.h>
 

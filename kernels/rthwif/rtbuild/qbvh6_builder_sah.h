@@ -6,7 +6,7 @@
 #include "qbvh6.h"
 #include "statistics.h"
 #include "quadifier.h"
-#include "rthwif_builder.h"
+#include "rtbuild.h"
 
 #if defined(ZE_RAYTRACING)
 #include "builders/priminfo.h"

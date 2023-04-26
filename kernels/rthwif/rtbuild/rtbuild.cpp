@@ -3,7 +3,7 @@
 
 #define RTHWIF_EXPORT_API
 
-#include "rthwif_builder.h"
+#include "rtbuild.h"
 #include "qbvh6_builder_sah.h"
 
 #if defined(EMBREE_LEVEL_ZERO)

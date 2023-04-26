@@ -9,7 +9,7 @@
 #include "rthwif_embree_builder.h"
 #include "../common/scene.h"
 #include "../builders/primrefgen.h"
-#include "../rthwif/rtbuild/rthwif_builder.h"
+#include "../rthwif/rtbuild/rtbuild.h"
 
 #if defined(EMBREE_LEVEL_ZERO)
 #include <level_zero/ze_api.h>
