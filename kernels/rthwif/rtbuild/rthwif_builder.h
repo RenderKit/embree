@@ -890,7 +890,12 @@ RTHWIF_API ze_result_t_ ZE_APICALL_ zeDeviceGetRTASPropertiesExp( const ze_devic
 
 RTHWIF_API ze_result_t_ ZE_APICALL_ zeRTASBuilderDeviceFormatCompatibilityCheckExp( ze_rtas_builder_exp_handle_t hBuilder, const ze_rtas_device_format_exp_t accelFormat, const ze_rtas_device_format_exp_t otherAccelFormat );
 
-
+typedef uint32_t ze_rtas_builder_exp_flags_t;
+typedef enum _ze_rtas_builder_exp_flag_t
+{
+  ZE_RTAS_BUILDER_EXP_FLAG_NONE    = 0,
+  
+} ze_rtas_builder_exp_flag_t;
 
 /**
 
@@ -907,6 +912,8 @@ typedef struct _ze_rtas_builder_exp_properties_t
   /** [in,out][optional] must be null or a pointer to an extension-specific structure */
   const void* pNext;                                    
 
+  ze_rtas_builder_exp_flags_t flags;
+  
   /** 
       [out] The expected number of bytes required for the acceleration
       structure. When using an acceleration structure buffer of that

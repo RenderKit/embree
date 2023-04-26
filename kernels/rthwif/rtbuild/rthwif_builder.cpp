@@ -442,6 +442,7 @@ namespace embree
     QBVH6BuilderSAH::estimateSize(numGeometries, getSize, getType, args->buildQuality, args->buildFlags, expectedBytes, worstCaseBytes, scratchBytes);
     
     /* fill return struct */
+    size_o->flags = 0;
     size_o->rtasBufferSizeBytesExpected = expectedBytes;
     size_o->rtasBufferSizeBytesMax = worstCaseBytes;
     size_o->scratchBufferSizeBytes = scratchBytes;
