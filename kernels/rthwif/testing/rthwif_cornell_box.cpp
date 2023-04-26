@@ -328,7 +328,7 @@ void* build_rtas(sycl::device device, sycl::context context)
                                   accel, accelBytes,
                                   parallelOperation,
                                   nullptr, &bounds, &accelBufferBytesOut);
-  assert(err == ZE_RESULT_RTAS_EXP_OPERATION_DEFERRED);
+  assert(err == ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE_);
 
   /* after the build is started one can query number of threads to use for the build */
   ze_rtas_parallel_operation_exp_properties_t prop = { ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES };

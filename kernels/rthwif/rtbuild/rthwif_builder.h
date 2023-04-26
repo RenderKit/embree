@@ -232,7 +232,7 @@ typedef struct _ze_driver_handle_t *ze_driver_handle_t;
      build_desc.parallelOperation = hParallelOperation;
 
      result = zeRTASBuilderBuildExp( &build_desc );    
-     assert(result == ZE_RESULT_RTAS_EXP_OPERATION_DEFERRED);
+     assert(result == ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE_);
 
      uint32_t pMaxConcurrency = 0;
      result = zeRTASParallelOperationGetPropertiesExp( hParallelOperation, &MaxConcurrency );
@@ -306,8 +306,12 @@ typedef enum _ze_result_t_
   ZE_RESULT_ERROR_INVALID_ARGUMENT_,              ///< generic error code for invalid arguments 
   
   ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY_,    ///< acceleration structure build ran out of memory, app should re-try with more memory
-  ZE_RESULT_RTAS_EXP_OPERATION_DEFERRED,   ///< operation is deferred to a parallel operation
   ZE_RESULT_ERROR_INVALID_ENUMERATION_,   ///< the tested devices have incompatible acceleration structures
+
+  ZE_RESULT_ERROR_INVALID_NULL_HANDLE_,
+  ZE_RESULT_ERROR_INVALID_NULL_POINTER_,
+  ZE_RESULT_EXP_ERROR_OPERANDS_INCOMPATIBLE_,
+  ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE_,           ///< operation is deferred to a parallel operation
   
 } ze_result_t_;
 
@@ -337,7 +341,8 @@ typedef enum _ze_device_raytracing_ext_flag_t_ {
 
 typedef enum _ze_rtas_builder_exp_version_t
 {
-  ZE_RTAS_BUILDER_EXP_VERSION_1_0,
+  ZE_RTAS_BUILDER_EXP_VERSION_1_0 = 0,
+  ZE_RTAS_BUILDER_EXP_VERSION_CURRENT = 0,
   
 } ze_rtas_builder_exp_version_t;
 
@@ -1058,7 +1063,7 @@ RTHWIF_API ze_result_t_ ZE_APICALL_ zeRTASBuilderGetBuildPropertiesExp( ze_rtas_
    zeRTASParallelOperationJoinExp call with user provided worker
    threads. When a parallel operation is provided the
    zeRTASBuilderGetBuildPropertiesExp function returns with result
-   ZE_RESULT_RTAS_EXP_OPERATION_DEFERRED to indicate that the
+   ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE to indicate that the
    build operation is still in progress. The return value of the
    zeRTASParallelOperationJoinExp function determines the status
    of the parallel acceleration structure build.

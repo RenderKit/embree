@@ -1242,7 +1242,7 @@ struct Scene
 
         if (parallelOperation)
         {
-          assert(err == ZE_RESULT_RTAS_EXP_OPERATION_DEFERRED);
+          assert(err == ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE_);
           
           ze_rtas_parallel_operation_exp_properties_t prop = { ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES };
           err = zeRTASParallelOperationGetPropertiesExp(parallelOperation,&prop);
@@ -1288,7 +1288,7 @@ struct Scene
 
         if (parallelOperation)
         {
-          assert(err == ZE_RESULT_RTAS_EXP_OPERATION_DEFERRED);
+          assert(err == ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE_);
 
           
           ze_rtas_parallel_operation_exp_properties_t prop = { ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES };
