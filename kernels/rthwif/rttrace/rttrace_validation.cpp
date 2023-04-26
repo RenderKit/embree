@@ -1,8 +1,7 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "rthwif_production.h"
-#include "rthwif_internal.h"
+#include "rttrace_validation.h"
 
 #define sizeof_QBVH6_InternalNode6 64
 #define QBVH6_rootNodeOffset 128

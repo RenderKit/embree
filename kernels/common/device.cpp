@@ -603,7 +603,7 @@ namespace embree
       std::cout << std::endl;
     }
     
-    dispatchGlobalsPtr = zeRaytracingInitExt(gpu_device, gpu_context);
+    dispatchGlobalsPtr = zeRTASInitExp(gpu_device, gpu_context);
   }
 
   DeviceGPU::~DeviceGPU()
