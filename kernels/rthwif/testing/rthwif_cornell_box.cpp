@@ -242,10 +242,11 @@ ze_rtas_float3_exp_t vertices[] = {
 /* builds acceleration structure */
 void* build_rtas(sycl::device device, sycl::context context)
 {
-  sycl::platform platform = device.get_platform();
-  ze_driver_handle_t hDriver = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(platform);
+  /* get L0 handles */
+  ze_driver_handle_t hDriver = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device.get_platform());
+  ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
     
-  /* create L0 builder object */
+  /* create rtas builder object */
   ze_rtas_builder_exp_desc_t builderDesc = {};
   ze_rtas_builder_exp_handle_t hBuilder = nullptr;
   ze_result_t_ err = zeRTASBuilderCreateExp(hDriver, &builderDesc, &hBuilder);
@@ -273,82 +274,80 @@ void* build_rtas(sycl::device device, sycl::context context)
   descs.push_back((ze_rtas_builder_geometry_info_exp_t*)&mesh);
   
   /* get acceleration structure format for this device */
-  ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
   ze_rtas_device_exp_properties_t rtasProp = { ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES };
   err = zeDeviceGetRTASPropertiesExp(hDevice, &rtasProp );
   if (err != ZE_RESULT_SUCCESS_)
     throw std::runtime_error("get rtas device properties failed");
 
   /* create parallel operation for parallel build */
-  ze_rtas_parallel_operation_exp_handle_t parallelOperation = nullptr;
-  err = zeRTASParallelOperationCreateExp(hBuilder, &parallelOperation);
+  ze_rtas_parallel_operation_exp_handle_t hParallelOperation = nullptr;
+  err = zeRTASParallelOperationCreateExp(hBuilder, &hParallelOperation);
   if (err != ZE_RESULT_SUCCESS_)
-    throw std::runtime_error("parallel operation creation failed");
+    throw std::runtime_error("zeRTASParallelOperationCreateExp failed");
 
   /* create descriptor of build operation */
   size_t accelBufferBytesOut = 0;
   ze_rtas_aabb_exp_t bounds;
-  ze_rtas_builder_build_op_exp_desc_t args = {};
-  args.stype = ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_EXP_DESC;
-  args.pNext = nullptr;
-  args.rtasFormat = rtasProp.rtasDeviceFormat;
-  args.buildQuality = ZE_RTAS_BUILDER_BUILD_QUALITY_HINT_EXP_MEDIUM;
-  args.buildFlags = ZE_RTAS_BUILDER_BUILD_OP_EXP_FLAG_NONE;
-  args.ppGeometries = (const ze_rtas_builder_geometry_info_exp_t **) descs.data();
-  args.numGeometries = descs.size();
+  ze_rtas_builder_build_op_exp_desc_t buildOp = {};
+  buildOp.stype = ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_EXP_DESC;
+  buildOp.pNext = nullptr;
+  buildOp.rtasFormat = rtasProp.rtasDeviceFormat;
+  buildOp.buildQuality = ZE_RTAS_BUILDER_BUILD_QUALITY_HINT_EXP_MEDIUM;
+  buildOp.buildFlags = ZE_RTAS_BUILDER_BUILD_OP_EXP_FLAG_NONE;
+  buildOp.ppGeometries = (const ze_rtas_builder_geometry_info_exp_t **) descs.data();
+  buildOp.numGeometries = descs.size();
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
-  args.dispatchGlobalsPtr = dispatchGlobalsPtr;
+  buildOp.dispatchGlobalsPtr = dispatchGlobalsPtr;
 #endif
 
   /* query required buffer sizes */
-  ze_rtas_builder_exp_properties_t size = {};
-  size.stype = ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES;
-  size.pNext = nullptr;
-    
-  err = zeRTASBuilderGetBuildPropertiesExp(hBuilder,&args,parallelOperation,&size);
+  ze_rtas_builder_exp_properties_t buildProps = { ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES };
+  err = zeRTASBuilderGetBuildPropertiesExp(hBuilder,&buildOp,hParallelOperation,&buildProps);
   if (err != ZE_RESULT_SUCCESS_)
-    throw std::runtime_error("BVH size estimate failed");
+    throw std::runtime_error("zeRTASBuilderGetBuildPropertiesExp failed");
 
   /* allocate scratch buffer */
-  std::vector<char> scratchBuffer(size.scratchBufferSizeBytes);
+  std::vector<char> scratchBuffer(buildProps.scratchBufferSizeBytes);
   memset(scratchBuffer.data(),0,scratchBuffer.size());
 
   /* allocate acceleration structure buffer */
-  size_t accelBytes = size.rtasBufferSizeBytesMax;
+  size_t accelBytes = buildProps.rtasBufferSizeBytesMax;
   void* accel = alloc_accel_buffer(accelBytes,device,context);
-  memset(accel,0,accelBytes);
+  memset(accel,0,accelBytes); // optional
   
   /* build acceleration strucuture multi threaded */
-  err = zeRTASBuilderBuildExp(hBuilder,&args,
+  err = zeRTASBuilderBuildExp(hBuilder,&buildOp,
                                   scratchBuffer.data(),scratchBuffer.size(),
                                   accel, accelBytes,
-                                  parallelOperation,
+                                  hParallelOperation,
                                   nullptr, &bounds, &accelBufferBytesOut);
-  assert(err == ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE_);
+  
+  if (err != ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE_)
+    throw std::runtime_error("zeRTASBuilderBuildExp failed");
 
   /* after the build is started one can query number of threads to use for the build */
   ze_rtas_parallel_operation_exp_properties_t prop = { ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES };
-  err = zeRTASParallelOperationGetPropertiesExp(parallelOperation,&prop);
+  err = zeRTASParallelOperationGetPropertiesExp(hParallelOperation,&prop);
   if (err != ZE_RESULT_SUCCESS_)
-    throw std::runtime_error("get max concurrency failed");
+    throw std::runtime_error("zeRTASParallelOperationGetPropertiesExp failed");
 
   /* build in parallel using maximal number of build threads */
   tbb::parallel_for(0u, prop.maxConcurrency, 1u, [&](uint32_t) {
-    err = zeRTASParallelOperationJoinExp(parallelOperation);
+    err = zeRTASParallelOperationJoinExp(hParallelOperation);
   });
   
   if (err != ZE_RESULT_SUCCESS_)
-    throw std::runtime_error("build error");
+    throw std::runtime_error("zeRTASParallelOperationJoinExp failed");
 
   /* destroy parallel operation again */
-  err = zeRTASParallelOperationDestroyExp(parallelOperation);
+  err = zeRTASParallelOperationDestroyExp(hParallelOperation);
   if (err != ZE_RESULT_SUCCESS_)
-    throw std::runtime_error("parallel operation destruction failed");
+    throw std::runtime_error("zeRTASParallelOperationDestroyExp failed");
 
   /* destroy rtas builder again */
   err = zeRTASBuilderDestroyExp(hBuilder);
   if (err != ZE_RESULT_SUCCESS_)
-    throw std::runtime_error("ze_rtas_builder destruction failed");
+    throw std::runtime_error("zeRTASBuilderDestroyExp failed");
   
   return accel;
 }
@@ -435,8 +434,9 @@ int main(int argc, char* argv[])
                });
   queue.wait_and_throw();
 
+  /* free acceleration structure again */
   free_accel_buffer(bvh,context);
-
+  
   /* cleanup L0 ray tracing extension */
   zeRTASExitExp();
 
