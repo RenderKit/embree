@@ -4,11 +4,7 @@
 #include <CL/sycl.hpp>
 #include "tbb/tbb.h"
 
-#if defined(EMBREE_SYCL_RT_VALIDATION_API)
-#  include "../rttrace/rttrace_validation.h"
-#else
-#  include "../rttrace/rttrace.h"
-#endif
+#include "../rttrace/rttrace.h"
 #include "../rtbuild/rtbuild.h"
 
 #include <level_zero/ze_api.h>
