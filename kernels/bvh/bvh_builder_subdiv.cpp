@@ -85,7 +85,6 @@ namespace embree
         }
  
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "SubdivPatch1BuilderSAH");
-
         //bvh->alloc.reset();
         bvh->alloc.init_estimate(numPrimitives*sizeof(PrimRef));
 
@@ -105,7 +104,7 @@ namespace embree
           for (size_t f=r.begin(); f!=r.end(); ++f) {          
             if (!mesh->valid(f)) continue;
             patch_eval_subdivision(mesh->getHalfEdge(0,f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
-            {
+            {              
               float level[4]; SubdivPatch1Base::computeEdgeLevels(edge_level,subdiv,level);
               Vec2i grid = SubdivPatch1Base::computeGridSize(level);
               size_t num = getNumEagerLeaves(grid.x,grid.y);
@@ -127,6 +126,14 @@ namespace embree
           return;
         }
 
+        uint patchID = 0;
+
+        char* patch_file = "patches.bin";
+
+        std::ofstream output(patch_file,std::ios::out|std::ios::binary);
+        if (!output) FATAL("cannot open patch file");
+        
+        
         PrimInfo pinfo3 = parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, size_t geomID, const PrimInfo& base) -> PrimInfo
         {
           Allocator alloc = bvh->alloc.getCachedAllocator();
@@ -138,6 +145,49 @@ namespace embree
             patch_eval_subdivision(mesh->getHalfEdge(0,f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
               SubdivPatch1Base patch(unsigned(geomID),unsigned(f),subPatch,mesh,0,uv,edge_level,subdiv,VSIZEX);
+              uint type = 0;
+              uint geomID = 0;
+              uint primID = patchID;
+              uint flags = 0;
+#if 1              
+              if (patch.type == SubdivPatch1::BEZIER_PATCH) 
+              {
+                PRINT2(patchID,"BEZIER");
+                type = 0;
+              }
+              else if (patch.type == SubdivPatch1::BSPLINE_PATCH) 
+              {
+                PRINT2(patchID,"BSPLINE");
+                type = 1;
+              }              
+              else if (patch.type == SubdivPatch1::GREGORY_PATCH) 
+              {
+                PRINT2(patchID,"GREGORY -> BEZIER");
+                PRINT5(f,patch.patch_v[1][1],patch.patch_v[1][2],patch.patch_v[2][2],patch.patch_v[2][1]);
+
+                BezierPatch3fa irregular(CatmullClarkPatch3fa(mesh->getHalfEdge(0,f),mesh->getVertexBuffer(0)));
+                *(BezierPatch3fa*)(patch.patch_v) = irregular;
+                type = 0;                
+              }              
+              else
+              {
+                type = 3;                                
+                PRINT((uint)patch.type);
+                PRINT("SOMETHING ELSE");
+              }
+              output.write((char*)&type,sizeof(uint));
+              output.write((char*)&geomID,sizeof(uint));
+              output.write((char*)&primID,sizeof(uint));
+              output.write((char*)&flags,sizeof(uint));
+              
+              for (uint y=0;y<4;y++)
+                for (uint x=0;x<4;x++)
+                {
+                  output.write((char*)&patch.patch_v[y][x],sizeof(Vec3f));
+                  //PRINT3(y,x,patch.patch_v[y][x]);
+                }
+              patchID++;
+#endif              
               size_t num = createEager(patch,scene,mesh,unsigned(f),alloc,&prims[base.end+s.end]);
               assert(num == getNumEagerLeaves(patch.grid_u_res,patch.grid_v_res));
               for (size_t i=0; i<num; i++)
@@ -148,6 +198,10 @@ namespace embree
           return s;
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a, b); });
 
+        output.close();
+        PRINT("DONE WRITING PATCH FILE");
+        //exit(0);
+        
         PrimInfo pinfo(0,pinfo3.end,pinfo3);
         
         auto createLeaf = [&] (const PrimRef* prims, const range<size_t>& range, Allocator alloc) -> NodeRef {

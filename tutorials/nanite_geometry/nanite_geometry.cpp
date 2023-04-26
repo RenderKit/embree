@@ -21,8 +21,10 @@ namespace embree
   extern "C" char* camera_file;
   extern "C" unsigned int camera_mode;
   extern "C" unsigned int frameIndex;
+  extern "C" char* patches_file;
 
   FileName cameraFilename;
+  FileName patchesFilename;
   
   struct Tutorial : public SceneLoadingTutorialApplication 
   {    
@@ -45,6 +47,11 @@ namespace embree
         cameraFilename = cin->getFileName();
         camera_file = (char*)cameraFilename.c_str();
       }, "--camera file");
+
+      registerOption("patches", [] (Ref<ParseStream> cin, const FileName& path) {
+        patchesFilename = cin->getFileName();
+        patches_file = (char*)patchesFilename.c_str();
+      }, "--patches file");
       
 
       registerOption("camera_record", [] (Ref<ParseStream> cin, const FileName& path) {

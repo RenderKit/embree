@@ -2,12 +2,245 @@
 
 #define FORCE_ROOT_LEVEL 0
 
-namespace embree {
+namespace sycl {
+  template<> struct sycl::is_device_copyable<embree::Vec3f> : std::true_type {};
+}
 
+namespace embree {
   extern "C" unsigned int g_lod_threshold;
   extern LCG_Scene *global_lcgbp_scene;
   extern TutorialData data;
 
+  class BezierBasis
+  {
+  public:
+
+    template<typename T>
+      static __forceinline Vec4<T> eval(const T& u) 
+    {
+      const T t1 = u;
+      const T t0 = 1.0f-t1;
+      const T B0 = t0 * t0 * t0;
+      const T B1 = 3.0f * t1 * (t0 * t0);
+      const T B2 = 3.0f * (t1 * t1) * t0;
+      const T B3 = t1 * t1 * t1;
+      return Vec4<T>(B0,B1,B2,B3);
+    }
+    
+    template<typename T>
+      static __forceinline Vec4<T>  derivative(const T& u)
+    {
+      const T t1 = u;
+      const T t0 = 1.0f-t1;
+      const T B0 = -(t0*t0);
+      const T B1 = madd(-2.0f,t0*t1,t0*t0);
+      const T B2 = msub(+2.0f,t0*t1,t1*t1);
+      const T B3 = +(t1*t1);
+      return T(3.0f)*Vec4<T>(B0,B1,B2,B3);
+    }
+
+    template<typename T>
+      static __forceinline Vec4<T>  derivative2(const T& u)
+    {
+      const T t1 = u;
+      const T t0 = 1.0f-t1;
+      const T B0 = t0;
+      const T B1 = madd(-2.0f,t0,t1);
+      const T B2 = madd(-2.0f,t1,t0);
+      const T B3 = t1;
+      return T(6.0f)*Vec4<T>(B0,B1,B2,B3);
+    }
+  };  
+
+  class BSplineBasis
+  {
+  public:
+
+    template<typename T>
+      static __forceinline Vec4<T> eval(const T& u) 
+    {
+      const T t  = u;
+      const T s  = T(1.0f) - u;
+      const T n0 = s*s*s;
+      const T n1 = (4.0f*(s*s*s)+(t*t*t)) + (12.0f*((s*t)*s) + 6.0f*((t*s)*t));
+      const T n2 = (4.0f*(t*t*t)+(s*s*s)) + (12.0f*((t*s)*t) + 6.0f*((s*t)*s));
+      const T n3 = t*t*t;
+      return T(1.0f/6.0f)*Vec4<T>(n0,n1,n2,n3);
+    }
+    
+    template<typename T>
+      static __forceinline Vec4<T>  derivative(const T& u)
+    {
+      const T t  =  u;
+      const T s  =  1.0f - u;
+      const T n0 = -s*s;
+      const T n1 = -t*t - 4.0f*(t*s);
+      const T n2 =  s*s + 4.0f*(s*t);
+      const T n3 =  t*t;
+      return T(0.5f)*Vec4<T>(n0,n1,n2,n3);
+    }
+
+    template<typename T>
+      static __forceinline Vec4<T>  derivative2(const T& u)
+    {
+      const T t  =  u;
+      const T s  =  1.0f - u;
+      const T n0 = s;
+      const T n1 = t - 2.0f*s;
+      const T n2 = s - 2.0f*t;
+      const T n3 = t;
+      return Vec4<T>(n0,n1,n2,n3);
+    }
+  };
+
+  __forceinline Vec3f bilinear(const Vec4f Bu, const Vec3f matrix[4][4], const Vec4f Bv)
+  {
+    const Vec3f M0 = madd(Bu.x,matrix[0][0],madd(Bu.y,matrix[0][1],madd(Bu.z,matrix[0][2],Bu.w * matrix[0][3]))); 
+    const Vec3f M1 = madd(Bu.x,matrix[1][0],madd(Bu.y,matrix[1][1],madd(Bu.z,matrix[1][2],Bu.w * matrix[1][3])));
+    const Vec3f M2 = madd(Bu.x,matrix[2][0],madd(Bu.y,matrix[2][1],madd(Bu.z,matrix[2][2],Bu.w * matrix[2][3])));
+    const Vec3f M3 = madd(Bu.x,matrix[3][0],madd(Bu.y,matrix[3][1],madd(Bu.z,matrix[3][2],Bu.w * matrix[3][3])));
+    return madd(Bv.x,M0,madd(Bv.y,M1,madd(Bv.z,M2,Bv.w*M3)));
+  }
+  
+  __forceinline Vec3f evalPatch(const Patch& patch, const float uu, const float vv)
+  {
+#if 0    
+    const Vec4f v_n = BSplineBasis::eval(vv);
+    const Vec3f curve0 = madd(v_n[0],patch.v[0][0],madd(v_n[1],patch.v[1][0],madd(v_n[2],patch.v[2][0],v_n[3] * patch.v[3][0])));
+    const Vec3f curve1 = madd(v_n[0],patch.v[0][1],madd(v_n[1],patch.v[1][1],madd(v_n[2],patch.v[2][1],v_n[3] * patch.v[3][1])));
+    const Vec3f curve2 = madd(v_n[0],patch.v[0][2],madd(v_n[1],patch.v[1][2],madd(v_n[2],patch.v[2][2],v_n[3] * patch.v[3][2])));
+    const Vec3f curve3 = madd(v_n[0],patch.v[0][3],madd(v_n[1],patch.v[1][3],madd(v_n[2],patch.v[2][3],v_n[3] * patch.v[3][3])));    
+    const Vec4f u_n = BSplineBasis::eval(uu);
+    return madd(u_n[0],curve0,madd(u_n[1],curve1,madd(u_n[2],curve2,u_n[3] * curve3)));
+#else
+    const Vec4f Bu = BezierBasis::eval(uu);
+    const Vec4f Bv = BezierBasis::eval(vv);
+    return bilinear(Bu,patch.v,Bv);    
+#endif    
+  }
+
+  void select_clusters_lod_patches(LCG_Scene *local_lcgbp_scene,
+                                   const unsigned int width,
+                                   const unsigned int height,
+                                   const ISPCCamera* const _camera)
+  {
+    const uint numSubdivPatches = local_lcgbp_scene->numSubdivPatches;    
+    const BBox3f geometryBounds   = local_lcgbp_scene->patch_mesh->bounds;
+    const Vec3f geometry_lower    = geometryBounds.lower;
+    const Vec3f geometry_diag     = geometryBounds.size();
+    const Vec3f geometry_inv_diag = geometry_diag != Vec3fa(0.0f) ? Vec3fa(1.0f) / geometry_diag : Vec3fa(0.0f);
+
+#if 0    
+    local_lcgbp_scene->numLCMeshClusterRootsPerFrame = local_lcgbp_scene->numSubdivPatches;
+    local_lcgbp_scene->patch_mesh->numVertices = 0;
+    local_lcgbp_scene->patch_mesh->numQuads = 0;
+#else
+     sycl::event init_event =  global_gpu_queue->submit([&](sycl::handler &cgh) {
+      cgh.single_task([=]() {
+        local_lcgbp_scene->numLCMeshClusterRootsPerFrame = local_lcgbp_scene->numSubdivPatches;
+        local_lcgbp_scene->patch_mesh->numVertices = 0;
+        local_lcgbp_scene->patch_mesh->numQuads = 0;
+      });
+    });
+
+    waitOnEventAndCatchException(init_event);   
+#endif    
+
+
+    const unsigned int wgSize = 256;
+    
+    //for (uint i=0;i<local_lcgbp_scene->numSubdivPatches;i++)
+    const sycl::nd_range<1> nd_range1(alignTo(numSubdivPatches,wgSize),sycl::range<1>(wgSize));              
+    sycl::event compute_lod_event = global_gpu_queue->submit([=](sycl::handler& cgh){
+      cgh.depends_on(init_event);                                                   
+      cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16) {
+          const unsigned int i = item.get_global_id(0);
+          if (i < numSubdivPatches)
+          {
+            const Patch &patch = local_lcgbp_scene->patches[i];
+
+            //PRINT5(i,patch.v[1][1],patch.v[1][2],patch.v[2][2],patch.v[2][1]);
+
+            const unsigned int type = patch.type;
+            //if (type != 0) FATAL("TYPE");
+            const unsigned int numVertices = (type == Patch::BEZIER) ? 16 : 4;
+            const unsigned int numQuads = (type == Patch::BEZIER) ? 9 : 1;
+      
+            const unsigned int offsetVertex = gpu::atomic_add_global(&local_lcgbp_scene->patch_mesh->numVertices,numVertices);
+            const unsigned int offsetQuad   = gpu::atomic_add_global(&local_lcgbp_scene->patch_mesh->numQuads,numQuads);
+            
+            //local_lcgbp_scene->patch_mesh->numVertices += numVertices;
+            //local_lcgbp_scene->patch_mesh->numQuads += numQuads;
+
+            LossyCompressedMeshCluster &cluster = local_lcgbp_scene->lcm_cluster[i];
+      
+            CompressedVertex *const cv = &local_lcgbp_scene->patch_mesh->compressedVertices[offsetVertex];
+            CompressedQuadIndices *const cq = &local_lcgbp_scene->patch_mesh->compressedIndices[offsetQuad];
+
+            CompressedAABB3f bounds;
+            bounds.init();
+
+#if 1            
+            if (type == Patch::BEZIER)
+            {
+              for (int y=0;y<4;y++)
+                for (int x=0;x<4;x++)
+                {
+                  const float p_u = (float)x / 3;
+                  const float p_v = (float)y / 3;
+                  const Vec3f vtx = evalPatch(patch,p_u,p_v);
+                  const CompressedVertex c_vtx = CompressedVertex(vtx,geometry_lower,geometry_inv_diag);
+                  cv[y*4+x] = c_vtx;
+                  bounds.extend(c_vtx);
+                }
+
+              for (int y=0;y<3;y++)
+                for (int x=0;x<3;x++)
+                {
+                  const unsigned int v0 = (y+0)*4+(x+0);
+                  const unsigned int v1 = (y+0)*4+(x+1);
+                  const unsigned int v2 = (y+1)*4+(x+1);
+                  const unsigned int v3 = (y+1)*4+(x+0);          
+                  cq[y*3+x] = CompressedQuadIndices(v0,v1,v2,v3);
+                }
+            }
+            else
+#endif              
+            {
+              cv[0] = CompressedVertex(patch.v[1][1],geometry_lower,geometry_inv_diag);
+              cv[1] = CompressedVertex(patch.v[1][2],geometry_lower,geometry_inv_diag);
+              cv[2] = CompressedVertex(patch.v[2][2],geometry_lower,geometry_inv_diag);
+              cv[3] = CompressedVertex(patch.v[2][1],geometry_lower,geometry_inv_diag);
+              bounds.extend(cv[0]);
+              bounds.extend(cv[1]);
+              bounds.extend(cv[2]);
+              bounds.extend(cv[3]);        
+              cq[0] = CompressedQuadIndices(0,1,2,3);        
+            }
+            
+            cluster.numQuads = type == Patch::BEZIER ? 9 : 1;
+            cluster.numBlocks = LossyCompressedMeshCluster::getDecompressedSizeInBytes(cluster.numQuads)/64;
+            cluster.lod_level = 0;
+            cluster.tmp = 0;
+            cluster.bounds = bounds;      
+            cluster.mesh = local_lcgbp_scene->patch_mesh;
+            cluster.leftID = -1;
+            cluster.rightID = -1;
+            cluster.neighborID = -1;
+            cluster.offsetVertices = offsetVertex;
+            cluster.offsetIndices  = offsetQuad;
+          }
+        });
+    });
+    waitOnEventAndCatchException(compute_lod_event);
+
+    //PRINT(local_lcgbp_scene->patch_mesh->numVertices);
+    //PRINT(local_lcgbp_scene->patch_mesh->numQuads);
+
+    //gpu::waitOnQueueAndCatchException(*global_gpu_queue);        
+    
+  }  
+  
   
   __forceinline bool frustumCullPlane(const Vec3f &lower, const Vec3f &upper, const Vec3f &normal)
   {
@@ -314,10 +547,10 @@ namespace embree {
                                                                                              
           LODEdgeLevel edgeLevels(lod_level);
                                                                                              
-          edgeLevels.top    = min(edgeLevels.top,(uchar)lod_level_top);
-          edgeLevels.right  = min(edgeLevels.right,(uchar)lod_level_right);
-          edgeLevels.bottom = min(edgeLevels.bottom,(uchar)lod_level_bottom);
-          edgeLevels.left   = min(edgeLevels.left,(uchar)lod_level_left);
+          edgeLevels.top    = min(edgeLevels.top,(unsigned char)lod_level_top);
+          edgeLevels.right  = min(edgeLevels.right,(unsigned char)lod_level_right);
+          edgeLevels.bottom = min(edgeLevels.bottom,(unsigned char)lod_level_bottom);
+          edgeLevels.left   = min(edgeLevels.left,(unsigned char)lod_level_left);
                                                                                              
           unsigned int blend = (unsigned int)floorf(255.0f * patchLevel.blend);
                                                                                              
@@ -348,9 +581,8 @@ namespace embree {
                 index++;
               }
           }
-        }
-                                                                                           
-      });
+        }                                                                                           
+        });
     });
     waitOnEventAndCatchException(compute_lod_event);
 #if 0
@@ -382,7 +614,7 @@ namespace embree {
 
     const unsigned int numLCMeshClusters = local_lcgbp_scene->numLCMeshClusters;
     const unsigned int numRootsTotal = local_lcgbp_scene->numLCMeshClusterRoots;
-    uchar *const active_state = local_lcgbp_scene->lcm_cluster_active_state_per_frame;      
+    unsigned char *const active_state = local_lcgbp_scene->lcm_cluster_active_state_per_frame;      
 
     // ================================================================================================================================
     // ================================================================================================================================

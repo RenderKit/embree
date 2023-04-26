@@ -13,9 +13,10 @@
 #include "../../kernels/rthwif/builder/gpu/lcgbp.h"
 #include "../../kernels/rthwif/builder/gpu/morton.h"
 
+//#include "../../kernels/subdiv/bspline_curve.h"
 
 #define ENABLE_DAG 1
-#define ALLOC_DEVICE_MEMORY 1
+#define ALLOC_DEVICE_MEMORY 0
 #define RELATIVE_MIN_LOD_DISTANCE_FACTOR 256
 //28.0f
 
@@ -44,7 +45,7 @@ extern "C" ISPCScene* g_ispc_scene;
 #define ENABLE_FP16_GBUFFER 1
 
 #if ENABLE_FP16_GBUFFER == 1
-  typedef sycl::vec<cl::sycl::cl_half, 3>  Vec3fp16;
+  typedef sycl::vec<sycl::opencl::cl_half, 3>  Vec3fp16;
 
   __forceinline Vec3f    fp_convert(const Vec3fp16 &v) { return Vec3f((float)v.x(),(float)v.y(),(float)v.z()); }
   __forceinline Vec3fp16 fp_convert(const Vec3f    &v) { return Vec3fp16(v.x,v.y,v.z);  }
@@ -164,6 +165,36 @@ struct TutorialData
   ISPCScene* ispc_scene;
 };
 
+  struct Patch {
+    static const size_t MAX_PATCH_VERTICES = 8*8;
+    static const size_t MAX_PATCH_QUADS = 7*7;
+
+    static const unsigned int BEZIER = 0;
+    //static const unsigned int BSPLINE = 1;
+      
+    uint type,geomID,primID,flags;
+    Vec3f v[4][4];
+
+    __forceinline Patch() {}
+    __forceinline BBox3f bounds()
+    {
+      BBox3f patch_bounds(empty);
+      if (type == 0)
+      {
+        for (int y=0;y<4;y++)
+          for (int x=0;x<4;x++)
+            patch_bounds.extend(v[y][x]);
+      }
+      else
+      {
+        for (int y=1;y<=2;y++)
+          for (int x=1;x<=2;x++)
+            patch_bounds.extend(v[y][x]);        
+      }
+      return patch_bounds;
+    }
+    
+  };
 
   struct __aligned(64) LCG_Scene {
     static const unsigned int LOD_LEVELS = 3;
@@ -194,8 +225,13 @@ struct TutorialData
     LossyCompressedMeshCluster  *lcm_cluster;
     unsigned int *lcm_cluster_roots_IDs;
     unsigned int *lcm_cluster_roots_IDs_per_frame;
-    uchar *lcm_cluster_active_state_per_frame;
-        
+    unsigned char *lcm_cluster_active_state_per_frame;
+
+    /* --- subdiv patches --- */
+    LossyCompressedMesh *patch_mesh;
+    unsigned int numSubdivPatches;
+    Patch *patches;
+    
     /* --- embree geometry --- */
     RTCGeometry geometry;
     unsigned int geomID;
@@ -230,6 +266,12 @@ struct TutorialData
                                      const unsigned int width,
                                      const unsigned int height,
                                      const ISPCCamera* const camera);
+
+  void select_clusters_lod_patches(LCG_Scene *local_lcgbp_scene,
+                                   const unsigned int width,
+                                   const unsigned int height,
+                                   const ISPCCamera* const camera);
+
 
   __forceinline size_t alignTo(const unsigned int size, const unsigned int alignment)
   {

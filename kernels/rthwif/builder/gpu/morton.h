@@ -325,8 +325,8 @@ namespace embree
       const int left  = min(i1, i2);
       const int right = max(i1, i2);
       if (left < 0 || right >= numPrimitives) return -1;
-      const ulong left_code  = morton[left].getCode();
-      const ulong right_code = morton[right].getCode();
+      const unsigned long left_code  = morton[left].getCode();
+      const unsigned long right_code = morton[right].getCode();
       if (left_code != right_code)
         return sycl::clz(left_code ^ right_code);
       else

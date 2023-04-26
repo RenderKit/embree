@@ -362,7 +362,7 @@ namespace embree
 #if defined(EMBREE_SYCL_SUPPORT)
     
   public:
-    struct PrimID_XY { uint32_t primID; ushort x,y; };
+    struct PrimID_XY { uint32_t primID; unsigned short x,y; };
     Device::vector<PrimID_XY> quadID_to_primID_xy = device;  //!< maps a quad to the primitive ID and grid coordinates
 #endif
   };

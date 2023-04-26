@@ -283,6 +283,10 @@ namespace embree
         new (&right) CubicBezierCurve(p30,p21,p12,p03);
       }
       
+      __forceinline void subdivide(CubicBezierCurve& left, CubicBezierCurve& right, const float t = 0.5f) const
+      {
+        split(left,right,t);
+      }
       __forceinline CubicBezierCurve<Vec2vfx> split() const
       {
         const float u0 = 0.0f, u1 = 1.0f;

@@ -139,7 +139,7 @@ namespace embree {
 #if HIGH_PRECISION_OFFSETS == 0          
       unsigned int data;
 #else
-      ushort data_x,data_y,data_z;
+      unsigned short data_x,data_y,data_z;
 #endif      
 
       __forceinline LCType() {}
@@ -287,29 +287,36 @@ namespace embree {
 
   struct CompressedVertex
   {
-    ushort x,y,z;
+    unsigned short x,y,z;
     
     static const unsigned int BITS_PER_DIM = 16;
     static const unsigned int BITS_MASK = ((unsigned int)1<<BITS_PER_DIM)-1;
     static const unsigned int RES_PER_DIM = BITS_MASK;
     
-    static const ushort MIN_VALUE = 0;
-    static const ushort MAX_VALUE = BITS_MASK;
+    static const unsigned short MIN_VALUE = 0;
+    static const unsigned short MAX_VALUE = BITS_MASK;
     
     __forceinline CompressedVertex() {}
 
-    __forceinline CompressedVertex(const ushort x, const ushort y, const ushort z) : x(x), y(y), z(z) {}
+    __forceinline CompressedVertex(const unsigned short x, const unsigned short y, const unsigned short z) : x(x), y(y), z(z) {}
 
-    __forceinline CompressedVertex(const ushort v) : x(v), y(v), z(v) {}
+    __forceinline CompressedVertex(const unsigned short v) : x(v), y(v), z(v) {}
     
     
     __forceinline CompressedVertex(const Vec3f &org, const Vec3f &lower, const Vec3f &inv_diag)
     {
+#if 0      
       const Vec3f norm_v = (org - lower)*inv_diag;
       x = (unsigned int)(floorf(norm_v.x * (float)RES_PER_DIM));
       y = (unsigned int)(floorf(norm_v.y * (float)RES_PER_DIM));
       z = (unsigned int)(floorf(norm_v.z * (float)RES_PER_DIM));
-    }
+#else
+      x = (unsigned int)(floorf((org.x - lower.x)*inv_diag.x * (float)RES_PER_DIM));
+      y = (unsigned int)(floorf((org.y - lower.y)*inv_diag.y * (float)RES_PER_DIM));
+      z = (unsigned int)(floorf((org.z - lower.z)*inv_diag.z * (float)RES_PER_DIM));
+      
+#endif      
+    }    
 
     __forceinline Vec3f decompress(const Vec3f &lower, const Vec3f &diag) const
     {
@@ -320,18 +327,18 @@ namespace embree {
     __forceinline CompressedVertex sub_group_reduce_min() const
     {
       CompressedVertex result;
-      result.x = embree::sub_group_reduce(x, SYCL_EXT_ONEAPI::minimum<ushort>());
-      result.y = embree::sub_group_reduce(y, SYCL_EXT_ONEAPI::minimum<ushort>());
-      result.z = embree::sub_group_reduce(z, SYCL_EXT_ONEAPI::minimum<ushort>());
+      result.x = embree::sub_group_reduce(x, SYCL_EXT_ONEAPI::minimum<unsigned short>());
+      result.y = embree::sub_group_reduce(y, SYCL_EXT_ONEAPI::minimum<unsigned short>());
+      result.z = embree::sub_group_reduce(z, SYCL_EXT_ONEAPI::minimum<unsigned short>());
       return result;	
     }
 
     __forceinline CompressedVertex sub_group_reduce_max() const
     {
       CompressedVertex result;
-      result.x = embree::sub_group_reduce(x, SYCL_EXT_ONEAPI::maximum<ushort>());
-      result.y = embree::sub_group_reduce(y, SYCL_EXT_ONEAPI::maximum<ushort>());
-      result.z = embree::sub_group_reduce(z, SYCL_EXT_ONEAPI::maximum<ushort>());
+      result.x = embree::sub_group_reduce(x, SYCL_EXT_ONEAPI::maximum<unsigned short>());
+      result.y = embree::sub_group_reduce(y, SYCL_EXT_ONEAPI::maximum<unsigned short>());
+      result.z = embree::sub_group_reduce(z, SYCL_EXT_ONEAPI::maximum<unsigned short>());
       return result;	
     }
     

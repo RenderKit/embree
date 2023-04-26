@@ -140,7 +140,8 @@ namespace embree
                 PATCH_DEBUG_SUBDIVISION(234423,c,c,-1);
                 return;
               } else {
-                IrregularFillPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale); 
+                //IrregularFillPatch(patch,border0,border1,border2,border3).eval(uv.x,uv.y,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale);
+                IrregularFillPatch(patch).eval(uv.x,uv.y,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale); 
                 PATCH_DEBUG_SUBDIVISION(34534,c,-1,c);
                 return;
               }

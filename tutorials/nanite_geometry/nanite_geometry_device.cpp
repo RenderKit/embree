@@ -64,6 +64,8 @@ namespace embree {
   extern "C" unsigned int g_max_path_length = 2;
   extern "C" unsigned int g_lod_threshold = 24;
   extern "C" char* camera_file = nullptr;
+  extern "C" char* patches_file = nullptr;
+  
   extern "C" unsigned int camera_mode = 0;
   
   Averaged<double> avg_bvh_build_time(64,1.0);
@@ -138,6 +140,10 @@ namespace embree {
     lcm_cluster_roots_IDs = nullptr;
     lcm_cluster_roots_IDs_per_frame = nullptr;
     lcm_cluster_active_state_per_frame = nullptr;
+
+
+    numSubdivPatches = 0;
+    patches = nullptr;
     
     pick_geomID = -1;
     pick_primID = -1;
@@ -440,7 +446,7 @@ namespace embree {
       global_lcgbp_scene->lcm_cluster = (LossyCompressedMeshCluster*)alignedUSMMalloc(sizeof(LossyCompressedMeshCluster)*global_lcgbp_scene->numLCMeshClusters,64,mode);
       global_lcgbp_scene->lcm_cluster_roots_IDs = (unsigned int*)alignedUSMMalloc(sizeof(unsigned int)*global_lcgbp_scene->numLCMeshClusterRoots,64,mode);
       global_lcgbp_scene->lcm_cluster_roots_IDs_per_frame = (unsigned int*)alignedUSMMalloc(sizeof(unsigned int)*global_lcgbp_scene->numLCMeshClusters,64,mode);
-      global_lcgbp_scene->lcm_cluster_active_state_per_frame = (uchar*)alignedUSMMalloc(sizeof(uchar)*global_lcgbp_scene->numLCMeshClusters,64,mode);
+      global_lcgbp_scene->lcm_cluster_active_state_per_frame = (unsigned char*)alignedUSMMalloc(sizeof(unsigned char)*global_lcgbp_scene->numLCMeshClusters,64,mode);
 
       global_gpu_queue->memcpy(global_lcgbp_scene->lcm_cluster,&*lcm_clusters.begin(),sizeof(LossyCompressedMeshCluster)*global_lcgbp_scene->numLCMeshClusters);
       global_gpu_queue->memcpy(global_lcgbp_scene->lcm_cluster_roots_IDs,&*lcm_clusterRootIDs.begin(),sizeof(unsigned int)*global_lcgbp_scene->numLCMeshClusterRoots);
@@ -456,8 +462,7 @@ namespace embree {
 
       unsigned int numTotalLODQuads = 0;
       for (unsigned int i=0;i<global_lcgbp_scene->numLCMeshClusters;i++)
-        numTotalLODQuads += lcm_clusters[ i ].numQuads;
-      
+        numTotalLODQuads += lcm_clusters[ i ].numQuads;      
       
       global_lcgbp_scene->geometry = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY);
       rtcCommitGeometry(global_lcgbp_scene->geometry);
@@ -476,7 +481,64 @@ namespace embree {
     const unsigned int gridResX = 16*1024;
     const unsigned int gridResY = 16*1024;    
     generateGrid(data.g_scene,gridResX,gridResY);
-#endif    
+#endif
+
+    PRINT(patches_file);
+    if (patches_file)
+    {
+      std::ifstream input(patches_file,std::ios::in|std::ios::binary);
+      if (!input) FATAL("cannot open patches file");
+
+      input.seekg (0, std::ios::end);
+      size_t length = input.tellg();
+      PRINT(length);
+      input.seekg (0, std::ios::beg);
+      PRINT(sizeof(Patch));
+      
+      global_lcgbp_scene->numSubdivPatches = length / sizeof(Patch);      
+      global_lcgbp_scene->patch_mesh = (LossyCompressedMesh*)alignedUSMMalloc(sizeof(LossyCompressedMesh),64,EmbreeUSMMode::EMBREE_USM_SHARED);
+      global_lcgbp_scene->patches = (Patch*)alignedUSMMalloc(sizeof(unsigned char)*length,64, EmbreeUSMMode::EMBREE_USM_SHARED);
+
+      PRINT2(length,global_lcgbp_scene->numSubdivPatches);
+      
+      input.read((char*)global_lcgbp_scene->patches,sizeof(unsigned char)*length);
+      input.close();
+      PRINT("READING PATCHES DONE");
+
+      global_lcgbp_scene->bounds = BBox3f(empty);
+      for (uint i=0;i<global_lcgbp_scene->numSubdivPatches;i++)
+        global_lcgbp_scene->bounds.extend(global_lcgbp_scene->patches[i].bounds());
+
+      /* --- init single lossy compressed mesh -- */
+      
+      global_lcgbp_scene->patch_mesh->bounds = BBox3f(Vec3f(global_lcgbp_scene->bounds.lower.x,
+                                                             global_lcgbp_scene->bounds.lower.y,
+                                                             global_lcgbp_scene->bounds.lower.z),
+                                                       Vec3f(global_lcgbp_scene->bounds.upper.x,
+                                                             global_lcgbp_scene->bounds.upper.y,
+                                                             global_lcgbp_scene->bounds.upper.z));
+      global_lcgbp_scene->patch_mesh->numQuads = 0;
+      global_lcgbp_scene->patch_mesh->numVertices = 0;
+      global_lcgbp_scene->patch_mesh->geomID = 0;
+
+      global_lcgbp_scene->patch_mesh->compressedVertices = (CompressedVertex*)alignedUSMMalloc(sizeof(CompressedVertex)*Patch::MAX_PATCH_VERTICES*global_lcgbp_scene->numSubdivPatches,64, EmbreeUSMMode::EMBREE_USM_SHARED);
+      global_lcgbp_scene->patch_mesh->compressedIndices = (CompressedQuadIndices*)alignedUSMMalloc(sizeof(CompressedQuadIndices)*Patch::MAX_PATCH_QUADS*global_lcgbp_scene->numSubdivPatches,64, EmbreeUSMMode::EMBREE_USM_SHARED);
+
+      global_lcgbp_scene->numLCMeshClusters = global_lcgbp_scene->numSubdivPatches;
+      global_lcgbp_scene->lcm_cluster = (LossyCompressedMeshCluster*)alignedUSMMalloc(sizeof(LossyCompressedMeshCluster)*global_lcgbp_scene->numLCMeshClusters,64, EmbreeUSMMode::EMBREE_USM_SHARED);
+      global_lcgbp_scene->lcm_cluster_roots_IDs_per_frame = (unsigned int*)alignedUSMMalloc(sizeof(unsigned int)*global_lcgbp_scene->numLCMeshClusters,64, EmbreeUSMMode::EMBREE_USM_SHARED);
+      for (int i=0;i<global_lcgbp_scene->numLCMeshClusters;i++)
+        global_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[i] = i; 
+      PRINT2( global_lcgbp_scene->numLCMeshClusters, global_lcgbp_scene->patch_mesh->bounds );
+
+      global_lcgbp_scene->geometry = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY);
+      rtcCommitGeometry(global_lcgbp_scene->geometry);
+      global_lcgbp_scene->geomID = rtcAttachGeometry(data.g_scene,global_lcgbp_scene->geometry);
+
+      //exit(0);
+    }
+    
+
     /* update scene */
     //rtcCommitScene (data.g_scene);  
   }
@@ -653,9 +715,11 @@ namespace embree {
         fx += RandomSampler_get1D(sampler);
         fy += RandomSampler_get1D(sampler);
       }
-      RenderMode new_mode = RENDER_PRIMARY;      
-#if 1      
+#if 0
+      RenderMode new_mode = RENDER_PRIMARY;            
       if (x > width/2) new_mode = mode;
+#else
+      RenderMode new_mode = mode;            
 #endif
       
       /* calculate pixel color */
@@ -691,7 +755,7 @@ namespace embree {
     //ImGui::Text("BVH Build Time: %4.4f ms",avg_bvh_build_time.get());
     ImGui::Text("SPP:                %d",user_spp);        
     ImGui::Text("Per Frame Overhead: %4.4f ms",avg_bvh_build_time.get());
-    //ImGui::Text("LOD Selection Time: %4.4f ms",avg_lod_selection_time.get());
+    ImGui::Text("LOD Selection Time: %4.4f ms",avg_lod_selection_time.get());
     ImGui::DragInt("LOD Threshold",(int*)&g_lod_threshold,1,2,1000);
     
     RenderMode rendering_mode = user_rendering_mode;
@@ -726,7 +790,6 @@ namespace embree {
                                  const ISPCCamera& _camera)
   {
     const uint frameID = camera_path.size() ? ((frameIndex++) % camera_path.size()) : 0;
-
 #if 1  
     if (camera_mode == 1)
       camera_path.push_back(_camera);
@@ -735,7 +798,7 @@ namespace embree {
     if (camera_mode != 2)
     {
       sycl::event camera_event = global_gpu_queue->memcpy(global_camera,&_camera,sizeof(ISPCCamera));
-      gpu::waitOnEventAndCatchException(camera_event);      
+      gpu::waitOnEventAndCatchException(camera_event);
     }
     else
     {
@@ -756,7 +819,7 @@ namespace embree {
       select_clusters_lod_grid_tree(local_lcgbp_scene,width,height,global_camera);
     }
     
-    if (local_lcgbp_scene->numLCMeshClusters)
+    if (local_lcgbp_scene->numLCMeshClusters && !local_lcgbp_scene->numSubdivPatches)
     {
 #if ENABLE_DAG == 1
       select_clusters_lod_mesh_dag(local_lcgbp_scene,width,height,global_camera);      
@@ -765,6 +828,12 @@ namespace embree {
 #endif      
     }
 
+    //PRINT(local_lcgbp_scene->numSubdivPatches);
+    if (local_lcgbp_scene->numSubdivPatches)
+    {      
+      select_clusters_lod_patches(local_lcgbp_scene,width,height,global_camera);                  
+    }
+    
     waitOnQueueAndCatchException(*global_gpu_queue);  // FIXME            
     
 
@@ -782,9 +851,13 @@ namespace embree {
     }
     PRINT3(readBytes,less96,local_lcgbp_scene->numLCMeshClusterRootsPerFrame);
 #endif
-    
+
     double dt0_lod = (getSeconds()-t0_lod)*1000.0;
 
+    //PRINT( local_lcgbp_scene->lcm_cluster );
+    //PRINT( local_lcgbp_scene->numLCMeshClusterRootsPerFrame );
+    //PRINT( local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame );
+    
     rtcSetLCData(local_lcgbp_scene->geometry, local_lcgbp_scene->numCurrentLCGBPStates, local_lcgbp_scene->lcgbp_state, local_lcgbp_scene->lcm_cluster, local_lcgbp_scene->numLCMeshClusterRootsPerFrame,local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame);
     
     avg_lod_selection_time.add(dt0_lod);

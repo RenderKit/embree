@@ -17,20 +17,25 @@ namespace embree
   : flags(0), type(INVALID_PATCH), geom(gID), prim(pID), time_(unsigned(time))
   {
     static_assert(sizeof(SubdivPatch1Base) == 5 * 64, "SubdivPatch1Base has wrong size");
-
+    //PING;
+    //PRINT2(geom,prim);
+    
     const HalfEdge* edge = mesh->getHalfEdge(0,pID);
 
     if (edge->patch_type == HalfEdge::BILINEAR_PATCH)
     {
+      //PRINT("BILINEAR");                  
       type = BILINEAR_PATCH;
       new (patch_v) BilinearPatch3fa(edge,mesh->getVertexBuffer(time));
     }
     else if (edge->patch_type == HalfEdge::REGULAR_QUAD_PATCH) 
     {
-#if PATCH_USE_BEZIER_PATCH 
+#if PATCH_USE_BEZIER_PATCH
+      //PRINT("BEZIER");
       type = BEZIER_PATCH;
       new (patch_v) BezierPatch3fa(BSplinePatch3fa(CatmullClarkPatch3fa(edge,mesh->getVertexBuffer(time))));
 #else
+      //PRINT("BSPLINE");      
       type = BSPLINE_PATCH;
       new (patch_v) BSplinePatch3fa(CatmullClarkPatch3fa(edge,mesh->getVertexBuffer(time))); // FIXME: init BSpline directly from half edge structure
 #endif      
@@ -38,12 +43,14 @@ namespace embree
 #if PATCH_USE_GREGORY == 2
     else if (edge->patch_type == HalfEdge::IRREGULAR_QUAD_PATCH) 
     {
+      //PRINT("GREGORY");      
       type = GREGORY_PATCH;
       new (patch_v) DenseGregoryPatch3fa(GregoryPatch3fa(CatmullClarkPatch3fa(edge,mesh->getVertexBuffer(time))));
     }
 #endif
     else
     {
+      //PRINT("ELSE");            
       type = EVAL_PATCH;
       set_edge(mesh->getHalfEdge(0,pID));
       set_subPatch(subPatch);

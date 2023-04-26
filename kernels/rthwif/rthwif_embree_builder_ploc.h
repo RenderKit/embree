@@ -15,11 +15,11 @@
 #define BVH_BRANCHING_FACTOR         6
 #define FATLEAF_THRESHOLD            6
 #define PAIR_OFFSET_SHIFT            28
-#define GEOMID_MASK                  (((uint)1<<PAIR_OFFSET_SHIFT)-1)
+#define GEOMID_MASK                  (((uint32_t)1<<PAIR_OFFSET_SHIFT)-1)
 #define LARGE_WG_SIZE                1024
 #define TRIANGLE_QUAD_BLOCK_SIZE     64
 #define QBVH6_HEADER_OFFSET          128
-#define HOST_DEVICE_COMM_BUFFER_SIZE 16*sizeof(uint)
+#define HOST_DEVICE_COMM_BUFFER_SIZE 16*sizeof(uint32_t)
 #define EQUAL_DISTANCES_WORKAROUND   1
 #define REBALANCE_BVH2_MINIMUM_DEPTH 30
 
@@ -43,25 +43,25 @@ namespace embree
     gpu::AABB3f geometryBounds;
     gpu::AABB3f centroidBounds; 
     char *qbvh_base_pointer;
-    uint node_mem_allocator_start;
-    uint node_mem_allocator_cur;
+    uint32_t node_mem_allocator_start;
+    uint32_t node_mem_allocator_cur;
     // === second 64 bytes ===    
-    uint numTriangles;
-    uint numQuads;
-    uint numMergedTrisQuads;
-    uint numProcedurals;
-    uint numInstances;
-    uint numQuadBlocks;
-    uint numLossyCompressedGeometries;    
-    uint bvh2_index_allocator;    
-    uint leaf_mem_allocator_start;
-    uint leaf_mem_allocator_cur;
-    uint range_start;
-    uint range_end;
-    uint sync;
-    uint rootIndex;
-    uint wgID;
-    uint numLeaves;
+    uint32_t numTriangles;
+    uint32_t numQuads;
+    uint32_t numMergedTrisQuads;
+    uint32_t numProcedurals;
+    uint32_t numInstances;
+    uint32_t numQuadBlocks;
+    uint32_t numLossyCompressedGeometries;    
+    uint32_t bvh2_index_allocator;    
+    uint32_t leaf_mem_allocator_start;
+    uint32_t leaf_mem_allocator_cur;
+    uint32_t range_start;
+    uint32_t range_end;
+    uint32_t sync;
+    uint32_t rootIndex;
+    uint32_t wgID;
+    uint32_t numLeaves;
 
     __forceinline void reset()
     {
@@ -89,19 +89,19 @@ namespace embree
     }
       
     /* allocate data in the node memory section */
-    __forceinline char* atomic_allocNode(const uint bytes)
+    __forceinline char* atomic_allocNode(const uint32_t bytes)
     {
       uint32_t blocks = (uint32_t)bytes / 64;
-      const uint current = gpu::atomic_add_global(&node_mem_allocator_cur,blocks);      
+      const uint32_t current = gpu::atomic_add_global(&node_mem_allocator_cur,blocks);      
       char* ptr = qbvh_base_pointer + 64 * (size_t)current;
       return ptr;
     }
 
     /* allocate memory in the leaf memory section */
-    __forceinline char* atomic_allocLeaf(const uint bytes)
+    __forceinline char* atomic_allocLeaf(const uint32_t bytes)
     {
       uint32_t blocks = (uint32_t)bytes / 64;      
-      const uint current = gpu::atomic_add_global(&leaf_mem_allocator_cur,blocks);            
+      const uint32_t current = gpu::atomic_add_global(&leaf_mem_allocator_cur,blocks);            
       char* ptr = qbvh_base_pointer + 64 * (size_t)current;
       return ptr;
     }
@@ -110,27 +110,27 @@ namespace embree
       return qbvh_base_pointer;
     }
 
-    __forceinline char* nodeBlockPtr(const uint blockID) {
+    __forceinline char* nodeBlockPtr(const uint32_t blockID) {
       return qbvh_base_pointer + 64 * size_t(blockID);
     }
 
-    __forceinline char* leafLocalPtr(const uint localID=0) {
+    __forceinline char* leafLocalPtr(const uint32_t localID=0) {
       return qbvh_base_pointer + 64 * size_t(leaf_mem_allocator_start + localID);
     }
 
-    __forceinline uint getBlockIDFromPtr(const char *addr) {
+    __forceinline uint32_t getBlockIDFromPtr(const char *addr) {
       return (addr - qbvh_base_pointer)/64;
     }
     
-    __forceinline uint atomic_add_sub_group_varying_allocNodeBlocks(const uint blocks)
+    __forceinline uint32_t atomic_add_sub_group_varying_allocNodeBlocks(const uint32_t blocks)
     {
       return gpu::atomic_add_global_sub_group_varying(&node_mem_allocator_cur,blocks);      
     }    
     
-    __forceinline char* atomic_add_sub_group_varying_allocLeaf(const uint bytes)
+    __forceinline char* atomic_add_sub_group_varying_allocLeaf(const uint32_t bytes)
     {
       uint32_t blocks = (uint32_t)bytes / 64;      
-      const uint current = gpu::atomic_add_global_sub_group_varying(&leaf_mem_allocator_cur,blocks);            
+      const uint32_t current = gpu::atomic_add_global_sub_group_varying(&leaf_mem_allocator_cur,blocks);            
       char* ptr = qbvh_base_pointer + 64 * (size_t)current;
       return ptr;
     }      
@@ -147,26 +147,26 @@ namespace embree
 
   struct BVH2SubTreeState
   {
-    static const uint DEPTH_BITS = 7;
-    static const uint LEAVES_BITS = 32 - DEPTH_BITS - 1;
+    static const uint32_t DEPTH_BITS = 7;
+    static const uint32_t LEAVES_BITS = 32 - DEPTH_BITS - 1;
 
-    uint depth  : DEPTH_BITS;
-    uint leaves : LEAVES_BITS;
-    uint mark   : 1;
+    uint32_t depth  : DEPTH_BITS;
+    uint32_t leaves : LEAVES_BITS;
+    uint32_t mark   : 1;
     
-    static const uint MAX_LEAVES = ((uint)1 << LEAVES_BITS)-1;
-    static const uint MAX_DEPTH  = ((uint)1 << DEPTH_BITS)-1;
+    static const uint32_t MAX_LEAVES = ((uint)1 << LEAVES_BITS)-1;
+    static const uint32_t MAX_DEPTH  = ((uint)1 << DEPTH_BITS)-1;
 
     __forceinline BVH2SubTreeState() {}
 
-    __forceinline BVH2SubTreeState(const uint leaves, const uint depth) : leaves(leaves), depth(depth) {}
+    __forceinline BVH2SubTreeState(const uint32_t leaves, const uint32_t depth) : leaves(leaves), depth(depth) {}
     
     __forceinline BVH2SubTreeState(const BVH2SubTreeState &left, const BVH2SubTreeState &right)
     {
       leaves = sycl::min((uint)(left.leaves)+(uint)right.leaves,MAX_LEAVES);
-      const uint leftFatLeaf  = left.leaves  <= FATLEAF_THRESHOLD ? 1 : 0;
-      const uint rightFatLeaf = right.leaves <= FATLEAF_THRESHOLD ? 1 : 0;
-      const uint sum = leftFatLeaf + rightFatLeaf;
+      const uint32_t leftFatLeaf  = left.leaves  <= FATLEAF_THRESHOLD ? 1 : 0;
+      const uint32_t rightFatLeaf = right.leaves <= FATLEAF_THRESHOLD ? 1 : 0;
+      const uint32_t sum = leftFatLeaf + rightFatLeaf;
 #if 1     
       if (sum == 0) depth = 0;
       else if (sum == 2) depth = 1;
@@ -247,14 +247,14 @@ namespace embree
     __forceinline QuadLeafData() {}
 
     __forceinline QuadLeafData(const Vec3f &v0, const Vec3f &v1, const Vec3f &v2, const Vec3f &v3,
-                               const uint j0, const uint j1, const uint j2,
-                               const uint shaderID, const uint geomID, const uint primID0, const uint primID1, const GeometryFlags geomFlags, const uint geomMask)
+                               const uint32_t j0, const uint32_t j1, const uint32_t j2,
+                               const uint32_t shaderID, const uint32_t geomID, const uint32_t primID0, const uint32_t primID1, const GeometryFlags geomFlags, const uint32_t geomMask)
     {
       shaderIndex = (geomMask << 24) | shaderID;
       geomIndex = geomID | ((uint)geomFlags << 30);
       primIndex0 = primID0;
-      const uint delta = primID1 - primID0;
-      const uint j = (((j0) << 0) | ((j1) << 2) | ((j2) << 4));
+      const uint32_t delta = primID1 - primID0;
+      const uint32_t j = (((j0) << 0) | ((j1) << 2) | ((j2) << 4));
       primIndex1Delta = delta | (j << 16) | (1 << 22); // single prim in leaf            
       v[0][0] = v0.x;
       v[0][1] = v0.y;
@@ -275,37 +275,37 @@ namespace embree
   struct LeafGenerationData {
 
     __forceinline LeafGenerationData() {}
-    __forceinline LeafGenerationData(const uint blockID, const uint primID, const uint geomID) : blockID(blockID),primID(primID),geomID(geomID) {}
+    __forceinline LeafGenerationData(const uint32_t blockID, const uint32_t primID, const uint32_t geomID) : blockID(blockID),primID(primID),geomID(geomID) {}
     
-    uint blockID;
+    uint32_t blockID;
     union {
-      uint primID;
-      uint bvh2_index;
+      uint32_t primID;
+      uint32_t bvh2_index;
     };
     union {
-      uint geomID;
-      uint data;
+      uint32_t geomID;
+      uint32_t data;
     };
   };
 
   struct __aligned(16) TmpNodeState { 
-    uint header;
-    uint bvh2_index;
+    uint32_t header;
+    uint32_t bvh2_index;
 
     __forceinline TmpNodeState() {}
-    __forceinline TmpNodeState(const uint _bvh2_index) : header(0x7fffffff), bvh2_index(_bvh2_index) {}
-    __forceinline void init(const uint _bvh2_index) { header = 0x7fffffff; bvh2_index = _bvh2_index;  }
+    __forceinline TmpNodeState(const uint32_t _bvh2_index) : header(0x7fffffff), bvh2_index(_bvh2_index) {}
+    __forceinline void init(const uint32_t _bvh2_index) { header = 0x7fffffff; bvh2_index = _bvh2_index;  }
   };
 
 
   struct GeometryTypeRanges
   {
-    uint triQuad_end;
-    uint procedural_end;    
-    uint instances_end;
-    uint lossy_compressed_geometries_end;
+    uint32_t triQuad_end;
+    uint32_t procedural_end;    
+    uint32_t instances_end;
+    uint32_t lossy_compressed_geometries_end;
 
-    __forceinline GeometryTypeRanges(const uint triQuads, const uint numProcedurals, const uint numInstances, const uint numLossyCompressedGeometries) 
+    __forceinline GeometryTypeRanges(const uint32_t triQuads, const uint32_t numProcedurals, const uint32_t numInstances, const uint32_t numLossyCompressedGeometries) 
     {
       triQuad_end    = triQuads;
       procedural_end = triQuads + numProcedurals;      
@@ -313,10 +313,10 @@ namespace embree
       lossy_compressed_geometries_end = triQuads + numProcedurals + numInstances + numLossyCompressedGeometries;
     }
     
-    __forceinline bool isTriQuad(const uint index)    const { return index >= 0              && index < triQuad_end;    }
-    __forceinline bool isProcedural(const uint index) const { return index >= triQuad_end    && index < procedural_end; }    
-    __forceinline bool isInstance(const uint index)   const { return index >= procedural_end && index < instances_end;  }
-    __forceinline bool isLossyCompressedGeometry(const uint index)   const { return index >= instances_end && index < lossy_compressed_geometries_end;  }
+    __forceinline bool isTriQuad(const uint32_t index)    const { return index >= 0              && index < triQuad_end;    }
+    __forceinline bool isProcedural(const uint32_t index) const { return index >= triQuad_end    && index < procedural_end; }    
+    __forceinline bool isInstance(const uint32_t index)   const { return index >= procedural_end && index < instances_end;  }
+    __forceinline bool isLossyCompressedGeometry(const uint32_t index)   const { return index >= instances_end && index < lossy_compressed_geometries_end;  }
     
     
   };
@@ -329,23 +329,23 @@ namespace embree
   {
   public:
     
-    static const uint FATLEAF_SHIFT0     =  31;
-    static const uint FATLEAF_SHIFT1     =  30;    
-    static const uint FATLEAF_BIT0       =  (uint)1<<FATLEAF_SHIFT0;
-    static const uint FATLEAF_MASK       = ~(FATLEAF_BIT0);
+    static const uint32_t FATLEAF_SHIFT0     =  31;
+    static const uint32_t FATLEAF_SHIFT1     =  30;    
+    static const uint32_t FATLEAF_BIT0       =  (uint)1<<FATLEAF_SHIFT0;
+    static const uint32_t FATLEAF_MASK       = ~(FATLEAF_BIT0);
     
-    uint left;   // 4 bytes
-    uint right;  // 4 bytes
+    uint32_t left;   // 4 bytes
+    uint32_t right;  // 4 bytes
 
     gpu::AABB3f bounds;       // 24 bytes
     
     __forceinline BVH2Ploc() {}
 
-    __forceinline uint leftIndex()      const { return left & FATLEAF_MASK;  }
-    __forceinline uint getLeafIndex()   const { return left & FATLEAF_MASK;  }
-    __forceinline uint rightIndex()     const { return right & FATLEAF_MASK; }
+    __forceinline uint32_t leftIndex()      const { return left & FATLEAF_MASK;  }
+    __forceinline uint32_t getLeafIndex()   const { return left & FATLEAF_MASK;  }
+    __forceinline uint32_t rightIndex()     const { return right & FATLEAF_MASK; }
     
-    __forceinline void init(const uint _left, const uint _right, const gpu::AABB3f &_bounds, const BVH2SubTreeState &subtree_size_left, const BVH2SubTreeState &subtree_size_right)
+    __forceinline void init(const uint32_t _left, const uint32_t _right, const gpu::AABB3f &_bounds, const BVH2SubTreeState &subtree_size_left, const BVH2SubTreeState &subtree_size_right)
     {
       left    = _left  | ((subtree_size_left.leaves  <= FATLEAF_THRESHOLD ? 1 : 0)<<FATLEAF_SHIFT0);
       right   = _right | ((subtree_size_right.leaves <= FATLEAF_THRESHOLD ? 1 : 0)<<FATLEAF_SHIFT0);
@@ -359,7 +359,7 @@ namespace embree
       bounds.upper_z = _bounds.upper_z;                  
     }
     
-    __forceinline void initLeaf(const uint _geomID, const uint _primID, const gpu::AABB3f &_bounds)
+    __forceinline void initLeaf(const uint32_t _geomID, const uint32_t _primID, const gpu::AABB3f &_bounds)
     {
       left    = _geomID;      
       right   = _primID;
@@ -385,10 +385,10 @@ namespace embree
       dest->bounds.upper_z = bounds.upper_z;            
     }
 
-    static  __forceinline bool isFatLeaf     (const uint index, const uint numPrimitives) { return (index & FATLEAF_BIT0) || (index & FATLEAF_MASK) < numPrimitives;  }
-    static  __forceinline uint getIndex      (const uint index)                           { return index & FATLEAF_MASK;  }
-    static  __forceinline bool isLeaf        (const uint index, const uint numPrimitives) { return getIndex(index) < numPrimitives;  }
-    static  __forceinline uint makeFatLeaf   (const uint index, const uint numChildren)   { return index | (1<<FATLEAF_SHIFT0);      }
+    static  __forceinline bool isFatLeaf     (const uint32_t index, const uint32_t numPrimitives) { return (index & FATLEAF_BIT0) || (index & FATLEAF_MASK) < numPrimitives;  }
+    static  __forceinline uint32_t getIndex      (const uint32_t index)                           { return index & FATLEAF_MASK;  }
+    static  __forceinline bool isLeaf        (const uint32_t index, const uint32_t numPrimitives) { return getIndex(index) < numPrimitives;  }
+    static  __forceinline uint32_t makeFatLeaf   (const uint32_t index, const uint32_t numChildren)   { return index | (1<<FATLEAF_SHIFT0);      }
 
     __forceinline operator const gpu::AABB3f &() const { return bounds; }
 
@@ -462,32 +462,32 @@ namespace embree
   // ===================================================================================================================================================================================
 
 
-  __forceinline const RTHWIF_TRIANGLE_INDICES &getTriangleDesc(const RTHWIF_GEOMETRY_TRIANGLES_DESC& mesh, const uint triID)
+  __forceinline const RTHWIF_TRIANGLE_INDICES &getTriangleDesc(const RTHWIF_GEOMETRY_TRIANGLES_DESC& mesh, const uint32_t triID)
   {
     return *(RTHWIF_TRIANGLE_INDICES*)((char*)mesh.triangleBuffer + mesh.triangleStride * uint64_t(triID));    
   }
 
-  __forceinline const RTHWIF_QUAD_INDICES &getQuadDesc(const RTHWIF_GEOMETRY_QUADS_DESC& mesh, const uint triID)
+  __forceinline const RTHWIF_QUAD_INDICES &getQuadDesc(const RTHWIF_GEOMETRY_QUADS_DESC& mesh, const uint32_t triID)
   {
     return *(RTHWIF_QUAD_INDICES*)((char*)mesh.quadBuffer + mesh.quadStride * uint64_t(triID));    
   }
     
-  __forceinline Vec3f getVec3f(const RTHWIF_GEOMETRY_TRIANGLES_DESC& mesh, const uint vtxID)
+  __forceinline Vec3f getVec3f(const RTHWIF_GEOMETRY_TRIANGLES_DESC& mesh, const uint32_t vtxID)
   {
     return *(Vec3f*)((char*)mesh.vertexBuffer + mesh.vertexStride * uint64_t(vtxID));
     
   }
 
-  __forceinline Vec3f getVec3f(const RTHWIF_GEOMETRY_QUADS_DESC& mesh, const uint vtxID)
+  __forceinline Vec3f getVec3f(const RTHWIF_GEOMETRY_QUADS_DESC& mesh, const uint32_t vtxID)
   {
     return *(Vec3f*)((char*)mesh.vertexBuffer + mesh.vertexStride * uint64_t(vtxID));
     
   }
     
-  __forceinline bool isValidTriangle(const RTHWIF_GEOMETRY_TRIANGLES_DESC& mesh, const uint i, uint3 &indices, gpu::AABB3f &bounds)
+  __forceinline bool isValidTriangle(const RTHWIF_GEOMETRY_TRIANGLES_DESC& mesh, const uint32_t i, uint3 &indices, gpu::AABB3f &bounds)
   {
     const RTHWIF_TRIANGLE_INDICES &tri = getTriangleDesc(mesh,i);
-    const uint numVertices = mesh.vertexCount;
+    const uint32_t numVertices = mesh.vertexCount;
     indices.x() = tri.v0;
     indices.y() = tri.v1;
     indices.z() = tri.v2;    
@@ -511,10 +511,10 @@ namespace embree
     return true;
   }
   
-  __forceinline bool isValidQuad(const RTHWIF_GEOMETRY_QUADS_DESC& mesh, const uint i, uint4 &indices, gpu::AABB3f &bounds)
+  __forceinline bool isValidQuad(const RTHWIF_GEOMETRY_QUADS_DESC& mesh, const uint32_t i, uint4 &indices, gpu::AABB3f &bounds)
   {
     const RTHWIF_QUAD_INDICES &quad = getQuadDesc(mesh,i);
-    const uint numVertices = mesh.vertexCount;
+    const uint32_t numVertices = mesh.vertexCount;
     indices.x() = quad.v0;
     indices.y() = quad.v1;
     indices.z() = quad.v2;
@@ -545,7 +545,7 @@ namespace embree
     return true;
   }
 
-  __forceinline uint try_pair_triangles(const uint3 &a, const uint3 &b, uint& lb0, uint& lb1, uint &lb2)    
+  __forceinline uint32_t try_pair_triangles(const uint3 &a, const uint3 &b, uint& lb0, uint& lb1, uint32_t &lb2)    
   {
     lb0 = 3;
     lb1 = 3;
@@ -564,7 +564,7 @@ namespace embree
     lb2 = ( b.z() == a.z() ) ? 2 : lb2;    
     if ((lb0 == 3) + (lb1 == 3) + (lb2 == 3) <= 1)
     {
-      uint p3_index = 0;
+      uint32_t p3_index = 0;
       p3_index = (lb1 == 3) ? 1 : p3_index;
       p3_index = (lb2 == 3) ? 2 : p3_index;
       return p3_index;
@@ -575,7 +575,7 @@ namespace embree
 
   __forceinline bool try_pair_triangles(const uint3 &a, const uint3 &b)    
   {
-    uint lb0,lb1,lb2;
+    uint32_t lb0,lb1,lb2;
     lb0 = 3;
     lb1 = 3;
     lb2 = 3;
@@ -597,29 +597,29 @@ namespace embree
       return false;
   }
 
-  __forceinline uint getBlockQuadificationCount(const RTHWIF_GEOMETRY_TRIANGLES_DESC* const triMesh, const uint localID, const uint startPrimID, const uint endPrimID)
+  __forceinline uint32_t getBlockQuadificationCount(const RTHWIF_GEOMETRY_TRIANGLES_DESC* const triMesh, const uint32_t localID, const uint32_t startPrimID, const uint32_t endPrimID)
   {
-    const uint subgroupLocalID = get_sub_group_local_id();
-    const uint subgroupSize    = get_sub_group_size();            
-    const uint ID           = (startPrimID + localID) < endPrimID ? startPrimID + localID : -1;
+    const uint32_t subgroupLocalID = get_sub_group_local_id();
+    const uint32_t subgroupSize    = get_sub_group_size();            
+    const uint32_t ID           = (startPrimID + localID) < endPrimID ? startPrimID + localID : -1;
     uint3 tri_indices;
     gpu::AABB3f tmp_bounds;
     bool valid = ID < endPrimID ? isValidTriangle(*triMesh,ID,tri_indices,tmp_bounds) : false;
     bool paired = false;
-    uint numQuads = 0;
-    uint active_mask = sub_group_ballot(valid);
+    uint32_t numQuads = 0;
+    uint32_t active_mask = sub_group_ballot(valid);
 
     while(active_mask)
     {
       active_mask = sub_group_broadcast(active_mask,0);
                                                                               
-      const uint broadcast_lane = sycl::ctz(active_mask);
+      const uint32_t broadcast_lane = sycl::ctz(active_mask);
       if (subgroupLocalID == broadcast_lane) valid = false;
 
       active_mask &= active_mask-1;
                                                                               
       const bool broadcast_paired = sub_group_broadcast(paired, broadcast_lane);
-      const uint broadcast_ID     = sub_group_broadcast(ID    , broadcast_lane);
+      const uint32_t broadcast_ID     = sub_group_broadcast(ID    , broadcast_lane);
 
       if (!broadcast_paired)
       {
@@ -630,7 +630,7 @@ namespace embree
         if (ID != broadcast_ID && !paired && valid)
           pairable = try_pair_triangles(tri_indices_broadcast,tri_indices);
                                                                             
-        const uint first_paired_lane = sycl::ctz(sub_group_ballot(pairable));
+        const uint32_t first_paired_lane = sycl::ctz(sub_group_ballot(pairable));
         if (first_paired_lane < subgroupSize)
         {
           active_mask &= ~((uint)1 << first_paired_lane);
@@ -642,29 +642,29 @@ namespace embree
     return numQuads;
   }
 
-  __forceinline uint getMergedQuadBounds(const RTHWIF_GEOMETRY_TRIANGLES_DESC* const triMesh, const uint ID, const uint endPrimID, gpu::AABB3f &bounds)
+  __forceinline uint32_t getMergedQuadBounds(const RTHWIF_GEOMETRY_TRIANGLES_DESC* const triMesh, const uint32_t ID, const uint32_t endPrimID, gpu::AABB3f &bounds)
   {
-    const uint subgroupLocalID = get_sub_group_local_id();
-    const uint subgroupSize    = get_sub_group_size();        
+    const uint32_t subgroupLocalID = get_sub_group_local_id();
+    const uint32_t subgroupSize    = get_sub_group_size();        
     
     uint3 tri_indices;
     bool valid = ID < endPrimID ? isValidTriangle(*triMesh,ID,tri_indices,bounds) : false;
     bool paired = false;
-    uint paired_ID = -1;
-    uint active_mask = sub_group_ballot(valid);
+    uint32_t paired_ID = -1;
+    uint32_t active_mask = sub_group_ballot(valid);
 
     while(active_mask)
     {
       active_mask = sub_group_broadcast(active_mask,0);
                                                                               
-      const uint broadcast_lane = sycl::ctz(active_mask);
+      const uint32_t broadcast_lane = sycl::ctz(active_mask);
 
       if (subgroupLocalID == broadcast_lane) valid = false;
                                                                             
       active_mask &= active_mask-1;
                                                                               
       const bool broadcast_paired = sub_group_broadcast(paired, broadcast_lane);
-      const uint broadcast_ID     = sub_group_broadcast(ID    , broadcast_lane);
+      const uint32_t broadcast_ID     = sub_group_broadcast(ID    , broadcast_lane);
 
       if (!broadcast_paired)
       {
@@ -675,12 +675,12 @@ namespace embree
         if (ID != broadcast_ID && !paired && valid)
           pairable = try_pair_triangles(tri_indices_broadcast,tri_indices);
                                                                             
-        const uint first_paired_lane = sycl::ctz(sub_group_ballot(pairable));
+        const uint32_t first_paired_lane = sycl::ctz(sub_group_ballot(pairable));
         if (first_paired_lane < subgroupSize)
         {
           active_mask &= ~((uint)1 << first_paired_lane);
           if (subgroupLocalID == first_paired_lane) { valid = false; }
-          const uint secondID = sub_group_broadcast(ID,first_paired_lane);
+          const uint32_t secondID = sub_group_broadcast(ID,first_paired_lane);
           gpu::AABB3f second_bounds = bounds.sub_group_broadcast(first_paired_lane);
           if (subgroupLocalID == broadcast_lane)  {
             paired_ID = secondID;
@@ -760,20 +760,20 @@ namespace embree
   // =====================================================================================================================================================================================
 
 
-  __forceinline void copyCLs_from_SLM_to_GlobalMemory(void *dest, void *source, const uint numCachelines)
+  __forceinline void copyCLs_from_SLM_to_GlobalMemory(void *dest, void *source, const uint32_t numCachelines)
   {
-    const uint subgroupLocalID = get_sub_group_local_id();
-    uint *s = (uint*)source;    
-    uint *d = (uint*)dest;
-    for (uint i=0;i<numCachelines;i++,s+=16,d+=16)
+    const uint32_t subgroupLocalID = get_sub_group_local_id();
+    uint32_t *s = (uint*)source;    
+    uint32_t *d = (uint*)dest;
+    for (uint32_t i=0;i<numCachelines;i++,s+=16,d+=16)
       sub_group_store(d,s[subgroupLocalID]);
   }
   
-  __forceinline uint estimateLossyCompressedGeometriesSize(const uint numLossyCompressedGeometries)
+  __forceinline uint32_t estimateLossyCompressedGeometriesSize(const uint32_t numLossyCompressedGeometries)
   {
 #if 0    
-    const uint numQuads = numLossyCompressedGeometries * (RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1) * (RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1) * 64;
-    const uint numInnerNodes = numLossyCompressedGeometries * (4*3+2+1) * 64;
+    const uint32_t numQuads = numLossyCompressedGeometries * (RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1) * (RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1) * 64;
+    const uint32_t numInnerNodes = numLossyCompressedGeometries * (4*3+2+1) * 64;
     return numQuads + numInnerNodes;
 #else
     return  numLossyCompressedGeometries * LossyCompressedMeshCluster::getDecompressedSizeInBytes(LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER);    
@@ -785,14 +785,14 @@ namespace embree
   // ============================================================================== Prefix Sums ==========================================================================================
   // =====================================================================================================================================================================================
 
-  __forceinline void clearScratchMem(sycl::queue &gpu_queue, uint *scratch_mem, const uint value, const uint numEntries, double &iteration_time, const bool verbose)
+  __forceinline void clearScratchMem(sycl::queue &gpu_queue, uint32_t *scratch_mem, const uint32_t value, const uint32_t numEntries, double &iteration_time, const bool verbose)
    {
-     const uint wgSize = 256;
+     const uint32_t wgSize = 256;
      const sycl::nd_range<1> nd_range1(gpu::alignTo(numEntries,wgSize),sycl::range<1>(wgSize)); 
      sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
          cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(32)
                           {
-                            const uint globalID         = item.get_global_id(0);
+                            const uint32_t globalID         = item.get_global_id(0);
                             if (globalID < numEntries)
                               scratch_mem[globalID] = value;
                           });                                                         
@@ -801,47 +801,47 @@ namespace embree
      if (unlikely(verbose)) iteration_time += gpu::getDeviceExecutionTiming(queue_event); 
    }
 
-  __forceinline uint prefixSumWorkgroup(const uint count, const uint WG_SIZE, uint *const counts, uint *const counts_prefix_sum, const sycl::nd_item<1> &item, uint &total_reduction)
+  __forceinline uint32_t prefixSumWorkgroup(const uint32_t count, const uint32_t WG_SIZE, uint32_t *const counts, uint32_t *const counts_prefix_sum, const sycl::nd_item<1> &item, uint32_t &total_reduction)
   {
-    const uint subgroupID      = get_sub_group_id();
-    const uint subgroupSize    = get_sub_group_size();
-    const uint subgroupLocalID = get_sub_group_local_id();                                                        
-    const uint exclusive_scan  = sub_group_exclusive_scan(count, std::plus<uint>());
-    const uint reduction       = sub_group_reduce(count, std::plus<uint>());
+    const uint32_t subgroupID      = get_sub_group_id();
+    const uint32_t subgroupSize    = get_sub_group_size();
+    const uint32_t subgroupLocalID = get_sub_group_local_id();                                                        
+    const uint32_t exclusive_scan  = sub_group_exclusive_scan(count, std::plus<uint>());
+    const uint32_t reduction       = sub_group_reduce(count, std::plus<uint>());
     counts[subgroupID]         = reduction;
                              
     item.barrier(sycl::access::fence_space::local_space);
 
     /* -- prefix sum over reduced sub group counts -- */        
     total_reduction = 0;
-    for (uint j=subgroupLocalID;j<WG_SIZE/subgroupSize;j+=subgroupSize)
+    for (uint32_t j=subgroupLocalID;j<WG_SIZE/subgroupSize;j+=subgroupSize)
     {
-      const uint subgroup_counts = counts[j];
-      const uint sums_exclusive_scan = sub_group_exclusive_scan(subgroup_counts, std::plus<uint>());
-      const uint reduction = sub_group_broadcast(subgroup_counts,subgroupSize-1) + sub_group_broadcast(sums_exclusive_scan,subgroupSize-1);
+      const uint32_t subgroup_counts = counts[j];
+      const uint32_t sums_exclusive_scan = sub_group_exclusive_scan(subgroup_counts, std::plus<uint>());
+      const uint32_t reduction = sub_group_broadcast(subgroup_counts,subgroupSize-1) + sub_group_broadcast(sums_exclusive_scan,subgroupSize-1);
       counts_prefix_sum[j] = sums_exclusive_scan + total_reduction;
       total_reduction += reduction;
     }
 
     item.barrier(sycl::access::fence_space::local_space);
 
-    const uint sums_prefix_sum = counts_prefix_sum[subgroupID];                                                                 
+    const uint32_t sums_prefix_sum = counts_prefix_sum[subgroupID];                                                                 
     return sums_prefix_sum + exclusive_scan;
   }
 
-  __forceinline uint prefixSumWorkgroup(const uint ps, const uint WG_SIZE, uint *const counts, const sycl::nd_item<1> &item)
+  __forceinline uint32_t prefixSumWorkgroup(const uint32_t ps, const uint32_t WG_SIZE, uint32_t *const counts, const sycl::nd_item<1> &item)
   {
-    const uint subgroupID      = get_sub_group_id();
-    const uint subgroupSize    = get_sub_group_size();    
-    const uint exclusive_scan = sub_group_exclusive_scan(ps, std::plus<uint>());
-    const uint reduction = sub_group_reduce(ps, std::plus<uint>());
+    const uint32_t subgroupID      = get_sub_group_id();
+    const uint32_t subgroupSize    = get_sub_group_size();    
+    const uint32_t exclusive_scan = sub_group_exclusive_scan(ps, std::plus<uint>());
+    const uint32_t reduction = sub_group_reduce(ps, std::plus<uint>());
     counts[subgroupID] = reduction;
                                                                           
     item.barrier(sycl::access::fence_space::local_space);
 
     /* -- prefix sum over reduced sub group counts -- */        
-    uint p_sum = 0;
-    for (uint j=0;j<TRIANGLE_QUAD_BLOCK_SIZE/subgroupSize;j++)
+    uint32_t p_sum = 0;
+    for (uint32_t j=0;j<TRIANGLE_QUAD_BLOCK_SIZE/subgroupSize;j++)
       if (j<subgroupID) p_sum += counts[j];
                                                                           
     return p_sum + exclusive_scan;
@@ -849,32 +849,32 @@ namespace embree
 
   
   
-  sycl::event prefixSumOverCounts (sycl::queue &gpu_queue, sycl::event &input_event, const uint numGeoms, uint *const counts_per_geom_prefix_sum, uint *host_device_tasks, const bool verbose) // FIXME: general, host_device_tasks
+  sycl::event prefixSumOverCounts (sycl::queue &gpu_queue, sycl::event &input_event, const uint32_t numGeoms, uint32_t *const counts_per_geom_prefix_sum, uint32_t *host_device_tasks, const bool verbose) // FIXME: general, host_device_tasks
   {
-    static const uint GEOM_PREFIX_SUB_GROUP_WIDTH = 16;
-    static const uint GEOM_PREFIX_WG_SIZE  = LARGE_WG_SIZE;
+    static const uint32_t GEOM_PREFIX_SUB_GROUP_WIDTH = 16;
+    static const uint32_t GEOM_PREFIX_WG_SIZE  = LARGE_WG_SIZE;
 
     sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
-        sycl::local_accessor< uint       , 1> counts(sycl::range<1>((GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH)),cgh);
-        sycl::local_accessor< uint       , 1> counts_prefix_sum(sycl::range<1>((GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH)),cgh);
+        sycl::local_accessor< uint32_t       , 1> counts(sycl::range<1>((GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH)),cgh);
+        sycl::local_accessor< uint32_t       , 1> counts_prefix_sum(sycl::range<1>((GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH)),cgh);
         const sycl::nd_range<1> nd_range(GEOM_PREFIX_WG_SIZE,sycl::range<1>(GEOM_PREFIX_WG_SIZE));
         cgh.depends_on(input_event);
         cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(GEOM_PREFIX_SUB_GROUP_WIDTH) {
-            const uint localID        = item.get_local_id(0);
-            const uint localSize       = item.get_local_range().size();            
-            const uint aligned_numGeoms = gpu::alignTo(numGeoms,GEOM_PREFIX_WG_SIZE);
+            const uint32_t localID        = item.get_local_id(0);
+            const uint32_t localSize       = item.get_local_range().size();            
+            const uint32_t aligned_numGeoms = gpu::alignTo(numGeoms,GEOM_PREFIX_WG_SIZE);
 
-            uint total_offset = 0;
-            for (uint t=localID;t<aligned_numGeoms;t+=localSize)
+            uint32_t total_offset = 0;
+            for (uint32_t t=localID;t<aligned_numGeoms;t+=localSize)
             {
               item.barrier(sycl::access::fence_space::local_space);
                                                           
-              uint count = 0;
+              uint32_t count = 0;
               if (t < numGeoms)
                 count = counts_per_geom_prefix_sum[t];
 
-              uint total_reduction = 0;
-              const uint p_sum = total_offset + prefixSumWorkgroup(count,GEOM_PREFIX_WG_SIZE,counts.get_pointer(),counts_prefix_sum.get_pointer(),item,total_reduction);
+              uint32_t total_reduction = 0;
+              const uint32_t p_sum = total_offset + prefixSumWorkgroup(count,GEOM_PREFIX_WG_SIZE,counts.get_pointer(),counts_prefix_sum.get_pointer(),item,total_reduction);
               total_offset += total_reduction;              
 
               if (t < numGeoms)
@@ -898,13 +898,13 @@ namespace embree
   // =====================================================================================================================================================================================
   
   struct __aligned(64) PrimitiveCounts {
-    uint numTriangles;
-    uint numQuads;
-    uint numProcedurals;
-    uint numInstances;
-    uint numMergedTrisQuads;
-    uint numQuadBlocks;
-    uint numLossyCompressedGeometries;
+    uint32_t numTriangles;
+    uint32_t numQuads;
+    uint32_t numProcedurals;
+    uint32_t numInstances;
+    uint32_t numMergedTrisQuads;
+    uint32_t numQuadBlocks;
+    uint32_t numLossyCompressedGeometries;
 
     __forceinline void reset()
     {
@@ -944,7 +944,7 @@ namespace embree
     return !(a==b);
   }
     
-  __forceinline uint find_geomID_from_blockID(const uint *const prefix_sum, const int numItems, const int blockID)
+  __forceinline uint32_t find_geomID_from_blockID(const uint32_t *const prefix_sum, const int numItems, const int blockID)
   {
     int l = 0;
     int r = numItems-1;
@@ -966,10 +966,10 @@ namespace embree
   }
   
 
-  PrimitiveCounts countPrimitives(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeometries, PLOCGlobals *const globals, uint *blocksPerGeom, uint *host_device_tasks, double &iteration_time, const bool verbose)    
+  PrimitiveCounts countPrimitives(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometries, const uint32_t numGeometries, PLOCGlobals *const globals, uint32_t *blocksPerGeom, uint32_t *host_device_tasks, double &iteration_time, const bool verbose)    
   {
     PrimitiveCounts count;
-    const uint wgSize = LARGE_WG_SIZE;
+    const uint32_t wgSize = LARGE_WG_SIZE;
     const sycl::nd_range<1> nd_range1(gpu::alignTo(numGeometries,wgSize),sycl::range<1>(wgSize));          
     sycl::event count_event = gpu_queue.submit([&](sycl::handler &cgh) {
         sycl::local_accessor< uint, 0> _numTriangles(cgh);
@@ -981,15 +981,15 @@ namespace embree
         
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                          {
-                           const uint geomID    = item.get_global_id(0);
-                           const uint localID   = item.get_local_id(0);
+                           const uint32_t geomID    = item.get_global_id(0);
+                           const uint32_t localID   = item.get_local_id(0);
                            
-                           uint &numTriangles   = *_numTriangles.get_pointer();
-                           uint &numQuads       = *_numQuads.get_pointer();
-                           uint &numProcedurals = *_numProcedurals.get_pointer();
-                           uint &numInstances   = *_numInstances.get_pointer();
-                           uint &numQuadBlocks  = *_numQuadBlocks.get_pointer();
-                           uint &numLossyCompressedGeometries = *_numLossyCompressedGeometries.get_pointer();
+                           uint32_t &numTriangles   = *_numTriangles.get_pointer();
+                           uint32_t &numQuads       = *_numQuads.get_pointer();
+                           uint32_t &numProcedurals = *_numProcedurals.get_pointer();
+                           uint32_t &numInstances   = *_numInstances.get_pointer();
+                           uint32_t &numQuadBlocks  = *_numQuadBlocks.get_pointer();
+                           uint32_t &numLossyCompressedGeometries = *_numLossyCompressedGeometries.get_pointer();
                            
                            if (localID == 0)
                            {
@@ -1004,7 +1004,7 @@ namespace embree
 
                            if (geomID < numGeometries)
                            {
-                             uint numBlocks = 0;                             
+                             uint32_t numBlocks = 0;                             
                              const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
                              if (geom != nullptr) {
                                switch (geom->geometryType)
@@ -1074,7 +1074,7 @@ namespace embree
   }  
 
 
-  uint countQuadsPerGeometryUsingBlocks(sycl::queue &gpu_queue, PLOCGlobals *const globals, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeoms, const uint numQuadBlocks, uint *const blocksPerGeom, uint *const quadsPerBlock, uint *const host_device_tasks, double &iteration_time, const bool verbose)    
+  uint32_t countQuadsPerGeometryUsingBlocks(sycl::queue &gpu_queue, PLOCGlobals *const globals, const RTHWIF_GEOMETRY_DESC **const geometries, const uint32_t numGeoms, const uint32_t numQuadBlocks, uint32_t *const blocksPerGeom, uint32_t *const quadsPerBlock, uint32_t *const host_device_tasks, double &iteration_time, const bool verbose)    
   {
     sycl::event initial;
     sycl::event prefix_sum_blocks_event = prefixSumOverCounts(gpu_queue,initial,numGeoms,blocksPerGeom,host_device_tasks,verbose);     
@@ -1083,22 +1083,22 @@ namespace embree
 
     const sycl::nd_range<1> nd_range2(numQuadBlocks*TRIANGLE_QUAD_BLOCK_SIZE,sycl::range<1>(TRIANGLE_QUAD_BLOCK_SIZE));
     sycl::event count_quads_event = gpu_queue.submit([&](sycl::handler &cgh) {
-        sycl::local_accessor< uint      ,  0> _active_counter(cgh);
-        sycl::local_accessor< uint      ,  0> _geomID(cgh);
+        sycl::local_accessor< uint32_t      ,  0> _active_counter(cgh);
+        sycl::local_accessor< uint32_t      ,  0> _geomID(cgh);
         cgh.depends_on(prefix_sum_blocks_event);
         cgh.parallel_for(nd_range2,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                          {
-                           const uint localID         = item.get_local_id(0);                                                                      
-                           const uint subgroupLocalID = get_sub_group_local_id();
-                           const uint globalBlockID   = item.get_group(0);
-                           uint &active_counter       = *_active_counter.get_pointer();
-                           uint &geomID               = *_geomID.get_pointer();
+                           const uint32_t localID         = item.get_local_id(0);                                                                      
+                           const uint32_t subgroupLocalID = get_sub_group_local_id();
+                           const uint32_t globalBlockID   = item.get_group(0);
+                           uint32_t &active_counter       = *_active_counter.get_pointer();
+                           uint32_t &geomID               = *_geomID.get_pointer();
                            active_counter = 0;
                            if (localID == 0)
                              geomID = find_geomID_from_blockID(blocksPerGeom,numGeoms,globalBlockID);
                            
                            item.barrier(sycl::access::fence_space::local_space);
-                           const uint blockID        = globalBlockID - blocksPerGeom[geomID];
+                           const uint32_t blockID        = globalBlockID - blocksPerGeom[geomID];
                            const RTHWIF_GEOMETRY_DESC *const geometryDesc = geometries[geomID];
                            
                            // ====================                           
@@ -1108,11 +1108,11 @@ namespace embree
                            if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_TRIANGLES)
                            {
                              RTHWIF_GEOMETRY_TRIANGLES_DESC* triMesh = (RTHWIF_GEOMETRY_TRIANGLES_DESC*)geometryDesc;                             
-                             const uint numTriangles   = triMesh->triangleCount;
+                             const uint32_t numTriangles   = triMesh->triangleCount;
                              {                                                                          
-                               const uint startPrimID = blockID*TRIANGLE_QUAD_BLOCK_SIZE;
-                               const uint endPrimID   = min(startPrimID+TRIANGLE_QUAD_BLOCK_SIZE,numTriangles);
-                               const uint numQuads    = getBlockQuadificationCount(triMesh,localID,startPrimID,endPrimID);
+                               const uint32_t startPrimID = blockID*TRIANGLE_QUAD_BLOCK_SIZE;
+                               const uint32_t endPrimID   = min(startPrimID+TRIANGLE_QUAD_BLOCK_SIZE,numTriangles);
+                               const uint32_t numQuads    = getBlockQuadificationCount(triMesh,localID,startPrimID,endPrimID);
                                if (subgroupLocalID == 0)                                 
                                  gpu::atomic_add_local(&active_counter,numQuads);
                              }
@@ -1123,16 +1123,16 @@ namespace embree
                            else if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_QUADS)
                            {
                              RTHWIF_GEOMETRY_QUADS_DESC* quadMesh = (RTHWIF_GEOMETRY_QUADS_DESC*)geometryDesc;                                                          
-                             const uint numQuads  = quadMesh->quadCount;
+                             const uint32_t numQuads  = quadMesh->quadCount;
                              {                                                                          
-                               const uint startPrimID  = blockID*TRIANGLE_QUAD_BLOCK_SIZE;
-                               const uint endPrimID    = min(startPrimID+TRIANGLE_QUAD_BLOCK_SIZE,numQuads);
-                               const uint ID           = (startPrimID + localID) < endPrimID ? startPrimID + localID : -1;
+                               const uint32_t startPrimID  = blockID*TRIANGLE_QUAD_BLOCK_SIZE;
+                               const uint32_t endPrimID    = min(startPrimID+TRIANGLE_QUAD_BLOCK_SIZE,numQuads);
+                               const uint32_t ID           = (startPrimID + localID) < endPrimID ? startPrimID + localID : -1;
                                uint4 quad_indices;
                                gpu::AABB3f tmp_bounds;
                                bool valid = ID < endPrimID ? isValidQuad(*quadMesh,ID,quad_indices,tmp_bounds) : false;
-                               uint active_mask = sub_group_ballot(valid);
-                               uint numQuads = sycl::popcount(active_mask);
+                               uint32_t active_mask = sub_group_ballot(valid);
+                               uint32_t numQuads = sycl::popcount(active_mask);
                                if (subgroupLocalID == 0)
                                  gpu::atomic_add_local(&active_counter,numQuads);
                              }
@@ -1180,20 +1180,20 @@ namespace embree
       iteration_time += gpu::getDeviceExecutionTiming(copy_event);
     }
 
-    const uint numMergedTrisQuads = host_device_tasks[0];
+    const uint32_t numMergedTrisQuads = host_device_tasks[0];
     return numMergedTrisQuads;
   }
    
-   PrimitiveCounts getEstimatedPrimitiveCounts(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeoms, const bool verbose)    
+   PrimitiveCounts getEstimatedPrimitiveCounts(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometries, const uint32_t numGeoms, const bool verbose)    
   {
     if (numGeoms == 0) return PrimitiveCounts();
 
     const bool verbose2 = verbose;
-    uint *host_device_tasks = (uint*)sycl::aligned_alloc(64,HOST_DEVICE_COMM_BUFFER_SIZE,gpu_queue.get_device(),gpu_queue.get_context(),sycl::usm::alloc::host);    
+    uint32_t *host_device_tasks = (uint*)sycl::aligned_alloc(64,HOST_DEVICE_COMM_BUFFER_SIZE,gpu_queue.get_device(),gpu_queue.get_context(),sycl::usm::alloc::host);    
     char *scratch           = (char*)sycl::aligned_alloc(64,sizeof(PrimitiveCounts)+sizeof(PLOCGlobals)+numGeoms*sizeof(uint),gpu_queue.get_device(),gpu_queue.get_context(),sycl::usm::alloc::device);
     
     PLOCGlobals *globals = (PLOCGlobals*)scratch;   
-    uint  *blocksPerGeom = (uint*)(scratch + sizeof(PLOCGlobals));
+    uint32_t  *blocksPerGeom = (uint*)(scratch + sizeof(PLOCGlobals));
 
     sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
         cgh.single_task([=]() {
@@ -1204,7 +1204,7 @@ namespace embree
     
     double device_prim_counts_time;
     PrimitiveCounts primCounts = countPrimitives(gpu_queue,geometries,numGeoms,globals,blocksPerGeom,host_device_tasks,device_prim_counts_time,verbose2); 
-    const uint numQuadBlocks = primCounts.numQuadBlocks;
+    const uint32_t numQuadBlocks = primCounts.numQuadBlocks;
     if (numQuadBlocks)
     {
       // === get accurate quadification count ===
@@ -1223,32 +1223,32 @@ namespace embree
   // ============================================================================== Create Primrefs ==========================================================================================
   // =========================================================================================================================================================================================
 
-   void createQuads_initPLOCPrimRefs(sycl::queue &gpu_queue, PLOCGlobals *const globals, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeoms, const uint numQuadBlocks, const uint *const scratch, BVH2Ploc *const bvh2, const uint prim_type_offset, double &iteration_time, const bool verbose)    
+   void createQuads_initPLOCPrimRefs(sycl::queue &gpu_queue, PLOCGlobals *const globals, const RTHWIF_GEOMETRY_DESC **const geometries, const uint32_t numGeoms, const uint32_t numQuadBlocks, const uint32_t *const scratch, BVH2Ploc *const bvh2, const uint32_t prim_type_offset, double &iteration_time, const bool verbose)    
   {
-    const uint *const blocksPerGeom          = scratch;
-    const uint *const quadsPerBlockPrefixSum = scratch + numGeoms;
-    static const uint MERGE_TRIANGLES_TO_QUADS_SUB_GROUP_WIDTH = 16;
+    const uint32_t *const blocksPerGeom          = scratch;
+    const uint32_t *const quadsPerBlockPrefixSum = scratch + numGeoms;
+    static const uint32_t MERGE_TRIANGLES_TO_QUADS_SUB_GROUP_WIDTH = 16;
 
 
     
     const sycl::nd_range<1> nd_range1(numQuadBlocks*TRIANGLE_QUAD_BLOCK_SIZE,sycl::range<1>(TRIANGLE_QUAD_BLOCK_SIZE));
     sycl::event quadification_event = gpu_queue.submit([&](sycl::handler &cgh) {
-        sycl::local_accessor< uint      , 0> _active_counter(cgh);
-        sycl::local_accessor< uint      , 0> _geomID(cgh);                
-        sycl::local_accessor< uint      , 1> counts(sycl::range<1>((TRIANGLE_QUAD_BLOCK_SIZE/MERGE_TRIANGLES_TO_QUADS_SUB_GROUP_WIDTH)),cgh);       
+        sycl::local_accessor< uint32_t      , 0> _active_counter(cgh);
+        sycl::local_accessor< uint32_t      , 0> _geomID(cgh);                
+        sycl::local_accessor< uint32_t      , 1> counts(sycl::range<1>((TRIANGLE_QUAD_BLOCK_SIZE/MERGE_TRIANGLES_TO_QUADS_SUB_GROUP_WIDTH)),cgh);       
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(MERGE_TRIANGLES_TO_QUADS_SUB_GROUP_WIDTH)      
                          {
-                           const uint localID         = item.get_local_id(0);
-                           const uint globalBlockID   = item.get_group(0);
-                           uint &active_counter       = *_active_counter.get_pointer();
-                           uint &geomID               = *_geomID.get_pointer();
+                           const uint32_t localID         = item.get_local_id(0);
+                           const uint32_t globalBlockID   = item.get_group(0);
+                           uint32_t &active_counter       = *_active_counter.get_pointer();
+                           uint32_t &geomID               = *_geomID.get_pointer();
                            active_counter = 0;
                            if (localID == 0)
                              geomID = find_geomID_from_blockID(blocksPerGeom,numGeoms,globalBlockID);
                            
                            item.barrier(sycl::access::fence_space::local_space);
-                           const uint blockID        = globalBlockID - blocksPerGeom[geomID];
-                           const uint startQuadOffset = quadsPerBlockPrefixSum[globalBlockID] + prim_type_offset;
+                           const uint32_t blockID        = globalBlockID - blocksPerGeom[geomID];
+                           const uint32_t startQuadOffset = quadsPerBlockPrefixSum[globalBlockID] + prim_type_offset;
                            const RTHWIF_GEOMETRY_DESC *const geometryDesc = geometries[geomID];
                                                       
                            // ====================                           
@@ -1257,25 +1257,25 @@ namespace embree
                            if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_TRIANGLES)
                            {
                              RTHWIF_GEOMETRY_TRIANGLES_DESC* triMesh = (RTHWIF_GEOMETRY_TRIANGLES_DESC*)geometryDesc;                             
-                             const uint numTriangles = triMesh->triangleCount;                                                                                                     
+                             const uint32_t numTriangles = triMesh->triangleCount;                                                                                                     
                              {                                                                          
-                               const uint startPrimID  = blockID*TRIANGLE_QUAD_BLOCK_SIZE;
-                               const uint endPrimID    = min(startPrimID+TRIANGLE_QUAD_BLOCK_SIZE,numTriangles);
-                               const uint ID           = (startPrimID + localID) < endPrimID ? startPrimID + localID : -1;
+                               const uint32_t startPrimID  = blockID*TRIANGLE_QUAD_BLOCK_SIZE;
+                               const uint32_t endPrimID    = min(startPrimID+TRIANGLE_QUAD_BLOCK_SIZE,numTriangles);
+                               const uint32_t ID           = (startPrimID + localID) < endPrimID ? startPrimID + localID : -1;
                                {
                                  gpu::AABB3f bounds;
                                  bounds.init();                                 
-                                 const uint paired_ID = getMergedQuadBounds(triMesh,ID,endPrimID,bounds);                                                                          
-                                 const uint flag = paired_ID != -1 ? 1 : 0;
-                                 const uint ps = ID < endPrimID ? flag : 0;
-                                 const uint dest_offset = startQuadOffset + prefixSumWorkgroup(ps,TRIANGLE_QUAD_BLOCK_SIZE,counts.get_pointer(),item);
+                                 const uint32_t paired_ID = getMergedQuadBounds(triMesh,ID,endPrimID,bounds);                                                                          
+                                 const uint32_t flag = paired_ID != -1 ? 1 : 0;
+                                 const uint32_t ps = ID < endPrimID ? flag : 0;
+                                 const uint32_t dest_offset = startQuadOffset + prefixSumWorkgroup(ps,TRIANGLE_QUAD_BLOCK_SIZE,counts.get_pointer(),item);
 
                                  /* --- store cluster representative into destination array --- */
                                  if (ID < endPrimID)
                                    if (paired_ID != -1)
                                    {
-                                     const uint pair_offset = paired_ID - ID;
-                                     const uint pair_geomID = (pair_offset << PAIR_OFFSET_SHIFT) | geomID;
+                                     const uint32_t pair_offset = paired_ID - ID;
+                                     const uint32_t pair_geomID = (pair_offset << PAIR_OFFSET_SHIFT) | geomID;
                                      BVH2Ploc node;
                                      node.initLeaf(pair_geomID,ID,bounds); // need to consider pair_offset
                                      node.store(&bvh2[dest_offset]);
@@ -1289,18 +1289,18 @@ namespace embree
                            else if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_QUADS)
                            {
                              RTHWIF_GEOMETRY_QUADS_DESC* quadMesh = (RTHWIF_GEOMETRY_QUADS_DESC*)geometryDesc;                                                          
-                             const uint numQuads  = quadMesh->quadCount;                             
+                             const uint32_t numQuads  = quadMesh->quadCount;                             
                              {                                                                          
-                               const uint startPrimID  = blockID*TRIANGLE_QUAD_BLOCK_SIZE;
-                               const uint endPrimID    = min(startPrimID+TRIANGLE_QUAD_BLOCK_SIZE,numQuads);
-                               const uint ID           = (startPrimID + localID) < endPrimID ? startPrimID + localID : -1;
+                               const uint32_t startPrimID  = blockID*TRIANGLE_QUAD_BLOCK_SIZE;
+                               const uint32_t endPrimID    = min(startPrimID+TRIANGLE_QUAD_BLOCK_SIZE,numQuads);
+                               const uint32_t ID           = (startPrimID + localID) < endPrimID ? startPrimID + localID : -1;
                                {
                                  uint4 quad_indices;
                                  gpu::AABB3f bounds;
                                  bounds.init();
                                  const bool valid = ID < endPrimID ? isValidQuad(*quadMesh,ID,quad_indices,bounds) : false;                                                                          
-                                 const uint ps = valid ? 1 : 0;
-                                 const uint dest_offset = startQuadOffset + prefixSumWorkgroup(ps,TRIANGLE_QUAD_BLOCK_SIZE,counts.get_pointer(),item);
+                                 const uint32_t ps = valid ? 1 : 0;
+                                 const uint32_t dest_offset = startQuadOffset + prefixSumWorkgroup(ps,TRIANGLE_QUAD_BLOCK_SIZE,counts.get_pointer(),item);
 
                                  /* --- store cluster representative into destination array --- */
                                  if (ID < endPrimID)
@@ -1320,33 +1320,33 @@ namespace embree
     if (unlikely(verbose)) iteration_time += gpu::getDeviceExecutionTiming(quadification_event);
   }
        
-   uint createInstances_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGS, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, double &iteration_time, const bool verbose)    
+   uint32_t createInstances_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint32_t numGeoms, uint32_t *scratch_mem, const uint32_t MAX_WGS, BVH2Ploc *const bvh2, const uint32_t prim_type_offset, uint32_t *host_device_tasks, double &iteration_time, const bool verbose)    
   {
-    const uint numWGs = min((numGeoms+LARGE_WG_SIZE-1)/LARGE_WG_SIZE,(uint)MAX_WGS);
+    const uint32_t numWGs = min((numGeoms+LARGE_WG_SIZE-1)/LARGE_WG_SIZE,(uint)MAX_WGS);
     clearScratchMem(gpu_queue,scratch_mem,0,numWGs,iteration_time,verbose);
    
-    static const uint CREATE_INSTANCES_SUB_GROUP_WIDTH = 16;
-    static const uint CREATE_INSTANCES_WG_SIZE  = LARGE_WG_SIZE;
+    static const uint32_t CREATE_INSTANCES_SUB_GROUP_WIDTH = 16;
+    static const uint32_t CREATE_INSTANCES_WG_SIZE  = LARGE_WG_SIZE;
     const sycl::nd_range<1> nd_range1(numWGs*CREATE_INSTANCES_WG_SIZE,sycl::range<1>(CREATE_INSTANCES_WG_SIZE));
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-        sycl::local_accessor< uint      , 1> counts(sycl::range<1>((CREATE_INSTANCES_WG_SIZE/CREATE_INSTANCES_SUB_GROUP_WIDTH)),cgh);
-        sycl::local_accessor< uint      , 1> counts_prefix_sum(sycl::range<1>((CREATE_INSTANCES_WG_SIZE/CREATE_INSTANCES_SUB_GROUP_WIDTH)),cgh);                
-        sycl::local_accessor< uint      , 0> _active_counter(cgh);
-        sycl::local_accessor< uint      , 0> _global_count_prefix_sum(cgh);
+        sycl::local_accessor< uint32_t      , 1> counts(sycl::range<1>((CREATE_INSTANCES_WG_SIZE/CREATE_INSTANCES_SUB_GROUP_WIDTH)),cgh);
+        sycl::local_accessor< uint32_t      , 1> counts_prefix_sum(sycl::range<1>((CREATE_INSTANCES_WG_SIZE/CREATE_INSTANCES_SUB_GROUP_WIDTH)),cgh);                
+        sycl::local_accessor< uint32_t      , 0> _active_counter(cgh);
+        sycl::local_accessor< uint32_t      , 0> _global_count_prefix_sum(cgh);
         
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(CREATE_INSTANCES_SUB_GROUP_WIDTH)      
                          {
-                           const uint groupID         = item.get_group(0);
-                           const uint numGroups       = item.get_group_range(0);                                                        
-                           const uint localID         = item.get_local_id(0);
-                           const uint step_local      = item.get_local_range().size();
-                           const uint startID         = ((size_t)groupID + 0)*(size_t)numGeoms / numWGs;
-                           const uint endID           = ((size_t)groupID + 1)*(size_t)numGeoms / numWGs;
-                           const uint sizeID          = endID-startID;
-                           const uint aligned_sizeID  = gpu::alignTo(sizeID,CREATE_INSTANCES_WG_SIZE);
+                           const uint32_t groupID         = item.get_group(0);
+                           const uint32_t numGroups       = item.get_group_range(0);                                                        
+                           const uint32_t localID         = item.get_local_id(0);
+                           const uint32_t step_local      = item.get_local_range().size();
+                           const uint32_t startID         = ((size_t)groupID + 0)*(size_t)numGeoms / numWGs;
+                           const uint32_t endID           = ((size_t)groupID + 1)*(size_t)numGeoms / numWGs;
+                           const uint32_t sizeID          = endID-startID;
+                           const uint32_t aligned_sizeID  = gpu::alignTo(sizeID,CREATE_INSTANCES_WG_SIZE);
                            
-                           uint &active_counter          = *_active_counter.get_pointer();
-                           uint &global_count_prefix_sum = *_global_count_prefix_sum.get_pointer();
+                           uint32_t &active_counter          = *_active_counter.get_pointer();
+                           uint32_t &global_count_prefix_sum = *_global_count_prefix_sum.get_pointer();
                            
                            active_counter = 0;
                            global_count_prefix_sum = 0;            
@@ -1356,12 +1356,12 @@ namespace embree
                            item.barrier(sycl::access::fence_space::local_space);
 
                            
-                           for (uint ID = localID; ID < aligned_sizeID; ID += step_local)
+                           for (uint32_t ID = localID; ID < aligned_sizeID; ID += step_local)
                            {
                              if (ID < sizeID)
                              {
-                               const uint instID = startID + ID;
-                               uint count = 0;
+                               const uint32_t instID = startID + ID;
+                               uint32_t count = 0;
                                if (geometry_desc[instID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE)
                                {
                                  RTHWIF_GEOMETRY_INSTANCE_DESC *geom = (RTHWIF_GEOMETRY_INSTANCE_DESC *)geometry_desc[instID];
@@ -1375,8 +1375,8 @@ namespace embree
 
                            item.barrier(sycl::access::fence_space::local_space);
 
-                           const uint flag = (uint)1<<31;            
-                           const uint mask = ~flag;
+                           const uint32_t flag = (uint)1<<31;            
+                           const uint32_t mask = ~flag;
             
                            if (localID == 0)
                            {
@@ -1393,23 +1393,23 @@ namespace embree
                            if (localID < groupID)
                            {
                              sycl::atomic_ref<uint, sycl::memory_order::acq_rel, sycl::memory_scope::device,sycl::access::address_space::global_space> global_state(scratch_mem[localID]);
-                             uint c = 0;
+                             uint32_t c = 0;
                              while( ((c = global_state.load()) & flag) == 0 );
                              if (c) gpu::atomic_add_local(&global_count_prefix_sum,(uint)c & mask);
                            }
             
                            item.barrier(sycl::access::fence_space::local_space);
 
-                           uint total_offset = 0;
+                           uint32_t total_offset = 0;
                            gpu::AABB3f bounds;
-                           for (uint ID = localID; ID < aligned_sizeID; ID += step_local)
+                           for (uint32_t ID = localID; ID < aligned_sizeID; ID += step_local)
                            {
                              item.barrier(sycl::access::fence_space::local_space);
 
-                             uint count = 0;
+                             uint32_t count = 0;
                              if (ID < sizeID)
                              {
-                               const uint instID = startID + ID;
+                               const uint32_t instID = startID + ID;
                                if (geometry_desc[instID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE)
                                {
                                  RTHWIF_GEOMETRY_INSTANCE_DESC *geom = (RTHWIF_GEOMETRY_INSTANCE_DESC *)geometry_desc[instID];                                                                  
@@ -1417,13 +1417,13 @@ namespace embree
                                }
                              }
 
-                             uint total_reduction = 0;
-                             const uint p_sum = global_count_prefix_sum + total_offset + prefixSumWorkgroup(count,CREATE_INSTANCES_WG_SIZE,counts.get_pointer(),counts_prefix_sum.get_pointer(),item,total_reduction);
+                             uint32_t total_reduction = 0;
+                             const uint32_t p_sum = global_count_prefix_sum + total_offset + prefixSumWorkgroup(count,CREATE_INSTANCES_WG_SIZE,counts.get_pointer(),counts_prefix_sum.get_pointer(),item,total_reduction);
                              total_offset += total_reduction;
                              
                              if (ID < sizeID)
                              {
-                               const uint instID = startID + ID;
+                               const uint32_t instID = startID + ID;
                                if (geometry_desc[instID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE && count == 1)
                                {
                                  BVH2Ploc node;                                                                                           
@@ -1440,7 +1440,7 @@ namespace embree
       });
     gpu::waitOnEventAndCatchException(queue_event);
     if (unlikely(verbose)) iteration_time += gpu::getDeviceExecutionTiming(queue_event);
-    const uint numInstances = *host_device_tasks;
+    const uint32_t numInstances = *host_device_tasks;
     return numInstances;
   }
 
@@ -1460,12 +1460,12 @@ namespace embree
     return true;
   }
   
-   uint createProcedurals_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGS, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, double &iteration_time, const bool verbose)    
+   uint32_t createProcedurals_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint32_t numGeoms, uint32_t *scratch_mem, const uint32_t MAX_WGS, BVH2Ploc *const bvh2, const uint32_t prim_type_offset, uint32_t *host_device_tasks, double &iteration_time, const bool verbose)    
   {
     //FIXME: GPU version
     
-    uint ID = 0;
-    for (uint userGeomID=0;userGeomID<numGeoms;userGeomID++)
+    uint32_t ID = 0;
+    for (uint32_t userGeomID=0;userGeomID<numGeoms;userGeomID++)
     {
       if (unlikely(geometry_desc[userGeomID] == nullptr)) continue;
       if (geometry_desc[userGeomID]->geometryType == RTHWIF_GEOMETRY_TYPE_AABBS_FPTR)
@@ -1474,7 +1474,7 @@ namespace embree
         if (geom->geometryType == RTHWIF_GEOMETRY_TYPE_AABBS_FPTR)
         {
           RTHWIF_GEOMETRY_AABBS_FPTR_DESC *procedural = (RTHWIF_GEOMETRY_AABBS_FPTR_DESC *)geom;
-          for (uint i=0;i<procedural->primCount;i++)
+          for (uint32_t i=0;i<procedural->primCount;i++)
           {
             BBox3fa procedural_bounds;
             
@@ -1495,9 +1495,9 @@ namespace embree
   }
 
 
-   __forceinline void writeNodeFast(void *_dest, const int relative_block_offset, const gpu::AABB3f &parent_bounds, const uint numChildren, const gpu::AABB3f child_bounds[6], const NodeType default_type)
+   __forceinline void writeNodeFast(void *_dest, const int relative_block_offset, const gpu::AABB3f &parent_bounds, const uint32_t numChildren, const gpu::AABB3f child_bounds[6], const NodeType default_type)
   {
-    uint *dest = (uint*)_dest;    
+    uint32_t *dest = (uint*)_dest;    
     //PRINT3(dest,numChildren,relative_block_offset);
 
     const float _ulp = std::numeric_limits<float>::epsilon();
@@ -1529,9 +1529,9 @@ namespace embree
     tmp[5]         = 0xff; //instanceMode ? 1 : 0xff;
     
 #pragma nounroll
-    for (uint i=0;i<BVH_BRANCHING_FACTOR;i++)
+    for (uint32_t i=0;i<BVH_BRANCHING_FACTOR;i++)
     {
-      //const uint index = BVH2Ploc::getIndex(indices[sycl::min(i,numChildren-1)]);
+      //const uint32_t index = BVH2Ploc::getIndex(indices[sycl::min(i,numChildren-1)]);
       // === default is invalid ===
       uint8_t lower_x = 0x80;
       uint8_t lower_y = 0x80;
@@ -1542,13 +1542,13 @@ namespace embree
       uint8_t data    = 0x00;      
       // === determine leaf type ===
       const bool isLeaf = true; // && !forceFatLeaves;      
-      const uint numBlocks    =  1;
+      const uint32_t numBlocks    =  1;
       NodeType leaf_type = default_type;
       data = (i<numChildren) ? numBlocks : 0;
       data |= (isLeaf ? leaf_type : NODE_TYPE_INTERNAL) << 2;
       const gpu::AABB3f childBounds = child_bounds[i]; //.conservativeBounds();
       // === bounds valid ? ====
-      uint equal_dims = childBounds.lower_x == childBounds.upper_x ? 1 : 0;
+      uint32_t equal_dims = childBounds.lower_x == childBounds.upper_x ? 1 : 0;
       equal_dims += childBounds.lower_y == childBounds.upper_y ? 1 : 0;
       equal_dims += childBounds.lower_z == childBounds.upper_z ? 1 : 0;
       const bool write = (i<numChildren) && equal_dims <= 1;
@@ -1571,16 +1571,16 @@ namespace embree
       tmp[42+i] = upper_z;      
     }
     // === write out second part of 64 bytes node ===
-    for (uint i=0;i<12;i++)
+    for (uint32_t i=0;i<12;i++)
       dest[4+i] = tmp[i*4+0] | (tmp[i*4+1]<<8) | (tmp[i*4+2]<<16) | (tmp[i*4+3]<<24);
   }
    
    struct __aligned(64) LocalNodeData_subgroup { 
-     uint lower[4];
+     uint32_t lower[4];
      uint8_t tmp[48];
    }; 
 
-   __forceinline void writeNode_subgroup(LocalNodeData_subgroup &dest, const uint relative_block_offset, const gpu::AABB3f &parent_bounds, const gpu::AABB3f &childBounds, const uint numChildren, const uint localID, const NodeType default_type = NODE_TYPE_INTERNAL)
+   __forceinline void writeNode_subgroup(LocalNodeData_subgroup &dest, const uint32_t relative_block_offset, const gpu::AABB3f &parent_bounds, const gpu::AABB3f &childBounds, const uint32_t numChildren, const uint32_t localID, const NodeType default_type = NODE_TYPE_INTERNAL)
   {    
     const float _ulp = std::numeric_limits<float>::epsilon();
     const float up = 1.0f + float(_ulp);  
@@ -1608,7 +1608,7 @@ namespace embree
     dest.tmp[4]         = _exp_z; assert(_exp_z >= -128 && _exp_z <= 127);
     dest.tmp[5]         = 0xff; //instanceMode ? 1 : 0xff;
 
-    for (uint i=numChildren;i<6;i++)
+    for (uint32_t i=numChildren;i<6;i++)
     {
       uint8_t lower_x = 0x80;
       uint8_t lower_y = 0x80;
@@ -1629,7 +1629,7 @@ namespace embree
     
     if (localID < BVH_BRANCHING_FACTOR)
     {
-      const uint i = localID;
+      const uint32_t i = localID;
       // === default is invalid ===
       uint8_t lower_x = 0x80;
       uint8_t lower_y = 0x80;
@@ -1640,12 +1640,12 @@ namespace embree
       uint8_t data    = 0x00;      
       // === determine leaf type ===
       const bool isLeaf = true; // && !forceFatLeaves;      
-      const uint numBlocks    =  1;
+      const uint32_t numBlocks    =  1;
       NodeType leaf_type = default_type;
       data = (i<numChildren) ? numBlocks : 0;
       data |= (isLeaf ? leaf_type : NODE_TYPE_INTERNAL) << 2;
       // === bounds valid ? ====
-      uint equal_dims = childBounds.lower_x == childBounds.upper_x ? 1 : 0;
+      uint32_t equal_dims = childBounds.lower_x == childBounds.upper_x ? 1 : 0;
       equal_dims += childBounds.lower_y == childBounds.upper_y ? 1 : 0;
       equal_dims += childBounds.lower_z == childBounds.upper_z ? 1 : 0;
       const bool write = (i<numChildren) && equal_dims <= 1;
@@ -1762,9 +1762,9 @@ namespace embree
    
 
 
-   __forceinline void writeNodeFast(void *_dest, const int relative_block_offset, const uint numChildren, const QBVH child_bounds[6], const NodeType default_type, const QBVHReference &ref)
+   __forceinline void writeNodeFast(void *_dest, const int relative_block_offset, const uint32_t numChildren, const QBVH child_bounds[6], const NodeType default_type, const QBVHReference &ref)
    {
-     uint *dest = (uint*)_dest;    
+     uint32_t *dest = (uint*)_dest;    
     
      dest[0]  = gpu::as_uint(ref.lower.x());
      dest[1]  = gpu::as_uint(ref.lower.y());
@@ -1781,9 +1781,9 @@ namespace embree
      tmp[5]         = 0xff; //instanceMode ? 1 : 0xff;
     
 #pragma nounroll
-     for (uint i=0;i<BVH_BRANCHING_FACTOR;i++)
+     for (uint32_t i=0;i<BVH_BRANCHING_FACTOR;i++)
      {
-       //const uint index = BVH2Ploc::getIndex(indices[sycl::min(i,numChildren-1)]);
+       //const uint32_t index = BVH2Ploc::getIndex(indices[sycl::min(i,numChildren-1)]);
        // === default is invalid ===
        uint8_t lower_x = 0x80;
        uint8_t lower_y = 0x80;
@@ -1794,13 +1794,13 @@ namespace embree
        uint8_t data    = 0x00;      
        // === determine leaf type ===
        const bool isLeaf = true; // && !forceFatLeaves;      
-       const uint numBlocks    =  1;
+       const uint32_t numBlocks    =  1;
        NodeType leaf_type = default_type;
        data = (i<numChildren) ? numBlocks : 0;
        data |= (isLeaf ? leaf_type : NODE_TYPE_INTERNAL) << 2;
        const QBVH &childBounds = child_bounds[i];
        // === bounds valid ? ====
-       uint equal_dims = childBounds.lower_x == childBounds.upper_x ? 1 : 0;
+       uint32_t equal_dims = childBounds.lower_x == childBounds.upper_x ? 1 : 0;
        equal_dims += childBounds.lower_y == childBounds.upper_y ? 1 : 0;
        equal_dims += childBounds.lower_z == childBounds.upper_z ? 1 : 0;
        const bool write = (i<numChildren) && equal_dims <= 1;
@@ -1821,14 +1821,14 @@ namespace embree
        tmp[42+i] = upper_z;      
      }
      // === write out second part of 64 bytes node ===
-     for (uint i=0;i<12;i++)
+     for (uint32_t i=0;i<12;i++)
        dest[4+i] = tmp[i*4+0] | (tmp[i*4+1]<<8) | (tmp[i*4+2]<<16) | (tmp[i*4+3]<<24);
    }
   
 
-   __forceinline void writeNodeFast(void *_dest, const int relative_block_offset, const CompressedAABB3f &parent_bounds, const uint numChildren, const CompressedAABB3f child_bounds[6], const NodeType default_type, const Vec3f &start, const Vec3f &diag)
+   __forceinline void writeNodeFast(void *_dest, const int relative_block_offset, const CompressedAABB3f &parent_bounds, const uint32_t numChildren, const CompressedAABB3f child_bounds[6], const NodeType default_type, const Vec3f &start, const Vec3f &diag)
    {
-     uint *dest = (uint*)_dest;    
+     uint32_t *dest = (uint*)_dest;    
      //PRINT3(dest,numChildren,relative_block_offset);
 
      const float _ulp = std::numeric_limits<float>::epsilon();
@@ -1860,9 +1860,9 @@ namespace embree
      tmp[5]         = 0xff; //instanceMode ? 1 : 0xff;
     
 #pragma nounroll
-     for (uint i=0;i<BVH_BRANCHING_FACTOR;i++)
+     for (uint32_t i=0;i<BVH_BRANCHING_FACTOR;i++)
      {
-       //const uint index = BVH2Ploc::getIndex(indices[sycl::min(i,numChildren-1)]);
+       //const uint32_t index = BVH2Ploc::getIndex(indices[sycl::min(i,numChildren-1)]);
        // === default is invalid ===
        uint8_t lower_x = 0x80;
        uint8_t lower_y = 0x80;
@@ -1873,13 +1873,13 @@ namespace embree
        uint8_t data    = 0x00;      
        // === determine leaf type ===
        const bool isLeaf = true; // && !forceFatLeaves;      
-       const uint numBlocks    =  1;
+       const uint32_t numBlocks    =  1;
        NodeType leaf_type = default_type;
        data = (i<numChildren) ? numBlocks : 0;
        data |= (isLeaf ? leaf_type : NODE_TYPE_INTERNAL) << 2;
        const gpu::AABB3f childBounds = to_AABB3f(child_bounds[i].decompress(start,diag)); //.conservativeBounds();
        // === bounds valid ? ====
-       uint equal_dims = childBounds.lower_x == childBounds.upper_x ? 1 : 0;
+       uint32_t equal_dims = childBounds.lower_x == childBounds.upper_x ? 1 : 0;
        equal_dims += childBounds.lower_y == childBounds.upper_y ? 1 : 0;
        equal_dims += childBounds.lower_z == childBounds.upper_z ? 1 : 0;
        const bool write = (i<numChildren) && equal_dims <= 1;
@@ -1902,16 +1902,16 @@ namespace embree
        tmp[42+i] = upper_z;      
      }
      // === write out second part of 64 bytes node ===
-     for (uint i=0;i<12;i++)
+     for (uint32_t i=0;i<12;i++)
        dest[4+i] = tmp[i*4+0] | (tmp[i*4+1]<<8) | (tmp[i*4+2]<<16) | (tmp[i*4+3]<<24);
    }
    
    
-   uint createLossyCompressedGeometries_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGS, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, char* lcg_bvh_mem, uint *const lcg_bvh_mem_allocator, double &iteration_time, const bool verbose)    
+   uint32_t createLossyCompressedGeometries_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint32_t numGeoms, uint32_t *scratch_mem, const uint32_t MAX_WGS, BVH2Ploc *const bvh2, const uint32_t prim_type_offset, uint32_t *host_device_tasks, char* lcg_bvh_mem, uint32_t *const lcg_bvh_mem_allocator, double &iteration_time, const bool verbose)    
   {    
-    uint numTotalLCGs = 0;
+    uint32_t numTotalLCGs = 0;
     //char* dest = lcg_bvh_mem;
-    for (uint lcgID=0;lcgID<numGeoms;lcgID++)
+    for (uint32_t lcgID=0;lcgID<numGeoms;lcgID++)
     {
       if (unlikely(geometry_desc[lcgID] == nullptr)) continue;
       if (geometry_desc[lcgID]->geometryType == RTHWIF_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY)
@@ -1919,11 +1919,9 @@ namespace embree
         
         RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC *geom = (RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC *)geometry_desc[lcgID];        
         if (geom->numLCMs)
-        {
-          //for (uint i=0;i<geom->numLCMs;i++)
-          //  PRINT2(i,geom->pLCMIDs[i]);
+        {          
 #if 1
-          const uint wgSize = 16;        
+          const uint32_t wgSize = 16;        
           const sycl::nd_range<1> nd_range1(wgSize*geom->numLCMs,sycl::range<1>(wgSize));          
           sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
               sycl::local_accessor< CompressedAABB3f, 1> _clusterPrimBounds(sycl::range<1>(LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER),cgh);
@@ -1931,11 +1929,11 @@ namespace embree
               
               cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                                {
-                                 const uint subgroupLocalID = get_sub_group_local_id();
-                                 const uint subgroupSize    = get_sub_group_size();                                           
-                                 const uint ID         = item.get_group(0);
+                                 const uint32_t subgroupLocalID = get_sub_group_local_id();
+                                 const uint32_t subgroupSize    = get_sub_group_size();                                           
+                                 const uint32_t ID         = item.get_group(0);
                                  const LossyCompressedMeshCluster* const base = (LossyCompressedMeshCluster*)(geom->pLCMs);
-                                 const uint clusterID = geom->pLCMIDs[ID];
+                                 const uint32_t clusterID = geom->pLCMIDs[ID];
                                  const LossyCompressedMeshCluster &cluster = base[ clusterID ];                                 
                                  const LossyCompressedMesh &mesh = *cluster.mesh;
 
@@ -1945,7 +1943,7 @@ namespace embree
                                  const Vec3f lower = mesh.bounds.lower;
                                  const Vec3f diag = mesh.bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
 
-                                 uint globalBlockID = 0;
+                                 uint32_t globalBlockID = 0;
                                  if (subgroupLocalID == 0)
                                    globalBlockID = gpu::atomic_add_global(lcg_bvh_mem_allocator,(uint)cluster.numBlocks);
                                  globalBlockID = sub_group_broadcast(globalBlockID,0);
@@ -1960,16 +1958,17 @@ namespace embree
                                  //const QBVHReference qbvh_ref(to_AABB3f(cluster.bounds.decompress(lower,diag)));
 
                                  const CompressedAABB3f &clusterBounds = cluster.bounds;
+                                 
                                  BVH2Ploc node;                             
                                  node.initLeaf(lcgID,((int64_t)dest-(int64_t)lcg_bvh_mem)/64,to_AABB3f(clusterBounds.decompress(lower,diag)));                               
                                  node.store(&bvh2[prim_type_offset + ID]);
                                  
-                                 for (uint q=subgroupLocalID;q<cluster.numQuads;q+=subgroupSize)
+                                 for (uint32_t q=subgroupLocalID;q<cluster.numQuads;q+=subgroupSize)
                                  {
-                                   const uint v0 = compressedIndices[q].v0();
-                                   const uint v1 = compressedIndices[q].v1();
-                                   const uint v2 = compressedIndices[q].v2();
-                                   const uint v3 = compressedIndices[q].v3();
+                                   const uint32_t v0 = compressedIndices[q].v0();
+                                   const uint32_t v1 = compressedIndices[q].v1();
+                                   const uint32_t v2 = compressedIndices[q].v2();
+                                   const uint32_t v3 = compressedIndices[q].v3();
 
                                    const Vec3f vtx0 = compressedVertices[v0].decompress(lower,diag);
                                    const Vec3f vtx1 = compressedVertices[v1].decompress(lower,diag);
@@ -1987,38 +1986,38 @@ namespace embree
                                    //quad_bounds.extend( vtx3 );                                   
                                    
                                    
-                                   const uint geomID = lcgID;
-                                   const uint primID0 = clusterID;
-                                   const uint primID1 = clusterID;
+                                   const uint32_t geomID = lcgID;
+                                   const uint32_t primID0 = clusterID;
+                                   const uint32_t primID1 = clusterID;
             
                                    leaf[q] = QuadLeafData( vtx0,vtx1,vtx3,vtx2, 3,2,1, 0, geomID, primID0, primID1, GeometryFlags::OPAQUE, -1);
                                    clusterPrimBounds[q] = quad_bounds;
                                    //clusterPrimBounds[q] = QBVH(to_AABB3f(quad_bounds),qbvh_ref);
 
-                                   //const uint cls = std::min(cluster.numQuads - sub_group_broadcast(q,0),(uint)16);
+                                   //const uint32_t cls = std::min(cluster.numQuads - sub_group_broadcast(q,0),(uint)16);
                                    //copyCLs_from_SLM_to_GlobalMemory(&leaf[q],&local_leaf[q],cls);                                   
                                  }
                                  sub_group_barrier();                                                                    
                                  
-                                 uint numPrims = cluster.numQuads;
-                                 uint numNodes = ((numPrims+BVH_BRANCHING_FACTOR-1)/BVH_BRANCHING_FACTOR);
+                                 uint32_t numPrims = cluster.numQuads;
+                                 uint32_t numNodes = ((numPrims+BVH_BRANCHING_FACTOR-1)/BVH_BRANCHING_FACTOR);
                                  char *prev = (char*)leaf;
                                  char *cur  = prev - numNodes*64;
                                  NodeType node_type = NODE_TYPE_QUAD;
                                  while(numPrims > BVH_BRANCHING_FACTOR)
                                  {
-                                   for (uint i=subgroupLocalID;i<numNodes;i+=subgroupSize)
+                                   for (uint32_t i=subgroupLocalID;i<numNodes;i+=subgroupSize)
                                    {
                                      CompressedAABB3f nodeBounds;
                                      //QBVH nodeBounds;
                                      nodeBounds.init();
-                                     const uint offset = i*BVH_BRANCHING_FACTOR;
-                                     for (uint j=0;j<BVH_BRANCHING_FACTOR;j++)
+                                     const uint32_t offset = i*BVH_BRANCHING_FACTOR;
+                                     for (uint32_t j=0;j<BVH_BRANCHING_FACTOR;j++)
                                      {
-                                       const uint index = min(offset+j,numPrims-1);
+                                       const uint32_t index = min(offset+j,numPrims-1);
                                        nodeBounds.extend( clusterPrimBounds[index] );
                                      }
-                                     const uint numChildren = min(numPrims-offset,(uint)BVH_BRANCHING_FACTOR);
+                                     const uint32_t numChildren = min(numPrims-offset,(uint)BVH_BRANCHING_FACTOR);
                                      writeNodeFast(&cur[i*64],((int64_t)&prev[64*offset]-(int64_t)&cur[i*64])/64,nodeBounds,numChildren,&clusterPrimBounds[offset],node_type,lower,diag);
                                      //writeNodeFast(&cur[i*64],((int64_t)&prev[64*offset]-(int64_t)&cur[i*64])/64,numChildren,&clusterPrimBounds[offset],node_type,qbvh_ref);
                                      sub_group_barrier();                                   
@@ -2038,17 +2037,17 @@ namespace embree
                                });
             });
 #else          
-          const uint wgSize = 16;        
+          const uint32_t wgSize = 16;        
           const sycl::nd_range<1> nd_range1(wgSize*geom->numLCMs,sycl::range<1>(wgSize));          
           sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
               sycl::local_accessor< gpu::AABB3f, 1> _clusterPrimBounds(sycl::range<1>(LossyCompressedMeshCluster::MAX_QUADS_PER_CLUSTER),cgh);
               cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                                {
-                                 const uint subgroupLocalID = get_sub_group_local_id();
-                                 const uint subgroupSize    = get_sub_group_size();                                           
-                                 const uint ID         = item.get_group(0);
+                                 const uint32_t subgroupLocalID = get_sub_group_local_id();
+                                 const uint32_t subgroupSize    = get_sub_group_size();                                           
+                                 const uint32_t ID         = item.get_group(0);
                                  const LossyCompressedMeshCluster* const base = (LossyCompressedMeshCluster*)(geom->pLCMs);
-                                 const uint clusterID = geom->pLCMIDs[ID];
+                                 const uint32_t clusterID = geom->pLCMIDs[ID];
                                  const LossyCompressedMeshCluster &cluster = base[ clusterID ];
                                  
                                  const LossyCompressedMesh &mesh = *cluster.mesh;
@@ -2058,7 +2057,7 @@ namespace embree
                                  const Vec3f lower = mesh.bounds.lower;
                                  const Vec3f diag = mesh.bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
 
-                                 uint globalBlockID = 0;
+                                 uint32_t globalBlockID = 0;
                                  if (subgroupLocalID == 0)
                                    globalBlockID = gpu::atomic_add_global(lcg_bvh_mem_allocator,(uint)cluster.numBlocks);
                                  globalBlockID = sub_group_broadcast(globalBlockID,0);
@@ -2068,12 +2067,12 @@ namespace embree
                                  gpu::AABB3f *const clusterPrimBounds = _clusterPrimBounds.get_pointer();
                                  gpu::AABB3f clusterBounds;
                                  clusterBounds.init();
-                                 for (uint q=subgroupLocalID;q<cluster.numQuads;q+=subgroupSize)
+                                 for (uint32_t q=subgroupLocalID;q<cluster.numQuads;q+=subgroupSize)
                                  {
-                                   const uint v0 = compressedIndices[q].v0();
-                                   const uint v1 = compressedIndices[q].v1();
-                                   const uint v2 = compressedIndices[q].v2();
-                                   const uint v3 = compressedIndices[q].v3();
+                                   const uint32_t v0 = compressedIndices[q].v0();
+                                   const uint32_t v1 = compressedIndices[q].v1();
+                                   const uint32_t v2 = compressedIndices[q].v2();
+                                   const uint32_t v3 = compressedIndices[q].v3();
 
                                    const Vec3f vtx0 = compressedVertices[v0].decompress(lower,diag);
                                    const Vec3f vtx1 = compressedVertices[v1].decompress(lower,diag);
@@ -2086,33 +2085,33 @@ namespace embree
                                    quad_bounds.extend( to_float3(vtx3) );                                 
                                    clusterBounds.extend(quad_bounds);
 
-                                   const uint geomID = lcgID;
-                                   const uint primID0 = clusterID;
-                                   const uint primID1 = clusterID;
+                                   const uint32_t geomID = lcgID;
+                                   const uint32_t primID0 = clusterID;
+                                   const uint32_t primID1 = clusterID;
             
                                    leaf[q] = QuadLeafData( vtx0,vtx1,vtx3,vtx2, 3,2,1, 0, geomID, primID0, primID1, GeometryFlags::OPAQUE, -1);
                                    clusterPrimBounds[q] = quad_bounds;
                                  }
 
                                  clusterBounds = clusterBounds.sub_group_reduce();                                
-                                 uint numPrims = cluster.numQuads;
-                                 uint numNodes = ((numPrims+BVH_BRANCHING_FACTOR-1)/BVH_BRANCHING_FACTOR);
+                                 uint32_t numPrims = cluster.numQuads;
+                                 uint32_t numNodes = ((numPrims+BVH_BRANCHING_FACTOR-1)/BVH_BRANCHING_FACTOR);
                                  char *prev = (char*)leaf;
                                  char *cur  = prev - numNodes*64;
                                  NodeType node_type = NODE_TYPE_QUAD;
                                  while(numPrims > BVH_BRANCHING_FACTOR)
                                  {
-                                   for (uint i=subgroupLocalID;i<numNodes;i+=subgroupSize)
+                                   for (uint32_t i=subgroupLocalID;i<numNodes;i+=subgroupSize)
                                    {
                                      gpu::AABB3f nodeBounds;
                                      nodeBounds.init();
-                                     const uint offset = i*BVH_BRANCHING_FACTOR;
-                                     for (uint j=0;j<BVH_BRANCHING_FACTOR;j++)
+                                     const uint32_t offset = i*BVH_BRANCHING_FACTOR;
+                                     for (uint32_t j=0;j<BVH_BRANCHING_FACTOR;j++)
                                      {
-                                       const uint index = min(offset+j,numPrims-1);
+                                       const uint32_t index = min(offset+j,numPrims-1);
                                        nodeBounds.extend( clusterPrimBounds[index] );
                                      }
-                                     const uint numChildren = min(numPrims-offset,(uint)BVH_BRANCHING_FACTOR);
+                                     const uint32_t numChildren = min(numPrims-offset,(uint)BVH_BRANCHING_FACTOR);
                                      writeNodeFast(&cur[i*64],((int64_t)&prev[64*offset]-(int64_t)&cur[i*64])/64,nodeBounds,numChildren,&clusterPrimBounds[offset],node_type);
                                      sub_group_barrier();                                   
                                      clusterPrimBounds[i] = nodeBounds;
@@ -2141,7 +2140,7 @@ namespace embree
 
 #if 0
     static double total_sum = 0.0f;
-    static uint entries = 0;
+    static uint32_t entries = 0;
     total_sum += gpu::getDeviceExecutionTiming(queue_event);
     entries++;
     if (entries % (4*4096)) PRINT2("Decomp",total_sum / entries);
@@ -2156,8 +2155,8 @@ namespace embree
 
         if (geom->numLCGs)
         {
-          const uint SIZE_LCG_BVH = estimateLossyCompressedGeometriesSize(1);        
-          const uint wgSize = 16;        
+          const uint32_t SIZE_LCG_BVH = estimateLossyCompressedGeometriesSize(1);        
+          const uint32_t wgSize = 16;        
           const sycl::nd_range<1> nd_range1(wgSize*geom->numLCGs,sycl::range<1>(wgSize));          
           sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
               sycl::local_accessor< LocalNodeData_subgroup, 1> _local_node(sycl::range<1>(3),cgh); //FIXME: reuse _local_leaf
@@ -2166,12 +2165,12 @@ namespace embree
             
               cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                                {
-                                 const uint subgroupLocalID = get_sub_group_local_id();
-                                 const uint blockID = subgroupLocalID <  6 ? 0 : (subgroupLocalID <  12 ? 1 : 2);
+                                 const uint32_t subgroupLocalID = get_sub_group_local_id();
+                                 const uint32_t blockID = subgroupLocalID <  6 ? 0 : (subgroupLocalID <  12 ? 1 : 2);
                                
-                                 const uint ID         = item.get_group(0);
-                                 const uint start_x[16] = { 0,1,2, 0,1,2, 3,4,5, 3,4,5, 6,7,6,7};
-                                 const uint start_y[16] = { 0,0,0, 1,1,1, 0,0,0, 1,1,1, 0,0,1,1};
+                                 const uint32_t ID         = item.get_group(0);
+                                 const uint32_t start_x[16] = { 0,1,2, 0,1,2, 3,4,5, 3,4,5, 6,7,6,7};
+                                 const uint32_t start_y[16] = { 0,0,0, 1,1,1, 0,0,0, 1,1,1, 0,0,1,1};
 
                                  LocalNodeData_subgroup *local_node = _local_node.get_pointer();                               
                                  gpu::AABB3f *local_bounds          = _local_bounds.get_pointer();
@@ -2179,20 +2178,20 @@ namespace embree
 
                                  LCGBP_State &state = ((LCGBP_State*)(geom->pLCGs))[ID];
                                  const LCGBP *const lcgbp = state.lcgbp;
-                                 const uint lgcbp_start_x = state.start_x;
-                                 const uint lgcbp_start_y = state.start_y;                               
-                                 const uint lgcbp_step = state.step;
+                                 const uint32_t lgcbp_start_x = state.start_x;
+                                 const uint32_t lgcbp_start_y = state.start_y;                               
+                                 const uint32_t lgcbp_step = state.step;
                                  
                                  char* dest = lcg_bvh_mem + ID * SIZE_LCG_BVH;
                                  LocalNodeData_subgroup *node = (LocalNodeData_subgroup*)(dest + 3 * 64);
                                  QuadLeafData *leaf = (QuadLeafData*)(dest + (4*3+2+1)*64);
                                
-                                 const uint sx = start_x[subgroupLocalID];
-                                 const uint sy = start_y[subgroupLocalID];
+                                 const uint32_t sx = start_x[subgroupLocalID];
+                                 const uint32_t sy = start_y[subgroupLocalID];
 
-                                 for (uint y=0;y<9;y++)
+                                 for (uint32_t y=0;y<9;y++)
                                  {
-                                   const uint x = subgroupLocalID;
+                                   const uint32_t x = subgroupLocalID;
                                    if (x < 9)
                                      gridPos[y*9+x] = lcgbp->decode(lgcbp_start_x + x*lgcbp_step, lgcbp_start_y + y*lgcbp_step);
                                  }
@@ -2201,15 +2200,15 @@ namespace embree
                                  /* ---- fix cracks if necessary ---- */
                                  if (unlikely(state.lod_diff_levels))
                                  {
-                                   const uint i = subgroupLocalID;
-                                   const uint diff_top    = state.get_lod_diff_level(0);
-                                   const uint diff_right  = state.get_lod_diff_level(1);
-                                   const uint diff_bottom = state.get_lod_diff_level(2);
-                                   const uint diff_left   = state.get_lod_diff_level(3);
+                                   const uint32_t i = subgroupLocalID;
+                                   const uint32_t diff_top    = state.get_lod_diff_level(0);
+                                   const uint32_t diff_right  = state.get_lod_diff_level(1);
+                                   const uint32_t diff_bottom = state.get_lod_diff_level(2);
+                                   const uint32_t diff_left   = state.get_lod_diff_level(3);
                                    
                                    if (unlikely(diff_top))
                                    {
-                                     const uint index = (i>>diff_top)<<diff_top;
+                                     const uint32_t index = (i>>diff_top)<<diff_top;
                                      const Vec3f p = gridPos[index];
                                      sub_group_barrier();
                                      if (i>0 && i<8)
@@ -2217,21 +2216,21 @@ namespace embree
                                    }
                                    if (unlikely(diff_right))
                                    {
-                                     const uint index = (i>>diff_right)<<diff_right;
+                                     const uint32_t index = (i>>diff_right)<<diff_right;
                                      const Vec3f p = gridPos[index*9+8];
                                      if (i>0 && i<8)
                                        gridPos[i*9+8] = p; 
                                    }
                                    if (unlikely(diff_bottom))
                                    {
-                                     const uint index = (i>>diff_bottom)<<diff_bottom;
+                                     const uint32_t index = (i>>diff_bottom)<<diff_bottom;
                                      const Vec3f p = gridPos[8*9+index];
                                      if (i>0 && i<8)
                                        gridPos[8*9+i] = p;                                  
                                    }
                                    if (unlikely(diff_left))
                                    {
-                                     const uint index = (i>>diff_left)<<diff_left;
+                                     const uint32_t index = (i>>diff_left)<<diff_left;
                                      const Vec3f p = gridPos[index*9];
                                      if (i>0 && i<8)
                                        gridPos[i*9] = p;                                 
@@ -2244,33 +2243,33 @@ namespace embree
                                  {
                                    sub_group_barrier();
 
-                                   const uint x = subgroupLocalID;
+                                   const uint32_t x = subgroupLocalID;
 #if 0
-                                   const uint diff_top    = state.get_lod_diff_level(0);
-                                   const uint diff_right  = state.get_lod_diff_level(1);
-                                   const uint diff_bottom = state.get_lod_diff_level(2);
-                                   const uint diff_left   = state.get_lod_diff_level(3);
+                                   const uint32_t diff_top    = state.get_lod_diff_level(0);
+                                   const uint32_t diff_right  = state.get_lod_diff_level(1);
+                                   const uint32_t diff_bottom = state.get_lod_diff_level(2);
+                                   const uint32_t diff_left   = state.get_lod_diff_level(3);
                                  
-                                   const uint sy = diff_top ? 1 : 0; 
-                                   const uint ey = diff_bottom ? 7 : 8; 
-                                   const uint sx = diff_left ? 1 : 0; 
-                                   const uint ex = diff_right ? 7 : 8;
+                                   const uint32_t sy = diff_top ? 1 : 0; 
+                                   const uint32_t ey = diff_bottom ? 7 : 8; 
+                                   const uint32_t sx = diff_left ? 1 : 0; 
+                                   const uint32_t ex = diff_right ? 7 : 8;
 #else
-                                   const uint sy = (state.flags & TOP_BORDER) ? 1 : 0; 
-                                   const uint ey = (state.flags & BOTTOM_BORDER) ? 7 : 8; 
-                                   const uint sx = (state.flags & LEFT_BORDER) ? 1 : 0; 
-                                   const uint ex = (state.flags & RIGHT_BORDER) ? 7 : 8;
+                                   const uint32_t sy = (state.flags & TOP_BORDER) ? 1 : 0; 
+                                   const uint32_t ey = (state.flags & BOTTOM_BORDER) ? 7 : 8; 
+                                   const uint32_t sx = (state.flags & LEFT_BORDER) ? 1 : 0; 
+                                   const uint32_t ex = (state.flags & RIGHT_BORDER) ? 7 : 8;
                                  
 #endif                                 
                                  
                                    if (x>=sx && x<=ex)
-                                     for (uint y=sy;y<=ey;y++)
+                                     for (uint32_t y=sy;y<=ey;y++)
                                      {
-                                       uint state_blend = state.blend;
+                                       uint32_t state_blend = state.blend;
                                        const float blend_factor = (float)state_blend * 1.0f / 255.0f;                                     
                                      
-                                       uint blend_x = x + ((x < 4) ? 1 : -1);
-                                       uint blend_y = y + ((y < 4) ? 1 : -1);
+                                       uint32_t blend_x = x + ((x < 4) ? 1 : -1);
+                                       uint32_t blend_y = y + ((y < 4) ? 1 : -1);
                                        blend_x = (x%2) ? blend_x : x;
                                        blend_y = (y%2) ? blend_y : y;
                                        if (blend_x != x || blend_y != y)
@@ -2286,17 +2285,17 @@ namespace embree
                               
                                  /* --------------------------------- */
                                
-                                 for (uint rows=0;rows<4;rows++,leaf+=16,node+=3)
+                                 for (uint32_t rows=0;rows<4;rows++,leaf+=16,node+=3)
                                  {
-                                   const uint x = sx; 
-                                   const uint y = sy + 2*rows;
+                                   const uint32_t x = sx; 
+                                   const uint32_t y = sy + 2*rows;
                                    const Vec3f p0 = gridPos[9*(y+0)+(x+0)];
                                    const Vec3f p1 = gridPos[9*(y+0)+(x+1)];
                                    const Vec3f p2 = gridPos[9*(y+1)+(x+1)];
                                    const Vec3f p3 = gridPos[9*(y+1)+(x+0)];
 
-                                   const uint geomID = lcgID;
-                                   const uint primID = (ID << RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT) | 2*(y*RTC_LOSSY_COMPRESSED_GRID_QUAD_RES+x) ; //y*8+x; 
+                                   const uint32_t geomID = lcgID;
+                                   const uint32_t primID = (ID << RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT) | 2*(y*RTC_LOSSY_COMPRESSED_GRID_QUAD_RES+x) ; //y*8+x; 
 
                                    leaf[subgroupLocalID] = QuadLeafData( p0,p1,p3,p2, 3,2,1, 0, geomID, primID, primID+1, GeometryFlags::OPAQUE, -1);
                                  
@@ -2314,7 +2313,7 @@ namespace embree
                                  
                                    sub_group_barrier();
                                  
-                                   const uint offset = ((char*)(leaf+blockID*6) - (char*)(node+blockID))/64;                                 
+                                   const uint32_t offset = ((char*)(leaf+blockID*6) - (char*)(node+blockID))/64;                                 
                                    writeNode_subgroup(local_node[blockID],offset,local_bounds[rows*3+blockID],quad_bounds,blockID == 2 ? 4 : 6,subgroupLocalID-blockID*6,NODE_TYPE_QUAD);
                                    sub_group_barrier();                                 
                                    copyCLs_from_SLM_to_GlobalMemory(node,local_node,3);                                 
@@ -2399,9 +2398,9 @@ namespace embree
   // ====================================================================================================================================================================================
   
 
-   void computeCentroidGeometryBounds(sycl::queue &gpu_queue, gpu::AABB3f *geometryBounds, gpu::AABB3f *centroidBounds, const BVH2Ploc *const bvh2, const uint numPrimitives, double &iteration_time, const bool verbose)
+   void computeCentroidGeometryBounds(sycl::queue &gpu_queue, gpu::AABB3f *geometryBounds, gpu::AABB3f *centroidBounds, const BVH2Ploc *const bvh2, const uint32_t numPrimitives, double &iteration_time, const bool verbose)
   {
-    const uint wgSize = LARGE_WG_SIZE;
+    const uint32_t wgSize = LARGE_WG_SIZE;
     const sycl::nd_range<1> nd_range1(gpu::alignTo(numPrimitives,wgSize),sycl::range<1>(wgSize));          
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
         sycl::local_accessor< gpu::AABB3f, 0> _local_geometry_aabb(cgh);
@@ -2409,9 +2408,9 @@ namespace embree
                                                        
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                          {
-                           const uint localID        = item.get_local_id(0);
-                           const uint subgroupLocalID = get_sub_group_local_id();
-                           const uint ID = item.get_global_id(0);                                                                                                               
+                           const uint32_t localID        = item.get_local_id(0);
+                           const uint32_t subgroupLocalID = get_sub_group_local_id();
+                           const uint32_t ID = item.get_global_id(0);                                                                                                               
                            gpu::AABB3f *local_geometry_aabb = _local_geometry_aabb.get_pointer();
                            gpu::AABB3f *local_centroid_aabb = _local_centroid_aabb.get_pointer();
                                                                                     
@@ -2459,21 +2458,21 @@ namespace embree
   }
   
   template<typename type>
-    __forceinline void computeMortonCodes64Bit(sycl::queue &gpu_queue, const gpu::AABB3f *const _centroidBounds, type *const mc0, const BVH2Ploc *const bvh2, const uint numPrimitives, const uint shift, const uint64_t mask, double &iteration_time, const bool verbose)    
+    __forceinline void computeMortonCodes64Bit(sycl::queue &gpu_queue, const gpu::AABB3f *const _centroidBounds, type *const mc0, const BVH2Ploc *const bvh2, const uint32_t numPrimitives, const uint32_t shift, const uint64_t mask, double &iteration_time, const bool verbose)    
   {
-    const uint wgSize = 16;
+    const uint32_t wgSize = 16;
     const sycl::nd_range<1> nd_range1(gpu::alignTo(numPrimitives,wgSize),sycl::range<1>(wgSize));              
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(32)
                          {
-                           const uint globalID     = item.get_global_id(0);                                                                    
+                           const uint32_t globalID     = item.get_global_id(0);                                                                    
                            if (globalID < numPrimitives)
                            {
                              const gpu::AABB3f centroidBounds(*_centroidBounds);
-                             const uint i = globalID;
+                             const uint32_t i = globalID;
 
                              const float3 lower = centroidBounds.lower();                                                                      
-                             const uint   grid_size   = 1 << type::GRID_SHIFT;
+                             const uint32_t   grid_size   = 1 << type::GRID_SHIFT;
                              const float3 grid_base(lower.x(),lower.y(),lower.z());
                              const float3 grid_extend(centroidBounds.maxDiagDim());                             
                              const float3 grid_scale = cselect( int3(grid_extend != 0.0f), (grid_size * 0.99f)/grid_extend, float3(0.0f)); 
@@ -2482,7 +2481,7 @@ namespace embree
                              const gpu::AABB3f bounds3f = bvh2[i].bounds;
                              const float3 centroid = bounds3f.centroid2();
                              const float3 gridpos_f = (centroid-grid_base)*grid_scale;                                                                      
-                             const sycl::uint3 gridpos = gridpos_f.convert<sycl::uint,sycl::rounding_mode::rtz>();                             
+                             const sycl::uint3 gridpos = gridpos_f.convert<uint32_t,sycl::rounding_mode::rtz>();                             
                              const uint64_t code = (gpu::bitInterleave3D_64bits(gridpos)>>shift) & mask;
                              mc0[i] = type(code,i); 
                            }
@@ -2494,20 +2493,20 @@ namespace embree
   }
 
   template<typename type>
-    __forceinline void computeMortonCodes64Bit_SaveMSBBits(sycl::queue &gpu_queue, const gpu::AABB3f *const _centroidBounds, type *const mc0, const BVH2Ploc *const bvh2, uint *const high, const uint numPrimitives, double &iteration_time, const bool verbose)    
+    __forceinline void computeMortonCodes64Bit_SaveMSBBits(sycl::queue &gpu_queue, const gpu::AABB3f *const _centroidBounds, type *const mc0, const BVH2Ploc *const bvh2, uint32_t *const high, const uint32_t numPrimitives, double &iteration_time, const bool verbose)    
   {
-    const uint wgSize = 16; //256;
+    const uint32_t wgSize = 16; //256;
     const sycl::nd_range<1> nd_range1(gpu::alignTo(numPrimitives,wgSize),sycl::range<1>(wgSize));              
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(32)
                          {
-                           const uint globalID     = item.get_global_id(0);                                                                    
+                           const uint32_t globalID     = item.get_global_id(0);                                                                    
                            if (globalID < numPrimitives)
                            {
                              const gpu::AABB3f centroidBounds(*_centroidBounds);
-                             const uint i = globalID;
+                             const uint32_t i = globalID;
                              const float3 lower = centroidBounds.lower();                                                                      
-                             const uint   grid_size   = 1 << type::GRID_SHIFT;
+                             const uint32_t   grid_size   = 1 << type::GRID_SHIFT;
                              const float3 grid_base(lower.x(),lower.y(),lower.z());
                              const float3 grid_extend(centroidBounds.maxDiagDim());                             
                              const float3 grid_scale = cselect( int3(grid_extend != 0.0f), (grid_size * 0.99f)/grid_extend, float3(0.0f));
@@ -2515,7 +2514,7 @@ namespace embree
                              const gpu::AABB3f bounds3f = bvh2[i].bounds;
                              const float3 centroid = bounds3f.centroid2();
                              const float3 gridpos_f = (centroid-grid_base)*grid_scale;                                                                      
-                             const sycl::uint3 gridpos = gridpos_f.convert<sycl::uint,sycl::rounding_mode::rtz>();
+                             const sycl::uint3 gridpos = gridpos_f.convert<uint32_t,sycl::rounding_mode::rtz>();
                              const uint64_t mask = (((uint64_t)1 << 32)-1);
                              const uint64_t code = gpu::bitInterleave3D_64bits(gridpos);
                              high[i] = code >> 32;
@@ -2529,18 +2528,18 @@ namespace embree
   }
   
   template<typename type>
-    __forceinline sycl::event restoreMSBBits(sycl::queue &gpu_queue, type *const mc0, uint *const high, const uint numPrimitives, sycl::event &input_event, const bool verbose)    
+    __forceinline sycl::event restoreMSBBits(sycl::queue &gpu_queue, type *const mc0, uint32_t *const high, const uint32_t numPrimitives, sycl::event &input_event, const bool verbose)    
   {
-    const uint wgSize = 16; 
+    const uint32_t wgSize = 16; 
     const sycl::nd_range<1> nd_range1(gpu::alignTo(numPrimitives,wgSize),sycl::range<1>(wgSize));              
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
         cgh.depends_on(input_event);        
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(32)
                          {
-                           const uint globalID     = item.get_global_id(0);                                                                    
+                           const uint32_t globalID     = item.get_global_id(0);                                                                    
                            if (globalID < numPrimitives)
                            {
-                             const uint index = mc0[globalID].getIndex();
+                             const uint32_t index = mc0[globalID].getIndex();
                              const uint64_t code = high[index];                             
                              mc0[globalID] = type(code,index);                                        
                            }
@@ -2552,17 +2551,17 @@ namespace embree
   
 
   template<typename type>  
-    __forceinline void initClusters(sycl::queue &gpu_queue, type *const mc0, const BVH2Ploc *const bvh2, uint *const cluster_index, BVH2SubTreeState *const bvh2_subtree_size, const uint numPrimitives, double &iteration_time, const bool verbose)    
+    __forceinline void initClusters(sycl::queue &gpu_queue, type *const mc0, const BVH2Ploc *const bvh2, uint32_t *const cluster_index, BVH2SubTreeState *const bvh2_subtree_size, const uint32_t numPrimitives, double &iteration_time, const bool verbose)    
   {
-    static const uint INIT_CLUSTERS_WG_SIZE = 256;    
+    static const uint32_t INIT_CLUSTERS_WG_SIZE = 256;    
     const sycl::nd_range<1> nd_range1(sycl::range<1>(gpu::alignTo(numPrimitives,INIT_CLUSTERS_WG_SIZE)),sycl::range<1>(INIT_CLUSTERS_WG_SIZE)); 
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                          {
-                           const uint globalID     = item.get_global_id(0);
+                           const uint32_t globalID     = item.get_global_id(0);
                            if (globalID < numPrimitives)
                            {
-                             const uint index = mc0[globalID].getIndex();
+                             const uint32_t index = mc0[globalID].getIndex();
                              bvh2_subtree_size[globalID] = BVH2SubTreeState(1,1);
                              cluster_index[globalID] = index;
                            }
@@ -2579,55 +2578,55 @@ namespace embree
   // ====================================================================================================================================================================================
   
 
-  __forceinline  uint encodeRelativeOffset(const int localID, const int neighbor)
+  __forceinline  uint32_t encodeRelativeOffset(const int localID, const int neighbor)
   {
     const int sOffset = neighbor - localID;
-    const uint uOffset = sycl::abs(sOffset)-1;
+    const uint32_t uOffset = sycl::abs(sOffset)-1;
     return (uOffset<<1) | ((uint)sOffset>>31);
   }
 
-  __forceinline  uint encodeRelativeOffsetFast(const uint ID, const uint neighbor) // === neighbor must be larger than ID ===
+  __forceinline  uint32_t encodeRelativeOffsetFast(const uint32_t ID, const uint32_t neighbor) // === neighbor must be larger than ID ===
   {
-    const uint uOffset = neighbor - ID - 1;
+    const uint32_t uOffset = neighbor - ID - 1;
     return uOffset<<1;
   }  
 
-  __forceinline int decodeRelativeOffset(const int localID, const uint offset, const uint ID)
+  __forceinline int decodeRelativeOffset(const int localID, const uint32_t offset, const uint32_t ID)
   {
-    const uint off = (offset>>1)+1;
+    const uint32_t off = (offset>>1)+1;
     return localID + (((offset^ID) % 2 == 0) ? (int)off : -(int)off);
   }
 
 
-  __forceinline void findNN(const uint localID, const uint ID, const uint local_window_size, const gpu::AABB3f *const cached_bounds, uint *const cached_neighbor, const uint SEARCH_RADIUS_SHIFT,const bool forceNeighborMerge=false)
+  __forceinline void findNN(const uint32_t localID, const uint32_t ID, const uint32_t local_window_size, const gpu::AABB3f *const cached_bounds, uint32_t *const cached_neighbor, const uint32_t SEARCH_RADIUS_SHIFT,const bool forceNeighborMerge=false)
   {
     /* ---------------------------------------------------------- */                                                       
     /* --- compute nearest neighbor and store result into SLM --- */
     /* ---------------------------------------------------------- */
-    const uint SEARCH_RADIUS =    (uint)1<<SEARCH_RADIUS_SHIFT;            
-    uint encode_mask   = ~(((uint)1<<(SEARCH_RADIUS_SHIFT+1))-1);
+    const uint32_t SEARCH_RADIUS =    (uint)1<<SEARCH_RADIUS_SHIFT;            
+    uint32_t encode_mask   = ~(((uint)1<<(SEARCH_RADIUS_SHIFT+1))-1);
 
     /* --- only look at exponent if we need to force a merge --- */
     if (forceNeighborMerge)
       encode_mask =~(((uint)1<<(24))-1);
     
     
-    uint min_area_index = -1;
+    uint32_t min_area_index = -1;
     const gpu::AABB3f bounds0 = cached_bounds[localID];              
-    for (uint r=1;r<=SEARCH_RADIUS && (localID + r < local_window_size) ;r++)
+    for (uint32_t r=1;r<=SEARCH_RADIUS && (localID + r < local_window_size) ;r++)
     {
       const gpu::AABB3f bounds1 = cached_bounds[localID+r];
       const float new_area = distanceFct(bounds0,bounds1);
-      uint new_area_i = ((gpu::as_uint(new_area) << 1) & encode_mask);
+      uint32_t new_area_i = ((gpu::as_uint(new_area) << 1) & encode_mask);
 #if EQUAL_DISTANCES_WORKAROUND == 1
-      const uint encode0 = encodeRelativeOffsetFast(localID  ,localID+r);                
-      const uint new_area_index0 = new_area_i | encode0 | (ID&1); 
-      const uint new_area_index1 = new_area_i | encode0 | (((ID+r)&1)^1); 
+      const uint32_t encode0 = encodeRelativeOffsetFast(localID  ,localID+r);                
+      const uint32_t new_area_index0 = new_area_i | encode0 | (ID&1); 
+      const uint32_t new_area_index1 = new_area_i | encode0 | (((ID+r)&1)^1); 
 #else
-      const uint encode0 = encodeRelativeOffset(localID  ,localID+r);                
-      const uint encode1 = encodeRelativeOffset(localID+r,localID);   // faster            
-      const uint new_area_index0 = new_area_i | encode0;
-      const uint new_area_index1 = new_area_i | encode1;            
+      const uint32_t encode0 = encodeRelativeOffset(localID  ,localID+r);                
+      const uint32_t encode1 = encodeRelativeOffset(localID+r,localID);   // faster            
+      const uint32_t new_area_index0 = new_area_i | encode0;
+      const uint32_t new_area_index1 = new_area_i | encode1;            
 #endif
       min_area_index = min(min_area_index,new_area_index0);                  
       gpu::atomic_min_local(&cached_neighbor[localID+r],new_area_index1);                  
@@ -2637,21 +2636,21 @@ namespace embree
   }
 
 
-  __forceinline uint getNewClusterIndexCreateBVH2Node(const uint localID, const uint ID, const uint maxID, const uint local_window_start, const uint *const cluster_index_source, const gpu::AABB3f *const cached_bounds, const uint *const cached_neighbor,const uint *const cached_clusterID, BVH2Ploc *const bvh2, uint *const bvh2_index_allocator, BVH2SubTreeState *const bvh2_subtree_size, const uint SEARCH_RADIUS_SHIFT)
+  __forceinline uint32_t getNewClusterIndexCreateBVH2Node(const uint32_t localID, const uint32_t ID, const uint32_t maxID, const uint32_t local_window_start, const uint32_t *const cluster_index_source, const gpu::AABB3f *const cached_bounds, const uint32_t *const cached_neighbor,const uint32_t *const cached_clusterID, BVH2Ploc *const bvh2, uint32_t *const bvh2_index_allocator, BVH2SubTreeState *const bvh2_subtree_size, const uint32_t SEARCH_RADIUS_SHIFT)
   {
-    const uint decode_mask =  (((uint)1<<(SEARCH_RADIUS_SHIFT+1))-1);
+    const uint32_t decode_mask =  (((uint)1<<(SEARCH_RADIUS_SHIFT+1))-1);
               
-    uint new_cluster_index = -1;
+    uint32_t new_cluster_index = -1;
     if (ID < maxID)
     {
       new_cluster_index = cluster_index_source[ID]; // prevents partial writes later 
       //new_cluster_index = cached_clusterID[ID-local_window_start]; //cluster_index_source[ID];
 #if EQUAL_DISTANCES_WORKAROUND == 1          
-      uint n_i     = decodeRelativeOffset(ID -local_window_start,cached_neighbor[ID -local_window_start] & decode_mask,  ID) + local_window_start;
-      uint n_i_n_i = decodeRelativeOffset(n_i-local_window_start,cached_neighbor[n_i-local_window_start] & decode_mask, n_i) + local_window_start;
+      uint32_t n_i     = decodeRelativeOffset(ID -local_window_start,cached_neighbor[ID -local_window_start] & decode_mask,  ID) + local_window_start;
+      uint32_t n_i_n_i = decodeRelativeOffset(n_i-local_window_start,cached_neighbor[n_i-local_window_start] & decode_mask, n_i) + local_window_start;
 #else
-      uint n_i     = decodeRelativeOffset(ID -local_window_start,cached_neighbor[ID -local_window_start] & decode_mask,  0) + local_window_start;
-      uint n_i_n_i = decodeRelativeOffset(n_i-local_window_start,cached_neighbor[n_i-local_window_start] & decode_mask,  0) + local_window_start;          
+      uint32_t n_i     = decodeRelativeOffset(ID -local_window_start,cached_neighbor[ID -local_window_start] & decode_mask,  0) + local_window_start;
+      uint32_t n_i_n_i = decodeRelativeOffset(n_i-local_window_start,cached_neighbor[n_i-local_window_start] & decode_mask,  0) + local_window_start;          
 #endif          
       const gpu::AABB3f bounds = cached_bounds[ID - local_window_start];
       
@@ -2659,14 +2658,14 @@ namespace embree
       {
         if (ID < n_i)
         {
-          const uint leftIndex  = cached_clusterID[ID-local_window_start]; //cluster_index_source[ID];
-          const uint rightIndex = cached_clusterID[n_i-local_window_start]; //cluster_index_source[n_i];
+          const uint32_t leftIndex  = cached_clusterID[ID-local_window_start]; //cluster_index_source[ID];
+          const uint32_t rightIndex = cached_clusterID[n_i-local_window_start]; //cluster_index_source[n_i];
           const gpu::AABB3f &leftBounds  = bounds;
           const gpu::AABB3f &rightBounds = cached_bounds[n_i-local_window_start];
 
           /* --- reduce per subgroup to lower pressure on global atomic counter --- */                                                         
           sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> bvh2_counter(*bvh2_index_allocator);
-          const uint bvh2_index = gpu::atomic_add_global_sub_group_shared(bvh2_counter,1);
+          const uint32_t bvh2_index = gpu::atomic_add_global_sub_group_shared(bvh2_counter,1);
 
           /* --- store new BVH2 node --- */
           bvh2[bvh2_index].init(leftIndex,rightIndex,gpu::merge(leftBounds,rightBounds),bvh2_subtree_size[leftIndex],bvh2_subtree_size[rightIndex]);                                                         
@@ -2680,46 +2679,46 @@ namespace embree
     return new_cluster_index;
   }
   
-  void iteratePLOC (sycl::queue &gpu_queue, PLOCGlobals *const globals, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, BVH2SubTreeState *const bvh2_subtree_size, uint *const scratch_mem, const uint numPrims, const uint NN_SEARCH_WG_NUM, uint *host_device_tasks, const uint SEARCH_RADIUS_SHIFT, double &iteration_time, const bool forceNeighborMerge, const bool verbose)    
+  void iteratePLOC (sycl::queue &gpu_queue, PLOCGlobals *const globals, BVH2Ploc *const bvh2, uint32_t *const cluster_index_source, uint32_t *const cluster_index_dest, BVH2SubTreeState *const bvh2_subtree_size, uint32_t *const scratch_mem, const uint32_t numPrims, const uint32_t NN_SEARCH_WG_NUM, uint32_t *host_device_tasks, const uint32_t SEARCH_RADIUS_SHIFT, double &iteration_time, const bool forceNeighborMerge, const bool verbose)    
   {
-    static const uint NN_SEARCH_SUB_GROUP_WIDTH = 16;
-    static const uint NN_SEARCH_WG_SIZE         = LARGE_WG_SIZE;
-    uint *const bvh2_index_allocator            = &globals->bvh2_index_allocator;
+    static const uint32_t NN_SEARCH_SUB_GROUP_WIDTH = 16;
+    static const uint32_t NN_SEARCH_WG_SIZE         = LARGE_WG_SIZE;
+    uint32_t *const bvh2_index_allocator            = &globals->bvh2_index_allocator;
     
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
         sycl::local_accessor< gpu::AABB3f, 1> cached_bounds  (sycl::range<1>(NN_SEARCH_WG_SIZE),cgh);
-        sycl::local_accessor< uint       , 1> cached_neighbor(sycl::range<1>(NN_SEARCH_WG_SIZE),cgh);
-        sycl::local_accessor< uint       , 1> cached_clusterID(sycl::range<1>(NN_SEARCH_WG_SIZE),cgh);        
-        sycl::local_accessor< uint       , 1> counts(sycl::range<1>((NN_SEARCH_WG_SIZE/NN_SEARCH_SUB_GROUP_WIDTH)),cgh);
-        sycl::local_accessor< uint       , 1> counts_prefix_sum(sycl::range<1>((NN_SEARCH_WG_SIZE/NN_SEARCH_SUB_GROUP_WIDTH)),cgh);        
-        sycl::local_accessor< uint      ,  0> _wgID(cgh);
-        sycl::local_accessor< uint      ,  0> _global_count_prefix_sum(cgh);
+        sycl::local_accessor< uint32_t       , 1> cached_neighbor(sycl::range<1>(NN_SEARCH_WG_SIZE),cgh);
+        sycl::local_accessor< uint32_t       , 1> cached_clusterID(sycl::range<1>(NN_SEARCH_WG_SIZE),cgh);        
+        sycl::local_accessor< uint32_t       , 1> counts(sycl::range<1>((NN_SEARCH_WG_SIZE/NN_SEARCH_SUB_GROUP_WIDTH)),cgh);
+        sycl::local_accessor< uint32_t       , 1> counts_prefix_sum(sycl::range<1>((NN_SEARCH_WG_SIZE/NN_SEARCH_SUB_GROUP_WIDTH)),cgh);        
+        sycl::local_accessor< uint32_t      ,  0> _wgID(cgh);
+        sycl::local_accessor< uint32_t      ,  0> _global_count_prefix_sum(cgh);
                 
         const sycl::nd_range<1> nd_range(sycl::range<1>(NN_SEARCH_WG_NUM*NN_SEARCH_WG_SIZE),sycl::range<1>(NN_SEARCH_WG_SIZE));		  
         cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(NN_SEARCH_SUB_GROUP_WIDTH) {
-            const uint localID        = item.get_local_id(0);
-            const uint localSize       = item.get_local_range().size();            
-            const uint SEARCH_RADIUS   = (uint)1<<SEARCH_RADIUS_SHIFT;            
-            const uint WORKING_WG_SIZE = NN_SEARCH_WG_SIZE - 4*SEARCH_RADIUS; /* reducing working group set size to LARGE_WG_SIZE - 4 * radius to avoid loops */
+            const uint32_t localID        = item.get_local_id(0);
+            const uint32_t localSize       = item.get_local_range().size();            
+            const uint32_t SEARCH_RADIUS   = (uint)1<<SEARCH_RADIUS_SHIFT;            
+            const uint32_t WORKING_WG_SIZE = NN_SEARCH_WG_SIZE - 4*SEARCH_RADIUS; /* reducing working group set size to LARGE_WG_SIZE - 4 * radius to avoid loops */
             
 
-            uint &wgID = *_wgID.get_pointer();
-            uint &global_count_prefix_sum = *_global_count_prefix_sum.get_pointer();
+            uint32_t &wgID = *_wgID.get_pointer();
+            uint32_t &global_count_prefix_sum = *_global_count_prefix_sum.get_pointer();
 
             if (localID == 0)
               wgID = gpu::atomic_add_global(&globals->wgID,(uint)1);
 
             item.barrier(sycl::access::fence_space::local_space);
             
-            const uint groupID        = wgID;                                                             
-            const uint startID        = ((size_t)groupID + 0)*(size_t)numPrims / NN_SEARCH_WG_NUM;
-            const uint endID          = ((size_t)groupID + 1)*(size_t)numPrims / NN_SEARCH_WG_NUM;
-            const uint sizeID         = endID-startID;
-            const uint aligned_sizeID = gpu::alignTo(sizeID,WORKING_WG_SIZE);
+            const uint32_t groupID        = wgID;                                                             
+            const uint32_t startID        = ((size_t)groupID + 0)*(size_t)numPrims / NN_SEARCH_WG_NUM;
+            const uint32_t endID          = ((size_t)groupID + 1)*(size_t)numPrims / NN_SEARCH_WG_NUM;
+            const uint32_t sizeID         = endID-startID;
+            const uint32_t aligned_sizeID = gpu::alignTo(sizeID,WORKING_WG_SIZE);
             
             
-            uint total_offset = 0;                                                     
-            for (uint t=0;t<aligned_sizeID;t+=WORKING_WG_SIZE)
+            uint32_t total_offset = 0;                                                     
+            for (uint32_t t=0;t<aligned_sizeID;t+=WORKING_WG_SIZE)
             {
               /* -------------------------------------------------------- */                                                       
               /* --- copy AABBs from cluster representatives into SLM --- */
@@ -2728,10 +2727,10 @@ namespace embree
               const int local_window_start = max((int)(startID+t                )-2*(int)SEARCH_RADIUS  ,(int)0);
               const int local_window_end   = min((int)(startID+t+WORKING_WG_SIZE)+2*(int)SEARCH_RADIUS+1,(int)numPrims);
               const int local_window_size = local_window_end - local_window_start;
-              const uint ID = startID + localID + t;
-              const uint maxID = min(startID + t + WORKING_WG_SIZE,endID);
+              const uint32_t ID = startID + localID + t;
+              const uint32_t maxID = min(startID + t + WORKING_WG_SIZE,endID);
 
-              const uint clusterID = cluster_index_source[min(local_window_start+(int)localID,local_window_end-1)];
+              const uint32_t clusterID = cluster_index_source[min(local_window_start+(int)localID,local_window_end-1)];
               cached_bounds[localID] = bvh2[clusterID].bounds;
               cached_clusterID[localID] = clusterID;
               cached_neighbor[localID] = -1;
@@ -2750,15 +2749,15 @@ namespace embree
               /* --- merge valid nearest neighbors and create bvh2 node --- */
               /* ---------------------------------------------------------- */
 
-              const uint new_cluster_index = getNewClusterIndexCreateBVH2Node(localID,ID,maxID,local_window_start,cluster_index_source,
+              const uint32_t new_cluster_index = getNewClusterIndexCreateBVH2Node(localID,ID,maxID,local_window_start,cluster_index_source,
                                                                               cached_bounds.get_pointer(),cached_neighbor.get_pointer(),cached_clusterID.get_pointer(),
                                                                               bvh2,bvh2_index_allocator,bvh2_subtree_size,
                                                                               SEARCH_RADIUS_SHIFT);
 
-              const uint flag = new_cluster_index != -1 ? 1 : 0;
-              const uint ps = ID < maxID ? flag : 0;
-              uint total_reduction = 0;
-              const uint p_sum = startID + total_offset + prefixSumWorkgroup(ps,NN_SEARCH_WG_SIZE,counts.get_pointer(),counts_prefix_sum.get_pointer(),item,total_reduction);    
+              const uint32_t flag = new_cluster_index != -1 ? 1 : 0;
+              const uint32_t ps = ID < maxID ? flag : 0;
+              uint32_t total_reduction = 0;
+              const uint32_t p_sum = startID + total_offset + prefixSumWorkgroup(ps,NN_SEARCH_WG_SIZE,counts.get_pointer(),counts_prefix_sum.get_pointer(),item,total_reduction);    
 
               /* --- store cluster representative into destination array --- */                                                                 
               if (ID < maxID)
@@ -2772,8 +2771,8 @@ namespace embree
             /* --- store number of valid cluster representatives into scratch mem and set valid flag --- */
             /* ----------------------------------------------------------------------------------------- */
 
-            const uint flag = (uint)1<<31;            
-            const uint mask = ~flag;
+            const uint32_t flag = (uint)1<<31;            
+            const uint32_t mask = ~flag;
             
             if (localID == 0)
             {
@@ -2792,7 +2791,7 @@ namespace embree
             if (localID < groupID /*NN_SEARCH_WG_NUM */)
             {
               sycl::atomic_ref<uint, sycl::memory_order::acq_rel, sycl::memory_scope::device,sycl::access::address_space::global_space> global_state(scratch_mem[localID]);
-              uint c = 0;
+              uint32_t c = 0;
               while( ((c = global_state.load()) & flag) == 0 );
               if (c)
                 gpu::atomic_add_local(&global_count_prefix_sum,(uint)c & mask);
@@ -2803,10 +2802,10 @@ namespace embree
             /* ---------------------------------------------------- */                                                       
             /* --- prefix sum over per WG counts in scratch mem --- */
             /* ---------------------------------------------------- */
-            const uint active_count = total_offset;
-            const uint global_offset = global_count_prefix_sum;            
+            const uint32_t active_count = total_offset;
+            const uint32_t global_offset = global_count_prefix_sum;            
               
-            for (uint t=localID;t<active_count;t+=localSize)
+            for (uint32_t t=localID;t<active_count;t+=localSize)
               cluster_index_source[global_offset + t] = cluster_index_dest[startID + t];                                                               
 
             /* -------------------------------------------------- */                                                       
@@ -2822,14 +2821,14 @@ namespace embree
 
             if (localID == 0)
             {
-              const uint syncID = gpu::atomic_add_global(&globals->sync,(uint)1);
+              const uint32_t syncID = gpu::atomic_add_global(&globals->sync,(uint)1);
               if (syncID == NN_SEARCH_WG_NUM-1)
               {
                 /* --- reset atomics --- */
                 globals->wgID = 0;
                 globals->sync = 0;
                 /* --- reset scratch_mem --- */
-                for (uint i=0;i<NN_SEARCH_WG_NUM;i++) 
+                for (uint32_t i=0;i<NN_SEARCH_WG_NUM;i++) 
                   scratch_mem[i] = 0;                
               }
             }            
@@ -2845,41 +2844,41 @@ namespace embree
   // ====================================================================================================================================================================================
   
   
-  __forceinline uint wgBuild(sycl::nd_item<1> &item,
-                             uint *const bvh2_index_allocator,
-                             const uint startID,
-                             const uint endID,
+  __forceinline uint32_t wgBuild(sycl::nd_item<1> &item,
+                             uint32_t *const bvh2_index_allocator,
+                             const uint32_t startID,
+                             const uint32_t endID,
                              BVH2Ploc *const bvh2,
-                             uint *const global_cluster_index_source,
-                             uint *const global_cluster_index_dest,
+                             uint32_t *const global_cluster_index_source,
+                             uint32_t *const global_cluster_index_dest,
                              BVH2SubTreeState *const bvh2_subtree_size,
                              gpu::AABB3f *const cached_bounds,
-                             uint *const cached_neighbor,
-                             uint *const cached_clusterID,                             
-                             uint *const counts,
-                             uint *const counts_prefix_sum,                             
-                             uint &active_counter,
-                             const uint BOTTOM_UP_THRESHOLD,
-                             const uint SEARCH_RADIUS_SHIFT,
-                             const uint SINGLE_WG_SIZE = LARGE_WG_SIZE)
+                             uint32_t *const cached_neighbor,
+                             uint32_t *const cached_clusterID,                             
+                             uint32_t *const counts,
+                             uint32_t *const counts_prefix_sum,                             
+                             uint32_t &active_counter,
+                             const uint32_t BOTTOM_UP_THRESHOLD,
+                             const uint32_t SEARCH_RADIUS_SHIFT,
+                             const uint32_t SINGLE_WG_SIZE = LARGE_WG_SIZE)
   {
-    const uint localID         = item.get_local_id(0);
-    const uint localSize       = item.get_local_range().size();
-    const uint SEARCH_RADIUS   = (uint)1<<SEARCH_RADIUS_SHIFT;
-    const uint WORKING_WG_SIZE = SINGLE_WG_SIZE - 4*SEARCH_RADIUS; 
+    const uint32_t localID         = item.get_local_id(0);
+    const uint32_t localSize       = item.get_local_range().size();
+    const uint32_t SEARCH_RADIUS   = (uint)1<<SEARCH_RADIUS_SHIFT;
+    const uint32_t WORKING_WG_SIZE = SINGLE_WG_SIZE - 4*SEARCH_RADIUS; 
     
-    uint *const cluster_index_source = &global_cluster_index_source[startID];
-    uint *const cluster_index_dest   = &global_cluster_index_dest[startID];
+    uint32_t *const cluster_index_source = &global_cluster_index_source[startID];
+    uint32_t *const cluster_index_dest   = &global_cluster_index_dest[startID];
 
     float ratio = 100.0f;
     
-    uint numPrims = endID-startID; 
+    uint32_t numPrims = endID-startID; 
     while(numPrims>BOTTOM_UP_THRESHOLD)
     {
-      const uint aligned_numPrims = gpu::alignTo(numPrims,WORKING_WG_SIZE);
+      const uint32_t aligned_numPrims = gpu::alignTo(numPrims,WORKING_WG_SIZE);
 
-      uint total_offset = 0;
-      for (uint t=0;t<aligned_numPrims;t+=WORKING_WG_SIZE)
+      uint32_t total_offset = 0;
+      for (uint32_t t=0;t<aligned_numPrims;t+=WORKING_WG_SIZE)
       {
         /* -------------------------------------------------------- */                                                       
         /* --- copy AABBs from cluster representatives into SLM --- */
@@ -2889,12 +2888,12 @@ namespace embree
         const int local_window_end   = min((int)(t+WORKING_WG_SIZE)+2*(int)SEARCH_RADIUS+1,(int)numPrims);
         const int local_window_size = local_window_end - local_window_start;
         
-        const uint ID    = localID + t;                                                             
-        const uint maxID = min(t + WORKING_WG_SIZE,numPrims);                                                         
+        const uint32_t ID    = localID + t;                                                             
+        const uint32_t maxID = min(t + WORKING_WG_SIZE,numPrims);                                                         
 
         /* --- fill the SLM bounds cache --- */
         
-        const uint clusterID = cluster_index_source[min(local_window_start+(int)localID,local_window_end-1)];
+        const uint32_t clusterID = cluster_index_source[min(local_window_start+(int)localID,local_window_end-1)];
         cached_bounds[localID] = bvh2[clusterID].bounds;
         cached_clusterID[localID] = clusterID;        
         cached_neighbor[localID] = -1;              
@@ -2914,16 +2913,16 @@ namespace embree
         /* --- merge valid nearest neighbors and create bvh2 node --- */
         /* ---------------------------------------------------------- */
 
-        const uint new_cluster_index = getNewClusterIndexCreateBVH2Node(localID,ID,maxID,local_window_start,cluster_index_source,
+        const uint32_t new_cluster_index = getNewClusterIndexCreateBVH2Node(localID,ID,maxID,local_window_start,cluster_index_source,
                                                                         cached_bounds,cached_neighbor,cached_clusterID,
                                                                         bvh2,bvh2_index_allocator,bvh2_subtree_size,
                                                                         SEARCH_RADIUS_SHIFT);
         
-        const uint flag = new_cluster_index != -1 ? 1 : 0;
-        const uint ps = ID < maxID ? flag : 0;
+        const uint32_t flag = new_cluster_index != -1 ? 1 : 0;
+        const uint32_t ps = ID < maxID ? flag : 0;
 
-        uint total_reduction = 0;
-        const uint p_sum = total_offset + prefixSumWorkgroup(ps,SINGLE_WG_SIZE,counts,counts_prefix_sum,item,total_reduction);
+        uint32_t total_reduction = 0;
+        const uint32_t p_sum = total_offset + prefixSumWorkgroup(ps,SINGLE_WG_SIZE,counts,counts_prefix_sum,item,total_reduction);
 
         /* --- store cluster representative into destination array --- */                                                                 
         if (ID < maxID)
@@ -2937,12 +2936,12 @@ namespace embree
 
       /*-- copy elements back from dest to source -- */
       
-      for (uint t=localID;t<total_offset;t+=localSize)
+      for (uint32_t t=localID;t<total_offset;t+=localSize)
         cluster_index_source[t] = cluster_index_dest[t];      
 
       item.barrier(sycl::access::fence_space::local_space);
 
-      const uint new_numPrims = total_offset;
+      const uint32_t new_numPrims = total_offset;
       
       ratio = (float)(numPrims-new_numPrims) / numPrims * 100.0f;
       numPrims = total_offset;
@@ -2954,35 +2953,35 @@ namespace embree
   // ====================================================================================================================================================================================
   // ====================================================================================================================================================================================
   
-  void singleWGBuild(sycl::queue &gpu_queue, PLOCGlobals *const globals, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, BVH2SubTreeState *const bvh2_subtree_size, const uint numPrimitives, const uint SEARCH_RADIUS_SHIFT, double &iteration_time, const bool verbose)
+  void singleWGBuild(sycl::queue &gpu_queue, PLOCGlobals *const globals, BVH2Ploc *const bvh2, uint32_t *const cluster_index_source, uint32_t *const cluster_index_dest, BVH2SubTreeState *const bvh2_subtree_size, const uint32_t numPrimitives, const uint32_t SEARCH_RADIUS_SHIFT, double &iteration_time, const bool verbose)
   {
-    static const uint SINGLE_WG_SUB_GROUP_WIDTH = 16;
-    static const uint SINGLE_WG_SIZE = LARGE_WG_SIZE;
-    uint *const bvh2_index_allocator = &globals->bvh2_index_allocator;
+    static const uint32_t SINGLE_WG_SUB_GROUP_WIDTH = 16;
+    static const uint32_t SINGLE_WG_SIZE = LARGE_WG_SIZE;
+    uint32_t *const bvh2_index_allocator = &globals->bvh2_index_allocator;
     
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
         const sycl::nd_range<1> nd_range(SINGLE_WG_SIZE,sycl::range<1>(SINGLE_WG_SIZE));
 
         /* local variables */
         sycl::local_accessor< gpu::AABB3f, 1> cached_bounds  (sycl::range<1>(SINGLE_WG_SIZE),cgh);
-        sycl::local_accessor< uint       , 1> cached_neighbor(sycl::range<1>(SINGLE_WG_SIZE),cgh);
-        sycl::local_accessor< uint       , 1> cached_clusterID(sycl::range<1>(SINGLE_WG_SIZE),cgh);
+        sycl::local_accessor< uint32_t       , 1> cached_neighbor(sycl::range<1>(SINGLE_WG_SIZE),cgh);
+        sycl::local_accessor< uint32_t       , 1> cached_clusterID(sycl::range<1>(SINGLE_WG_SIZE),cgh);
 #if 0
-        sycl::local_accessor< uint       , 1> local_cluster_index_source(sycl::range<1>(SINGLE_WG_SWITCH_THRESHOLD),cgh);
-        sycl::local_accessor< uint       , 1> local_cluster_index_dest(sycl::range<1>(SINGLE_WG_SWITCH_THRESHOLD),cgh);
+        sycl::local_accessor< uint32_t       , 1> local_cluster_index_source(sycl::range<1>(SINGLE_WG_SWITCH_THRESHOLD),cgh);
+        sycl::local_accessor< uint32_t       , 1> local_cluster_index_dest(sycl::range<1>(SINGLE_WG_SWITCH_THRESHOLD),cgh);
 #endif        
-        sycl::local_accessor< uint       , 1> counts(sycl::range<1>((SINGLE_WG_SIZE/SINGLE_WG_SUB_GROUP_WIDTH)),cgh);        
-        sycl::local_accessor< uint       , 1> counts_prefix_sum(sycl::range<1>((SINGLE_WG_SIZE/SINGLE_WG_SUB_GROUP_WIDTH)),cgh);
-        sycl::local_accessor< uint       , 0> _active_counter(cgh);
+        sycl::local_accessor< uint32_t       , 1> counts(sycl::range<1>((SINGLE_WG_SIZE/SINGLE_WG_SUB_GROUP_WIDTH)),cgh);        
+        sycl::local_accessor< uint32_t       , 1> counts_prefix_sum(sycl::range<1>((SINGLE_WG_SIZE/SINGLE_WG_SUB_GROUP_WIDTH)),cgh);
+        sycl::local_accessor< uint32_t       , 0> _active_counter(cgh);
                                              
         cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(SINGLE_WG_SUB_GROUP_WIDTH) {
-            uint &active_counter = *_active_counter.get_pointer();
+            uint32_t &active_counter = *_active_counter.get_pointer();
 
-            const uint localID        = item.get_local_id(0);
-            //const uint localSize       = item.get_local_range().size();
+            const uint32_t localID        = item.get_local_id(0);
+            //const uint32_t localSize       = item.get_local_range().size();
 
 #if 0            
-            for (uint i=localID;i<numPrimitives;i+=localSize)
+            for (uint32_t i=localID;i<numPrimitives;i+=localSize)
               local_cluster_index_source[i] = cluster_index_source[i];
 
             item.barrier(sycl::access::fence_space::local_space);
@@ -3004,27 +3003,27 @@ namespace embree
   // ====================================================================== Rebalance BVH2 ===================================================================================
   // =========================================================================================================================================================================
   
-  __forceinline void rebalanceBVH2(BVH2Ploc *bvh2, uint root, const uint numPrimitives,const BVH2SubTreeState *const bvh2_subtree_size, uint *const inner, uint *const leaves, const uint maxEntries)
+  __forceinline void rebalanceBVH2(BVH2Ploc *bvh2, uint32_t root, const uint32_t numPrimitives,const BVH2SubTreeState *const bvh2_subtree_size, uint32_t *const inner, uint32_t *const leaves, const uint32_t maxEntries)
   {
-    uint numLeaves = 0;
-    uint numInner = 1;
+    uint32_t numLeaves = 0;
+    uint32_t numInner = 1;
     inner[0] = root;
 
-    uint start = 0;
+    uint32_t start = 0;
     while(start<numInner && numInner < maxEntries)
     {
-      const uint num = numInner-start;
-      uint plus = 0;
-      for (uint i=0;i<num;i++,plus++)
+      const uint32_t num = numInner-start;
+      uint32_t plus = 0;
+      for (uint32_t i=0;i<num;i++,plus++)
       {
-        const uint index = inner[start+i];
-        const uint left  = bvh2[index].leftIndex();          
+        const uint32_t index = inner[start+i];
+        const uint32_t left  = bvh2[index].leftIndex();          
         if (BVH2Ploc::isFatLeaf(bvh2[index].left,numPrimitives))
           leaves[numLeaves++] = left;
         else
           inner[numInner++] = left;
 
-        const uint right = bvh2[index].rightIndex();
+        const uint32_t right = bvh2[index].rightIndex();
         if (BVH2Ploc::isFatLeaf(bvh2[index].right,numPrimitives))
           leaves[numLeaves++] = right;
         else
@@ -3038,16 +3037,16 @@ namespace embree
     while(numInner >= numLeaves)
       leaves[numLeaves++] = inner[--numInner];
     
-    uint active = numLeaves;
+    uint32_t active = numLeaves;
     while(active > 1)
     {
-      uint new_active = 0;
-      for (uint i=0;i<active;i+=2)
+      uint32_t new_active = 0;
+      for (uint32_t i=0;i<active;i+=2)
         if (i+1 < active)
         {
-          const uint innerID = inner[--numInner];
-          const uint leftIndex  = leaves[i+0];
-          const uint rightIndex = leaves[i+1];
+          const uint32_t innerID = inner[--numInner];
+          const uint32_t leftIndex  = leaves[i+0];
+          const uint32_t rightIndex = leaves[i+1];
           const gpu::AABB3f &leftBounds  = bvh2[leftIndex].bounds;
           const gpu::AABB3f &rightBounds = bvh2[rightIndex].bounds;          
           bvh2[innerID].init(leftIndex,rightIndex,gpu::merge(leftBounds,rightBounds),bvh2_subtree_size[leftIndex],bvh2_subtree_size[rightIndex]);                                                         
@@ -3060,10 +3059,10 @@ namespace embree
     }    
   }
   
-  __forceinline void rebalanceBVH2(sycl::queue &gpu_queue, BVH2Ploc *const bvh2, const BVH2SubTreeState *const bvh2_subtree_size, const uint numPrimitives, double &iteration_time, const bool verbose)    
+  __forceinline void rebalanceBVH2(sycl::queue &gpu_queue, BVH2Ploc *const bvh2, const BVH2SubTreeState *const bvh2_subtree_size, const uint32_t numPrimitives, double &iteration_time, const bool verbose)    
   {
-    static const uint REBALANCE_BVH2_WG_SIZE = 16;
-    static const uint MAX_NUM_REBALANCE_NODES = 256;
+    static const uint32_t REBALANCE_BVH2_WG_SIZE = 16;
+    static const uint32_t MAX_NUM_REBALANCE_NODES = 256;
     
     const sycl::nd_range<1> nd_range1(gpu::alignTo(numPrimitives,REBALANCE_BVH2_WG_SIZE),sycl::range<1>(REBALANCE_BVH2_WG_SIZE));
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
@@ -3072,20 +3071,20 @@ namespace embree
         
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                          {
-                           const uint ID = item.get_global_id(0);
+                           const uint32_t ID = item.get_global_id(0);
                            if (ID < numPrimitives)
                            {
-                             const uint global_root = numPrimitives+ID;
-                             uint *inner  = _inner.get_pointer();
-                             uint *leaves = _leaves.get_pointer();
-                             uint mask = sub_group_ballot(bvh2_subtree_size[global_root].isMarked());
+                             const uint32_t global_root = numPrimitives+ID;
+                             uint32_t *inner  = _inner.get_pointer();
+                             uint32_t *leaves = _leaves.get_pointer();
+                             uint32_t mask = sub_group_ballot(bvh2_subtree_size[global_root].isMarked());
                              while (mask)
                              {
-                               const uint index = sycl::ctz(mask);
+                               const uint32_t index = sycl::ctz(mask);
                                mask &= mask-1;
-                               const uint root = sub_group_broadcast(global_root,index);
-                               const uint leftIndex = bvh2[root].leftIndex();
-                               const uint rightIndex = bvh2[root].rightIndex();
+                               const uint32_t root = sub_group_broadcast(global_root,index);
+                               const uint32_t leftIndex = bvh2[root].leftIndex();
+                               const uint32_t rightIndex = bvh2[root].rightIndex();
                                if (bvh2_subtree_size[leftIndex].depth >= REBALANCE_BVH2_MINIMUM_DEPTH)                             
                                  rebalanceBVH2(bvh2,leftIndex,numPrimitives,bvh2_subtree_size,inner,leaves,MAX_NUM_REBALANCE_NODES);
                                if (bvh2_subtree_size[rightIndex].depth >= REBALANCE_BVH2_MINIMUM_DEPTH)                             
@@ -3105,28 +3104,28 @@ namespace embree
   // ===================================================================================================================================================================================
 
 
-  __forceinline void getLeafIndices(const uint first_index, const BVH2Ploc *const bvh_nodes, uint *const dest, uint &indexID, const uint numPrimitives)
+  __forceinline void getLeafIndices(const uint32_t first_index, const BVH2Ploc *const bvh_nodes, uint32_t *const dest, uint32_t &indexID, const uint32_t numPrimitives)
   {
     dest[0] = first_index;
-    uint old_indexID = 0;
+    uint32_t old_indexID = 0;
     indexID = 1;
     while(old_indexID != indexID)
     {
       old_indexID = indexID;
-      for (uint i=0;i<old_indexID;i++)
+      for (uint32_t i=0;i<old_indexID;i++)
         if (!BVH2Ploc::isLeaf(dest[i],numPrimitives))
         {
-          const uint left = bvh_nodes[BVH2Ploc::getIndex(dest[i])].left;
-          const uint right = bvh_nodes[BVH2Ploc::getIndex(dest[i])].right;
+          const uint32_t left = bvh_nodes[BVH2Ploc::getIndex(dest[i])].left;
+          const uint32_t right = bvh_nodes[BVH2Ploc::getIndex(dest[i])].right;
           dest[i]         = left;
           dest[indexID++] = right;
         }
     }
   }  
 
-  __forceinline void writeNode(void *_dest, const uint relative_block_offset, const gpu::AABB3f &parent_bounds, const uint numChildren, uint indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint numPrimitives, const NodeType type, const GeometryTypeRanges &geometryTypeRanges)
+  __forceinline void writeNode(void *_dest, const uint32_t relative_block_offset, const gpu::AABB3f &parent_bounds, const uint32_t numChildren, uint32_t indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint32_t numPrimitives, const NodeType type, const GeometryTypeRanges &geometryTypeRanges)
   {
-    uint *dest = (uint*)_dest;
+    uint32_t *dest = (uint*)_dest;
     //dest = (uint*) __builtin_assume_aligned(dest,16);
     
     const float _ulp = std::numeric_limits<float>::epsilon();
@@ -3158,9 +3157,9 @@ namespace embree
     tmp[5]         = 0xff; //instanceMode ? 1 : 0xff;
     
 #pragma nounroll
-    for (uint i=0;i<BVH_BRANCHING_FACTOR;i++)
+    for (uint32_t i=0;i<BVH_BRANCHING_FACTOR;i++)
     {
-      const uint index = BVH2Ploc::getIndex(indices[sycl::min(i,numChildren-1)]);
+      const uint32_t index = BVH2Ploc::getIndex(indices[sycl::min(i,numChildren-1)]);
       // === default is invalid ===
       uint8_t lower_x = 0x80;
       uint8_t lower_y = 0x80;
@@ -3175,7 +3174,7 @@ namespace embree
       const bool isProcedural = geometryTypeRanges.isProcedural(index);
       const bool isLCG        = geometryTypeRanges.isLossyCompressedGeometry(index);      
       
-      const uint numBlocks    = isInstance ? 2 : 1;
+      const uint32_t numBlocks    = isInstance ? 2 : 1;
       NodeType leaf_type = NODE_TYPE_QUAD;
       leaf_type = isInstance ? NODE_TYPE_INSTANCE   : leaf_type;
       leaf_type = isProcedural ? NODE_TYPE_PROCEDURAL : leaf_type;
@@ -3184,7 +3183,7 @@ namespace embree
       data |= (isLeaf ? leaf_type : NODE_TYPE_INTERNAL) << 2;
       const gpu::AABB3f childBounds = bvh2[index].bounds; //.conservativeBounds();
       // === bounds valid ? ====
-      const uint equal_dims = childBounds.numEqualDims();
+      const uint32_t equal_dims = childBounds.numEqualDims();
       const bool write = (i<numChildren) && equal_dims <= 1;
       // === quantize bounds ===
       const gpu::AABB3f  qbounds    = QBVHNodeN::quantize_bounds(lower, _exp_x, _exp_y, _exp_z, childBounds);
@@ -3205,24 +3204,24 @@ namespace embree
       tmp[42+i] = upper_z;      
     }
     // === write out second part of 64 bytes node ===
-    for (uint i=0;i<12;i++)
+    for (uint32_t i=0;i<12;i++)
       dest[4+i] = tmp[i*4+0] | (tmp[i*4+1]<<8) | (tmp[i*4+2]<<16) | (tmp[i*4+3]<<24);
   }
 
-  __forceinline uint getNumLeaves(const uint first_index, const BVH2Ploc *const bvh_nodes, const uint numPrimitives)
+  __forceinline uint32_t getNumLeaves(const uint32_t first_index, const BVH2Ploc *const bvh_nodes, const uint32_t numPrimitives)
   {
-    uint dest[BVH_BRANCHING_FACTOR];
+    uint32_t dest[BVH_BRANCHING_FACTOR];
     dest[0] = BVH2Ploc::getIndex(first_index);
-    uint old_indexID = 0;
-    uint indexID = 1;
+    uint32_t old_indexID = 0;
+    uint32_t indexID = 1;
     while(old_indexID != indexID)
     {
       old_indexID = indexID;
-      for (uint i=0;i<old_indexID;i++)
+      for (uint32_t i=0;i<old_indexID;i++)
         if (!BVH2Ploc::isLeaf(dest[i],numPrimitives))
         {
-          const uint left = bvh_nodes[BVH2Ploc::getIndex(dest[i])].left;
-          const uint right = bvh_nodes[BVH2Ploc::getIndex(dest[i])].right;
+          const uint32_t left = bvh_nodes[BVH2Ploc::getIndex(dest[i])].left;
+          const uint32_t right = bvh_nodes[BVH2Ploc::getIndex(dest[i])].right;
           dest[i]         = left;
           dest[indexID++] = right;
         }
@@ -3230,26 +3229,26 @@ namespace embree
     return indexID;
   }  
     
-  __forceinline uint openBVH2MaxAreaSortChildren(const uint index, uint indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint numPrimitives)
+  __forceinline uint32_t openBVH2MaxAreaSortChildren(const uint32_t index, uint32_t indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint32_t numPrimitives)
   {
     float areas[BVH_BRANCHING_FACTOR];
                                                                           
-    const uint _left  = bvh2[BVH2Ploc::getIndex(index)].left;
-    const uint _right = bvh2[BVH2Ploc::getIndex(index)].right;
+    const uint32_t _left  = bvh2[BVH2Ploc::getIndex(index)].left;
+    const uint32_t _right = bvh2[BVH2Ploc::getIndex(index)].right;
                                                                           
     indices[0] = _left;
     indices[1] = _right;
     areas[0]  = (!BVH2Ploc::isFatLeaf( _left,numPrimitives)) ? bvh2[BVH2Ploc::getIndex( _left)].bounds.area() : neg_inf;    
     areas[1]  = (!BVH2Ploc::isFatLeaf(_right,numPrimitives)) ? bvh2[BVH2Ploc::getIndex(_right)].bounds.area() : neg_inf; 
 
-    uint numChildren = 2;    
+    uint32_t numChildren = 2;    
 #if 1   
     while (numChildren < BVH_BRANCHING_FACTOR)
     {      
       /*! find best child to split */
       float bestArea = areas[0];
-      uint bestChild = 0;
-      for (uint i=1;i<numChildren;i++)
+      uint32_t bestChild = 0;
+      for (uint32_t i=1;i<numChildren;i++)
         if (areas[i] > bestArea)
         {
           bestArea = areas[i];
@@ -3258,9 +3257,9 @@ namespace embree
       
       if (areas[bestChild] < 0.0f) break;
       
-      const uint bestNodeID = indices[bestChild];      
-      const uint left  = bvh2[BVH2Ploc::getIndex(bestNodeID)].left;
-      const uint right = bvh2[BVH2Ploc::getIndex(bestNodeID)].right;
+      const uint32_t bestNodeID = indices[bestChild];      
+      const uint32_t left  = bvh2[BVH2Ploc::getIndex(bestNodeID)].left;
+      const uint32_t right = bvh2[BVH2Ploc::getIndex(bestNodeID)].right;
 
       areas[bestChild]     = (!BVH2Ploc::isFatLeaf(left,numPrimitives)) ? bvh2[BVH2Ploc::getIndex(left)].bounds.area() : neg_inf; 
       areas[numChildren]   = (!BVH2Ploc::isFatLeaf(right,numPrimitives)) ? bvh2[BVH2Ploc::getIndex(right)].bounds.area() : neg_inf; 
@@ -3271,13 +3270,13 @@ namespace embree
 #else
     while(numChildren < BVH_BRANCHING_FACTOR)
     {
-      const uint cur_numChildren = numChildren;      
-      for (uint i=0;i<cur_numChildren && numChildren < BVH_BRANCHING_FACTOR;i++)
+      const uint32_t cur_numChildren = numChildren;      
+      for (uint32_t i=0;i<cur_numChildren && numChildren < BVH_BRANCHING_FACTOR;i++)
       {
         if (!BVH2Ploc::isFatLeaf(indices[i],numPrimitives))
         {
-          const uint left  = bvh2[BVH2Ploc::getIndex(indices[i])].left;
-          const uint right = bvh2[BVH2Ploc::getIndex(indices[i])].right;          
+          const uint32_t left  = bvh2[BVH2Ploc::getIndex(indices[i])].left;
+          const uint32_t right = bvh2[BVH2Ploc::getIndex(indices[i])].right;          
           indices[i]   = left;      
           indices[numChildren] = right;                                                                            
           numChildren++;                
@@ -3287,11 +3286,11 @@ namespace embree
     }
 #endif    
     
-    for (uint i=0;i<numChildren;i++)
+    for (uint32_t i=0;i<numChildren;i++)
       areas[i] = fabs(areas[i]);
 
-    for (uint m=0; m<numChildren-1; m++)
-      for (uint n=m+1; n<numChildren; n++)
+    for (uint32_t m=0; m<numChildren-1; m++)
+      for (uint32_t n=m+1; n<numChildren; n++)
         if (areas[m] < areas[n])
         {
           std::swap(areas[m],areas[n]);
@@ -3326,9 +3325,9 @@ namespace embree
   // =============================================================================================================================================
 
 
-  bool convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, uint *host_device_tasks, const RTHWIF_GEOMETRY_DESC **const geometries, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const uint numPrimitives, const bool instanceMode, const GeometryTypeRanges &geometryTypeRanges, char* const lcg_bvh_mem, float& conversion_device_time,  const bool verbose)
+  bool convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, uint32_t *host_device_tasks, const RTHWIF_GEOMETRY_DESC **const geometries, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const uint32_t numPrimitives, const bool instanceMode, const GeometryTypeRanges &geometryTypeRanges, char* const lcg_bvh_mem, float& conversion_device_time,  const bool verbose)
   {
-    static const uint STOP_THRESHOLD = 1296;    
+    static const uint32_t STOP_THRESHOLD = 1296;    
     double total_time = 0.0f;    
     conversion_device_time = 0.0f;
     
@@ -3339,18 +3338,18 @@ namespace embree
     
     /* ---- Phase I: single WG generates enough work for the breadth-first phase --- */
     {
-      const uint wgSize = LARGE_WG_SIZE;
+      const uint32_t wgSize = LARGE_WG_SIZE;
       const sycl::nd_range<1> nd_range1(wgSize,sycl::range<1>(wgSize));                    
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-          sycl::local_accessor< uint      ,  0> _node_mem_allocator_cur(cgh);                                                   
+          sycl::local_accessor< uint32_t      ,  0> _node_mem_allocator_cur(cgh);                                                   
           cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                            {
-                             const uint localID     = item.get_local_id(0);
-                             const uint localSize   = item.get_local_range().size();                                                                      
-                             uint &node_mem_allocator_cur = *_node_mem_allocator_cur.get_pointer();
+                             const uint32_t localID     = item.get_local_id(0);
+                             const uint32_t localSize   = item.get_local_range().size();                                                                      
+                             uint32_t &node_mem_allocator_cur = *_node_mem_allocator_cur.get_pointer();
 
-                             const uint node_start = 2;
-                             const uint node_end   = 3;
+                             const uint32_t node_start = 2;
+                             const uint32_t node_end   = 3;
                                                                       
                              if (localID == 0)
                              {
@@ -3361,7 +3360,7 @@ namespace embree
                                globals->numLeaves                = 0;
                                // === init intial state ===
                                TmpNodeState *root_state = (TmpNodeState*)((char*)qbvh + 64 * node_start);
-                               uint rootIndex = globals->rootIndex;
+                               uint32_t rootIndex = globals->rootIndex;
                                // === make fat leaf if #prims < threshold ===
                                if (numPrimitives <= FATLEAF_THRESHOLD)
                                  rootIndex = BVH2Ploc::makeFatLeaf(rootIndex,numPrimitives);                                                                        
@@ -3371,8 +3370,8 @@ namespace embree
 
                              item.barrier(sycl::access::fence_space::global_and_local);
 
-                             uint startBlockID = node_start;
-                             uint endBlockID   = node_mem_allocator_cur;
+                             uint32_t startBlockID = node_start;
+                             uint32_t endBlockID   = node_mem_allocator_cur;
 
                              while(1)
                              {                                                                        
@@ -3380,11 +3379,11 @@ namespace embree
                                
                                if (startBlockID == endBlockID || endBlockID-startBlockID>STOP_THRESHOLD) break;
                                
-                               for (uint innerID=startBlockID+localID;innerID<endBlockID;innerID+=localSize)
+                               for (uint32_t innerID=startBlockID+localID;innerID<endBlockID;innerID+=localSize)
                                {
                                  TmpNodeState *state = (TmpNodeState *)globals->nodeBlockPtr(innerID);
-                                 const uint header = state->header;                                                                        
-                                 const uint index  = state->bvh2_index;
+                                 const uint32_t header = state->header;                                                                        
+                                 const uint32_t index  = state->bvh2_index;
                                  char* curAddr = (char*)state;
 
                                  if (header == 0x7fffffff)
@@ -3393,18 +3392,18 @@ namespace embree
                                    {                                                                              
                                      if (!BVH2Ploc::isFatLeaf(index,numPrimitives))
                                      {
-                                       uint indices[BVH_BRANCHING_FACTOR];                                                                                
-                                       const uint numChildren = openBVH2MaxAreaSortChildren(index,indices,bvh2,numPrimitives);
-                                       uint numBlocks = 0;
-                                       for (uint i=0;i<numChildren;i++)
+                                       uint32_t indices[BVH_BRANCHING_FACTOR];                                                                                
+                                       const uint32_t numChildren = openBVH2MaxAreaSortChildren(index,indices,bvh2,numPrimitives);
+                                       uint32_t numBlocks = 0;
+                                       for (uint32_t i=0;i<numChildren;i++)
                                          numBlocks += geometryTypeRanges.isInstance(BVH2Ploc::getIndex(indices[i])) ? 2 : 1; 
                                                                                     
-                                       const uint allocID = gpu::atomic_add_local(&node_mem_allocator_cur,numBlocks);
+                                       const uint32_t allocID = gpu::atomic_add_local(&node_mem_allocator_cur,numBlocks);
                                                                                 
                                        char* childAddr = (char*)globals->qbvh_base_pointer + 64 * allocID;
                                        writeNode(curAddr,allocID-innerID,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED,geometryTypeRanges);
-                                       uint offset = 0;
-                                       for (uint j=0;j<numChildren;j++)
+                                       uint32_t offset = 0;
+                                       for (uint32_t j=0;j<numChildren;j++)
                                        {
                                          TmpNodeState *childState = (TmpNodeState *)(childAddr + offset*64);
                                          childState->init(indices[j]);                                                                                  
@@ -3448,25 +3447,25 @@ namespace embree
     /* ---- Phase II: full breadth-first phase until only fat leaves or single leaves remain--- */
 
     struct __aligned(64) LocalNodeData {
-      uint v[16];
+      uint32_t v[16];
     };
     while(1)
     {      
-      const uint blocks = host_device_tasks[0];
+      const uint32_t blocks = host_device_tasks[0];
       if (blocks == 0 || blocks == -1) break;
       
-      const uint wgSize = 256;
+      const uint32_t wgSize = 256;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(blocks,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
           sycl::local_accessor< LocalNodeData, 1> _localNodeData(sycl::range<1>(wgSize),cgh);                        
           cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                            {
-                             const uint localID   = item.get_local_id(0);                                                                      
-                             const uint globalID  = item.get_global_id(0);
-                             const uint numGroups   = item.get_group_range(0);                             
-                             const uint startBlockID = globals->range_start; 
-                             const uint endBlockID   = globals->range_end;                              
-                             const uint innerID   = startBlockID + globalID;
+                             const uint32_t localID   = item.get_local_id(0);                                                                      
+                             const uint32_t globalID  = item.get_global_id(0);
+                             const uint32_t numGroups   = item.get_group_range(0);                             
+                             const uint32_t startBlockID = globals->range_start; 
+                             const uint32_t endBlockID   = globals->range_end;                              
+                             const uint32_t innerID   = startBlockID + globalID;
                              char* curAddr = nullptr;
                              bool valid = false;
 
@@ -3475,8 +3474,8 @@ namespace embree
                              if (innerID < endBlockID)
                              {
                                TmpNodeState *state = (TmpNodeState *)globals->nodeBlockPtr(innerID);
-                               const uint header = state->header;                                                                        
-                               const uint index  = state->bvh2_index;
+                               const uint32_t header = state->header;                                                                        
+                               const uint32_t index  = state->bvh2_index;
                                curAddr = (char*)state;
                                if (header == 0x7fffffff)
                                {
@@ -3484,19 +3483,19 @@ namespace embree
                                  {                                                                            
                                    if (!BVH2Ploc::isFatLeaf(index,numPrimitives))
                                    {                                                                              
-                                     uint indices[BVH_BRANCHING_FACTOR];
-                                     const uint numChildren = openBVH2MaxAreaSortChildren(index,indices,bvh2,numPrimitives);
-                                     uint numBlocks = 0;
-                                     for (uint i=0;i<numChildren;i++)
+                                     uint32_t indices[BVH_BRANCHING_FACTOR];
+                                     const uint32_t numChildren = openBVH2MaxAreaSortChildren(index,indices,bvh2,numPrimitives);
+                                     uint32_t numBlocks = 0;
+                                     for (uint32_t i=0;i<numChildren;i++)
                                        numBlocks += geometryTypeRanges.isInstance(BVH2Ploc::getIndex(indices[i])) ? 2 : 1; 
                                                                               
-                                     const uint childBlockID = globals->atomic_add_sub_group_varying_allocNodeBlocks(numBlocks);
+                                     const uint32_t childBlockID = globals->atomic_add_sub_group_varying_allocNodeBlocks(numBlocks);
                                      char *const childAddr = globals->nodeBlockPtr(childBlockID);
                                                                               
                                      valid = true;
                                      writeNode(localNodeData[localID].v,childBlockID-innerID,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED,geometryTypeRanges);
-                                     uint offset = 0;
-                                     for (uint j=0;j<numChildren;j++)
+                                     uint32_t offset = 0;
+                                     for (uint32_t j=0;j<numChildren;j++)
                                      {
                                        TmpNodeState *childState = (TmpNodeState *)(childAddr + offset*64);
                                        childState->init(indices[j]);
@@ -3514,15 +3513,15 @@ namespace embree
                              item.barrier(sycl::access::fence_space::local_space);
 
                                                                       
-                             const uint subgroupLocalID = get_sub_group_local_id();
-                             uint mask = sub_group_ballot(valid);
+                             const uint32_t subgroupLocalID = get_sub_group_local_id();
+                             uint32_t mask = sub_group_ballot(valid);
                              while(mask)
                              {
-                               const uint index = sycl::ctz(mask);
+                               const uint32_t index = sycl::ctz(mask);
                                mask &= mask-1;
-                               uint ID = sub_group_broadcast(localID,index);
+                               uint32_t ID = sub_group_broadcast(localID,index);
                                uint* dest = sub_group_broadcast((uint*)curAddr,index);
-                               const uint v = localNodeData[ID].v[subgroupLocalID];                                                                        
+                               const uint32_t v = localNodeData[ID].v[subgroupLocalID];                                                                        
                                sub_group_store(dest,v);
                              }
                                                                       
@@ -3532,13 +3531,13 @@ namespace embree
 
                              if (localID == 0)
                              {
-                               const uint syncID = gpu::atomic_add_global(&globals->sync,(uint)1);
+                               const uint32_t syncID = gpu::atomic_add_global(&globals->sync,(uint)1);
                                if (syncID == numGroups-1)
                                {
                                  /* --- reset atomics --- */
                                  globals->sync = 0;
-                                 const uint new_startBlockID = globals->range_end;
-                                 const uint new_endBlockID   = globals->node_mem_allocator_cur;                                 
+                                 const uint32_t new_startBlockID = globals->range_end;
+                                 const uint32_t new_endBlockID   = globals->node_mem_allocator_cur;                                 
                                  globals->range_start = new_startBlockID;
                                  globals->range_end   = new_endBlockID;
                                  host_device_tasks[0] = new_endBlockID - new_startBlockID;
@@ -3558,38 +3557,38 @@ namespace embree
     if (unlikely(host_device_tasks[0] == -1)) return false;
     
     /* ---- Phase III: fill in mixed leafs and generate inner node for fatleaves plus storing primID, geomID pairs for final phase --- */
-    const uint blocks = host_device_tasks[1];
+    const uint32_t blocks = host_device_tasks[1];
     
     if (blocks)
     {
-      const uint wgSize = 256;
+      const uint32_t wgSize = 256;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(blocks,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-          sycl::local_accessor< uint  ,  0> _local_numBlocks(cgh);
-          sycl::local_accessor< uint  ,  0> _local_numLeaves(cgh);                                                   
-          sycl::local_accessor< uint  ,  0> _global_blockID(cgh);
-          sycl::local_accessor< uint  ,  0> _global_numLeafID(cgh);                                                   
+          sycl::local_accessor< uint32_t  ,  0> _local_numBlocks(cgh);
+          sycl::local_accessor< uint32_t  ,  0> _local_numLeaves(cgh);                                                   
+          sycl::local_accessor< uint32_t  ,  0> _global_blockID(cgh);
+          sycl::local_accessor< uint32_t  ,  0> _global_numLeafID(cgh);                                                   
           sycl::local_accessor< LeafGenerationData, 1> _local_leafGenData(sycl::range<1>(wgSize*BVH_BRANCHING_FACTOR),cgh);
           sycl::local_accessor< uint, 1> _local_indices(sycl::range<1>(wgSize*BVH_BRANCHING_FACTOR),cgh);
           cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                            {
-                             const uint localID   = item.get_local_id(0);                             
-                             const uint globalID  = item.get_global_id(0);
-                             const uint numGroups   = item.get_group_range(0);
-                             const uint localSize   = item.get_local_range().size();                                                                      
+                             const uint32_t localID   = item.get_local_id(0);                             
+                             const uint32_t globalID  = item.get_global_id(0);
+                             const uint32_t numGroups   = item.get_group_range(0);
+                             const uint32_t localSize   = item.get_local_range().size();                                                                      
                                                                       
-                             const uint startBlockID = globals->node_mem_allocator_start;
-                             const uint endBlockID   = globals->node_mem_allocator_cur;                             
-                             const uint innerID      = startBlockID + globalID;
+                             const uint32_t startBlockID = globals->node_mem_allocator_start;
+                             const uint32_t endBlockID   = globals->node_mem_allocator_cur;                             
+                             const uint32_t innerID      = startBlockID + globalID;
 
-                             uint &local_numBlocks   = *_local_numBlocks.get_pointer();
-                             uint &local_numLeaves   = *_local_numLeaves.get_pointer();                                                                      
-                             uint &global_blockID    = *_global_blockID.get_pointer();
-                             uint &global_leafID     = *_global_numLeafID.get_pointer();
+                             uint32_t &local_numBlocks   = *_local_numBlocks.get_pointer();
+                             uint32_t &local_numLeaves   = *_local_numLeaves.get_pointer();                                                                      
+                             uint32_t &global_blockID    = *_global_blockID.get_pointer();
+                             uint32_t &global_leafID     = *_global_numLeafID.get_pointer();
                                                                       
                              LeafGenerationData* local_leafGenData = _local_leafGenData.get_pointer();
 
-                             uint *indices = _local_indices.get_pointer() + BVH_BRANCHING_FACTOR * localID;
+                             uint32_t *indices = _local_indices.get_pointer() + BVH_BRANCHING_FACTOR * localID;
                                                                       
                              if (localID == 0)
                              {
@@ -3600,11 +3599,11 @@ namespace embree
                              item.barrier(sycl::access::fence_space::local_space);
                                                                       
                              char* curAddr      = nullptr;
-                             uint numChildren   = 0;
+                             uint32_t numChildren   = 0;
                              bool isFatLeaf     = false;
-                             uint local_blockID = 0;
-                             uint local_leafID  = 0;
-                             uint index         = 0;
+                             uint32_t local_blockID = 0;
+                             uint32_t local_leafID  = 0;
+                             uint32_t index         = 0;
                                                                       
                              if (innerID < endBlockID)                                                                        
                              {
@@ -3616,12 +3615,12 @@ namespace embree
                                if (state->header == 0x7fffffff) // not processed yet
                                {
                                  isFatLeaf = !BVH2Ploc::isLeaf(index,numPrimitives) || forceFatLeaves;
-                                 uint numBlocks = 0;
+                                 uint32_t numBlocks = 0;
                                  if (isFatLeaf) 
                                  {
                                    numChildren = 0;
                                    getLeafIndices(index,bvh2,indices,numChildren,numPrimitives);
-                                   for (uint i=0;i<numChildren;i++)
+                                   for (uint32_t i=0;i<numChildren;i++)
                                      numBlocks += geometryTypeRanges.isInstance(BVH2Ploc::getIndex(indices[i])) ? 2 : 1;
                                  }
                                  else
@@ -3638,8 +3637,8 @@ namespace embree
                                                                       
                              item.barrier(sycl::access::fence_space::local_space);
                                                                       
-                             const uint numBlocks = local_numBlocks;
-                             const uint numLeaves = local_numLeaves;                                                                                                                                              
+                             const uint32_t numBlocks = local_numBlocks;
+                             const uint32_t numLeaves = local_numLeaves;                                                                                                                                              
                              if (localID == 0)
                              {
                                global_blockID = gpu::atomic_add_global(&globals->leaf_mem_allocator_cur,numBlocks);
@@ -3648,8 +3647,8 @@ namespace embree
                                                                       
                              item.barrier(sycl::access::fence_space::local_space);
 
-                             const uint blockID = global_blockID + local_blockID;
-                             const uint leafID  = global_leafID; //  + local_leafID;
+                             const uint32_t blockID = global_blockID + local_blockID;
+                             const uint32_t leafID  = global_leafID; //  + local_leafID;
                                                                       
                                                                       
                              if (isFatLeaf)
@@ -3657,14 +3656,14 @@ namespace embree
                                                                                                                                             
                              /* --- write to SLM frist --- */
                                                                       
-                             const uint local_leafDataID = local_leafID;
-                             uint node_blockID = 0;
-                             for (uint j=0;j<numChildren;j++)
+                             const uint32_t local_leafDataID = local_leafID;
+                             uint32_t node_blockID = 0;
+                             for (uint32_t j=0;j<numChildren;j++)
                              {
-                               const uint index_j = BVH2Ploc::getIndex(indices[j]);
-                               const uint geomID = bvh2[index_j].left;
-                               const uint primID = bvh2[index_j].right;
-                               const uint bID = isFatLeaf ? (blockID + node_blockID) : innerID;
+                               const uint32_t index_j = BVH2Ploc::getIndex(indices[j]);
+                               const uint32_t geomID = bvh2[index_j].left;
+                               const uint32_t primID = bvh2[index_j].right;
+                               const uint32_t bID = isFatLeaf ? (blockID + node_blockID) : innerID;
                                const bool isInstance   = geometryTypeRanges.isInstance(index_j);
                                local_leafGenData[local_leafDataID+j].blockID = bID;
                                local_leafGenData[local_leafDataID+j].primID = primID;
@@ -3676,12 +3675,12 @@ namespace embree
 
                              /* --- write out all local entries to global memory --- */
                                                                       
-                             for (uint i=localID;i<numLeaves;i+=localSize) 
+                             for (uint32_t i=localID;i<numLeaves;i+=localSize) 
                                leafGenData[leafID+i] = local_leafGenData[i]; 
                                                                       
                              if (localID == 0)
                              {                                                                        
-                               const uint syncID = gpu::atomic_add_global(&globals->sync,(uint)1);
+                               const uint32_t syncID = gpu::atomic_add_global(&globals->sync,(uint)1);
                                if (syncID == numGroups-1)
                                {
                                  /* --- reset atomics --- */
@@ -3701,22 +3700,22 @@ namespace embree
     if (unlikely(host_device_tasks[0] == -1)) return false;
 
     /* ---- Phase IV: for each primID, geomID pair generate corresponding leaf data --- */
-    const uint leaves = host_device_tasks[0];
+    const uint32_t leaves = host_device_tasks[0];
 
     
     if (leaves)
     {
-      const uint wgSize = 256;
+      const uint32_t wgSize = 256;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(leaves,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
           cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                            {
-                             const uint globalID = item.get_global_id(0);
+                             const uint32_t globalID = item.get_global_id(0);
                              QuadLeafData*qleaf = nullptr;
                              if (globalID < leaves)                                                                        
                              {
                                qleaf = (QuadLeafData *)globals->nodeBlockPtr(leafGenData[globalID].blockID);
-                               const uint geomID = leafGenData[globalID].geomID & GEOMID_MASK;
+                               const uint32_t geomID = leafGenData[globalID].geomID & GEOMID_MASK;
                                const RTHWIF_GEOMETRY_DESC *const geometryDesc = geometries[geomID];                                 
                                if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_TRIANGLES)
                                {
@@ -3724,21 +3723,21 @@ namespace embree
                                  // ====================                           
                                  // === TriangleMesh ===
                                  // ====================                                                                        
-                                 const uint primID0 = leafGenData[globalID].primID;
-                                 const uint primID1 = primID0 + (leafGenData[globalID].geomID >> PAIR_OFFSET_SHIFT);                                   
+                                 const uint32_t primID0 = leafGenData[globalID].primID;
+                                 const uint32_t primID1 = primID0 + (leafGenData[globalID].geomID >> PAIR_OFFSET_SHIFT);                                   
                                  RTHWIF_GEOMETRY_TRIANGLES_DESC* triMesh = (RTHWIF_GEOMETRY_TRIANGLES_DESC*)geometryDesc;
                                  const RTHWIF_TRIANGLE_INDICES &tri = getTriangleDesc(*triMesh,primID0);
                                  const Vec3f p0 = getVec3f(*triMesh,tri.v0);
                                  const Vec3f p1 = getVec3f(*triMesh,tri.v1);
                                  const Vec3f p2 = getVec3f(*triMesh,tri.v2);                                       
                                  Vec3f p3 = p2;
-                                 uint lb0 = 0,lb1 = 0, lb2 = 0;
+                                 uint32_t lb0 = 0,lb1 = 0, lb2 = 0;
                                  
                                  /* handle paired triangle */
                                  if (primID0 != primID1)
                                  {
                                    const RTHWIF_TRIANGLE_INDICES &tri1 = getTriangleDesc(*triMesh,primID1);          
-                                   const uint p3_index = try_pair_triangles(uint3(tri.v0,tri.v1,tri.v2),uint3(tri1.v0,tri1.v1,tri1.v2),lb0,lb1,lb2);
+                                   const uint32_t p3_index = try_pair_triangles(uint3(tri.v0,tri.v1,tri.v2),uint3(tri1.v0,tri1.v1,tri1.v2),lb0,lb1,lb2);
                                    p3 = getVec3f(*triMesh,((uint*)&tri1)[p3_index]); // FIXME: might cause tri1 to store to mem first
                                  }
                                  *qleaf = QuadLeafData( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, (GeometryFlags)triMesh->geometryFlags, triMesh->geometryMask);
@@ -3748,7 +3747,7 @@ namespace embree
                                  // ================                           
                                  // === QuadMesh ===
                                  // ================
-                                 const uint primID0 = leafGenData[globalID].primID;                                   
+                                 const uint32_t primID0 = leafGenData[globalID].primID;                                   
                                  RTHWIF_GEOMETRY_QUADS_DESC* quadMesh = (RTHWIF_GEOMETRY_QUADS_DESC*)geometryDesc;                             
                                  const RTHWIF_QUAD_INDICES &quad = getQuadDesc(*quadMesh,primID0);
                                  const Vec3f p0 = getVec3f(*quadMesh,quad.v0);
@@ -3763,7 +3762,7 @@ namespace embree
                                  // ================                           
                                  // === Instance ===
                                  // ================                                 
-                                 const uint instID = leafGenData[globalID].geomID;
+                                 const uint32_t instID = leafGenData[globalID].geomID;
                                  const RTHWIF_GEOMETRY_INSTANCE_DESC* instance = (const RTHWIF_GEOMETRY_INSTANCE_DESC*)geometryDesc;                                 
                                  InstancePrimitive *dest = (InstancePrimitive *)qleaf;         
                                  const AffineSpace3fa local2world = getTransform(instance);
@@ -3775,9 +3774,9 @@ namespace embree
                                  // ==================                           
                                  // === Procedural ===
                                  // ==================                                
-                                 const uint primID0 = leafGenData[globalID].primID;                                 
+                                 const uint32_t primID0 = leafGenData[globalID].primID;                                 
                                  const RTHWIF_GEOMETRY_AABBS_FPTR_DESC* geom = (const RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geometryDesc;                                 
-                                 const uint mask32 = mask32_to_mask8(geom->geometryMask);
+                                 const uint32_t mask32 = mask32_to_mask8(geom->geometryMask);
                                  ProceduralLeaf *dest = (ProceduralLeaf *)qleaf;
                                  PrimLeafDesc leafDesc(0,geomID,GeometryFlags::NONE /*(GeometryFlags)geom->geometryFlags*/,mask32,PrimLeafDesc::TYPE_OPACITY_CULLING_ENABLED);
                                  *dest = ProceduralLeaf(leafDesc,primID0,true);
@@ -3788,7 +3787,7 @@ namespace embree
                                  // =================================                           
                                  // === Lossy Compressed Geometry ===
                                  // =================================                                 
-                                 const uint primID = leafGenData[globalID].primID;
+                                 const uint32_t primID = leafGenData[globalID].primID;
                                  InternalNode6Data *lcg_root = (InternalNode6Data*)(lcg_bvh_mem + primID * 64);
                                  const int oldOffset = lcg_root->childOffset;
                                  InternalNode6Data *dest     = (InternalNode6Data *)qleaf;         
@@ -3803,16 +3802,16 @@ namespace embree
                            /* === write out to global memory === */
                            /* ================================== */
                                                                       
-                           /* const uint subgroupLocalID = get_sub_group_local_id(); */
-                           /* uint mask = sub_group_ballot(valid); */
+                           /* const uint32_t subgroupLocalID = get_sub_group_local_id(); */
+                           /* uint32_t mask = sub_group_ballot(valid); */
                            /* while(mask) */
                            /* { */
-                           /*   const uint index = sycl::ctz(mask); */
+                           /*   const uint32_t index = sycl::ctz(mask); */
                            /*   mask &= mask-1; */
-                           /*   uint ID = sub_group_broadcast(localID,index); */
+                           /*   uint32_t ID = sub_group_broadcast(localID,index); */
                            /*   uint* dest = sub_group_broadcast((uint*)qleaf,index); */
                            /*   uint* source = (uint*)&localLeaf[ID]; */
-                           /*   const uint v = source[subgroupLocalID]; */
+                           /*   const uint32_t v = source[subgroupLocalID]; */
                            /*   sub_group_store(dest,v); */
                            /* } */
                              

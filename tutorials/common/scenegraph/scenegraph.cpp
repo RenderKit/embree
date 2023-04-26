@@ -1752,6 +1752,7 @@ namespace embree
       
   Ref<SceneGraph::Node> SceneGraph::convert_quads_to_subdivs(Ref<SceneGraph::Node> node)
   {
+    PING;
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
       xfmNode->child = convert_quads_to_subdivs(xfmNode->child);
     } 
@@ -1766,7 +1767,6 @@ namespace embree
 
       for (auto& p : tmesh->positions)
         smesh->positions.push_back(p);
-
       for (size_t i=0; i<tmesh->quads.size(); i++) {
         smesh->position_indices.push_back(tmesh->quads[i].v0);
         smesh->position_indices.push_back(tmesh->quads[i].v1);

@@ -67,7 +67,7 @@ namespace embree
     return sizeof(PLOCGlobals) + sizeof(size_t)*MAX_LARGE_WGS + numPrimitives * sizeof(LeafGenerationData);
   }
 
-  uint getBVH2Depth(BVH2Ploc *bvh2, uint index, const uint numPrimitives)
+  uint32_t getBVH2Depth(BVH2Ploc *bvh2, uint32_t index, const uint32_t numPrimitives)
   {
     if (BVH2Ploc::getIndex(index) < numPrimitives) //isLeaf 
       return 1;
@@ -75,7 +75,7 @@ namespace embree
       return 1 + std::max(getBVH2Depth(bvh2,bvh2[index].leftIndex(),numPrimitives),getBVH2Depth(bvh2,bvh2[index].rightIndex(),numPrimitives));
   }
 
-  uint getNumLeaves(BVH2Ploc *bvh2, uint index, const uint numPrimitives)
+  uint32_t getNumLeaves(BVH2Ploc *bvh2, uint32_t index, const uint32_t numPrimitives)
   {
     if (BVH2Ploc::getIndex(index) < numPrimitives) //isLeaf 
       return 1;
@@ -84,7 +84,7 @@ namespace embree
   }
 
 
-  uint getNumFatLeaves(BVH2Ploc *bvh2, uint index, const uint numPrimitives)
+  uint32_t getNumFatLeaves(BVH2Ploc *bvh2, uint32_t index, const uint32_t numPrimitives)
   {
     if (BVH2Ploc::isFatLeaf(index,numPrimitives)) //isLeaf 
       return 1;
@@ -94,7 +94,7 @@ namespace embree
   
 
 
-  void printBVH2Path(BVH2Ploc *bvh2, uint index, const uint numPrimitives)
+  void printBVH2Path(BVH2Ploc *bvh2, uint32_t index, const uint32_t numPrimitives)
   {
     if (BVH2Ploc::getIndex(index) < numPrimitives) //isLeaf
     {
@@ -102,13 +102,13 @@ namespace embree
     }
     else
     {
-      const uint depth = getBVH2Depth(bvh2,index,numPrimitives);
-      const uint leftIndex = bvh2[index].leftIndex();
-      const uint rightIndex = bvh2[index].rightIndex();
+      const uint32_t depth = getBVH2Depth(bvh2,index,numPrimitives);
+      const uint32_t leftIndex = bvh2[index].leftIndex();
+      const uint32_t rightIndex = bvh2[index].rightIndex();
       const bool isFatLeafLeft = BVH2Ploc::isFatLeaf(bvh2[index].left,numPrimitives);
       const bool isFatLeafRight = BVH2Ploc::isFatLeaf(bvh2[index].right,numPrimitives);
-      const uint numLeavesLeft = getNumLeaves(bvh2,leftIndex,numPrimitives);
-      const uint numLeavesRight = getNumLeaves(bvh2,rightIndex,numPrimitives);      
+      const uint32_t numLeavesLeft = getNumLeaves(bvh2,leftIndex,numPrimitives);
+      const uint32_t numLeavesRight = getNumLeaves(bvh2,rightIndex,numPrimitives);      
       PRINT6(index,depth,leftIndex,rightIndex,isFatLeafLeft,isFatLeafRight);
       PRINT2(leftIndex,numLeavesLeft);
       PRINT2(rightIndex,numLeavesRight);
@@ -121,7 +121,7 @@ namespace embree
   }  
   
   
-  void checkBVH2PlocHW(BVH2Ploc *bvh2, uint index,uint &nodes,uint &leaves,float &nodeSAH, float &leafSAH, uint &maxDepth,const uint numPrimitives, const uint bvh2_max_allocations, const uint depth)
+  void checkBVH2PlocHW(BVH2Ploc *bvh2, uint32_t index,uint32_t &nodes,uint32_t &leaves,float &nodeSAH, float &leafSAH, uint32_t &maxDepth,const uint32_t numPrimitives, const uint32_t bvh2_max_allocations, const uint32_t depth)
   {
     if (bvh2[index].bounds.empty()) {
       PRINT2(index,bvh2[index]);
@@ -142,9 +142,9 @@ namespace embree
     else
     {
       maxDepth = max(maxDepth,depth+1);
-      uint indices[BVH_BRANCHING_FACTOR];
-      const uint numChildren = openBVH2MaxAreaSortChildren(BVH2Ploc::getIndex(index),indices,bvh2,numPrimitives);
-      for (uint i=0;i<numChildren;i++)
+      uint32_t indices[BVH_BRANCHING_FACTOR];
+      const uint32_t numChildren = openBVH2MaxAreaSortChildren(BVH2Ploc::getIndex(index),indices,bvh2,numPrimitives);
+      for (uint32_t i=0;i<numChildren;i++)
         if (BVH2Ploc::getIndex(indices[i]) > bvh2_max_allocations)
           FATAL("OPENING ERROR");
 
@@ -175,7 +175,7 @@ namespace embree
 
     inline void reset()
     {
-      for (uint i=0;i<TOTAL;i++)
+      for (uint32_t i=0;i<TOTAL;i++)
       {
         host_timers[i] = 0.0;
         device_timers[i] = 0.0;        
@@ -205,14 +205,14 @@ namespace embree
     inline float get_total_device_time()
     {
       double sum = 0.0;
-      for (uint i=0;i<ALLOCATION;i++) sum += device_timers[i];
+      for (uint32_t i=0;i<ALLOCATION;i++) sum += device_timers[i];
       return sum;
     }
 
     inline float get_total_host_time()
     {
       double sum = 0.0;
-      for (uint i=0;i<ALLOCATION;i++) sum += host_timers[i];
+      for (uint32_t i=0;i<ALLOCATION;i++) sum += host_timers[i];
       return sum;
     }
     
@@ -240,7 +240,7 @@ namespace embree
     return args;
   } 
   
-  __forceinline PrimitiveCounts countPrimitives(const RTHWIF_GEOMETRY_DESC** geometries, const uint numGeometries)
+  __forceinline PrimitiveCounts countPrimitives(const RTHWIF_GEOMETRY_DESC** geometries, const uint32_t numGeometries)
   {
     auto reduce = [&](const range<size_t>& r) -> PrimitiveCounts
                   {
@@ -270,8 +270,8 @@ namespace embree
                     return counts;
                   };
 
-    const uint COUNT_BLOCK_SIZE = 256;
-    const uint COUNT_PARALLEL_THRESHOLD = 256;
+    const uint32_t COUNT_BLOCK_SIZE = 256;
+    const uint32_t COUNT_PARALLEL_THRESHOLD = 256;
     
     const PrimitiveCounts primCounts = parallel_reduce((uint)0, numGeometries, COUNT_BLOCK_SIZE, COUNT_PARALLEL_THRESHOLD, PrimitiveCounts(), reduce,
                                                        [&](const PrimitiveCounts& b0, const PrimitiveCounts& b1) -> PrimitiveCounts { return b0 + b1; });
@@ -301,13 +301,13 @@ namespace embree
 // =================================================================================================================================================================================
 // =================================================================================================================================================================================
 
-  RTHWIF_API RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o, void *sycl_queue, uint verbose_level=0)
+  RTHWIF_API RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o, void *sycl_queue, uint32_t verbose_level=0)
   {
     double time0 = getSeconds();
     
     RTHWIF_BUILD_ACCEL_ARGS args = rthwifPrepareBuildAccelArgs(args_i);
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
-    const uint numGeometries = args.numGeometries;
+    const uint32_t numGeometries = args.numGeometries;
     sycl::queue  &gpu_queue  = *(sycl::queue*)sycl_queue;
 
     // =============================================================================    
@@ -316,14 +316,14 @@ namespace embree
     
     const PrimitiveCounts primCounts = getEstimatedPrimitiveCounts(gpu_queue,geometries,numGeometries,verbose_level >= 2);            
 
-    const uint numTriangles       = primCounts.numTriangles; // === original number of triangles ===
-    const uint numMergedTrisQuads = primCounts.numMergedTrisQuads;
-    const uint numQuads           = primCounts.numQuads;
-    const uint numProcedurals     = primCounts.numProcedurals;
-    const uint numInstances       = primCounts.numInstances;
-    const uint numLossyCompressedGeometries = primCounts.numLossyCompressedGeometries;
+    const uint32_t numTriangles       = primCounts.numTriangles; // === original number of triangles ===
+    const uint32_t numMergedTrisQuads = primCounts.numMergedTrisQuads;
+    const uint32_t numQuads           = primCounts.numQuads;
+    const uint32_t numProcedurals     = primCounts.numProcedurals;
+    const uint32_t numInstances       = primCounts.numInstances;
+    const uint32_t numLossyCompressedGeometries = primCounts.numLossyCompressedGeometries;
 
-    const uint numPrimitives = numMergedTrisQuads + numProcedurals + numInstances + numLossyCompressedGeometries;
+    const uint32_t numPrimitives = numMergedTrisQuads + numProcedurals + numInstances + numLossyCompressedGeometries;
 
     // =============================================    
     // === allocation for empty scene is default ===
@@ -368,7 +368,7 @@ namespace embree
     return RTHWIF_ERROR_NONE;
   }
 
-  RTHWIF_API RTHWIF_ERROR rthwifPrefetchAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args, void *sycl_queue, uint verbose_level=0)
+  RTHWIF_API RTHWIF_ERROR rthwifPrefetchAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args, void *sycl_queue, uint32_t verbose_level=0)
   {
     double time0 = getSeconds();
     
@@ -376,7 +376,7 @@ namespace embree
 
 #if 0
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
-    const uint numGeometries                = args.numGeometries;  
+    const uint32_t numGeometries                = args.numGeometries;  
     
     // ===================================    
     // === prefetch builder scene data ===
@@ -438,7 +438,7 @@ namespace embree
     return RTHWIF_ERROR_NONE;      
   }
 
-  RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args, void *sycl_queue, uint verbose_level=0)
+  RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args, void *sycl_queue, uint32_t verbose_level=0)
   {
     BuildTimer timer;
     timer.reset();
@@ -452,16 +452,16 @@ namespace embree
     sycl::queue  &gpu_queue  = *(sycl::queue*)sycl_queue;
     const bool verbose1 = verbose_level >= 1;    
     const bool verbose2 = verbose_level >= 2;
-    const uint gpu_maxComputeUnits  = gpu_queue.get_device().get_info<sycl::info::device::max_compute_units>();
-    const uint MAX_WGS = gpu_maxComputeUnits / 8;
+    const uint32_t gpu_maxComputeUnits  = gpu_queue.get_device().get_info<sycl::info::device::max_compute_units>();
+    const uint32_t MAX_WGS = gpu_maxComputeUnits / 8;
     
-    uint *host_device_tasks = (uint*)sycl::aligned_alloc(64,HOST_DEVICE_COMM_BUFFER_SIZE,gpu_queue.get_device(),gpu_queue.get_context(),sycl::usm::alloc::host);
+    uint32_t *host_device_tasks = (uint*)sycl::aligned_alloc(64,HOST_DEVICE_COMM_BUFFER_SIZE,gpu_queue.get_device(),gpu_queue.get_context(),sycl::usm::alloc::host);
 
     
     if (unlikely(verbose2))
     {
-      const uint gpu_maxWorkGroupSize = gpu_queue.get_device().get_info<sycl::info::device::max_work_group_size>();
-      const uint gpu_maxLocalMemory   = gpu_queue.get_device().get_info<sycl::info::device::local_mem_size>();    
+      const uint32_t gpu_maxWorkGroupSize = gpu_queue.get_device().get_info<sycl::info::device::max_work_group_size>();
+      const uint32_t gpu_maxLocalMemory   = gpu_queue.get_device().get_info<sycl::info::device::local_mem_size>();    
       PRINT("PLOC++ GPU BVH BUILDER");            
       PRINT( gpu_queue.get_device().get_info<sycl::info::device::global_mem_size>() );
       PRINT(gpu_maxWorkGroupSize);
@@ -474,8 +474,8 @@ namespace embree
     // =============================
     
     PLOCGlobals *globals = (PLOCGlobals *)args.scratchBuffer;
-    uint *const sync_mem = (uint*)((char*)args.scratchBuffer + sizeof(PLOCGlobals));
-    uint *const scratch  = (uint*)((char*)args.scratchBuffer + sizeof(PLOCGlobals) + sizeof(uint)*MAX_LARGE_WGS);    
+    uint32_t *const sync_mem = (uint*)((char*)args.scratchBuffer + sizeof(PLOCGlobals));
+    uint32_t *const scratch  = (uint*)((char*)args.scratchBuffer + sizeof(PLOCGlobals) + sizeof(uint)*MAX_LARGE_WGS);    
   
     // ======================          
     // ==== init globals ====
@@ -500,7 +500,7 @@ namespace embree
     // ==============================================================================
   
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
-    uint numGeometries                = args.numGeometries;
+    uint32_t numGeometries                = args.numGeometries;
  
     double device_prim_counts_time = 0.0f;
   
@@ -512,13 +512,13 @@ namespace embree
     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_prim_counts_time);                              
     if (unlikely(verbose2)) std::cout << "=> Count Primitives from Geometries: " << timer.get_host_timer() << " ms (host) " << device_prim_counts_time << " ms (device) " << std::endl;      
   
-    uint numQuads            = primCounts.numQuads + primCounts.numTriangles; // no quadification taken into account at this point
-    uint numProcedurals      = primCounts.numProcedurals;
-    uint numInstances        = primCounts.numInstances;
-    const uint numQuadBlocks = primCounts.numQuadBlocks;
-    uint numLossyCompressedGeometries = primCounts.numLossyCompressedGeometries;
+    uint32_t numQuads            = primCounts.numQuads + primCounts.numTriangles; // no quadification taken into account at this point
+    uint32_t numProcedurals      = primCounts.numProcedurals;
+    uint32_t numInstances        = primCounts.numInstances;
+    const uint32_t numQuadBlocks = primCounts.numQuadBlocks;
+    uint32_t numLossyCompressedGeometries = primCounts.numLossyCompressedGeometries;
     
-    const uint expected_numPrimitives = numQuads + numProcedurals + numInstances + numLossyCompressedGeometries;    
+    const uint32_t expected_numPrimitives = numQuads + numProcedurals + numInstances + numLossyCompressedGeometries;    
 
     // =================================================    
     // === empty scene before removing invalid prims ===
@@ -561,7 +561,7 @@ namespace embree
     // === if allocated accel buffer is too small, return with error ===
     // =================================================================
     
-    const uint required_size = header + estimateSizeInternalNodes(numQuads,numInstances,numProcedurals,numLossyCompressedGeometries,false) + leaf_size;
+    const uint32_t required_size = header + estimateSizeInternalNodes(numQuads,numInstances,numProcedurals,numLossyCompressedGeometries,false) + leaf_size;
     if (unlikely(allocated_size < required_size))
     {
       if (unlikely(verbose2))
@@ -589,11 +589,11 @@ namespace embree
     MCPrim *const mc0 = (MCPrim*)(bvh2 + numPrimitives);
     MCPrim *const mc1 = mc0 + numPrimitives;     
     MCPrim *const morton_codes[2] = { mc0, mc1 }; 
-    uint *const cluster_index     = (uint*) (bvh_mem + 0 * numPrimitives * sizeof(uint)); // * 2
+    uint32_t *const cluster_index     = (uint*) (bvh_mem + 0 * numPrimitives * sizeof(uint)); // * 2
     BVH2SubTreeState *const bvh2_subtree_size = (BVH2SubTreeState*) (bvh_mem + 2 * numPrimitives * sizeof(uint)); // * 2        
-    uint *cluster_i[2] = { cluster_index + 0, cluster_index + numPrimitives };        
-    uint *const cluster_index_source = cluster_i[0];
-    uint *const   cluster_index_dest = cluster_i[1];
+    uint32_t *cluster_i[2] = { cluster_index + 0, cluster_index + numPrimitives };        
+    uint32_t *const cluster_index_source = cluster_i[0];
+    uint32_t *const   cluster_index_dest = cluster_i[1];
     LeafGenerationData *leafGenData = (LeafGenerationData*)scratch;
     char *lcg_bvh_mem = (char*)qbvh + lcg_data_start;
 
@@ -724,9 +724,9 @@ namespace embree
     
     if (!fastMCMode) // fastMCMode == 32bit key + 32bit value pairs, !fastMode == 64bit key + 32bit value pairs
     {
-      const uint scratchMemWGs = gpu::getNumWGsScratchSize(conv_mem_size);
-      const uint nextPowerOf2 =  1 << (32 - sycl::clz(numPrimitives) - 1);
-      const uint sortWGs = min(max(min((int)nextPowerOf2/8192,(int)gpu_maxComputeUnits/4),1),(int)scratchMemWGs);
+      const uint32_t scratchMemWGs = gpu::getNumWGsScratchSize(conv_mem_size);
+      const uint32_t nextPowerOf2 =  1 << (32 - sycl::clz(numPrimitives) - 1);
+      const uint32_t sortWGs = min(max(min((int)nextPowerOf2/8192,(int)gpu_maxComputeUnits/4),1),(int)scratchMemWGs);
 
       sycl::event initial = sycl::event();
       sycl::event block0  = gpu::radix_sort_Nx8Bit(gpu_queue, morton_codes[0], morton_codes[1], numPrimitives, (uint*)scratch, 4, 8, initial, sortWGs);      
@@ -740,9 +740,9 @@ namespace embree
         gpu::radix_sort_single_workgroup(gpu_queue, (uint64_t *)mc0, (uint64_t *)mc1, numPrimitives, 3,8);
       else
       {
-        const uint scratchMemWGs = gpu::getNumWGsScratchSize(conv_mem_size);        
-        const uint nextPowerOf2 =  1 << (32 - sycl::clz(numPrimitives) - 1);          
-        const uint sortWGs = min(max(min((int)nextPowerOf2/LARGE_WG_SIZE,(int)gpu_maxComputeUnits/4),1),(int)scratchMemWGs);
+        const uint32_t scratchMemWGs = gpu::getNumWGsScratchSize(conv_mem_size);        
+        const uint32_t nextPowerOf2 =  1 << (32 - sycl::clz(numPrimitives) - 1);          
+        const uint32_t sortWGs = min(max(min((int)nextPowerOf2/LARGE_WG_SIZE,(int)gpu_maxComputeUnits/4),1),(int)scratchMemWGs);
         sycl::event initial = sycl::event();
         sycl::event block0  = gpu::radix_sort_Nx8Bit(gpu_queue, (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[1], (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[0], numPrimitives, (uint*)scratch, 3, 8, initial, sortWGs);
         gpu::waitOnEventAndCatchException(block0);              
@@ -774,17 +774,17 @@ namespace embree
     if (unlikely(verbose2))
       std::cout << "=> Init Clusters: " << timer.get_host_timer() << " ms (host) " << device_init_clusters_time << " ms (device) " << std::endl;		
 
-    uint numPrims = numPrimitives;
+    uint32_t numPrims = numPrimitives;
     // ===================================================================================================================================================
     // ===================================================================================================================================================
     // ===================================================================================================================================================
 
     // === 8 or 16-wide search radius dependening on compiler flags ===
-    const uint SEARCH_RADIUS_SHIFT = args.quality == RTHWIF_BUILD_QUALITY_LOW ? 3 : 4;
+    const uint32_t SEARCH_RADIUS_SHIFT = args.quality == RTHWIF_BUILD_QUALITY_LOW ? 3 : 4;
     
     double device_ploc_iteration_time = 0.0f;
         
-    uint iteration = 0;
+    uint32_t iteration = 0;
 
     
     timer.start(BuildTimer::BUILD);        
@@ -817,7 +817,7 @@ namespace embree
         device_ploc_iteration_time = 0.0f;
         iteratePLOC(gpu_queue,globals,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,sync_mem,numPrims,NUM_ACTIVE_LARGE_WGS,host_device_tasks,SEARCH_RADIUS_SHIFT,device_ploc_iteration_time,ratio < BOTTOM_LEVEL_RATIO,verbose1);
         timer.add_to_device_timer(BuildTimer::BUILD,device_ploc_iteration_time);
-        const uint new_numPrims = *host_device_tasks;
+        const uint32_t new_numPrims = *host_device_tasks;
         assert(new_numPrims < numPrims);
         ratio = (float)(numPrims-new_numPrims) / numPrims * 100.0f;
         numPrims = new_numPrims;                      
@@ -836,10 +836,10 @@ namespace embree
         // ========================================== rebalance BVH2 if degenerated ======================================
         // ===============================================================================================================
 #if 0
-        uint maxDepth = 0;
-        for (uint i=0;i<numPrims;i++)
+        uint32_t maxDepth = 0;
+        for (uint32_t i=0;i<numPrims;i++)
         {
-          const uint depth = getBVH2Depth(bvh2,cluster_index_source[i],numPrimitives);
+          const uint32_t depth = getBVH2Depth(bvh2,cluster_index_source[i],numPrimitives);
           maxDepth = max(maxDepth,depth);
         }
         PRINT(maxDepth);
@@ -853,9 +853,9 @@ namespace embree
 
 #if 0
         maxDepth = 0;
-        for (uint i=0;i<numPrims;i++)
+        for (uint32_t i=0;i<numPrims;i++)
         {
-          const uint depth = getBVH2Depth(bvh2,cluster_index_source[i],numPrimitives);
+          const uint32_t depth = getBVH2Depth(bvh2,cluster_index_source[i],numPrimitives);
           maxDepth = max(maxDepth,depth);
         }
         PRINT(maxDepth);        
@@ -878,11 +878,11 @@ namespace embree
       if (globals->bvh2_index_allocator >= 2*numPrimitives)
         FATAL("BVH2 construction, allocator");
       PRINT(globals->rootIndex);      
-      uint nodes = 0;
-      uint leaves = 0;
+      uint32_t nodes = 0;
+      uint32_t leaves = 0;
       float nodeSAH = 0;
       float leafSAH = 0;
-      uint maxDepth = 0;
+      uint32_t maxDepth = 0;
       checkBVH2PlocHW(bvh2,globals->rootIndex,nodes,leaves,nodeSAH,leafSAH,maxDepth,numPrimitives,globals->bvh2_index_allocator,0);
       nodeSAH /= globals->geometryBounds.area();
       leafSAH /= globals->geometryBounds.area();                
@@ -941,8 +941,8 @@ namespace embree
     if (unlikely(verbose2))
     {
       // === memory allocation and usage stats ===
-      const uint nodes_used   = globals->node_mem_allocator_cur-globals->node_mem_allocator_start;
-      const uint leaves_used  = globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start;
+      const uint32_t nodes_used   = globals->node_mem_allocator_cur-globals->node_mem_allocator_start;
+      const uint32_t leaves_used  = globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start;
       const float nodes_util  = 100.0f * (float)(globals->node_mem_allocator_cur-globals->node_mem_allocator_start) / (node_size/64);
       const float leaves_util = 100.0f * (float)(globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start) / (leaf_size/64);
       PRINT4(globals->node_mem_allocator_start,globals->node_mem_allocator_cur,nodes_used,nodes_util);
@@ -994,7 +994,7 @@ namespace embree
 #else
     {
     static double total_sum = 0.0f;
-    static uint entries = 0;
+    static uint32_t entries = 0;
     total_sum += timer.get_total_device_time();
     entries++;
     if (entries % (4*4096)) PRINT(total_sum / entries);

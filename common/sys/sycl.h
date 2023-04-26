@@ -20,7 +20,7 @@ using sycl::uint8;
 using sycl::uint4;
 using sycl::uint3;
 using sycl::uint2;
-using sycl::uint;
+//using sycl::uint;
 using sycl::ulong;
 using sycl::uchar16;
 using sycl::uchar8;
@@ -52,7 +52,7 @@ SYCL_EXTERNAL extern float atomic_min(volatile LOCAL  float *p, float val);
 SYCL_EXTERNAL extern float atomic_max(volatile GLOBAL float *p, float val);
 SYCL_EXTERNAL extern float atomic_max(volatile LOCAL  float *p, float val);
 
-SYCL_EXTERNAL extern "C" uint intel_sub_group_ballot(bool valid);
+SYCL_EXTERNAL extern "C" uint32_t intel_sub_group_ballot(bool valid);
 
 SYCL_EXTERNAL extern "C" void __builtin_IB_assume_uniform(void *p);
 
@@ -151,7 +151,7 @@ inline float work_group_reduce_max(float x) { return x; }
 inline float atomic_min(volatile float *p, float val) { return val; };
 inline float atomic_max(volatile float *p, float val) { return val; };
 
-inline uint intel_sub_group_ballot(bool valid) { return 0; }
+inline uint32_t intel_sub_group_ballot(bool valid) { return 0; }
 
 #endif
 
@@ -193,23 +193,23 @@ namespace embree
     return SYCL_EXPERIMENTAL::this_sub_group(); 
   }
   
-  __forceinline const uint get_sub_group_local_id() {
+  __forceinline const uint32_t get_sub_group_local_id() {
     return this_sub_group().get_local_id()[0];
   }
 
-  __forceinline const uint get_sub_group_size() {
+  __forceinline const uint32_t get_sub_group_size() {
     return this_sub_group().get_max_local_range().size();
   }
 
-  __forceinline const uint get_sub_group_id() {
+  __forceinline const uint32_t get_sub_group_id() {
     return this_sub_group().get_group_id()[0];
   }
   
-  __forceinline const uint get_num_sub_groups() {
+  __forceinline const uint32_t get_num_sub_groups() {
     return this_sub_group().get_group_range().size();
   }
   
-  __forceinline uint sub_group_ballot(bool pred) {
+  __forceinline uint32_t sub_group_ballot(bool pred) {
     return intel_sub_group_ballot(pred);
   }
 
