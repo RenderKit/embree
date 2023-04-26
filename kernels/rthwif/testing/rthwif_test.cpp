@@ -13,12 +13,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-#if defined(EMBREE_SYCL_RT_VALIDATION_API)
-#  include "../rttrace/rttrace_validation.h"
-#else
-#  include "../rttrace/rttrace.h"
-#endif
-
+#include "../rttrace/rttrace.h"
 #include "../rtbuild/rtbuild.h"
 
 #include <level_zero/ze_api.h>
