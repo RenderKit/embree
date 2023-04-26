@@ -28,9 +28,9 @@ jobs:
 
   release-macosx-x64-Release-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_macos.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
     with:
-      runs-on: '[ "macOS", "embree", "sign", "avx2" ]'
+      runs-on: '[ "macOS", "sign", "avx2" ]'
       artifact-out: release-macosx-x64-Release-ICX2023_0_0-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
       artifact-path: ./build/*.zip
       cmd: |

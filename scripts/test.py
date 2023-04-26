@@ -67,7 +67,7 @@ if OS == "windows":
 elif OS == "linux":
   NAS = os.environ["NAS_LINUX"]
 elif OS == "macosx":
-  NAS = os.environ["NAS_MACOSX"]
+  NAS = os.environ["STORAGE_PATH"] + "/packages/apps"
 
 # path of oneapi installation on windows machines
 ONE_API_PATH_WINDOWS="C:\\Program Files (x86)\\Intel\\oneAPI\\compiler"
