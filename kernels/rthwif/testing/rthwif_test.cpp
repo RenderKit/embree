@@ -565,14 +565,16 @@ public:
       vertices[i] = xfmPoint(xfm,vertices[i]);
   }
 
-  static void getBoundsCallback (const uint32_t primIDStart, const uint32_t primIDCount, void* geomUserPtr, void* buildUserPtr, ze_rtas_aabb_exp_t* boundsOut)
+  static void getBoundsCallback (ze_rtas_geometry_aabbs_exp_cb_params_t* params)
   {
-    const TriangleMesh* mesh = (TriangleMesh*) geomUserPtr;
+    assert(params->stype == ZE_STRUCTURE_TYPE_RTAS_GEOMETRY_AABBS_EXP_CB_PARAMS);
+    const TriangleMesh* mesh = (TriangleMesh*) params->pGeomUserPtr;
 
-    for (uint32_t i=0; i<primIDCount; i++)
+    for (uint32_t i=0; i<params->primIDCount; i++)
     {
-      const uint32_t primID = primIDStart+i;
+      const uint32_t primID = params->primID+i;
       const Bounds3f bounds = mesh->getBounds(primID);
+      ze_rtas_aabb_exp_t* boundsOut = params->pBoundsOut;
       boundsOut[i].lower.x = bounds.lower.x();
       boundsOut[i].lower.y = bounds.lower.y();
       boundsOut[i].lower.z = bounds.lower.z();
@@ -788,14 +790,15 @@ struct InstanceGeometryT : public Geometry
     sycl::free(ptr,context);
   }
 
-  static void getBoundsCallback (const uint32_t primIDStart, const uint32_t primIDCount, void* geomUserPtr, void* buildUserPtr, ze_rtas_aabb_exp_t* boundsOut)
+  static void getBoundsCallback (ze_rtas_geometry_aabbs_exp_cb_params_t* params)
   {
-    assert(primIDStart == 0);
-    assert(primIDCount == 1);
-    const InstanceGeometryT* inst = (InstanceGeometryT*) geomUserPtr;
+    assert(params->stype == ZE_STRUCTURE_TYPE_RTAS_GEOMETRY_AABBS_EXP_CB_PARAMS);
+    assert(params->primID == 0);
+    assert(params->primIDCount == 1);
+    const InstanceGeometryT* inst = (InstanceGeometryT*) params->pGeomUserPtr;
     const Bounds3f scene_bounds = inst->scene->getBounds();
     const Bounds3f bounds = xfmBounds(inst->local2world, scene_bounds);
-    
+    ze_rtas_aabb_exp_t* boundsOut = params->pBoundsOut;
     boundsOut->lower.x = bounds.lower.x();
     boundsOut->lower.y = bounds.lower.y();
     boundsOut->lower.z = bounds.lower.z();

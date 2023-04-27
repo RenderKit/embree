@@ -333,12 +333,14 @@ typedef enum _ze_result_t
 #define ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_EXP_DESC ((ze_structure_type_t)(0x0002000E))
 #define ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES ((ze_structure_type_t)(0x0002000F))
 #define ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES ((ze_structure_type_t)(0x00020010))
+#define ZE_STRUCTURE_TYPE_RTAS_GEOMETRY_AABBS_EXP_CB_PARAMS ((ze_structure_type_t)(0x00020011))
 #else
 typedef enum _ze_structure_type_t
 {
   ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_EXP_DESC, ///< ze_rtas_builder_build_op_exp_desc_t
   ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES, ///< ze_rtas_parallel_operation_exp_properties_t
   ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES, ///< ze_rtas_device_exp_properties_t
+  ZE_STRUCTURE_TYPE_RTAS_GEOMETRY_AABBS_EXP_CB_PARAMS,
   
 } ze_structure_type_t;
 #endif
@@ -718,14 +720,24 @@ typedef struct _ze_rtas_builder_quads_geometry_info_exp_t // 40 bytes
 } ze_rtas_builder_quads_geometry_info_exp_t;
 
 
+typedef struct _ze_rtas_geometry_aabbs_exp_cb_params_t
+{
+    ze_structure_type_t stype;                      ///< [in] type of this structure
+    void* pNext;                                    ///< [in,out][optional] must be null or a pointer to an extension-specific
+                                                    ///< structure (i.e. contains sType and pNext).
+    uint32_t primID;                                ///< [in] first primitive to return bounds for
+    uint32_t primIDCount;                           ///< [in] number of primitives to return bounds for
+    void* pGeomUserPtr;                             ///< [in] pointer provided through geometry descriptor
+    void* pBuildUserPtr;                            ///< [in] pointer provided through ::zeRTASBuilderBuildExp function
+    ze_rtas_aabb_exp_t* pBoundsOut;                 ///< [out] destination buffer to write AABB bounds to
+
+} ze_rtas_geometry_aabbs_exp_cb_params_t;
+
 /**
  \brief Function pointer type to return AABBs for a range of procedural primitives. 
 */
-typedef void (*ze_rtas_geometry_aabbs_cb_exp_t)(const uint32_t primID,            ///< [in] first primitive to return bounds for
-                                                        const uint32_t primIDCount,       ///< [in] number of primitives to return bounds for
-                                                        void* geomUserPtr,                ///< [in] pointer provided through geometry descriptor
-                                                        void* buildUserPtr,               ///< [in] pointer provided through zeRTASBuilderBuildExp function
-                                                        ze_rtas_aabb_exp_t* pBoundsOut  ///< [out] destination buffer to write AABB bounds to
+typedef void (*ze_rtas_geometry_aabbs_cb_exp_t)(
+  ze_rtas_geometry_aabbs_exp_cb_params_t* params  ///< [in] callback function parameters structure
   );
 
 /**
