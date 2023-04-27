@@ -167,7 +167,14 @@ namespace embree
     if (geom->pfnGetBoundsCb == nullptr) return false;
 
     BBox3f bounds;
-    (geom->pfnGetBoundsCb)(primID,1,geom->pGeomUserPtr,buildUserPtr,(ze_rtas_aabb_exp_t*)&bounds);
+    ze_rtas_geometry_aabbs_exp_cb_params_t params = { ZE_STRUCTURE_TYPE_RTAS_GEOMETRY_AABBS_EXP_CB_PARAMS };
+    params.primID = primID;
+    params.primIDCount = 1;
+    params.pGeomUserPtr = geom->pGeomUserPtr;
+    params.pBuildUserPtr = buildUserPtr;
+    params.pBoundsOut = (ze_rtas_aabb_exp_t*) &bounds;
+    (geom->pfnGetBoundsCb)(&params);
+    
     if (unlikely(!isvalid(bounds.lower))) return false;
     if (unlikely(!isvalid(bounds.upper))) return false;
     if (unlikely(bounds.empty())) return false;

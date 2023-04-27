@@ -318,14 +318,17 @@ namespace embree
     out->vertexStride = geom->vertices0.getStride();
   }
 
-  void getProceduralAABB(const uint32_t primIDStart, const uint32_t primIDCount, void* geomUserPtr, void* buildUserPtr, ze_rtas_aabb_exp_t* boundsOut)
+  void getProceduralAABB(ze_rtas_geometry_aabbs_exp_cb_params_t* params)
   {
-    BBox1f time_range = * (BBox1f*) buildUserPtr;
-    Geometry* geom = (Geometry*) geomUserPtr;
+    assert(params->stype == ZE_STRUCTURE_TYPE_RTAS_GEOMETRY_AABBS_EXP_CB_PARAMS);
+
+    BBox1f time_range = * (BBox1f*) params->pBuildUserPtr;
+    Geometry* geom = (Geometry*) params->pGeomUserPtr;
+    ze_rtas_aabb_exp_t* boundsOut = params->pBoundsOut;
       
-    for (uint32_t i=0; i<primIDCount; i++)
+    for (uint32_t i=0; i<params->primIDCount; i++)
     {
-      const uint32_t primID = primIDStart+i;
+      const uint32_t primID = params->primID+i;
       PrimRef prim;
       range<size_t> r(primID);
       size_t k = 0;
