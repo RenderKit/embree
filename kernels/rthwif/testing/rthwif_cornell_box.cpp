@@ -289,9 +289,9 @@ void* build_rtas(sycl::device device, sycl::context context)
   ze_rtas_builder_build_op_exp_desc_t buildOp = {};
   buildOp.stype = ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_EXP_DESC;
   buildOp.pNext = nullptr;
-  buildOp.rtasFormat = rtasProp.rtasDeviceFormat;
+  buildOp.deviceFormat = rtasProp.rtasDeviceFormat;
   buildOp.buildQuality = ZE_RTAS_BUILDER_BUILD_QUALITY_HINT_EXP_MEDIUM;
-  buildOp.buildFlags = ZE_RTAS_BUILDER_BUILD_OP_EXP_FLAG_NONE;
+  buildOp.buildFlags = 0;
   buildOp.ppGeometries = (const ze_rtas_builder_geometry_info_exp_t **) descs.data();
   buildOp.numGeometries = descs.size();
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)

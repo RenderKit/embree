@@ -83,10 +83,6 @@ namespace embree
     if (geom->vertexBufferFormat != ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3)
       throw std::runtime_error("vertex format must be ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3");
  
-    if (geom->reserved0 != 0) throw std::runtime_error("reserved member must be 0");
-    if (geom->reserved1 != 0) throw std::runtime_error("reserved member must be 0");
-    if (geom->reserved2 != 0) throw std::runtime_error("reserved member must be 0");
-    
     if (geom->triangleCount && geom->pTriangleBuffer == nullptr) throw std::runtime_error("no triangle buffer specified");
     if (geom->vertexCount   && geom->pVertexBuffer   == nullptr) throw std::runtime_error("no vertex buffer specified");
   }
@@ -99,17 +95,12 @@ namespace embree
     if (geom->vertexBufferFormat != ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3)
       throw std::runtime_error("vertex format must be ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3");
  
-    if (geom->reserved0 != 0) throw std::runtime_error("reserved member must be 0");
-    if (geom->reserved1 != 0) throw std::runtime_error("reserved member must be 0");
-    if (geom->reserved2 != 0) throw std::runtime_error("reserved member must be 0");
-    
     if (geom->quadCount   && geom->pQuadBuffer   == nullptr) throw std::runtime_error("no quad buffer specified");
     if (geom->vertexCount && geom->pVertexBuffer == nullptr) throw std::runtime_error("no vertex buffer specified");
   }
 
   inline void verifyGeometryDesc(const ze_rtas_builder_procedural_geometry_info_exp_t* geom)
   {
-    if (geom->reserved != 0) throw std::runtime_error("reserved member must be 0");
     if (geom->primCount   && geom->pfnGetBoundsCb == nullptr) throw std::runtime_error("no bounds function specified");
   }
 
@@ -386,7 +377,7 @@ namespace embree
       return ZE_RESULT_ERROR_INVALID_ARGUMENT;
 
     /* check if acceleration structure format is supported */
-    VALIDATE(args->rtasFormat);
+    VALIDATE(args->deviceFormat);
 
     /* check for valid geometries array */
     if (args->ppGeometries == nullptr && args->numGeometries > 0)
@@ -462,7 +453,7 @@ namespace embree
     VALIDATE(pProperties);
 
     /* fill properties */
-    pProperties->flags = ZE_RTAS_DEVICE_EXP_FLAG_NONE;
+    pProperties->flags = 0;
     pProperties->rtasDeviceFormat = (ze_rtas_device_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_INVALID;
     pProperties->rtasBufferAlignment = 128;
 
@@ -574,7 +565,7 @@ namespace embree
     
     /* fill return struct */
     pProp->flags = 0;
-    pProp->rtasBufferSizeBytesExpected = expectedBytes;
+    pProp->rtasBufferSizeBytesMin = expectedBytes;
     pProp->rtasBufferSizeBytesMax = worstCaseBytes;
     pProp->scratchBufferSizeBytes = scratchBytes;
     return ZE_RESULT_SUCCESS;
@@ -790,7 +781,7 @@ namespace embree
     VALIDATE(pProperties);
    
     /* return properties */
-    pProperties->flags = ZE_RTAS_PARALLEL_OPERATION_EXP_FLAG_NONE;
+    pProperties->flags = 0;
     pProperties->maxConcurrency = tbb::this_task_arena::max_concurrency();
     return ZE_RESULT_SUCCESS;
   }

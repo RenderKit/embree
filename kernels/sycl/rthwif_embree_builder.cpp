@@ -270,17 +270,17 @@ namespace embree
     }
   }
 
-  ze_rtas_builder_geometry_exp_flag_t getGeometryFlags(Scene* scene, Geometry* geom)
+  ze_rtas_builder_geometry_exp_flags_t getGeometryFlags(Scene* scene, Geometry* geom)
   {
     /* invoke any hit callback when Embree filter functions are present */
-    ze_rtas_builder_geometry_exp_flag_t gflags = ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_OPAQUE;
+    ze_rtas_builder_geometry_exp_flags_t gflags = ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_OPAQUE;
     if (geom->hasArgumentFilterFunctions() || geom->hasGeometryFilterFunctions())
-      gflags = ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_NONE;
+      gflags = 0;
     
 #if defined(EMBREE_RAY_MASK)
     /* invoke any hit callback when high mask bits are enabled */
     if (geom->mask & 0xFFFFFF80)
-      gflags = ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_NONE;
+      gflags = 0;
 #endif
     
     return gflags;
@@ -370,7 +370,7 @@ namespace embree
     
     memset(out,0,sizeof(ze_rtas_builder_procedural_geometry_info_exp_t));
     out->geometryType = ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_PROCEDURAL;
-    out->geometryFlags = ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_NONE;
+    out->geometryFlags = 0;
     out->geometryMask = mask32_to_mask8(geom->mask);
     out->primCount = numPrimitives;
     out->pfnGetBoundsCb = getProceduralAABB;
@@ -382,7 +382,7 @@ namespace embree
     assert(geom->gsubtype == AccelSet::GTY_SUBTYPE_INSTANCE_QUATERNION);
     memset(out,0,sizeof(GEOMETRY_INSTANCE_DESC));
     out->geometryType = ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_INSTANCE;
-    out->instanceFlags = ZE_RTAS_BUILDER_INSTANCE_EXP_FLAG_NONE;
+    out->instanceFlags = 0;
     out->geometryMask = mask32_to_mask8(geom->mask);
     out->instanceUserID = 0;
     const AffineSpace3fa local2world = geom->getLocal2World();
@@ -399,7 +399,7 @@ namespace embree
     assert(geom->gsubtype == AccelSet::GTY_SUBTYPE_DEFAULT);
     memset(out,0,sizeof(ze_rtas_builder_instance_geometry_info_exp_t));
     out->geometryType = ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_INSTANCE;
-    out->instanceFlags = ZE_RTAS_BUILDER_INSTANCE_EXP_FLAG_NONE;
+    out->instanceFlags = 0;
     out->geometryMask = mask32_to_mask8(geom->mask);
     out->instanceUserID = 0;
     out->transformFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3X4_ALIGNED_COLUMN_MAJOR;
@@ -433,16 +433,16 @@ namespace embree
     }
   }
 
-  ze_rtas_builder_build_op_exp_flag_t convertBuildFlags(RTCSceneFlags scene_flags, RTCBuildQuality quality_flags)
+  ze_rtas_builder_build_op_exp_flags_t convertBuildFlags(RTCSceneFlags scene_flags, RTCBuildQuality quality_flags)
   {
-    uint32_t result = ZE_RTAS_BUILDER_BUILD_OP_EXP_FLAG_NONE;
+    ze_rtas_builder_build_op_exp_flags_t result = 0;
     if (scene_flags & RTC_SCENE_FLAG_COMPACT) result |= ZE_RTAS_BUILDER_BUILD_OP_EXP_FLAG_COMPACT;
 
     /* only in high quality build mode spatial splits are allowed in Embree */
     if (quality_flags != RTC_BUILD_QUALITY_HIGH)
       result |= ZE_RTAS_BUILDER_BUILD_OP_EXP_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION;
 
-    return (ze_rtas_builder_build_op_exp_flag_t) result;
+    return result;
   }  
 
   BBox3f rthwifBuild(Scene* scene, AccelBuffer& accel)
@@ -578,7 +578,7 @@ namespace embree
     memset(&args,0,sizeof(args));
     args.stype = ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_EXP_DESC;
     args.pNext = nullptr;
-    args.rtasFormat = rtasProp.rtasDeviceFormat;
+    args.deviceFormat = rtasProp.rtasDeviceFormat;
     args.buildQuality = convertBuildQuality(scene->quality_flags);
     args.buildFlags = convertBuildFlags(scene->scene_flags,scene->quality_flags);
     args.ppGeometries = (const ze_rtas_builder_geometry_info_exp_t**) geomDescr.data();
@@ -607,9 +607,9 @@ namespace embree
     {
       /* estimate size of all mblur BVHs */
       ze_rtas_builder_exp_properties_t size;
-      size.rtasBufferSizeBytesExpected  = maxTimeSegments*sizeTotal.rtasBufferSizeBytesExpected;
+      size.rtasBufferSizeBytesMin  = maxTimeSegments*sizeTotal.rtasBufferSizeBytesMin;
       size.rtasBufferSizeBytesMax = maxTimeSegments*sizeTotal.rtasBufferSizeBytesMax;
-      size_t bytes = headerBytes+size.rtasBufferSizeBytesExpected;
+      size_t bytes = headerBytes+size.rtasBufferSizeBytesMin;
 
       /* allocate BVH data */
       if (accel.size() < bytes) accel.resize(bytes);
@@ -622,8 +622,8 @@ namespace embree
         const float t1 = float(i+1)/float(maxTimeSegments);
         time_range = BBox1f(t0,t1);
         
-        void* accelBuffer = accel.data() + headerBytes + i*sizeTotal.rtasBufferSizeBytesExpected;
-        size_t accelBufferBytes = sizeTotal.rtasBufferSizeBytesExpected;
+        void* accelBuffer = accel.data() + headerBytes + i*sizeTotal.rtasBufferSizeBytesMin;
+        size_t accelBufferBytes = sizeTotal.rtasBufferSizeBytesMin;
         bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };
         
         err = zeRTASBuilderBuildExp(hBuilder,&args,
@@ -647,10 +647,10 @@ namespace embree
 
         if (err == ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY)
         {
-          if (sizeTotal.rtasBufferSizeBytesExpected == sizeTotal.rtasBufferSizeBytesMax)
+          if (sizeTotal.rtasBufferSizeBytesMin == sizeTotal.rtasBufferSizeBytesMax)
             throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
           
-          sizeTotal.rtasBufferSizeBytesExpected = std::min(sizeTotal.rtasBufferSizeBytesMax,(size_t(1.2*sizeTotal.rtasBufferSizeBytesExpected)+127)&-128);
+          sizeTotal.rtasBufferSizeBytesMin = std::min(sizeTotal.rtasBufferSizeBytesMax,(size_t(1.2*sizeTotal.rtasBufferSizeBytesMin)+127)&-128);
           break;
         }
         
@@ -676,7 +676,7 @@ namespace embree
     hwaccel->numTimeSegments = maxTimeSegments;
 
     for (size_t i=0; i<maxTimeSegments; i++)
-      hwaccel->AccelTable[i] = (char*)hwaccel + headerBytes + i*sizeTotal.rtasBufferSizeBytesExpected;
+      hwaccel->AccelTable[i] = (char*)hwaccel + headerBytes + i*sizeTotal.rtasBufferSizeBytesMin;
 
     return fullBounds;
   }

@@ -814,7 +814,7 @@ struct InstanceGeometryT : public Geometry
       ze_rtas_builder_procedural_geometry_info_exp_t& out = desc->AABBs;
       memset(&out,0,sizeof(out));
       out.geometryType = ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_PROCEDURAL;
-      out.geometryFlags = ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_NONE;
+      out.geometryFlags = 0;
       out.geometryMask = 0xFF;
       out.primCount = 1;
       out.pfnGetBoundsCb = InstanceGeometryT::getBoundsCallback;
@@ -825,7 +825,7 @@ struct InstanceGeometryT : public Geometry
       GEOMETRY_INSTANCE_DESC& out = desc->Instance;
       memset(&out,0,sizeof(GEOMETRY_INSTANCE_DESC));
       out.geometryType = ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_INSTANCE;
-      out.instanceFlags = ZE_RTAS_BUILDER_INSTANCE_EXP_FLAG_NONE;
+      out.instanceFlags = 0;
       out.geometryMask = 0xFF;
       out.instanceUserID = instUserID;
       out.transformFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3X4_ALIGNED_COLUMN_MAJOR;
@@ -1002,7 +1002,7 @@ struct Scene
     : geometries_alloc(context,device,sycl::ext::oneapi::property::usm::device_read_only()), geometries(0,geometries_alloc), bounds(Bounds3f::empty()), accel(nullptr) 
   {
     std::shared_ptr<TriangleMesh> plane = createTrianglePlane(sycl::float3(0,0,0), sycl::float3(width,0,0), sycl::float3(0,height,0), width, height);
-    plane->gflags = opaque ? ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_OPAQUE : ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_NONE;
+    plane->gflags = opaque ? ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_OPAQUE : (ze_rtas_builder_geometry_exp_flag_t) 0;
     plane->procedural = procedural;
     geometries.push_back(plane);
   }
@@ -1187,9 +1187,9 @@ struct Scene
     memset(&args,0,sizeof(args));
     args.stype = ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_EXP_DESC;
     args.pNext = nullptr;
-    args.rtasFormat = rtasProp.rtasDeviceFormat;
+    args.deviceFormat = rtasProp.rtasDeviceFormat;
     args.buildQuality = quality;
-    args.buildFlags = ZE_RTAS_BUILDER_BUILD_OP_EXP_FLAG_NONE;
+    args.buildFlags = 0;
     args.ppGeometries = (const ze_rtas_builder_geometry_info_exp_t**) geom.data();
     args.numGeometries = geom.size();
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
@@ -1204,7 +1204,7 @@ struct Scene
     if (err != ZE_RESULT_SUCCESS)
       throw std::runtime_error("BVH size estimate failed");
 
-    if (size.rtasBufferSizeBytesExpected > size.rtasBufferSizeBytesMax)
+    if (size.rtasBufferSizeBytesMin > size.rtasBufferSizeBytesMax)
       throw std::runtime_error("expected larger than worst case");
 
     /* allocate scratch buffer */
@@ -1263,7 +1263,7 @@ struct Scene
     }
     case BuildMode::BUILD_EXPECTED_SIZE: {
       
-      size_t bytes = size.rtasBufferSizeBytesExpected;
+      size_t bytes = size.rtasBufferSizeBytesMin;
       for (size_t i=0; i<=16; i++) // FIXME: reduce worst cast iteration number
       {
         if (i == 16)
