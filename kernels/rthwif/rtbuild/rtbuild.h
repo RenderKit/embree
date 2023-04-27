@@ -411,9 +411,10 @@ RTHWIF_API ze_result_t ZE_APICALL_ zeRTASParallelOperationCreateExp( ze_rtas_bui
 
 RTHWIF_API ze_result_t ZE_APICALL_ zeRTASParallelOperationDestroyExp( ze_rtas_parallel_operation_exp_handle_t hParallelOperation );
 
-typedef enum _ze_rtas_parallel_operation_exp_flags_t {
+typedef uint8_t ze_rtas_parallel_operation_exp_flags_t;
+typedef enum _ze_rtas_parallel_operation_exp_flag_t {
   ZE_RTAS_PARALLEL_OPERATION_EXP_FLAG_NONE = 0, 
-} ze_rtas_parallel_operation_exp_flags_t;
+} ze_rtas_parallel_operation_exp_flag_t;
 
 typedef struct _ze_rtas_parallel_operation_exp_properties_t
 {
@@ -667,9 +668,9 @@ typedef struct _ze_rtas_builder_triangles_geometry_info_exp_t  // 40 bytes
   ze_rtas_builder_geometry_type_exp_t geometryType;       ///< must be ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_TRIANGLES
   ze_rtas_builder_geometry_exp_flags_t geometryFlags;     ///< geometry flags for all primitives of this geometry
   uint8_t geometryMask;                                 ///< 8-bit geometry mask for ray masking
-  uint8_t reserved0;                                    ///< must be zero
-  uint8_t reserved1;                                    ///< must be zero
-  uint8_t reserved2;                                    ///< must be zero
+  //uint8_t reserved0;                                    ///< must be zero
+  //uint8_t reserved1;                                    ///< must be zero
+  //uint8_t reserved2;                                    ///< must be zero
   ze_rtas_data_buffer_format_exp_t triangleBufferFormat;            ///< format of triangleBuffer (must be ZE_RTAS_DATA_BUFFER_FORMAT_EXP_TRIANGLE_INDICES_UINT32)
   ze_rtas_data_buffer_format_exp_t vertexBufferFormat;              ///< format of vertexBuffer (must be ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3)
   unsigned int triangleCount;                           ///< number of triangles in triangleBuffer
@@ -705,9 +706,9 @@ typedef struct _ze_rtas_builder_quads_geometry_info_exp_t // 40 bytes
   ze_rtas_builder_geometry_type_exp_t geometryType;   ///< must be ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_QUADS
   ze_rtas_builder_geometry_exp_flags_t geometryFlags; ///< geometry flags for all primitives of this geometry
   uint8_t geometryMask;                             ///< 8-bit geometry mask for ray masking
-  uint8_t reserved0;                                ///< must be zero
-  uint8_t reserved1;                                ///< must be zero
-  uint8_t reserved2;                                ///< must be zero
+  //uint8_t reserved0;                                ///< must be zero
+  //uint8_t reserved1;                                ///< must be zero
+  //uint8_t reserved2;                                ///< must be zero
   ze_rtas_data_buffer_format_exp_t quadBufferFormat;            ///< format of quadBuffer (must be ZE_RTAS_DATA_BUFFER_FORMAT_EXP_QUAD_INDICES_UINT32)
   ze_rtas_data_buffer_format_exp_t vertexBufferFormat;          ///< format of vertexBuffer (must be ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3)
   unsigned int quadCount;                           ///< number of quads in quadBuffer
@@ -761,7 +762,7 @@ typedef struct _ze_rtas_builder_procedural_geometry_info_exp_t // 24 bytes
   ze_rtas_builder_geometry_type_exp_t geometryType;      ///< must be ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_PROCEDURAL
   ze_rtas_builder_geometry_exp_flags_t geometryFlags;    ///< geometry flags for all primitives of this geometry
   uint8_t geometryMask;                                ///< 8-bit geometry mask for ray masking
-  uint8_t reserved;                                    ///< must be zero
+  //uint8_t reserved;                                    ///< must be zero
   unsigned int primCount;                              ///< number of primitives in geometry
   ze_rtas_geometry_aabbs_cb_exp_t pfnGetBoundsCb;   ///< function pointer to return bounds for a range of primitives
   void* pGeomUserPtr;                                   ///< geometry user pointer passed to callback
@@ -889,23 +890,6 @@ typedef struct _ze_rtas_device_exp_properties_t
 
 /**
 
-  \brief Returns the acceleration structure format supported by the specified device.
-
-  \param hDevice: device to query the acceleration structure format for
-  \param pAccelFormat: points to destination of returned acceleration structure format
-
-  If a ray tracing is supported by this device a format is returned to
-  the memory location pointed by pAccelFormat and the result code
-  ZE_RESULT_SUCCESS is returned.
-
-*/
-
-RTHWIF_API ze_result_t ZE_APICALL_ zeDeviceGetRTASPropertiesExp( const ze_device_handle_t hDevice, ze_rtas_device_exp_properties_t* pRtasProp );
-
-
-
-/**
-
   \brief Checks if the acceleration structure build for hDevice can be used on hDeviceOther.
 
   \param accelFormat: format the acceleration structure is build for
@@ -950,7 +934,7 @@ typedef struct _ze_rtas_builder_exp_properties_t
       size, the build is expected to succeed mostly, but it may fail
       with ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY_. 
   */
-  size_t rtasBufferSizeBytesExpected;
+  size_t rtasBufferSizeBytesMin;
 
   /**
      [out] The worst case number of bytes required for the acceleration
@@ -984,7 +968,7 @@ typedef struct _ze_rtas_builder_build_op_exp_desc_t
    * other devices whose acceleration structure is compatible with the
    * device specified here (see
    * zeRTASBuilderDeviceFormatCompatibilityCheckExp function). */
-  ze_rtas_device_format_exp_t rtasFormat;
+  ze_rtas_device_format_exp_t deviceFormat;
 
   /** 
       [in] Build quality to use (see ze_rtas_builder_build_quality_hint_exp_t) 
@@ -1097,6 +1081,22 @@ RTHWIF_API ze_result_t ZE_APICALL_ zeRTASBuilderGetBuildPropertiesExp( ze_rtas_b
 
 RTHWIF_API ze_result_t ZE_APICALL_ zeRTASBuilderBuildExp( ze_rtas_builder_exp_handle_t hBuilder, const ze_rtas_builder_build_op_exp_desc_t* args,
   void *pScratchBuffer, size_t scratchBufferSizeBytes, void *pRtasBuffer, size_t rtasBufferSizeBytes, ze_rtas_parallel_operation_exp_handle_t hParallelOperation, void *pBuildUserPtr, ze_rtas_aabb_exp_t *pBounds, size_t *pRtasBufferSizeBytes);
+
+
+/**
+
+  \brief Returns the acceleration structure format supported by the specified device.
+
+  \param hDevice: device to query the acceleration structure format for
+  \param pAccelFormat: points to destination of returned acceleration structure format
+
+  If a ray tracing is supported by this device a format is returned to
+  the memory location pointed by pAccelFormat and the result code
+  ZE_RESULT_SUCCESS is returned.
+
+*/
+
+RTHWIF_API ze_result_t ZE_APICALL_ zeDeviceGetRTASPropertiesExp( const ze_device_handle_t hDevice, ze_rtas_device_exp_properties_t* pRtasProp );
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////
