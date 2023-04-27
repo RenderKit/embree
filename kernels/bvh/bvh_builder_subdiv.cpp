@@ -174,6 +174,22 @@ namespace embree
                 type = 3;                                
                 PRINT((uint)patch.type);
                 PRINT("SOMETHING ELSE");
+
+#if 1                
+                BilinearPatch3fa irregular(mesh->getHalfEdge(0,f),mesh->getVertexBuffer(0));
+                
+                for (int y=0;y<4;y++)
+                  for (int x=0;x<4;x++)
+                  {
+                    const Vec3fa vtx = irregular.eval((float)x/3,(float)y/3);
+                    patch.patch_v[y][x] = vtx;
+                  }
+#else
+                BezierPatch3fa irregular(CatmullClarkPatch3fa(mesh->getHalfEdge(0,f),mesh->getVertexBuffer(0)));
+                *(BezierPatch3fa*)(patch.patch_v) = irregular;
+#endif                
+                type = 0;
+                PRINT("DONE");
               }
               output.write((char*)&type,sizeof(uint));
               output.write((char*)&geomID,sizeof(uint));
@@ -187,12 +203,14 @@ namespace embree
                   //PRINT3(y,x,patch.patch_v[y][x]);
                 }
               patchID++;
-#endif              
+#endif
+#if 0              
               size_t num = createEager(patch,scene,mesh,unsigned(f),alloc,&prims[base.end+s.end]);
               assert(num == getNumEagerLeaves(patch.grid_u_res,patch.grid_v_res));
               for (size_t i=0; i<num; i++)
                 s.add_center2(prims[base.end+s.end]);
               s.begin++;
+#endif              
             });
           }
           return s;
@@ -200,7 +218,7 @@ namespace embree
 
         output.close();
         PRINT("DONE WRITING PATCH FILE");
-        //exit(0);
+        exit(0);
         
         PrimInfo pinfo(0,pinfo3.end,pinfo3);
         

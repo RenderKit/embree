@@ -120,11 +120,13 @@ namespace embree
 
     void set_edge(const HalfEdge *h) const { ((PatchHalfEdge*)patch_v)->edge = h; }
     void set_subPatch(const unsigned s) const { ((PatchHalfEdge*)patch_v)->subPatch = s; }
+    
   };
 
   namespace isa
   {
     Vec3fa patchEval(const SubdivPatch1Base& patch, const float uu, const float vv);
+    
     Vec3fa patchNormal(const SubdivPatch1Base& patch, const float uu, const float vv);
     
     template<typename simdf>

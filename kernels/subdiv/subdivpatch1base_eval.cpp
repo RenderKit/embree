@@ -19,7 +19,7 @@ namespace embree
         return ((BilinearPatch3fa*)patch.patch_v)->eval(uu,vv);
       return Vec3fa( zero );
     }
-
+    
     Vec3fa patchNormal(const SubdivPatch1Base& patch, const float uu, const float vv) 
     {
       if (likely(patch.type == SubdivPatch1Base::BEZIER_PATCH))

@@ -30,7 +30,7 @@
 #define PATCH_MAX_EVAL_DEPTH_IRREGULAR PATCH_MAX_CACHE_DEPTH     // maximum evaluation depth at irregular vertices (has to be larger or equal than PATCH_MAX_CACHE_DEPTH)
 #define PATCH_MAX_EVAL_DEPTH_CREASE PATCH_MAX_CACHE_DEPTH       // maximum evaluation depth at crease features (has to be larger or equal than PATCH_MAX_CACHE_DEPTH)
 
-#define PATCH_USE_GREGORY 2        // 0 = no gregory, 1 = fill, 2 = as early as possible
+#define PATCH_USE_GREGORY 2       // 0 = no gregory, 1 = fill, 2 = as early as possible
 
 #if PATCH_USE_GREGORY==2
 #define PATCH_USE_BEZIER_PATCH 1   // enable use of bezier instead of b-spline patches
