@@ -970,7 +970,7 @@ namespace embree {
             const Vec2f p2 = projectVertexToPlane(cv2-org,vx,vy,vz,width,height);
             const Vec2f p3 = projectVertexToPlane(cv3-org,vx,vy,vz,width,height);
 
-            const float f = 1.0/4.0f;
+            const float f = 1.0/2.0f;
             const float d0 = length(p1-p0) * f;
             const float d1 = length(p2-p1) * f;
             const float d2 = length(p3-p2) * f;

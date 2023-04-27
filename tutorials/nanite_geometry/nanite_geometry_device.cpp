@@ -77,6 +77,8 @@ namespace embree {
   ISPCCamera *camera_path_device = nullptr;
   ISPCCamera *global_camera = nullptr;
 
+  std::vector<Patch*> patch_anim;
+  
 #if defined(EMBREE_SYCL_TUTORIAL) && defined(USE_SPECIALIZATION_CONSTANTS)
   const static sycl::specialization_id<RTCFeatureFlags> rtc_feature_mask(RTC_FEATURE_FLAG_ALL);
 #endif
@@ -536,6 +538,34 @@ namespace embree {
       global_lcgbp_scene->geomID = rtcAttachGeometry(data.g_scene,global_lcgbp_scene->geometry);
 
       //exit(0);
+
+      for (int z=0;z<3;z++)
+        for (int y=0;y<8;y++)
+          for (int x=0;x<10;x++)
+          {
+            std::string fileName("patches_anim/animation/subdiv/patches_");
+            fileName += std::to_string(z) + std::to_string(y) + std::to_string(x) + std::string(".bin");
+            PRINT(fileName.c_str());
+
+            std::ifstream file(fileName,std::ios::in|std::ios::binary);
+            if (!file) { PRINT("cannot open patches file"); continue; }
+
+            file.seekg (0, std::ios::end);
+            size_t length = file.tellg();
+            PRINT(length);
+            file.seekg (0, std::ios::beg);
+      
+            Patch *new_patch = (Patch*)alignedUSMMalloc(sizeof(unsigned char)*length,64, EmbreeUSMMode::EMBREE_USM_SHARED);
+            file.read((char*)new_patch,sizeof(unsigned char)*length);
+            file.close();
+            patch_anim.push_back(new_patch);
+
+            for (uint i=0;i<global_lcgbp_scene->numSubdivPatches;i++)
+              global_lcgbp_scene->patch_mesh->bounds.extend(new_patch[i].bounds());
+
+          }
+
+      PRINT(patch_anim.size());
     }
     
 
@@ -790,6 +820,8 @@ namespace embree {
                                  const ISPCCamera& _camera)
   {
     const uint frameID = camera_path.size() ? ((frameIndex++) % camera_path.size()) : 0;
+
+    global_lcgbp_scene->patches = patch_anim[((frameIndex++)/4) % patch_anim.size()];
 #if 1  
     if (camera_mode == 1)
       camera_path.push_back(_camera);

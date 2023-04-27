@@ -166,7 +166,7 @@ struct TutorialData
 };
 
   struct Patch {
-    static const unsigned int MAX_PATCH_EDGE_TESS = 8; 
+    static const unsigned int MAX_PATCH_EDGE_TESS = 10; 
     static const size_t MAX_PATCH_VERTICES = MAX_PATCH_EDGE_TESS*MAX_PATCH_EDGE_TESS;
     static const size_t MAX_PATCH_QUADS = (MAX_PATCH_EDGE_TESS-1)*(MAX_PATCH_EDGE_TESS-1);
 
