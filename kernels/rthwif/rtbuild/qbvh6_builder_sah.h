@@ -7,6 +7,7 @@
 #include "statistics.h"
 #include "quadifier.h"
 #include "rtbuild.h"
+#include <atomic>
 
 #if defined(ZE_RAYTRACING)
 #include "builders/priminfo.h"

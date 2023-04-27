@@ -6,6 +6,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#if defined(EMBREE_LEVEL_ZERO)
+#include <level_zero/ze_api.h>
+#endif
+
 #if !defined(EMBREE_LEVEL_ZERO)
 struct _ze_device_handle_t {};
 #else
@@ -299,22 +303,25 @@ typedef struct _ze_driver_handle_t *ze_driver_handle_t;
  \brief Additional ze_result_t enum fields. 
 
 */
-typedef enum _ze_result_t_
+#if defined(EMBREE_LEVEL_ZERO)
+#define ZE_RESULT_EXP_ERROR_OPERANDS_INCOMPATIBLE ((_ze_result_t) 0x10000000)
+#else
+typedef enum _ze_result_t
 {
-  ZE_RESULT_SUCCESS_,                             ///< operation was successfull
-  ZE_RESULT_ERROR_UNKNOWN_,                       ///< unknown error occurred
-  ZE_RESULT_ERROR_INVALID_ARGUMENT_,              ///< generic error code for invalid arguments 
+  ZE_RESULT_SUCCESS,                             ///< operation was successfull
+  ZE_RESULT_ERROR_UNKNOWN,                       ///< unknown error occurred
+  ZE_RESULT_ERROR_INVALID_ARGUMENT,              ///< generic error code for invalid arguments 
   
-  ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY_,    ///< acceleration structure build ran out of memory, app should re-try with more memory
-  ZE_RESULT_ERROR_INVALID_ENUMERATION_,   ///< the tested devices have incompatible acceleration structures
+  ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY,    ///< acceleration structure build ran out of memory, app should re-try with more memory
+  ZE_RESULT_ERROR_INVALID_ENUMERATION,   ///< the tested devices have incompatible acceleration structures
 
-  ZE_RESULT_ERROR_INVALID_NULL_HANDLE_,
-  ZE_RESULT_ERROR_INVALID_NULL_POINTER_,
-  ZE_RESULT_EXP_ERROR_OPERANDS_INCOMPATIBLE_,
-  ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE_,           ///< operation is deferred to a parallel operation
+  ZE_RESULT_ERROR_INVALID_NULL_HANDLE,
+  ZE_RESULT_ERROR_INVALID_NULL_POINTER,
+  ZE_RESULT_EXP_ERROR_OPERANDS_INCOMPATIBLE,
+  ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE,           ///< operation is deferred to a parallel operation
   
-} ze_result_t_;
-
+} ze_result_t;
+#endif
 
 /**
 
@@ -322,13 +329,19 @@ typedef enum _ze_result_t_
 
 */
 
-typedef enum _ze_structure_type_t_
+#if defined(EMBREE_LEVEL_ZERO)
+#define ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_EXP_DESC ((ze_structure_type_t)(0x0002000E))
+#define ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES ((ze_structure_type_t)(0x0002000F))
+#define ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES ((ze_structure_type_t)(0x00020010))
+#else
+typedef enum _ze_structure_type_t
 {
   ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_EXP_DESC, ///< ze_rtas_builder_build_op_exp_desc_t
   ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES, ///< ze_rtas_parallel_operation_exp_properties_t
   ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES, ///< ze_rtas_device_exp_properties_t
   
-} ze_structure_type_t_;
+} ze_structure_type_t;
+#endif
 
 
 /**
@@ -349,7 +362,7 @@ typedef enum _ze_rtas_builder_exp_version_t
 typedef struct _ze_rtas_builder_exp_desc_t
 {
   /** [in] type of this structure */
-  ze_structure_type_t_ stype;
+  ze_structure_type_t stype;
 
   /** [in,out][optional] must be null or a pointer to an extension-specific structure */
   const void* pNext;                                    
@@ -360,9 +373,9 @@ typedef struct _ze_rtas_builder_exp_desc_t
 
 typedef struct _ze_rtas_builder_exp_handle_t *ze_rtas_builder_exp_handle_t;
 
-RTHWIF_API ze_result_t_ ZE_APICALL_ zeRTASBuilderCreateExp(ze_driver_handle_t hDriver, const ze_rtas_builder_exp_desc_t *pDescriptor, ze_rtas_builder_exp_handle_t *phBuilder);
+RTHWIF_API ze_result_t ZE_APICALL_ zeRTASBuilderCreateExp(ze_driver_handle_t hDriver, const ze_rtas_builder_exp_desc_t *pDescriptor, ze_rtas_builder_exp_handle_t *phBuilder);
 
-RTHWIF_API ze_result_t_ ZE_APICALL_ zeRTASBuilderDestroyExp(ze_rtas_builder_exp_handle_t hBuilder);
+RTHWIF_API ze_result_t ZE_APICALL_ zeRTASBuilderDestroyExp(ze_rtas_builder_exp_handle_t hBuilder);
   
 /**
 
@@ -387,14 +400,14 @@ typedef struct _ze_rtas_parallel_operation_exp_handle_t* ze_rtas_parallel_operat
    parallel operation at a given time.
 */
 
-RTHWIF_API ze_result_t_ ZE_APICALL_ zeRTASParallelOperationCreateExp( ze_rtas_builder_exp_handle_t hBuilder, ze_rtas_parallel_operation_exp_handle_t* phParallelOperation );
+RTHWIF_API ze_result_t ZE_APICALL_ zeRTASParallelOperationCreateExp( ze_rtas_builder_exp_handle_t hBuilder, ze_rtas_parallel_operation_exp_handle_t* phParallelOperation );
 
 
 /**
   \brief Destroy parallel operation.
 */
 
-RTHWIF_API ze_result_t_ ZE_APICALL_ zeRTASParallelOperationDestroyExp( ze_rtas_parallel_operation_exp_handle_t hParallelOperation );
+RTHWIF_API ze_result_t ZE_APICALL_ zeRTASParallelOperationDestroyExp( ze_rtas_parallel_operation_exp_handle_t hParallelOperation );
 
 typedef enum _ze_rtas_parallel_operation_exp_flags_t {
   ZE_RTAS_PARALLEL_OPERATION_EXP_FLAG_NONE = 0, 
@@ -403,7 +416,7 @@ typedef enum _ze_rtas_parallel_operation_exp_flags_t {
 typedef struct _ze_rtas_parallel_operation_exp_properties_t
 {
   /** [in] type of this structure */
-  ze_structure_type_t_ stype;
+  ze_structure_type_t stype;
 
   /** [in,out][optional] must be null or a pointer to an extension-specific structure */
   const void* pNext;                                    
@@ -418,7 +431,7 @@ typedef struct _ze_rtas_parallel_operation_exp_properties_t
   \brief Returns the maximal number of threads that can join the parallel operation.
 */
 
-RTHWIF_API ze_result_t_ ZE_APICALL_ zeRTASParallelOperationGetPropertiesExp( ze_rtas_parallel_operation_exp_handle_t hParallelOperation, ze_rtas_parallel_operation_exp_properties_t* pProperties );
+RTHWIF_API ze_result_t ZE_APICALL_ zeRTASParallelOperationGetPropertiesExp( ze_rtas_parallel_operation_exp_handle_t hParallelOperation, ze_rtas_parallel_operation_exp_properties_t* pProperties );
 
 
 /**
@@ -429,7 +442,7 @@ RTHWIF_API ze_result_t_ ZE_APICALL_ zeRTASParallelOperationGetPropertiesExp( ze_
    with the same error code of the build.
 */
 
-RTHWIF_API ze_result_t_ ZE_APICALL_ zeRTASParallelOperationJoinExp( ze_rtas_parallel_operation_exp_handle_t hParallelOperation );
+RTHWIF_API ze_result_t ZE_APICALL_ zeRTASParallelOperationJoinExp( ze_rtas_parallel_operation_exp_handle_t hParallelOperation );
 
 
 
@@ -848,7 +861,7 @@ typedef enum _ze_rtas_device_exp_flag_t
 typedef struct _ze_rtas_device_exp_properties_t
 {
   /** [in] type of this structure */
-  ze_structure_type_t_ stype;
+  ze_structure_type_t stype;
 
   /** [in,out][optional] must be null or a pointer to an extension-specific structure */
   const void* pNext;                                    
@@ -875,7 +888,7 @@ typedef struct _ze_rtas_device_exp_properties_t
 
 */
 
-RTHWIF_API ze_result_t_ ZE_APICALL_ zeDeviceGetRTASPropertiesExp( const ze_device_handle_t hDevice, ze_rtas_device_exp_properties_t* pRtasProp );
+RTHWIF_API ze_result_t ZE_APICALL_ zeDeviceGetRTASPropertiesExp( const ze_device_handle_t hDevice, ze_rtas_device_exp_properties_t* pRtasProp );
 
 
 
@@ -893,7 +906,7 @@ RTHWIF_API ze_result_t_ ZE_APICALL_ zeDeviceGetRTASPropertiesExp( const ze_devic
 
 */
 
-RTHWIF_API ze_result_t_ ZE_APICALL_ zeRTASBuilderDeviceFormatCompatibilityCheckExp( ze_rtas_builder_exp_handle_t hBuilder, const ze_rtas_device_format_exp_t accelFormat, const ze_rtas_device_format_exp_t otherAccelFormat );
+RTHWIF_API ze_result_t ZE_APICALL_ zeRTASBuilderDeviceFormatCompatibilityCheckExp( ze_rtas_builder_exp_handle_t hBuilder, const ze_rtas_device_format_exp_t accelFormat, const ze_rtas_device_format_exp_t otherAccelFormat );
 
 typedef uint32_t ze_rtas_builder_exp_flags_t;
 typedef enum _ze_rtas_builder_exp_flag_t
@@ -912,7 +925,7 @@ typedef enum _ze_rtas_builder_exp_flag_t
 typedef struct _ze_rtas_builder_exp_properties_t
 {
   /** [in] type of this structure */
-  ze_structure_type_t_ stype;
+  ze_structure_type_t stype;
 
   /** [in,out][optional] must be null or a pointer to an extension-specific structure */
   const void* pNext;                                    
@@ -949,7 +962,7 @@ typedef struct _ze_rtas_builder_exp_properties_t
 typedef struct _ze_rtas_builder_build_op_exp_desc_t
 {
   /** [in] type of this structure */
-  ze_structure_type_t_ stype;
+  ze_structure_type_t stype;
 
   /** [in,out][optional] must be null or a pointer to an extension-specific structure */
   const void* pNext;
@@ -1007,7 +1020,7 @@ typedef struct _ze_rtas_builder_build_op_exp_desc_t
 
 */
 
-RTHWIF_API ze_result_t_ ZE_APICALL_ zeRTASBuilderGetBuildPropertiesExp( ze_rtas_builder_exp_handle_t hBuilder, const ze_rtas_builder_build_op_exp_desc_t* args, ze_rtas_parallel_operation_exp_handle_t hParallelOperation, ze_rtas_builder_exp_properties_t* pAccelSizeOut );
+RTHWIF_API ze_result_t ZE_APICALL_ zeRTASBuilderGetBuildPropertiesExp( ze_rtas_builder_exp_handle_t hBuilder, const ze_rtas_builder_build_op_exp_desc_t* args, ze_rtas_parallel_operation_exp_handle_t hParallelOperation, ze_rtas_builder_exp_properties_t* pAccelSizeOut );
 
 
 /**
@@ -1070,7 +1083,7 @@ RTHWIF_API ze_result_t_ ZE_APICALL_ zeRTASBuilderGetBuildPropertiesExp( ze_rtas_
 
  */
 
-RTHWIF_API ze_result_t_ ZE_APICALL_ zeRTASBuilderBuildExp( ze_rtas_builder_exp_handle_t hBuilder, const ze_rtas_builder_build_op_exp_desc_t* args,
+RTHWIF_API ze_result_t ZE_APICALL_ zeRTASBuilderBuildExp( ze_rtas_builder_exp_handle_t hBuilder, const ze_rtas_builder_build_op_exp_desc_t* args,
   void *pScratchBuffer, size_t scratchBufferSizeBytes, void *pRtasBuffer, size_t rtasBufferSizeBytes, ze_rtas_parallel_operation_exp_handle_t hParallelOperation, void *pBuildUserPtr, ze_rtas_aabb_exp_t *pBounds, size_t *pRtasBufferSizeBytes);
 
 
