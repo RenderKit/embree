@@ -1196,10 +1196,7 @@ struct Scene
     args.dispatchGlobalsPtr = dispatchGlobalsPtr;
 #endif
     
-    ze_rtas_builder_exp_properties_t size = {};
-    size.stype = ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES;
-    size.pNext = nullptr;
-    
+    ze_rtas_builder_exp_properties_t size = { ZE_STRUCTURE_TYPE_RTAS_BUILDER_EXP_PROPERTIES };
     err = zeRTASBuilderGetBuildPropertiesExp(hBuilder,&args,parallelOperation,&size);
     if (err != ZE_RESULT_SUCCESS)
       throw std::runtime_error("BVH size estimate failed");
@@ -2146,7 +2143,7 @@ int main(int argc, char* argv[])
   ze_driver_handle_t hDriver = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(platform);
     
   /* create L0 builder object */
-  ze_rtas_builder_exp_desc_t builderDesc = {};
+  ze_rtas_builder_exp_desc_t builderDesc = { ZE_STRUCTURE_TYPE_RTAS_BUILDER_EXP_DESC };
   ze_result_t err = zeRTASBuilderCreateExp(hDriver, &builderDesc, &hBuilder);
   if (err != ZE_RESULT_SUCCESS)
     throw std::runtime_error("ze_rtas_builder creation failed");

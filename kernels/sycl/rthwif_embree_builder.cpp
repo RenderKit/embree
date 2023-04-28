@@ -456,7 +456,7 @@ namespace embree
     ze_driver_handle_t hDriver = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(platform);
     
     /* create L0 builder object */
-    ze_rtas_builder_exp_desc_t builderDesc = {};
+    ze_rtas_builder_exp_desc_t builderDesc = { ZE_STRUCTURE_TYPE_RTAS_BUILDER_EXP_DESC };
     ze_rtas_builder_exp_handle_t hBuilder = nullptr;
     ze_result_t err = zeRTASBuilderCreateExp(hDriver, &builderDesc, &hBuilder);
     if (err != ZE_RESULT_SUCCESS)
@@ -587,10 +587,7 @@ namespace embree
     args.dispatchGlobalsPtr = dynamic_cast<DeviceGPU*>(scene->device)->dispatchGlobalsPtr;
 #endif
     
-    ze_rtas_builder_exp_properties_t sizeTotal;
-    memset(&sizeTotal,0,sizeof(ze_rtas_builder_exp_properties_t));
-    sizeTotal.stype = ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES;
-    sizeTotal.pNext = nullptr;
+    ze_rtas_builder_exp_properties_t sizeTotal = { ZE_STRUCTURE_TYPE_RTAS_BUILDER_EXP_PROPERTIES };
     err = zeRTASBuilderGetBuildPropertiesExp(hBuilder,&args,parallelOperation,&sizeTotal);
     if (err != ZE_RESULT_SUCCESS)
       throw_RTCError(RTC_ERROR_UNKNOWN,"BVH size estimate failed");
@@ -606,7 +603,7 @@ namespace embree
     while (true)
     {
       /* estimate size of all mblur BVHs */
-      ze_rtas_builder_exp_properties_t size;
+      ze_rtas_builder_exp_properties_t size = { ZE_STRUCTURE_TYPE_RTAS_BUILDER_EXP_PROPERTIES };
       size.rtasBufferSizeBytesMin  = maxTimeSegments*sizeTotal.rtasBufferSizeBytesMin;
       size.rtasBufferSizeBytesMax = maxTimeSegments*sizeTotal.rtasBufferSizeBytesMax;
       size_t bytes = headerBytes+size.rtasBufferSizeBytesMin;
