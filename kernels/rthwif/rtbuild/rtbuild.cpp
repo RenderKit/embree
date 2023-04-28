@@ -332,10 +332,10 @@ namespace embree
       return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
 
     if (pDescriptor->stype != ZE_STRUCTURE_TYPE_RTAS_BUILDER_EXP_DESC)
-      return ZE_RESULT_ERROR_INVALID_ARGUMENT;
+      return ZE_RESULT_ERROR_INVALID_ENUMERATION;
 
     if (!checkDescChain((zet_base_desc_t_*)pDescriptor))
-      return ZE_RESULT_ERROR_INVALID_ARGUMENT;
+      return ZE_RESULT_ERROR_INVALID_ENUMERATION;
 
     if (uint32_t(ZE_RTAS_BUILDER_EXP_VERSION_CURRENT) < uint32_t(pDescriptor->builderVersion))
       return ZE_RESULT_ERROR_INVALID_ENUMERATION;
@@ -349,10 +349,10 @@ namespace embree
       return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
 
     if (pProperties->stype != ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES)
-      return ZE_RESULT_ERROR_INVALID_ARGUMENT;
+      return ZE_RESULT_ERROR_INVALID_ENUMERATION;
     
     if (!checkDescChain((zet_base_desc_t_*)pProperties))
-      return ZE_RESULT_ERROR_INVALID_ARGUMENT;
+      return ZE_RESULT_ERROR_INVALID_ENUMERATION;
     
     return ZE_RESULT_SUCCESS;
   }
@@ -373,11 +373,11 @@ namespace embree
 
     /* check if input descriptor has proper type */
     if (args->stype != ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_EXP_DESC)
-      return ZE_RESULT_ERROR_INVALID_ARGUMENT;
+      return ZE_RESULT_ERROR_INVALID_ENUMERATION;
 
     /* check valid pNext chain */
     if (!checkDescChain((zet_base_desc_t_*)args))
-      return ZE_RESULT_ERROR_INVALID_ARGUMENT;
+      return ZE_RESULT_ERROR_INVALID_ENUMERATION;
 
     /* check if acceleration structure format is supported */
     VALIDATE(args->deviceFormat);
@@ -405,11 +405,11 @@ namespace embree
     
     /* check if return property has proper type */
     if (pProp->stype != ZE_STRUCTURE_TYPE_RTAS_BUILDER_EXP_PROPERTIES)
-      return ZE_RESULT_ERROR_INVALID_ARGUMENT;
+      return ZE_RESULT_ERROR_INVALID_ENUMERATION;
 
     /* check valid pNext chain */
     if (!checkDescChain((zet_base_desc_t_*)pProp))
-      return ZE_RESULT_ERROR_INVALID_ARGUMENT;
+      return ZE_RESULT_ERROR_INVALID_ENUMERATION;
 
     return ZE_RESULT_SUCCESS;
   }
@@ -422,11 +422,11 @@ namespace embree
 
     /* check for proper property */
     if (pProperties->stype != ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES)
-      return ZE_RESULT_ERROR_INVALID_ARGUMENT;
+      return ZE_RESULT_ERROR_INVALID_ENUMERATION;
 
     /* check valid pNext chain */
     if (!checkDescChain((zet_base_desc_t_*)pProperties))
-      return ZE_RESULT_ERROR_INVALID_ARGUMENT;
+      return ZE_RESULT_ERROR_INVALID_ENUMERATION;
 
     return ZE_RESULT_SUCCESS;
   }
