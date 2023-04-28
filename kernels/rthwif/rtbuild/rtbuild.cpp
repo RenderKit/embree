@@ -331,6 +331,9 @@ namespace embree
     if (pDescriptor == nullptr)
       return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
 
+    if (pDescriptor->stype != ZE_STRUCTURE_TYPE_RTAS_BUILDER_EXP_DESC)
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT;
+
     if (!checkDescChain((zet_base_desc_t_*)pDescriptor))
       return ZE_RESULT_ERROR_INVALID_ARGUMENT;
 
@@ -345,12 +348,12 @@ namespace embree
     if (pProperties == nullptr)
       return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
 
+    if (pProperties->stype != ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES)
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT;
+    
     if (!checkDescChain((zet_base_desc_t_*)pProperties))
       return ZE_RESULT_ERROR_INVALID_ARGUMENT;
     
-    if (pProperties->stype != ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES)
-      return ZE_RESULT_ERROR_INVALID_ARGUMENT;
-
     return ZE_RESULT_SUCCESS;
   }
 
@@ -401,7 +404,7 @@ namespace embree
       return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
     
     /* check if return property has proper type */
-    if (pProp->stype != ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES)
+    if (pProp->stype != ZE_STRUCTURE_TYPE_RTAS_BUILDER_EXP_PROPERTIES)
       return ZE_RESULT_ERROR_INVALID_ARGUMENT;
 
     /* check valid pNext chain */
