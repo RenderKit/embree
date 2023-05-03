@@ -26,7 +26,7 @@ jobs:
       artifact-out: linux-DG2-DPCPP
       artifact-path: ./build/*.tar.gz .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 build:Release compiler:ICX2023.0.0 EMBREE_SYCL_SUPPORT:ON sycl:none gfx:RELEASE ispc:ispc1.18.1 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.7.0 intensity:4 package:ZIP EMBREE_USE_GOOGLE_BENCHMARK:ON EMBREE_BUILD_GOOGLE_BENCHMARK_FROM_SOURCE:ON
+        scripts/test.py configure platform:x64 build:Release compiler:ICX2023.0.0 EMBREE_SYCL_SUPPORT:ON sycl:none gfx:RELEASE ispc:ispc1.18.1 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.7.0 intensity:4 package:ZIP EMBREE_USE_GOOGLE_BENCHMARK:ON EMBREE_BUILD_GOOGLE_BENCHMARK_FROM_SOURCE:ON EMBREE_NO_SPLASH:ON
         scripts/test.py build
         scripts/test.py test
 
@@ -39,7 +39,7 @@ jobs:
       artifact-out: linux-build-x86-ICX-ISPC
       artifact-path: ./build/*.tar.gz .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 build:Release compiler:ICX2023.0.0 ispc:ispc1.18.1 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.7.0 intensity:4 package:ZIP EMBREE_USE_GOOGLE_BENCHMARK:ON EMBREE_BUILD_GOOGLE_BENCHMARK_FROM_SOURCE:ON
+        scripts/test.py configure platform:x64 build:Release compiler:ICX2023.0.0 ispc:ispc1.18.1 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.7.0 intensity:4 package:ZIP EMBREE_USE_GOOGLE_BENCHMARK:ON EMBREE_BUILD_GOOGLE_BENCHMARK_FROM_SOURCE:ON EMBREE_NO_SPLASH:ON
         scripts/test.py build
         scripts/test.py test
 

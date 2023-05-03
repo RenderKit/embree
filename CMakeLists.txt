@@ -143,7 +143,8 @@ OPTION(EMBREE_STACK_PROTECTOR "When enabled Embree compiles with stack protectio
 
 IF (NOT APPLE)
   OPTION(EMBREE_SYCL_SUPPORT "Enables SYCL GPU support." OFF)
-  IF (EMBREE_SYCL_SUPPORT)
+  OPTION(EMBREE_NO_SPLASH "Enables/Disables the Embree splash." OFF)
+  IF (EMBREE_SYCL_SUPPORT AND NOT EMBREE_NO_SPLASH)
     MESSAGE(WARNING
        "==================================================================================\n"
        "  The SYCL support of Embree is in beta phase. Current functionality, quality,    \n"
@@ -166,6 +167,9 @@ ENDIF()
 
 IF (EMBREE_SYCL_SUPPORT)
   ADD_DEFINITIONS("-DEMBREE_SYCL_SUPPORT")  # FIXME: only use define from rtcore_config.h
+ENDIF()
+IF (EMBREE_NO_SPLASH)
+  ADD_DEFINITIONS("-DEMBREE_NO_SPLASH")  # FIXME: only use define from rtcore_config.h
 ENDIF()
 
 CMAKE_DEPENDENT_OPTION(EMBREE_SYCL_RT_SIMULATION "Using hardware simulation" OFF "EMBREE_SYCL_SUPPORT" OFF)
