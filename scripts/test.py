@@ -118,6 +118,8 @@ def runConfig(config):
     enable_sycl_support = True
     conf.append("-D EMBREE_SYCL_SUPPORT="+config["EMBREE_SYCL_SUPPORT"])
     conf.append("-D EMBREE_TESTING_ONLY_SYCL_TESTS=ON")
+  if "EMBREE_NO_SPLASH" in config:
+    conf.append("-D EMBREE_NO_SPLASH="+config["EMBREE_NO_SPLASH"])
 
   #if "package" in config and OS == 'linux': # we need up to date cmake for RPMs to work properly
   #  env.append("module load cmake")
