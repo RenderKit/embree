@@ -540,7 +540,7 @@ struct TriangleMesh : public Geometry
 {
 public:
 
-  TriangleMesh (ze_rtas_builder_geometry_exp_flag_t gflags = ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_OPAQUE, bool procedural = false)
+  TriangleMesh (ze_rtas_builder_geometry_exp_flags_t gflags = 0, bool procedural = false)
     : Geometry(Type::TRIANGLE_MESH),
       gflags(gflags), procedural(procedural),
       triangles_alloc(context,device,sycl::ext::oneapi::property::usm::device_read_only()), triangles(0,triangles_alloc),
@@ -761,7 +761,7 @@ public:
 
   
 public:
-  ze_rtas_builder_geometry_exp_flag_t gflags = ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_OPAQUE;
+  ze_rtas_builder_geometry_exp_flags_t gflags = 0;
   bool procedural = false;
   
   typedef sycl::usm_allocator<sycl::int4, sycl::usm::alloc::shared> triangles_alloc_ty;
@@ -1002,7 +1002,7 @@ struct Scene
     : geometries_alloc(context,device,sycl::ext::oneapi::property::usm::device_read_only()), geometries(0,geometries_alloc), bounds(Bounds3f::empty()), accel(nullptr) 
   {
     std::shared_ptr<TriangleMesh> plane = createTrianglePlane(sycl::float3(0,0,0), sycl::float3(width,0,0), sycl::float3(0,height,0), width, height);
-    plane->gflags = opaque ? ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_OPAQUE : (ze_rtas_builder_geometry_exp_flag_t) 0;
+    plane->gflags = opaque ? (ze_rtas_builder_geometry_exp_flag_t) 0 : ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_NON_OPAQUE;
     plane->procedural = procedural;
     geometries.push_back(plane);
   }

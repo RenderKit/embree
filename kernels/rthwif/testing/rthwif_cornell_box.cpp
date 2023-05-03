@@ -254,7 +254,7 @@ void* build_rtas(sycl::device device, sycl::context context)
   /* create geometry descriptor for single triangle mesh */
   ze_rtas_builder_triangles_geometry_info_exp_t mesh = {};
   mesh.geometryType = ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_TRIANGLES;
-  mesh.geometryFlags = ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_OPAQUE;
+  mesh.geometryFlags = 0;
   mesh.geometryMask = 0xFF;
   
   mesh.triangleFormat = ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_TRIANGLE_INDICES_UINT32;

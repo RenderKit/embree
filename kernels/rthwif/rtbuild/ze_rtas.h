@@ -153,9 +153,7 @@ typedef enum _ze_rtas_parallel_operation_exp_flag_t
 typedef uint32_t ze_rtas_builder_geometry_exp_flags_t;
 typedef enum _ze_rtas_builder_geometry_exp_flag_t
 {
-//    ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_NON_OPAQUE = ZE_BIT(0),   ///< non-opaque geometries invoke an any-hit shader
-    ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_OPAQUE = ZE_BIT(0),   ///< non-opaque geometries invoke an any-hit shader
-
+    ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_NON_OPAQUE = ZE_BIT(0),   ///< non-opaque geometries invoke an any-hit shader
     ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_FORCE_UINT32 = 0x7fffffff
 
 } ze_rtas_builder_geometry_exp_flag_t;
