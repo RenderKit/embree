@@ -281,14 +281,14 @@ namespace embree
   ze_rtas_builder_geometry_exp_flags_t getGeometryFlags(Scene* scene, Geometry* geom)
   {
     /* invoke any hit callback when Embree filter functions are present */
-    ze_rtas_builder_geometry_exp_flags_t gflags = ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_OPAQUE;
+    ze_rtas_builder_geometry_exp_flags_t gflags = 0;
     if (geom->hasArgumentFilterFunctions() || geom->hasGeometryFilterFunctions())
-      gflags = 0;
+      gflags = ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_NON_OPAQUE;
     
 #if defined(EMBREE_RAY_MASK)
     /* invoke any hit callback when high mask bits are enabled */
     if (geom->mask & 0xFFFFFF80)
-      gflags = 0;
+      gflags = ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_NON_OPAQUE;
 #endif
     
     return gflags;

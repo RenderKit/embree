@@ -630,6 +630,10 @@ namespace embree
       default: throw std::runtime_error("invalid geometry type");
       };
     };
+
+    auto convertGeometryFlags = [&] (ze_rtas_builder_packed_geometry_exp_flags_t flags) -> GeometryFlags {
+      return (flags & ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_NON_OPAQUE) ? GeometryFlags::NONE : GeometryFlags::OPAQUE;
+    };
     
     auto getTriangle = [&](unsigned int geomID, unsigned int primID)
     {
@@ -648,7 +652,7 @@ namespace embree
       if (unlikely(!isvalid(p1))) return QBVH6BuilderSAH::Triangle();
       if (unlikely(!isvalid(p2))) return QBVH6BuilderSAH::Triangle();
 
-      const GeometryFlags gflags = (GeometryFlags) geom->geometryFlags;
+      const GeometryFlags gflags = convertGeometryFlags(geom->geometryFlags);
       return QBVH6BuilderSAH::Triangle(tri.v0,tri.v1,tri.v2,p0,p1,p2,gflags,geom->geometryMask);
     };
     
@@ -670,7 +674,7 @@ namespace embree
       const Vec3f p2 = getVertex(geom,quad.v2);
       const Vec3f p3 = getVertex(geom,quad.v3);
 
-      const GeometryFlags gflags = (GeometryFlags) geom->geometryFlags;
+      const GeometryFlags gflags = convertGeometryFlags(geom->geometryFlags);
       return QBVH6BuilderSAH::Quad(p0,p1,p2,p3,gflags,geom->geometryMask);
     };
     
