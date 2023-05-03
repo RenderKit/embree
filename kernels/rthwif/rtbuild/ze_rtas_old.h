@@ -172,7 +172,7 @@ typedef struct _ze_driver_handle_t *ze_driver_handle_t;
   estimates:
   
     ze_raytracing_mem_alloc_ext_desc_t rt_desc;
-    rt_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_RAYTRACING_EXT_PROPERTIES;
+    rt_desc.stype = ZE_STRUCTURE_TYPE_RAYTRACING_MEM_ALLOC_EXT_DESC;
     rt_desc.pNext = nullptr;
     rt_desc.flags = 0;
 
