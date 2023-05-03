@@ -43,8 +43,8 @@ namespace embree
   {
     switch (geom->transformFormat)
     {
-    case ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3X4_COLUMN_MAJOR: {
-      const ze_rtas_transform_float3x4_column_major_exp_t* xfm = (const ze_rtas_transform_float3x4_column_major_exp_t*) geom->pTransformBuffer;
+    case ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FLOAT3X4_COLUMN_MAJOR: {
+      const ze_rtas_transform_float3x4_column_major_exp_t* xfm = (const ze_rtas_transform_float3x4_column_major_exp_t*) geom->pTransform;
       return {
         { xfm->vx_x, xfm->vx_y, xfm->vx_z },
         { xfm->vy_x, xfm->vy_y, xfm->vy_z },
@@ -52,8 +52,8 @@ namespace embree
         { xfm-> p_x, xfm-> p_y, xfm-> p_z }
       };
     }
-    case ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3X4_ALIGNED_COLUMN_MAJOR: {
-      const ze_rtas_transform_float3x4_aligned_column_major_exp_t* xfm = (const ze_rtas_transform_float3x4_aligned_column_major_exp_t*) geom->pTransformBuffer;
+    case ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FLOAT3X4_ALIGNED_COLUMN_MAJOR: {
+      const ze_rtas_transform_float3x4_aligned_column_major_exp_t* xfm = (const ze_rtas_transform_float3x4_aligned_column_major_exp_t*) geom->pTransform;
       return {
         { xfm->vx_x, xfm->vx_y, xfm->vx_z },
         { xfm->vy_x, xfm->vy_y, xfm->vy_z },
@@ -61,8 +61,8 @@ namespace embree
         { xfm-> p_x, xfm-> p_y, xfm-> p_z }
       };
     }
-    case ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3X4_ROW_MAJOR: {
-      const ze_rtas_transform_float3x4_row_major_exp_t* xfm = (const ze_rtas_transform_float3x4_row_major_exp_t*) geom->pTransformBuffer;
+    case ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FLOAT3X4_ROW_MAJOR: {
+      const ze_rtas_transform_float3x4_row_major_exp_t* xfm = (const ze_rtas_transform_float3x4_row_major_exp_t*) geom->pTransform;
       return {
         { xfm->vx_x, xfm->vx_y, xfm->vx_z },
         { xfm->vy_x, xfm->vy_y, xfm->vy_z },
@@ -77,11 +77,11 @@ namespace embree
   
   inline void verifyGeometryDesc(const ze_rtas_builder_triangles_geometry_info_exp_t* geom)
   {
-    if (geom->triangleBufferFormat != ZE_RTAS_DATA_BUFFER_FORMAT_EXP_TRIANGLE_INDICES_UINT32)
-      throw std::runtime_error("triangle format must be ZE_RTAS_DATA_BUFFER_FORMAT_EXP_TRIANGLE_INDICES_UINT32");
+    if (geom->triangleFormat != ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_TRIANGLE_INDICES_UINT32)
+      throw std::runtime_error("triangle format must be ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_TRIANGLE_INDICES_UINT32");
     
-    if (geom->vertexBufferFormat != ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3)
-      throw std::runtime_error("vertex format must be ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3");
+    if (geom->vertexFormat != ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FLOAT3)
+      throw std::runtime_error("vertex format must be ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FLOAT3");
  
     if (geom->triangleCount && geom->pTriangleBuffer == nullptr) throw std::runtime_error("no triangle buffer specified");
     if (geom->vertexCount   && geom->pVertexBuffer   == nullptr) throw std::runtime_error("no vertex buffer specified");
@@ -89,11 +89,11 @@ namespace embree
 
   inline void verifyGeometryDesc(const ze_rtas_builder_quads_geometry_info_exp_t* geom)
   {
-    if (geom->quadBufferFormat != ZE_RTAS_DATA_BUFFER_FORMAT_EXP_QUAD_INDICES_UINT32)
-      throw std::runtime_error("quad format must be ZE_RTAS_DATA_BUFFER_FORMAT_EXP_QUAD_INDICES_UINT32");
+    if (geom->quadFormat != ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_QUAD_INDICES_UINT32)
+      throw std::runtime_error("quad format must be ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_QUAD_INDICES_UINT32");
     
-    if (geom->vertexBufferFormat != ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3)
-      throw std::runtime_error("vertex format must be ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3");
+    if (geom->vertexFormat != ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FLOAT3)
+      throw std::runtime_error("vertex format must be ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FLOAT3");
  
     if (geom->quadCount   && geom->pQuadBuffer   == nullptr) throw std::runtime_error("no quad buffer specified");
     if (geom->vertexCount && geom->pVertexBuffer == nullptr) throw std::runtime_error("no vertex buffer specified");
@@ -106,7 +106,7 @@ namespace embree
 
   inline void verifyGeometryDesc(const ze_rtas_builder_instance_geometry_info_exp_t* geom)
   {
-    if (geom->pTransformBuffer == nullptr) throw std::runtime_error("no instance transformation specified");
+    if (geom->pTransform == nullptr) throw std::runtime_error("no instance transformation specified");
     if (geom->pBounds == nullptr) throw std::runtime_error("no acceleration structure bounds specified");
     if (geom->pAccelerationStructure == nullptr) throw std::runtime_error("no acceleration structure to instanciate specified");
   }
@@ -178,7 +178,7 @@ namespace embree
   {
     if (primID >= 1) return false;
     if (geom->pAccelerationStructure == nullptr) return false;
-    if (geom->pTransformBuffer == nullptr) return false;
+    if (geom->pTransform == nullptr) return false;
     
     const AffineSpace3fa local2world = getTransform(geom);
     const Vec3fa lower(geom->pBounds->lower.x,geom->pBounds->lower.y,geom->pBounds->lower.z);
@@ -296,21 +296,25 @@ namespace embree
 
   struct ze_rtas_parallel_operation_t
   {
-    ze_rtas_parallel_operation_t(ze_rtas_builder_exp_handle_t hBuilder)
-      : hBuilder(hBuilder) {}
+    //ze_rtas_parallel_operation_t(ze_rtas_builder_exp_handle_t hBuilder)
+    //: hBuilder(hBuilder) {}
+    
+    ze_rtas_parallel_operation_t() {
+    }
 
     ~ze_rtas_parallel_operation_t() {
       magick = 0x0;
-      hBuilder = nullptr;
+      //hBuilder = nullptr;
     }
 
     bool verify() const {
-      return (magick == MAGICK) && (validate(hBuilder) == ZE_RESULT_SUCCESS);
+      //return (magick == MAGICK) && (validate(hBuilder) == ZE_RESULT_SUCCESS);
+      return (magick == MAGICK);
     }
     
     enum { MAGICK = 0xE84567E1 };
     uint32_t magick = MAGICK;
-    ze_rtas_builder_exp_handle_t hBuilder = nullptr;
+    //ze_rtas_builder_exp_handle_t hBuilder = nullptr;
     ze_result_t errorCode = ZE_RESULT_SUCCESS;
     tbb::task_group group;
   };
@@ -357,7 +361,7 @@ namespace embree
     return ZE_RESULT_SUCCESS;
   }
 
-  ze_result_t validate(ze_rtas_device_format_exp_t rtasFormat)
+  ze_result_t validate(ze_rtas_format_exp_t rtasFormat)
   {
     if (uint32_t(rtasFormat) > uint32_t(ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_MAX))
       return ZE_RESULT_ERROR_INVALID_ENUMERATION;
@@ -380,7 +384,7 @@ namespace embree
       return ZE_RESULT_ERROR_INVALID_ENUMERATION;
 
     /* check if acceleration structure format is supported */
-    VALIDATE(args->deviceFormat);
+    VALIDATE(args->rtasFormat);
 
     /* check for valid geometries array */
     if (args->ppGeometries == nullptr && args->numGeometries > 0)
@@ -457,7 +461,7 @@ namespace embree
 
     /* fill properties */
     pProperties->flags = 0;
-    pProperties->rtasDeviceFormat = (ze_rtas_device_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_INVALID;
+    pProperties->rtasFormat = (ze_rtas_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_INVALID;
     pProperties->rtasBufferAlignment = 128;
 
 #if defined(EMBREE_LEVEL_ZERO)
@@ -485,7 +489,7 @@ namespace embree
       (device_id == 0x0BE5                       );
 
     if (dg2 || pvc) {
-      pProperties->rtasDeviceFormat = (ze_rtas_device_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1;
+      pProperties->rtasFormat = (ze_rtas_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1;
       return ZE_RESULT_SUCCESS;
     }        
 
@@ -493,15 +497,15 @@ namespace embree
 
 #else
 
-    pProperties->rtasDeviceFormat = (ze_rtas_device_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1;
+    pProperties->rtasFormat = (ze_rtas_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1;
     return ZE_RESULT_SUCCESS;
     
 #endif
   }
   
   RTHWIF_API ze_result_t zeRTASBuilderDeviceFormatCompatibilityCheckExp( ze_rtas_builder_exp_handle_t hBuilder,
-                                                                          const ze_rtas_device_format_exp_t accelFormat,
-                                                                          const ze_rtas_device_format_exp_t otherAccelFormat )
+                                                                          const ze_rtas_format_exp_t accelFormat,
+                                                                          const ze_rtas_format_exp_t otherAccelFormat )
   {
     /* input validation */
     VALIDATE(hBuilder);
@@ -529,13 +533,11 @@ namespace embree
   
   RTHWIF_API ze_result_t zeRTASBuilderGetBuildPropertiesExp(ze_rtas_builder_exp_handle_t hBuilder,
                                                              const ze_rtas_builder_build_op_exp_desc_t* args,
-                                                             ze_rtas_parallel_operation_exp_handle_t hParallelOperation,
                                                              ze_rtas_builder_exp_properties_t* pProp)
   {
     /* input validation */
     VALIDATE(hBuilder);
     VALIDATE(args);
-    VALIDATE(hParallelOperation);
     VALIDATE(pProp);
 
     const ze_rtas_builder_geometry_info_exp_t** geometries = args->ppGeometries;
@@ -568,8 +570,8 @@ namespace embree
     
     /* fill return struct */
     pProp->flags = 0;
-    pProp->rtasBufferSizeBytesMin = expectedBytes;
-    pProp->rtasBufferSizeBytesMax = worstCaseBytes;
+    pProp->rtasBufferSizeBytesExpected = expectedBytes;
+    pProp->rtasBufferSizeBytesMaxRequired = worstCaseBytes;
     pProp->scratchBufferSizeBytes = scratchBytes;
     return ZE_RESULT_SUCCESS;
   }
@@ -731,8 +733,8 @@ namespace embree
       VALIDATE(hParallelOperation);
       
       ze_rtas_parallel_operation_t* op = (ze_rtas_parallel_operation_t*) hParallelOperation;
-      if (op->hBuilder != hBuilder)
-        return ZE_RESULT_ERROR_INVALID_ARGUMENT;
+      //if (op->hBuilder != hBuilder)
+      //  return ZE_RESULT_ERROR_INVALID_ARGUMENT;
       
       g_arena->execute([&](){ op->group.run([=](){
          op->errorCode = zeRTASBuilderBuildExpInternal(args,
@@ -756,14 +758,14 @@ namespace embree
     }
   }
 
-  RTHWIF_API ze_result_t zeRTASParallelOperationCreateExp(ze_rtas_builder_exp_handle_t hBuilder, ze_rtas_parallel_operation_exp_handle_t* phParallelOperation)
+  RTHWIF_API ze_result_t zeRTASParallelOperationCreateExp(ze_driver_handle_t hDriver, ze_rtas_parallel_operation_exp_handle_t* phParallelOperation)
   {
     /* input validation */
-    VALIDATE(hBuilder);
+    VALIDATE(hDriver);
     VALIDATE_PTR(phParallelOperation);
 
     /* create parallel operation object */
-    *phParallelOperation = (ze_rtas_parallel_operation_exp_handle_t) new ze_rtas_parallel_operation_t(hBuilder);
+    *phParallelOperation = (ze_rtas_parallel_operation_exp_handle_t) new ze_rtas_parallel_operation_t();
     return ZE_RESULT_SUCCESS;
   }
   

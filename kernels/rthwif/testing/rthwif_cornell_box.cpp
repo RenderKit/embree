@@ -257,12 +257,12 @@ void* build_rtas(sycl::device device, sycl::context context)
   mesh.geometryFlags = ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_OPAQUE;
   mesh.geometryMask = 0xFF;
   
-  mesh.triangleBufferFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_TRIANGLE_INDICES_UINT32;
+  mesh.triangleFormat = ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_TRIANGLE_INDICES_UINT32;
   mesh.triangleCount = sizeof(indices)/sizeof(ze_rtas_triangle_indices_uint32_exp_t);
   mesh.triangleStride = sizeof(ze_rtas_triangle_indices_uint32_exp_t);
   mesh.pTriangleBuffer = indices;
 
-  mesh.vertexBufferFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3;
+  mesh.vertexFormat = ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FLOAT3;
   mesh.vertexCount = sizeof(vertices)/sizeof(ze_rtas_float3_exp_t);
   mesh.vertexStride = sizeof(ze_rtas_float3_exp_t);
   mesh.pVertexBuffer = vertices;
@@ -279,7 +279,7 @@ void* build_rtas(sycl::device device, sycl::context context)
 
   /* create parallel operation for parallel build */
   ze_rtas_parallel_operation_exp_handle_t hParallelOperation = nullptr;
-  err = zeRTASParallelOperationCreateExp(hBuilder, &hParallelOperation);
+  err = zeRTASParallelOperationCreateExp(hDriver, &hParallelOperation);
   if (err != ZE_RESULT_SUCCESS)
     throw std::runtime_error("zeRTASParallelOperationCreateExp failed");
 
@@ -289,7 +289,7 @@ void* build_rtas(sycl::device device, sycl::context context)
   ze_rtas_builder_build_op_exp_desc_t buildOp = {};
   buildOp.stype = ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_EXP_DESC;
   buildOp.pNext = nullptr;
-  buildOp.deviceFormat = rtasProp.rtasDeviceFormat;
+  buildOp.rtasFormat = rtasProp.rtasFormat;
   buildOp.buildQuality = ZE_RTAS_BUILDER_BUILD_QUALITY_HINT_EXP_MEDIUM;
   buildOp.buildFlags = 0;
   buildOp.ppGeometries = (const ze_rtas_builder_geometry_info_exp_t **) descs.data();
@@ -300,7 +300,7 @@ void* build_rtas(sycl::device device, sycl::context context)
 
   /* query required buffer sizes */
   ze_rtas_builder_exp_properties_t buildProps = { ZE_STRUCTURE_TYPE_RTAS_BUILDER_EXP_PROPERTIES };
-  err = zeRTASBuilderGetBuildPropertiesExp(hBuilder,&buildOp,hParallelOperation,&buildProps);
+  err = zeRTASBuilderGetBuildPropertiesExp(hBuilder,&buildOp,&buildProps);
   if (err != ZE_RESULT_SUCCESS)
     throw std::runtime_error("zeRTASBuilderGetBuildPropertiesExp failed");
 
@@ -309,7 +309,7 @@ void* build_rtas(sycl::device device, sycl::context context)
   memset(scratchBuffer.data(),0,scratchBuffer.size());
 
   /* allocate acceleration structure buffer */
-  size_t accelBytes = buildProps.rtasBufferSizeBytesMax;
+  size_t accelBytes = buildProps.rtasBufferSizeBytesMaxRequired;
   void* accel = alloc_accel_buffer(accelBytes,device,context);
   memset(accel,0,accelBytes); // optional
   

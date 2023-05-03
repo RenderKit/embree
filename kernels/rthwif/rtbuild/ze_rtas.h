@@ -84,6 +84,7 @@ typedef struct _ze_rtas_builder_instance_geometry_info_exp_t ze_rtas_builder_ins
 /// @brief Forward-declare ze_rtas_builder_build_op_exp_desc_t
 typedef struct _ze_rtas_builder_build_op_exp_desc_t ze_rtas_builder_build_op_exp_desc_t;
 
+
 // Intel 'oneAPI' Level-Zero Extension for supporting ray tracing acceleration structure builder.
 #if !defined(__GNUC__)
 #pragma region RTASBuilder
@@ -115,17 +116,17 @@ typedef enum _ze_rtas_device_exp_flag_t
 } ze_rtas_device_exp_flag_t;
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @brief Ray tracing acceleration structure device format
+/// @brief Ray tracing acceleration structure format
 /// 
 /// @details
-///     - This is an opaque, device-specific ray tracing acceleration structure
-///       format identifier.
-typedef enum _ze_rtas_device_format_exp_t
+///     - This is an opaque ray tracing acceleration structure format
+///       identifier.
+typedef enum _ze_rtas_format_exp_t
 {
-    ZE_RTAS_DEVICE_FORMAT_EXP_INVALID = 0,          ///< Invalid acceleration structure format
-    ZE_RTAS_DEVICE_FORMAT_EXP_FORCE_UINT32 = 0x7fffffff
+    ZE_RTAS_FORMAT_EXP_INVALID = 0,                 ///< Invalid acceleration structure format
+    ZE_RTAS_FORMAT_EXP_FORCE_UINT32 = 0x7fffffff
 
-} ze_rtas_device_format_exp_t;
+} ze_rtas_format_exp_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @brief Ray tracing acceleration structure builder flags
@@ -152,10 +153,17 @@ typedef enum _ze_rtas_parallel_operation_exp_flag_t
 typedef uint32_t ze_rtas_builder_geometry_exp_flags_t;
 typedef enum _ze_rtas_builder_geometry_exp_flag_t
 {
-    ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_OPAQUE = ZE_BIT(0),   ///< Opaque geometries do not invoke an any-hit shader
+//    ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_NON_OPAQUE = ZE_BIT(0),   ///< non-opaque geometries invoke an any-hit shader
+    ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_OPAQUE = ZE_BIT(0),   ///< non-opaque geometries invoke an any-hit shader
+
     ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_FORCE_UINT32 = 0x7fffffff
 
 } ze_rtas_builder_geometry_exp_flag_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Packed ray tracing acceleration structure builder geometry flags (see
+///        ::ze_rtas_builder_geometry_exp_flags_t)
+typedef uint8_t ze_rtas_builder_packed_geometry_exp_flags_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @brief Ray tracing acceleration structure builder instance flags
@@ -171,6 +179,11 @@ typedef enum _ze_rtas_builder_instance_exp_flag_t
     ZE_RTAS_BUILDER_INSTANCE_EXP_FLAG_FORCE_UINT32 = 0x7fffffff
 
 } ze_rtas_builder_instance_exp_flag_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Packed ray tracing acceleration structure builder instance flags (see
+///        ::ze_rtas_builder_instance_exp_flags_t)
+typedef uint8_t ze_rtas_builder_packed_instance_exp_flags_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @brief Ray tracing acceleration structure builder build operation flags
@@ -217,7 +230,7 @@ typedef enum _ze_rtas_builder_build_quality_hint_exp_t
 } ze_rtas_builder_build_quality_hint_exp_t;
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @brief Ray tracing acceleration structure geometry type
+/// @brief Ray tracing acceleration structure builder geometry type
 typedef enum _ze_rtas_builder_geometry_type_exp_t
 {
     ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_TRIANGLES = 0,///< triangle mesh geometry type
@@ -229,28 +242,38 @@ typedef enum _ze_rtas_builder_geometry_type_exp_t
 } ze_rtas_builder_geometry_type_exp_t;
 
 ///////////////////////////////////////////////////////////////////////////////
+/// @brief Packed ray tracing acceleration structure builder geometry type (see
+///        ::ze_rtas_builder_geometry_type_exp_t)
+typedef uint8_t ze_rtas_builder_packed_geometry_type_exp_t;
+
+///////////////////////////////////////////////////////////////////////////////
 /// @brief Ray tracing acceleration structure data buffer element format
 /// 
 /// @details
 ///     - Specifies the format of data buffer elements.
 ///     - Data buffers may contain instancing transform matrices, triangle/quad
 ///       vertex indices, etc...
-typedef enum _ze_rtas_data_buffer_format_exp_t
+typedef enum _ze_rtas_builder_input_data_format_exp_t
 {
-    ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3 = 0,      ///< 3-component float vector (see ::ze_rtas_float3_exp_t)
-    ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3X4_COLUMN_MAJOR = 1,   ///< 3x4 affine transformation in column-major format (see
+    ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FLOAT3 = 0,   ///< 3-component float vector (see ::ze_rtas_float3_exp_t)
+    ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FLOAT3X4_COLUMN_MAJOR = 1,///< 3x4 affine transformation in column-major format (see
                                                     ///< ::ze_rtas_transform_float3x4_column_major_exp_t)
-    ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3X4_ALIGNED_COLUMN_MAJOR = 2,   ///< 3x4 affine transformation in column-major format (see
+    ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FLOAT3X4_ALIGNED_COLUMN_MAJOR = 2,///< 3x4 affine transformation in column-major format (see
                                                     ///< ::ze_rtas_transform_float3x4_aligned_column_major_exp_t)
-    ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3X4_ROW_MAJOR = 3,  ///< 3x4 affine transformation in row-major format (see
+    ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FLOAT3X4_ROW_MAJOR = 3,   ///< 3x4 affine transformation in row-major format (see
                                                     ///< ::ze_rtas_transform_float3x4_row_major_exp_t)
-    ZE_RTAS_DATA_BUFFER_FORMAT_EXP_AABB = 4,        ///< 3-dimensional axis-aligned bounding-box (see ::ze_rtas_aabb_exp_t)
-    ZE_RTAS_DATA_BUFFER_FORMAT_EXP_TRIANGLE_INDICES_UINT32 = 5, ///< Unsigned 32-bit triangle indices (see
+    ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_AABB = 4, ///< 3-dimensional axis-aligned bounding-box (see ::ze_rtas_aabb_exp_t)
+    ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_TRIANGLE_INDICES_UINT32 = 5,  ///< Unsigned 32-bit triangle indices (see
                                                     ///< ::ze_rtas_triangle_indices_uint32_exp_t)
-    ZE_RTAS_DATA_BUFFER_FORMAT_EXP_QUAD_INDICES_UINT32 = 6, ///< Unsigned 32-bit quad indices (see ::ze_rtas_quad_indices_uint32_exp_t)
-    ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FORCE_UINT32 = 0x7fffffff
+    ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_QUAD_INDICES_UINT32 = 6,  ///< Unsigned 32-bit quad indices (see ::ze_rtas_quad_indices_uint32_exp_t)
+    ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FORCE_UINT32 = 0x7fffffff
 
-} ze_rtas_data_buffer_format_exp_t;
+} ze_rtas_builder_input_data_format_exp_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Packed ray tracing acceleration structure data buffer element format
+///        (see ::ze_rtas_builder_input_data_format_exp_t)
+typedef uint8_t ze_rtas_builder_packed_input_data_format_exp_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @brief Handle of ray tracing acceleration structure builder object
@@ -280,11 +303,11 @@ typedef struct _ze_rtas_builder_exp_properties_t
     void* pNext;                                    ///< [in,out][optional] must be null or a pointer to an extension-specific
                                                     ///< structure (i.e. contains sType and pNext).
     ze_rtas_builder_exp_flags_t flags;              ///< [out] ray tracing acceleration structure builder flags
-    size_t rtasBufferSizeBytesMin;                  ///< [out] expected size (in bytes) required for acceleration structure buffer
+    size_t rtasBufferSizeBytesExpected;             ///< [out] expected size (in bytes) required for acceleration structure buffer
                                                     ///<    - When using an acceleration structure buffer of this size, the
                                                     ///< build is expected to succeed; however, it is possible that the build
                                                     ///< may fail with ::ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY
-    size_t rtasBufferSizeBytesMax;                  ///< [out] worst-case size (in bytes) required for acceleration structure buffer
+    size_t rtasBufferSizeBytesMaxRequired;          ///< [out] worst-case size (in bytes) required for acceleration structure buffer
                                                     ///<    - When using an acceleration structure buffer of this size, the
                                                     ///< build is guaranteed to not run out of memory.
     size_t scratchBufferSizeBytes;                  ///< [out] scratch buffer size (in bytes) required for acceleration
@@ -313,15 +336,14 @@ typedef struct _ze_rtas_parallel_operation_exp_properties_t
 ///     - This structure may be passed to ::zeDeviceGetProperties, via `pNext`
 ///       member of ::ze_device_properties_t.
 ///     - The implementation shall populate `format` with a value other than
-///       ::ZE_RTAS_DEVICE_FORMAT_EXP_INVALID when the device supports ray
-///       tracing.
+///       ::ZE_RTAS_FORMAT_EXP_INVALID when the device supports ray tracing.
 typedef struct _ze_rtas_device_exp_properties_t
 {
     ze_structure_type_t stype;                      ///< [in] type of this structure
     void* pNext;                                    ///< [in,out][optional] must be null or a pointer to an extension-specific
                                                     ///< structure (i.e. contains sType and pNext).
     ze_rtas_device_exp_flags_t flags;               ///< [out] ray tracing acceleration structure device flags
-    ze_rtas_device_format_exp_t rtasDeviceFormat;   ///< [out] ray tracing acceleration structure device format
+    ze_rtas_format_exp_t rtasFormat;                ///< [out] ray tracing acceleration structure format
     uint32_t rtasBufferAlignment;                   ///< [out] required alignment of acceleration structure buffer
 
 } ze_rtas_device_exp_properties_t;
@@ -487,7 +509,7 @@ typedef struct _ze_rtas_quad_indices_uint32_exp_t
 /// @brief Ray tracing acceleration structure builder geometry info
 typedef struct _ze_rtas_builder_geometry_info_exp_t
 {
-    ze_rtas_builder_geometry_type_exp_t geometryType;   ///< [in] geometry type
+    ze_rtas_builder_packed_geometry_type_exp_t geometryType;///< [in] geometry type
 
 } ze_rtas_builder_geometry_info_exp_t;
 
@@ -501,21 +523,24 @@ typedef struct _ze_rtas_builder_geometry_info_exp_t
 ///          - (u=0, v=1) at v2
 typedef struct _ze_rtas_builder_triangles_geometry_info_exp_t
 {
-    ze_rtas_builder_geometry_type_exp_t geometryType;   ///< [in] geometry type, must be
+    ze_rtas_builder_packed_geometry_type_exp_t geometryType;///< [in] geometry type, must be
                                                     ///< ::ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_TRIANGLES
-    ze_rtas_builder_geometry_exp_flags_t geometryFlags; ///< [in] 0 or some combination of ::ze_rtas_builder_geometry_exp_flag_t
+    ze_rtas_builder_packed_geometry_exp_flags_t geometryFlags;  ///< [in] 0 or some combination of ::ze_rtas_builder_geometry_exp_flag_t
                                                     ///< bits representing the geometry flags for all primitives of this
                                                     ///< geometry
     uint8_t geometryMask;                           ///< [in] 8-bit geometry mask for ray masking
-    ze_rtas_data_buffer_format_exp_t triangleBufferFormat;  ///< [in] format of triangle buffer, must be
-                                                    ///< ::ZE_RTAS_DATA_BUFFER_FORMAT_EXP_TRIANGLE_INDICES_UINT32
+    uint8_t reserved0;                              ///< [in] reserved for future use
+    uint8_t reserved1;                              ///< [in] reserved for future use
+    uint8_t reserved2;                              ///< [in] reserved for future use
+    ze_rtas_builder_packed_input_data_format_exp_t triangleFormat;  ///< [in] format of triangle buffer data, must be
+                                                    ///< ::ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_TRIANGLE_INDICES_UINT32
+    ze_rtas_builder_packed_input_data_format_exp_t vertexFormat;///< [in] format of vertex buffer data, must be
+                                                    ///< ::ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FLOAT3
     uint32_t triangleCount;                         ///< [in] number of triangles in triangle buffer
-    uint32_t triangleStride;                        ///< [in] stride (in bytes) of triangles in triangle buffer
-    void* pTriangleBuffer;                          ///< [in] pointer to array of triangle indices in specified format
-    ze_rtas_data_buffer_format_exp_t vertexBufferFormat;///< [in] format of vertex buffer, must be
-                                                    ///< ::ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3
     uint32_t vertexCount;                           ///< [in] number of vertices in vertex buffer
+    uint32_t triangleStride;                        ///< [in] stride (in bytes) of triangles in triangle buffer
     uint32_t vertexStride;                          ///< [in] stride (in bytes) of vertices in vertex buffer
+    void* pTriangleBuffer;                          ///< [in] pointer to array of triangle indices in specified format
     void* pVertexBuffer;                            ///< [in] pointer to array of triangle vertices in specified format
 
 } ze_rtas_builder_triangles_geometry_info_exp_t;
@@ -538,20 +563,23 @@ typedef struct _ze_rtas_builder_triangles_geometry_info_exp_t
 ///       *u = 1-u'* and *v = 1-v'*, yielding a piecewise linear parametrization.
 typedef struct _ze_rtas_builder_quads_geometry_info_exp_t
 {
-    ze_rtas_builder_geometry_type_exp_t geometryType;   ///< [in] geometry type, must be ::ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_QUADS
-    ze_rtas_builder_geometry_exp_flags_t geometryFlags; ///< [in] 0 or some combination of ::ze_rtas_builder_geometry_exp_flag_t
+    ze_rtas_builder_packed_geometry_type_exp_t geometryType;///< [in] geometry type, must be ::ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_QUADS
+    ze_rtas_builder_packed_geometry_exp_flags_t geometryFlags;  ///< [in] 0 or some combination of ::ze_rtas_builder_geometry_exp_flag_t
                                                     ///< bits representing the geometry flags for all primitives of this
                                                     ///< geometry
     uint8_t geometryMask;                           ///< [in] 8-bit geometry mask for ray masking
-    ze_rtas_data_buffer_format_exp_t quadBufferFormat;  ///< [in] format of quad buffer, must be
-                                                    ///< ::ZE_RTAS_DATA_BUFFER_FORMAT_EXP_QUAD_INDICES_UINT32
+    uint8_t reserved0;                              ///< [in] reserved for future use
+    uint8_t reserved1;                              ///< [in] reserved for future use
+    uint8_t reserved2;                              ///< [in] reserved for future use
+    ze_rtas_builder_packed_input_data_format_exp_t quadFormat;  ///< [in] format of quad buffer data, must be
+                                                    ///< ::ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_QUAD_INDICES_UINT32
+    ze_rtas_builder_packed_input_data_format_exp_t vertexFormat;///< [in] format of vertex buffer data, must be
+                                                    ///< ::ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FLOAT3
     uint32_t quadCount;                             ///< [in] number of quads in quad buffer
-    uint32_t quadStride;                            ///< [in] stride (in bytes) of quads in quad buffer
-    void* pQuadBuffer;                              ///< [in] pointer to array of quad indices in specified format
-    ze_rtas_data_buffer_format_exp_t vertexBufferFormat;///< [in] format of vertex buffer, must be
-                                                    ///< ::ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3
     uint32_t vertexCount;                           ///< [in] number of vertices in vertex buffer
+    uint32_t quadStride;                            ///< [in] stride (in bytes) of quads in quad buffer
     uint32_t vertexStride;                          ///< [in] stride (in bytes) of vertices in vertex buffer
+    void* pQuadBuffer;                              ///< [in] pointer to array of quad indices in specified format
     void* pVertexBuffer;                            ///< [in] pointer to array of quad vertices in specified format
 
 } ze_rtas_builder_quads_geometry_info_exp_t;
@@ -594,12 +622,13 @@ typedef void (*ze_rtas_geometry_aabbs_cb_exp_t)(
 ///       motion blur.
 typedef struct _ze_rtas_builder_procedural_geometry_info_exp_t
 {
-    ze_rtas_builder_geometry_type_exp_t geometryType;   ///< [in] geometry type, must be
+    ze_rtas_builder_packed_geometry_type_exp_t geometryType;///< [in] geometry type, must be
                                                     ///< ::ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_PROCEDURAL
-    ze_rtas_builder_geometry_exp_flags_t geometryFlags; ///< [in] 0 or some combination of ::ze_rtas_builder_geometry_exp_flag_t
+    ze_rtas_builder_packed_geometry_exp_flags_t geometryFlags;  ///< [in] 0 or some combination of ::ze_rtas_builder_geometry_exp_flag_t
                                                     ///< bits representing the geometry flags for all primitives of this
                                                     ///< geometry
     uint8_t geometryMask;                           ///< [in] 8-bit geometry mask for ray masking
+    uint8_t reserved;                               ///< [in] reserved for future use
     uint32_t primCount;                             ///< [in] number of primitives in geometry
     ze_rtas_geometry_aabbs_cb_exp_t pfnGetBoundsCb; ///< [in] pointer to callback function to get the axis-aligned bounding-box
                                                     ///< for a range of primitives
@@ -611,15 +640,15 @@ typedef struct _ze_rtas_builder_procedural_geometry_info_exp_t
 /// @brief Ray tracing acceleration structure builder instance geometry info
 typedef struct _ze_rtas_builder_instance_geometry_info_exp_t
 {
-    ze_rtas_builder_geometry_type_exp_t geometryType;   ///< [in] geometry type, must be
+    ze_rtas_builder_packed_geometry_type_exp_t geometryType;///< [in] geometry type, must be
                                                     ///< ::ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_INSTANCE
-    ze_rtas_builder_instance_exp_flags_t instanceFlags; ///< [in] 0 or some combination of ::ze_rtas_builder_geometry_exp_flag_t
+    ze_rtas_builder_packed_instance_exp_flags_t instanceFlags;  ///< [in] 0 or some combination of ::ze_rtas_builder_geometry_exp_flag_t
                                                     ///< bits representing the geometry flags for all primitives of this
                                                     ///< geometry
     uint8_t geometryMask;                           ///< [in] 8-bit geometry mask for ray masking
+    ze_rtas_builder_packed_input_data_format_exp_t transformFormat; ///< [in] format of the specified transformation
     uint32_t instanceUserID;                        ///< [in] user-specified identifier for the instance
-    ze_rtas_data_buffer_format_exp_t transformFormat;   ///< [in] format of the specified transformation
-    void* pTransformBuffer;                         ///< [in] object-to-world instance transformation in specified format
+    void* pTransform;                               ///< [in] object-to-world instance transformation in specified format
     ze_rtas_aabb_exp_t* pBounds;                    ///< [in] object-space axis-aligned bounding-box of the instanced
                                                     ///< acceleration structure
     void* pAccelerationStructure;                   ///< [in] pointer to acceleration structure to instantiate
@@ -633,12 +662,19 @@ typedef struct _ze_rtas_builder_build_op_exp_desc_t
     ze_structure_type_t stype;                      ///< [in] type of this structure
     const void* pNext;                              ///< [in][optional] must be null or a pointer to an extension-specific
                                                     ///< structure (i.e. contains sType and pNext).
-    ze_rtas_device_format_exp_t deviceFormat;       ///< [in] ray tracing acceleration structure device format
+    ze_rtas_format_exp_t rtasFormat;                ///< [in] ray tracing acceleration structure format
     ze_rtas_builder_build_quality_hint_exp_t buildQuality;  ///< [in] acceleration structure build quality hint
     ze_rtas_builder_build_op_exp_flags_t buildFlags;///< [in] 0 or some combination of ::ze_rtas_builder_build_op_exp_flag_t
                                                     ///< flags
-    const ze_rtas_builder_geometry_info_exp_t** ppGeometries;   ///< [in][range(0, `numGeometries`)] array of pointers to geometry infos
-    uint32_t numGeometries;                         ///< [in] number of geometries in geometry infos array
+    const ze_rtas_builder_geometry_info_exp_t** ppGeometries;   ///< [in][optional][range(0, `numGeometries`)] NULL or a valid array of
+                                                    ///< pointers to geometry infos
+    uint32_t numGeometries;                         ///< [in] number of geometries in geometry infos array, can be zero when
+                                                    ///< `ppGeometries` is NULL
+
+  /* for debugging purposes use only */
+#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
+  void* dispatchGlobalsPtr;
+#endif
 
 } ze_rtas_builder_build_op_exp_desc_t;
 
@@ -688,24 +724,20 @@ zeRTASBuilderCreateExp(
 ///         + `nullptr == hBuilder`
 ///     - ::ZE_RESULT_ERROR_INVALID_NULL_POINTER
 ///         + `nullptr == pBuildOpDescriptor`
-///         + `nullptr == pBuildOpDescriptor->ppGeometries`
 ///         + `nullptr == pProperties`
 ///     - ::ZE_RESULT_ERROR_INVALID_ENUMERATION
-///         + `::ZE_RTAS_DEVICE_FORMAT_EXP_INVALID < pBuildOpDescriptor->deviceFormat`
+///         + `::ZE_RTAS_FORMAT_EXP_INVALID < pBuildOpDescriptor->rtasFormat`
 ///         + `::ZE_RTAS_BUILDER_BUILD_QUALITY_HINT_EXP_HIGH < pBuildOpDescriptor->buildQuality`
 ///         + `0x3 < pBuildOpDescriptor->buildFlags`
-///     - ::ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE
-///         + `hParallelOperation` is participating in a parallel acceleration structure build operation.
 ZE_APIEXPORT ze_result_t ZE_APICALL
 zeRTASBuilderGetBuildPropertiesExp(
     ze_rtas_builder_exp_handle_t hBuilder,          ///< [in] handle of builder object
     const ze_rtas_builder_build_op_exp_desc_t* pBuildOpDescriptor,  ///< [in] pointer to build operation descriptor
-    ze_rtas_parallel_operation_exp_handle_t hParallelOperation, ///< [in][optional] handle to parallel operation object
     ze_rtas_builder_exp_properties_t* pProperties   ///< [in,out] query result for builder properties
     );
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @brief Checks ray tracing acceleration structure device format compatibility
+/// @brief Checks ray tracing acceleration structure format compatibility
 /// 
 /// @details
 ///     - The application may call this function from simultaneous threads.
@@ -720,17 +752,17 @@ zeRTASBuilderGetBuildPropertiesExp(
 ///     - ::ZE_RESULT_ERROR_INVALID_NULL_HANDLE
 ///         + `nullptr == hBuilder`
 ///     - ::ZE_RESULT_ERROR_INVALID_ENUMERATION
-///         + `::ZE_RTAS_DEVICE_FORMAT_EXP_INVALID < rtasDeviceFormatA`
-///         + `::ZE_RTAS_DEVICE_FORMAT_EXP_INVALID < rtasDeviceFormatB`
+///         + `::ZE_RTAS_FORMAT_EXP_INVALID < rtasFormatA`
+///         + `::ZE_RTAS_FORMAT_EXP_INVALID < rtasFormatB`
 ///     - ::ZE_RESULT_SUCCESS
-///         + An acceleration structure built with `rtasDeviceFormatA` is compatible with devices that report `rtasDeviceFormatB`.
+///         + An acceleration structure built with `rtasFormatA` is compatible with devices that report `rtasFormatB`.
 ///     - ::ZE_RESULT_EXP_ERROR_OPERANDS_INCOMPATIBLE
-///         + An acceleration structure built with `rtasDeviceFormatA` is **not** compatible with devices that report `rtasDeviceFormatB`.
+///         + An acceleration structure built with `rtasFormatA` is **not** compatible with devices that report `rtasFormatB`.
 ZE_APIEXPORT ze_result_t ZE_APICALL
-zeRTASBuilderDeviceFormatCompatibilityCheckExp(
+zeRTASBuilderFormatCompatibilityCheckExp(
     ze_rtas_builder_exp_handle_t hBuilder,          ///< [in] handle of builder object
-    ze_rtas_device_format_exp_t rtasDeviceFormatA,  ///< [in] operand A
-    ze_rtas_device_format_exp_t rtasDeviceFormatB   ///< [in] operand B
+    ze_rtas_format_exp_t rtasFormatA,               ///< [in] operand A
+    ze_rtas_format_exp_t rtasFormatB                ///< [in] operand B
     );
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -794,15 +826,16 @@ zeRTASBuilderDeviceFormatCompatibilityCheckExp(
 ///         + `nullptr == hBuilder`
 ///     - ::ZE_RESULT_ERROR_INVALID_NULL_POINTER
 ///         + `nullptr == pBuildOpDescriptor`
-///         + `nullptr == pBuildOpDescriptor->ppGeometries`
 ///         + `nullptr == pScratchBuffer`
 ///         + `nullptr == pRtasBuffer`
 ///     - ::ZE_RESULT_ERROR_INVALID_ENUMERATION
-///         + `::ZE_RTAS_DEVICE_FORMAT_EXP_INVALID < pBuildOpDescriptor->deviceFormat`
+///         + `::ZE_RTAS_FORMAT_EXP_INVALID < pBuildOpDescriptor->rtasFormat`
 ///         + `::ZE_RTAS_BUILDER_BUILD_QUALITY_HINT_EXP_HIGH < pBuildOpDescriptor->buildQuality`
 ///         + `0x3 < pBuildOpDescriptor->buildFlags`
 ///     - ::ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY
 ///         + Acceleration structure build failed due to insufficient resources
+///     - ::ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE
+///         + Acceleration structure build failed due to parallel operation object participation in another build operation.
 ZE_APIEXPORT ze_result_t ZE_APICALL
 zeRTASBuilderBuildExp(
     ze_rtas_builder_exp_handle_t hBuilder,          ///< [in] handle of builder object
@@ -863,12 +896,12 @@ zeRTASBuilderDestroyExp(
 ///     - ::ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY
 ///     - ::ZE_RESULT_ERROR_OUT_OF_DEVICE_MEMORY
 ///     - ::ZE_RESULT_ERROR_INVALID_NULL_HANDLE
-///         + `nullptr == hBuilder`
+///         + `nullptr == hDriver`
 ///     - ::ZE_RESULT_ERROR_INVALID_NULL_POINTER
 ///         + `nullptr == phParallelOperation`
 ZE_APIEXPORT ze_result_t ZE_APICALL
 zeRTASParallelOperationCreateExp(
-    ze_rtas_builder_exp_handle_t hBuilder,          ///< [in] handle of builder object
+    ze_driver_handle_t hDriver,                     ///< [in] handle of driver object
     ze_rtas_parallel_operation_exp_handle_t* phParallelOperation///< [out] handle of parallel operation object
     );
 
@@ -944,5 +977,6 @@ zeRTASParallelOperationDestroyExp(
 #if !defined(__GNUC__)
 #pragma endregion
 #endif
+
 
 
