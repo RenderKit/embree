@@ -221,8 +221,16 @@ namespace embree
   void* rthwifAllocAccelBuffer(size_t bytes, sycl::device device, sycl::context context)
   {
     void* ptr = sycl::aligned_alloc_shared(128, bytes, device, context);
+    
     if (ptr == nullptr)
       throw_RTCError(RTC_ERROR_OUT_OF_MEMORY,"rtas memory allocation failed");
+
+    auto isAddrCanonical = [](uint64_t addr) {
+      return ((addr & 0xFFFF000000000000LL) == 0x0) || ((addr & 0xFFFF800000000000LL) == 0xFFFF800000000000LL);
+    };
+    if (!isAddrCanonical((uint64_t)ptr))
+      throw_RTCError(RTC_ERROR_OUT_OF_MEMORY,"rtas memory allocation out of 48 bit address range");
+    
     return ptr;
   }
 
