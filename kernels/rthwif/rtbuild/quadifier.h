@@ -21,6 +21,7 @@ namespace embree
     QUADIFIER_PAIRED = 0xFFFF,   // indicates that triangle is paired with a previous triangle
     QUADIFIER_TRIANGLE = 0,      // indicates that this triangle cannot get paired
     QUADIFIER_QUAD = 1,          // all values > 0 and != 0xFFFF indicate offset to paired triangle
+    QUADIFIER_MAX_DISTANCE = 31,
   };
 
   template<typename Ty, size_t N>
@@ -107,7 +108,7 @@ namespace embree
 
       /* the offset between the triangles cannot be too large as hardware limits bits for offset encode */
       uint32_t prim_offset = primID1 - primID0;
-      pair &= prim_offset < QUADIFIER_PAIRED;
+      pair &= prim_offset <= QUADIFIER_MAX_DISTANCE;
 
       /* store pairing if successful */
       if (pair)
