@@ -10,6 +10,8 @@
 #include <vector>
 #include <iostream>
 
+void* dispatchGlobalsPtr = nullptr;
+
 void exception_handler(sycl::exception_list exceptions)
 {
   for (std::exception_ptr const& e : exceptions) {
@@ -125,6 +127,50 @@ void free_accel_buffer(void* ptr, sycl::context context)
   ze_result_t result = zeMemFree(hContext,ptr);
   if (result != ZE_RESULT_SUCCESS)
     throw std::runtime_error("acceleration buffer free failed");
+}
+
+
+/* dispatch globals allocation is for debugging only */
+
+enum Flags : uint32_t {
+  FLAGS_NONE,
+  DEPTH_TEST_LESS_EQUAL = 1 << 0  // when set we use <= for depth test, otherwise <
+};
+
+struct DispatchGlobals
+{
+  uint64_t rtMemBasePtr;               // base address of the allocated stack memory
+  uint64_t callStackHandlerKSP;             // this is the KSP of the continuation handler that is invoked by BTD when the read KSP is 0
+  uint32_t asyncStackSize;             // async-RT stack size in 64 byte blocks
+  uint32_t numDSSRTStacks : 16;        // number of stacks per DSS
+  uint32_t syncRayQueryCount : 4;      // number of ray queries in the sync-RT stack: 0-15 mapped to: 1-16
+  unsigned _reserved_mbz : 12;
+  uint32_t maxBVHLevels;               // the maximal number of supported instancing levels (0->8, 1->1, 2->2, ...)
+  Flags flags;                         // per context control flags
+};
+
+void* allocDispatchGlobals(sycl::device device, sycl::context context)
+{
+  size_t maxBVHLevels = 2; //RTC_MAX_INSTANCE_LEVEL_COUNT+1;
+  
+  size_t rtstack_bytes = (64+maxBVHLevels*(64+32)+63)&-64;
+  size_t num_rtstacks = 1<<17; // this is sufficiently large also for PVC
+  size_t dispatchGlobalSize = 128+num_rtstacks*rtstack_bytes;
+  
+  void* dispatchGlobalsPtr = alloc_accel_buffer(dispatchGlobalSize,device,context);
+  memset(dispatchGlobalsPtr, 0, dispatchGlobalSize);
+
+  DispatchGlobals* dg = (DispatchGlobals*) dispatchGlobalsPtr;
+  dg->rtMemBasePtr = (uint64_t) dispatchGlobalsPtr + dispatchGlobalSize;
+  dg->callStackHandlerKSP = 0;
+  dg->asyncStackSize = 0;
+  dg->numDSSRTStacks = 0;
+  dg->syncRayQueryCount = 0;
+  dg->_reserved_mbz = 0;
+  dg->maxBVHLevels = maxBVHLevels;
+  dg->flags = DEPTH_TEST_LESS_EQUAL;
+  
+  return dispatchGlobalsPtr;
 }
 
 /* vertex indices for cornell_box model */
@@ -409,8 +455,17 @@ int main(int argc, char* argv[])
   sycl::queue queue = sycl::queue(device,exception_handler);
   sycl::context context = queue.get_context();
 
+#if defined(ZE_RAYTRACING_RT_SIMULATION)
+  RTCore::Init();
+  RTCore::SetXeVersion((RTCore::XeVersion)ZE_RAYTRACING_DEVICE);
+#endif
+
   /* initialize L0 ray tracing extension */
   zeRTASInitExp();
+
+#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
+  dispatchGlobalsPtr = allocDispatchGlobals(device,context);
+#endif
 
   /* build acceleration structure */
   void* bvh = build_rtas(device,context);
@@ -422,6 +477,16 @@ int main(int argc, char* argv[])
   memset(pixels, 0, width*height*sizeof(uint32_t));
 
   /* renders image on device */
+#if defined(ZE_RAYTRACING_RT_SIMULATION)
+  tbb::parallel_for(tbb::blocked_range2d<uint32_t>(0,height,0,width),
+     [&](const tbb::blocked_range2d<uint32_t>& r) {
+        for (int y=r.rows().begin(); y<r.rows().end(); y++) {
+          for (int x=r.cols().begin(); x<r.cols().end(); x++) {
+            render(x,y,bvh,pixels,width,height);
+          }
+        }
+     });
+#else
   queue.submit([&](sycl::handler& cgh) {
                  const sycl::range<2> range(width,height);
                  cgh.parallel_for(range, [=](sycl::item<2> item) {
@@ -431,12 +496,21 @@ int main(int argc, char* argv[])
                                             });
                });
   queue.wait_and_throw();
-
+#endif
+  
   /* free acceleration structure again */
   free_accel_buffer(bvh,context);
+
+#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
+  free_accel_buffer(dispatchGlobalsPtr, context);
+#endif
   
   /* cleanup L0 ray tracing extension */
   zeRTASExitExp();
+
+#if defined(ZE_RAYTRACING_RT_SIMULATION)
+  RTCore::Cleanup();
+#endif
 
   /* store image to disk */
   storeTga(pixels,width,height,"cornell_box.tga");

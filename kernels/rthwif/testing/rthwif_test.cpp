@@ -1864,6 +1864,11 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   if (inst != InstancingType::SW_INSTANCING &&
       (test == TestType::TRIANGLES_COMMITTED_HIT || test == TestType::TRIANGLES_POTENTIAL_HIT))
   {
+#if defined(ZE_RAYTRACING_RT_SIMULATION)
+    tbb::parallel_for(size_t(0),numTests, [&](size_t i) {
+      render(i,in[i],out_test[i],accel);
+    });
+#else
     queue.submit([&](sycl::handler& cgh) {
                    const sycl::range<1> range(numTests);
                    cgh.parallel_for(range, [=](sycl::item<1> item) {
@@ -1872,9 +1877,15 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
                                            });
                  });
     queue.wait_and_throw();
+#endif
   }
   else
   {
+#if defined(ZE_RAYTRACING_RT_SIMULATION)
+    tbb::parallel_for(size_t(0),numTests, [&](size_t i) {
+      render_loop(i,in[i],out_test[i],scene_ptr,accel,test);
+     });
+#else
     queue.submit([&](sycl::handler& cgh) {
                    const sycl::range<1> range(numTests);
                    cgh.parallel_for(range, [=](sycl::item<1> item) {
@@ -1883,6 +1894,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
                                            });
                  });
     queue.wait_and_throw();
+#endif
   }
     
   /* verify result */
@@ -1941,6 +1953,11 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
 
   if (numPrimitives)
   {
+#if defined(ZE_RAYTRACING_RT_SIMULATION)
+    tbb::parallel_for(size_t(0),size_t(numPrimitives), [&](size_t i) {
+      render_loop(i,in[i],out_test[i],scene_ptr,accel,TestType::TRIANGLES_COMMITTED_HIT);
+    });
+#else
     queue.submit([&](sycl::handler& cgh) {
                    const sycl::range<1> range(numPrimitives);
                    cgh.parallel_for(range, [=](sycl::item<1> item) {
@@ -1949,13 +1966,14 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
                                            });
                  });
     queue.wait_and_throw();
+#endif
   }
     
   /* verify result */
   uint32_t numErrors = 0;
   for (size_t tid=0; tid<numPrimitives; tid++)
     compareTestOutput(tid,numErrors,out_test[tid],out_expected[tid]);
-
+  
   sycl::free(in,context);
   sycl::free(out_test,context);
   sycl::free(out_expected,context);
@@ -2042,6 +2060,11 @@ void* allocDispatchGlobals(sycl::device device, sycl::context context)
 
 int main(int argc, char* argv[])
 {
+#if defined(ZE_RAYTRACING_RT_SIMULATION)
+  RTCore::Init();
+  RTCore::SetXeVersion((RTCore::XeVersion)ZE_RAYTRACING_DEVICE);
+#endif
+  
   zeRTASInitExp();
 
   TestType test = TestType::TRIANGLES_COMMITTED_HIT;
@@ -2174,6 +2197,10 @@ int main(int argc, char* argv[])
 #endif
 
   zeRTASExitExp();
+
+#if defined(ZE_RAYTRACING_RT_SIMULATION)
+  RTCore::Cleanup();
+#endif
   
   return numErrors ? 1 : 0;
 }
