@@ -1,4 +1,4 @@
-// Copyright 2009-2021 Intel Corporation
+// Copyright 2009-2023 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #include "rthwif_embree_builder_stoch.h"
@@ -13,21 +13,15 @@
 #include "../builders/primrefgen.h"
 #include "../builders/primrefgen_presplit.h"
 #include "../builders/splitter.h"
-//#include "../geometry/triangle1v.h"
-//#include "../geometry/quad1v.h"
 
 #include "../common/state.h"
 #include "../../common/algorithms/parallel_for_for.h"
 #include "../../common/algorithms/parallel_for_for_prefix_sum.h"
-
-//#include "../bvh/gbvh_builder_gpu.h"
-//#include "../bvh/gbvh_builder_gpu_morton.h"
 #include "builder/gpu/morton.h"
 
 #include "../common/lexers/streamfilters.h"
 #include <stack>
 #include  <unistd.h>
-//#include "../bvh/sobol.h"
 #include "builder/gpu/builder.h"
 #include "builder/gpu/sort2.h"
 
@@ -62,56 +56,6 @@ namespace embree
   const int BIN_OFFSET = 64;
   const int BIN_COUNT = 128;
   const uint SUBTREE_THRESHOLD = 512;
-
-  double pHistTimerStochHW = 0.f;
-
-  void resetPhistStochHW(sycl::queue &gpu_queue, uint *phist) {
-// #if USE_PHIST
-//     gpu::waitOnQueueAndCatchException(gpu_queue);
-// #if PHIST_MODE == 0
-//     for (uint i = 0; i < PHIST_SIZE; i++)
-//       phist[i] = 0;
-// #else
-//     pHistTimerStochHW = getSeconds();
-// #endif
-// #endif 
-  }
-
-  void printresetPhistStochHW(const char* key, sycl::queue &gpu_queue, uint *phist) {
-// #if USE_PHIST
-//     gpu::waitOnQueueAndCatchException(gpu_queue);
-// #if PHIST_MODE == 0
-//     std::cout << "phist: " << key << "; ";
-//     for (uint i = 0; i < PHIST_SIZE; i++) {
-//       if (i != 0)
-//         std::cout << ", ";
-//       std::cout << phist[i];
-//       phist[i] = 0;
-//     }
-//     std::cout << std::endl;
-// #else
-//     double newpHistTimerStochHW = getSeconds();
-//     double diff = newpHistTimerStochHW - pHistTimerStochHW;
-//     std::cout << "phist: " << key << "; " << diff << std::endl;
-//     pHistTimerStochHW = newpHistTimerStochHW;
-// #endif
-// #endif 
-  }
-
-  void writePHistStochHW(uint *phist, gpu::BVH2BuildRecord *bvh_nodes, uint index) {
-// #if USE_PHIST && PHIST_MODE == 0
-//     uint numPrims = bvh_nodes[index].end - bvh_nodes[index].start;
-//     uint level = 0;
-
-//     for (; index != 0x7fffffff; level++)
-//       index = bvh_nodes[index].parent;
-    
-//     level--;
-
-//     sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> ap(phist[level]);
-//     ap.fetch_add(numPrims);
-// #endif 
-  }
 
   struct WeightClampingContextHW {
     uint bin_counts[BIN_COUNT];
@@ -236,12 +180,6 @@ namespace embree
     gpu::AABB* centroidAABB;
     
     void init(DeviceGPU* deviceGPU, size_t numPrims, float frac)
-    //:bvhPrimitives(numPrims),
-        //closestSubsetPrimitive(numPrims),
-        //cdf(numPrims),
-        //subsetSelection(numPrims)
-        //nodeSelections(numPrims),
-        //subsetNodeSelections(maxNumSubsetPrims)
         {
           size = numPrims;         
           targetSubsetSize = (int)std::round(numPrims * frac); // FIXME: adjust allocation due targetSubsetSize
@@ -253,14 +191,10 @@ namespace embree
           subsetNodeSelections   =                  (uint*)sycl::aligned_alloc(64,sizeof(uint)*numPrims,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);          
           nodeSelections         =                  (uint*)sycl::aligned_alloc(64,sizeof(uint)*numPrims,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
           leafPrimitiveRanges    =            (gpu::Range*)sycl::aligned_alloc(64,sizeof(gpu::Range)*2*numPrims,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
-          //sobolMatrix            =                  (uint*)sycl::aligned_alloc(64,sizeof(uint)*sobol::Matrices::num_dimensions*sobol::Matrices::size,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
           subsetAABB             =             (gpu::AABB*)sycl::aligned_alloc(64,sizeof(gpu::AABB)*numPrims,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
           clusterIDX             =                  (uint*)sycl::aligned_alloc(64,sizeof(uint)*numPrims,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
           centroidAABB           =             (gpu::AABB*)sycl::aligned_alloc(64,sizeof(gpu::AABB)*numPrims,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
-#if USE_PHIST && PHIST_MODE == 0
-          phist = (uint*)sycl::aligned_alloc(64,sizeof(uint)*PHIST_SIZE,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
-          assert(phist);
-#endif
+
           assert(wc);
           assert(cdf);
           assert(subsetSelection);
@@ -368,7 +302,6 @@ namespace embree
       push();
       pK("globals", globals);
       pK("compCentroid", compCentroid);
-#if MORTON_SORT
       pK("compMortonCodes", compMortonCodes);
       push();
       if(detailed)
@@ -379,7 +312,6 @@ namespace embree
         }
       }
       pop("sortMorton", sortMortonEnd - sortMortonBegin);
-#endif
       pop("pre", preEnd - preBegin);
       push();
       pK("InitBins", subsetInitBins);
@@ -389,12 +321,10 @@ namespace embree
       pK("PSumLocal", subsetPSumLocal);
       pK("PSumGlobal", subsetPSumGlobal);
       pK("SampleSubset", subsetSampleSubset);
-#if STABLE_ORDER
       pK("WriteClosestSubsetPrimitive", subsetWriteClosestSubsetPrimitive);
       pK("MortonWindowPSumLocal", subsetMortonWindowPSumLocal);
       pK("MortonWindowPSumGlobal", subsetMortonWindowPSumGlobal);
       pK("WriteSamples", subsetWriteSamples);
-#endif
       pop("subset", subsetEnd - subsetBegin);
       push();
       pK("InitFirstBuildRecord", topInitFirstBuildRecord, topInitFirstBuildRecordEnd - topInitFirstBuildRecordBegin);
@@ -426,16 +356,6 @@ namespace embree
       pK("TopRefit", clusterTopRefit);
       pK("InitNodeSelection", clusterInitNodeSelection);
       pK("WriteSubsetPrimSelection", clusterWriteSubsetPrimSelection);
-#if MORTON_SORT
-#if !STABLE_ORDER
-      pK("WriteClosestSubsetPrimitive", clusterWriteClosestSubsetPrimitive);
-      pK("MortonWindowPSumLocal", clusterMortonWindowPSumLocal);
-      pK("MortonWindowPSumGlobal", clusterMortonWindowPSumGlobal);
-#endif
-#if !COHERENT_SUBSET
-      pK("WriteSubsetNodeSelection", clusterWriteSubsetNodeSelection);
-#endif
-#endif
       pK("FindBestNode", clusterFindBestNode);
       pK("WritePrimref", clusterWritePrimref);
       pK("ReorderPSumLocal", clusterReorderPSumLocal);
@@ -464,25 +384,19 @@ namespace embree
 //  CLAMPING BINS ZERO-INIT
 //  TODO can't we simply set them to zero when gpu-copy?
 // ******************************************************
-#if GPU_SUBSET == 1
+
     {
       // BIN_COUNT must be power of 2
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-                                                   const sycl::nd_range<1> nd_range1(BIN_COUNT,sycl::range<1>(BIN_COUNT));                      
-                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(32) {
-                                                       const uint i     = item.get_global_id(0);
-                                                       ctx.wc->bin_counts[i] = 0;
-                                                     });		  
-                                                 });
+                                                    const sycl::nd_range<1> nd_range1(BIN_COUNT,sycl::range<1>(BIN_COUNT));                      
+                                                    cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(32) {
+                                                        const uint i     = item.get_global_id(0);
+                                                        ctx.wc->bin_counts[i] = 0;
+                                                      });		  
+                                                  });
       ectx.subsetInitBins = queue_event;
-    }         
-#else    
-    gpu::waitOnQueueAndCatchException(gpu_queue);          
-    // initialize bins
-    // execute in one work group?
-    for (int i = 0; i < BIN_COUNT; i++)
-      ctx.wc->bin_counts[i] = 0;
-#endif    
+    }      
+
 
 // ********************************************************************
 //  CLAMPING BINS INIT WITH PRIMS WEIGTH AND MORTON INDEX INIT
@@ -490,83 +404,56 @@ namespace embree
 //   - init lower 32 bits for morton ordering with prim id
 //     or simple array position if not sorting
 // ********************************************************************
-#if GPU_SUBSET == 1
     {
       const uint wgSize = 1024;
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-                                                   sycl::local_accessor< WeightClampingContextHW, 0> _lwc(cgh);
-                                                   const sycl::nd_range<1> nd_range(sycl::range<1>(gpu::alignTo(size,wgSize)),sycl::range<1>(wgSize));                                                        
-                                                   cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(32) {
+                                                    sycl::local_accessor< WeightClampingContextHW, 0> _lwc(cgh);
+                                                    const sycl::nd_range<1> nd_range(sycl::range<1>(gpu::alignTo(size,wgSize)),sycl::range<1>(wgSize));                                                        
+                                                    cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(32) {
 
-                                                       const uint i     = item.get_global_id(0);
-                                                       const uint li    = item.get_local_id(0);
+                                                        const uint i     = item.get_global_id(0);
+                                                        const uint li    = item.get_local_id(0);
 
-                                                       WeightClampingContextHW &lwc = *_lwc.get_pointer();
-                                                       if (li < BIN_COUNT)
+                                                        WeightClampingContextHW &lwc = *_lwc.get_pointer();
+                                                        if (li < BIN_COUNT)
                                                         lwc.bin_counts[li] = 0;
 
-                                                       item.barrier(sycl::access::fence_space::local_space);
+                                                        item.barrier(sycl::access::fence_space::local_space);
 
-                                                       if (i < ctx.size)
-                                                       {
-#if MORTON_SORT
-                                                         float w = ctx.aabb[ctx.mc0[i].getIndex()].length();
-#else                                                         
-                                                         float w = ctx.aabb[i].length();
-#endif
-                                                         ctx.cdf[i] = w;
+                                                        if (i < ctx.size)
+                                                        {
+                                                          float w = ctx.aabb[ctx.mc0[i].getIndex()].length();
+                                                          ctx.cdf[i] = w;
 
-                                                         int bin;
-                                                         if (w == 0)
-                                                           bin = 0;
-                                                         else if (w == std::numeric_limits<float>::infinity())
-                                                           bin = BIN_COUNT - 1;
-                                                         else {
-                                                           int exp = std::floor(std::log(w)/std::log(BIN_BASE));
-                                                           bin = std::min(std::max(BIN_OFFSET + exp, 0), BIN_COUNT - 1);
-                                                         }
+                                                          int bin;
+                                                          if (w == 0)
+                                                            bin = 0;
+                                                          else if (w == std::numeric_limits<float>::infinity())
+                                                            bin = BIN_COUNT - 1;
+                                                          else {
+                                                            int exp = std::floor(std::log(w)/std::log(BIN_BASE));
+                                                            bin = std::min(std::max(BIN_OFFSET + exp, 0), BIN_COUNT - 1);
+                                                          }
                                                         gpu::atomic_add_local<uint>(&lwc.bin_counts[bin],1);
-                                                       }
+                                                        }
 
-                                                       item.barrier(sycl::access::fence_space::local_space);
+                                                        item.barrier(sycl::access::fence_space::local_space);
 
-                                                       if (li < BIN_COUNT)
-                                                       {
-                                                         auto bin_count = lwc.bin_counts[li];
-                                                         if (bin_count > 0)
+                                                        if (li < BIN_COUNT)
+                                                        {
+                                                          auto bin_count = lwc.bin_counts[li];
+                                                          if (bin_count > 0)
                                                           gpu::atomic_add_global<uint>(&ctx.wc->bin_counts[li],bin_count);
-                                                       }
-                                                     });		  
-                                                 });
+                                                        }
+                                                      });		  
+                                                  });
       ectx.subsetAccumulateBins = queue_event;
     }
-#else    
-    gpu::waitOnQueueAndCatchException(gpu_queue);
-    // compute weight for each primitive and add to corresponding bin
-    // parallel for each primitive
-    for (int i = 0; i < ctx.size; i++) {
-      float w = aabb[i].length();
-      ctx.cdf[i] = w;
-
-      int bin;
-      if (w == 0)
-        bin = 0;
-      else if (w == std::numeric_limits<float>::infinity())
-        bin = BIN_COUNT - 1;
-      else {
-        int exp = std::floor(std::log(w)/std::log(BIN_BASE));
-        bin = std::min(std::max(BIN_OFFSET + exp, 0), BIN_COUNT - 1);
-      }
-
-      ctx.wc->bin_counts[bin] += 1;
-    }
-#endif
 
 // *******************************************************************
 //  SINGLE THREADED BINNED CLAMPING TERM EVALUATION
 //  goes over a handful of bins (32 to 64) so it does not matter much
 // *******************************************************************
-#if GPU_SUBSET == 1
     {
       sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
                                                     cgh.single_task([=]() {
@@ -594,252 +481,82 @@ namespace embree
                                                   });
       ectx.subsetComputeClampingTerm = queue_event;
     }
-#else    
-    gpu::waitOnQueueAndCatchException(gpu_queue);
-    // compute approximate clamping term
-    // execute in one work group or even with just one thread?
-    {
-      float M = ctx.size * params.subsetSizeFrac;
-      float prefix_sum = 0.f;
-      int postfix_count = ctx.size;
-      float clamp = 0;
-
-      float weight_factor = 1.f / (1.f - params.uniformCdfFrac);
-      
-      int i = 0;
-      for (; i < BIN_COUNT - 1; i++) {
-        float bin_upper = std::pow(BIN_BASE, i - BIN_OFFSET + 1.f);
-        uint bin_count = ctx.wc->bin_counts[i];
-        prefix_sum += bin_upper * bin_count;
-        postfix_count -= bin_count;
-        clamp = bin_upper;
-        float max_weight = weight_factor * (prefix_sum + clamp * postfix_count) / M;
-        if (clamp >= max_weight) break;
-      }
-
-      if (i == BIN_COUNT - 1) clamp = std::numeric_limits<float>::infinity();
-
-      ctx.wc->clamp = clamp;
-    }
-#endif
 
 // ************************************************
 //  WEIGHT CLAMPING AND SUBSET SELECTION ZERO-INIT
 // ************************************************
-#if GPU_SUBSET == 1
     {
       // FIXME: this doesn't work yet as prefix_sum algorithms required integral data types like float,int,...
       // TODO: Ideally we could do the prefix sum and select the primitives in the same pass
       const uint wgSize = 256;
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-                                                   const sycl::nd_range<1> nd_range(sycl::range<1>(gpu::alignTo(size,wgSize)),sycl::range<1>(wgSize));                                                        
-                                                   cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(32) {
-                                                       const uint i     = item.get_global_id(0);
-                                                       if (i < ctx.size)
-                                                         // clamp the prim weight
-                                                         ctx.cdf[i] = std::min(ctx.cdf[i], ctx.wc->clamp);
-                                                         // init the selection of this prim to zero
-                                                         ctx.subsetSelection[i] = 0;
-                                                     });		  
-                                                 });
+                                                    const sycl::nd_range<1> nd_range(sycl::range<1>(gpu::alignTo(size,wgSize)),sycl::range<1>(wgSize));                                                        
+                                                    cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(32) {
+                                                        const uint i     = item.get_global_id(0);
+                                                        if (i < ctx.size)
+                                                          // clamp the prim weight
+                                                          ctx.cdf[i] = std::min(ctx.cdf[i], ctx.wc->clamp);
+                                                          // init the selection of this prim to zero
+                                                          ctx.subsetSelection[i] = 0;
+                                                      });		  
+                                                  });
       ectx.subsetWriteClampedWeights = queue_event;
       
       auto events = inclusive_prefix_sum<float>(gpu_queue,cdf,size,(float*)ctx.scratch_mem, false);
       ectx.subsetPSumLocal = events.first;
       ectx.subsetPSumGlobal = events.second;
     }
-#else    
-    gpu::waitOnQueueAndCatchException(gpu_queue);      
-    // inclusive prefix sum over interpolation between clamped and uniform weights
-    // kahan summation for reference
-    {
-      float pfix = 0.f, c = 0.f;
-      for (int i = 0; i < ctx.size; i++) {
-        float w = std::min(ctx.cdf[i], ctx.wc->clamp);
-        float y = w - c;
-        float t = pfix + y;
-        c = (t - pfix) - y;
-        pfix = t;
-        ctx.cdf[i] = pfix;
-      }
-    }
-    for (uint i=0;i<ctx.size;i++)
-      ctx.subsetSelection[i] = 0;   
-#endif
 
-
-
-// #if GPU_SUBSET == 1
-//     {
-//       const uint wgSize = 256;
-//       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-//                                                    const sycl::nd_range<1> nd_range(sycl::range<1>(gpu::alignTo(ctx.size,wgSize)),sycl::range<1>(wgSize));                                                        
-//                                                    cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16) {
-//                                                        const uint i     = item.get_global_id(0);
-//                                                        if (i < ctx.size)
-//                                                          ctx.subsetSelection[i] = 0;      
-//                                                      });		  
-//                                                  });
-//       ectx.subsetInitSubsetSelection = queue_event;
-//     }
-// #else    
-//     gpu::waitOnQueueAndCatchException(gpu_queue);      
-//     for (uint i=0;i<ctx.size;i++)
-//       ctx.subsetSelection[i] = 0;      
-// #endif
-
-#if GPU_SUBSET == 1
     {
       const uint wgSize = 32;
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-                                                   const sycl::nd_range<1> nd_range(sycl::range<1>(gpu::alignTo(targetSubsetSize,wgSize)),sycl::range<1>(wgSize));                                                        
-                                                   cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(32) {
-                                                       /*
-                                                       auto sampleSobol = [&](unsigned long long index, const unsigned dimension, const unsigned scramble = 0U) {
-                                                        assert(dimension < sobol::Matrices::num_dimensions);
-
-                                                        unsigned result = scramble;
-                                                        for (unsigned i = dimension * sobol::Matrices::size; index; index >>= 1, ++i)
+                                                    const sycl::nd_range<1> nd_range(sycl::range<1>(gpu::alignTo(targetSubsetSize,wgSize)),sycl::range<1>(wgSize));                                                        
+                                                    cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(32) {
+  
+                                                        const uint i     = item.get_global_id(0);
+                                                        const uint subgroupID = get_sub_group_id();
+                                                        if (i < ctx.targetSubsetSize)
                                                         {
-                                                            if (index & 1)
-                                                                result ^= ctx.sobolMatrix[i];
-                                                        }
+                                                          float offset = params.randomSeed * (1.f / (1ULL << 32));
+                                                          float rnd = ((float(i) + offset) / ctx.targetSubsetSize);
+                                                          float lf = (1 - params.uniformCdfFrac) / ctx.cdf[ctx.size-1];
+                                                          float rf = params.uniformCdfFrac / ctx.size;
 
-                                                        return result * (1.f / (1ULL << 32));
-                                                       };
-                                                       */
-
-
-                                                       const uint i     = item.get_global_id(0);
-                                                       const uint subgroupID = get_sub_group_id();
-                                                       if (i < ctx.targetSubsetSize)
-                                                       {
-                                                         float rnd;
-                                                         //if (params.useSobol) {
-                                                         //  rnd = sampleSobol(i, params.randomSeed);
-                                                         //} else {
-                                                           float offset = params.randomSeed * (1.f / (1ULL << 32));
-                                                           rnd = ((float(i) + offset) / ctx.targetSubsetSize);
-                                                         //}
-                                                         float lf = (1 - params.uniformCdfFrac) / ctx.cdf[ctx.size-1];
-                                                         float rf = params.uniformCdfFrac / ctx.size;
-
-                                                         auto cdf = [&](int i) {
+                                                          auto cdf = [&](int i) {
                                                             return lf * ctx.cdf[i] + rf * (i + 1.f);
-                                                         };
+                                                          };
 
-                                                         int j;
-                                                         {
-                                                           int first = 0;
-                                                           int step, i;
-                                                           int count = ctx.size - 1;
+                                                          int j;
+                                                          {
+                                                            int first = 0;
+                                                            int step, i;
+                                                            int count = ctx.size - 1;
                                                           
-                                                           while (count > 0) {
-                                                             i = first;
-                                                             step = count / 2; 
-                                                             i += step;
-                                                             if (!(rnd < cdf(i))) {
-                                                               first = ++i;
-                                                               count -= step + 1;
-                                                             } 
-                                                             else
+                                                            while (count > 0) {
+                                                              i = first;
+                                                              step = count / 2; 
+                                                              i += step;
+                                                              if (!(rnd < cdf(i))) {
+                                                                first = ++i;
+                                                                count -= step + 1;
+                                                              } 
+                                                              else
                                                               count = step;
-                                                           }
-                                                           j = first;
-                                                         }       
+                                                            }
+                                                            j = first;
+                                                          }       
 
-                                                         if (gpu::atomic_max_global<uint>(&ctx.subsetSelection[j],1) == 0)
-                                                         {
-#if 1
-                                                           uint subsetSizeID = gpu::atomic_add_global<uint>(&ctx.globals->sched,1);
-#else
-                                                           uint offset = sub_group_exclusive_scan(1u, std::plus<uint>());
-                                                           uint maxID = sub_group_reduce_max(subgroupID);
-                                                           uint globalOffset = 0;
-                                                           if (subgroupID == maxID)
-                                                            globalOffset = gpu::atomic_add_global<uint>(&ctx.globals->sched,offset + 1);
-                                                           uint subsetSizeID = sub_group_broadcast(globalOffset, maxID) + offset;
-#endif
-#if !STABLE_ORDER
-#if MORTON_SORT
-                                                           ctx.primref_index0[subsetSizeID] = ctx.mc0[j].getIndex();
-#else
-                                                           ctx.primref_index0[subsetSizeID] = j;
-#endif                                                           
-#endif
-                                                         }
-                                                         
-                                                       }
-                                                     });		  
-                                                 });
+                                                          if (gpu::atomic_max_global<uint>(&ctx.subsetSelection[j],1) == 0)
+                                                          {
+                                                            uint subsetSizeID = gpu::atomic_add_global<uint>(&ctx.globals->sched,1);
+                                                          }
+                                                          
+                                                        }
+                                                      });		  
+                                                  });
       ectx.subsetSampleSubset = queue_event;
     }
-#else    
-    gpu::waitOnQueueAndCatchException(gpu_queue);      
-    // sample subset primitives
-    // parallel for 0 to subsetSize
-    {
-      for (int i = 0; i <  ctx.targetSubsetSize; i++) {
-        float rnd = (float(i) / ctx.targetSubsetSize);
-        float lf = (1 - params.uniformCdfFrac) / ctx.cdf[ctx.size-1];
-        float rf = params.uniformCdfFrac / ctx.size;
 
-        auto cdf = [&](int i) {
-          return lf * ctx.cdf[i] + rf * (i + 1.f);
-        };
-
-        int j;
-        {
-          int first = 0;
-          int step, i;
-          int count = ctx.size - 1;
-        
-          while (count > 0) {
-              i = first;
-              step = count / 2; 
-              i += step;
-              if (!(rnd < cdf(i))) {
-                  first = ++i;
-                  count -= step + 1;
-              } 
-              else
-                  count = step;
-          }
-          j = first;
-        }
-
-        /*
-        int upper_index = ctx.size-1;
-        for (int j=0;j<ctx.size-1;j++)
-        {
-          if (ctx.cdf[j] > rnd * ctx.wc->sum) {
-            upper_index = j;
-            break;
-          }
-        }        
-
-        if (upper_index_ != upper_index) abort();
-        */
-        //auto it = std::upper_bound(ctx.cdf.begin(), ctx.cdf.end() - 1, rnd * ctx.wc->sum);
-
-        //auto j = it - ctx.cdf.begin();
-        
-        if (ctx.subsetSelection[j] == 1) continue;
-        ctx.subsetSelection[j] = 1;
-
-        float pdf = (cdf(j) - (0 < j ? cdf(j - 1) : 0));
-        CHECK(pdf > 0.f);
-        auto scale = std::max(1.f / (float)(pdf *  ctx.targetSubsetSize), 1.f);
-
-        auto prim = ctx.bvhPrimitives[j];
-        prim.primitiveNumber = j;
-        if (params.representativePrimitivesCost)
-          prim.cost = scale;
-        ctx.bvhPrimitivesScratch[ctx.subsetSize++] = prim;
-      }
-    }
-#endif
-#if STABLE_ORDER
     {
       const uint wgSize = 256;
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) { //11
@@ -865,27 +582,14 @@ namespace embree
                                                         const uint i = item.get_global_id(0);
                                                         if (i < ctx.size && ctx.subsetSelection[i] != 0) {
                                                           uint j = ctx.closestSubsetPrimitive[i];
-#if COHERENT_SUBSET
-#if MORTON_SORT
                                                           uint index = ctx.mc0[i].getIndex();
-#else
-                                                          uint index = i; 
-#endif
                                                           ctx.subsetAABB[j] = ctx.aabb[index];
                                                           ctx.primref_index0[j] = j;
-#else
-#if MORTON_SORT
-                                                          ctx.primref_index0[j] = ctx.mc0[i].getIndex();
-#else
-                                                          ctx.primref_index0[j] = i;
-#endif
-#endif
                                                         }
                                                       });		  
                                                   });
       ectx.subsetWriteSamples = queue_event;
     }       
-#endif
   }
 
   gpu::AABB3f checkBVH2Stoch2HW(gpu::BVH2BuildRecord *bvh_nodes, uint index,const uint *const primref_index,gpu::AABB *aabb,uint &nodes,uint &leaves,double &nodeSAH, double &leafSAH, const uint cfg_maxLeafSize);
@@ -908,14 +612,11 @@ namespace embree
     gpu::waitOnQueueAndCatchException(gpu_queue);   
     ectx.topInitFirstBuildRecordEnd = getSeconds();
 
-    resetPhistStochHW(gpu_queue, ctx.phist);
-
     const uint cfg_maxLeafSize = params.maxLeafSizeTopLevel;
     PRINT(cfg_maxLeafSize);
 
     if (numPrimitives > NUM_TOPLEVEL_WG) {
 
-#if 1
     // todo: range <= cfg_maxLeafSize
 
     //SORT!!!!
@@ -936,7 +637,6 @@ namespace embree
             //PRINT(numRecords);
             if (numRecords == 1)
             {
-              writePHistStochHW(ctx.phist, ctx.bvh2, 0);
               for (uint i=0;i<NUM_TOPLEVEL_WG;i++)
               {
                 gpu::BVH2BuildRecord &current = ctx.bvh2[0];              
@@ -944,17 +644,14 @@ namespace embree
                 ctx.wgTaskState[i].buildStateID = 0;
                 ctx.wgTaskState[i].start = current.start + (i + 0)*current.size() / NUM_TOPLEVEL_WG;
                 ctx.wgTaskState[i].end   = current.start + (i + 1)*current.size() / NUM_TOPLEVEL_WG;
-                //PRINT5(i,ctx.wgTaskState[i].recordID,ctx.wgTaskState[i].buildStateID,ctx.wgTaskState[i].start,ctx.wgTaskState[i].end);                
-              }
+               }
               ctx.wgBuildState[0].numAssignedWGs = NUM_TOPLEVEL_WG;
               ctx.wgBuildState[0].numDoneWGs = 0;
-              //PRINT2(0,ctx.wgBuildState[0].numAssignedWGs);
-              ctx.globals->numWGs = NUM_TOPLEVEL_WG;
+               ctx.globals->numWGs = NUM_TOPLEVEL_WG;
             }
             else
             {
-              //PRINT(average_threshold);
-              uint recs = 0;
+               uint recs = 0;
               uint average_threshold = 0;
               for (uint r=0;r<numRecords;r++)
                 if (ctx.bvh2[r].left == -1)
@@ -963,8 +660,6 @@ namespace embree
                   recs++;
                 }
               average_threshold = (uint)floorf((float)average_threshold / recs);
-              //PRINT(average_threshold);
-              //const uint average_threshold = (uint)floorf(numPrimitives / (2*NUM_TOPLEVEL_WG));
               
               uint recordIDs = 0;
               uint recordIDs_total_size = 0;
@@ -973,15 +668,9 @@ namespace embree
               for (uint r=0;r<numRecords;r++)
                 if (ctx.bvh2[r].size() >= average_threshold && ctx.bvh2[r].left == -1)
                 {
-                  writePHistStochHW(ctx.phist, ctx.bvh2, r);
                   recordIDs_total_size += ctx.bvh2[r].size();
                   record_table_IDs[recordIDs++] = r;
                 }
-              
-              // for (uint r=0;r<recordIDs;r++)
-              //   PRINT2(r,record_table_IDs[r]);
-              //
-              //const uint average_threshold = (uint)floorf(recordIDs_total_size / NUM_TOPLEVEL_WG);
               
               uint numWGs_per_record_table[NUM_TOPLEVEL_WG];
               for (uint r=0;r<recordIDs;r++)
@@ -990,15 +679,12 @@ namespace embree
                 numWGs_per_record_table[r] = max((uint)floorf(NUM_TOPLEVEL_WG * (float)ctx.bvh2[recordID].size() / recordIDs_total_size),(uint)1);
                 assert(numWGs_per_record_table[r]);
                 ctx.globals->numWGs += numWGs_per_record_table[r];
-                //PRINT3(r,numWGs_per_record_table[r],numWGs_launch);
               }
-              //PRINT(numWGs_launch);
               assert(ctx.globals->numWGs <= NUM_TOPLEVEL_WG);
               
               uint wgTaskStateID = 0;
               for (uint r=0;r<recordIDs;r++)
               {
-                //PRINT(r);
                 for (uint i=0;i<numWGs_per_record_table[r];i++)
                 {
                   const uint recordID = record_table_IDs[r];
@@ -1009,15 +695,12 @@ namespace embree
                   ctx.wgTaskState[wgTaskStateID+i].start = current.start + (i + 0)*current.size() / numWGs_per_record_table[r];
                   ctx.wgTaskState[wgTaskStateID+i].end   = current.start + (i + 1)*current.size() / numWGs_per_record_table[r];
                   
-                  //PRINT6(i,wgTaskStateID+i,ctx.wgTaskState[wgTaskStateID+i].recordID,ctx.wgTaskState[wgTaskStateID+i].buildStateID,ctx.wgTaskState[wgTaskStateID+i].start,ctx.wgTaskState[wgTaskStateID+i].end);
                 }
                 wgTaskStateID += numWGs_per_record_table[r];
 
                 ctx.wgBuildState[r].numAssignedWGs = numWGs_per_record_table[r];
                 ctx.wgBuildState[r].numDoneWGs = 0;
-                //PRINT2(r,ctx.wgBuildState[r].numAssignedWGs);                
               }
-              //exit(0);              
             }
           });
         });
@@ -1056,11 +739,7 @@ namespace embree
                                                         if (!(groupID < ctx.globals->numWGs)) return;
 
                                                         gpu::BinInfoNew *binInfo    = _binInfo.get_pointer();
-#if STABLE_ORDER && COHERENT_SUBSET                                                                                                                  
                                                         const gpu::AABB *const primref  = ctx.subsetAABB;
-#else
-                                                        const gpu::AABB *const primref  = ctx.aabb;
-#endif
 
                                                         const gpu::WorkGroupTaskState &taskState = ctx.wgTaskState[groupID];
                                                         uint recordID = taskState.recordID;
@@ -1087,7 +766,6 @@ namespace embree
                                                           const uint index = ctx.primref_index0[t];
                                                           ctx.primref_index1[t] = index;
                                                           bi->atomicUpdateBallot(binMapping,primref[index]);
-                                                          //bi->atomicUpdate(binMapping,primref[index]);                                                             
                                                         }
                                                         
                                                         item.barrier(sycl::access::fence_space::local_space);
@@ -1120,11 +798,9 @@ namespace embree
                                                         const uint localSize    = item.get_local_range().size();
 
                                                         if (!(groupID < ctx.globals->numWGs)) return;
-#if STABLE_ORDER && COHERENT_SUBSET                                                                                                                  
+
                                                         const gpu::AABB *const primref  = ctx.subsetAABB;
-#else
-                                                        const gpu::AABB *const primref  = ctx.aabb;
-#endif
+
                                                         uint &atomicCountLeft    = *_atomicCountLeft.get_pointer();
                                                         uint &atomicCountRight   = *_atomicCountRight.get_pointer();
 
@@ -1179,8 +855,6 @@ namespace embree
                                                             
                                                             if (ID<local_endID)
                                                             {
-                                                              //if ((ID < local_startID || ID >= local_endID) && groupID == 0) PRINT3(ID,local_startID,t);
-                                                              
                                                               index = ctx.primref_index1[ID];
                                                               const gpu::AABB pref = primref[index];
                                                               l = is_left(binMapping, split,pref);
@@ -1221,15 +895,10 @@ namespace embree
                                                                 offset = current.start + offset + global_offset_left;
                                                                 ctx.primref_index0[offset] = index;
 
-                                                                // if (offset >= split_pos && groupID == 0)
-                                                                //   PRINT2("left",offset);
-
                                                               }
                                                               else
                                                               {
                                                                 offset = global_endID - 1 - offset - global_offset_right;
-                                                                // if (offset < split_pos  && groupID == 0)
-                                                                //   PRINT2("right",offset);                                                                   
                                                                 ctx.primref_index0[offset] = index;                                                                                                                                      
                                                               }
 
@@ -1272,9 +941,6 @@ namespace embree
                                                             
                                                             /* split position */
                                                             const uint split_position = global_startID + ctx.wgBuildState[buildStateID].atomicCountLeft;
-
-
-                                                            //UPRINT2(split_position,split_pos);
                                                           
                                                             /* write out two new ctx.bvh2 build records */
                                                             sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> bvh2_counter(ctx.globals->bvh2_index_allocator);
@@ -1300,68 +966,16 @@ namespace embree
                                                   });
         std::get<3>(*topBreadthFirst) = queue_event;
       }
-    
-    
-
-#if CHECKS == 1
-      //PRINT2(ctx.wgBuildState[0].atomicCountLeft,ctx.wgBuildState[0].atomicCountRight);
-      //PRINT2(ctx.wgBuildState[0].leftBounds,ctx.wgBuildState[0].rightBounds);
-
-      //PRINT(ctx.globals->bvh2_breathfirst_records_start);
-      //PRINT(ctx.globals->bvh2_breathfirst_records_end);
-      
-      for (uint i=ctx.globals->bvh2_breathfirst_records_start;i<ctx.globals->bvh2_breathfirst_records_end;i++)
-      {
-        gpu::BVH2BuildRecord &current = ctx.bvh2[i];
-        //PRINT4(current.start,current.end,current.size(),current.bounds);
-        gpu::AABB bounds = convert_AABB(current.bounds);          
-        for (uint j=current.start;j<current.end;j++)
-        {
-          if (!bounds.encloses(ctx.aabb[ctx.primref_index0[j]].centroid2()))
-            PRINT3(j,gpu::AABB(ctx.aabb[ctx.primref_index0[j]].centroid2()),bounds);
-          assert(bounds.encloses(ctx.aabb[ctx.primref_index0[j]].centroid2()));
-        }
-      }
-    uint count_middle = 0;
-    for (uint i=0;i<ctx.globals->bvh2_breathfirst_records_end;i++)
-      {
-        gpu::BVH2BuildRecord &current = ctx.bvh2[i];
-        if (current.size() > cfg_maxLeafSize && current.left == -1)
-        {
-          //PRINT4(current.start,current.end,current.size(),current.bounds);
-          count_middle++;
-        }
-      }
-    PRINT(count_middle);
-      
-#endif
-      printresetPhistStochHW("u", gpu_queue, ctx.phist);
     }
-#endif
+
 
     gpu::waitOnQueueAndCatchException(gpu_queue);
     ectx.topBreadthFirstEnd = getSeconds();
 
-    if (false) {
-      uint nodes = 0;
-      uint leaves = 0;
-      double nodeSAH = 0;
-      double leafSAH = 0;      
-#if STABLE_ORDER && COHERENT_SUBSET
-      auto* aabb = ctx.subsetAABB;
-#else
-      auto* aabb = ctx.aabb;
-#endif
-      float area = checkBVH2Stoch2HW(ctx.bvh2,ctx.globals->rootIndex,ctx.primref_index,aabb,nodes,leaves,nodeSAH,leafSAH,cfg_maxLeafSize).area();
-      nodeSAH /= area;
-      leafSAH /= area;                
-      PRINT4(nodes,leaves,(float)nodeSAH,(float)leafSAH);
-    }
-
     // === build top-level tree breadth-first ===
     uint numWGs = 64;
     uint sizeWG = 1024;
-    for (uint iteration = 0; iteration < 12 /*ctx.globals->bvh2_breathfirst_records_start < ctx.globals->bvh2_breathfirst_records_end*/;iteration++)
+    for (uint iteration = 0; iteration < 12; iteration++)
     {
       if (sizeWG > 256 && iteration > 0) {
         sizeWG /= 2;
@@ -1390,37 +1004,19 @@ namespace embree
                                                         uint &atomicCountRight   = *_atomicCountRight.get_pointer();
                                                         gpu::AABB3f &leftBounds  = *_leftBounds.get_pointer();
                                                         gpu::AABB3f &rightBounds = *_rightBounds.get_pointer();
-                                                                                                                
 
-#if STABLE_ORDER && COHERENT_SUBSET                                                                                                                  
                                                         const gpu::AABB *const primref  = ctx.subsetAABB;
-#else
-                                                        const gpu::AABB *const primref  = ctx.aabb;
-#endif
 
                                                         const uint record_start = ctx.globals->bvh2_breathfirst_records_start;
                                                         const uint num_records = ctx.globals->bvh2_breathfirst_records_end - record_start;
-                                                        
-#if 1
                                                         for (int i = groupID; i < num_records; i += numWGs) {
                                                         const uint recordID = record_start + i;
-#else                                                           
-                                                        while (true) {
-                                                        
-                                                        item.barrier(sycl::access::fence_space::local_space);
-                                                        if (localID == 0) atomicCountLeft = gpu::atomic_add_global<uint>(&ctx.globals->sched, 1);
-                                                        item.barrier(sycl::access::fence_space::local_space);
-                                                        if (!(atomicCountLeft < num_records)) break;
-                                                        const uint recordID = record_start + atomicCountLeft;
-#endif                                                           
 
                                                         if (ctx.bvh2[recordID].size() > cfg_maxLeafSize && ctx.bvh2[recordID].left == -1)
                                                         {
                                                           gpu::BVH2BuildRecord &current = ctx.bvh2[recordID];
                                                           if (current.size() > SUBTREE_THRESHOLD)
                                                           {
-                                                            if (localID == 0)
-                                                              writePHistStochHW(ctx.phist, ctx.bvh2, recordID);
                                                             const uint parentID = recordID;
                                                             const uint startID = current.start;
                                                             const uint endID   = current.end;
@@ -1465,24 +1061,6 @@ namespace embree
                                                   });
       ectx.topMiddle.push_back(queue_event);
 
-    
-#if CHECKS == 1          
-      PRINT(ctx.globals->bvh2_breathfirst_records_start);
-      PRINT(ctx.globals->bvh2_breathfirst_records_end);
-    
-      for (uint i=ctx.globals->bvh2_breathfirst_records_start;i<ctx.globals->bvh2_breathfirst_records_end;i++)
-      {
-        gpu::BVH2BuildRecord &current = ctx.bvh2[i];
-        gpu::AABB bounds = convert_AABB(current.bounds);          
-        for (uint j=current.start;j<current.end;j++)
-        {
-          if (!bounds.encloses(ctx.aabb[ctx.primref_index0[j]].centroid2()))
-            PRINT3(j,gpu::AABB(ctx.aabb[ctx.primref_index0[j]].centroid2()),bounds);
-          assert(bounds.encloses(ctx.aabb[ctx.primref_index0[j]].centroid2()));
-        }
-      }
-#endif
-      printresetPhistStochHW("m", gpu_queue, ctx.phist);
     }
 
     gpu::waitOnQueueAndCatchException(gpu_queue);
@@ -1493,11 +1071,7 @@ namespace embree
       uint leaves = 0;
       double nodeSAH = 0;
       double leafSAH = 0;      
-#if STABLE_ORDER && COHERENT_SUBSET
       auto* aabb = ctx.subsetAABB;
-#else
-      auto* aabb = ctx.aabb;
-#endif
       float area = checkBVH2Stoch2HW(ctx.bvh2,ctx.globals->rootIndex,ctx.primref_index,aabb,nodes,leaves,nodeSAH,leafSAH,cfg_maxLeafSize).area();
       nodeSAH /= area;
       leafSAH /= area;                
@@ -1528,14 +1102,9 @@ namespace embree
                                                         uint &atomicCountLeft   = *_atomicCountLeft.get_pointer();                                                         
                                                         uint &atomicCountRight  = *_atomicCountRight.get_pointer();
                                                         uint *stack             =  _stack.get_pointer();
-                                                                                                                
 
-#if STABLE_ORDER && COHERENT_SUBSET                                                                                                                  
                                                         const gpu::AABB *const primref  = ctx.subsetAABB;
-#else
-                                                        const gpu::AABB *const primref  = ctx.aabb;
-#endif
-                                                        
+
                                                         for (int i = groupID; i < ctx.globals->bvh2_breathfirst_records_end; i += numGroups) {
 
                                                         const uint recordID = i;
@@ -1550,8 +1119,6 @@ namespace embree
                                                             sindex--;                                                               
                                                             const uint ID = stack[sindex];
                                                             gpu::BVH2BuildRecord &current = ctx.bvh2[ID];
-                                                            if (localID == 0)
-                                                              writePHistStochHW(ctx.phist, ctx.bvh2, ID);
                                                             
                                                             const uint parentID = ID;
                                                             const uint startID = current.start;
@@ -1598,30 +1165,9 @@ namespace embree
 
     gpu::waitOnQueueAndCatchException(gpu_queue);      
 
-    printresetPhistStochHW("b", gpu_queue, ctx.phist);
-
     ectx.topBottomEnd = getSeconds();
     
     const uint numTopLevelNodes = ctx.globals->bvh2_index_allocator;
-
-    if (false) {
-      uint nodes = 0;
-      uint leaves = 0;
-      double nodeSAH = 0;
-      double leafSAH = 0;      
-#if STABLE_ORDER && COHERENT_SUBSET
-      auto* aabb = ctx.subsetAABB;
-#else
-      auto* aabb = ctx.aabb;
-#endif
-      float area = checkBVH2Stoch2HW(ctx.bvh2,ctx.globals->rootIndex,ctx.primref_index,aabb,nodes,leaves,nodeSAH,leafSAH,cfg_maxLeafSize).area();
-      nodeSAH /= area;
-      leafSAH /= area;                
-      PRINT4(nodes,leaves,(float)nodeSAH,(float)leafSAH);
-    }
-    
-    PRINT(numTopLevelNodes);        
-
   }
 
  __forceinline uint FindBestNode(const BuildParametersHW &params, const BuildContextHW &ctx, const int idx, const uint primitiveID, const gpu::AABB *const aabb, const gpu::BVH2BuildRecord *const bvh2)
@@ -1754,236 +1300,6 @@ namespace embree
    }
   }
 
- __forceinline uint FindBestNode3(const BuildParametersHW &params, const BuildContextHW &ctx, const int idx, const gpu::AABB *const aabb, const gpu::BVH2BuildRecord *const bvh2)
- {
-   const gpu::AABB3f primBounds = convert_AABB3f(aabb[idx]);
-   const float leafCostBound = primBounds.area();
-
-   float bCost = FLT_MAX, cCost = 0;
-   int bNodeID = -1, cNodeID = 0;
-
-   auto nodeCost = [&](const uint nodeID) {
-      const auto &node = bvh2[nodeID];
-      float oldSA = node.bounds.area();
-      float newSA = merge(node.bounds, primBounds).area();
-      float diff = newSA - oldSA;
-      if (!node.isLeaf()) return diff;
-      float cost = cCost + diff * (node.end - node.start) + newSA;
-      if (cost < bCost) {
-        bCost = cost;
-        bNodeID = nodeID;
-      }
-      return FLT_MAX;
-   };
-
-   auto nodeCost2 = [&](const uint nodeID) {
-      const auto &node = bvh2[nodeID];
-      float oldSA = node.bounds.area();
-      float newSA = merge(node.bounds, primBounds).area();
-      return node.isLeaf() ? FLT_MAX : newSA - oldSA;
-   };
-   
-   bool down = true;
-   while (true) {
-     const auto &cNode = bvh2[cNodeID];
-     if (down) {
-       const float leftCost = nodeCost(cNode.left);
-       const float rightCost = nodeCost(cNode.right);
-
-       const float minCost = min(leftCost, rightCost);
-       const int   minNodeIdx  = leftCost == minCost ? cNode.left : cNode.right;
-
-       if (cCost + minCost + leafCostBound < bCost) {
-         cNodeID = minNodeIdx;
-         cCost += minCost;
-       } else
-         down = false;
-     } else {
-       const auto pNodeID = cNode.parent;
-       if (pNodeID == 0x7fffffff) break;
-       const auto &pNode = bvh2[pNodeID];
-       const auto sNodeID = pNode.left == cNodeID ? pNode.right : pNode.left;
-       const auto &sNode = bvh2[sNodeID];
-       const auto dCost = nodeCost2(cNodeID);
-       const auto sCost = nodeCost2(sNodeID);
-
-       cCost -= dCost;
-
-       bool second = sCost > dCost || (sCost == dCost && pNode.left == cNodeID);
-       if (second && cCost + sCost + leafCostBound < bCost) {
-         cNodeID = sNodeID;
-         cCost += sCost;
-         down = true;
-       } else {
-         cNodeID = pNodeID;
-       }
-     }
-   }
-
-   return bNodeID;
-  }
-
- __forceinline uint FindBestNode4(const BuildParametersHW &params, const BuildContextHW &ctx, const int idx, const gpu::AABB *const aabb, const gpu::BVH2BuildRecord *const bvh2)
- {
-   const gpu::AABB3f primBounds = convert_AABB3f(aabb[idx]);
-   const float leafCostBound = primBounds.area();
-
-   float bCost = FLT_MAX, cCost = 0;
-   int bNodeID = -1, cNodeID = 0;
-   bool down = true;
-
-   auto nodeCost = [&](const uint nodeID) {
-      const auto &node = bvh2[nodeID];
-      float oldSA = node.bounds.area();
-      float newSA = merge(node.bounds, primBounds).area();
-      float diff = newSA - oldSA;
-      if (!node.isLeaf()) return diff;
-      if (down) {
-        float cost = cCost + diff * (node.end - node.start) + newSA;
-        if (cost < bCost) {
-          bCost = cost;
-          bNodeID = nodeID;
-        }
-      }
-      return FLT_MAX;
-   };
-
-   while (true) {
-     const auto pNodeID = cNodeID;
-     const auto *pNode = &bvh2[pNodeID];
-
-     if (!down) {
-       cNodeID = pNode->parent;
-       if (cNodeID == 0x7fffffff) break;
-     }
-
-     const auto *cNode = &bvh2[cNodeID];
-
-     const float leftCost = nodeCost(cNode->left);
-     const float rightCost = nodeCost(cNode->right);
-
-     if (down) {
-       const float minCost = min(leftCost, rightCost);
-       const int   minNodeIdx  = leftCost == minCost ? cNode->left : cNode->right;
-
-       if (cCost + minCost + leafCostBound < bCost) {
-         cNodeID = minNodeIdx;
-         cCost += minCost;
-       } else
-         down = false;
-     } else {
-       const auto sNodeID = cNode->left == pNodeID ? cNode->right : cNode->left;
-       const auto dCost = cNode->left == pNodeID ? leftCost : rightCost;
-       const auto sCost = cNode->left == pNodeID ? rightCost : leftCost;
-
-       cCost -= dCost;
-
-       bool second = sCost > dCost || (sCost == dCost && cNode->left == pNodeID);
-       if (second && cCost + sCost + leafCostBound < bCost) {
-         cNodeID = sNodeID;
-         cCost += sCost;
-         down = true;
-       }
-     }
-   }
-
-   return bNodeID;
-  }
-
-  // =================================================================================================================================================================================================
-  // ================================================================================= CHECK/CONVERT BVH2 ============================================================================================
-  // =================================================================================================================================================================================================
-
-  gpu::AABB3f checkBVH2Stoch2HW(gpu::BVH2BuildRecord *bvh_nodes, uint index,const uint *const primref_index,gpu::AABB *aabb,uint &nodes,uint &leaves,double &nodeSAH, double &leafSAH, const uint cfg_maxLeafSize)
-  {
-    gpu::AABB3f bounds;
-
-    if (bvh_nodes[index].isLeaf())
-    {      
-      leaves++;
-      bounds.init();
-      for (uint i=bvh_nodes[index].start;i<bvh_nodes[index].end;i++)
-      {
-        const gpu::AABB3f primBounds = convert_AABB3f( aabb[ primref_index[ i ]] );
-        bounds = merge(bounds, primBounds);
-        leafSAH += primBounds.area();
-      }
-    }
-    else
-    {
-      nodes++;
-      gpu::AABB3f lB = checkBVH2Stoch2HW(bvh_nodes,bvh_nodes[index].left,primref_index,aabb,nodes,leaves,nodeSAH,leafSAH,cfg_maxLeafSize);
-      gpu::AABB3f rB = checkBVH2Stoch2HW(bvh_nodes,bvh_nodes[index].right,primref_index,aabb,nodes,leaves,nodeSAH,leafSAH,cfg_maxLeafSize);
-      bounds = merge(lB, rB);
-      nodeSAH += bounds.area();
-    }
-    return bounds;
-  }
-
-
-    void checkBVH2StochHW_(gpu::BVH2BuildRecord *bvh_nodes, std::unordered_set<uint> &prims, uint index,const uint *const primref_index,gpu::AABB *aabb,uint &nodes,uint &leaves,double &nodeSAH, double &leafSAH, const uint cfg_maxLeafSize)
-  {
-    //PRINT3(index,bvh_nodes[index].isLeaf(),bvh_nodes[index]);
-    if (!bvh_nodes[index].bounds.isValid()) {
-      FATAL("invalid bounds in BVH2");
-    }
-
-    gpu::AABB3f bounds;
-    bounds.init();
-    if (bvh_nodes[index].isLeaf())
-    {      
-      for (uint i=bvh_nodes[index].start;i<bvh_nodes[index].end;i++)
-      {
-        if (prims.erase(primref_index[ i ]) != 1) FATAL("unknown primitive!");;
-        if (!bvh_nodes[index].bounds.encloses( convert_AABB3f( aabb[ primref_index[ i ]  ]))) FATAL("primitive not enclosed!");
-        bounds.extend(convert_AABB3f( aabb[ primref_index[ i ]  ]));
-      }
-      
-      leaves++;
-      for (uint i=bvh_nodes[index].start;i<bvh_nodes[index].end;i++)      
-        leafSAH +=  aabb[ primref_index[i] ].area();                    
-      if (bvh_nodes[index].bounds != bounds) FATAL("wrong leaf bounds!");
-    }
-    else
-    {
-      nodes++;
-      nodeSAH += bvh_nodes[index].bounds.area();
-
-      if (bvh_nodes[index].left != -1)
-      {
-        if (bvh_nodes[ bvh_nodes[index].left ].parent != index) FATAL("left child not pointing to parent!");
-        if(!bvh_nodes[index].bounds.encloses( bvh_nodes[ bvh_nodes[index].left ].bounds )) FATAL("left child not enclosed!");        
-        bounds.extend(bvh_nodes[ bvh_nodes[index].left ].bounds );
-        checkBVH2StochHW_(bvh_nodes,prims,bvh_nodes[index].left,primref_index,aabb,nodes,leaves,nodeSAH,leafSAH,cfg_maxLeafSize);
-      }
-      
-      if (bvh_nodes[index].right != -1)
-      {
-        if (bvh_nodes[ bvh_nodes[index].right ].parent != index) FATAL("right child not pointing to parent!");
-        if(!bvh_nodes[index].bounds.encloses( bvh_nodes[ bvh_nodes[index].right ].bounds )) FATAL("right child not enclosed!");        
-        bounds.extend(bvh_nodes[ bvh_nodes[index].right ].bounds );
-        checkBVH2StochHW_(bvh_nodes,prims,bvh_nodes[index].right,primref_index,aabb,nodes,leaves,nodeSAH,leafSAH,cfg_maxLeafSize);
-      }
-      if (bvh_nodes[index].bounds != bounds) FATAL("wrong inner bounds!");
-    }
-  }
-
-  void checkBVH2StochHW(gpu::Globals *globals, gpu::BVH2BuildRecord *bvh_nodes, uint numPrimitives, const uint *const primref_index, gpu::AABB *aabb, const uint cfg_maxLeafSize) {
-    uint nodes = 0;
-    uint leaves = 0;
-    double nodeSAH = 0;
-    double leafSAH = 0; 
-    std::unordered_set<uint32_t> set;
-    for (uint i = 0; i < numPrimitives; i++)
-      set.insert(i);
-    checkBVH2StochHW_(bvh_nodes,set,globals->rootIndex,primref_index,aabb,nodes,leaves,nodeSAH,leafSAH,cfg_maxLeafSize);
-    if (!set.empty())
-      FATAL("primitives missing!");
-    nodeSAH /= globals->geometryBounds.area();
-    leafSAH /= globals->geometryBounds.area();                
-    PRINT4(nodes,leaves,(float)nodeSAH,(float)leafSAH);
-  }
-
   // ===================================================================================================================================================================================
   // ================================================================================= BVH2 ============================================================================================
   // ===================================================================================================================================================================================
@@ -2109,40 +1425,6 @@ namespace embree
   StochReturn rthwifBuildStoch(DeviceGPU* deviceGPU, sycl::queue &gpu_queue, const uint numPrimitives, gpu::AABB *aabb)
   {
     PING;
-    /*
-    DeviceGPU* deviceGPU = dynamic_cast<DeviceGPU*>(scene->device);
-    assert(deviceGPU);
-    
-    size_t org_numPrimitives = 0;
-    for (size_t geomID = 0; geomID < scene->size(); geomID++)
-    {
-      if (GridMesh* mesh = scene->getSafe<GridMesh>(geomID))
-        org_numPrimitives += mesh->getNumTotalQuads(); // FIXME: slow
-      else
-        org_numPrimitives += scene->get(geomID)->size();
-    }
-
-    const size_t bytes = 2*4096 + org_numPrimitives*(3*64);
-    if (accel.size() < bytes) accel = std::move(Device::avector<char,64>(scene->device,bytes));
-    memset(accel.data(),0,accel.size());
-
-    FastAllocator alloc(scene->device, false, true, false);
-    alloc.addBlock(accel.data(),accel.size());
-
-    // FastAllocator::CachedAllocator thread_alloc = alloc.getCachedAllocator();
-    // thread_alloc.malloc0(128-FastAllocator::blockHeaderSize);
-
-    mvector<PrimRef> prims(scene->device,0);
-    prims.getAlloc().enableUSM(&deviceGPU->getGPUDevice(),&deviceGPU->getGPUContext(),&deviceGPU->getGPUQueue());	    
-    prims.resize(org_numPrimitives); 
-
-    //mvector<PrimRef> prims(scene->device,org_numPrimitives);
-    
-    PrimInfo pinfo = rthwifCreatePrimRefArrayStoch(scene,Geometry::MTY_ALL,false,org_numPrimitives,prims,scene->progressInterface);
-
-    const uint numPrimitives = pinfo.size();
-    PRINT2(org_numPrimitives,numPrimitives);
-    */
     
     const int maxWorkGroupSize = deviceGPU->getGPUMaxWorkGroupSize();
 
@@ -2253,8 +1535,7 @@ namespace embree
     ctx.morton_codes[0] = morton_codes[0];
     ctx.morton_codes[1] = morton_codes[1];
     ctx.wgBuildState = wgBuildState;
-    ctx.wgTaskState = wgTaskState;        
-    //std::memcpy(ctx.sobolMatrix, sobol::Matrices::matrices, sizeof(uint)*sobol::Matrices::num_dimensions*sobol::Matrices::size);
+    ctx.wgTaskState = wgTaskState;
 
     // === DUMMY KERNEL TO TRIGGER USM TRANSFER ===
     {	  
@@ -2516,7 +1797,6 @@ namespace embree
     // === initialize nPrimitives ===
     // ==============================
     
-#if 1        
     {
       const uint wgSize = 256;
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) { //7
@@ -2529,25 +1809,14 @@ namespace embree
                                                   });
       ectx.clusterInitNPrimitives = queue_event;
     }
-#else        
-    gpu::waitOnQueueAndCatchException(gpu_queue);
-    for (int i = 0; i < numTopLevelNodes; i++)
-      ctx.leafPrimitiveRanges[i] = gpu::Range(0,0);
-#endif
-    
-#if 1
+
     {
       const uint wgSize = 32;
       const sycl::nd_range<1> nd_range1(sycl::range<1>(gpu::alignTo(numTopLevelNodes,wgSize)),sycl::range<1>(wgSize)); 
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) { //8
                                                     cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(32)
                                                                     {
-#if STABLE_ORDER && COHERENT_SUBSET                                                                                                                  
                                                                       const gpu::AABB *const aabb  = ctx.subsetAABB;
-#else
-                                                                      const gpu::AABB *const aabb  = ctx.aabb;
-#endif
-
                                                                       const uint nodeID     = item.get_global_id(0);
                                                                       if (nodeID < numTopLevelNodes && bvh2[nodeID].isLeaf())
                                                                       {
@@ -2591,10 +1860,6 @@ namespace embree
                                                   });
       ectx.clusterTopRefit = queue_event;
     }
-#else
-    gpu::waitOnQueueAndCatchException(gpu_queue);        
-    refitGeometryBoundsCalculateSAHHW(bvh2,0,primref_index,aabb);
-#endif
 
     // =================================================================================                
     // write node selection of subset primitives into original index
@@ -2602,7 +1867,6 @@ namespace embree
     // parallel for each leaf node?
     // ===============================================================================        
 
-#if 1
     {
       const uint wgSize = 256;
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) { //9
@@ -2615,13 +1879,7 @@ namespace embree
                                                   });
       ectx.clusterInitNodeSelection = queue_event;
     }
-#else        
-    gpu::waitOnQueueAndCatchException(gpu_queue);      
-    for (int i = 0; i < ctx.size; i++) ctx.nodeSelections[i] = -1;
-#endif        
 
-
-#if 1
     {
       const uint wgSize = 256;
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) { //10
@@ -2635,11 +1893,7 @@ namespace embree
                                                             for (uint j=bvh2[i].start;j<bvh2[i].end;j++)
                                                             {
                                                               const uint index = primref_index0[j];
-#if STABLE_ORDER && COHERENT_SUBSET
                                                               ctx.subsetNodeSelections[index] = i;
-#else
-                                                              ctx.nodeSelections[index] = i;
-#endif
                                                             }
                                                             ctx.leafPrimitiveRanges[i].start+=bvh2[i].size();
                                                           }
@@ -2647,99 +1901,12 @@ namespace embree
                                                       });		  
                                                   });
       ectx.clusterWriteSubsetPrimSelection = queue_event;
-    }        
-#else        
-    gpu::waitOnQueueAndCatchException(gpu_queue);      
-    for (uint i=0;i<numTopLevelNodes;i++)
-      if (bvh2[i].isLeaf())
-      {
-        for (uint j=bvh2[i].start;j<bvh2[i].end;j++)
-        {
-          const uint index = primref_index0[j];
-          ctx.nodeSelections[index] = i;
-        }
-        ctx.leafPrimitiveRanges[i].start+=bvh2[i].size();
-      }
-#endif        
-
-#if MORTON_SORT
-#if !STABLE_ORDER
-    // ====================================================================================================
-    // exclusive prefix sum over indicator function of primitives (whether primitive is a subset primitive)
-    // needed by the morton search
-    // ====================================================================================================
-
-#if 1
-    {
-      const uint wgSize = 256;
-      sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) { //11
-                                                    const sycl::nd_range<1> nd_range(sycl::range<1>(gpu::alignTo(ctx.size,wgSize)),sycl::range<1>(wgSize));                                                        
-                                                    cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(32) {
-                                                        const uint i = item.get_global_id(0);
-                                                        if (i < ctx.size)
-                                                          ctx.closestSubsetPrimitive[i] = ctx.subsetSelection[i];
-                                                      });		  
-                                                  });
-      ectx.clusterWriteClosestSubsetPrimitive = queue_event;
-    }        
-    
-    auto events = exclusive_prefix_sum2<uint>(gpu_queue,(uint*)ctx.closestSubsetPrimitive,ctx.size,(uint*)scratch_mem);
-    ectx.clusterMortonWindowPSumLocal = events.first;
-    ectx.clusterMortonWindowPSumGlobal = events.second;
-#else        
-    gpu::waitOnQueueAndCatchException(gpu_queue);      
-    {
-      int j = 0;
-      for (int i = 0; i < ctx.size; i++) {
-        ctx.closestSubsetPrimitive[i] = j;
-        if (ctx.subsetSelection[i] != 0) j++;
-      }
-    }
-#endif
-#endif
-
-
-    // ==================================================        
-    // write subset node selections into compacted array
-    // parallel for each primitive
-    // ==================================================
-
-#if !(STABLE_ORDER && COHERENT_SUBSET)
-#if 1
-    {
-      const uint wgSize = 256;
-      sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) { //12
-                                                    const sycl::nd_range<1> nd_range(sycl::range<1>(gpu::alignTo(ctx.size,wgSize)),sycl::range<1>(wgSize));                                                        
-                                                    cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(32) {
-                                                        const uint i = item.get_global_id(0);
-                                                        if (i < ctx.size)
-                                                        {
-                                                          if (ctx.subsetSelection[i] != 0) {
-                                                            int j = ctx.closestSubsetPrimitive[i];
-                                                            ctx.subsetNodeSelections[j] = ctx.nodeSelections[ctx.mc0[i].getIndex()];
-                                                          }                                                             
-                                                        }
-                                                      });		  
-                                                  });
-      ectx.clusterWriteSubsetNodeSelection = queue_event;
-    }        
-#else        
-    gpu::waitOnQueueAndCatchException(gpu_queue);      
-    for (int i = 0; i < ctx.size; i++) {
-      if (ctx.subsetSelection[i] != 0) {
-        int j = ctx.closestSubsetPrimitive[i] - 1;
-        ctx.subsetNodeSelections[j] = ctx.nodeSelections[ctx.bvhPrimitives[i].primitiveNumber];
-      }
-    }
-#endif
-#endif
-#endif
+    }     
 
     // ===========================
     // insert primitives into BVH
     // ===========================
     
-#if 1
     {
       const uint wgSize = 16;
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) { //13
@@ -2749,51 +1916,30 @@ namespace embree
                                                         if (i < ctx.size)
                                                         {
                                                           int subsetPrimitiveIdx = ctx.closestSubsetPrimitive[i];
-#if MORTON_SORT
                                                           const uint primID = ctx.mc0[i].getIndex();
-#else
-                                                          const uint primID = i;
-#endif
                                                           if (ctx.subsetSelection[i] == 0)
                                                           {
-#if MORTON_SORT
-                                                          uint nodeID = FindBestNode(params, ctx, i, primID, aabb, bvh2);
-#else
-                                                          uint nodeID = FindBestNode3(params, ctx, i, aabb, bvh2);
-#endif
-                                                          ctx.nodeSelections[primID] = nodeID;              
-                                                          //ctx.leafPrimitiveRanges[nodeID].start++;
-                                                          gpu::atomic_add_global<uint>(&ctx.leafPrimitiveRanges[nodeID].start,1);
+                                                            uint nodeID = FindBestNode(params, ctx, i, primID, aabb, bvh2);
+                                                            ctx.nodeSelections[primID] = nodeID;              
+                                                            //ctx.leafPrimitiveRanges[nodeID].start++;
+                                                            gpu::atomic_add_global<uint>(&ctx.leafPrimitiveRanges[nodeID].start,1);
                                                           }
-#if STABLE_ORDER && COHERENT_SUBSET
+
                                                           else {
                                                             auto selection = ctx.subsetNodeSelections[subsetPrimitiveIdx];
                                                             ctx.nodeSelections[primID] = selection;
                                                           }
-#endif
+
                                                         }
                                                       });		  
                                                   });
       ectx.clusterFindBestNode = queue_event;
-    }        
-#else        
-    gpu::waitOnQueueAndCatchException(gpu_queue);
-    for (int i = 0; i < ctx.size; i++) {
-      {
-        if (ctx.subsetSelection[i] != 0) continue;              
-        uint nodeID = FindBestNode(params, &ctx, i, aabb, bvh2);
-        //PRINT5(i,nodeID,bvh2[nodeID].isLeaf(),ctx.nodeSelections[i],ctx.subsetSelection[i]);
-        ctx.nodeSelections[ctx.bvhPrimitives[i].primitiveNumber] = nodeID;              
-        ctx.leafPrimitiveRanges[nodeID].start++;
-      }
     }
-#endif
 
     // ================================================================================================        
     // exclusive prefix sum over primitive counts of leaf nodes (they are offsets after the prefix sum)
     // ================================================================================================
 
-#if 1 // TODO
     {
       const uint wgSize = 256;
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) { //14
@@ -2828,22 +1974,11 @@ namespace embree
       gpu::waitOnQueueAndCatchException(gpu_queue);      
       ectx.clusterWriteLeafPrimitiveRanges = queue_event;
     }
-#else        
-    uint acc = 0;        
-    for (uint i=0;i<numTopLevelNodes;i++)
-    {
-      //PRINT2(i,acc);
-      const uint tmp = ctx.leafPrimitiveRanges[i].start;
-      ctx.leafPrimitiveRanges[i].start = acc;
-      ctx.leafPrimitiveRanges[i].end   = acc; // + tmp;          
-      acc += tmp;
-    }
-#endif
+
     // =====================================        
     // reorder primitives into scratch space
     // =====================================
 
-#if 1
     {
       const uint wgSize = 256;
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) { //16
@@ -2852,11 +1987,7 @@ namespace embree
                                                         const uint i = item.get_global_id(0);
                                                         if (i < ctx.size)
                                                         {
-#if MORTON_SORT
                                                           uint primID = ctx.mc0[i].getIndex();
-#else
-                                                          uint primID = i;
-#endif
                                                           uint nodeID = ctx.nodeSelections[primID];
                                                           uint endID = gpu::atomic_add_global<uint>(&ctx.leafPrimitiveRanges[nodeID].end,1);
                                                           primref_index0[endID] = primID;
@@ -2865,28 +1996,11 @@ namespace embree
                                                   });
       ectx.clusterReorder = queue_event;
     }               
-#else        
-    gpu::waitOnQueueAndCatchException(gpu_queue);      
-    for (int i = 0; i < ctx.size; i++) {
-      uint primID = ctx.bvhPrimitives[i].primitiveNumber;
-      uint nodeID = ctx.nodeSelections[primID];
-      primref_index0[ctx.leafPrimitiveRanges[nodeID].end++] = primID;
-    }
-#endif
-
-    // for (uint i=0;i<numTopLevelNodes;i++)
-    //   if (ctx.leafPrimitiveRanges[i].size() > 0)
-    //   {
-    //     PRINT5(i,ctx.leafPrimitiveRanges[i].start,ctx.leafPrimitiveRanges[i].end,ctx.leafPrimitiveRanges[i].size(),bvh2[i].isLeaf());
-        // for (uint j=ctx.leafPrimitiveRanges[i].start;j<ctx.leafPrimitiveRanges[i].end;j++)
-        //   PRINT2(j,primref_index[j]);
-      // }
 
     // ===========================================================================        
     // === recompute centroid bounds per range and reset buildrecord/bvh2 node ===
     // ===========================================================================
 
-#if 1
     {
       const uint wgSize = 16;
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) { //17
@@ -2916,26 +2030,6 @@ namespace embree
                                                   });
       ectx.clusterUpdateCentroidBounds = queue_event;
     }               
-#else        
-    gpu::waitOnQueueAndCatchException(gpu_queue);      
-    for (uint i=0;i<numTopLevelNodes;i++)
-    {
-      if (ctx.leafPrimitiveRanges[i].size() > 0)
-      {
-        gpu::BVH2BuildRecord &current = bvh2[i];
-        assert(current.isLeaf());
-        
-        current.bounds.init();
-        current.start  = ctx.leafPrimitiveRanges[i].start;
-        current.end    = ctx.leafPrimitiveRanges[i].end;
-        current.left   = -1;
-        current.right  = -1;
-        
-        for (uint j=current.start;j<current.end;j++)
-          current.bounds.extend(convert_AABB3f(aabb[primref_index0[j]]).centroid2());
-      }          
-    }        
-#endif
 
     gpu::waitOnQueueAndCatchException(gpu_queue);    
     ectx.clusterEnd = getSeconds();
@@ -3011,16 +2105,10 @@ namespace embree
     // === build BVH2 over all top-level ranges ===
     // ============================================
 
-    //globals->sched = 0;
-    //globals->numWGs = 0;
-    //globals->sync = 0;
-
-    resetPhistStochHW(gpu_queue, ctx.phist);
-
     {
       const uint sizeWG = 16;        
       assert(numPrimitives > cfg_maxLeafSize_BottomLevel);
-      sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) { //18
+      sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
                                                     const sycl::nd_range<1> nd_range(sycl::range<1>(numTopLevelNodes*sizeWG),sycl::range<1>(sizeWG));		  
                                                     /* local variables */
                                                     sycl::local_accessor< uint           , 0> _atomicCountLeft(cgh);
@@ -3039,21 +2127,14 @@ namespace embree
                                                         
                                                         if (bvh2[recordID].isLeaf() && bvh2[recordID].size() > cfg_maxLeafSize_BottomLevel)
                                                         {
-                                                          //if (localID == 0) gpu::atomic_add_global<uint>(&globals->sched,1);
                                                           uint sindex = 1;
                                                           stack[0] = recordID;
 
-                                                          //uint prims = 0;
-                                                          //uint its = 0;
                                                           while(sindex)
                                                           {
-                                                            //prims += bvh2[recordID].size();
-                                                            //its++;
                                                             sindex--;                                                               
                                                             const uint ID = stack[sindex];
                                                             gpu::BVH2BuildRecord &current = bvh2[ID];
-                                                            if (localID == 0)
-                                                            writePHistStochHW(ctx.phist, ctx.bvh2, ID);
                                                             
                                                             const uint parentID = ID;
                                                             const uint startID = current.start;
@@ -3088,36 +2169,16 @@ namespace embree
                                                             if (endID - split_position  > cfg_maxLeafSize_BottomLevel)
                                                               stack[sindex++] = bvh2_index+1;                                                               
                                                           }                                                             
-                                                        
-                                                          //if (localID == 0) gpu::atomic_add_global<uint>(&globals->numWGs,its);
-                                                          //if (localID == 0) gpu::atomic_add_global<uint>(&globals->sync,prims);
                                                         }
-                                                                                                                                                                        
-
                                                       });		  
                                                   });
       ectx.bottom = queue_event;
       ectx.refit = queue_event;
     }
 
-    printresetPhistStochHW("c", gpu_queue, ctx.phist);
-
     gpu::waitOnQueueAndCatchException(gpu_queue);        
     ectx.bottomEnd = getSeconds();
     const uint numBVH2Nodes = globals->bvh2_index_allocator;
-
-    /*{
-      uint initial = globals->sched;
-      uint processed = globals->numWGs;
-      float ratio = (float)processed/(float)initial;
-      uint prims = globals->sync;
-      PRINT4(initial, processed, ratio, prims);
-      globals->sched = 0;
-      globals->numWGs = 0;
-    }*/
-    PRINT(numBVH2Nodes);
-
-
 
     /* --- bottom-up BVH2 refit --- */
 #if 1
@@ -3193,53 +2254,7 @@ namespace embree
     // ================================= CHECK BVH2 ====================================
     // =================================================================================
     
-    checkBVH2StochHW(globals,bvh2,numPrimitives,primref_index,aabb,cfg_maxLeafSize_BottomLevel);
-    
-    //if (unlikely(deviceGPU->verbosity(2)))
-      std::cout << "BVH GPU Stochastic Builder DONE in " << 1000.*total_diff << " ms : " << numPrimitives*0.000001f/total_diff << " MPrims/s " << std::endl << std::flush;
-    /*
-    PRINT2(globals->bvh2_index_allocator,numPrimitives);
-        
-    if( globals->bvh2_index_allocator >= 2*numPrimitives)
-      FATAL("ALLOCATOR");
-
-    // ==========================================================
-    // ==========================================================
-
-    alloc.clear();
-    QBVH6::SizeEstimate sizeEstimate(node_size,leaf_size,0);
-    PRINT(pinfo.geomBounds);
-    PRINT(sizeEstimate);
-    QBVH6* qbvh = new (accel.data()) QBVH6(sizeEstimate, 6);
-    qbvh->numPrims = org_numPrimitives;
-    qbvh->bounds = pinfo.geomBounds;
-
-    PRINT(numPrimitives);
-    PRINT(qbvh->sizeNodeMem());
-    PRINT(qbvh->sizeNodeMem()/64);    
-    PRINT(qbvh->sizeLeafMem());
-    PRINT(qbvh->sizeLeafMem()/64);
-    
-    
-    char* root_node = qbvh->allocNode(sizeof(QBVH6::InternalNode6));    
-    qbvh->rootNodeOffset = QBVH6::Node((char*)(root_node - (char*)qbvh), NODE_TYPE_INTERNAL, 0);
-    PRINT(qbvh->rootNodeOffset);
-    
-    //convertBVH2toQBVH6_Stoch(scene,qbvh,root_node,bvh2,ctx.leafPrimitiveRanges,globals->rootIndex,primref_index,prims.data(),nullptr,settings2);
-    //convertBVH2toQBVH6_new(scene,qbvh,root_node,bvh2,globals->rootIndex,bvh2_subtree_size,prims.data(),settings,numPrimitives);
-
-    qbvh->computeStatistics();
-    BVHStatistics::instance.print(std::cout);
-    qbvh->print();
-
-    
-    if (deviceGPU) {
-      HWAccel* hwaccel = (HWAccel*) accel.data();
-      hwaccel->dispatchGlobalsPtr = (uint64_t) deviceGPU->dispatchGlobalsPtr;
-    }
-    
-    return pinfo.geomBounds;
-    */
+    std::cout << "BVH GPU Stochastic Builder DONE in " << 1000.*total_diff << " ms : " << numPrimitives*0.000001f/total_diff << " MPrims/s " << std::endl << std::flush;
 
 
     StochReturn ret;
@@ -3249,17 +2264,5 @@ namespace embree
 
     return ret;
   }
-
-  /************************************************************************************/
-  /************************************************************************************/
-  /************************************************************************************/
-  /************************************************************************************/
-
-
-
-  /************************************************************************************/
-  /************************************************************************************/
-  /************************************************************************************/
-  /************************************************************************************/    
 }  
 #endif
