@@ -12,13 +12,6 @@ namespace embree
 
   static std::unique_ptr<tbb::task_arena> g_arena;
   
-  typedef enum _ze_raytracing_accel_format_internal_t {
-    ZE_RTAS_DEVICE_FORMAT_EXP_INVALID = 0,      // invalid acceleration structure format
-    ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1 = 1, // acceleration structure format version 1
-    ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_2 = 2, // acceleration structure format version 2
-    ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_MAX = 2
-  } ze_raytracing_accel_format_internal_t;
-  
   inline ze_rtas_triangle_indices_uint32_exp_t getPrimitive(const ze_rtas_builder_triangles_geometry_info_exp_t* geom, uint32_t primID) {
     assert(primID < geom->triangleCount);
     return *(ze_rtas_triangle_indices_uint32_exp_t*)((char*)geom->pTriangleBuffer + uint64_t(primID)*geom->triangleStride);
@@ -491,7 +484,7 @@ namespace embree
     if (dg2 || pvc) {
       pProperties->rtasFormat = (ze_rtas_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1;
       return ZE_RESULT_SUCCESS;
-    }        
+    }
 
     return ZE_RESULT_ERROR_UNKNOWN;
 
@@ -566,7 +559,7 @@ namespace embree
     size_t expectedBytes = 0;
     size_t worstCaseBytes = 0;
     size_t scratchBytes = 0;
-    QBVH6BuilderSAH::estimateSize(numGeometries, getSize, getType, args->buildQuality, args->buildFlags, expectedBytes, worstCaseBytes, scratchBytes);
+    QBVH6BuilderSAH::estimateSize(numGeometries, getSize, getType, args->rtasFormat, args->buildQuality, args->buildFlags, expectedBytes, worstCaseBytes, scratchBytes);
     
     /* fill return struct */
     pProp->flags = 0;
@@ -707,7 +700,7 @@ namespace embree
                            (char*)pRtasBuffer, rtasBufferSizeBytes,
                            pScratchBuffer, scratchBufferSizeBytes,
                            (BBox3f*) pBounds, pRtasBufferSizeBytes,
-                           args->buildQuality, args->buildFlags, verbose, dispatchGlobalsPtr);
+                           args->rtasFormat, args->buildQuality, args->buildFlags, verbose, dispatchGlobalsPtr);
     if (!success) {
       return ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY;
     }

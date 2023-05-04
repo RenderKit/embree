@@ -21,7 +21,14 @@ namespace embree
   inline constexpr size_t roundOffsetTo128(size_t offset) {
     return 2 * ((offset + 127) / 128);
   }
-  
+
+  typedef enum _ze_raytracing_accel_format_internal_t {
+    ZE_RTAS_DEVICE_FORMAT_EXP_INVALID = 0,      // invalid acceleration structure format
+    ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1 = 1, // acceleration structure format version 1
+    ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_2 = 2, // acceleration structure format version 2
+    ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_MAX = 2
+  } ze_raytracing_accel_format_internal_t;
+    
   struct QBVH6
   {
     typedef NodeRef Node;
@@ -125,11 +132,6 @@ namespace embree
     /* calculates BVH statistics */
     BVHStatistics computeStatistics() const;
 
-    template<typename QInternalNode>
-    void calculateInternalNodeRelocationData(QBVH6::Node node, uint32_t myid, std::map<QBVH6*, uint32_t>& id, std::map<uint64_t, QBVH6*>& link2bvh, std::vector<std::vector<uint64_t>>& relocationData);
-    void calculateRelocationData(QBVH6::Node node, uint32_t myid, std::map<QBVH6*, uint32_t>& id, std::map<uint64_t, QBVH6*>& link2bvh, std::vector<std::vector<uint64_t>>& relocationData);
-    void calculateRelocationData(std::map<QBVH6*, uint32_t>& id, std::map<uint64_t, QBVH6*>& link2bvh, std::vector<std::vector<uint64_t>>& relocationData);
-
     /*
        This section implements a simple allocator for BVH data. The
        BVH data is separated into two section, a section where nodes
@@ -211,7 +213,8 @@ namespace embree
     }
 
   public:
-    uint64_t reserved1;
+    ze_raytracing_accel_format_internal_t rtas_format = ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1;
+    uint32_t reserved1;
     BBox3f bounds;                  // bounding box of the BVH
 
     uint32_t nodeDataStart;         // first 64 byte block of node data

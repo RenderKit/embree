@@ -3,7 +3,15 @@
 
 #pragma once
 
-#include "rttrace_internal.h"
+#include <cstdint>
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#pragma clang diagnostic ignored "-W#pragma-messages"
+
+#include <sycl/sycl.hpp>
+
+#pragma clang diagnostic pop
 
 enum intel_ray_flags_t
 {
@@ -30,16 +38,6 @@ enum intel_raytracing_ext_flag_t
 {
   intel_raytracing_ext_flag_ray_query   = 1 << 0,        // true if ray queries are supported
 };
-
-// opaque types
-struct intel_ray_query_t {
-  void* opaque0; void* opaque1; void* opaque2; uint32_t ctrl; uint32_t bvh_level;
-  MemHit& hit(intel_hit_type_t ty) {
-    struct RTStack* rtStack = (struct RTStack*) opaque2;
-    return rtStack->hit[ty];
-  }
-};
-typedef __attribute__((opencl_global )) struct intel_raytracing_acceleration_structure_opaque_t* intel_raytracing_acceleration_structure_t;
 
 struct intel_float2
 {
@@ -88,6 +86,18 @@ struct intel_ray_desc_t
   unsigned int mask;
   intel_ray_flags_t flags;
 };
+
+#include "rttrace_internal.h"
+
+// opaque types
+struct intel_ray_query_t {
+  void* opaque0; void* opaque1; void* opaque2; uint32_t ctrl; uint32_t bvh_level;
+  MemHit& hit(intel_hit_type_t ty) {
+    struct RTStack* rtStack = (struct RTStack*) opaque2;
+    return rtStack->hit[ty];
+  }
+};
+typedef __attribute__((opencl_global )) struct intel_raytracing_acceleration_structure_opaque_t* intel_raytracing_acceleration_structure_t;
 
 // check supported ray tracing features
 SYCL_EXTERNAL intel_raytracing_ext_flag_t intel_get_raytracing_ext_flag();

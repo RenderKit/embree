@@ -37,33 +37,16 @@ SYCL_EXTERNAL intel_ray_query_t intel_ray_query_init(intel_ray_desc_t ray, intel
   struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)intel_get_rt_stack( (rtglobals_t)dispatchGlobalsPtr )).get();
 
   /* init ray */
-  rtStack->ray[bvh_level].org[0] = ray.origin.x;
-  rtStack->ray[bvh_level].org[1] = ray.origin.y;
-  rtStack->ray[bvh_level].org[2] = ray.origin.z;
-  rtStack->ray[bvh_level].dir[0] = ray.direction.x;
-  rtStack->ray[bvh_level].dir[1] = ray.direction.y;
-  rtStack->ray[bvh_level].dir[2] = ray.direction.z;
-  rtStack->ray[bvh_level].tnear  = ray.tmin;
-  rtStack->ray[bvh_level].tfar   = ray.tmax;
-  rtStack->ray[bvh_level].rootNodePtr = (uint64_t)accel + QBVH6_rootNodeOffset;
-  rtStack->ray[bvh_level].rayFlags = ray.flags;
-  rtStack->ray[bvh_level].hitGroupSRBasePtr = 0;
-  rtStack->ray[bvh_level].hitGroupSRStride = 0;
-  rtStack->ray[bvh_level].missSRPtr = 0;
-  rtStack->ray[bvh_level].pad0 = 0;
-  rtStack->ray[bvh_level].shaderIndexMultiplier = 0;
-  rtStack->ray[bvh_level].instLeafPtr = 0;
-  rtStack->ray[bvh_level].rayMask = ray.mask;
-  rtStack->ray[bvh_level].pad1 = 0;
+  rtStack->ray[bvh_level].init(ray,(uint64_t)accel + QBVH6_rootNodeOffset);
   
-  rtStack->committedHit.t  = INFINITY;
-  rtStack->committedHit.u  = 0.0f;
-  rtStack->committedHit.v  = 0.0f;
+  rtStack->committedHit.setT(INFINITY);
+  rtStack->committedHit.setU(0.0f);
+  rtStack->committedHit.setV(0.0f);
   rtStack->committedHit.data = 0;
 
-  rtStack->potentialHit.t  = INFINITY;
-  rtStack->potentialHit.u  = 0.0f;
-  rtStack->potentialHit.v  = 0.0f;
+  rtStack->potentialHit.setT(INFINITY);
+  rtStack->potentialHit.setU(0.0f);
+  rtStack->potentialHit.setV(0.0f);
   rtStack->potentialHit.data = 0;
   rtStack->potentialHit.done = 1;
   rtStack->potentialHit.valid = 1;
@@ -78,24 +61,7 @@ SYCL_EXTERNAL void intel_ray_query_forward_ray( intel_ray_query_t& query, intel_
 
   /* init ray */
   unsigned int bvh_level = query.bvh_level+1;
-  rtStack->ray[bvh_level].org[0] = ray.origin.x;
-  rtStack->ray[bvh_level].org[1] = ray.origin.y;
-  rtStack->ray[bvh_level].org[2] = ray.origin.z;
-  rtStack->ray[bvh_level].dir[0] = ray.direction.x;
-  rtStack->ray[bvh_level].dir[1] = ray.direction.y;
-  rtStack->ray[bvh_level].dir[2] = ray.direction.z;
-  rtStack->ray[bvh_level].tnear  = ray.tmin;
-  rtStack->ray[bvh_level].tfar   = ray.tmax;
-  rtStack->ray[bvh_level].rootNodePtr = (uint64_t)accel + QBVH6_rootNodeOffset;
-  rtStack->ray[bvh_level].rayFlags = ray.flags;
-  rtStack->ray[bvh_level].hitGroupSRBasePtr = 0;
-  rtStack->ray[bvh_level].hitGroupSRStride = 0;
-  rtStack->ray[bvh_level].missSRPtr = 0;
-  rtStack->ray[bvh_level].pad0 = 0;
-  rtStack->ray[bvh_level].shaderIndexMultiplier = 0;
-  rtStack->ray[bvh_level].instLeafPtr = 0;
-  rtStack->ray[bvh_level].rayMask = ray.mask;
-  rtStack->ray[bvh_level].pad1 = 0;
+  rtStack->ray[bvh_level].init(ray,(uint64_t)accel + QBVH6_rootNodeOffset);
   query = { nullptr, query.opaque1, query.opaque2, TRACE_RAY_INSTANCE, bvh_level };
 }
 
@@ -120,9 +86,9 @@ SYCL_EXTERNAL void intel_ray_query_commit_potential_hit_override( intel_ray_quer
   //struct RTStack* rtStack = (struct RTStack*) query.opaque2;  
   struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)query.opaque2).get();
   
-  rtStack->potentialHit.t = override_hit_distance;
-  rtStack->potentialHit.u = override_uv.x;
-  rtStack->potentialHit.v = override_uv.y;
+  rtStack->potentialHit.setT(override_hit_distance);
+  rtStack->potentialHit.setU(override_uv.x);
+  rtStack->potentialHit.setV(override_uv.y);
   intel_ray_query_commit_potential_hit(query);
 }
 
@@ -172,11 +138,11 @@ SYCL_EXTERNAL unsigned int intel_get_hit_bvh_level( intel_ray_query_t& query, in
 }
 
 SYCL_EXTERNAL float intel_get_hit_distance( intel_ray_query_t& query, intel_hit_type_t hit_type ) {
-  return query.hit(hit_type).t;
+  return query.hit(hit_type).getT();
 }
 
 SYCL_EXTERNAL intel_float2 intel_get_hit_barycentrics( intel_ray_query_t& query, intel_hit_type_t hit_type ) {
-  return { query.hit(hit_type).u, query.hit(hit_type).v };
+  return { query.hit(hit_type).getU(), query.hit(hit_type).getV() };
 }
 
 SYCL_EXTERNAL bool intel_get_hit_front_face( intel_ray_query_t& query, intel_hit_type_t hit_type ) {
