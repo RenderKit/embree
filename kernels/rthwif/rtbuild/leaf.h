@@ -20,6 +20,8 @@
 #include "../../../common/math/affinespace.h"
 #endif
 
+#include "node_type.h"
+
 #include <map>
 #include <bitset>
 
@@ -519,6 +521,7 @@ namespace embree
   };
 
   static_assert(sizeof(InstanceLeaf) == 128, "InstanceLeaf must be 128 bytes large");
+
 
   /*
     Leaf type for procedural geometry. This leaf only contains the

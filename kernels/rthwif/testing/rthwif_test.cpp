@@ -1867,7 +1867,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
 #if defined(ZE_RAYTRACING_RT_SIMULATION)
     tbb::parallel_for(size_t(0),numTests, [&](size_t i) {
       render(i,in[i],out_test[i],accel);
-    });
+     });
 #else
     queue.submit([&](sycl::handler& cgh) {
                    const sycl::range<1> range(numTests);
