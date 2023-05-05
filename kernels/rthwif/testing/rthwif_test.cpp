@@ -1178,6 +1178,8 @@ struct Scene
 #else        
     std::vector<GEOMETRY_DESC> desc(size());
     std::vector<const ze_rtas_builder_geometry_info_exp_t*> geom(size());
+#endif
+    
     size_t numPrimitives = 0;
     for (size_t geomID=0; geomID<size(); geomID++)
     {
