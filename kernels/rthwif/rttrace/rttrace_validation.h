@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "rthwif_internal.h"
+#include "rttrace_internal.h"
 
 enum intel_ray_flags_t
 {

@@ -6,7 +6,12 @@
 #include "gpu/morton.h"
 #include <memory>
 #include "../../common/scene.h" 
-#include "rthwif_builder.h"
+#include "../../sycl/rthwif_embree.h"
+
+#define RTHWIF_EXPORT_API
+
+#include "ze_rtas.h"
+#include "rtbuild.h"
 
 
 #if defined(EMBREE_SYCL_SUPPORT)
@@ -458,31 +463,31 @@ namespace embree
   // ===================================================================================================================================================================================
 
 
-  __forceinline const _ze_raytracing_triangle_indices_uint32_ext_t &getTriangleDesc(const  _ze_raytracing_geometry_triangles_ext_desc_t& mesh, const unsigned int triID)
+  __forceinline const ze_rtas_triangle_indices_uint32_exp_t &getTriangleDesc(const  ze_rtas_builder_triangles_geometry_info_exp_t& mesh, const unsigned int triID)
   {
-    return *(_ze_raytracing_triangle_indices_uint32_ext_t*)((char*)mesh.triangleBuffer + mesh.triangleStride * uint64_t(triID));    
+    return *(ze_rtas_triangle_indices_uint32_exp_t*)((char*)mesh.pTriangleBuffer + mesh.triangleStride * uint64_t(triID));    
   }
 
-  __forceinline const _ze_raytracing_quad_indices_uint32_ext_t &getQuadDesc(const _ze_raytracing_geometry_quads_ext_desc_t& mesh, const unsigned int triID)
+  __forceinline const ze_rtas_quad_indices_uint32_exp_t &getQuadDesc(const ze_rtas_builder_quads_geometry_info_exp_t& mesh, const unsigned int triID)
   {
-    return *(_ze_raytracing_quad_indices_uint32_ext_t*)((char*)mesh.quadBuffer + mesh.quadStride * uint64_t(triID));    
+    return *(ze_rtas_quad_indices_uint32_exp_t*)((char*)mesh.pQuadBuffer + mesh.quadStride * uint64_t(triID));    
   }
     
-  __forceinline Vec3f getVec3f(const  _ze_raytracing_geometry_triangles_ext_desc_t& mesh, const unsigned int vtxID)
+  __forceinline Vec3f getVec3f(const  ze_rtas_builder_triangles_geometry_info_exp_t& mesh, const unsigned int vtxID)
   {
-    return *(Vec3f*)((char*)mesh.vertexBuffer + mesh.vertexStride * uint64_t(vtxID));
+    return *(Vec3f*)((char*)mesh.pVertexBuffer + mesh.vertexStride * uint64_t(vtxID));
     
   }
 
-  __forceinline Vec3f getVec3f(const _ze_raytracing_geometry_quads_ext_desc_t& mesh, const unsigned int vtxID)
+  __forceinline Vec3f getVec3f(const ze_rtas_builder_quads_geometry_info_exp_t& mesh, const unsigned int vtxID)
   {
-    return *(Vec3f*)((char*)mesh.vertexBuffer + mesh.vertexStride * uint64_t(vtxID));
+    return *(Vec3f*)((char*)mesh.pVertexBuffer + mesh.vertexStride * uint64_t(vtxID));
     
   }
     
-  __forceinline bool isValidTriangle(const  _ze_raytracing_geometry_triangles_ext_desc_t& mesh, const unsigned int i, uint3 &indices, gpu::AABB3f &bounds)
+  __forceinline bool isValidTriangle(const  ze_rtas_builder_triangles_geometry_info_exp_t& mesh, const unsigned int i, uint3 &indices, gpu::AABB3f &bounds)
   {
-    const _ze_raytracing_triangle_indices_uint32_ext_t &tri = getTriangleDesc(mesh,i);
+    const ze_rtas_triangle_indices_uint32_exp_t &tri = getTriangleDesc(mesh,i);
     const unsigned int numVertices = mesh.vertexCount;
     indices.x() = tri.v0;
     indices.y() = tri.v1;
@@ -507,9 +512,9 @@ namespace embree
     return true;
   }
   
-  __forceinline bool isValidQuad(const _ze_raytracing_geometry_quads_ext_desc_t& mesh, const unsigned int i, uint4 &indices, gpu::AABB3f &bounds)
+  __forceinline bool isValidQuad(const ze_rtas_builder_quads_geometry_info_exp_t& mesh, const unsigned int i, uint4 &indices, gpu::AABB3f &bounds)
   {
-    const _ze_raytracing_quad_indices_uint32_ext_t &quad = getQuadDesc(mesh,i);
+    const ze_rtas_quad_indices_uint32_exp_t &quad = getQuadDesc(mesh,i);
     const unsigned int numVertices = mesh.vertexCount;
     indices.x() = quad.v0;
     indices.y() = quad.v1;
@@ -593,7 +598,7 @@ namespace embree
       return false;
   }
 
-  __forceinline unsigned int getBlockQuadificationCount(const  _ze_raytracing_geometry_triangles_ext_desc_t* const triMesh, const unsigned int localID, const unsigned int startPrimID, const unsigned int endPrimID)
+  __forceinline unsigned int getBlockQuadificationCount(const  ze_rtas_builder_triangles_geometry_info_exp_t* const triMesh, const unsigned int localID, const unsigned int startPrimID, const unsigned int endPrimID)
   {
     const unsigned int subgroupLocalID = get_sub_group_local_id();
     const unsigned int subgroupSize    = get_sub_group_size();            
@@ -638,7 +643,7 @@ namespace embree
     return numQuads;
   }
 
-  __forceinline unsigned int getMergedQuadBounds(const  _ze_raytracing_geometry_triangles_ext_desc_t* const triMesh, const unsigned int ID, const unsigned int endPrimID, gpu::AABB3f &bounds)
+  __forceinline unsigned int getMergedQuadBounds(const  ze_rtas_builder_triangles_geometry_info_exp_t* const triMesh, const unsigned int ID, const unsigned int endPrimID, gpu::AABB3f &bounds)
   {
     const unsigned int subgroupLocalID = get_sub_group_local_id();
     const unsigned int subgroupSize    = get_sub_group_size();        
@@ -696,12 +701,12 @@ namespace embree
   // ============================================================================== Instances ==========================================================================================
   // ===================================================================================================================================================================================
 
-  __forceinline AffineSpace3fa getTransform(const _ze_raytracing_geometry_instance_ext_desc_t* geom)
+  __forceinline AffineSpace3fa getTransform(const ze_rtas_builder_instance_geometry_info_exp_t* geom)
   {
     switch (geom->transformFormat)
     {
-    case ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_COLUMN_MAJOR: {
-      const ze_raytracing_transform_float3x4_column_major_ext_t* xfm = (const ze_raytracing_transform_float3x4_column_major_ext_t*) geom->transform;
+    case ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3X4_COLUMN_MAJOR: {
+      const ze_rtas_transform_float3x4_column_major_exp_t* xfm = (const ze_rtas_transform_float3x4_column_major_exp_t*) geom->pTransformBuffer;
       return {
         { xfm->vx_x, xfm->vx_y, xfm->vx_z },
         { xfm->vy_x, xfm->vy_y, xfm->vy_z },
@@ -709,8 +714,8 @@ namespace embree
         { xfm-> p_x, xfm-> p_y, xfm-> p_z }
       };
     }
-    case ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_ALIGNED_COLUMN_MAJOR: {
-      const ze_raytracing_transform_float3x4_aligned_column_major_ext_t* xfm = (const ze_raytracing_transform_float3x4_aligned_column_major_ext_t*) geom->transform;
+    case ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3X4_ALIGNED_COLUMN_MAJOR: {
+      const ze_rtas_transform_float3x4_aligned_column_major_exp_t* xfm = (const ze_rtas_transform_float3x4_aligned_column_major_exp_t*) geom->pTransformBuffer;
       return {
         { xfm->vx_x, xfm->vx_y, xfm->vx_z },
         { xfm->vy_x, xfm->vy_y, xfm->vy_z },
@@ -718,8 +723,8 @@ namespace embree
         { xfm-> p_x, xfm-> p_y, xfm-> p_z }
       };
     }
-    case ZE_RAYTRACING_FORMAT_EXT_FLOAT3X4_ROW_MAJOR: {
-      const ze_raytracing_transform_float3x4_row_major_ext_t* xfm = (const ze_raytracing_transform_float3x4_row_major_ext_t*) geom->transform;
+    case ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3X4_ROW_MAJOR: {
+      const ze_rtas_transform_float3x4_row_major_exp_t* xfm = (const ze_rtas_transform_float3x4_row_major_exp_t*) geom->pTransformBuffer;
       return {
         { xfm->vx_x, xfm->vx_y, xfm->vx_z },
         { xfm->vy_x, xfm->vy_y, xfm->vy_z },
@@ -732,10 +737,10 @@ namespace embree
     }
   }  
 
-  __forceinline gpu::AABB3f getInstanceBounds(const _ze_raytracing_geometry_instance_ext_desc_t &instance)
+  __forceinline gpu::AABB3f getInstanceBounds(const ze_rtas_builder_instance_geometry_info_exp_t &instance)
   {
-    const Vec3fa lower(instance.bounds->lower.x,instance.bounds->lower.y,instance.bounds->lower.z);
-    const Vec3fa upper(instance.bounds->upper.x,instance.bounds->upper.y,instance.bounds->upper.z);
+    const Vec3fa lower(instance.pBounds->lower.x,instance.pBounds->lower.y,instance.pBounds->lower.z);
+    const Vec3fa upper(instance.pBounds->upper.x,instance.pBounds->upper.y,instance.pBounds->upper.z);
     const BBox3fa org_bounds(lower,upper);
     const AffineSpace3fa local2world = getTransform(&instance);    
     const BBox3fa instance_bounds = xfmBounds(local2world,org_bounds);
@@ -744,9 +749,9 @@ namespace embree
     return bounds;
   }
   
-  __forceinline bool isValidInstance(const _ze_raytracing_geometry_instance_ext_desc_t& instance, gpu::AABB3f &bounds)
+  __forceinline bool isValidInstance(const ze_rtas_builder_instance_geometry_info_exp_t& instance, gpu::AABB3f &bounds)
   {
-    if (instance.bounds == nullptr) return false;    
+    if (instance.pBounds == nullptr) return false;    
     bounds = getInstanceBounds(instance);
     if (bounds.empty()) return false;
     if (!bounds.checkNumericalBounds()) return false;    
@@ -936,7 +941,7 @@ namespace embree
   }
   
 
-  PrimitiveCounts countPrimitives(sycl::queue &gpu_queue, const _ze_raytracing_geometry_ext_desc_t **const geometries, const unsigned int numGeometries, PLOCGlobals *const globals, unsigned int *blocksPerGeom, unsigned int *host_device_tasks, double &iteration_time, const bool verbose)    
+  PrimitiveCounts countPrimitives(sycl::queue &gpu_queue, const ze_rtas_builder_geometry_info_exp_t **const geometries, const unsigned int numGeometries, PLOCGlobals *const globals, unsigned int *blocksPerGeom, unsigned int *host_device_tasks, double &iteration_time, const bool verbose)    
   {
     PrimitiveCounts count;
     const unsigned int wgSize = LARGE_WG_SIZE;
@@ -970,26 +975,27 @@ namespace embree
                            if (geomID < numGeometries)
                            {
                              unsigned int numBlocks = 0;                             
-                             const _ze_raytracing_geometry_ext_desc_t* geom = geometries[geomID];
+                             const ze_rtas_builder_geometry_info_exp_t* geom = geometries[geomID];
                              if (geom != nullptr) {
                                switch (geom->geometryType)
                                {
-                               case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES  :
+                               case ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_TRIANGLES  :
                                {
-                                 gpu::atomic_add_local(&numTriangles  , (( _ze_raytracing_geometry_triangles_ext_desc_t *)geom)->triangleCount);
-                                 gpu::atomic_add_local(&numQuadBlocks ,((( _ze_raytracing_geometry_triangles_ext_desc_t *)geom)->triangleCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE);
-                                 numBlocks += ((( _ze_raytracing_geometry_triangles_ext_desc_t *)geom)->triangleCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE;
+                                 gpu::atomic_add_local(&numTriangles  , (( ze_rtas_builder_triangles_geometry_info_exp_t *)geom)->triangleCount);
+                                 gpu::atomic_add_local(&numQuadBlocks ,((( ze_rtas_builder_triangles_geometry_info_exp_t *)geom)->triangleCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE);
+                                 numBlocks += ((( ze_rtas_builder_triangles_geometry_info_exp_t *)geom)->triangleCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE;
                                  break;
                                }
-                               case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS      :
+                               case ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_QUADS      :
                                {
-                                 gpu::atomic_add_local(&numQuads      , ((_ze_raytracing_geometry_quads_ext_desc_t     *)geom)->quadCount);
-                                 gpu::atomic_add_local(&numQuadBlocks ,(((_ze_raytracing_geometry_quads_ext_desc_t *)geom)->quadCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE);
-                                 numBlocks += (((_ze_raytracing_geometry_quads_ext_desc_t *)geom)->quadCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE;
+                                 gpu::atomic_add_local(&numQuads      , ((ze_rtas_builder_quads_geometry_info_exp_t     *)geom)->quadCount);
+                                 gpu::atomic_add_local(&numQuadBlocks ,(((ze_rtas_builder_quads_geometry_info_exp_t *)geom)->quadCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE);
+                                 numBlocks += (((ze_rtas_builder_quads_geometry_info_exp_t *)geom)->quadCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE;
                                  break;
                                }
-                               case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR :  gpu::atomic_add_local(&numProcedurals,((_ze_raytracing_geometry_aabbs_fptr_ext_desc_t*)geom)->primCount);     break;
-                               case ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE   :  gpu::atomic_add_local(&numInstances  ,(unsigned int)1); break;
+                               case ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_PROCEDURAL :  gpu::atomic_add_local(&numProcedurals,((ze_rtas_builder_procedural_geometry_info_exp_t*)geom)->primCount);     break;
+                               case ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_INSTANCE   :  gpu::atomic_add_local(&numInstances  ,(unsigned int)1); break;
+                             default:                                 
                                };
                              }
                              blocksPerGeom[geomID] = numBlocks;
@@ -1035,7 +1041,7 @@ namespace embree
   }  
 
 
-  unsigned int countQuadsPerGeometryUsingBlocks(sycl::queue &gpu_queue, PLOCGlobals *const globals, const _ze_raytracing_geometry_ext_desc_t **const geometries, const unsigned int numGeoms, const unsigned int numQuadBlocks, unsigned int *const blocksPerGeom, unsigned int *const quadsPerBlock, unsigned int *const host_device_tasks, double &iteration_time, const bool verbose)    
+  unsigned int countQuadsPerGeometryUsingBlocks(sycl::queue &gpu_queue, PLOCGlobals *const globals, const ze_rtas_builder_geometry_info_exp_t **const geometries, const unsigned int numGeoms, const unsigned int numQuadBlocks, unsigned int *const blocksPerGeom, unsigned int *const quadsPerBlock, unsigned int *const host_device_tasks, double &iteration_time, const bool verbose)    
   {
     sycl::event initial;
     sycl::event prefix_sum_blocks_event = prefixSumOverCounts(gpu_queue,initial,numGeoms,blocksPerGeom,host_device_tasks,verbose);     
@@ -1060,15 +1066,15 @@ namespace embree
                            
                            item.barrier(sycl::access::fence_space::local_space);
                            const unsigned int blockID        = globalBlockID - blocksPerGeom[geomID];
-                           const _ze_raytracing_geometry_ext_desc_t *const geometryDesc = geometries[geomID];
+                           const ze_rtas_builder_geometry_info_exp_t *const geometryDesc = geometries[geomID];
                            
                            // ====================                           
                            // === TriangleMesh ===
                            // ====================
                            
-                           if (geometryDesc->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES)
+                           if (geometryDesc->geometryType == ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_TRIANGLES)
                            {
-                              _ze_raytracing_geometry_triangles_ext_desc_t* triMesh = ( _ze_raytracing_geometry_triangles_ext_desc_t*)geometryDesc;                             
+                              ze_rtas_builder_triangles_geometry_info_exp_t* triMesh = ( ze_rtas_builder_triangles_geometry_info_exp_t*)geometryDesc;                             
                              const unsigned int numTriangles   = triMesh->triangleCount;
                              {                                                                          
                                const unsigned int startPrimID = blockID*TRIANGLE_QUAD_BLOCK_SIZE;
@@ -1081,9 +1087,9 @@ namespace embree
                            // ================                           
                            // === QuadMesh ===
                            // ================
-                           else if (geometryDesc->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS)
+                           else if (geometryDesc->geometryType == ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_QUADS)
                            {
-                             _ze_raytracing_geometry_quads_ext_desc_t* quadMesh = (_ze_raytracing_geometry_quads_ext_desc_t*)geometryDesc;                                                          
+                             ze_rtas_builder_quads_geometry_info_exp_t* quadMesh = (ze_rtas_builder_quads_geometry_info_exp_t*)geometryDesc;                                                          
                              const unsigned int numQuads  = quadMesh->quadCount;
                              {                                                                          
                                const unsigned int startPrimID  = blockID*TRIANGLE_QUAD_BLOCK_SIZE;
@@ -1145,7 +1151,7 @@ namespace embree
     return numMergedTrisQuads;
   }
    
-   PrimitiveCounts getEstimatedPrimitiveCounts(sycl::queue &gpu_queue, const _ze_raytracing_geometry_ext_desc_t **const geometries, const unsigned int numGeoms, const bool verbose)    
+   PrimitiveCounts getEstimatedPrimitiveCounts(sycl::queue &gpu_queue, const ze_rtas_builder_geometry_info_exp_t **const geometries, const unsigned int numGeoms, const bool verbose)    
   {
     if (numGeoms == 0) return PrimitiveCounts();
 
@@ -1184,7 +1190,7 @@ namespace embree
   // ============================================================================== Create Primrefs ==========================================================================================
   // =========================================================================================================================================================================================
 
-   void createQuads_initPLOCPrimRefs(sycl::queue &gpu_queue, PLOCGlobals *const globals, const _ze_raytracing_geometry_ext_desc_t **const geometries, const unsigned int numGeoms, const unsigned int numQuadBlocks, const unsigned int *const scratch, BVH2Ploc *const bvh2, const unsigned int prim_type_offset, double &iteration_time, const bool verbose)    
+   void createQuads_initPLOCPrimRefs(sycl::queue &gpu_queue, PLOCGlobals *const globals, const ze_rtas_builder_geometry_info_exp_t **const geometries, const unsigned int numGeoms, const unsigned int numQuadBlocks, const unsigned int *const scratch, BVH2Ploc *const bvh2, const unsigned int prim_type_offset, double &iteration_time, const bool verbose)    
   {
     const unsigned int *const blocksPerGeom          = scratch;
     const unsigned int *const quadsPerBlockPrefixSum = scratch + numGeoms;
@@ -1210,14 +1216,14 @@ namespace embree
                            item.barrier(sycl::access::fence_space::local_space);
                            const unsigned int blockID        = globalBlockID - blocksPerGeom[geomID];
                            const unsigned int startQuadOffset = quadsPerBlockPrefixSum[globalBlockID] + prim_type_offset;
-                           const _ze_raytracing_geometry_ext_desc_t *const geometryDesc = geometries[geomID];
+                           const ze_rtas_builder_geometry_info_exp_t *const geometryDesc = geometries[geomID];
                                                       
                            // ====================                           
                            // === TriangleMesh ===
                            // ====================
-                           if (geometryDesc->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES)
+                           if (geometryDesc->geometryType == ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_TRIANGLES)
                            {
-                              _ze_raytracing_geometry_triangles_ext_desc_t* triMesh = ( _ze_raytracing_geometry_triangles_ext_desc_t*)geometryDesc;                             
+                              ze_rtas_builder_triangles_geometry_info_exp_t* triMesh = ( ze_rtas_builder_triangles_geometry_info_exp_t*)geometryDesc;                             
                              const unsigned int numTriangles = triMesh->triangleCount;                                                                                                     
                              {                                                                          
                                const unsigned int startPrimID  = blockID*TRIANGLE_QUAD_BLOCK_SIZE;
@@ -1247,9 +1253,9 @@ namespace embree
                            // ================                           
                            // === QuadMesh ===
                            // ================                           
-                           else if (geometryDesc->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS)
+                           else if (geometryDesc->geometryType == ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_QUADS)
                            {
-                             _ze_raytracing_geometry_quads_ext_desc_t* quadMesh = (_ze_raytracing_geometry_quads_ext_desc_t*)geometryDesc;                                                          
+                             ze_rtas_builder_quads_geometry_info_exp_t* quadMesh = (ze_rtas_builder_quads_geometry_info_exp_t*)geometryDesc;                                                          
                              const unsigned int numQuads  = quadMesh->quadCount;                             
                              {                                                                          
                                const unsigned int startPrimID  = blockID*TRIANGLE_QUAD_BLOCK_SIZE;
@@ -1281,7 +1287,7 @@ namespace embree
     if (unlikely(verbose)) iteration_time += gpu::getDeviceExecutionTiming(quadification_event);
   }
        
-   unsigned int createInstances_initPLOCPrimRefs(sycl::queue &gpu_queue, const _ze_raytracing_geometry_ext_desc_t **const geometry_desc, const unsigned int numGeoms, unsigned int *scratch_mem, const unsigned int MAX_WGS, BVH2Ploc *const bvh2, const unsigned int prim_type_offset, unsigned int *host_device_tasks, double &iteration_time, const bool verbose)    
+   unsigned int createInstances_initPLOCPrimRefs(sycl::queue &gpu_queue, const ze_rtas_builder_geometry_info_exp_t **const geometry_desc, const unsigned int numGeoms, unsigned int *scratch_mem, const unsigned int MAX_WGS, BVH2Ploc *const bvh2, const unsigned int prim_type_offset, unsigned int *host_device_tasks, double &iteration_time, const bool verbose)    
   {
     const unsigned int numWGs = min((numGeoms+LARGE_WG_SIZE-1)/LARGE_WG_SIZE,(unsigned int)MAX_WGS);
     clearScratchMem(gpu_queue,scratch_mem,0,numWGs,iteration_time,verbose);
@@ -1323,9 +1329,9 @@ namespace embree
                              {
                                const unsigned int instID = startID + ID;
                                unsigned int count = 0;
-                               if (geometry_desc[instID]->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE)
+                               if (geometry_desc[instID]->geometryType == ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_INSTANCE)
                                {
-                                 _ze_raytracing_geometry_instance_ext_desc_t *geom = (_ze_raytracing_geometry_instance_ext_desc_t *)geometry_desc[instID];
+                                 ze_rtas_builder_instance_geometry_info_exp_t *geom = (ze_rtas_builder_instance_geometry_info_exp_t *)geometry_desc[instID];
                                  gpu::AABB3f bounds;
                                  if (isValidInstance(*geom,bounds)) count = 1;
                                }
@@ -1371,9 +1377,9 @@ namespace embree
                              if (ID < sizeID)
                              {
                                const unsigned int instID = startID + ID;
-                               if (geometry_desc[instID]->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE)
+                               if (geometry_desc[instID]->geometryType == ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_INSTANCE)
                                {
-                                 _ze_raytracing_geometry_instance_ext_desc_t *geom = (_ze_raytracing_geometry_instance_ext_desc_t *)geometry_desc[instID];                                                                  
+                                 ze_rtas_builder_instance_geometry_info_exp_t *geom = (ze_rtas_builder_instance_geometry_info_exp_t *)geometry_desc[instID];                                                                  
                                  if (isValidInstance(*geom,bounds)) count = 1;
                                }
                              }
@@ -1385,7 +1391,7 @@ namespace embree
                              if (ID < sizeID)
                              {
                                const unsigned int instID = startID + ID;
-                               if (geometry_desc[instID]->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE && count == 1)
+                               if (geometry_desc[instID]->geometryType == ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_INSTANCE && count == 1)
                                {
                                  BVH2Ploc node;                                                                                           
                                  node.initLeaf(instID,0,bounds);                               
@@ -1405,13 +1411,19 @@ namespace embree
     return numInstances;
   }
   
-   __forceinline bool buildBounds(const _ze_raytracing_geometry_aabbs_fptr_ext_desc_t* geom, unsigned int primID, BBox3fa& bbox, void* buildUserPtr)
+   __forceinline bool buildBounds(const ze_rtas_builder_procedural_geometry_info_exp_t* geom, unsigned int primID, BBox3fa& bbox, void* buildUserPtr)
   {
     if (primID >= geom->primCount) return false;
-    if (geom->getBounds == nullptr) return false;
+    if (geom->pfnGetBoundsCb == nullptr) return false;
 
-    BBox3f bounds;
-    (geom->getBounds)(primID,1,geom->geomUserPtr,buildUserPtr,(_ze_raytracing_aabb_ext_t*)&bounds);
+    BBox3f bounds;    
+    ze_rtas_geometry_aabbs_exp_cb_params_t params = { ZE_STRUCTURE_TYPE_RTAS_GEOMETRY_AABBS_EXP_CB_PARAMS };
+    params.primID = primID;
+    params.primIDCount = 1;
+    params.pGeomUserPtr = geom->pGeomUserPtr;
+    params.pBuildUserPtr = buildUserPtr;
+    params.pBoundsOut = (ze_rtas_aabb_exp_t*) &bounds;
+    (geom->pfnGetBoundsCb)(&params);
 
     if (unlikely(!isvalid(bounds.lower))) return false;
     if (unlikely(!isvalid(bounds.upper))) return false;
@@ -1421,19 +1433,19 @@ namespace embree
     return true;
   }
   
-   unsigned int createProcedurals_initPLOCPrimRefs(sycl::queue &gpu_queue, const _ze_raytracing_geometry_ext_desc_t **const geometry_desc, const unsigned int numGeoms, unsigned int *scratch_mem, const unsigned int MAX_WGS, BVH2Ploc *const bvh2, const unsigned int prim_type_offset, void* buildUserPtr, unsigned int *host_device_tasks, double &iteration_time, const bool verbose)    
+   unsigned int createProcedurals_initPLOCPrimRefs(sycl::queue &gpu_queue, const ze_rtas_builder_geometry_info_exp_t **const geometry_desc, const unsigned int numGeoms, unsigned int *scratch_mem, const unsigned int MAX_WGS, BVH2Ploc *const bvh2, const unsigned int prim_type_offset, void* buildUserPtr, unsigned int *host_device_tasks, double &iteration_time, const bool verbose)    
   {
     //FIXME: GPU version
     unsigned int ID = 0;
     for (unsigned int userGeomID=0;userGeomID<numGeoms;userGeomID++)
     {
       if (unlikely(geometry_desc[userGeomID] == nullptr)) continue;
-      if (geometry_desc[userGeomID]->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR)
+      if (geometry_desc[userGeomID]->geometryType == ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_PROCEDURAL)
       {
-        _ze_raytracing_geometry_instance_ext_desc_t *geom = (_ze_raytracing_geometry_instance_ext_desc_t *)geometry_desc[userGeomID];
-        if (geom->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR)
+        ze_rtas_builder_instance_geometry_info_exp_t *geom = (ze_rtas_builder_instance_geometry_info_exp_t *)geometry_desc[userGeomID];
+        if (geom->geometryType == ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_PROCEDURAL)
         {
-          _ze_raytracing_geometry_aabbs_fptr_ext_desc_t *procedural = (_ze_raytracing_geometry_aabbs_fptr_ext_desc_t *)geom;
+          ze_rtas_builder_procedural_geometry_info_exp_t *procedural = (ze_rtas_builder_procedural_geometry_info_exp_t *)geom;
           for (unsigned int i=0;i<procedural->primCount;i++)
           {
             BBox3fa procedural_bounds;
@@ -2379,7 +2391,7 @@ namespace embree
   // =============================================================================================================================================
 
 
-   bool convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, unsigned int *host_device_tasks, const _ze_raytracing_geometry_ext_desc_t **const geometries, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const unsigned int numPrimitives, const bool instanceMode, const GeometryTypeRanges &geometryTypeRanges, float& conversion_device_time, const bool verbose)
+   bool convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, unsigned int *host_device_tasks, const ze_rtas_builder_geometry_info_exp_t **const geometries, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const unsigned int numPrimitives, const bool instanceMode, const GeometryTypeRanges &geometryTypeRanges, float& conversion_device_time, const bool verbose)
   {
     static const unsigned int STOP_THRESHOLD = 1296;    
     double total_time = 0.0f;    
@@ -2770,9 +2782,9 @@ namespace embree
                              {
                                qleaf = (QuadLeafData *)globals->nodeBlockPtr(leafGenData[globalID].blockID);
                                const unsigned int geomID = leafGenData[globalID].geomID & GEOMID_MASK;
-                               const _ze_raytracing_geometry_ext_desc_t *const geometryDesc = geometries[geomID];                                 
+                               const ze_rtas_builder_geometry_info_exp_t *const geometryDesc = geometries[geomID];                                 
 
-                               if (geometryDesc->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_TRIANGLES)
+                               if (geometryDesc->geometryType == ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_TRIANGLES)
                                {
                                  
                                  // ====================                           
@@ -2781,8 +2793,8 @@ namespace embree
                                  //valid = true;                                   
                                  const unsigned int primID0 = leafGenData[globalID].primID;
                                  const unsigned int primID1 = primID0 + (leafGenData[globalID].geomID >> PAIR_OFFSET_SHIFT);                                   
-                                  _ze_raytracing_geometry_triangles_ext_desc_t* triMesh = ( _ze_raytracing_geometry_triangles_ext_desc_t*)geometryDesc;
-                                 const _ze_raytracing_triangle_indices_uint32_ext_t &tri = getTriangleDesc(*triMesh,primID0);
+                                  ze_rtas_builder_triangles_geometry_info_exp_t* triMesh = ( ze_rtas_builder_triangles_geometry_info_exp_t*)geometryDesc;
+                                 const ze_rtas_triangle_indices_uint32_exp_t &tri = getTriangleDesc(*triMesh,primID0);
                                  const Vec3f p0 = getVec3f(*triMesh,tri.v0);
                                  const Vec3f p1 = getVec3f(*triMesh,tri.v1);
                                  const Vec3f p2 = getVec3f(*triMesh,tri.v2);                                       
@@ -2792,21 +2804,21 @@ namespace embree
                                  /* handle paired triangle */
                                  if (primID0 != primID1)
                                  {
-                                   const _ze_raytracing_triangle_indices_uint32_ext_t &tri1 = getTriangleDesc(*triMesh,primID1);          
+                                   const ze_rtas_triangle_indices_uint32_exp_t &tri1 = getTriangleDesc(*triMesh,primID1);          
                                    const unsigned int p3_index = try_pair_triangles(uint3(tri.v0,tri.v1,tri.v2),uint3(tri1.v0,tri1.v1,tri1.v2),lb0,lb1,lb2);
                                    p3 = getVec3f(*triMesh,((unsigned int*)&tri1)[p3_index]); // FIXME: might cause tri1 to store to mem first
                                  }
                                  *qleaf = QuadLeafData( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, (GeometryFlags)triMesh->geometryFlags, triMesh->geometryMask);
                                }
-                               else if (geometryDesc->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_QUADS)
+                               else if (geometryDesc->geometryType == ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_QUADS)
                                {
                                  // ================                           
                                  // === QuadMesh ===
                                  // ================
                                  //valid = true;                                                                    
                                  const unsigned int primID0 = leafGenData[globalID].primID;                                   
-                                 _ze_raytracing_geometry_quads_ext_desc_t* quadMesh = (_ze_raytracing_geometry_quads_ext_desc_t*)geometryDesc;                             
-                                 const _ze_raytracing_quad_indices_uint32_ext_t &quad = getQuadDesc(*quadMesh,primID0);
+                                 ze_rtas_builder_quads_geometry_info_exp_t* quadMesh = (ze_rtas_builder_quads_geometry_info_exp_t*)geometryDesc;                             
+                                 const ze_rtas_quad_indices_uint32_exp_t &quad = getQuadDesc(*quadMesh,primID0);
                                  const Vec3f p0 = getVec3f(*quadMesh,quad.v0);
                                  const Vec3f p1 = getVec3f(*quadMesh,quad.v1);
                                  const Vec3f p2 = getVec3f(*quadMesh,quad.v2);                                       
@@ -2814,25 +2826,25 @@ namespace embree
                                  *qleaf = QuadLeafData( p0,p1,p3,p2, 3,2,1, 0, geomID, primID0, primID0, (GeometryFlags)quadMesh->geometryFlags, quadMesh->geometryMask);
                                }
                              
-                               else if (geometryDesc->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_INSTANCE)
+                               else if (geometryDesc->geometryType == ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_INSTANCE)
                                {
                                  // ================                           
                                  // === Instance ===
                                  // ================                                 
                                  const unsigned int instID = leafGenData[globalID].geomID;
-                                 const _ze_raytracing_geometry_instance_ext_desc_t* instance = (const _ze_raytracing_geometry_instance_ext_desc_t*)geometryDesc;                                 
+                                 const ze_rtas_builder_instance_geometry_info_exp_t* instance = (const ze_rtas_builder_instance_geometry_info_exp_t*)geometryDesc;                                 
                                  InstancePrimitive *dest = (InstancePrimitive *)qleaf;         
                                  const AffineSpace3fa local2world = getTransform(instance);
-                                 const uint64_t root = (uint64_t)instance->accel + QBVH6_HEADER_OFFSET;
+                                 const uint64_t root = (uint64_t)instance->pAccelerationStructure + QBVH6_HEADER_OFFSET;
                                  *dest = InstancePrimitive(local2world,root,instance->instanceUserID,instID,mask32_to_mask8(instance->geometryMask));
                                }
-                               else if (geometryDesc->geometryType == ZE_RAYTRACING_GEOMETRY_TYPE_EXT_AABBS_FPTR)
+                               else if (geometryDesc->geometryType == ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_PROCEDURAL)
                                {
                                  // ==================                           
                                  // === Procedural ===
                                  // ==================                                
                                  const unsigned int primID0 = leafGenData[globalID].primID;                                 
-                                 const _ze_raytracing_geometry_aabbs_fptr_ext_desc_t* geom = (const _ze_raytracing_geometry_aabbs_fptr_ext_desc_t*)geometryDesc;                                 
+                                 const ze_rtas_builder_procedural_geometry_info_exp_t* geom = (const ze_rtas_builder_procedural_geometry_info_exp_t*)geometryDesc;                                 
                                  const unsigned int mask32 = mask32_to_mask8(geom->geometryMask);
                                  ProceduralLeaf *dest = (ProceduralLeaf *)qleaf;
                                  PrimLeafDesc leafDesc(0,geomID,GeometryFlags::NONE /*(GeometryFlags)geom->geometryFlags*/,mask32,PrimLeafDesc::TYPE_OPACITY_CULLING_ENABLED);
