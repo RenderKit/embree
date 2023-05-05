@@ -4,8 +4,8 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.1.0)
 
 SET(EMBREE_VERSION_MAJOR 4)
-SET(EMBREE_VERSION_MINOR 0)
-SET(EMBREE_VERSION_PATCH 1)
+SET(EMBREE_VERSION_MINOR 1)
+SET(EMBREE_VERSION_PATCH 0)
 IF (EMBREE_SYCL_SUPPORT)
   SET(EMBREE_VERSION_NOTE "-beta") # Embree SYCL version is in beta phase
 ELSE()
@@ -143,7 +143,8 @@ OPTION(EMBREE_STACK_PROTECTOR "When enabled Embree compiles with stack protectio
 
 IF (NOT APPLE)
   OPTION(EMBREE_SYCL_SUPPORT "Enables SYCL GPU support." OFF)
-  IF (EMBREE_SYCL_SUPPORT)
+  OPTION(EMBREE_NO_SPLASH "Enables/Disables the Embree splash." OFF)
+  IF (EMBREE_SYCL_SUPPORT AND NOT EMBREE_NO_SPLASH)
     MESSAGE(WARNING
        "==================================================================================\n"
        "  The SYCL support of Embree is in beta phase. Current functionality, quality,    \n"
@@ -166,6 +167,9 @@ ENDIF()
 
 IF (EMBREE_SYCL_SUPPORT)
   ADD_DEFINITIONS("-DEMBREE_SYCL_SUPPORT")  # FIXME: only use define from rtcore_config.h
+ENDIF()
+IF (EMBREE_NO_SPLASH)
+  ADD_DEFINITIONS("-DEMBREE_NO_SPLASH")  # FIXME: only use define from rtcore_config.h
 ENDIF()
 
 OPTION(EMBREE_SYCL_GPU_BVH_BUILDER "Using fast GPU-based BVH builder" OFF)

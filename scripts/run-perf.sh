@@ -1,7 +1,5 @@
 #!/bin/bash -xe
 
-export EMBREE_NO_SPLASH=1
-
 models_dir=./embree-models/
 git lfs install
 git clone https://${RENDERKIT_GITHUB_TOKEN}@github.com/intel-sandbox/embree-models.git $models_dir

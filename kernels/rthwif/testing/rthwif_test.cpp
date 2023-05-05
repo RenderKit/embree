@@ -542,7 +542,7 @@ struct TriangleMesh : public Geometry
 {
 public:
 
-  TriangleMesh (ze_rtas_builder_geometry_exp_flag_t gflags = ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_OPAQUE, bool procedural = false)
+  TriangleMesh (ze_rtas_builder_geometry_exp_flags_t gflags = 0, bool procedural = false)
     : Geometry(Type::TRIANGLE_MESH),
       gflags(gflags), procedural(procedural),
       triangles_alloc(context,device,sycl::ext::oneapi::property::usm::device_read_only()), triangles(0,triangles_alloc),
@@ -606,8 +606,8 @@ public:
       out.geometryType = ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_TRIANGLES;
       out.geometryFlags = gflags;
       out.geometryMask = 0xFF;
-      out.triangleBufferFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_TRIANGLE_INDICES_UINT32;
-      out.vertexBufferFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3;
+      out.triangleFormat = ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_TRIANGLE_INDICES_UINT32;
+      out.vertexFormat = ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FLOAT3;
       out.pTriangleBuffer = (ze_rtas_triangle_indices_uint32_exp_t*) triangles.data();
       out.triangleCount = triangles.size();
       out.triangleStride = sizeof(sycl::int4);
@@ -763,7 +763,7 @@ public:
 
   
 public:
-  ze_rtas_builder_geometry_exp_flag_t gflags = ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_OPAQUE;
+  ze_rtas_builder_geometry_exp_flags_t gflags = 0;
   bool procedural = false;
   
   typedef sycl::usm_allocator<sycl::int4, sycl::usm::alloc::shared> triangles_alloc_ty;
@@ -830,8 +830,8 @@ struct InstanceGeometryT : public Geometry
       out.instanceFlags = 0;
       out.geometryMask = 0xFF;
       out.instanceUserID = instUserID;
-      out.transformFormat = ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3X4_ALIGNED_COLUMN_MAJOR;
-      out.pTransformBuffer = (float*)&out.xfmdata;
+      out.transformFormat = ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FLOAT3X4_ALIGNED_COLUMN_MAJOR;
+      out.pTransform = (float*)&out.xfmdata;
       out.xfmdata.vx_x = local2world.vx.x();
       out.xfmdata.vx_y = local2world.vx.y();
       out.xfmdata.vx_z = local2world.vx.z();
@@ -910,7 +910,7 @@ void* alloc_accel_buffer_internal(size_t bytes, sycl::device device, sycl::conte
     throw std::runtime_error("get rtas device properties failed");
   
   ze_raytracing_mem_alloc_ext_desc_t rt_desc;
-  rt_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_RAYTRACING_EXT_PROPERTIES;
+  rt_desc.stype = ZE_STRUCTURE_TYPE_RAYTRACING_MEM_ALLOC_EXT_DESC;
   rt_desc.pNext = nullptr;
   rt_desc.flags = 0;
     
@@ -1017,7 +1017,7 @@ struct Scene
     : geometries_alloc(context,device,sycl::ext::oneapi::property::usm::device_read_only()), geometries(0,geometries_alloc), bounds(Bounds3f::empty()), accel(nullptr) 
   {
     std::shared_ptr<TriangleMesh> plane = createTrianglePlane(sycl::float3(0,0,0), sycl::float3(width,0,0), sycl::float3(0,height,0), width, height);
-    plane->gflags = opaque ? ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_OPAQUE : (ze_rtas_builder_geometry_exp_flag_t) 0;
+    plane->gflags = opaque ? (ze_rtas_builder_geometry_exp_flag_t) 0 : ZE_RTAS_BUILDER_GEOMETRY_EXP_FLAG_NON_OPAQUE;
     plane->procedural = procedural;
     geometries.push_back(plane);
   }
@@ -1209,7 +1209,7 @@ struct Scene
     memset(&args,0,sizeof(args));
     args.stype = ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_EXP_DESC;
     args.pNext = nullptr;
-    args.deviceFormat = rtasProp.rtasDeviceFormat;
+    args.rtasFormat = rtasProp.rtasFormat;
     args.buildQuality = quality;
     args.buildFlags = 0;
     args.ppGeometries = (const ze_rtas_builder_geometry_info_exp_t**) geom.data();
@@ -1219,11 +1219,11 @@ struct Scene
 #endif
     
     ze_rtas_builder_exp_properties_t size = { ZE_STRUCTURE_TYPE_RTAS_BUILDER_EXP_PROPERTIES };
-    err = zeRTASBuilderGetBuildPropertiesExp(hBuilder,&args,parallelOperation,&size);
+    err = zeRTASBuilderGetBuildPropertiesExp(hBuilder,&args,&size);
     if (err != ZE_RESULT_SUCCESS)
       throw std::runtime_error("BVH size estimate failed");
 
-    if (size.rtasBufferSizeBytesMin > size.rtasBufferSizeBytesMax)
+    if (size.rtasBufferSizeBytesExpected > size.rtasBufferSizeBytesMaxRequired)
       throw std::runtime_error("expected larger than worst case");
 
     /* allocate scratch buffer */
@@ -1251,7 +1251,7 @@ struct Scene
     {
     case BuildMode::BUILD_WORST_CASE_SIZE: {
 
-      accelBytes = size.rtasBufferSizeBytesMax;
+      accelBytes = size.rtasBufferSizeBytesMaxRequired;
       accel = alloc_accel_buffer(accelBytes+sentinelBytes,device,context);
       memset(accel,0,accelBytes+sentinelBytes);
 
@@ -1304,7 +1304,7 @@ struct Scene
     }
     case BuildMode::BUILD_EXPECTED_SIZE: {
       
-      size_t bytes = size.rtasBufferSizeBytesMin;
+      size_t bytes = size.rtasBufferSizeBytesExpected;
       for (size_t i=0; i<=16; i++) // FIXME: reduce worst cast iteration number
       {
         if (i == 16)
@@ -1340,7 +1340,7 @@ struct Scene
         if (err != ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY)
           break;
 
-        if (accelBufferBytesOut < bytes || size.rtasBufferSizeBytesMax < accelBufferBytesOut )
+        if (accelBufferBytesOut < bytes || size.rtasBufferSizeBytesMaxRequired < accelBufferBytesOut )
           throw std::runtime_error("failed build returned wrong new estimate");
 
         bytes = accelBufferBytesOut;
@@ -2189,7 +2189,7 @@ int main(int argc, char* argv[])
   if (err != ZE_RESULT_SUCCESS)
     throw std::runtime_error("ze_rtas_builder creation failed");
 
-  err = zeRTASParallelOperationCreateExp(hBuilder,&parallelOperation);
+  err = zeRTASParallelOperationCreateExp(hDriver,&parallelOperation);
   if (err != ZE_RESULT_SUCCESS)
     throw std::runtime_error("parallel operation creation failed");
   

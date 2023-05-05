@@ -1,9 +1,10 @@
 Version History
 ---------------
 
-### Embree 4.0.2
+### Embree 4.1.0
+-   Added support for Intel® Data Center GPU Max Series.
 -   Added ARM64 Linux support.
-    Added EMBREE_BACKFACE_CULLING_SPHERES cmake option. The new cmake option defaults to OFF.
+-   Added EMBREE_BACKFACE_CULLING_SPHERES cmake option. The new cmake option defaults to OFF.
 
 ### Embree 4.0.1
 -   Improved performance for Tiger Lake, Comet Lake, Cannon Lake, Kaby Lake,
