@@ -578,13 +578,16 @@ namespace embree
     }
 
     const size_t numGeometries = scene->size();
+
+    auto alloc_mode = sycl::ext::oneapi::property::usm::device_read_only();
+    //auto alloc_mode = sycl::ext::oneapi::property::usm::shared();
     
     /* fill geomdesc buffers */    
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     const size_t geomDescrBytes = sizeof(ze_rtas_builder_geometry_info_exp_t*)*numGeometries;
-    ze_rtas_builder_geometry_info_exp_t** geomDescr = (ze_rtas_builder_geometry_info_exp_t**)sycl::aligned_alloc_shared(64,geomDescrBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::ext::oneapi::property::usm::device_read_only());
+    ze_rtas_builder_geometry_info_exp_t** geomDescr = (ze_rtas_builder_geometry_info_exp_t**)sycl::aligned_alloc_shared(64,geomDescrBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),alloc_mode);
     assert(geomDescr);        
-    char *geomDescrData = (char*)sycl::aligned_alloc_shared(64,totalBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::ext::oneapi::property::usm::device_read_only());
+    char *geomDescrData = (char*)sycl::aligned_alloc_shared(64,totalBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),alloc_mode);
     assert(geomDescrData);
 #else    
     /* fill geomdesc buffers */
@@ -674,7 +677,7 @@ namespace embree
     args.stype = ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_EXP_DESC;
     args.pNext = nullptr;
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-    args.rtasFormat = ZE_RTAS_DEVICE_FORMAT_EXP_INVALID;
+    args.rtasFormat = ZE_RTAS_FORMAT_EXP_INVALID;
     args.buildQuality = gpu_device->quality_flags == RTC_BUILD_QUALITY_LOW ? ZE_RTAS_BUILDER_BUILD_QUALITY_HINT_EXP_LOW : ZE_RTAS_BUILDER_BUILD_QUALITY_HINT_EXP_MEDIUM;
 #else
     args.rtasFormat = rtasProp.rtasFormat;
@@ -844,12 +847,22 @@ namespace embree
     // === moving this to device code prevents USM down and up transfer of accel ===
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+
+#if 0    
     EmbreeHWAccel hwaccel;
     hwaccel.numTimeSegments = maxTimeSegments;
     for (size_t i=0; i<maxTimeSegments; i++)
-      hwaccel.AccelTable[i] = (char*)accel.data() + headerBytes + i*sizeTotal.rtasBufferSizeBytesMin;    
+      hwaccel.AccelTable[i] = (char*)accel.data() + headerBytes + i*sizeTotal.rtasBufferSizeBytesExpected;    
     sycl::event queue_event =  sycl_queue.memcpy(accel.data(),&hwaccel,sizeof(EmbreeHWAccel)+sizeof(void*)*(maxTimeSegments-1));
     queue_event.wait();
+#else
+    EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) accel.data();
+    hwaccel->numTimeSegments = maxTimeSegments;
+
+    for (size_t i=0; i<maxTimeSegments; i++)
+      hwaccel->AccelTable[i] = (char*)hwaccel + headerBytes + i*sizeTotal.rtasBufferSizeBytesExpected;    
+#endif
+    
 #else    
     /* destroy parallel operation */
     err = zeRTASParallelOperationDestroyExp(parallelOperation);
@@ -875,7 +888,8 @@ namespace embree
     sycl::free(geomDescrData    ,gpu_device->getGPUContext());    
     sycl::free(scratchBuffer    ,gpu_device->getGPUContext());
 #endif
-
+    PRINT(fullBounds);
+    
     return fullBounds;
   }
 

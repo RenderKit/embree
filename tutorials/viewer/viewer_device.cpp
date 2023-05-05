@@ -297,7 +297,7 @@ extern "C" void renderFrameStandard (int* pixels,
 {
 #if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION)
   TutorialData ldata = data;
-
+  
 #if defined(USE_SPECIALIZATION_CONSTANTS)
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh) {
     cgh.set_specialization_constant<spec_feature_mask>(g_feature_mask);

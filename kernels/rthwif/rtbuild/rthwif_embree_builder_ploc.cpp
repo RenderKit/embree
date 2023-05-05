@@ -358,8 +358,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL zeRTASGetAccelSizeGPUExp( const ze_rtas_buil
     }
         
     /* return size to user */
-    size_o->rtasBufferSizeBytesMin = expectedBytes;
-    size_o->rtasBufferSizeBytesMax = worstCaseBytes;
+    size_o->rtasBufferSizeBytesExpected = expectedBytes;
+    size_o->rtasBufferSizeBytesMaxRequired = worstCaseBytes;
     size_o->scratchBufferSizeBytes = scratchBytes;
 
     double time1 = getSeconds();
@@ -895,6 +895,12 @@ ZE_APIEXPORT ze_result_t ZE_APICALL zeRTASPrefetchAccelGPUExp( const ze_rtas_bui
     float conversion_device_time = 0.0f;
     const bool convert_success = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,args->ppGeometries,qbvh,bvh2,leafGenData,numPrimitives,numInstances != 0,geometryTypeRanges,conversion_device_time,verbose1);
 
+    /* dispatch globals ptr for debugging purposes */
+    void* dispatchGlobalsPtr = nullptr;
+#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
+    dispatchGlobalsPtr = args->dispatchGlobalsPtr;
+#endif
+    
     /* --- init final QBVH6 header --- */        
     {     
       sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
@@ -912,6 +918,8 @@ ZE_APIEXPORT ze_result_t ZE_APICALL zeRTASPrefetchAccelGPUExp( const ze_rtas_bui
                                                                       qbvh->leafDataStart  = globals->leaf_mem_allocator_start;
                                                                       qbvh->leafDataCur    = globals->leaf_mem_allocator_cur;
                                                                       *(gpu::AABB3f*)host_device_tasks = globals->geometryBounds;
+                                                                      qbvh->dispatchGlobalsPtr = (uint64_t) dispatchGlobalsPtr;
+
                                                                     });
                                                   });
       gpu::waitOnEventAndCatchException(queue_event);
@@ -968,10 +976,11 @@ ZE_APIEXPORT ze_result_t ZE_APICALL zeRTASPrefetchAccelGPUExp( const ze_rtas_bui
     {
       gpu::waitOnQueueAndCatchException(gpu_queue);
       
-      qbvh->print(std::cout,qbvh->root(),0,6);
+      //qbvh->print(std::cout,qbvh->root(),0,6);
       BVHStatistics stats = qbvh->computeStatistics();      
       stats.print(std::cout);
       stats.print_raw(std::cout);
+      qbvh->print();      
       PRINT("VERBOSE STATS DONE");
     }        
 #endif

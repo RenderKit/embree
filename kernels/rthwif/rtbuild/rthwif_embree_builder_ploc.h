@@ -705,8 +705,8 @@ namespace embree
   {
     switch (geom->transformFormat)
     {
-    case ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3X4_COLUMN_MAJOR: {
-      const ze_rtas_transform_float3x4_column_major_exp_t* xfm = (const ze_rtas_transform_float3x4_column_major_exp_t*) geom->pTransformBuffer;
+    case ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FLOAT3X4_COLUMN_MAJOR: {      
+      const ze_rtas_transform_float3x4_column_major_exp_t* xfm = (const ze_rtas_transform_float3x4_column_major_exp_t*) geom->pTransform;
       return {
         { xfm->vx_x, xfm->vx_y, xfm->vx_z },
         { xfm->vy_x, xfm->vy_y, xfm->vy_z },
@@ -714,8 +714,8 @@ namespace embree
         { xfm-> p_x, xfm-> p_y, xfm-> p_z }
       };
     }
-    case ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3X4_ALIGNED_COLUMN_MAJOR: {
-      const ze_rtas_transform_float3x4_aligned_column_major_exp_t* xfm = (const ze_rtas_transform_float3x4_aligned_column_major_exp_t*) geom->pTransformBuffer;
+    case ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FLOAT3X4_ALIGNED_COLUMN_MAJOR: {      
+      const ze_rtas_transform_float3x4_aligned_column_major_exp_t* xfm = (const ze_rtas_transform_float3x4_aligned_column_major_exp_t*) geom->pTransform;
       return {
         { xfm->vx_x, xfm->vx_y, xfm->vx_z },
         { xfm->vy_x, xfm->vy_y, xfm->vy_z },
@@ -723,8 +723,8 @@ namespace embree
         { xfm-> p_x, xfm-> p_y, xfm-> p_z }
       };
     }
-    case ZE_RTAS_DATA_BUFFER_FORMAT_EXP_FLOAT3X4_ROW_MAJOR: {
-      const ze_rtas_transform_float3x4_row_major_exp_t* xfm = (const ze_rtas_transform_float3x4_row_major_exp_t*) geom->pTransformBuffer;
+    case ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FLOAT3X4_ROW_MAJOR: {      
+      const ze_rtas_transform_float3x4_row_major_exp_t* xfm = (const ze_rtas_transform_float3x4_row_major_exp_t*) geom->pTransform;
       return {
         { xfm->vx_x, xfm->vx_y, xfm->vx_z },
         { xfm->vy_x, xfm->vy_y, xfm->vy_z },

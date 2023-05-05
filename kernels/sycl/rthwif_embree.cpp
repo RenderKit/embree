@@ -61,6 +61,9 @@ const constexpr uint32_t TRAV_LOOP_FEATURES =
   RTC_FEATURE_FLAG_FILTER_FUNCTION;
 
 void use_rthwif_embree() {
+  //PING;
+  //PRINT(TRAV_LOOP_FEATURES);
+  //exit(0);
 }
 
 Vec3f intel_get_hit_triangle_normal(intel_ray_query_t& query, intel_hit_type_t hit_type)
@@ -566,7 +569,7 @@ void trav_loop(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANC
 }
 
 SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::private_ptr<RTCRayQueryContext> ucontext, sycl::private_ptr<RTCRayHit> rayhit_i, sycl::private_ptr<RTCIntersectArguments> args)
-{
+{ 
   Scene* scene = (Scene*) hscene.get();
   intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) scene->hwaccel.data();
 
@@ -626,8 +629,11 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
   intel_ray_query_t query = intel_ray_query_init(raydesc, hwaccel_ptr);
   intel_ray_query_start_traversal(query);
   intel_ray_query_sync(query);
-  
-  if (args->feature_mask & TRAV_LOOP_FEATURES) {
+
+#if !defined(EMBREE_SYCL_GPU_BVH_BUILDER)        
+  if (args->feature_mask & TRAV_LOOP_FEATURES)
+#endif    
+  {
     trav_loop(query,ray,scenes,&context,args->feature_mask);
   }
 
@@ -724,7 +730,10 @@ SYCL_EXTERNAL void rtcOccludedRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::pr
   intel_ray_query_start_traversal(query);
   intel_ray_query_sync(query);
 
-  if (args->feature_mask & TRAV_LOOP_FEATURES) {
+#if !defined(EMBREE_SYCL_GPU_BVH_BUILDER)          
+  if (args->feature_mask & TRAV_LOOP_FEATURES)
+#endif    
+  {
     trav_loop(query,ray,scenes,&context,args->feature_mask);
   }
   
