@@ -909,7 +909,7 @@ void* alloc_accel_buffer_internal(size_t bytes, sycl::device device, sycl::conte
   if (err != ZE_RESULT_SUCCESS)
     throw std::runtime_error("get rtas device properties failed");
   
-  ze_raytracing_mem_alloc_ext_desc_t rt_desc;
+  ze_rtas_mem_alloc_ext_desc_t rt_desc;
   rt_desc.stype = ZE_STRUCTURE_TYPE_RAYTRACING_MEM_ALLOC_EXT_DESC;
   rt_desc.pNext = nullptr;
   rt_desc.flags = 0;
@@ -1233,16 +1233,16 @@ struct Scene
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
       // === scratch buffer === 
-    char *scratchBuffer  = (char*)sycl::aligned_alloc(64,size.scratchBufferBytes+sentinelBytes,device,context,sycl::usm::alloc::shared);
+    char *scratchBuffer  = (char*)sycl::aligned_alloc(64,size.scratchBufferSizeBytes+sentinelBytes,device,context,sycl::usm::alloc::shared);
     assert(scratchBuffer);    
-    memset(scratchBuffer,0,size.scratchBufferBytes+sentinelBytes);
-    args.scratchBuffer = scratchBuffer;
-    args.scratchBufferBytes = size.scratchBufferBytes;           
+    memset(scratchBuffer,0,size.scratchBufferSizeBytes+sentinelBytes);
+    // args.scratchBuffer = scratchBuffer;
+    // args.scratchBufferSizeBytes = size.scratchBufferSizeBytes;           
 #else    
-    std::vector<char> scratchBuffer(size.scratchBufferBytes+sentinelBytes);
+    std::vector<char> scratchBuffer(size.scratchBufferSizeBytes+sentinelBytes);
     memset(scratchBuffer.data(),0,scratchBuffer.size());
-    args.scratchBuffer = scratchBuffer.data();
-    args.scratchBufferBytes = size.scratchBufferBytes;
+    // args.scratchBuffer = scratchBuffer.data();
+    // args.scratchBufferSizeBytes = size.scratchBufferSizeBytes;
 #endif
     
     accel = nullptr;
@@ -1261,8 +1261,8 @@ struct Scene
       size_t numIterations = benchmark ? 16 : 1;
 
       args.numGeometries = numGeometries; //geom.size();
-      args.accelBuffer = accel;
-      args.accelBufferBytes = size.accelBufferWorstCaseBytes;
+      //args.accelBuffer = accel;
+      //args.accelBufferBytes = size.accelBufferWorstCaseBytes;
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)      
       rthwifPrefetchAccelGPU(args,&queue,VERBOSE);      
@@ -1319,6 +1319,13 @@ struct Scene
         memset(accel,0,accelBytes+sentinelBytes);
 
         /* build accel */
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+        err = zeRTASBuildAccelGPUExp(&args,
+                                     scratchBuffer,sizeTotal.scratchBufferSizeBytes,
+                                     accel, accelBytes,
+                                     nullptr, &bounds, &accelBufferBytesOut,&sycl_queue,gpu_device->verbose); //FIXME nullptr ????
+        
+#else                
         err = zeRTASBuilderBuildExp(hBuilder,&args,
                                         scratchBuffer.data(),scratchBuffer.size(),
                                         accel, accelBytes,
@@ -1338,6 +1345,7 @@ struct Scene
             err = zeRTASParallelOperationJoinExp(parallelOperation);
           });
         }
+#endif        
         
         if (err != ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY)
           break;
