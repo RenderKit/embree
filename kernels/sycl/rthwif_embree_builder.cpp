@@ -457,6 +457,9 @@ namespace embree
   {
     DeviceGPU* gpuDevice = dynamic_cast<DeviceGPU*>(scene->device);
     if (gpuDevice == nullptr) throw std::runtime_error("internal error");
+
+    if (scene->size() > 0x00FFFFFF)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "too many geometries inside scene");
     
     sycl::device device = gpuDevice->getGPUDevice();
     ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
@@ -468,7 +471,7 @@ namespace embree
     ze_rtas_builder_exp_handle_t hBuilder = nullptr;
     ze_result_t err = zeRTASBuilderCreateExp(hDriver, &builderDesc, &hBuilder);
     if (err != ZE_RESULT_SUCCESS)
-      throw std::runtime_error("ze_rtas_builder creation failed");
+      throw_RTCError(RTC_ERROR_UNKNOWN, "ze_rtas_builder creation failed");
     
     auto getType = [&](unsigned int geomID) -> GEOMETRY_TYPE
     {
@@ -572,12 +575,12 @@ namespace embree
     ze_rtas_parallel_operation_exp_handle_t parallelOperation = nullptr;
     err = zeRTASParallelOperationCreateExp(hDriver, &parallelOperation);
     if (err != ZE_RESULT_SUCCESS)
-      throw std::runtime_error("parallel operation creation failed");
+      throw_RTCError(RTC_ERROR_UNKNOWN, "parallel operation creation failed");
 
     ze_rtas_device_exp_properties_t rtasProp = { ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES };
     err = zeDeviceGetRTASPropertiesExp(hDevice, &rtasProp );
     if (err != ZE_RESULT_SUCCESS)
-      throw std::runtime_error("get rtas device properties failed");
+      throw_RTCError(RTC_ERROR_UNKNOWN, "get rtas device properties failed");
 
     /* estimate static accel size */
     BBox1f time_range(0,1);
@@ -643,7 +646,7 @@ namespace embree
           ze_rtas_parallel_operation_exp_properties_t prop = { ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES };
           err = zeRTASParallelOperationGetPropertiesExp(parallelOperation,&prop);
           if (err != ZE_RESULT_SUCCESS)
-            throw std::runtime_error("get max concurrency failed");
+            throw_RTCError(RTC_ERROR_UNKNOWN, "get max concurrency failed");
           
           parallel_for(prop.maxConcurrency, [&](uint32_t) { err = zeRTASParallelOperationJoinExp(parallelOperation); });
         }
@@ -670,12 +673,12 @@ namespace embree
     /* destroy parallel operation */
     err = zeRTASParallelOperationDestroyExp(parallelOperation);
     if (err != ZE_RESULT_SUCCESS)
-      throw std::runtime_error("parallel operation destruction failed");
+      throw_RTCError(RTC_ERROR_UNKNOWN, "parallel operation destruction failed");
 
     /* destroy rtas builder again */
     err = zeRTASBuilderDestroyExp(hBuilder);
     if (err != ZE_RESULT_SUCCESS)
-      throw std::runtime_error("ze_rtas_builder destruction failed");
+      throw_RTCError(RTC_ERROR_UNKNOWN, "ze_rtas_builder destruction failed");
     
     EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) accel.data();
     hwaccel->numTimeSegments = maxTimeSegments;

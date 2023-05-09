@@ -383,6 +383,10 @@ namespace embree
     if (args->ppGeometries == nullptr && args->numGeometries > 0)
       return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
 
+    /* validate that number of geometries are in range */
+    if (args->numGeometries > 0x00FFFFFF)
+      return ZE_RESULT_ERROR_INVALID_ENUMERATION;
+
     /* validate build quality */
     if (args->buildQuality < 0 || ZE_RTAS_BUILDER_BUILD_QUALITY_HINT_EXP_HIGH < args->buildQuality)
       return ZE_RESULT_ERROR_INVALID_ENUMERATION;
