@@ -909,7 +909,7 @@ void* alloc_accel_buffer_internal(size_t bytes, sycl::device device, sycl::conte
   if (err != ZE_RESULT_SUCCESS)
     throw std::runtime_error("get rtas device properties failed");
   
-  ze_rtas_mem_alloc_ext_desc_t rt_desc;
+  ze_raytracing_mem_alloc_ext_desc_t rt_desc;
   rt_desc.stype = ZE_STRUCTURE_TYPE_RAYTRACING_MEM_ALLOC_EXT_DESC;
   rt_desc.pNext = nullptr;
   rt_desc.flags = 0;
