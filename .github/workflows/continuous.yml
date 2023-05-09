@@ -79,7 +79,7 @@ jobs:
       artifact-out: linux-DG2-JIT-INTERNAL
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.18.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON LEVEL_ZERO:OFF sycl:none tasking:TBB2021.7.0 intensity:4
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.18.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON LEVEL_ZERO:ON sycl:none tasking:TBB2021.7.0 intensity:4
         scripts/test.py build --debug
         scripts/test.py build
 
