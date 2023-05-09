@@ -974,9 +974,7 @@ ZE_APIEXPORT ze_result_t ZE_APICALL zeRTASPrefetchAccelGPUExp( const ze_rtas_bui
 #if 1
     if (verbose2)
     {
-      gpu::waitOnQueueAndCatchException(gpu_queue);
-      
-      //qbvh->print(std::cout,qbvh->root(),0,6);
+      gpu::waitOnQueueAndCatchException(gpu_queue);      
       BVHStatistics stats = qbvh->computeStatistics();      
       stats.print(std::cout);
       stats.print_raw(std::cout);

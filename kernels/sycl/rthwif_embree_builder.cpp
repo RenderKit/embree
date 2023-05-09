@@ -580,7 +580,6 @@ namespace embree
     const size_t numGeometries = scene->size();
 
     auto alloc_mode = sycl::ext::oneapi::property::usm::device_read_only();
-    //auto alloc_mode = sycl::ext::oneapi::property::usm::shared();
     
     /* fill geomdesc buffers */    
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
@@ -848,20 +847,12 @@ namespace embree
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
 
-#if 0    
     EmbreeHWAccel hwaccel;
     hwaccel.numTimeSegments = maxTimeSegments;
     for (size_t i=0; i<maxTimeSegments; i++)
       hwaccel.AccelTable[i] = (char*)accel.data() + headerBytes + i*sizeTotal.rtasBufferSizeBytesExpected;    
     sycl::event queue_event =  sycl_queue.memcpy(accel.data(),&hwaccel,sizeof(EmbreeHWAccel)+sizeof(void*)*(maxTimeSegments-1));
     queue_event.wait();
-#else
-    EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) accel.data();
-    hwaccel->numTimeSegments = maxTimeSegments;
-
-    for (size_t i=0; i<maxTimeSegments; i++)
-      hwaccel->AccelTable[i] = (char*)hwaccel + headerBytes + i*sizeTotal.rtasBufferSizeBytesExpected;    
-#endif
     
 #else    
     /* destroy parallel operation */
@@ -888,7 +879,6 @@ namespace embree
     sycl::free(geomDescrData    ,gpu_device->getGPUContext());    
     sycl::free(scratchBuffer    ,gpu_device->getGPUContext());
 #endif
-    PRINT(fullBounds);
     
     return fullBounds;
   }

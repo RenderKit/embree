@@ -255,7 +255,7 @@ namespace embree
                                const unsigned int shaderID, const unsigned int geomID, const unsigned int primID0, const unsigned int primID1, const GeometryFlags geomFlags, const unsigned int geomMask)
     {
       shaderIndex = (geomMask << 24) | shaderID;
-      geomIndex = geomID | ((unsigned int)geomFlags << 30);
+      geomIndex = geomID | (((unsigned int)geomFlags^3) << 30);
       primIndex0 = primID0;
       const unsigned int delta = primID1 - primID0;
       const unsigned int j = (((j0) << 0) | ((j1) << 2) | ((j2) << 4));
