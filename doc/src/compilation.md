@@ -17,6 +17,7 @@ C++11. Embree is tested with the following compilers:
 
 Linux
 
+  - Intel® oneAPI DPC++/C++ Compiler 2023.1.0
   - Intel® oneAPI DPC++/C++ Compiler 2023.0.0
   - oneAPI DPC++/C++ Compiler 2023-04-17
   - Clang 5.0.0
@@ -26,6 +27,7 @@ Linux
   - GCC  7.3.1 (Fedora 27) AVX2 support
   - GCC  7.3.1 (Fedora 26) AVX2 support
   - GCC  6.4.1 (Fedora 25) AVX2 support
+  - Intel® Implicit SPMD Program Compiler 1.19.0
   - Intel® Implicit SPMD Program Compiler 1.18.1
   - Intel® Implicit SPMD Program Compiler 1.17.0
   - Intel® Implicit SPMD Program Compiler 1.16.1
@@ -36,6 +38,7 @@ Linux
   
 macOS x86
 
+  - Intel® C++ Classic Compiler 2023.1.0
   - Intel® C++ Classic Compiler 2023.0.0
   - Apple Clang 12.0.5 (macOS 11.7.1)
 
@@ -171,7 +174,7 @@ through `EMBREE_SYCL_SUPPORT=ON`.
 
 Alternatively, you can download and run the installer of the
 
- - [Intel(R) oneAPI DPC++/C++ Compiler 2023.0.0](https://www.intel.com/content/www/us/en/developer/articles/tool/oneapi-standalone-components.html#dpcpp-cpp).
+ - [Intel(R) oneAPI DPC++/C++ Compiler 2023.1.0](https://www.intel.com/content/www/us/en/developer/articles/tool/oneapi-standalone-components.html#dpcpp-cpp).
 
 After installation, you can set up the compiler by sourcing the
 `vars.sh` script in the `env` directory of the compiler install directory, for example,
@@ -227,11 +230,13 @@ Windows
         
 Embree is tested using the following compilers under Windows:
 
+  - Intel® oneAPI DPC++/C++ Compiler 2023.1.0
   - Intel® oneAPI DPC++/C++ Compiler 2023.0.0
   - oneAPI DPC++/C++ Compiler 2023-04-17
   - Visual Studio 2019
   - Visual Studio 2017
   - Visual Studio 2015 (Update\ 1)
+  - Intel® Implicit SPMD Program Compiler 1.19.0
   - Intel® Implicit SPMD Program Compiler 1.18.1
   - Intel® Implicit SPMD Program Compiler 1.17.0
   - Intel® Implicit SPMD Program Compiler 1.16.1
