@@ -10,7 +10,7 @@ namespace embree
 {
   using namespace embree::isa;
 
-  static std::unique_ptr<tbb::task_arena> g_arena;
+  static tbb::task_arena g_arena(tbb::this_task_arena::max_concurrency(),tbb::this_task_arena::max_concurrency());
   
   inline ze_rtas_triangle_indices_uint32_exp_t getPrimitive(const ze_rtas_builder_triangles_geometry_info_exp_t* geom, uint32_t primID) {
     assert(primID < geom->triangleCount);
@@ -201,17 +201,6 @@ namespace embree
     return pinfo;
   }
   
-  RTHWIF_API void zeRTASInitExp()
-  {
-    uint32_t numThreads = tbb::this_task_arena::max_concurrency();
-    g_arena.reset(new tbb::task_arena(numThreads,numThreads));
-  }
-  
-  RTHWIF_API void zeRTASExitExp()
-  {
-    g_arena.reset();
-  }
-
   typedef struct _zet_base_desc_t
   {
     /** [in] type of this structure */
@@ -737,7 +726,7 @@ namespace embree
       //if (op->hBuilder != hBuilder)
       //  return ZE_RESULT_ERROR_INVALID_ARGUMENT;
       
-      g_arena->execute([&](){ op->group.run([=](){
+      g_arena.execute([&](){ op->group.run([=](){
          op->errorCode = zeRTASBuilderBuildExpInternal(args,
                                                        pScratchBuffer, scratchBufferSizeBytes,
                                                        pRtasBuffer, rtasBufferSizeBytes,
@@ -750,7 +739,7 @@ namespace embree
     else
     {
       ze_result_t errorCode = ZE_RESULT_SUCCESS;
-      g_arena->execute([&](){ errorCode = zeRTASBuilderBuildExpInternal(args,
+      g_arena.execute([&](){ errorCode = zeRTASBuilderBuildExpInternal(args,
                                                                         pScratchBuffer, scratchBufferSizeBytes,
                                                                         pRtasBuffer, rtasBufferSizeBytes,
                                                                         pBuildUserPtr, pBounds, pRtasBufferSizeBytes);
@@ -798,7 +787,7 @@ namespace embree
     VALIDATE(hParallelOperation);
     
     ze_rtas_parallel_operation_t* op = (ze_rtas_parallel_operation_t*) hParallelOperation;
-    g_arena->execute([&](){ op->group.wait(); });
+    g_arena.execute([&](){ op->group.wait(); });
     return op->errorCode;
   }
 }

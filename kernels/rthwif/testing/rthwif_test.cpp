@@ -2065,8 +2065,6 @@ int main(int argc, char* argv[])
   RTCore::SetXeVersion((RTCore::XeVersion)ZE_RAYTRACING_DEVICE);
 #endif
   
-  zeRTASInitExp();
-
   TestType test = TestType::TRIANGLES_COMMITTED_HIT;
   InstancingType inst = InstancingType::NONE;
   BuildMode buildMode = BuildMode::BUILD_EXPECTED_SIZE;
@@ -2195,8 +2193,6 @@ int main(int argc, char* argv[])
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
   free_accel_buffer(dispatchGlobalsPtr, context);
 #endif
-
-  zeRTASExitExp();
 
 #if defined(ZE_RAYTRACING_RT_SIMULATION)
   RTCore::Cleanup();
