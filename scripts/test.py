@@ -61,13 +61,9 @@ else:
   print("unknown platform: "+ sys.platform);
   sys.exit(1)
 
-NAS = ""
-if OS == "windows":
-  NAS = os.environ["NAS_WINDOWS"]
-elif OS == "linux":
-  NAS = os.environ["NAS_LINUX"]
-elif OS == "macosx":
-  NAS = os.environ["STORAGE_PATH"] + "/packages/apps"
+NAS = os.environ["STORAGE_PATH"] + "/packages/apps"
+if "klocwork:ON" in sys.argv:
+  NAS = "/NAS/packages/apps"
 
 # path of oneapi installation on windows machines
 ONE_API_PATH_WINDOWS="C:\\Program Files (x86)\\Intel\\oneAPI\\compiler"
@@ -118,8 +114,6 @@ def runConfig(config):
     enable_sycl_support = True
     conf.append("-D EMBREE_SYCL_SUPPORT="+config["EMBREE_SYCL_SUPPORT"])
     conf.append("-D EMBREE_TESTING_ONLY_SYCL_TESTS=ON")
-  if "EMBREE_NO_SPLASH" in config:
-    conf.append("-D EMBREE_NO_SPLASH="+config["EMBREE_NO_SPLASH"])
 
   #if "package" in config and OS == 'linux': # we need up to date cmake for RPMs to work properly
   #  env.append("module load cmake")
