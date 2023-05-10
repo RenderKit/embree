@@ -69,15 +69,3 @@ typedef enum _ze_structure_type_t {} ze_structure_type_t;
 
 RTHWIF_API ze_result_t ZE_APICALL_ zeDeviceGetRTASPropertiesExp( const ze_device_handle_t hDevice, ze_rtas_device_exp_properties_t* pRtasProp );
 
-
-/*
- * Initializes the library.
- */
-
-RTHWIF_API void zeRTASInitExp();
-
-/*
- * Cleans up the library.
- */
-
-RTHWIF_API void zeRTASExitExp();

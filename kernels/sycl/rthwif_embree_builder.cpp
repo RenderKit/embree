@@ -38,8 +38,6 @@ namespace embree
 
   void* zeRTASInitExp(sycl::device device, sycl::context context)
   {
-    ::zeRTASInitExp();
-    
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
 
 #if !defined(EMBREE_LEVEL_ZERO)
@@ -79,8 +77,6 @@ namespace embree
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
     rthwifFreeAccelBuffer(dispatchGlobalsPtr, context);
 #endif
-
-    zeRTASExitExp();
   }
 
 #if defined(EMBREE_LEVEL_ZERO)

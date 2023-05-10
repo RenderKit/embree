@@ -460,9 +460,6 @@ int main(int argc, char* argv[])
   RTCore::SetXeVersion((RTCore::XeVersion)ZE_RAYTRACING_DEVICE);
 #endif
 
-  /* initialize L0 ray tracing extension */
-  zeRTASInitExp();
-
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
   dispatchGlobalsPtr = allocDispatchGlobals(device,context);
 #endif
@@ -505,9 +502,6 @@ int main(int argc, char* argv[])
   free_accel_buffer(dispatchGlobalsPtr, context);
 #endif
   
-  /* cleanup L0 ray tracing extension */
-  zeRTASExitExp();
-
 #if defined(ZE_RAYTRACING_RT_SIMULATION)
   RTCore::Cleanup();
 #endif
