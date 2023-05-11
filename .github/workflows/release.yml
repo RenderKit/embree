@@ -26,7 +26,7 @@ jobs:
         python scripts/test.py build
         python scripts/test.py test
 
-  release-macosx-x64-Release-ICX2023_0_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP:
+  release-macosx-x64-Release-CLANG-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
     with:
@@ -34,7 +34,7 @@ jobs:
       artifact-out: release-macosx-x64-Release-ICX2023_0_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
       artifact-path: ./build/*.zip
       cmd: |
-        scripts/test.py configure platform:x64 build:Release compiler:ICX2023.0.0 ispc:ispc1.19.0 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB2021.9.0 intensity:4 package:ZIP
+        scripts/test.py configure platform:x64 build:Release compiler:CLANG ispc:ispc1.19.0 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB2021.9.0 intensity:4 package:ZIP
         scripts/test.py build
         scripts/test.py test
 
@@ -106,28 +106,28 @@ jobs:
   binary-analysis:
     needs:
       - release-windows-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
-      - release-macosx-x64-Release-ICX2023_0_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
+      - release-macosx-x64-Release-CLANG-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
       - release-linux-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/binary_analysis.yml@main
     with:
       project: embree
       artifact-in-windows: release-windows-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
-      artifact-in-macos: release-macosx-x64-Release-ICX2023_0_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
+      artifact-in-macos: release-macosx-x64-Release-CLANG-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
       artifact-in-linux: release-linux-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
       path: "build/*.zip build/*.gz"
 
   antivirus-scan:
     needs:
       - release-windows-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
-      - release-macosx-x64-Release-ICX2023_0_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
+      - release-macosx-x64-Release-CLANG-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
       - release-linux-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/antivirus_scan.yml@main
     with:
       project: embree
       artifact-in-windows: release-windows-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
-      artifact-in-macos: release-macosx-x64-Release-ICX2023_0_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
+      artifact-in-macos: release-macosx-x64-Release-CLANG-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
       artifact-in-linux: release-linux-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
       path: "build/*.zip build/*.gz"
 
