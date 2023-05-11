@@ -562,7 +562,7 @@ jobs:
 
   nightly-windows-x64-RelWithDebInfo-V140-ISPC1_9_2-SSE2-INT:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       cmd: |
         python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:V140 ispc:ispc1.16.1 isa:SSE2 tasking:INT intensity:2
@@ -571,7 +571,7 @@ jobs:
 
   nightly-windows-x64-RelWithDebInfo-V140-ISPC1_9_2-AVX-TBB2019_2:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       cmd: |
         python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:V140 ispc:ispc1.16.1 isa:AVX tasking:TBB2019.2 intensity:4
@@ -580,7 +580,7 @@ jobs:
 
   nightly-windows-Win32-RelWithDebInfo-V140-ISPC1_12_0-SSE2-TBB2020_2:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       cmd: |
         python scripts/test.py configure platform:Win32 build:RelWithDebInfo compiler:V140 ispc:ispc1.12.0 isa:SSE2 tasking:TBB2020.2 intensity:2
@@ -589,7 +589,7 @@ jobs:
 
   nightly-windows-x64-RelWithDebInfo-V140-ISPC1_12_0-AVX2-PPL:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       cmd: |
         python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:V140 ispc:ispc1.12.0 isa:AVX2 frequency_level:simd256 tasking:PPL intensity:2
@@ -598,7 +598,7 @@ jobs:
 
   nightly-windows-x64-RelWithDebInfo-V141-ISPC1_13_0-AVX2-TBB2019_9-STATIC:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       cmd: |
         python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.13.0 isa:AVX2 frequency_level:simd128 tasking:TBB2019.9 intensity:2 STATIC_LIB:ON
@@ -607,7 +607,7 @@ jobs:
 
   nightly-windows-x64-RelWithDebInfo-V142-ISPC1_13_0-AVX2-TBB2020_2-STATIC:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       cmd: |
         python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:V142 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 intensity:2
@@ -616,7 +616,7 @@ jobs:
 
   nightly-windows-x64-RelWithDebInfo-LLVM-CLANG-ISPC1_13_0-AVX2-TBB2019_9-NAMESPACE:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       cmd: |
         python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:LLVM_CLANG ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.9 intensity:4 api_namespace:myembree
@@ -625,7 +625,7 @@ jobs:
 
   nightly-windows-x64-RelWithDebInfo-ICX2023_0_0-ISPC1_13_0-AVX2-TBB2021_5_0:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       cmd: |
         python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:ICX2023.0.0 ispc:ispc1.13.0 isa:AVX2 frequency_level:simd128 tasking:TBB2021.5.0 intensity:4
@@ -634,7 +634,7 @@ jobs:
 
   nightly-windows-x64-RelWithDebInfo-ICX2023_0_0-ISPC1_13_0-AVX512-TBB2019_9:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
       cmd: |
@@ -644,7 +644,7 @@ jobs:
 
   nightly-windows-x64-RelWithDebInfo-ICX2023_0_0-ISPC1_14_1-AVX2-TBB2021_2_0:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       cmd: |
         python scripts/test.py configure platform:x64 build:Release compiler:ICX2023.0.0 ispc:ispc1.14.1 isa:AVX2 tasking:TBB2021.2.0 intensity:2
