@@ -77,6 +77,16 @@ back face culling is enabled.
 This is only the case if Embree is compiled with
 \f[C]EMBREE_BACKFACE_CULLING\f[R] enabled.
 .IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_BACKFACE_CULLING_CURVES_ENABLED\f[R]: Queries
+whether back face culling for curves is enabled.
+This is only the case if Embree is compiled with
+\f[C]EMBREE_BACKFACE_CULLING_CURVES\f[R] enabled.
+.IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_BACKFACE_CULLING_SPHERES_ENABLED\f[R]: Queries
+whether back face culling for spheres is enabled.
+This is only the case if Embree is compiled with
+\f[C]EMBREE_BACKFACE_CULLING_SPHERES\f[R] enabled.
+.IP \[bu] 2
 \f[C]RTC_DEVICE_PROPERTY_COMPACT_POLYS_ENABLED\f[R]: Queries whether
 compact polys is enabled.
 This is only the case if Embree is compiled with

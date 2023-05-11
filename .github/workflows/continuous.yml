@@ -6,7 +6,6 @@ name: continuous
 on: [push, workflow_dispatch]
 
 jobs:
-
   ####################################################################
   # Setup dpcpp and gfx if not already on NAS
   ####################################################################
@@ -485,7 +484,7 @@ jobs:
   ########################################
   windows-V140:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@devel
     with:
       runs-on: '[ "Windows", "NAS", "build" ]'
       cmd: |
@@ -495,7 +494,7 @@ jobs:
 
   windows-V141:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@devel
     with:
       runs-on: '[ "Windows", "NAS", "build" ]'
       cmd: |
@@ -505,7 +504,7 @@ jobs:
 
   windows-V142:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@devel
     with:
       runs-on: '[ "Windows", "NAS", "build" ]'
       cmd: |
@@ -515,7 +514,7 @@ jobs:
 
   windows-ICX:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@devel
     with:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
       cmd: |
