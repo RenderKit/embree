@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 4.0.1
+% Embree: High Performance Ray Tracing Kernels 4.1.0
 % Intel Corporation
 
 Intel® Embree Overview
@@ -7,8 +7,8 @@ Intel® Embree Overview
 Intel® Embree is a high-performance ray tracing library developed at
 Intel, which is released as open source under the [Apache 2.0
 license](http://www.apache.org/licenses/LICENSE-2.0). Intel® Embree
-supports x86 CPUs under Linux, macOS, and Windows; ARM CPUs on macOS;
-as well as Intel® GPUs under Linux and Windows.
+supports x86 CPUs under Linux, macOS, and Windows; ARM CPUs on Linux
+and macOS; as well as Intel® GPUs under Linux and Windows.
 
 Intel® Embree targets graphics application developers to improve the
 performance of photo-realistic rendering applications. Embree is
@@ -63,23 +63,13 @@ Supported Platforms
 
 Embree supports Windows (32-bit and 64-bit), Linux (64-bit), and macOS
 (64-bit). Under Windows, Linux and macOS x86 based CPUs are supported,
-while ARM CPUs are currently only supported under macOS (e.g. Apple 
-M1). ARM support for Windows and Linux is experimental.
+while ARM CPUs are currently only supported under Linux and macOS (e.g. 
+Apple M1). ARM support for Windows experimental.
 
 Embree supports Intel GPUs based on the Xe HPG microarchitecture
 (Intel® Arc™ GPU) under Linux and Windows and Xe HPC microarchitecture
 (Intel® Data Center GPU Flex Series and Intel® Data Center GPU Max
 Series) under Linux.
-
-Currently the following products are supported and further products
-will get enabled soon:
-
-- Intel® Arc™ A770 Graphics
-- Intel® Arc™ A750 Graphics
-- Intel® Arc™ A770M Graphics
-- Intel® Arc™ A730M Graphics
-- Intel® Arc™ A550M Graphics
-- Intel® Data Center GPU Flex 170
 
 The code compiles with the Intel® Compiler, Intel® oneAPI DPC++
 Compiler, GCC, Clang, and the Microsoft Compiler. To use Embree on the
@@ -110,7 +100,7 @@ Windows Installation
 --------------------
 
 Embree linked against Visual Studio 2015 are provided as a ZIP file
-[embree-4.0.1.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v4.0.1/embree-4.0.1.x64.vc14.windows.zip). After
+[embree-4.1.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v4.1.0/embree-4.1.0.x64.vc14.windows.zip). After
 unpacking this ZIP file, you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree.
@@ -120,13 +110,13 @@ Linux Installation
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-4.0.1.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v4.0.1/embree-4.0.1.x86_64.linux.tar.gz). Unpack
+[embree-4.1.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v4.1.0/embree-4.1.0.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    tar xzf embree-4.0.1.x86_64.linux.tar.gz
-    source embree-4.0.1.x86_64.linux/embree-vars.sh
+    tar xzf embree-4.1.0.x86_64.linux.tar.gz
+    source embree-4.1.0.x86_64.linux/embree-vars.sh
 
 We recommend adding a relative `RPATH` to your application that points
 to the location where Embree (and TBB) can be found, e.g. `$ORIGIN/../lib`.
@@ -136,12 +126,12 @@ macOS Installation
 ------------------
 
 The macOS version of Embree is also delivered as a ZIP file:
-[embree-4.0.1.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v4.0.1/embree-4.0.1.x86_64.macosx.zip). Unpack
+[embree-4.1.0.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v4.1.0/embree-4.1.0.x86_64.macosx.zip). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    unzip embree-4.0.1.x64.macosx.zip    source embree-4.0.1.x64.macosx/embree-vars.sh
+    unzip embree-4.1.0.x64.macosx.zip    source embree-4.1.0.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided ZIP file. The library name of that Embree
@@ -166,7 +156,7 @@ set the `TBB_DIR` variable to the path containing `TBB-config.cmake` of a local
 TBB install, in case you do not have TBB installed globally on your system,
 e.g:
 
-    cmake -D embree_DIR=path_to_embree_package/lib/cmake/embree-4.0.1/ \
+    cmake -D embree_DIR=path_to_embree_package/lib/cmake/embree-4.1.0/ \
           -D TBB_DIR=path_to_tbb_package/lib/cmake/tbb/ \
           ..
 
@@ -278,8 +268,9 @@ C++11. Embree is tested with the following compilers:
 
 Linux
 
+  - Intel® oneAPI DPC++/C++ Compiler 2023.1.0
   - Intel® oneAPI DPC++/C++ Compiler 2023.0.0
-  - oneAPI DPC++/C++ Compiler 2022-12-14
+  - oneAPI DPC++/C++ Compiler 2023-04-17
   - Clang 5.0.0
   - Clang 4.0.0
   - GCC 10.0.1 (Fedora 32) AVX512 support
@@ -287,6 +278,7 @@ Linux
   - GCC  7.3.1 (Fedora 27) AVX2 support
   - GCC  7.3.1 (Fedora 26) AVX2 support
   - GCC  6.4.1 (Fedora 25) AVX2 support
+  - Intel® Implicit SPMD Program Compiler 1.19.0
   - Intel® Implicit SPMD Program Compiler 1.18.1
   - Intel® Implicit SPMD Program Compiler 1.17.0
   - Intel® Implicit SPMD Program Compiler 1.16.1
@@ -297,6 +289,7 @@ Linux
   
 macOS x86
 
+  - Intel® C++ Classic Compiler 2023.1.0
   - Intel® C++ Classic Compiler 2023.0.0
   - Apple Clang 12.0.5 (macOS 11.7.1)
 
@@ -402,13 +395,13 @@ The "oneAPI DPC++ Compiler" is more up-to-date than the "Intel(R) oneAPI
 DPC++/C++ Compiler" but less stable. The current tested version of the "oneAPI
 DPC++ compiler is
 
-  - [oneAPI DPC++ Compiler 2022-12-14](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20221214/dpcpp-compiler.tar.gz)
+  - [oneAPI DPC++ Compiler 2023-04-17](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20230417/dpcpp-compiler.tar.gz)
   
 The compiler can be downloaded and simply extracted. The oneAPI DPC++ compiler
 2022-12-14 can be set up executing the following command in a Linux (bash)
 shell:
 
-    wget https://github.com/intel/llvm/releases/download/sycl-nightly%2F20221214/dpcpp-compiler.tar.gz
+    wget https://github.com/intel/llvm/releases/download/sycl-nightly%2F20230417/dpcpp-compiler.tar.gz
     tar xzf dpcpp-compiler.tar.gz
     source ./dpcpp_compiler/startup.sh
 
@@ -432,7 +425,7 @@ through `EMBREE_SYCL_SUPPORT=ON`.
 
 Alternatively, you can download and run the installer of the
 
- - [Intel(R) oneAPI DPC++/C++ Compiler 2023.0.0](https://www.intel.com/content/www/us/en/developer/articles/tool/oneapi-standalone-components.html#dpcpp-cpp).
+ - [Intel(R) oneAPI DPC++/C++ Compiler 2023.1.0](https://www.intel.com/content/www/us/en/developer/articles/tool/oneapi-standalone-components.html#dpcpp-cpp).
 
 After installation, you can set up the compiler by sourcing the
 `vars.sh` script in the `env` directory of the compiler install directory, for example,
@@ -476,7 +469,7 @@ We tested Embree with the latest GPGPU driver Devel Release from
 and OpenCL(TM) Driver from that release is too old for Embree to work
 properly. Thus if no newer version of the GPGPU driver is available,
 you need to additionally install the latest compute runtime from here
-[22.43.24595](https://github.com/intel/compute-runtime/releases/tag/22.43.24595.30).
+[23.09.25812.14](https://github.com/intel/compute-runtime/releases/tag/23.09.25812.14).
 
 Unfortunately, these compute runtime packages are only available for
 Ubuntu 22.04. You can also install a newer version of the compute
@@ -488,11 +481,13 @@ Windows
         
 Embree is tested using the following compilers under Windows:
 
+  - Intel® oneAPI DPC++/C++ Compiler 2023.1.0
   - Intel® oneAPI DPC++/C++ Compiler 2023.0.0
-  - oneAPI DPC++/C++ Compiler 2022-12-14
+  - oneAPI DPC++/C++ Compiler 2023-04-17
   - Visual Studio 2019
   - Visual Studio 2017
   - Visual Studio 2015 (Update 1)
+  - Intel® Implicit SPMD Program Compiler 1.19.0
   - Intel® Implicit SPMD Program Compiler 1.18.1
   - Intel® Implicit SPMD Program Compiler 1.17.0
   - Intel® Implicit SPMD Program Compiler 1.16.1
@@ -617,7 +612,7 @@ The "oneAPI DPC++ Compiler" is more up-to-date than the "Intel(R) oneAPI
 DPC++/C++ Compiler" but less stable. The current tested version of the oneAPI
 DPC++ compiler is
 
-  - [oneAPI DPC++ Compiler 2022-12-14](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20221214/dpcpp-compiler-win.tar.gz)
+  - [oneAPI DPC++ Compiler 2023-04-17](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20230417/dpcpp-compiler-win.tar.gz)
 
 Download and unpack the archive and open the "x64 Native Tools Command Prompt"
 of Visual Studio and execute the following lines to properly configure the
@@ -703,9 +698,9 @@ your application with such an Embree package.
 ### Windows Graphics Driver Installation
 
 In order to run the SYCL tutorials on HPG hardware, you first need to
-install the proper graphics drivers for your graphics card from
-[https://www.intel.com](https://www.intel.com). Embree will work with
-graphics driver version 101.4027 or later.
+install the graphics drivers for your graphics card from
+[https://www.intel.com](https://www.intel.com). Please make sure to
+have installed version 31.0.101.4314 or newer.
 
 
 CMake Configuration
@@ -773,6 +768,14 @@ parameters that can be configured in CMake:
 + `EMBREE_BACKFACE_CULLING`: Enables backface culling, i.e. only
   surfaces facing a ray can be hit. This option is turned OFF by
   default.
+
++ `EMBREE_BACKFACE_CULLING_CURVES`: Enables backface culling for curves,
+  i.e. only surfaces facing a ray can be hit. This option is turned OFF
+  by default.
+
++ `EMBREE_BACKFACE_CULLING_SPHERES`: Enables backface culling for spheres,
+  i.e. only surfaces facing a ray can be hit. This option is turned OFF
+  by default.
 
 + `EMBREE_COMPACT_POLYS`: Enables compact tris/quads, i.e. only
   geomIDs and primIDs are stored inside the leaf nodes.  
@@ -1315,21 +1318,6 @@ Embree SYCL Known Issues
     quality, and GPU performance may not reflect that of the final
     product.
 
--   Currently only the following Intel® Arc™ GPUs are support:
-
-    -   Intel® Arc™ A770 Graphics
-    -   Intel® Arc™ A750 Graphics
-    -   Intel® Arc™ A770M Graphics
-    -   Intel® Arc™ A730M Graphics
-    -   Intel® Arc™ A550M Graphics
-
--   Intel® Data Center GPU Max Series is currently not supported.
-
--   Ahead of time compilation is currently not working properly and you
-    will get this error during compilation:
-
-        llvm-foreach: Floating point exception (core dumped)
-
 -   Compilation with build configuration "debug" is currently not
     working on Windows.
 
@@ -1841,6 +1829,16 @@ Possible properties to query are:
 -   `RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED`: Queries whether
     back face culling is enabled. This is only the case if Embree is
     compiled with `EMBREE_BACKFACE_CULLING` enabled.
+
+-   `RTC_DEVICE_PROPERTY_BACKFACE_CULLING_CURVES_ENABLED`: Queries
+    whether back face culling for curves is enabled. This is only the
+    case if Embree is compiled with `EMBREE_BACKFACE_CULLING_CURVES`
+    enabled.
+
+-   `RTC_DEVICE_PROPERTY_BACKFACE_CULLING_SPHERES_ENABLED`: Queries
+    whether back face culling for spheres is enabled. This is only the
+    case if Embree is compiled with `EMBREE_BACKFACE_CULLING_SPHERES`
+    enabled.
 
 -   `RTC_DEVICE_PROPERTY_COMPACT_POLYS_ENABLED`: Queries whether
     compact polys is enabled. This is only the case if Embree is
