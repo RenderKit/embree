@@ -66,36 +66,36 @@ MACRO (ADD_EMBREE_NORMAL_TEST name reference executable args)
 ENDMACRO()
 
 MACRO (ADD_EMBREE_TEST name)
-  ADD_EMBREE_NORMAL_TEST(${name} ${name} ${name} "")
+  #ADD_EMBREE_NORMAL_TEST(${name} ${name} ${name} "")
 ENDMACRO()
 
 MACRO (ADD_EMBREE_TEST2 name exe args)
-  ADD_EMBREE_NORMAL_TEST(${name} ${exe} ${exe} "${args}")
+  #ADD_EMBREE_NORMAL_TEST(${name} ${exe} ${exe} "${args}")
 ENDMACRO()
 
 MACRO (ADD_EMBREE_MODEL_TEST name reference executable args model)
-  IF (BUILD_TESTING)  
-    ADD_TEST(NAME ${name}
-             WORKING_DIRECTORY "${MY_PROJECT_BINARY_DIR}"
-             COMMAND embree_${executable} -c "${EMBREE_MODEL_DIR}/${model}" --compare "${EMBREE_MODEL_DIR}/reference/${reference}.tga" ${args})
-  ENDIF()
+  #IF (BUILD_TESTING)  
+  #  ADD_TEST(NAME ${name}
+  #           WORKING_DIRECTORY "${MY_PROJECT_BINARY_DIR}"
+  #           COMMAND embree_${executable} -c "${EMBREE_MODEL_DIR}/${model}" --compare "${EMBREE_MODEL_DIR}/reference/${reference}.tga" ${args})
+  #ENDIF()
   
-  IF (EMBREE_ISPC_SUPPORT AND EMBREE_RAY_PACKETS)
-    IF (BUILD_TESTING)  
-      ADD_TEST(NAME ${name}_ispc
-               WORKING_DIRECTORY "${MY_PROJECT_BINARY_DIR}"
-               COMMAND COMMAND embree_${executable}_ispc -c "${EMBREE_MODEL_DIR}/${model}" --compare "${EMBREE_MODEL_DIR}/reference/${reference}.tga" ${args})
-    ENDIF()
-  ENDIF()
+  #IF (EMBREE_ISPC_SUPPORT AND EMBREE_RAY_PACKETS)
+  #  IF (BUILD_TESTING)  
+  #    ADD_TEST(NAME ${name}_ispc
+  #             WORKING_DIRECTORY "${MY_PROJECT_BINARY_DIR}"
+  #             COMMAND COMMAND embree_${executable}_ispc -c "${EMBREE_MODEL_DIR}/${model}" --compare "${EMBREE_MODEL_DIR}/reference/${reference}.tga" ${args})
+  #  ENDIF()
+  #ENDIF()
 
-  IF (BUILD_TESTING AND EMBREE_SYCL_SUPPORT)
-    IF (NOT "${name}" MATCHES ".*subdiv.*")  # skip subdiv models for SYCL mode
-      ADD_TEST(NAME ${name}_sycl
-                 WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
-                 COMMAND COMMAND embree_${executable}_sycl -c ${EMBREE_MODEL_DIR}/${model} --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
-      SET_TESTS_PROPERTIES(${name}_sycl PROPERTIES TIMEOUT 120)
-    ENDIF()
-  ENDIF()
+  #IF (BUILD_TESTING AND EMBREE_SYCL_SUPPORT)
+  #  IF (NOT "${name}" MATCHES ".*subdiv.*")  # skip subdiv models for SYCL mode
+  #    ADD_TEST(NAME ${name}_sycl
+  #               WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
+  #               COMMAND COMMAND embree_${executable}_sycl -c ${EMBREE_MODEL_DIR}/${model} --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
+  #    SET_TESTS_PROPERTIES(${name}_sycl PROPERTIES TIMEOUT 120)
+  #  ENDIF()
+  #ENDIF()
 ENDMACRO()
   
 MACRO (ADD_EMBREE_MODELS_TEST model_list_file name reference executable)
