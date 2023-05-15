@@ -20,6 +20,8 @@
 #include "../../../common/math/affinespace.h"
 #endif
 
+#include "node_type.h"
+
 #include <map>
 #include <bitset>
 
@@ -175,7 +177,7 @@ namespace embree
 
       : leafDesc(shaderIndex,geomIndex,gflags,geomMask),
         primIndex0(primIndex0), 
-        primIndex1Delta(primIndex1-primIndex0),
+        primIndex1Delta(primIndex1-primIndex0), pad1(0),
         j0(j0),j1(j1),j2(j2),last(last),pad(0),
         v0(v0), v1(v1), v2(v2), v3(v3)
     {
@@ -288,20 +290,17 @@ namespace embree
     }
 
   public:
-    union {
-      struct {
-        PrimLeafDesc leafDesc;  // the leaf header
-        uint32_t primIndex0;    // primitive index of first triangle
-        struct {
-          uint32_t primIndex1Delta : 16;  // delta encoded primitive index of second triangle
-          uint32_t j0              : 2;   // specifies first vertex of second triangle
-          uint32_t j1              : 2;   // specified second vertex of second triangle
-          uint32_t j2              : 2;   // specified third vertex of second triangle    
-          uint32_t last            : 1;   // true if the second triangle is the last triangle in a leaf list
-          uint32_t pad             : 9;   // unused bits
-        };
-      };
-      unsigned int header[4];
+    PrimLeafDesc leafDesc;  // the leaf header
+
+    uint32_t primIndex0;    // primitive index of first triangle
+    struct {
+      uint32_t primIndex1Delta : 5;  // delta encoded primitive index of second triangle
+      uint32_t pad1            : 11; // MBZ
+      uint32_t j0              : 2;   // specifies first vertex of second triangle
+      uint32_t j1              : 2;   // specified second vertex of second triangle
+      uint32_t j2              : 2;   // specified third vertex of second triangle    
+      uint32_t last            : 1;   // true if the second triangle is the last triangle in a leaf list
+      uint32_t pad             : 9;   // unused bits
     };
     
     Vec3f v0;  // first vertex of first triangle
@@ -528,6 +527,7 @@ namespace embree
   };
 
   static_assert(sizeof(InstanceLeaf) == 128, "InstanceLeaf must be 128 bytes large");
+
 
   /*
     Leaf type for procedural geometry. This leaf only contains the

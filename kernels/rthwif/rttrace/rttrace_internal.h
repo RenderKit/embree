@@ -3,15 +3,12 @@
 
 #pragma once
 
+#  define MemRay MemRayV1
+#  define MemHit MemHitV1
+#  define QuadLeaf QuadLeafV1
+#  define InstanceLeaf InstanceLeafV1
+
 #include <cstdint>
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-#pragma clang diagnostic ignored "-W#pragma-messages"
-
-#include <sycl/sycl.hpp>
-
-#pragma clang diagnostic pop
 
 enum TraceRayCtrl
 {
@@ -55,14 +52,36 @@ enum NodeType
   NODE_TYPE_INVALID = 0x7       // indicates invalid node
 };
 
-struct __attribute__ ((packed,aligned(32))) MemRay
+struct __attribute__ ((packed,aligned(32))) MemRayV1
 {
+  void init(intel_ray_desc_t ray, uint64_t rootNodePtr_i)
+  {
+    org[0] = ray.origin.x;
+    org[1] = ray.origin.y;
+    org[2] = ray.origin.z;
+    dir[0] = ray.direction.x;
+    dir[1] = ray.direction.y;
+    dir[2] = ray.direction.z;
+    tnear  = ray.tmin;
+    tfar   = ray.tmax;
+    rootNodePtr = rootNodePtr_i;
+    rayFlags = ray.flags;
+    hitGroupSRBasePtr = 0;
+    hitGroupSRStride = 0;
+    missSRPtr = 0;
+    pad0 = 0;
+    shaderIndexMultiplier = 0;
+    instLeafPtr = 0;
+    rayMask = ray.mask;
+    pad1 = 0;
+  }
+  
   // 32 B  
   float org[3];
   float dir[3];
   float tnear;
   float tfar;
-  
+
   // 32 B
   struct { // FIXME: removing these anonymous structs triggers IGC bug
     uint64_t rootNodePtr : 48;  // root node to start traversal at
@@ -87,8 +106,32 @@ struct __attribute__ ((packed,aligned(32))) MemRay
   };
 };
 
-struct __attribute__ ((packed,aligned(32))) MemHit 
+struct __attribute__ ((packed,aligned(32))) MemHitV1
 {
+  inline float getT() const {
+    return ft;
+  }
+
+  inline void setT(float t) {
+    ft = t;
+  }
+
+  inline float getU() const {
+    return fu;
+  }
+
+  inline void setU(float u) {
+    fu = u;
+  }
+  
+  inline float getV() const {
+    return fv;
+  }
+
+  inline void setV(float v) {
+    fv = v;
+  }
+  
   inline void* getPrimLeafPtr() {
     return sycl::global_ptr<void>((void*)(uint64_t(primLeafPtr)*64)).get();
   }
@@ -96,9 +139,10 @@ struct __attribute__ ((packed,aligned(32))) MemHit
   inline void* getInstanceLeafPtr() {
     return sycl::global_ptr<void>((void*)(uint64_t(instLeafPtr)*64)).get();
   }
-  
-  float    t;                   // hit distance of current hit (or initial traversal distance)
-  float    u,v;                 // barycentric hit coordinates
+
+public:
+  float    ft;                   // hit distance of current hit (or initial traversal distance)
+  float    fu,fv;                 // barycentric hit coordinates
 
   union {
     struct {
@@ -126,7 +170,7 @@ struct __attribute__ ((packed,aligned(32))) MemHit
 
   void clear(bool _done, bool _valid) {
     //*(sycl::int8*) this = sycl::int8(0x7F800000 /* INFINITY */, 0, 0, (_done ? 0x10000000 : 0) | (_valid ? 0x10000), 0, 0, 0, 0);
-    t = u = v = 0.0f;
+    ft = fu = fv = 0.0f;
     data = 0;
     done = _done ? 1 : 0;
     valid = _valid ? 1 : 0;    
@@ -170,7 +214,7 @@ struct  __attribute__ ((packed,aligned(8))) PrimLeafDesc
   };
 };
 
-struct __attribute__ ((packed,aligned(64))) QuadLeaf
+struct __attribute__ ((packed,aligned(64))) QuadLeafV1
 {
   struct PrimLeafDesc leafDesc;
   unsigned int primIndex0;
@@ -198,7 +242,7 @@ struct __attribute__ ((packed,aligned(64))) ProceduralLeaf
   uint32_t _primIndex[N]; // primitive indices of all primitives stored inside the leaf
 };
 
-struct __attribute__ ((packed,aligned(64))) InstanceLeaf
+struct __attribute__ ((packed,aligned(64))) InstanceLeafV1
 {
   /* first 64 bytes accessed during traversal by hardware */
   struct Part0

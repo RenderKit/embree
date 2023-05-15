@@ -10,14 +10,7 @@ namespace embree
 {
   using namespace embree::isa;
 
-  static std::unique_ptr<tbb::task_arena> g_arena;
-  
-  typedef enum _ze_raytracing_accel_format_internal_t {
-    ZE_RTAS_DEVICE_FORMAT_EXP_INVALID = 0,      // invalid acceleration structure format
-    ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1 = 1, // acceleration structure format version 1
-    ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_2 = 2, // acceleration structure format version 2
-    ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_MAX = 2
-  } ze_raytracing_accel_format_internal_t;
+  static tbb::task_arena g_arena(tbb::this_task_arena::max_concurrency(),tbb::this_task_arena::max_concurrency());
   
   inline ze_rtas_triangle_indices_uint32_exp_t getPrimitive(const ze_rtas_builder_triangles_geometry_info_exp_t* geom, uint32_t primID) {
     assert(primID < geom->triangleCount);
@@ -208,17 +201,6 @@ namespace embree
     return pinfo;
   }
   
-  RTHWIF_API void zeRTASInitExp()
-  {
-    uint32_t numThreads = tbb::this_task_arena::max_concurrency();
-    g_arena.reset(new tbb::task_arena(numThreads,numThreads));
-  }
-  
-  RTHWIF_API void zeRTASExitExp()
-  {
-    g_arena.reset();
-  }
-
   typedef struct _zet_base_desc_t
   {
     /** [in] type of this structure */
@@ -390,6 +372,10 @@ namespace embree
     if (args->ppGeometries == nullptr && args->numGeometries > 0)
       return ZE_RESULT_ERROR_INVALID_NULL_POINTER;
 
+    /* validate that number of geometries are in range */
+    if (args->numGeometries > 0x00FFFFFF)
+      return ZE_RESULT_ERROR_INVALID_ENUMERATION;
+
     /* validate build quality */
     if (args->buildQuality < 0 || ZE_RTAS_BUILDER_BUILD_QUALITY_HINT_EXP_HIGH < args->buildQuality)
       return ZE_RESULT_ERROR_INVALID_ENUMERATION;
@@ -491,7 +477,7 @@ namespace embree
     if (dg2 || pvc) {
       pProperties->rtasFormat = (ze_rtas_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1;
       return ZE_RESULT_SUCCESS;
-    }        
+    }
 
     return ZE_RESULT_ERROR_UNKNOWN;
 
@@ -566,7 +552,7 @@ namespace embree
     size_t expectedBytes = 0;
     size_t worstCaseBytes = 0;
     size_t scratchBytes = 0;
-    QBVH6BuilderSAH::estimateSize(numGeometries, getSize, getType, args->buildQuality, args->buildFlags, expectedBytes, worstCaseBytes, scratchBytes);
+    QBVH6BuilderSAH::estimateSize(numGeometries, getSize, getType, args->rtasFormat, args->buildQuality, args->buildFlags, expectedBytes, worstCaseBytes, scratchBytes);
     
     /* fill return struct */
     pProp->flags = 0;
@@ -707,9 +693,9 @@ namespace embree
                            (char*)pRtasBuffer, rtasBufferSizeBytes,
                            pScratchBuffer, scratchBufferSizeBytes,
                            (BBox3f*) pBounds, pRtasBufferSizeBytes,
-                           args->buildQuality, args->buildFlags, verbose, dispatchGlobalsPtr);
+                           args->rtasFormat, args->buildQuality, args->buildFlags, verbose, dispatchGlobalsPtr);
     if (!success) {
-      return ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY;
+      return ZE_RESULT_EXP_ERROR_RETRY_RTAS_BUILD;
     }
     return ZE_RESULT_SUCCESS;
   }
@@ -740,7 +726,7 @@ namespace embree
       //if (op->hBuilder != hBuilder)
       //  return ZE_RESULT_ERROR_INVALID_ARGUMENT;
       
-      g_arena->execute([&](){ op->group.run([=](){
+      g_arena.execute([&](){ op->group.run([=](){
          op->errorCode = zeRTASBuilderBuildExpInternal(args,
                                                        pScratchBuffer, scratchBufferSizeBytes,
                                                        pRtasBuffer, rtasBufferSizeBytes,
@@ -753,7 +739,7 @@ namespace embree
     else
     {
       ze_result_t errorCode = ZE_RESULT_SUCCESS;
-      g_arena->execute([&](){ errorCode = zeRTASBuilderBuildExpInternal(args,
+      g_arena.execute([&](){ errorCode = zeRTASBuilderBuildExpInternal(args,
                                                                         pScratchBuffer, scratchBufferSizeBytes,
                                                                         pRtasBuffer, rtasBufferSizeBytes,
                                                                         pBuildUserPtr, pBounds, pRtasBufferSizeBytes);
@@ -801,7 +787,7 @@ namespace embree
     VALIDATE(hParallelOperation);
     
     ze_rtas_parallel_operation_t* op = (ze_rtas_parallel_operation_t*) hParallelOperation;
-    g_arena->execute([&](){ op->group.wait(); });
+    g_arena.execute([&](){ op->group.wait(); });
     return op->errorCode;
   }
 }

@@ -995,7 +995,7 @@ namespace embree
                                }
                                case ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_PROCEDURAL :  gpu::atomic_add_local(&numProcedurals,((ze_rtas_builder_procedural_geometry_info_exp_t*)geom)->primCount);     break;
                                case ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_INSTANCE   :  gpu::atomic_add_local(&numInstances  ,(unsigned int)1); break;
-                             default:                                 
+                                 //default:                                 
                                };
                              }
                              blocksPerGeom[geomID] = numBlocks;
@@ -2366,25 +2366,25 @@ namespace embree
     return numChildren;
   }  
 
-  __forceinline void write(const QuadLeaf &q, float16 *out) 
-  {
-    out[0].s0() = gpu::as_float(q.header[0]);      
-    out[0].s1() = gpu::as_float(q.header[1]);
-    out[0].s2() = gpu::as_float(q.header[2]);
-    out[0].s3() = gpu::as_float(q.header[3]);
-    out[0].s4() = q.v0.x;
-    out[0].s5() = q.v0.y;
-    out[0].s6() = q.v0.z;
-    out[0].s7() = q.v1.x;
-    out[0].s8() = q.v1.y;
-    out[0].s9() = q.v1.z;
-    out[0].sA() = q.v2.x;
-    out[0].sB() = q.v2.y;
-    out[0].sC() = q.v2.z;
-    out[0].sD() = q.v3.x;
-    out[0].sE() = q.v3.y;
-    out[0].sF() = q.v3.z;      
-  }
+  /* __forceinline void write(const QuadLeaf &q, float16 *out)  */
+  /* { */
+  /*   out[0].s0() = gpu::as_float(q.header[0]);       */
+  /*   out[0].s1() = gpu::as_float(q.header[1]); */
+  /*   out[0].s2() = gpu::as_float(q.header[2]); */
+  /*   out[0].s3() = gpu::as_float(q.header[3]); */
+  /*   out[0].s4() = q.v0.x; */
+  /*   out[0].s5() = q.v0.y; */
+  /*   out[0].s6() = q.v0.z; */
+  /*   out[0].s7() = q.v1.x; */
+  /*   out[0].s8() = q.v1.y; */
+  /*   out[0].s9() = q.v1.z; */
+  /*   out[0].sA() = q.v2.x; */
+  /*   out[0].sB() = q.v2.y; */
+  /*   out[0].sC() = q.v2.z; */
+  /*   out[0].sD() = q.v3.x; */
+  /*   out[0].sE() = q.v3.y; */
+  /*   out[0].sF() = q.v3.z;       */
+  /* } */
 
   // =============================================================================================================================================
   // =============================================================================================================================================

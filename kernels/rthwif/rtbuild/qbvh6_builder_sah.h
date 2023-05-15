@@ -323,6 +323,7 @@ namespace embree
                   const getProceduralFunc& getProcedural,
                   const getInstanceFunc& getInstance,
                   void* scratch_ptr, size_t scratch_bytes,
+                  ze_rtas_format_exp_t rtas_format,
                   ze_rtas_builder_build_quality_hint_exp_t build_quality,
                   ze_rtas_builder_build_op_exp_flags_t build_flags,
                   bool verbose)
@@ -335,6 +336,7 @@ namespace embree
             getProcedural(getProcedural),
             getInstance(getInstance),
             prims(scratch_ptr,scratch_bytes),
+            rtas_format((ze_raytracing_accel_format_internal_t)rtas_format),
             build_quality(build_quality),
             build_flags(build_flags),
             verbose(verbose) {} 
@@ -491,7 +493,8 @@ namespace embree
           
           return ReductionTy(curAddr, NODE_TYPE_INTERNAL, nodeMask, PrimRange(curBytes/64));
         }
-        
+
+        template<typename InstanceLeaf>
         const ReductionTy createInstances(const BuildRecord& curRecord, char* curAddr, size_t curBytes)
         {
           uint32_t numPrimitives = curRecord.size();
@@ -705,11 +708,12 @@ namespace embree
             return createFatQuadLeaf(ty, curRecord, curAddr, curBytes, children, numChildren);
           else if (ty == PROCEDURAL)
             return createProcedurals(curRecord,curAddr,curBytes);
-          else if (ty == INSTANCE)
-            return createInstances(curRecord,curAddr,curBytes);
-          else
-            assert(false);
-
+          else if (ty == INSTANCE) {
+            if (rtas_format == ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1)
+              return createInstances<InstanceLeaf>(curRecord,curAddr,curBytes);
+          }
+          
+          assert(false);
           return ReductionTy();
         }
 
@@ -1216,6 +1220,7 @@ namespace embree
 
           /* fill QBVH6 header */
           QBVH6* qbvh = new (accel) QBVH6(QBVH6::SizeEstimate());
+          qbvh->rtas_format = rtas_format;
           qbvh->numPrims = 0; //numPrimitives;
           uint64_t rootNodeOffset = QBVH6::Node((char*)(r.node - (char*)qbvh), r.type, r.primRange.cur_prim);
           assert(rootNodeOffset == QBVH6::rootNodeOffset);
@@ -1297,6 +1302,7 @@ namespace embree
         evector<PrimRef> prims;
         Allocator allocator;
         std::vector<std::vector<uint16_t>> quadification;
+        ze_raytracing_accel_format_internal_t rtas_format;
         ze_rtas_builder_build_quality_hint_exp_t build_quality;
         ze_rtas_builder_build_op_exp_flags_t build_flags;
         bool verbose;
@@ -1309,6 +1315,7 @@ namespace embree
       static void estimateSize(size_t numGeometries,
                                const getSizeFunc& getSize,
                                const getTypeFunc& getType,
+                               ze_rtas_format_exp_t rtas_format,
                                ze_rtas_builder_build_quality_hint_exp_t build_quality,
                                ze_rtas_builder_build_op_exp_flags_t build_flags,
                                size_t& expectedBytes,
@@ -1362,6 +1369,7 @@ namespace embree
                           void* scratch_ptr, size_t scratch_bytes,
                           BBox3f* boundsOut,
                           size_t* accelBufferBytesOut,
+                          ze_rtas_format_exp_t rtas_format,
                           ze_rtas_builder_build_quality_hint_exp_t build_quality,
                           ze_rtas_builder_build_op_exp_flags_t build_flags,
                           bool verbose,
@@ -1373,7 +1381,7 @@ namespace embree
           throw std::runtime_error("scratch buffer cannot get aligned");
     
         BuilderT<getSizeFunc, getTypeFunc, createPrimRefArrayFunc, getTriangleFunc, getTriangleIndicesFunc, getQuadFunc, getProceduralFunc, getInstanceFunc> builder
-          (device, getSize, getType, createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance, scratch_ptr, scratch_bytes, build_quality, build_flags, verbose);
+          (device, getSize, getType, createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance, scratch_ptr, scratch_bytes, rtas_format, build_quality, build_flags, verbose);
         
         return builder.build(numGeometries, accel_ptr, accel_bytes, boundsOut, accelBufferBytesOut, dispatchGlobalsPtr);
       }

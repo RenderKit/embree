@@ -39,8 +39,6 @@ namespace embree
 
   void* zeRTASInitExp(sycl::device device, sycl::context context)
   {
-    ::zeRTASInitExp();
-    
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
 
 #if !defined(EMBREE_LEVEL_ZERO)
@@ -80,8 +78,6 @@ namespace embree
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
     rthwifFreeAccelBuffer(dispatchGlobalsPtr, context);
 #endif
-
-    zeRTASExitExp();
   }
 
 #if defined(EMBREE_LEVEL_ZERO)
@@ -476,6 +472,8 @@ namespace embree
     DeviceGPU* gpuDevice = dynamic_cast<DeviceGPU*>(scene->device);
     if (gpuDevice == nullptr) throw std::runtime_error("internal error");
     ze_result_t err;
+    if (scene->size() > 0x00FFFFFF)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "too many geometries inside scene");
     
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     DeviceGPU *gpu_device = gpuDevice;
@@ -494,7 +492,7 @@ namespace embree
     ze_rtas_builder_exp_handle_t hBuilder = nullptr;
     err = zeRTASBuilderCreateExp(hDriver, &builderDesc, &hBuilder);
     if (err != ZE_RESULT_SUCCESS)
-      throw std::runtime_error("ze_rtas_builder creation failed");
+      throw_RTCError(RTC_ERROR_UNKNOWN, "ze_rtas_builder creation failed");      
 #endif    
     
     auto getType = [&](unsigned int geomID) -> GEOMETRY_TYPE
@@ -633,12 +631,12 @@ namespace embree
     ze_rtas_parallel_operation_exp_handle_t parallelOperation = nullptr;
     err = zeRTASParallelOperationCreateExp(hDriver, &parallelOperation);
     if (err != ZE_RESULT_SUCCESS)
-      throw std::runtime_error("parallel operation creation failed");
+      throw_RTCError(RTC_ERROR_UNKNOWN, "parallel operation creation failed");
 
     ze_rtas_device_exp_properties_t rtasProp = { ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES };
     err = zeDeviceGetRTASPropertiesExp(hDevice, &rtasProp );
     if (err != ZE_RESULT_SUCCESS)
-      throw std::runtime_error("get rtas device properties failed");
+      throw_RTCError(RTC_ERROR_UNKNOWN, "get rtas device properties failed");
 #endif    
 
     /* estimate static accel size */
@@ -815,7 +813,7 @@ namespace embree
           ze_rtas_parallel_operation_exp_properties_t prop = { ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES };
           err = zeRTASParallelOperationGetPropertiesExp(parallelOperation,&prop);
           if (err != ZE_RESULT_SUCCESS)
-            throw std::runtime_error("get max concurrency failed");
+            throw_RTCError(RTC_ERROR_UNKNOWN, "get max concurrency failed");
           
           parallel_for(prop.maxConcurrency, [&](uint32_t) { err = zeRTASParallelOperationJoinExp(parallelOperation); });
         }
@@ -826,7 +824,7 @@ namespace embree
         if (err == ZE_RESULT_SUCCESS) // added if        
           fullBounds.extend(*(BBox3f*) &bounds);
 
-        if (err == ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY)
+        if (err == ZE_RESULT_EXP_ERROR_RETRY_RTAS_BUILD)
         {
           if (sizeTotal.rtasBufferSizeBytesExpected == sizeTotal.rtasBufferSizeBytesMaxRequired)
             throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
@@ -837,7 +835,7 @@ namespace embree
         
         if (err != ZE_RESULT_SUCCESS) break;
       }
-      if (err != ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY) break;
+      if (err != ZE_RESULT_EXP_ERROR_RETRY_RTAS_BUILD) break;
     }
 
     if (err != ZE_RESULT_SUCCESS)
@@ -858,12 +856,12 @@ namespace embree
     /* destroy parallel operation */
     err = zeRTASParallelOperationDestroyExp(parallelOperation);
     if (err != ZE_RESULT_SUCCESS)
-      throw std::runtime_error("parallel operation destruction failed");
+      throw_RTCError(RTC_ERROR_UNKNOWN, "parallel operation destruction failed");
 
     /* destroy rtas builder again */
     err = zeRTASBuilderDestroyExp(hBuilder);
     if (err != ZE_RESULT_SUCCESS)
-      throw std::runtime_error("ze_rtas_builder destruction failed");
+      throw_RTCError(RTC_ERROR_UNKNOWN, "ze_rtas_builder destruction failed");
     
     EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) accel.data();
     hwaccel->numTimeSegments = maxTimeSegments;

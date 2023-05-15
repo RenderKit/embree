@@ -23,34 +23,6 @@ inline float embree_frexp(float value, int* exp)
 
 namespace embree
 {
-  /* The type of a node. */
-  enum NodeType : uint8_t
-  {
-    NODE_TYPE_MIXED = 0x0,        // identifies a mixed internal node where each child can have a different type
-    NODE_TYPE_INTERNAL = 0x0,     // internal BVH node with 6 children
-    NODE_TYPE_INSTANCE = 0x1,     // instance leaf
-    NODE_TYPE_PROCEDURAL = 0x3,   // procedural leaf
-    NODE_TYPE_QUAD = 0x4,         // quad leaf
-    NODE_TYPE_INVALID = 0x7       // indicates invalid node
-  };
-
-  /* output operator for NodeType */
-  inline std::ostream& operator<<(std::ostream& _cout, const NodeType& _type)
-  {
-#if !defined(__RTRT_GSIM)
-    switch (_type)
-    {
-    case NODE_TYPE_INTERNAL: _cout << "INTERNAL"; break;
-    case NODE_TYPE_INSTANCE: _cout << "INSTANCE"; break;
-    case NODE_TYPE_PROCEDURAL: _cout << "PROCEDURAL"; break;
-    case NODE_TYPE_QUAD: _cout << "QUAD"; break;
-    case NODE_TYPE_INVALID: _cout << "INVALID"; break;
-    default: _cout << "INVALID NODE TYPE"; break;
-    }
-#endif
-    return _cout;
-  };
-
   /* The NodeRef structure references a node of the BVH. It stores the
      * pointer to that node as well as the node's type. If a leaf node
      * is referenced the current primitive to intersect is also
