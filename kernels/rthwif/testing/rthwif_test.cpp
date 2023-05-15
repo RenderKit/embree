@@ -1293,7 +1293,7 @@ struct Scene
           });
         }
         
-        if (err != ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY)
+        if (err != ZE_RESULT_EXP_ERROR_RETRY_RTAS_BUILD)
           break;
 
         if (accelBufferBytesOut < bytes || size.rtasBufferSizeBytesMaxRequired < accelBufferBytesOut )

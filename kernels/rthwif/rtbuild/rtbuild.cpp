@@ -695,7 +695,7 @@ namespace embree
                            (BBox3f*) pBounds, pRtasBufferSizeBytes,
                            args->rtasFormat, args->buildQuality, args->buildFlags, verbose, dispatchGlobalsPtr);
     if (!success) {
-      return ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY;
+      return ZE_RESULT_EXP_ERROR_RETRY_RTAS_BUILD;
     }
     return ZE_RESULT_SUCCESS;
   }

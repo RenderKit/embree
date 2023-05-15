@@ -4,6 +4,8 @@
 #pragma once
 
 #define ZE_RESULT_EXP_ERROR_OPERANDS_INCOMPATIBLE ((ze_result_t)0x7ff00004) ///< [Core, Experimental] operands of comparison are not compatible
+#define ZE_RESULT_EXP_ERROR_RETRY_RTAS_BUILD ((ze_result_t) 0x7ff00005)  ///< [Core, Experimental] ray tracing acceleration structure build failed
+                                                                         ///< due to insufficient resources, retry with a larger buffer allocation
 
 #define ZE_STRUCTURE_TYPE_RTAS_BUILDER_EXP_DESC ((ze_structure_type_t)0x0002000E)   ///< ::ze_rtas_builder_exp_desc_t
 #define ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_EXP_DESC ((ze_structure_type_t)0x0002000F)  ///< ::ze_rtas_builder_build_op_exp_desc_t
@@ -304,7 +306,7 @@ typedef struct _ze_rtas_builder_exp_properties_t
     size_t rtasBufferSizeBytesExpected;             ///< [out] expected size (in bytes) required for acceleration structure buffer
                                                     ///<    - When using an acceleration structure buffer of this size, the
                                                     ///< build is expected to succeed; however, it is possible that the build
-                                                    ///< may fail with ::ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY
+                                                    ///< may fail with ::ZE_RESULT_EXP_ERROR_RETRY_RTAS_BUILD
     size_t rtasBufferSizeBytesMaxRequired;          ///< [out] worst-case size (in bytes) required for acceleration structure buffer
                                                     ///<    - When using an acceleration structure buffer of this size, the
                                                     ///< build is guaranteed to not run out of memory.
@@ -527,9 +529,6 @@ typedef struct _ze_rtas_builder_triangles_geometry_info_exp_t
                                                     ///< bits representing the geometry flags for all primitives of this
                                                     ///< geometry
     uint8_t geometryMask;                           ///< [in] 8-bit geometry mask for ray masking
-    uint8_t reserved0;                              ///< [in] reserved for future use
-    uint8_t reserved1;                              ///< [in] reserved for future use
-    uint8_t reserved2;                              ///< [in] reserved for future use
     ze_rtas_builder_packed_input_data_format_exp_t triangleFormat;  ///< [in] format of triangle buffer data, must be
                                                     ///< ::ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_TRIANGLE_INDICES_UINT32
     ze_rtas_builder_packed_input_data_format_exp_t vertexFormat;///< [in] format of vertex buffer data, must be
@@ -566,9 +565,6 @@ typedef struct _ze_rtas_builder_quads_geometry_info_exp_t
                                                     ///< bits representing the geometry flags for all primitives of this
                                                     ///< geometry
     uint8_t geometryMask;                           ///< [in] 8-bit geometry mask for ray masking
-    uint8_t reserved0;                              ///< [in] reserved for future use
-    uint8_t reserved1;                              ///< [in] reserved for future use
-    uint8_t reserved2;                              ///< [in] reserved for future use
     ze_rtas_builder_packed_input_data_format_exp_t quadFormat;  ///< [in] format of quad buffer data, must be
                                                     ///< ::ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_QUAD_INDICES_UINT32
     ze_rtas_builder_packed_input_data_format_exp_t vertexFormat;///< [in] format of vertex buffer data, must be
@@ -787,7 +783,7 @@ zeRTASBuilderFormatCompatibilityCheckExp(
 ///       an out-of-memory error.
 ///     - When using the "expected" size for the acceleration structure buffer,
 ///       the acceleration structure construction may fail with
-///       ::ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY. If this happens, the user may
+///       ::ZE_RESULT_EXP_ERROR_RETRY_RTAS_BUILD. If this happens, the user may
 ///       resize their acceleration structure buffer using the
 ///       `*pRtasBufferSizeBytes` value, which will be updated with an improved
 ///       size estimate that will likely result in a successful build.
@@ -830,8 +826,8 @@ zeRTASBuilderFormatCompatibilityCheckExp(
 ///         + `::ZE_RTAS_FORMAT_EXP_INVALID < pBuildOpDescriptor->rtasFormat`
 ///         + `::ZE_RTAS_BUILDER_BUILD_QUALITY_HINT_EXP_HIGH < pBuildOpDescriptor->buildQuality`
 ///         + `0x3 < pBuildOpDescriptor->buildFlags`
-///     - ::ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY
-///         + Acceleration structure build failed due to insufficient resources
+///     - ::ZE_RESULT_EXP_ERROR_RETRY_RTAS_BUILD
+///         + Acceleration structure build failed due to insufficient resources, retry the build operation with a larger buffer allocation.
 ///     - ::ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE
 ///         + Acceleration structure build failed due to parallel operation object participation in another build operation.
 ZE_APIEXPORT ze_result_t ZE_APICALL
@@ -975,6 +971,4 @@ zeRTASParallelOperationDestroyExp(
 #if !defined(__GNUC__)
 #pragma endregion
 #endif
-
-
 
