@@ -1921,6 +1921,49 @@ namespace embree
         if (geom->numLCMs)
         {          
 #if 1
+
+#if 0
+          std::vector<Vec3f> vertices;
+          std::vector<Vec4i> indices;
+          
+          for (uint ID=0;ID<geom->numLCMs;ID++)
+          {
+            const LossyCompressedMeshCluster* const base = (LossyCompressedMeshCluster*)(geom->pLCMs);
+            const uint32_t clusterID = geom->pLCMIDs[ID];
+            const LossyCompressedMeshCluster &cluster = base[ clusterID ];                                 
+            const LossyCompressedMesh &mesh = *cluster.mesh;
+            const CompressedVertex *const compressedVertices = mesh.compressedVertices + cluster.offsetVertices; 
+            const CompressedQuadIndices *const compressedIndices = mesh.compressedIndices + cluster.offsetIndices;
+            const Vec3f lower = mesh.bounds.lower;
+            const Vec3f diag = mesh.bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
+
+            const uint offset_vertices = vertices.size();
+                        
+            for (uint32_t q=0;q<cluster.numQuads;q++)
+            {
+              const uint32_t v0 = compressedIndices[q].v0() + offset_vertices;
+              const uint32_t v1 = compressedIndices[q].v1() + offset_vertices;
+              const uint32_t v2 = compressedIndices[q].v2() + offset_vertices;
+              const uint32_t v3 = compressedIndices[q].v3() + offset_vertices;
+
+              indices.push_back(Vec4i(v0,v1,v2,v3));
+            }
+            for (uint32_t q=0;q<cluster.tmp;q++)              
+              vertices.push_back(compressedVertices[q].decompress(lower,diag));            
+          }
+          PRINT(vertices.size());
+          PRINT(indices.size());
+          
+          std::ofstream output("clusters.obj",std::ios::out);
+          if (!output) FATAL("clusters.obj");
+          for (uint i=0;i<vertices.size();i++)
+            output << "v " << vertices[i].x << " " << vertices[i].y << " " << vertices[i].z << std::endl;
+          for (uint i=0;i<indices.size();i++)
+            output << "f " << indices[i].x+1 << " " << indices[i].y+1 << " " << indices[i].z+1 << " " << indices[i].w+1 << std::endl;          
+          output.close();
+          PRINT("WRITING OBJ FILE DONE");
+          exit(0);
+#endif          
           const uint32_t wgSize = 16;        
           const sycl::nd_range<1> nd_range1(wgSize*geom->numLCMs,sycl::range<1>(wgSize));          
           sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
@@ -2155,6 +2198,54 @@ namespace embree
 
         if (geom->numLCGs)
         {
+
+#if 0
+          const uint nums = geom->numLCGs;
+          
+          std::vector<Vec3f> vertices;
+          std::vector<Vec4i> indices;
+          for (uint ID=0;ID<nums;ID++)
+          {
+            LCGBP_State &state = ((LCGBP_State*)(geom->pLCGs))[ID];
+            const LCGBP *const lcgbp = state.lcgbp;
+            const uint32_t lgcbp_start_x = state.start_x;
+            const uint32_t lgcbp_start_y = state.start_y;                               
+            const uint32_t lgcbp_step = state.step;
+
+            const uint offset_vertices = vertices.size();
+
+            for (uint32_t y=0;y<9;y++)
+            {
+              for (uint32_t x=0;x<9;x++)                
+                vertices.push_back(lcgbp->decode(lgcbp_start_x + x*lgcbp_step, lgcbp_start_y + y*lgcbp_step));
+            }
+            
+            for (uint32_t y=0;y<8;y++)
+            {
+              for (uint32_t x=0;x<8;x++)                
+              {
+                const uint32_t v0 = (y+0)*9+(x+0) + offset_vertices;
+                const uint32_t v1 = (y+0)*9+(x+1) + offset_vertices;
+                const uint32_t v2 = (y+1)*9+(x+1) + offset_vertices;
+                const uint32_t v3 = (y+1)*9+(x+0) + offset_vertices;                
+                indices.push_back(Vec4i(v0,v1,v2,v3));
+              }
+            }            
+          }
+          PRINT(vertices.size());
+          PRINT(indices.size());
+          
+          std::ofstream output("clusters.obj",std::ios::out);
+          if (!output) FATAL("clusters.obj");
+          for (uint i=0;i<vertices.size();i++)
+            output << "v " << vertices[i].x << " " << vertices[i].y << " " << vertices[i].z << std::endl;
+          for (uint i=0;i<indices.size();i++)
+            output << "f " << indices[i].x+1 << " " << indices[i].y+1 << " " << indices[i].z+1 << " " << indices[i].w+1 << std::endl;          
+          output.close();
+          PRINT("WRITING OBJ FILE DONE");
+          exit(0);
+#endif          
+          
           const uint32_t SIZE_LCG_BVH = estimateLossyCompressedGeometriesSize(1);        
           const uint32_t wgSize = 16;        
           const sycl::nd_range<1> nd_range1(wgSize*geom->numLCGs,sycl::range<1>(wgSize));          
@@ -2370,7 +2461,10 @@ namespace embree
             });
         
           gpu::waitOnEventAndCatchException(queue_event);
-        
+
+
+          
+          
           if (unlikely(verbose))
             iteration_time += gpu::getDeviceExecutionTiming(queue_event);
           //PRINT( gpu::getDeviceExecutionTiming(queue_event) );

@@ -17,8 +17,9 @@
 
 #define ENABLE_DAG 1
 #define ALLOC_DEVICE_MEMORY 0
-#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 256
-//28.0f
+//#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 256
+//#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 28.0f
+#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 11.0f
 
 namespace embree {
 
@@ -46,43 +47,143 @@ extern "C" ISPCScene* g_ispc_scene;
 
 #if ENABLE_FP16_GBUFFER == 1
   typedef sycl::vec<sycl::opencl::cl_half, 3>  Vec3fp16;
+  typedef sycl::vec<sycl::opencl::cl_half, 2>  Vec2fp16;
 
   __forceinline Vec3f    fp_convert(const Vec3fp16 &v) { return Vec3f((float)v.x(),(float)v.y(),(float)v.z()); }
   __forceinline Vec3fp16 fp_convert(const Vec3f    &v) { return Vec3fp16(v.x,v.y,v.z);  }
 
+  __forceinline Vec2f    fp_convert(const Vec2fp16 &v) { return Vec2f((float)v.x(),(float)v.y()); }
+  __forceinline Vec2fp16 fp_convert(const Vec2f    &v) { return Vec2fp16(v.x,v.y);  }
+
 #else
-  __forceinline Vec3f    fp_convert(const Vec3f    &v) { return v; }  
+  __forceinline Vec3f    fp_convert(const Vec3f    &v) { return v; }
+  __forceinline Vec2f    fp_convert(const Vec2f    &v) { return v; }  
+  
 #endif
 
 
-struct GBuffer
-{
+struct  __attribute__ ((packed,aligned(16))) GBuffer
+{  
 #if ENABLE_FP16_GBUFFER == 1
   Vec3fp16 color,normal,albedo;
 #else
   Vec3f color;
   Vec3f normal;
   Vec3f albedo;
-#endif  
+#endif
+  Vec3f position;
+  float t;
+  int primID;
+  int motion;
+  
+  inline GBuffer() {}
+
+  inline GBuffer(const GBuffer& gb)
+    : color(gb.color), albedo(gb.albedo), normal(gb.normal), position(gb.position), t(gb.t), primID(gb.primID), motion(gb.motion) {}
+    
+  inline void clear() {
+#if ENABLE_FP16_GBUFFER == 0
+    color = Vec3f(0.0f); 
+    albedo = Vec3f(1.0f);
+    normal = Vec3f(1.0f);
+#else
+    color = Vec3fp16(0.0f); 
+    albedo = Vec3fp16(1.0);
+    normal = Vec3fp16(1.0f);
+#endif
+    position = Vec3f(0.0f);
+    t = 0.0f; // inf == no hit
+    primID = -1;
+    motion = -1;
+  }
+
+  inline Vec3f get_normal() const {
+    return fp_convert(normal);
+  }
+  
+  
+  friend GBuffer operator+ (const GBuffer& a, const GBuffer& b) {
+    GBuffer res;
+    res.color  = a.color  + b.color;
+    res.normal = a.normal + b.normal;    
+    res.albedo = a.albedo + b.albedo;
+    return res;
+  }
+
+  friend GBuffer operator* (const GBuffer& a, const float b) {
+    GBuffer res;
+    res.color  = a.color   * b;
+    res.normal = a.normal  * b;    
+    res.albedo = a.albedo  * b;
+    return res;      
+  }
+
 };
+
+
+  
 
 #if ENABLE_FP16_GBUFFER == 1
   typedef Vec3fp16 GBufferOutput;
 #else
   typedef Vec3f GBufferOutput;
 #endif
+
+  struct PosRadius
+  {
+    inline PosRadius() {}
+
+    inline PosRadius(Vec3f pos, float radius)
+      : pos(pos), radius(radius) {}
+
+    Vec3f pos = Vec3f(0);
+    float radius = -float(inf);
+  };
+
   
 struct Denoiser
 {
+
+  static constexpr float PI = 3.1415926535897932384626422832795028841971f;
+  static constexpr float TWO_PI = 6.2831853071795864769252867665590057683943f;
+  static constexpr float SQRT_OF_ONE_THIRD = 0.5773502691896257645091487805019574556476f;
+  static constexpr float EPSILON = 0.00001f;
+  static constexpr float ECON = 2.71828f;
+  
   OIDNDevice device;
   OIDNFilter filter;
-  GBuffer *gBuffer;
+  GBuffer *gBuffer[2];
+  Vec3f *colorBuffer[2];
+  Vec3f *momentsBuffer[2];
+  float *varianceBuffer[3];
+  
+#define FILTER_SIZE 5  
+  Vec2i *hst_offset;
+  float *hst_filter;
+  
+
+  
 #if ENABLE_FP16_GBUFFER == 1
   Vec3fp16   *outputBuffer;  
 #else  
   Vec3f   *outputBuffer;
 #endif  
   uint width, height;
+
+
+  void filterInit(int filterSize) {
+    // compute offsets and kernel values
+    int o_range = filterSize / 2;
+    int index = 0;
+    for (int i = -o_range; i <= o_range; ++i) {
+        for (int j = -o_range; j <= o_range; ++j) {
+            hst_offset[index] = Vec2i(j, i);
+            hst_filter[index] = ((1.f / TWO_PI) * powf(ECON, -(j * j + i * i) / 2.f));
+            index++;
+        }
+    }
+    if (index != FILTER_SIZE*FILTER_SIZE) FATAL("FILTER_SIZE");
+}
 
   void checkError()
   {
@@ -108,21 +209,53 @@ struct Denoiser
     OIDNFormat format = OIDN_FORMAT_FLOAT3;
 #else
     OIDNFormat format = OIDN_FORMAT_HALF3;
-#endif  
-    
-    gBuffer  = (GBuffer*)alignedUSMMalloc(sizeof(GBuffer)*width*height,64,EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE);
-    outputBuffer  = (GBufferOutput*)alignedUSMMalloc(sizeof(GBufferOutput)*width*height,64,EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE);
+#endif
 
-    oidnSetSharedFilterImage(filter, "color",  gBuffer,
+    // FIXME
+
+    //auto mode = EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE;
+    auto mode = EmbreeUSMMode::EMBREE_USM_SHARED;
+    
+    gBuffer[0]  = (GBuffer*)alignedUSMMalloc(sizeof(GBuffer)*width*height,64,mode);
+    gBuffer[1]  = (GBuffer*)alignedUSMMalloc(sizeof(GBuffer)*width*height,64,mode);
+    colorBuffer[0] = (Vec3f*)alignedUSMMalloc(sizeof(Vec3f)*width*height,64,mode);
+    colorBuffer[1] = (Vec3f*)alignedUSMMalloc(sizeof(Vec3f)*width*height,64,mode);
+    hst_offset = (Vec2i*)alignedUSMMalloc(sizeof(Vec2i)*FILTER_SIZE*FILTER_SIZE,64,mode);
+    hst_filter = (float*)alignedUSMMalloc(sizeof(float)*FILTER_SIZE*FILTER_SIZE,64,mode);
+
+    momentsBuffer[0] = (Vec3f*)alignedUSMMalloc(sizeof(Vec3f)*width*height,64,mode);
+    momentsBuffer[1] = (Vec3f*)alignedUSMMalloc(sizeof(Vec3f)*width*height,64,mode);
+
+    varianceBuffer[0] = (float*)alignedUSMMalloc(sizeof(float)*width*height,64,mode);
+    varianceBuffer[1] = (float*)alignedUSMMalloc(sizeof(float)*width*height,64,mode);
+    varianceBuffer[2] = (float*)alignedUSMMalloc(sizeof(float)*width*height,64,mode);
+    
+    
+    filterInit(FILTER_SIZE);
+
+    for (uint i=0;i<width*height;i++)
+    {
+      gBuffer[0][i].clear();
+      gBuffer[1][i].clear();
+    }
+
+    for (uint i=0;i<width*height;i++) colorBuffer[0][i] = Vec3f(0.0f);
+    for (uint i=0;i<width*height;i++) colorBuffer[1][i] = Vec3f(0.0f);      
+    
+    
+    //outputBuffer  = (GBufferOutput*)alignedUSMMalloc(sizeof(GBufferOutput)*width*height,64,EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE);
+    outputBuffer  = (GBufferOutput*)alignedUSMMalloc(sizeof(GBufferOutput)*width*height,64,mode);
+
+    oidnSetSharedFilterImage(filter, "color",  gBuffer[0],
                              format, width, height, offsetof(GBuffer, color), sizeof(GBuffer), sizeof(GBuffer) * width); // beauty
     checkError();
 
-    oidnSetSharedFilterImage(filter, "normal",  gBuffer,
+    oidnSetSharedFilterImage(filter, "normal",  gBuffer[0],
                              format, width, height, offsetof(GBuffer, normal), sizeof(GBuffer), sizeof(GBuffer) * width); // normal
 
     checkError();
 
-    oidnSetSharedFilterImage(filter, "albedo",  gBuffer,
+    oidnSetSharedFilterImage(filter, "albedo",  gBuffer[0],
                              format, width, height, offsetof(GBuffer, albedo), sizeof(GBuffer), sizeof(GBuffer) * width); // normal
 
     checkError();    

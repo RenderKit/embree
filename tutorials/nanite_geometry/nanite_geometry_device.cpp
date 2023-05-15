@@ -78,6 +78,10 @@ namespace embree {
   ISPCCamera *global_camera = nullptr;
 
   std::vector<Patch*> patch_anim;
+
+  float g_sigLumin = 5.0f;
+  float g_sigNormal = 0.3f;
+  float g_sigDepth = 50.0f;
   
 #if defined(EMBREE_SYCL_TUTORIAL) && defined(USE_SPECIALIZATION_CONSTANTS)
   const static sycl::specialization_id<RTCFeatureFlags> rtc_feature_mask(RTC_FEATURE_FLAG_ALL);
@@ -326,8 +330,10 @@ namespace embree {
 /* called by the C++ code for initialization */
   extern "C" void device_init (char* cfg)
   {
-    EmbreeUSMMode mode = EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE;    
-    global_camera = (ISPCCamera*)alignedUSMMalloc(sizeof(ISPCCamera),64,mode);
+    //EmbreeUSMMode mode = EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE;
+    EmbreeUSMMode mode = EmbreeUSMMode::EMBREE_USM_SHARED;    
+    global_camera = (ISPCCamera*)alignedUSMMalloc(sizeof(ISPCCamera)*4,64,mode);
+    //memset(global_camera,0,sizeof(ISPCCamera)*4);
     
     if (camera_mode == 2 && camera_file)
     {
@@ -348,7 +354,8 @@ namespace embree {
       sycl::event camera_event = global_gpu_queue->memcpy(camera_path_device,&*camera_path.begin(),sizeof(ISPCCamera)*camera_path.size());
       gpu::waitOnEventAndCatchException(camera_event);      
       
-      // for (uint i=0;i<camera_path.size();i++)
+      //for (uint i=0;i<camera_path.size();i++)
+      //  PRINT2(i,camera_path[i].xfm.l.vz);
       //   camera_path_device[i] = camera_path[i];
     }
     
@@ -485,9 +492,9 @@ namespace embree {
     generateGrid(data.g_scene,gridResX,gridResY);
 #endif
 
-    PRINT(patches_file);
     if (patches_file)
     {
+      PRINT("PATCHES");
       std::ifstream input(patches_file,std::ios::in|std::ios::binary);
       if (!input) FATAL("cannot open patches file");
 
@@ -570,7 +577,8 @@ namespace embree {
     
 
     /* update scene */
-    //rtcCommitScene (data.g_scene);  
+    //rtcCommitScene (data.g_scene);
+    PING;
   }
 
 
@@ -792,7 +800,6 @@ namespace embree {
     if (rendering_mode == RENDER_PATH_TRACER_DENOISE)
       ImGui::Text("Denoising Time: %4.4f ms",avg_denoising_time.get());
 
-    
     if (global_lcgbp_scene->numLCGBP)
     {
       ImGui::Text("numGrids9x9:   %d (out of %d)",global_lcgbp_scene->numCurrentLCGBPStates,global_lcgbp_scene->numLCGBP*(1<<(LCG_Scene::LOD_LEVELS+1)));
@@ -809,6 +816,11 @@ namespace embree {
       ImGui::Text("64-bytes QBVH6 Blocks / Frame: %d (out of %d)",global_lcgbp_scene->numLCMeshClusterBlocksPerFrame,global_lcgbp_scene->numLCBlocksTotal);            
     }
 
+    ImGui::DragFloat("sigLumin",(float*)&g_sigLumin,0.1,1,10);
+    ImGui::DragFloat("sigNormal",(float*)&g_sigNormal,0.01,0,1);
+    ImGui::DragFloat("sigDepth",(float*)&g_sigDepth,0.5,0.1,100);
+    
+
   }
     
   
@@ -819,23 +831,36 @@ namespace embree {
                                  const float time,
                                  const ISPCCamera& _camera)
   {
+    //PING;
     const uint frameID = camera_path.size() ? ((frameIndex++) % camera_path.size()) : 0;
-
-    global_lcgbp_scene->patches = patch_anim[((frameIndex++)/4) % patch_anim.size()];
+    //PRINT3(frameID,camera_mode,camera_path.size());
+    
+    if (global_lcgbp_scene->patches)
+      global_lcgbp_scene->patches = patch_anim[((frameIndex++)/4) % patch_anim.size()];
+      //global_lcgbp_scene->patches = patch_anim[((frameIndex)/4) % patch_anim.size()];
 #if 1  
     if (camera_mode == 1)
       camera_path.push_back(_camera);
 #endif
 
+    // FIXME
+    if (frameIndex == 0)
+      global_camera[0] = _camera;
+
+#if 1    
+    global_camera[1].xfm = global_camera[0].xfm;
+    global_camera[2].xfm = rcp(global_camera[0].xfm);    
+#endif
+    
     if (camera_mode != 2)
-    {
+    {      
       sycl::event camera_event = global_gpu_queue->memcpy(global_camera,&_camera,sizeof(ISPCCamera));
       gpu::waitOnEventAndCatchException(camera_event);
     }
     else
     {
       sycl::event camera_event = global_gpu_queue->memcpy(global_camera,&camera_path_device[frameID],sizeof(ISPCCamera));
-      gpu::waitOnEventAndCatchException(camera_event);      
+      gpu::waitOnEventAndCatchException(camera_event);
     }
     
     if (!denoiser)
@@ -918,10 +943,291 @@ namespace embree {
                                      const ISPCCamera* const _camera,
                                      TutorialData &data,
                                      unsigned int user_spp,
-                                     GBuffer *gbuffer,                              
+                                     GBuffer *gbuffer,
+                                     const unsigned int frameNo,
                                      bool denoise);
+
+
+__forceinline void computeDenoisedImage(const int x,
+                                        const int y,
+                                        const int width,
+                                        const int height,
+                                        const Vec3f* const denoisedInput,
+                                        Vec3f* const denoisedOutput,
+                                        const GBuffer* const gBuffer,
+                                        const int filterSize,
+                                        const float* const kernel,
+                                        const Vec2i* const offset,
+                                        const float cPhi,
+                                        const float pPhi,
+                                        const float nPhi,
+                                        const float stepWidth)
+{
+  const int index = y * width + x;
+  Vec3f colorSum(0.f); // store color sum here
+  float weightSum = 0.f;
+  // get current pixel's 2D coordinates
+  // loop over all the pixels in the filter
+  for (int i = 0; i < filterSize; ++i) {
+    // compute filter pixel coordinate
+    int o_x = offset[i].x;
+    int o_y = offset[i].y;
+    int pix_x = x + o_x * stepWidth;
+    int pix_y = y + o_y * stepWidth;
+
+    //if (pix_x < 0 || pix_x >= width || pix_y < 0 || pix_y >= height) continue; // skip out of bound coordinates
+    // Clamp to edges
+    if (pix_x < 0) pix_x = 0;
+    else if (pix_x >= width) pix_x = width - 1;
+    if (pix_y < 0) pix_y = 0;
+    else if (pix_y >= height) pix_y = height - 1;
+
+    int pix_idx = pix_x + (pix_y * width);
+
+    // Compute c_w
+    Vec3f diff = denoisedInput[index] - denoisedInput[pix_idx];
+    float len = dot(diff, diff);
+    float c_w = min(expf(-(len) / cPhi), 1.f);
+
+    // Compute n_w
+    diff = gBuffer[index].get_normal() - gBuffer[pix_idx].get_normal();
+    len = dot(diff, diff);
+    float n_w = min(expf(-(len) / nPhi), 1.f);
+
+    // Compute p_w
+#if 1 
+    diff = gBuffer[index].position - gBuffer[pix_idx].position;
+    len = dot(diff, diff);
+#else
+    len = 1.0f;
+#endif    
+    float p_w = min(expf(-(len) / pPhi), 1.f);
+
+    // weight
+    float w = c_w * n_w * p_w;
+    colorSum += denoisedInput[pix_idx] * w * kernel[i];
+    weightSum += w * kernel[i];
+
+    // do regular gaussian blur
+    //colorSum += (kernel[i] * denoisedInput[pix_idx]);
+    //weightSum += kernel[i];
+  }
+
+  // write the output
+  denoisedOutput[index] = (colorSum * 1.0f / weightSum);
+}
+
+inline float luminance(Vec3f color) {
+  const Vec3f T(.2126f, .7152f, .0722f);
+  return dot(color, T);
+}
+
+inline Vec2f mix2(const Vec2f &x, const Vec2f &y, const float &a)
+{
+  return x * (1.0 - a) + y * a;
+}
+
+inline Vec3f mix3(const Vec3f &x, const Vec3f &y, const float &a)
+{
+  return x * (1.0 - a) + y * a;
+}
+
+inline float satDot(const Vec3f& a, const Vec3f& b) {
+  return max(dot(a, b), 0.f);
+}
+  
   
 
+constexpr float Gaussian3x3[3][3] = {
+  { .075f, .124f, .075f },
+  { .124f, .204f, .124f },
+  { .075f, .124f, .075f }
+};
+  
+constexpr float Gaussian5x5[5][5] = {
+  { .0030f, .0133f, .0219f, .0133f, .0030f },
+  { .0133f, .0596f, .0983f, .0596f, .0133f },
+  { .0219f, .0983f, .1621f, .0983f, .0219f },
+  { .0133f, .0596f, .0983f, .0596f, .0133f },
+  { .0030f, .0133f, .0219f, .0133f, .0030f }
+};
+     
+    
+__forceinline void temporalAccumulate(const int x,
+                                      const int y,
+                                      const int width,
+                                      const int height,
+                                      const int motion,
+                                      Vec3f* devColorAccumOut, Vec3f* devColorAccumIn, 
+                                      Vec3f* devMomentAccumOut, Vec3f* devMomentAccumIn,
+                                      GBuffer *gBuffer,
+                                      bool first)
+{
+  const float Alpha = .2f;
+
+  int idx = y * width + x;
+  int primID = gBuffer[idx].primID;
+  int lastIdx = motion;
+
+  bool diff = first;
+
+  if (lastIdx < 0) {
+    diff = true;
+  }
+  else if (primID == -1) {
+    diff = true;
+  }
+  else if (gBuffer[lastIdx].primID != primID) {
+    diff = true;
+  }
+  else {
+    Vec3f norm = gBuffer[idx].get_normal();
+    Vec3f lastNorm = gBuffer[lastIdx].get_normal();
+    if (abs(dot(norm, lastNorm)) < .1f) {
+      diff = true;
+    }
+  }
+
+  Vec3f color = fp_convert(gBuffer[idx].color);
+  float lum = luminance(color);
+
+  Vec3f accumColor;
+  Vec3f accumMoment;
+  
+  if (diff) {
+    accumColor = color;
+    accumMoment = { lum, lum * lum, 0.f };
+  }
+  else {
+    Vec3f lastColor = devColorAccumIn[lastIdx];
+    Vec3f lastMoment = devMomentAccumIn[lastIdx];    
+    accumColor = mix3(lastColor, color, Alpha);
+    const Vec2f newMoment = mix2(Vec2f(lastMoment.x,lastMoment.y), Vec2f(lum, lum * lum), Alpha);
+    accumMoment = Vec3f(newMoment.x, newMoment.y, lastMoment.y + 1.f);
+  }
+  devColorAccumOut[idx] = accumColor;
+  devMomentAccumOut[idx] = accumMoment;
+}
+
+
+__forceinline void estimateVariance(const int x, const int y, const int width, const int height, float* devVariance, Vec3f* devMoment)
+{
+  int idx = y * width + x;
+  Vec3f m = devMoment[idx];
+  if (m.z > 3.5f) {
+    // Temporal variance
+    devVariance[idx] = m.y - m.x * m.x;
+  }
+  else {
+    // Spatial variance
+    Vec2f sumMoment(0.f);
+    int numPixel = 0;
+
+    for (int i = -1; i <= 1; i++) {
+      for (int j = -1; j <= 1; j++) {
+        int qx = x + j;
+        int qy = y + i;
+
+        if (qx < 0 || qx >= width || qy < 0 || qy >= height) {
+          continue;
+        }
+        int idxQ = qy * width + qx;
+        sumMoment += Vec2(devMoment[idxQ].x,devMoment[idxQ].y);
+        numPixel++;
+      }
+    }
+    sumMoment *= 1.0f / numPixel;
+    devVariance[idx] = sumMoment.y - sumMoment.x * sumMoment.x;
+  }
+}
+
+
+__forceinline  void filterVariance(const int x, const int y, const int width, const int height, float* devVarianceOut, float* devVarianceIn)
+{
+  int idx = y * width + x;
+
+  float sum = 0.f;
+  float sumWeight = 0.f;
+#pragma unroll
+  for (int i = -1; i <= 1; i++) {
+    for (int j = -1; j <= 1; j++) {
+      int qx = x + i;
+      int qy = y + j;
+      if (qx < 0 || qx >= width || qy < 0 || qy >= height) {
+        continue;
+      }
+      int idxQ = qy * width + qx;
+      float weight = Gaussian3x3[i + 1][j + 1];
+      sum += devVarianceIn[idxQ] * weight;
+      sumWeight += weight;
+    }
+  }
+  devVarianceOut[idx] = sum / sumWeight;
+}
+
+__forceinline void waveletFilter(const int x, const int y, const int width, const int height, Vec3f* devColorOut, Vec3f* devColorIn, float* devVarianceOut, float* devVarianceIn, float* devVarFiltered,
+                                 GBuffer *gBuffer, float sigDepth, float sigNormal, float sigLuminance, int level)
+{
+  int step = 1 << level;
+
+  int idxP = y * width + x;
+  int primIdP = gBuffer[idxP].primID;
+
+  if (primIdP == -1) {
+    devColorOut[idxP] = devColorIn[idxP];
+    devVarianceOut[idxP] = devVarianceIn[idxP];    
+    return;
+  }
+
+  Vec3f normP = gBuffer[idxP].get_normal();
+  Vec3f colorP = devColorIn[idxP];
+  Vec3f posP = gBuffer[idxP].position;
+
+  Vec3f sumColor(0.f);
+  float sumVariance = 0.f;
+  float sumWeight = 0.f;
+  float sumWeight2 = 0.f;
+#pragma unroll
+  for (int i = -2; i <= 2; i++) {
+    for (int j = -2; j <= 2; j++) {
+      int qx = x + j * step;
+      int qy = y + i * step;
+      int idxQ = qy * width + qx;
+
+      if (qx >= width || qy >= height || qx < 0 || qy < 0) continue;
+      
+      if (gBuffer[idxQ].primID != primIdP) continue;
+      
+      Vec3f normQ = gBuffer[idxQ].get_normal();
+      Vec3f colorQ = devColorIn[idxQ];
+      Vec3f posQ = gBuffer[idxQ].position;
+
+      float varQ = devVarianceIn[idxQ];
+
+      float distPos2 = dot(posP - posQ, posP - posQ);
+      float wPos = expf(-distPos2 / sigDepth) + 1e-4f;
+
+      float wNorm = powf(satDot(normP, normQ), sigNormal) + 1e-4f;
+
+      float denom = sigLuminance * sqrtf(max(devVarFiltered[idxQ], 0.f)) + 1e-4f;
+      float wColor = expf(-abs(luminance(colorP) - luminance(colorQ)) / denom) + 1e-4f;
+
+      float weight = wColor * wNorm * wPos * Gaussian5x5[i + 2][j + 2];
+      float weight2 = weight * weight;
+
+      sumColor += colorQ * weight;
+      sumVariance += varQ * weight2;
+      sumWeight += weight;
+      sumWeight2 += weight2;
+    }
+  }
+  
+  devColorOut[idxP] = (sumWeight < FLT_EPSILON) ? devColorIn[idxP] : sumColor / sumWeight;
+  devVarianceOut[idxP] = (sumWeight2 < FLT_EPSILON) ? devVarianceIn[idxP] : sumVariance / sumWeight2;  
+}
+  
+
+  
 
   extern "C" void renderFrameStandard (int* pixels,
                                        const unsigned int width,
@@ -954,20 +1260,180 @@ namespace embree {
     }
     else
     {
-      GBuffer *gBuffer  = denoiser->gBuffer;      
-      GBufferOutput *output  = denoiser->outputBuffer;
-      bool denoise = rendering_mode == RENDER_PATH_TRACER_DENOISE;
-      sycl::event event = renderFramePathTracer(pixels,width,height,time,local_camera,data,user_spp,gBuffer,denoise);
-      waitOnEventAndCatchException(event);
+      double t0 = getSeconds();                                                    
       
-      const double dt = gpu::getDeviceExecutionTiming(event);
+      static unsigned int frameNo = 1;
+      bool denoise = rendering_mode == RENDER_PATH_TRACER_DENOISE;
+      GBufferOutput *output  = denoiser->outputBuffer;
+      GBuffer *gBuffer  = denoiser->gBuffer[frameNo%2];
+      //GBuffer *prev_gBuffer = denoiser->gBuffer[frameNo];
+      Vec3f *colorBuffer0  = denoiser->colorBuffer[frameNo%2];
+      Vec3f *colorBuffer1  = denoiser->colorBuffer[1-(frameNo%2)];
+
+      sycl::event eventRender = renderFramePathTracer(pixels,width,height,time,local_camera,data,user_spp,gBuffer,frameNo,denoise);
+      waitOnEventAndCatchException(eventRender);
+      
+      const double dt = gpu::getDeviceExecutionTiming(eventRender);
       ((ISPCCamera*)&_camera)->render_time = dt * 1E-3;        
+      
+#if 0     
+      Vec3f *momentsBuffer0  = denoiser->momentsBuffer[frameNo%2];
+      Vec3f *momentsBuffer1  = denoiser->momentsBuffer[1-(frameNo%2)];
+      float *devTempVariance  = denoiser->varianceBuffer[0];
+      float *devVariance  = denoiser->varianceBuffer[1];
+      float *devFilteredVariance  = denoiser->varianceBuffer[2];
+
+      
+
+      const ISPCCamera *const local_camera = global_camera;
+      
+      const bool first = frameNo == 1;
+      sycl::event eventTA = global_gpu_queue->submit([=](sycl::handler& cgh) {
+        const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+        cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16)      
+        {
+          const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+          const unsigned int y = item.get_global_id(0); if (y >= height) return;          
+          if (gBuffer[y*width+x].primID != -1)
+          {
+            const Vec3f pos = gBuffer[y*width+x].position;
+            const Vec3f prev_pos = xfmPoint(local_camera[2].xfm,pos);
+            const Vec2f prev_xy = Vec2f(prev_pos.x / prev_pos.z,prev_pos.y / prev_pos.z);
+            Vec2i motion = Vec2i(prev_xy.x, prev_xy.y);
+            int motionIdx = -1;
+            if (motion.x >= 0 && motion.x < width &&
+                motion.y >= 0 && motion.y < height)
+              motionIdx = motion.y * width + motion.x;
+            temporalAccumulate(x,y,width,height,motionIdx,colorBuffer1,colorBuffer0,momentsBuffer1,momentsBuffer0,gBuffer,first);
+          }
+          else
+            colorBuffer1[y*width+x] = fp_convert(gBuffer[y*width+x].color);
+        });
+      });
+      waitOnEventAndCatchException(eventTA);
+
+      sycl::event eventEV = global_gpu_queue->submit([=](sycl::handler& cgh) {
+        const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+        cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16)      
+        {
+          const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+          const unsigned int y = item.get_global_id(0); if (y >= height) return;
+          estimateVariance(x,y,width,height,devVariance,momentsBuffer1);
+        });
+      });
+      waitOnEventAndCatchException(eventEV);
+      
+
+      float sigLumin = g_sigLumin;
+      float sigNormal = g_sigNormal;
+      float sigDepth = g_sigDepth;
+
+      for (int q=0;q<3;q++)
+      {
+        sycl::event filterV = global_gpu_queue->submit([=](sycl::handler& cgh) {
+          const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+          cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16)      
+                           {
+                             const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+                             const unsigned int y = item.get_global_id(0); if (y >= height) return;
+                             filterVariance(x,y,width,height,devFilteredVariance,devVariance);
+                           });
+        });
+        waitOnEventAndCatchException(filterV);
+        
+
+        sycl::event filterWavelet = global_gpu_queue->submit([=](sycl::handler& cgh) {
+          const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+          cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16)      
+                           {
+                             const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+                             const unsigned int y = item.get_global_id(0); if (y >= height) return;
+                             waveletFilter(x,y,width,height,colorBuffer0,colorBuffer1,devTempVariance, devVariance, devFilteredVariance,gBuffer,sigDepth,sigNormal,sigLumin,q);                             
+                           });
+        });
+        waitOnEventAndCatchException(filterWavelet);
+               
+        std::swap(colorBuffer0,colorBuffer1);
+        std::swap(devTempVariance,devVariance);        
+      }
+
+      sycl::event outputC = global_gpu_queue->submit([=](sycl::handler& cgh) {
+        const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+        cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16)      
+                         {
+                           const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+                           const unsigned int y = item.get_global_id(0); if (y >= height) return;
+                           output[y*width+x] = fp_convert(colorBuffer0[y*width+x]);
+                         });
+      });
+      waitOnEventAndCatchException(outputC);
+      
+      double dt0 = (getSeconds()-t0)*1000.0;                                            
+      avg_denoising_time.add(dt0);
+      //exit(0);
+#endif
+
+      // for (uint i=0;i<FILTER_SIZE*FILTER_SIZE;i++)
+      //   PRINT2(denoiser->hst_offset[i],denoiser->hst_filter[i]);
+      
+#if 1
+      Denoiser *local_denoiser = denoiser;
+      const float c_phi = g_sigLumin; //11.789f;
+      const float n_phi = g_sigNormal; //0.610f;
+      const float p_phi = g_sigDepth; //0.407f;
+
+      sycl::event eventInit = global_gpu_queue->submit([=](sycl::handler& cgh) {
+        const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+        cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16)      
+        {
+          const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+          const unsigned int y = item.get_global_id(0); if (y >= height) return;
+          colorBuffer0[y*width+x] = fp_convert(gBuffer[y*width+x].color);
+        });
+      });
+      waitOnEventAndCatchException(eventInit);
+
+#if 1
+      const float* const kernel = local_denoiser->hst_filter;
+      const Vec2i* const offset = local_denoiser->hst_offset;
+      const int num_iters = 6;
+      for (int i = 0; i < num_iters; ++i) {      
+        sycl::event eventFilter = global_gpu_queue->submit([=](sycl::handler& cgh) {
+          const Vec3f *const inputB  = (i % 2) == 0 ? colorBuffer0 : colorBuffer1;
+                Vec3f *const outputB = (i % 2) == 0 ? colorBuffer1 : colorBuffer0;
+          
+          const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+          cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16)      
+                           {
+                             const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+                             const unsigned int y = item.get_global_id(0); if (y >= height) return;
+                             computeDenoisedImage(x,y,width,height,inputB,outputB,gBuffer,FILTER_SIZE*FILTER_SIZE,kernel,offset,c_phi * powf(2, -i),
+                                                  p_phi,
+                                                  n_phi,
+                                                  powf(2, i));                             
+                           });
+        });
+        waitOnEventAndCatchException(eventFilter);
+      }
+#endif
+      
+      sycl::event eventCopy = global_gpu_queue->submit([=](sycl::handler& cgh) {
+        const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+        cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16)      
+        {
+          const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+          const unsigned int y = item.get_global_id(0); if (y >= height) return;
+          output[y*width+x] = fp_convert(colorBuffer0[y*width+x]);          
+        });
+      });
+      waitOnEventAndCatchException(eventCopy);
+      
+#endif        
       
       if (denoise)
       {
         double t0 = getSeconds();                                                    
-        denoiser->execute();
-        
+        //denoiser->execute();
         sycl::event event_denoising = global_gpu_queue->submit([=](sycl::handler& cgh) {
           const sycl::nd_range<2> nd_range = make_nd_range(height,width);
           cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16) {
@@ -987,7 +1453,8 @@ namespace embree {
         double dt0 = (getSeconds()-t0)*1000.0;                                            
         avg_denoising_time.add(dt0);
         
-      }          
+      }
+      //frameNo++;      
     }
 #endif
   }

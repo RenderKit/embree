@@ -718,9 +718,9 @@ namespace embree
         {
           QBVH6* qbvh   = (QBVH6*)args.accelBuffer;
           qbvh->print(std::cout,qbvh->root(),0,6);
-          //BVHStatistics stats = qbvh->computeStatistics();      
-          //stats.print(std::cout);
-          //stats.print_raw(std::cout);
+          BVHStatistics stats = qbvh->computeStatistics();      
+          stats.print(std::cout);
+          stats.print_raw(std::cout);
           PRINT("VERBOSE STATS DONE");
         }                
 #else

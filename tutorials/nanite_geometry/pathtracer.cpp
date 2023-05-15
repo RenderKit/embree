@@ -269,7 +269,6 @@ namespace embree {
       }
 
       Vec3fa Ns = normalize(ray.Ng);
-      if (i == 0) gb.normal = fp_convert(Ns);
       
       /* compute differential geometry */
     
@@ -296,7 +295,14 @@ namespace embree {
       ISPCMaterial** material_array = &data.ispc_scene->materials[0];
       Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
 
-      if (i == 0) gb.albedo = fp_convert(brdf.Kd);
+      if (i == 0)
+      {
+        gb.albedo = fp_convert(brdf.Kd);
+        gb.normal = fp_convert(dg.Ns);        
+        gb.position = dg.P;
+        gb.t = ray.tfar;
+        gb.primID = dg.geomID;
+      }
       
       /* sample BRDF at hit point */
       Sample3f wi1;
@@ -370,6 +376,7 @@ namespace embree {
                                      TutorialData &data,
                                      uint user_spp,
                                      GBuffer *gbuffer,
+                                     const unsigned int frameNo,
                                      bool denoise)
   {
     /* render all pixels */
@@ -392,8 +399,10 @@ namespace embree {
           const ISPCCamera &camera = *local_camera;                                   
           const RTCFeatureFlags feature_mask = RTC_FEATURE_FLAG_ALL;
           GBuffer gb;
-          gb.normal = fp_convert(Vec3f(1,0,0));
-          gb.albedo = fp_convert(Vec3f(0,0,0));
+          gb.clear();
+          // gb.normal = fp_convert(Vec3f(1,0,0));
+          // gb.albedo = fp_convert(Vec3f(0,0,0));
+          // gb.N = 1;
           const Vec3f c = renderPixelPathTracer(ldata,x,y,pixels,width,height,camera,gb,feature_mask);
           if (!denoise)
           {

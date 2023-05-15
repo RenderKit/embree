@@ -179,7 +179,8 @@ namespace embree {
     const Vec2f p2 = projectVertexToPlane(v2-org,vx,vy,vz,width,height);
     const Vec2f p3 = projectVertexToPlane(v3-org,vx,vy,vz,width,height);
 
-    const float f = 1.0/8.0f;
+    //const float f = 1.0/8.0f;
+    const float f = 1.0/2.0f;
     const float d0 = length(p1-p0) * f;
     const float d1 = length(p2-p1) * f;
     const float d2 = length(p3-p2) * f;
@@ -275,10 +276,10 @@ namespace embree {
 
           bool cull = frustumCull( patch_bounds.lower-org,patch_bounds.upper-org,vx*width,vy*height,vz);
           if (cull && 1)
-          {
-            patchLevel.level = 0;
-            patchLevel.blend = 0.0f;
-          }
+           {
+             patchLevel.level = 0;
+             patchLevel.blend = 0.0f;
+           }
 
           const unsigned int lod_level = patchLevel.level;
                                                                                              
@@ -970,7 +971,7 @@ namespace embree {
             const Vec2f p2 = projectVertexToPlane(cv2-org,vx,vy,vz,width,height);
             const Vec2f p3 = projectVertexToPlane(cv3-org,vx,vy,vz,width,height);
 
-            const float f = 1.0/2.0f;
+            const float f = 1.0f/1.2f;
             const float d0 = length(p1-p0) * f;
             const float d1 = length(p2-p1) * f;
             const float d2 = length(p3-p2) * f;
@@ -1070,6 +1071,18 @@ namespace embree {
     });
     waitOnEventAndCatchException(compute_lod_event);
 
+    
+
+#if 0
+    static double total_sum = 0.0f;
+    static uint entries = 0;
+    total_sum += gpu::getDeviceExecutionTiming(compute_lod_event); 
+    entries++;
+    if (entries % 4096) PRINT(total_sum / entries);
+    //PRINT4(gpu::getDeviceExecutionTiming(memset_event),gpu::getDeviceExecutionTiming(compute_lod_event),gpu::getDeviceExecutionTiming(select_clusterIDs_event),total);
+#endif    
+    
+    
     //PRINT(local_lcgbp_scene->patch_mesh->numVertices);
     //PRINT(local_lcgbp_scene->patch_mesh->numQuads);
 
