@@ -43,6 +43,8 @@ typedef enum _ze_result_t
     ZE_RESULT_SUCCESS = 0,                          ///< [Core] success
     ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY = 0x70000002,///< [Core] insufficient host memory to satisfy call
     ZE_RESULT_EXP_ERROR_OPERANDS_INCOMPATIBLE = 0x7ff00004, ///< [Core, Experimental] operands of comparison are not compatible
+    ZE_RESULT_EXP_ERROR_RETRY_RTAS_BUILD = 0x7ff00005,  ///< [Core, Experimental] ray tracing acceleration structure build failed
+                                                    ///< due to insufficient resources, retry with a larger buffer allocation
     ZE_RESULT_ERROR_INVALID_ARGUMENT = 0x78000004,  ///< [Validation] generic error code for invalid arguments
     ZE_RESULT_ERROR_INVALID_NULL_HANDLE = 0x78000005,   ///< [Validation] handle argument is not valid
     ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE = 0x78000006,  ///< [Validation] object pointed to by handle still in-use by device

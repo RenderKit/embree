@@ -649,7 +649,7 @@ namespace embree
         
         fullBounds.extend(*(BBox3f*) &bounds);
 
-        if (err == ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY)
+        if (err == ZE_RESULT_EXP_ERROR_RETRY_RTAS_BUILD)
         {
           if (sizeTotal.rtasBufferSizeBytesExpected == sizeTotal.rtasBufferSizeBytesMaxRequired)
             throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
@@ -660,7 +660,7 @@ namespace embree
         
         if (err != ZE_RESULT_SUCCESS) break;
       }
-      if (err != ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY) break;
+      if (err != ZE_RESULT_EXP_ERROR_RETRY_RTAS_BUILD) break;
     }
 
     if (err != ZE_RESULT_SUCCESS)
