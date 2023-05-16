@@ -1176,7 +1176,7 @@ __forceinline void temporalAccumulate(const int x,
   //   diff = true;
   // }
   else if (abs(dot(prev_gBuffer[lastIdx].position-gBuffer[idx].position,gBuffer[idx].get_normal()))>PLANE_DISTANCE) {
-     diff = true;
+    diff = true;
   }    
   else {
     Vec3f norm = gBuffer[idx].get_normal();
