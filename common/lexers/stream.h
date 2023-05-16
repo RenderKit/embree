@@ -126,17 +126,16 @@ namespace embree
   class FileStream : public Stream<int>
   {
   public:
-
-    FileStream (FILE* file, const std::string& name = "file")
-      : file(file), lineNumber(1), colNumber(0), charNumber(0), name(std::shared_ptr<std::string>(new std::string(name))) {}
-
     FileStream (const FileName& fileName)
       : lineNumber(1), colNumber(0), charNumber(0), name(std::shared_ptr<std::string>(new std::string(fileName.str())))
     {
-      file = fopen(fileName.c_str(),"r");
-      if (file == nullptr) THROW_RUNTIME_ERROR("cannot open file " + fileName.str());
+      if (ifs) ifs.close();
+      ifs.open(fileName.str());
+      if (!ifs.is_open()) THROW_RUNTIME_ERROR("cannot open file " + fileName.str());
     }
-    ~FileStream() { if (file) fclose(file); }
+    ~FileStream() { 
+      if (ifs) ifs.close();
+    }
 
   public:
     ParseLocation location() {
@@ -144,14 +143,15 @@ namespace embree
     }
 
     int next() {
-      int c = fgetc(file);
+      int c = ifs.get();
       if (c == '\n') { lineNumber++; colNumber = 0; } else if (c != '\r') colNumber++;
       charNumber++;
       return c;
     }
 
+
   private:
-    FILE* file;
+    std::ifstream ifs;
     ssize_t lineNumber;           /// the line number the token is from
     ssize_t colNumber;            /// the character number in the current line
     ssize_t charNumber;           /// the character in the file
