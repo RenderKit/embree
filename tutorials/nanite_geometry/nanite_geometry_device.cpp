@@ -1058,9 +1058,11 @@ __forceinline void temporalAccumulate(const int x,
                                       const int width,
                                       const int height,
                                       const int motion,
-                                      Vec3f* devColorAccumOut, Vec3f* devColorAccumIn, 
-                                      Vec3f* devMomentAccumOut, Vec3f* devMomentAccumIn,
+                                      Vec3f* devColorAccumOut, 
+                                      Vec3f* devMomentAccumOut,
+                                      Vec3f* devMomentAccumIn,
                                       GBuffer *gBuffer,
+                                      GBuffer *prev_gBuffer,                                      
                                       bool first)
 {
   const float Alpha = .2f;
@@ -1080,9 +1082,12 @@ __forceinline void temporalAccumulate(const int x,
   else if (gBuffer[lastIdx].primID != primID) {
     diff = true;
   }
+  else if (abs(gBuffer[lastIdx].t-gBuffer[idx].t)>1.0f) {
+    diff = true;
+  }  
   else {
     Vec3f norm = gBuffer[idx].get_normal();
-    Vec3f lastNorm = gBuffer[lastIdx].get_normal();
+    Vec3f lastNorm = prev_gBuffer[lastIdx].get_normal();
     if (abs(dot(norm, lastNorm)) < .1f) {
       diff = true;
     }
@@ -1099,7 +1104,7 @@ __forceinline void temporalAccumulate(const int x,
     accumMoment = { lum, lum * lum, 0.f };
   }
   else {
-    Vec3f lastColor = devColorAccumIn[lastIdx];
+    Vec3f lastColor = fp_convert(prev_gBuffer[lastIdx].color);
     Vec3f lastMoment = devMomentAccumIn[lastIdx];    
     accumColor = mix3(lastColor, color, Alpha);
     const Vec2f newMoment = mix2(Vec2f(lastMoment.x,lastMoment.y), Vec2f(lum, lum * lum), Alpha);
@@ -1228,7 +1233,18 @@ __forceinline void waveletFilter(const int x, const int y, const int width, cons
   
 
   
-
+__forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz)
+  {
+    const Vec3f vn = cross(vx,vy);    
+    const float distance = (float)dot(vn,vz) / (float)dot(vn,p);
+    Vec3f pip = p * distance;
+    if (distance < 0.0f)
+      pip = vz;
+    const float a = dot((pip-vz),vx);
+    const float b = dot((pip-vz),vy);
+    return Vec2f(a,b);    
+  }
+  
   extern "C" void renderFrameStandard (int* pixels,
                                        const unsigned int width,
                                        const unsigned int height,
@@ -1266,7 +1282,7 @@ __forceinline void waveletFilter(const int x, const int y, const int width, cons
       bool denoise = rendering_mode == RENDER_PATH_TRACER_DENOISE;
       GBufferOutput *output  = denoiser->outputBuffer;
       GBuffer *gBuffer  = denoiser->gBuffer[frameNo%2];
-      //GBuffer *prev_gBuffer = denoiser->gBuffer[frameNo];
+      GBuffer *prev_gBuffer = denoiser->gBuffer[1-(frameNo%2)];
       Vec3f *colorBuffer0  = denoiser->colorBuffer[frameNo%2];
       Vec3f *colorBuffer1  = denoiser->colorBuffer[1-(frameNo%2)];
 
@@ -1276,7 +1292,7 @@ __forceinline void waveletFilter(const int x, const int y, const int width, cons
       const double dt = gpu::getDeviceExecutionTiming(eventRender);
       ((ISPCCamera*)&_camera)->render_time = dt * 1E-3;        
       
-#if 0     
+#if 1     
       Vec3f *momentsBuffer0  = denoiser->momentsBuffer[frameNo%2];
       Vec3f *momentsBuffer1  = denoiser->momentsBuffer[1-(frameNo%2)];
       float *devTempVariance  = denoiser->varianceBuffer[0];
@@ -1286,6 +1302,22 @@ __forceinline void waveletFilter(const int x, const int y, const int width, cons
       
 
       const ISPCCamera *const local_camera = global_camera;
+
+//       for (int y=0;y<height;y++)
+//         for (int x=0;x<width;x++)        
+//           if (gBuffer[y*width+x].primID != -1)
+//           {
+//             const Vec3f pos = gBuffer[y*width+x].position;
+//             const Vec3f prev_pos = xfmPoint(local_camera[2].xfm,pos);
+//             const Vec2f prev_xy = Vec2f(prev_pos.x / prev_pos.z,prev_pos.y / prev_pos.z);
+//             Vec2i motion = Vec2i(prev_xy.x, prev_xy.y);
+
+// #if 1
+//             const Vec2i p2 = Vec2i(projectVertexToPlane(pos-local_camera[1].xfm.p,local_camera[1].xfm.l.vx,local_camera[1].xfm.l.vy,local_camera[1].xfm.l.vz));
+//             if ( std::abs(motion.x-p2.x)>1 ||  std::abs(motion.y-p2.y)>1)
+//               PRINT2(motion,p2);
+// #endif            
+//           }
       
       const bool first = frameNo == 1;
       sycl::event eventTA = global_gpu_queue->submit([=](sycl::handler& cgh) {
@@ -1294,7 +1326,7 @@ __forceinline void waveletFilter(const int x, const int y, const int width, cons
         {
           const unsigned int x = item.get_global_id(1); if (x >= width ) return;
           const unsigned int y = item.get_global_id(0); if (y >= height) return;          
-          if (gBuffer[y*width+x].primID != -1)
+          //if (gBuffer[y*width+x].primID != -1)
           {
             const Vec3f pos = gBuffer[y*width+x].position;
             const Vec3f prev_pos = xfmPoint(local_camera[2].xfm,pos);
@@ -1304,10 +1336,10 @@ __forceinline void waveletFilter(const int x, const int y, const int width, cons
             if (motion.x >= 0 && motion.x < width &&
                 motion.y >= 0 && motion.y < height)
               motionIdx = motion.y * width + motion.x;
-            temporalAccumulate(x,y,width,height,motionIdx,colorBuffer1,colorBuffer0,momentsBuffer1,momentsBuffer0,gBuffer,first);
+            temporalAccumulate(x,y,width,height,motionIdx,colorBuffer0,momentsBuffer0,momentsBuffer1,gBuffer,prev_gBuffer,first);
           }
-          else
-            colorBuffer1[y*width+x] = fp_convert(gBuffer[y*width+x].color);
+          // else
+          //   colorBuffer0[y*width+x] = fp_convert(gBuffer[y*width+x].color);
         });
       });
       waitOnEventAndCatchException(eventTA);
@@ -1318,18 +1350,19 @@ __forceinline void waveletFilter(const int x, const int y, const int width, cons
         {
           const unsigned int x = item.get_global_id(1); if (x >= width ) return;
           const unsigned int y = item.get_global_id(0); if (y >= height) return;
-          estimateVariance(x,y,width,height,devVariance,momentsBuffer1);
+          estimateVariance(x,y,width,height,devVariance,momentsBuffer0);
         });
       });
-      waitOnEventAndCatchException(eventEV);
-      
+      waitOnEventAndCatchException(eventEV);      
 
+#if 0      
       float sigLumin = g_sigLumin;
       float sigNormal = g_sigNormal;
       float sigDepth = g_sigDepth;
 
-      for (int q=0;q<3;q++)
+      for (int q=0;q<4;q++)
       {
+        
         sycl::event filterV = global_gpu_queue->submit([=](sycl::handler& cgh) {
           const sycl::nd_range<2> nd_range = make_nd_range(height,width);
           cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16)      
@@ -1340,7 +1373,6 @@ __forceinline void waveletFilter(const int x, const int y, const int width, cons
                            });
         });
         waitOnEventAndCatchException(filterV);
-        
 
         sycl::event filterWavelet = global_gpu_queue->submit([=](sycl::handler& cgh) {
           const sycl::nd_range<2> nd_range = make_nd_range(height,width);
@@ -1348,22 +1380,25 @@ __forceinline void waveletFilter(const int x, const int y, const int width, cons
                            {
                              const unsigned int x = item.get_global_id(1); if (x >= width ) return;
                              const unsigned int y = item.get_global_id(0); if (y >= height) return;
-                             waveletFilter(x,y,width,height,colorBuffer0,colorBuffer1,devTempVariance, devVariance, devFilteredVariance,gBuffer,sigDepth,sigNormal,sigLumin,q);                             
+                             waveletFilter(x,y,width,height,colorBuffer1,colorBuffer0,devTempVariance, devVariance, devFilteredVariance,gBuffer,sigDepth,sigNormal,sigLumin,q);                             
                            });
         });
         waitOnEventAndCatchException(filterWavelet);
                
         std::swap(colorBuffer0,colorBuffer1);
-        std::swap(devTempVariance,devVariance);        
+        //std::swap(devTempVariance,devVariance);        
       }
-
+#endif
+      
       sycl::event outputC = global_gpu_queue->submit([=](sycl::handler& cgh) {
         const sycl::nd_range<2> nd_range = make_nd_range(height,width);
         cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16)      
                          {
                            const unsigned int x = item.get_global_id(1); if (x >= width ) return;
                            const unsigned int y = item.get_global_id(0); if (y >= height) return;
-                           output[y*width+x] = fp_convert(colorBuffer0[y*width+x]);
+                           gBuffer[y*width+x].color = fp_convert(colorBuffer0[y*width+x]);
+                           //output[y*width+x] = fp_convert(colorBuffer0[y*width+x]);
+                           output[y*width+x] = fp_convert(Vec3f(devVariance[y*width+x]));
                          });
       });
       waitOnEventAndCatchException(outputC);
@@ -1376,7 +1411,7 @@ __forceinline void waveletFilter(const int x, const int y, const int width, cons
       // for (uint i=0;i<FILTER_SIZE*FILTER_SIZE;i++)
       //   PRINT2(denoiser->hst_offset[i],denoiser->hst_filter[i]);
       
-#if 1
+#if 0
       Denoiser *local_denoiser = denoiser;
       const float c_phi = g_sigLumin; //11.789f;
       const float n_phi = g_sigNormal; //0.610f;
@@ -1454,7 +1489,7 @@ __forceinline void waveletFilter(const int x, const int y, const int width, cons
         avg_denoising_time.add(dt0);
         
       }
-      //frameNo++;      
+      frameNo++;      
     }
 #endif
   }
