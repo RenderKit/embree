@@ -223,7 +223,7 @@ namespace embree {
     Vec3fa L = Vec3fa(0.0f);
     Vec3fa Lw = Vec3fa(1.0f);
     Medium medium = make_Medium_Vacuum();
-    float time = RandomSampler_get1D(sampler);
+    float time = 0.0f; //RandomSampler_get1D(sampler);
 
     /* initialize ray */
     Ray ray(Vec3fa(camera.xfm.p),
@@ -285,9 +285,9 @@ namespace embree {
 
       /*! Compute  simple volumetric effect. */
       Vec3fa c = Vec3fa(1.0f);
-      const Vec3fa transmission = medium.transmission;
-      if (ne(transmission,Vec3fa(1.0f)))
-        c = c * pow(transmission,ray.tfar);
+      //const Vec3fa transmission = medium.transmission;
+      // if (ne(transmission,Vec3fa(1.0f)))
+      //   c = c * pow(transmission,ray.tfar);
 
       /* calculate BRDF */
       BRDF brdf;
@@ -315,9 +315,9 @@ namespace embree {
         //Light_SampleRes ls = l->sample(l,dg,RandomSampler_get2D(sampler));
         Light_SampleRes ls = Lights_sample(l,dg,RandomSampler_get2D(sampler));
         if (ls.pdf <= 0.0f) continue;
-        Vec3fa transparency = Vec3fa(1.0f);
+        //Vec3fa transparency = Vec3fa(1.0f);
         Ray shadow(dg.P,ls.dir,dg.eps,ls.dist,time);
-        context.userRayExt = &transparency;
+        //context.userRayExt = &transparency;
 
         RTCOccludedArguments sargs;
         rtcInitOccludedArguments(&sargs);
@@ -325,7 +325,7 @@ namespace embree {
         sargs.feature_mask = features;
         rtcOccluded1(data.g_scene,RTCRay_(shadow),&sargs);
         if (shadow.tfar > 0.0f)
-          L = L + Lw*ls.weight*transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,ls.dir);
+          L = L + Lw*ls.weight*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,ls.dir);
       }
 
       if (wi1.pdf <= 1E-4f /* 0.0f */) break;
@@ -346,6 +346,7 @@ namespace embree {
                               int* pixels,
                               const unsigned int width,
                               const unsigned int height,
+                              const unsigned int frameNo,                              
                               const ISPCCamera& camera,
                               GBuffer &gb,
                               const RTCFeatureFlags features)
@@ -356,7 +357,7 @@ namespace embree {
 
     for (int i=0; i<data.spp; i++)
     {
-      RandomSampler_init(sampler, x, y, data.spp+i);
+      RandomSampler_init(sampler, x, y, data.spp+i /*+(frameNo%4) */);
 
       /* calculate pixel color */
       float fx = x + RandomSampler_get1D(sampler);
@@ -403,7 +404,7 @@ namespace embree {
           // gb.normal = fp_convert(Vec3f(1,0,0));
           // gb.albedo = fp_convert(Vec3f(0,0,0));
           // gb.N = 1;
-          const Vec3f c = renderPixelPathTracer(ldata,x,y,pixels,width,height,camera,gb,feature_mask);
+          const Vec3f c = renderPixelPathTracer(ldata,x,y,pixels,width,height,frameNo,camera,gb,feature_mask);
           if (!denoise)
           {
             unsigned int r = (unsigned int) (255.01f * clamp(c.x,0.0f,1.0f));

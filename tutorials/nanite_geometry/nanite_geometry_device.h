@@ -74,12 +74,12 @@ struct  __attribute__ ((packed,aligned(16))) GBuffer
   Vec3f position;
   float t;
   int primID;
-  int motion;
+  int N;
   
   inline GBuffer() {}
 
   inline GBuffer(const GBuffer& gb)
-    : color(gb.color), albedo(gb.albedo), normal(gb.normal), position(gb.position), t(gb.t), primID(gb.primID), motion(gb.motion) {}
+    : color(gb.color), albedo(gb.albedo), normal(gb.normal), position(gb.position), t(gb.t), primID(gb.primID) {} // 
     
   inline void clear() {
 #if ENABLE_FP16_GBUFFER == 0
@@ -91,10 +91,10 @@ struct  __attribute__ ((packed,aligned(16))) GBuffer
     albedo = Vec3fp16(1.0);
     normal = Vec3fp16(1.0f);
 #endif
-    position = Vec3f(0.0f);
-    t = 0.0f; // inf == no hit
+    position = Vec3f(FLT_MAX);
+    t = pos_inf; // inf == no hit
     primID = -1;
-    motion = -1;
+    N = 1;
   }
 
   inline Vec3f get_normal() const {
@@ -153,7 +153,7 @@ struct Denoiser
   OIDNDevice device;
   OIDNFilter filter;
   GBuffer *gBuffer[2];
-  Vec3f *colorBuffer[2];
+  GBufferOutput *colorBuffer[2];
   Vec3f *momentsBuffer[2];
   float *varianceBuffer[3];
   
@@ -218,8 +218,8 @@ struct Denoiser
     
     gBuffer[0]  = (GBuffer*)alignedUSMMalloc(sizeof(GBuffer)*width*height,64,mode);
     gBuffer[1]  = (GBuffer*)alignedUSMMalloc(sizeof(GBuffer)*width*height,64,mode);
-    colorBuffer[0] = (Vec3f*)alignedUSMMalloc(sizeof(Vec3f)*width*height,64,mode);
-    colorBuffer[1] = (Vec3f*)alignedUSMMalloc(sizeof(Vec3f)*width*height,64,mode);
+    colorBuffer[0] = (GBufferOutput*)alignedUSMMalloc(sizeof(GBufferOutput)*width*height,64,mode);
+    colorBuffer[1] = (GBufferOutput*)alignedUSMMalloc(sizeof(GBufferOutput)*width*height,64,mode);
     hst_offset = (Vec2i*)alignedUSMMalloc(sizeof(Vec2i)*FILTER_SIZE*FILTER_SIZE,64,mode);
     hst_filter = (float*)alignedUSMMalloc(sizeof(float)*FILTER_SIZE*FILTER_SIZE,64,mode);
 
@@ -239,8 +239,8 @@ struct Denoiser
       gBuffer[1][i].clear();
     }
 
-    for (uint i=0;i<width*height;i++) colorBuffer[0][i] = Vec3f(0.0f);
-    for (uint i=0;i<width*height;i++) colorBuffer[1][i] = Vec3f(0.0f);      
+    for (uint i=0;i<width*height;i++) colorBuffer[0][i] = GBufferOutput(0.0f);
+    for (uint i=0;i<width*height;i++) colorBuffer[1][i] = GBufferOutput(0.0f);      
     
     
     //outputBuffer  = (GBufferOutput*)alignedUSMMalloc(sizeof(GBufferOutput)*width*height,64,EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE);

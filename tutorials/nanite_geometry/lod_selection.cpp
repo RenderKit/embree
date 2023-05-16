@@ -777,7 +777,7 @@ namespace embree {
 #if ALLOC_DEVICE_MEMORY  == 0    
     if (hit)
     {
-      PRINT2(lcgbp_scene->pick_primID,lcgbp_scene->pick_geomID);
+      PRINT4(x,y,lcgbp_scene->pick_primID,lcgbp_scene->pick_geomID);
       PRINT(g_lod_threshold);
 
       if (lcgbp_scene->numLCMeshClusters)
