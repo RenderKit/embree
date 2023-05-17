@@ -216,8 +216,8 @@ namespace embree {
     return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
   }
 
-
-  Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSampler& sampler, const ISPCCamera& camera, GBuffer &gb, const RTCFeatureFlags features)
+  template<class SamplerT>
+  Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, SamplerT& sampler, const ISPCCamera& camera, GBuffer &gb, const RTCFeatureFlags features)
   {
     /* radiance accumulator and weight */
     Vec3fa L = Vec3fa(0.0f);
@@ -306,14 +306,14 @@ namespace embree {
       
       /* sample BRDF at hit point */
       Sample3f wi1;
-      c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, RandomSampler_get2D(sampler));
+      c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, sampler.Get2D());
 
       /* iterate over lights */
       for (unsigned int i=0; i<data.ispc_scene->numLights; i++)
       {
         const Light* l = data.ispc_scene->lights[i];
         //Light_SampleRes ls = l->sample(l,dg,RandomSampler_get2D(sampler));
-        Light_SampleRes ls = Lights_sample(l,dg,RandomSampler_get2D(sampler));
+        Light_SampleRes ls = Lights_sample(l,dg,sampler.Get2D());
         if (ls.pdf <= 0.0f) continue;
         //Vec3fa transparency = Vec3fa(1.0f);
         Ray shadow(dg.P,ls.dir,dg.eps,ls.dist,time);
@@ -351,17 +351,25 @@ namespace embree {
                               GBuffer &gb,
                               const RTCFeatureFlags features)
   {
-    RandomSampler sampler;
-
+    //RandomSampler sampler;
+    //PCGSampler sampler;
+    BNSSSampler1SPP sampler;
+    
     Vec3fa L = Vec3fa(0.0f);
 
     for (int i=0; i<data.spp; i++)
     {
-      RandomSampler_init(sampler, x, y, data.spp+i /*+(frameNo%4) */);
+      sampler.InitSampler(x, y, data.spp+i /*+(frameNo%4) */,0);
 
+      const Vec2f dxy = sampler.Get2D();
       /* calculate pixel color */
-      float fx = x + RandomSampler_get1D(sampler);
-      float fy = y + RandomSampler_get1D(sampler);
+      const float fx = x + dxy.x;
+      const float fy = y + dxy.y;
+    
+    
+      /* calculate pixel color */
+      //float fx = x + RandomSampler_get1D(sampler);
+      //float fy = y + RandomSampler_get1D(sampler);
       L = L + renderPixelFunction(data,fx,fy,sampler,camera,gb,features);
     }
     L = L/(float)data.spp;

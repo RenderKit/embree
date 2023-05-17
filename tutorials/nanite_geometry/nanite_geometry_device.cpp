@@ -815,12 +815,12 @@ namespace embree {
       ImGui::Text("Triangles / Frame:             %d (out of %d)",global_lcgbp_scene->numLCMeshClusterQuadsPerFrame*2,global_lcgbp_scene->numLCQuadsTotal*2);      
       ImGui::Text("64-bytes QBVH6 Blocks / Frame: %d (out of %d)",global_lcgbp_scene->numLCMeshClusterBlocksPerFrame,global_lcgbp_scene->numLCBlocksTotal);            
     }
-
+#if 1
     ImGui::DragFloat("sigLumin",(float*)&g_sigLumin,0.1,1,10);
     ImGui::DragFloat("sigNormal",(float*)&g_sigNormal,0.01,0,1);
     ImGui::DragFloat("sigDepth",(float*)&g_sigDepth,0.5,0.1,100);
     //ImGui::DragFloat("sigDepth",(float*)&g_sigDepth,0.1,0.1,10);
-    
+#endif    
 
   }
     
@@ -1049,26 +1049,361 @@ inline float satDot(const Vec3f& a, const Vec3f& b) {
   return max(dot(a, b), 0.f);
 }
   
-  
-
-constexpr float Gaussian3x3[3][3] = {
-  { .075f, .124f, .075f },
-  { .124f, .204f, .124f },
-  { .075f, .124f, .075f }
-};
-  
-constexpr float Gaussian5x5[5][5] = {
-  { .0030f, .0133f, .0219f, .0133f, .0030f },
-  { .0133f, .0596f, .0983f, .0596f, .0133f },
-  { .0219f, .0983f, .1621f, .0983f, .0219f },
-  { .0133f, .0596f, .0983f, .0596f, .0133f },
-  { .0030f, .0133f, .0219f, .0133f, .0030f }
-};
-     
+      
 
 #define NORMAL_DISTANCE 0.1f
-#define PLANE_DISTANCE 5.0f
+#define PLANE_DISTANCE 1.0f
 
+
+inline PosRadius getPosRadius(const float fx,
+                              const float fy,
+                              const float t,
+                              const Vec3f normal,
+                              const AffineSpace3f& xfm)
+{
+  /* re-generate ray */
+  Ray ray(Vec3f(xfm.p),
+          Vec3f(normalize(fx*xfm.l.vx + fy*xfm.l.vy + xfm.l.vz)),
+          0.0f,
+          t,
+          0.0f);
+    
+  const Vec3f wo = neg(ray.dir);
+  const Vec3f dg_P  = (Vec3f)(ray.org+ray.tfar*ray.dir);
+  const Vec3f dg_Ng = normal;
+  const float nx = fx + 1.0f;
+  const float ny = fy;
+  const Vec3f neighP = ray.org + ray.tfar * normalize(nx*xfm.l.vx + ny*xfm.l.vy + xfm.l.vz);
+
+    
+  PosRadius posr;
+
+  if (ray.tfar != (float)inf)
+  {
+    posr.pos = dg_P;
+    posr.radius = distance(dg_P, neighP) / dot(dg_Ng, wo);
+  }
+  else
+  {
+    // nohit -> default posr !!!      
+    posr = PosRadius();
+  }
+  return posr;
+}
+
+
+__forceinline Vec3f temporalAccumulate(const int idx,
+                                       const int width,
+                                       const int height,
+                                       const int lastIdx,
+                                       GBuffer *gBuffer,
+                                       GBuffer *prev_gBuffer,                                      
+                                       bool &diff)
+{
+  int primID = gBuffer[idx].primID;
+
+  if (lastIdx < 0) {
+    diff = true;
+  }
+  else if (primID == -1) {
+    diff = true;
+  }
+  else if (prev_gBuffer[lastIdx].primID == -1 || prev_gBuffer[lastIdx].t == (float)pos_inf) {
+     diff = true;
+  }  
+  else if (prev_gBuffer[lastIdx].primID != primID) {
+    diff = true;
+  }
+  else if (abs(dot(prev_gBuffer[lastIdx].position-gBuffer[idx].position,gBuffer[idx].get_normal()))>PLANE_DISTANCE) {
+    diff = true;
+  }    
+  else {
+    Vec3f norm = gBuffer[idx].get_normal();
+    Vec3f lastNorm = prev_gBuffer[lastIdx].get_normal();
+    if (abs(dot(norm, lastNorm)) < NORMAL_DISTANCE) {
+      diff = true;
+    }
+  }
+
+  Vec3f accumColor = fp_convert(gBuffer[idx].color);
+  
+  if (!diff) 
+    accumColor = fp_convert(prev_gBuffer[lastIdx].color);
+  
+  return accumColor;
+}
+
+
+
+  
+__forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz)
+  {
+    const Vec3f vn = cross(vx,vy);    
+    const float distance = (float)dot(vn,vz) / (float)dot(vn,p);
+    Vec3f pip = p * distance;
+    if (distance < 0.0f)
+      pip = vz;
+    const float a = dot((pip-vz),vx);
+    const float b = dot((pip-vz),vy);
+    return Vec2f(a,b);    
+  }
+  
+  extern "C" void renderFrameStandard (int* pixels,
+                                       const unsigned int width,
+                                       const unsigned int height,
+                                       const float time,
+                                       const ISPCCamera& _camera)
+  {   
+    /* render all pixels */
+#if defined(EMBREE_SYCL_TUTORIAL)
+    RenderMode rendering_mode = user_rendering_mode;
+    ISPCCamera *const local_camera = global_camera;
+    if (rendering_mode != RENDER_PATH_TRACER && rendering_mode != RENDER_PATH_TRACER_DENOISE)
+    {
+      LCG_Scene *lcgbp_scene = global_lcgbp_scene;
+      unsigned int spp = user_spp;
+      TutorialData ldata = data;
+      sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
+        const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+        cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16) {
+          const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+          const unsigned int y = item.get_global_id(0); if (y >= height) return;
+          const ISPCCamera &camera = *local_camera;                         
+          renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,lcgbp_scene,rendering_mode,spp);
+        });
+      });
+      waitOnEventAndCatchException(event);
+      const double dt = gpu::getDeviceExecutionTiming(event);
+      //PRINT(dt * 1E-3);
+      ((ISPCCamera*)&_camera)->render_time = dt * 1E-3;        
+    }
+    else
+    {
+      
+      static unsigned int frameNo = 1;
+      bool denoise = rendering_mode == RENDER_PATH_TRACER_DENOISE;
+      GBufferOutput *output  = denoiser->outputBuffer;
+      GBuffer *gBuffer  = denoiser->gBuffer[frameNo%2];
+      GBuffer *prev_gBuffer = denoiser->gBuffer[1-(frameNo%2)];
+      GBufferOutput *colorBuffer0  = denoiser->colorBuffer[frameNo%2];
+      GBufferOutput *colorBuffer1  = denoiser->colorBuffer[1-(frameNo%2)];
+
+      //PRINT2(frameNo%2,1-(frameNo%2));
+      local_camera->xfm.p.y += frameNo;
+      PRINT(local_camera->xfm);
+      
+      sycl::event eventRender = renderFramePathTracer(pixels,width,height,time,local_camera,data,user_spp,gBuffer,frameNo,denoise);
+      waitOnEventAndCatchException(eventRender);
+      
+      const double dt = gpu::getDeviceExecutionTiming(eventRender);
+      ((ISPCCamera*)&_camera)->render_time = dt * 1E-3;        
+
+      
+      // Vec3f *momentsBuffer0  = denoiser->momentsBuffer[frameNo%2];
+      // Vec3f *momentsBuffer1  = denoiser->momentsBuffer[1-(frameNo%2)];
+      // float *devTempVariance  = denoiser->varianceBuffer[0];
+      // float *devVariance  = denoiser->varianceBuffer[1];
+      // float *devFilteredVariance  = denoiser->varianceBuffer[2];      
+
+      const ISPCCamera *const local_camera = global_camera;
+
+      const bool first = frameNo == 1;
+#if 1    
+      sycl::event eventTA = global_gpu_queue->submit([=](sycl::handler& cgh) {
+        const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+        cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16)      
+        {
+          const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+          const unsigned int y = item.get_global_id(0); if (y >= height) return;          
+          //if (gBuffer[y*width+x].primID != -1)
+          {
+            const int idx = y * width + x;
+            const Vec3f pos = gBuffer[idx].position;
+            //const Vec3f pos = local_camera[0].xfm.p + normalize(x*local_camera[0].xfm.l.vx + y*local_camera[0].xfm.l.vy + local_camera[0].xfm.l.vz) * gBuffer[y*width+x].t;
+            const Vec3f prev_pos = xfmPoint(local_camera[2].xfm,pos);
+            const Vec2f prev_xy = Vec2f(prev_pos.x / prev_pos.z,prev_pos.y / prev_pos.z);
+            Vec2i motion = Vec2i(prev_xy.x, prev_xy.y);
+            int motionIdx = -1;
+            if (motion.x >= 0 && motion.x < width &&
+                motion.y >= 0 && motion.y < height)
+              motionIdx = motion.y * width + motion.x;
+
+            Vec3f current_color = fp_convert(gBuffer[idx].color);
+            bool diff = first;
+            Vec3f last_color = temporalAccumulate(idx,width,height,motionIdx,gBuffer,prev_gBuffer,diff);
+            const float Alpha = 0.2f;
+            Vec3f accumColor = mix3(last_color, current_color, Alpha);
+
+            gBuffer[idx].color = fp_convert(accumColor);
+            //if (!diff) accumColor.y = 0;  
+            colorBuffer0[idx] = fp_convert(accumColor);
+
+          }
+          // else
+          //   colorBuffer0[y*width+x] = fp_convert(gBuffer[y*width+x].color);
+        });
+      });
+      waitOnEventAndCatchException(eventTA);
+#endif
+
+      double t0 = getSeconds();                                                    
+
+#if 1
+      Denoiser *local_denoiser = denoiser;
+      const float c_phi = g_sigLumin; //11.789f;
+      const float n_phi = g_sigNormal; //0.610f;
+      const float p_phi = g_sigDepth; //0.407f;
+      
+      const float* const kernel = local_denoiser->hst_filter;
+      const Vec2i* const offset = local_denoiser->hst_offset;
+      const int num_iters = 6;
+      for (int i = 0; i < num_iters; ++i) {      
+        sycl::event eventFilter = global_gpu_queue->submit([=](sycl::handler& cgh) {
+          const GBufferOutput *const inputB  = (i % 2) == 0 ? colorBuffer0 : colorBuffer1;
+                GBufferOutput *const outputB = (i % 2) == 0 ? colorBuffer1 : colorBuffer0;
+          
+          const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+          cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16)      
+                           {
+                             const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+                             const unsigned int y = item.get_global_id(0); if (y >= height) return;
+                             computeDenoisedImage(x,y,width,height,inputB,outputB,gBuffer,FILTER_SIZE*FILTER_SIZE,kernel,offset,c_phi * powf(2, -i),
+                                                  p_phi,
+                                                  n_phi,
+                                                  powf(2, i));
+                             
+                             if (i == num_iters-1)
+                             {
+                               Vec3f c = fp_convert(outputB[y*width+x]);
+                               unsigned int r = (unsigned int) (255.01f * clamp(c.x,0.0f,1.0f));
+                               unsigned int g = (unsigned int) (255.01f * clamp(c.y,0.0f,1.0f));
+                               unsigned int b = (unsigned int) (255.01f * clamp(c.z,0.0f,1.0f));
+                               pixels[y*width+x] = (b << 16) + (g << 8) + r;                                                       
+                             }
+                           });
+        });
+        waitOnEventAndCatchException(eventFilter);
+      }
+#endif
+      
+#if 0     
+      sycl::event outputC = global_gpu_queue->submit([=](sycl::handler& cgh) {
+        const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+        cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16)      
+                         {
+                           const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+                           const unsigned int y = item.get_global_id(0); if (y >= height) return;
+                           const float alpha = 0.5f;
+                           Vec3f c = fp_convert(colorBuffer0[y*width+x]);
+                           unsigned int r = (unsigned int) (255.01f * clamp(c.x,0.0f,1.0f));
+                           unsigned int g = (unsigned int) (255.01f * clamp(c.y,0.0f,1.0f));
+                           unsigned int b = (unsigned int) (255.01f * clamp(c.z,0.0f,1.0f));
+                           pixels[y*width+x] = (b << 16) + (g << 8) + r;
+                               
+                           //gBuffer[y*width+x].color = fp_convert(colorBuffer0[y*width+x]);
+                           //output[y*width+x] = fp_convert(colorBuffer0[y*width+x])/(gBuffer[y*width+x].N);
+                           //output[y*width+x] = fp_convert(Vec3f(devVariance[y*width+x]));
+                           //output[y*width+x] = colorBuffer0[y*width+x];
+                         });
+      });
+      waitOnEventAndCatchException(outputC);
+#endif
+      
+      double dt0 = (getSeconds()-t0)*1000.0;                                            
+      avg_denoising_time.add(dt0);
+
+      //exit(0);
+      
+      // sycl::event eventCopy = global_gpu_queue->submit([=](sycl::handler& cgh) {
+      //   const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+      //   cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16)      
+      //   {
+      //     const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+      //     const unsigned int y = item.get_global_id(0); if (y >= height) return;
+      //     output[y*width+x] = fp_convert(colorBuffer0[y*width+x]);          
+      //   });
+      // });
+      // waitOnEventAndCatchException(eventCopy);
+            
+      //if (denoise)
+      if (0)
+      {
+#if ENABLE_FP16_GBUFFER == 0
+    OIDNFormat format = OIDN_FORMAT_FLOAT3;
+#else
+    OIDNFormat format = OIDN_FORMAT_HALF3;
+#endif
+        
+        oidnSetSharedFilterImage(denoiser->filter, "color",  gBuffer,
+                                 format, width, height, offsetof(GBuffer, color), sizeof(GBuffer), sizeof(GBuffer) * width); // beauty
+        denoiser->checkError();
+
+        oidnSetSharedFilterImage(denoiser->filter, "normal",  gBuffer,
+                                 format, width, height, offsetof(GBuffer, normal), sizeof(GBuffer), sizeof(GBuffer) * width); // normal
+
+        denoiser->checkError();
+
+        oidnSetSharedFilterImage(denoiser->filter, "albedo",  gBuffer,
+                                 format, width, height, offsetof(GBuffer, albedo), sizeof(GBuffer), sizeof(GBuffer) * width); // normal
+
+        denoiser->checkError();    
+    
+        oidnSetSharedFilterImage(denoiser->filter, "output",  output,
+                                 format, width, height, 0, sizeof(GBufferOutput), sizeof(GBufferOutput)*width); // denoised beauty
+        denoiser->checkError();    
+        oidnSetFilter1b(denoiser->filter, "ldr", true); // beauty image is HDR
+
+        oidnCommitFilter(denoiser->filter);
+        denoiser->checkError();    
+        
+        double t0 = getSeconds();                                                    
+        denoiser->execute();
+        sycl::event event_denoising = global_gpu_queue->submit([=](sycl::handler& cgh) {
+          const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+          cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16) {
+            const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+            const unsigned int y = item.get_global_id(0); if (y >= height) return;
+            Vec3f c = fp_convert(output[y*width+x]);
+            //gBuffer[y*width+x].color = fp_convert(c);
+            //Vec3f c = albedo[y*width+x];
+            
+            unsigned int r = (unsigned int) (255.01f * clamp(c.x,0.0f,1.0f));
+            unsigned int g = (unsigned int) (255.01f * clamp(c.y,0.0f,1.0f));
+            unsigned int b = (unsigned int) (255.01f * clamp(c.z,0.0f,1.0f));
+            pixels[y*width+x] = (b << 16) + (g << 8) + r;                        
+          });
+        });
+        waitOnEventAndCatchException(event_denoising);
+
+        double dt0 = (getSeconds()-t0)*1000.0;                                            
+        avg_denoising_time.add(dt0);
+        
+      }
+      frameNo++;      
+    }
+#endif
+  }
+  
+
+/* called by the C++ code for cleanup */
+  extern "C" void device_cleanup ()
+  {
+    PRINT( camera_mode );
+    if (camera_mode == 1 && camera_file)
+    {
+      PRINT(camera_path.size());
+    
+      std::ofstream output(camera_file,std::ios::out|std::ios::binary);
+      if (!output) FATAL("cannot open camera file");
+      for (uint i=0;i<camera_path.size();i++)
+        output.write((char*)&camera_path[i],sizeof(ISPCCamera));
+      output.close();
+    }
+    
+    TutorialData_Destructor(&data);
+  }
+
+#if 0
 __forceinline void temporalAccumulate(const int x,
                                       const int y,
                                       const int width,
@@ -1141,72 +1476,7 @@ __forceinline void temporalAccumulate(const int x,
   devMomentAccumOut[idx] = accumMoment;
 }
 
-
-__forceinline void temporalAccumulate(const int x,
-                                      const int y,
-                                      const int width,
-                                      const int height,
-                                      const int motion,
-                                      GBufferOutput* devColorAccumOut,                                       
-                                      GBuffer *gBuffer,
-                                      GBuffer *prev_gBuffer,                                      
-                                      bool first)
-{
-  
-
-  int idx = y * width + x;
-  int primID = gBuffer[idx].primID;
-  int lastIdx = motion;
-
-  bool diff = first;
-
-  if (lastIdx < 0) {
-    diff = true;
-  }
-  else if (primID == -1) {
-    diff = true;
-  }
-  else if (prev_gBuffer[lastIdx].primID == -1 || prev_gBuffer[lastIdx].t == (float)pos_inf) {
-     diff = true;
-  }  
-  else if (prev_gBuffer[lastIdx].primID != primID) {
-    diff = true;
-  }
-  // else if (abs(prev_gBuffer[lastIdx].t-gBuffer[idx].t)>0.1f) {
-  //   diff = true;
-  // }
-  else if (abs(dot(prev_gBuffer[lastIdx].position-gBuffer[idx].position,gBuffer[idx].get_normal()))>PLANE_DISTANCE) {
-    diff = true;
-  }    
-  else {
-    Vec3f norm = gBuffer[idx].get_normal();
-    Vec3f lastNorm = prev_gBuffer[lastIdx].get_normal();
-    if (abs(dot(norm, lastNorm)) < NORMAL_DISTANCE) {
-      diff = true;
-    }
-  }
-
-  Vec3f color = fp_convert(gBuffer[idx].color);
-  //float lum = luminance(color);
-
-  Vec3f accumColor;
-  Vec3f accumMoment;
-  
-  if (diff) {
-    accumColor = color;
-    gBuffer[idx].N = 1;
-  }
-  else {
-    Vec3f lastColor = fp_convert(prev_gBuffer[lastIdx].color);
-    //accumColor = lastColor + color; //mix3(lastColor, color, Alpha);
-    const float Alpha = 1.0f / float(prev_gBuffer[lastIdx].N + 1); //.2f;
-    accumColor = mix3(lastColor, color, Alpha);
-    gBuffer[idx].N = prev_gBuffer[lastIdx].N + 1;
-  }
-  gBuffer[idx].color = fp_convert(accumColor);  
-  devColorAccumOut[idx] = fp_convert(accumColor);
-}
-
+#endif
 
 #if 0
 __forceinline void estimateVariance(const int x, const int y, const int width, const int height, float* devVariance, Vec3f* devMoment)
@@ -1325,105 +1595,6 @@ __forceinline void waveletFilter(const int x, const int y, const int width, cons
   devVarianceOut[idxP] = (sumWeight2 < FLT_EPSILON) ? devVarianceIn[idxP] : sumVariance / sumWeight2;  
 }
 #endif  
-
-  
-__forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz)
-  {
-    const Vec3f vn = cross(vx,vy);    
-    const float distance = (float)dot(vn,vz) / (float)dot(vn,p);
-    Vec3f pip = p * distance;
-    if (distance < 0.0f)
-      pip = vz;
-    const float a = dot((pip-vz),vx);
-    const float b = dot((pip-vz),vy);
-    return Vec2f(a,b);    
-  }
-  
-  extern "C" void renderFrameStandard (int* pixels,
-                                       const unsigned int width,
-                                       const unsigned int height,
-                                       const float time,
-                                       const ISPCCamera& _camera)
-  {   
-    /* render all pixels */
-#if defined(EMBREE_SYCL_TUTORIAL)
-    RenderMode rendering_mode = user_rendering_mode;
-    const ISPCCamera *const local_camera = global_camera;
-    if (rendering_mode != RENDER_PATH_TRACER && rendering_mode != RENDER_PATH_TRACER_DENOISE)
-    {
-      LCG_Scene *lcgbp_scene = global_lcgbp_scene;
-      unsigned int spp = user_spp;
-      TutorialData ldata = data;
-      sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
-        const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-        cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16) {
-          const unsigned int x = item.get_global_id(1); if (x >= width ) return;
-          const unsigned int y = item.get_global_id(0); if (y >= height) return;
-          const ISPCCamera &camera = *local_camera;                         
-          renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,lcgbp_scene,rendering_mode,spp);
-        });
-      });
-      waitOnEventAndCatchException(event);
-      const double dt = gpu::getDeviceExecutionTiming(event);
-      //PRINT(dt * 1E-3);
-      ((ISPCCamera*)&_camera)->render_time = dt * 1E-3;        
-    }
-    else
-    {
-      
-      static unsigned int frameNo = 1;
-      bool denoise = rendering_mode == RENDER_PATH_TRACER_DENOISE;
-      GBufferOutput *output  = denoiser->outputBuffer;
-      GBuffer *gBuffer  = denoiser->gBuffer[frameNo%2];
-      GBuffer *prev_gBuffer = denoiser->gBuffer[1-(frameNo%2)];
-      GBufferOutput *colorBuffer0  = denoiser->colorBuffer[frameNo%2];
-      GBufferOutput *colorBuffer1  = denoiser->colorBuffer[1-(frameNo%2)];
-
-      //PRINT2(frameNo%2,1-(frameNo%2));
-
-      sycl::event eventRender = renderFramePathTracer(pixels,width,height,time,local_camera,data,user_spp,gBuffer,frameNo,denoise);
-      waitOnEventAndCatchException(eventRender);
-      
-      const double dt = gpu::getDeviceExecutionTiming(eventRender);
-      ((ISPCCamera*)&_camera)->render_time = dt * 1E-3;        
-
-      
-      // Vec3f *momentsBuffer0  = denoiser->momentsBuffer[frameNo%2];
-      // Vec3f *momentsBuffer1  = denoiser->momentsBuffer[1-(frameNo%2)];
-      // float *devTempVariance  = denoiser->varianceBuffer[0];
-      // float *devVariance  = denoiser->varianceBuffer[1];
-      // float *devFilteredVariance  = denoiser->varianceBuffer[2];      
-
-      const ISPCCamera *const local_camera = global_camera;
-
-      const bool first = frameNo == 1;
-      sycl::event eventTA = global_gpu_queue->submit([=](sycl::handler& cgh) {
-        const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-        cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16)      
-        {
-          const unsigned int x = item.get_global_id(1); if (x >= width ) return;
-          const unsigned int y = item.get_global_id(0); if (y >= height) return;          
-          //if (gBuffer[y*width+x].primID != -1)
-          {
-            const Vec3f pos = gBuffer[y*width+x].position;
-            //const Vec3f pos = local_camera[0].xfm.p + normalize(x*local_camera[0].xfm.l.vx + y*local_camera[0].xfm.l.vy + local_camera[0].xfm.l.vz) * gBuffer[y*width+x].t;
-            const Vec3f prev_pos = xfmPoint(local_camera[2].xfm,pos);
-            const Vec2f prev_xy = Vec2f(prev_pos.x / prev_pos.z,prev_pos.y / prev_pos.z);
-            Vec2i motion = Vec2i(prev_xy.x, prev_xy.y);
-            int motionIdx = -1;
-            if (motion.x >= 0 && motion.x < width &&
-                motion.y >= 0 && motion.y < height)
-              motionIdx = motion.y * width + motion.x;
-            //temporalAccumulate(x,y,width,height,motionIdx,colorBuffer0,momentsBuffer0,momentsBuffer1,gBuffer,prev_gBuffer,first);
-            temporalAccumulate(x,y,width,height,motionIdx,colorBuffer0,gBuffer,prev_gBuffer,first);            
-          }
-          // else
-          //   colorBuffer0[y*width+x] = fp_convert(gBuffer[y*width+x].color);
-        });
-      });
-      waitOnEventAndCatchException(eventTA);
-
-
 #if 0
       sycl::event eventEV = global_gpu_queue->submit([=](sycl::handler& cgh) {
         const sycl::nd_range<2> nd_range = make_nd_range(height,width);
@@ -1469,127 +1640,5 @@ __forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const 
         //std::swap(devTempVariance,devVariance);        
       }
 #endif
-      double t0 = getSeconds();                                                    
-
-#if 1
-      Denoiser *local_denoiser = denoiser;
-      const float c_phi = g_sigLumin; //11.789f;
-      const float n_phi = g_sigNormal; //0.610f;
-      const float p_phi = g_sigDepth; //0.407f;
-      
-      const float* const kernel = local_denoiser->hst_filter;
-      const Vec2i* const offset = local_denoiser->hst_offset;
-      const int num_iters = 6;
-      for (int i = 0; i < num_iters; ++i) {      
-        sycl::event eventFilter = global_gpu_queue->submit([=](sycl::handler& cgh) {
-          const GBufferOutput *const inputB  = (i % 2) == 0 ? colorBuffer0 : colorBuffer1;
-                GBufferOutput *const outputB = (i % 2) == 0 ? colorBuffer1 : colorBuffer0;
-          
-          const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-          cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16)      
-                           {
-                             const unsigned int x = item.get_global_id(1); if (x >= width ) return;
-                             const unsigned int y = item.get_global_id(0); if (y >= height) return;
-                             computeDenoisedImage(x,y,width,height,inputB,outputB,gBuffer,FILTER_SIZE*FILTER_SIZE,kernel,offset,c_phi * powf(2, -i),
-                                                  p_phi,
-                                                  n_phi,
-                                                  powf(2, i));
-                             
-                             if (i == num_iters-1)
-                             {
-                               Vec3f c = fp_convert(outputB[y*width+x]);
-                               unsigned int r = (unsigned int) (255.01f * clamp(c.x,0.0f,1.0f));
-                               unsigned int g = (unsigned int) (255.01f * clamp(c.y,0.0f,1.0f));
-                               unsigned int b = (unsigned int) (255.01f * clamp(c.z,0.0f,1.0f));
-                               pixels[y*width+x] = (b << 16) + (g << 8) + r;                                                       
-                             }
-                           });
-        });
-        waitOnEventAndCatchException(eventFilter);
-      }
-#endif
-      
-      
-      // sycl::event outputC = global_gpu_queue->submit([=](sycl::handler& cgh) {
-      //   const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-      //   cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16)      
-      //                    {
-      //                      const unsigned int x = item.get_global_id(1); if (x >= width ) return;
-      //                      const unsigned int y = item.get_global_id(0); if (y >= height) return;
-      //                      const float alpha = 0.5f;
-      //                      //gBuffer[y*width+x].color = fp_convert(colorBuffer0[y*width+x]);
-      //                      //output[y*width+x] = fp_convert(colorBuffer0[y*width+x])/(gBuffer[y*width+x].N);
-      //                      //output[y*width+x] = fp_convert(Vec3f(devVariance[y*width+x]));
-      //                      output[y*width+x] = fp_convert(colorBuffer0[y*width+x]);
-      //                    });
-      // });
-      // waitOnEventAndCatchException(outputC);
-      
-      double dt0 = (getSeconds()-t0)*1000.0;                                            
-      avg_denoising_time.add(dt0);
-
-      //exit(0);
-      
-      // sycl::event eventCopy = global_gpu_queue->submit([=](sycl::handler& cgh) {
-      //   const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-      //   cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16)      
-      //   {
-      //     const unsigned int x = item.get_global_id(1); if (x >= width ) return;
-      //     const unsigned int y = item.get_global_id(0); if (y >= height) return;
-      //     output[y*width+x] = fp_convert(colorBuffer0[y*width+x]);          
-      //   });
-      // });
-      // waitOnEventAndCatchException(eventCopy);
-            
-      //if (denoise)
-      if (0)
-      {
-        double t0 = getSeconds();                                                    
-        //denoiser->execute();
-        sycl::event event_denoising = global_gpu_queue->submit([=](sycl::handler& cgh) {
-          const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-          cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16) {
-            const unsigned int x = item.get_global_id(1); if (x >= width ) return;
-            const unsigned int y = item.get_global_id(0); if (y >= height) return;
-            Vec3f c = fp_convert(output[y*width+x]);
-            //Vec3f c = albedo[y*width+x];
-            
-            unsigned int r = (unsigned int) (255.01f * clamp(c.x,0.0f,1.0f));
-            unsigned int g = (unsigned int) (255.01f * clamp(c.y,0.0f,1.0f));
-            unsigned int b = (unsigned int) (255.01f * clamp(c.z,0.0f,1.0f));
-            pixels[y*width+x] = (b << 16) + (g << 8) + r;                        
-          });
-        });
-        waitOnEventAndCatchException(event_denoising);
-
-        double dt0 = (getSeconds()-t0)*1000.0;                                            
-        avg_denoising_time.add(dt0);
-        
-      }
-      frameNo++;      
-    }
-#endif
-  }
-  
-
-/* called by the C++ code for cleanup */
-  extern "C" void device_cleanup ()
-  {
-    PRINT( camera_mode );
-    if (camera_mode == 1 && camera_file)
-    {
-      PRINT(camera_path.size());
-    
-      std::ofstream output(camera_file,std::ios::out|std::ios::binary);
-      if (!output) FATAL("cannot open camera file");
-      for (uint i=0;i<camera_path.size();i++)
-        output.write((char*)&camera_path[i],sizeof(ISPCCamera));
-      output.close();
-    }
-    
-    TutorialData_Destructor(&data);
-  }
-
-  
 
 } // namespace embree

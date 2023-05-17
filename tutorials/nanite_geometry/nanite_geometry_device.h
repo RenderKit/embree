@@ -16,7 +16,7 @@
 //#include "../../kernels/subdiv/bspline_curve.h"
 
 #define ENABLE_DAG 1
-#define ALLOC_DEVICE_MEMORY 0
+#define ALLOC_DEVICE_MEMORY 1
 //#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 256
 //#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 28.0f
 #define RELATIVE_MIN_LOD_DISTANCE_FACTOR 11.0f
@@ -62,7 +62,7 @@ extern "C" ISPCScene* g_ispc_scene;
 #endif
 
 
-struct  __attribute__ ((packed,aligned(16))) GBuffer
+struct  __attribute__ ((packed,aligned(4))) GBuffer
 {  
 #if ENABLE_FP16_GBUFFER == 1
   Vec3fp16 color,normal,albedo;
@@ -74,7 +74,7 @@ struct  __attribute__ ((packed,aligned(16))) GBuffer
   Vec3f position;
   float t;
   int primID;
-  int N;
+  //int N;
   
   inline GBuffer() {}
 
@@ -94,7 +94,7 @@ struct  __attribute__ ((packed,aligned(16))) GBuffer
     position = Vec3f(FLT_MAX);
     t = pos_inf; // inf == no hit
     primID = -1;
-    N = 1;
+    //N = 1;
   }
 
   inline Vec3f get_normal() const {
@@ -157,7 +157,7 @@ struct Denoiser
   Vec3f *momentsBuffer[2];
   float *varianceBuffer[3];
   
-#define FILTER_SIZE 5  
+#define FILTER_SIZE 3
   Vec2i *hst_offset;
   float *hst_filter;
   
@@ -196,7 +196,9 @@ struct Denoiser
   }
   
   Denoiser(const uint width, const uint height) : width(width), height(height)
-  {    
+  {
+    PRINT(sizeof(GBuffer));
+    
     std::cout << "Init Denoiser...";
     device = oidnNewDevice(OIDN_DEVICE_TYPE_SYCL);
     checkError();
@@ -210,7 +212,7 @@ struct Denoiser
 #else
     OIDNFormat format = OIDN_FORMAT_HALF3;
 #endif
-
+    
     // FIXME
 
     //auto mode = EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE;

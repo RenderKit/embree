@@ -4,6 +4,9 @@
 #pragma once
 
 #include "../math/vec.h"
+#include "sobol_matrices.h"
+#include "samplerBlueNoiseErrorDistribution_128x128_OptimizedFor_2d2d2d2d_1spp.h"
+#include "samplerBlueNoiseErrorDistribution_128x128_OptimizedFor_2d2d2d2d_8spp.h"
 
 namespace embree {
 
@@ -51,6 +54,16 @@ __forceinline unsigned int MurmurHash3_finalize(unsigned int hash)
 
   return hash;
 }
+
+__forceinline unsigned int hashToRandom(unsigned int value, unsigned int scramble)
+{
+  value = (value ^ 61) ^ scramble;
+  value += value << 3;
+  value ^= value >> 4;
+  value *= 0x27d4eb2d;
+  return value;
+}
+  
 
 __forceinline unsigned int LCG_next(unsigned int value)
 {
@@ -187,6 +200,197 @@ private:
 
   unsigned long state;
   unsigned long stream;
+};
+
+class SobolSampler
+{
+public:
+
+  __forceinline void InitSampler(unsigned pixelID, unsigned sampleID, unsigned dim)
+  {
+    // skip the first few samples to reduce correlation artifacts
+    this->index = sampleID + 64;
+
+    unsigned hash = 0;
+    hash = MurmurHash3_mix(hash, pixelID);
+    this->scramble = MurmurHash3_finalize(hash);
+
+    hash = MurmurHash3_mix(hash, sampleID);
+    this->dimension = dim;
+  }
+
+  __forceinline float Get1D() {
+    return GetFloat();
+  }
+
+  __forceinline Vec2f Get2D()
+  {
+    const float u = Get1D();
+    const float v = Get1D();
+    return Vec2f(u,v);
+  }
+
+private:
+
+  __forceinline float GetFloat()
+  {
+    // MAXIMUM 1024 dimensions!!!
+
+    // Sample the Sobol sequence
+    const float s = Sobol_sample(index, dimension);
+
+    // Apply Cranley-Patterson rotation to reduce correlation artifacts
+    const float shift = to_float_unorm(hashToRandom(dimension, scramble));
+    dimension++;
+    return safe_sample(CranleyPattersonRotation(s, shift));
+  }
+
+  unsigned index; // sample index
+  unsigned scramble; // random number for scrambling the samples
+  unsigned dimension;
+};
+
+class BNSSSampler
+{
+public:
+
+  __forceinline void InitSampler(unsigned x, unsigned y, unsigned sampleID, unsigned dim)
+  {
+    pixel_i = x;
+    pixel_j = y;
+    index = sampleID;
+    dimension = dim;
+    pcg.InitSampler(x, y, sampleID, dim);
+
+    unsigned hash = 0;
+    hash = MurmurHash3_mix(hash, sampleID);
+    scramble = MurmurHash3_finalize(hash);
+  }
+  
+  __forceinline float Get1D_uniform()
+  {
+    return pcg.Get1D();
+  }
+  
+  __forceinline Vec2f Get2D_uniform()
+  {
+    return pcg.Get2D();
+  }
+
+  __forceinline float Get1D()
+  {
+    return GetFloat();
+  }
+
+  __forceinline Vec2f Get2D()
+  {
+    const float u = GetFloat();
+    const float v = GetFloat();
+    return Vec2f(u,v);
+  }
+
+private:
+
+  __forceinline float GetFloat()
+  {
+      // wrap arguments
+      pixel_i = pixel_i & 127;
+      pixel_j = pixel_j & 127;
+      if (index > 127) {
+        return pcg.Get1D();
+      }
+      index = index & 255;
+      dimension = dimension & 255;
+
+      // xor index based on optimized ranking
+      int rankedSampleIndex = index ^ rankingTile[dimension + (pixel_i + pixel_j*128)*8];
+
+      // fetch value in sequence
+      int value = sobol_256spp_256d[dimension + rankedSampleIndex*256];
+
+      // If the dimension is optimized, xor sequence value based on optimized scrambling
+      value = value ^ scramblingTile[(dimension%8) + (pixel_i + pixel_j*128)*8];
+
+      // Apply Cranley-Patterson rotation to reduce correlation artifacts
+      //const float shift = to_float_unorm(hashToRandom(dimension, scramble));
+
+      // convert to float and return
+      float v = (0.5f+value)/256.0f;
+      dimension++;
+      //return safe_sample(CranleyPattersonRotation(v, shift));
+      return safe_sample(v);
+  }
+
+  int index; // sample index
+  int pixel_i, pixel_j;
+  int dimension;
+  unsigned scramble;
+
+  PCGSampler pcg;
+};
+
+class BNSSSampler1SPP
+{
+public:
+
+  __forceinline void InitSampler(unsigned x, unsigned y, unsigned sampleID, unsigned dim)
+  {
+    pixel_i = x;
+    pixel_j = y;
+    index = sampleID;
+    dimension = dim;
+  }
+
+  __forceinline float Get1D_uniform()
+  {
+    return Get1D();
+  }
+
+  __forceinline Vec2f Get2D_uniform()
+  {
+    return Get2D();
+  }
+
+  __forceinline float Get1D()
+  {
+    return GetFloat();
+  }
+
+  __forceinline Vec2f Get2D()
+  {
+    const float u = GetFloat();
+    const float v = GetFloat();
+    return Vec2f(u,v);
+  }
+
+private:
+
+  __forceinline float GetFloat()
+  {
+      // wrap arguments
+      pixel_i = pixel_i & 127;
+      pixel_j = pixel_j & 127;
+      index = index & 255;
+      dimension = dimension & 255;
+
+      // xor index based on optimized ranking
+      int rankedSampleIndex = index ^ bnss_1spp::rankingTile[dimension + (pixel_i + pixel_j*128)*8];
+
+      // fetch value in sequence
+      int value = bnss_1spp::sobol_256spp_256d[dimension + rankedSampleIndex*256];
+
+      // If the dimension is optimized, xor sequence value based on optimized scrambling
+      value = value ^ bnss_1spp::scramblingTile[(dimension%8) + (pixel_i + pixel_j*128)*8];
+
+      // convert to float and return
+      float v = (0.5f+value)/256.0f;
+      dimension++;
+      return safe_sample(v);
+  }
+
+  int index; // sample index
+  int pixel_i, pixel_j;
+  int dimension;
 };
 
   
