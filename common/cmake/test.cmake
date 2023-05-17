@@ -288,6 +288,14 @@ if (BUILD_TESTING OR EMBREE_TESTING_INSTALL_TESTS)
     #ADD_EMBREE_TEST_ECS(verify_memcheck verify NO_REFERENCE CONDITIONS "EMBREE_TESTING_MEMCHECK == ON")       # 8) same as 7) but with extra condition
 
   FUNCTION (ADD_EMBREE_TEST_ECS testname executable)
+
+    if (EMBREE_TESTING_FILTER_TESTNAMES)
+      list(FIND EMBREE_TESTING_FILTER_TESTNAMES "${testname}" i)
+      if (${i} EQUAL -1)
+        return()
+      endif()
+    endif()
+
     SET(nargs ${ARGN})
 
     # disable everything
@@ -499,6 +507,18 @@ if (BUILD_TESTING OR EMBREE_TESTING_INSTALL_TESTS)
       endif()
 
       SET(testcall "${testcall} \n    INTENSITY ${intensity}")
+      if (${memcheck})
+        SET(testcall "${testcall} \n    MEMCHECK")
+      endif()
+      if (${no_cpp})
+        SET(testcall "${testcall} \n    NO_CPP")
+      endif()
+      if (${no_ispc})
+        SET(testcall "${testcall} \n    NO_ISPC")
+      endif()
+      if (${no_sycl})
+        SET(testcall "${testcall} \n    NO_SYCL")
+      endif()
       STRING(REPLACE "${PROJECT_SOURCE_DIR}/" "" conditionsfile "${conditionsfile}")
       SET(testcall "${testcall} \n    CONDITION_FILE ${conditionsfile}")
       SET(testcall "${testcall} \n    CONDITION ")
