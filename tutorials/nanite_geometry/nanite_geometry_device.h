@@ -17,9 +17,9 @@
 
 #define ENABLE_DAG 1
 #define ALLOC_DEVICE_MEMORY 1
-//#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 256
+#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 256
 //#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 28.0f
-#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 11.0f
+//#define RELATIVE_MIN_LOD_DISTANCE_FACTOR 11.0f
 
 namespace embree {
 
@@ -139,6 +139,48 @@ struct  __attribute__ ((packed,aligned(4))) GBuffer
     Vec3f pos = Vec3f(0);
     float radius = -float(inf);
   };
+
+
+  __forceinline PosRadius getPosRadius(const float fx,
+                                       const float fy,
+                                       const float t,
+                                       const Vec3f normal,
+                                       const AffineSpace3f& xfm)
+  {
+    /* re-generate ray */
+    Ray ray(Vec3f(xfm.p),
+            Vec3f(normalize(fx*xfm.l.vx + fy*xfm.l.vy + xfm.l.vz)),
+            0.0f,
+            t,
+            0.0f);
+    
+    const Vec3f wo = neg(ray.dir);
+    const Vec3f dg_P  = (Vec3f)(ray.org+ray.tfar*ray.dir);
+    const Vec3f dg_Ng = normal;
+    const float nx = fx + 1.0f;
+    const float ny = fy;
+    const Vec3f neighP = ray.org + ray.tfar * normalize(nx*xfm.l.vx + ny*xfm.l.vy + xfm.l.vz);
+
+    
+    PosRadius posr;
+
+    if (ray.tfar != (float)inf)
+    {
+      posr.pos = dg_P;
+      posr.radius = distance(dg_P, neighP) / dot(dg_Ng, wo);
+    }
+    else
+    {
+      // nohit -> default posr !!!      
+      posr = PosRadius();
+    }
+    return posr;
+  }
+
+inline float luminance(const Vec3f &color) {
+  const Vec3f T(.2126f, .7152f, .0722f);
+  return dot(color, T);
+}
 
   
 struct Denoiser
@@ -265,7 +307,7 @@ struct Denoiser
     oidnSetSharedFilterImage(filter, "output",  outputBuffer,
                              format, width, height, 0, sizeof(GBufferOutput), sizeof(GBufferOutput)*width); // denoised beauty
     checkError();    
-    oidnSetFilter1b(filter, "ldr", true); // beauty image is HDR
+    oidnSetFilterBool(filter, "ldr", true); // beauty image is HDR
     //oidnSetFilter1b(filter, "hdr", true);
     //oidnSetFilter1f(filter, "inputScale", 1.0f);  
     

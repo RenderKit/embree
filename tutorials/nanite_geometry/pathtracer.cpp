@@ -412,7 +412,12 @@ namespace embree {
           // gb.normal = fp_convert(Vec3f(1,0,0));
           // gb.albedo = fp_convert(Vec3f(0,0,0));
           // gb.N = 1;
-          const Vec3f c = renderPixelPathTracer(ldata,x,y,pixels,width,height,frameNo,camera,gb,feature_mask);
+          Vec3f c = renderPixelPathTracer(ldata,x,y,pixels,width,height,frameNo,camera,gb,feature_mask);
+
+          c.x = clamp(c.x,0.0f,1.0f);
+          c.y = clamp(c.y,0.0f,1.0f);
+          c.z = clamp(c.z,0.0f,1.0f);
+          
           if (!denoise)
           {
             unsigned int r = (unsigned int) (255.01f * clamp(c.x,0.0f,1.0f));
@@ -422,6 +427,7 @@ namespace embree {
           }
           else
           {
+            
             gb.color = fp_convert(c);
             gbuffer[y*width+x] = gb;            
           }

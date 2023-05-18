@@ -2352,7 +2352,7 @@ namespace embree
                                    const uint32_t ex = (state.flags & RIGHT_BORDER) ? 7 : 8;
                                  
 #endif                                 
-                                 
+                                   
                                    if (x>=sx && x<=ex)
                                      for (uint32_t y=sy;y<=ey;y++)
                                      {
