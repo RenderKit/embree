@@ -45,7 +45,7 @@ IF (EMBREE_TESTING_INSTALL_TESTS)
     "# Copyright 2009-2021 Intel Corporation\n"
     "# SPDX-License-Identifier: Apache-2.0\n"
     "# This file was automatically generated\n"
-    "cmake_minimum_required(VERSION 3.25)\n"
+    "cmake_minimum_required(VERSION 3.1.0)\n"
     "\n"
     "project(embree-testing)\n"
     "\n"
@@ -56,12 +56,32 @@ IF (EMBREE_TESTING_INSTALL_TESTS)
     "SET(BUILD_TESTING ON)\n"
     "include(test.cmake)\n"
     "\n"
+    "\n"
+    "if (EMBREE_TESTING_FILTER_TESTS_FILE)\n"
+    "  if (EXISTS \"\${EMBREE_TESTING_FILTER_TESTS_FILE}\")\n"
+    "    file(READ \"\${EMBREE_TESTING_FILTER_TESTS_FILE}\" lines)\n"
+    "    string(REGEX REPLACE \"\\n\" \";\" testnames \"\${lines}\")\n"
+    "    list(APPEND EMBREE_TESTING_FILTER_TESTNAMES \${testnames})\n"
+    "  else()\n"
+    "    message(FATAL_ERROR \"EMBREE_TESTING_FILTER_TESTS_FILE\" was specified as '\${EMBREE_TESTING_FILTER_TESTS_FILE}' but file could not be opened.)\n"
+    "  endif()\n"
+    "endif()\n"
+    "\n"
+    "message(\"filter:     \${EMBREE_TESTING_FILTER_TESTNAMES}\")\n"
+    "\n"
     "include(embree-addtests.cmake)\n"
   )
   INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}/testproject-CMakeLists.txt"
             DESTINATION "${CMAKE_INSTALL_TESTDIR}"
             RENAME "CMakeLists.txt"
             COMPONENT testing)
+
+  FILE(GLOB packfiles "${PROJECT_SOURCE_DIR}/tests/gta-configs/*")
+  foreach(f ${packfiles})
+    INSTALL(FILES "${f}"
+              DESTINATION "${CMAKE_INSTALL_TESTDIR}"
+              COMPONENT testing)
+  endforeach()
 
   # generated file adding tests
   INSTALL(FILES "${EMBREE_INSTALL_CTESTTESTFILE}"
