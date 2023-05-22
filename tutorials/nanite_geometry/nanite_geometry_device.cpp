@@ -1282,8 +1282,7 @@ __forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const 
 #endif
       
 
-      //if (denoise)
-      if (1)
+      if (denoise)
       {
 #if ENABLE_FP16_GBUFFER == 0
     OIDNFormat format = OIDN_FORMAT_FLOAT3;
