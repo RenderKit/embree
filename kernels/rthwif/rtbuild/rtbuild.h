@@ -33,35 +33,7 @@
 
 #define ZE_APICALL_
 
-#if defined(EMBREE_LEVEL_ZERO)
-#include <level_zero/ze_api.h>
-#else
-typedef struct _ze_driver_handle_t *ze_driver_handle_t;
-typedef struct _ze_device_handle_t *ze_device_handle_t;
-typedef enum _ze_result_t
-{
-    ZE_RESULT_SUCCESS = 0,                          ///< [Core] success
-    ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY = 0x70000002,///< [Core] insufficient host memory to satisfy call
-    ZE_RESULT_EXP_ERROR_OPERANDS_INCOMPATIBLE = 0x7ff00004, ///< [Core, Experimental] operands of comparison are not compatible
-    ZE_RESULT_EXP_ERROR_RETRY_RTAS_BUILD = 0x7ff00005,  ///< [Core, Experimental] ray tracing acceleration structure build failed
-                                                    ///< due to insufficient resources, retry with a larger buffer allocation
-    ZE_RESULT_ERROR_INVALID_ARGUMENT = 0x78000004,  ///< [Validation] generic error code for invalid arguments
-    ZE_RESULT_ERROR_INVALID_NULL_HANDLE = 0x78000005,   ///< [Validation] handle argument is not valid
-    ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE = 0x78000006,  ///< [Validation] object pointed to by handle still in-use by device
-    ZE_RESULT_ERROR_INVALID_NULL_POINTER = 0x78000007,  ///< [Validation] pointer argument may not be nullptr
-    ZE_RESULT_ERROR_INVALID_ENUMERATION = 0x7800000c,   ///< [Validation] enumerator argument is not valid
-    ZE_RESULT_ERROR_UNKNOWN = 0x7ffffffe,           ///< [Core] unknown or internal error
-    ZE_RESULT_FORCE_UINT32 = 0x7fffffff
-} ze_result_t;
-typedef enum _ze_structure_type_t {} ze_structure_type_t;
-#ifndef ZE_MAKE_VERSION
-#  define ZE_MAKE_VERSION( _major, _minor )  (( _major << 16 )|( _minor & 0x0000ffff))
-#endif // ZE_MAKE_VERSION
-#ifndef ZE_BIT
-#  define ZE_BIT( _i )  ( 1 << _i )
-#endif // ZE_BIT
-#define ZE_APICALL
-#endif
+#include <level_zero/ze_wrapper.h>
 
 #if !defined(ZE_RTAS_BUILDER_EXP_NAME)
 #undef ZE_APIEXPORT

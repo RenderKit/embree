@@ -450,11 +450,9 @@ namespace embree
     pProperties->rtasFormat = (ze_rtas_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_INVALID;
     pProperties->rtasBufferAlignment = 128;
 
-#if defined(EMBREE_LEVEL_ZERO)
-
     /* check for supported device ID */
     ze_device_properties_t device_props{ ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES };
-    ze_result_t status = zeDeviceGetProperties(hDevice, &device_props);
+    ze_result_t status = ZeWrapper::zeDeviceGetProperties(hDevice, &device_props);
     if (status != ZE_RESULT_SUCCESS)
       return status;
 
@@ -462,7 +460,7 @@ namespace embree
     const uint32_t vendor_id = device_props.vendorId;
     const uint32_t device_id = device_props.deviceId;
     if (vendor_id != 0x8086) return ZE_RESULT_ERROR_UNKNOWN;
-    
+
     bool dg2 =
       (0x4F80 <= device_id && device_id <= 0x4F88) ||
       (0x5690 <= device_id && device_id <= 0x5698) ||
@@ -480,13 +478,6 @@ namespace embree
     }
 
     return ZE_RESULT_ERROR_UNKNOWN;
-
-#else
-
-    pProperties->rtasFormat = (ze_rtas_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1;
-    return ZE_RESULT_SUCCESS;
-    
-#endif
   }
   
   RTHWIF_API ze_result_t zeRTASBuilderDeviceFormatCompatibilityCheckExpImpl( ze_rtas_builder_exp_handle_t hBuilder,

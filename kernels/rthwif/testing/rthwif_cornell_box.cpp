@@ -6,6 +6,7 @@
 
 #include "../rttrace/rttrace.h"
 #include "../rtbuild/rtbuild.h"
+#include "../rtbuild/ze_wrapper.h"
 
 #include <vector>
 #include <iostream>
@@ -114,7 +115,7 @@ void* alloc_accel_buffer(size_t bytes, sycl::device device, sycl::context contex
   host_desc.flags = ZE_HOST_MEM_ALLOC_FLAG_BIAS_CACHED;
   
   void* ptr = nullptr;
-  ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,rtasProp.rtasBufferAlignment,hDevice,&ptr);
+  ze_result_t result = ZeWrapper::zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,rtasProp.rtasBufferAlignment,hDevice,&ptr);
   if (result != ZE_RESULT_SUCCESS)
     throw std::runtime_error("acceleration buffer allocation failed");
 
@@ -124,7 +125,7 @@ void* alloc_accel_buffer(size_t bytes, sycl::device device, sycl::context contex
 void free_accel_buffer(void* ptr, sycl::context context)
 {
   ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
-  ze_result_t result = zeMemFree(hContext,ptr);
+  ze_result_t result = ZeWrapper::zeMemFree(hContext,ptr);
   if (result != ZE_RESULT_SUCCESS)
     throw std::runtime_error("acceleration buffer free failed");
 }

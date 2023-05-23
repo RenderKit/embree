@@ -6,24 +6,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if defined(EMBREE_LEVEL_ZERO)
-#include <level_zero/ze_api.h>
-#endif
-
-#if !defined(EMBREE_LEVEL_ZERO)
-struct _ze_device_handle_t {};
-#else
-struct _ze_device_handle_t;
-#endif
-
-typedef struct _ze_device_handle_t *ze_device_handle_t;
-
-#if !defined(EMBREE_LEVEL_ZERO)
-struct _ze_driver_handle_t {};
-#else
-struct _ze_driver_handle_t;
-#endif
-
 typedef struct _ze_driver_handle_t *ze_driver_handle_t;
 
 #if defined(__cplusplus)
@@ -303,25 +285,7 @@ typedef struct _ze_driver_handle_t *ze_driver_handle_t;
  \brief Additional ze_result_t enum fields. 
 
 */
-#if defined(EMBREE_LEVEL_ZERO)
 #define ZE_RESULT_EXP_ERROR_OPERANDS_INCOMPATIBLE ((_ze_result_t) 0x10000000)
-#else
-typedef enum _ze_result_t
-{
-  ZE_RESULT_SUCCESS,                             ///< operation was successfull
-  ZE_RESULT_ERROR_UNKNOWN,                       ///< unknown error occurred
-  ZE_RESULT_ERROR_INVALID_ARGUMENT,              ///< generic error code for invalid arguments 
-  
-  ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY,    ///< acceleration structure build ran out of memory, app should re-try with more memory
-  ZE_RESULT_ERROR_INVALID_ENUMERATION,   ///< the tested devices have incompatible acceleration structures
-
-  ZE_RESULT_ERROR_INVALID_NULL_HANDLE,
-  ZE_RESULT_ERROR_INVALID_NULL_POINTER,
-  ZE_RESULT_EXP_ERROR_OPERANDS_INCOMPATIBLE,
-  ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE,           ///< operation is deferred to a parallel operation
-  
-} ze_result_t;
-#endif
 
 /**
 
@@ -329,22 +293,10 @@ typedef enum _ze_result_t
 
 */
 
-#if defined(EMBREE_LEVEL_ZERO)
 #define ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_EXP_DESC ((ze_structure_type_t)(0x0002000E))
 #define ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES ((ze_structure_type_t)(0x0002000F))
 #define ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES ((ze_structure_type_t)(0x00020010))
 #define ZE_STRUCTURE_TYPE_RTAS_GEOMETRY_AABBS_EXP_CB_PARAMS ((ze_structure_type_t)(0x00020011))
-#else
-typedef enum _ze_structure_type_t
-{
-  ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_EXP_DESC, ///< ze_rtas_builder_build_op_exp_desc_t
-  ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES, ///< ze_rtas_parallel_operation_exp_properties_t
-  ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES, ///< ze_rtas_device_exp_properties_t
-  ZE_STRUCTURE_TYPE_RTAS_GEOMETRY_AABBS_EXP_CB_PARAMS,
-  
-} ze_structure_type_t;
-#endif
-
 
 /**
   \brief Feature bit for acceleration structure build API

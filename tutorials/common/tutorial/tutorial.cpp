@@ -1123,7 +1123,7 @@ namespace embree
       } catch(std::exception& e) {
         std::cerr << "Caught exception creating sycl::device: " << e.what() << std::endl;
         printAllSYCLDevices();
-        return;
+        throw;
       }
       sycl::platform platform = device->get_platform();
       log(1, "Selected SYCL Platform: " + platform.get_info<sycl::info::platform::name>());
