@@ -15,6 +15,7 @@
 
 #include "../rttrace/rttrace.h"
 #include "../rtbuild/rtbuild.h"
+#include "../rtbuild/ze_wrapper.h"
 
 #include <vector>
 #include <map>
@@ -924,7 +925,7 @@ void* alloc_accel_buffer_internal(size_t bytes, sycl::device device, sycl::conte
   host_desc.flags = ZE_HOST_MEM_ALLOC_FLAG_BIAS_CACHED;
   
   void* ptr = nullptr;
-  ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,rtasProp.rtasBufferAlignment,hDevice,&ptr);
+  ze_result_t result = ZeWrapper::zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,rtasProp.rtasBufferAlignment,hDevice,&ptr);
   if (result != ZE_RESULT_SUCCESS)
     throw std::runtime_error("accel allocation failed");
   return ptr;
@@ -934,7 +935,7 @@ void free_accel_buffer_internal(void* ptr, sycl::context context)
 {
   if (ptr == nullptr) return;
   ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
-  ze_result_t result = zeMemFree(hContext,ptr);
+  ze_result_t result = ZeWrapper::zeMemFree(hContext,ptr);
   if (result != ZE_RESULT_SUCCESS)
     throw std::runtime_error("accel free failed");
 }
@@ -2060,11 +2061,12 @@ void* allocDispatchGlobals(sycl::device device, sycl::context context)
 
 int main(int argc, char* argv[])
 {
+
 #if defined(ZE_RAYTRACING_RT_SIMULATION)
   RTCore::Init();
   RTCore::SetXeVersion((RTCore::XeVersion)ZE_RAYTRACING_DEVICE);
 #endif
-  
+
   TestType test = TestType::TRIANGLES_COMMITTED_HIT;
   InstancingType inst = InstancingType::NONE;
   BuildMode buildMode = BuildMode::BUILD_EXPECTED_SIZE;

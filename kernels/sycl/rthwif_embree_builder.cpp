@@ -10,6 +10,7 @@
 #include "../common/scene.h"
 #include "../builders/primrefgen.h"
 #include "../rthwif/rtbuild/rtbuild.h"
+#include "../level_zero/ze_wrapper.h"
 
 namespace embree
 {
@@ -27,7 +28,7 @@ namespace embree
   struct DispatchGlobals
   {
     uint64_t rtMemBasePtr;               // base address of the allocated stack memory
-    uint64_t callStackHandlerKSP;             // this is the KSP of the continuation handler that is invoked by BTD when the read KSP is 0
+    uint64_t callStackHandlerKSP;        // this is the KSP of the continuation handler that is invoked by BTD when the read KSP is 0
     uint32_t asyncStackSize;             // async-RT stack size in 64 byte blocks
     uint32_t numDSSRTStacks : 16;        // number of stacks per DSS
     uint32_t syncRayQueryCount : 4;      // number of ray queries in the sync-RT stack: 0-15 mapped to: 1-16
@@ -38,12 +39,11 @@ namespace embree
 
   void* zeRTASInitExp(sycl::device device, sycl::context context)
   {
+    if (ZeWrapper::init() != ZE_RESULT_SUCCESS)
+      return nullptr;
+
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
 
-#if !defined(EMBREE_LEVEL_ZERO)
-#  error "Level Zero required to properly allocate RTDispatchGlobals"
-#endif
-    
     size_t maxBVHLevels = RTC_MAX_INSTANCE_LEVEL_COUNT+1;
 
     size_t rtstack_bytes = (64+maxBVHLevels*(64+32)+63)&-64;
@@ -79,69 +79,73 @@ namespace embree
 #endif
   }
 
-#if defined(EMBREE_LEVEL_ZERO)
-
   int rthwifIsSYCLDeviceSupported(const sycl::device& sycl_device)
   {
+
     /* disabling of device check through env variable */
     const char* disable_device_check = getenv("EMBREE_DISABLE_DEVICEID_CHECK");
     if (disable_device_check && strcmp(disable_device_check,"1") == 0)
       return 1;
 
-    sycl::platform platform = sycl_device.get_platform();
-    ze_driver_handle_t hDriver = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(platform);
+    if (ZeWrapper::init() != ZE_RESULT_SUCCESS)
+      return -1;
 
-    uint32_t count = 0;
-    std::vector<ze_driver_extension_properties_t> extensions;
-    ze_result_t result = zeDriverGetExtensionProperties(hDriver,&count,extensions.data());
-    if (result != ZE_RESULT_SUCCESS) return -1;
-
-    extensions.resize(count);
-    result = zeDriverGetExtensionProperties(hDriver,&count,extensions.data());
-    if (result != ZE_RESULT_SUCCESS) return -1;
-
-    bool ze_extension_ray_tracing = false;
-    for (uint32_t i=0; i<extensions.size(); i++)
     {
-      //std::cout << extensions[i].name << " version " << extensions[i].version << std::endl;
-      
-      if (strncmp("ZE_extension_raytracing",extensions[i].name,sizeof(extensions[i].name)))
-        continue;
-      
-      ze_extension_ray_tracing = true; //extensions[i].version >= ZE_RAYTRACING_EXT_VERSION_1_0;
-      break;
+      /* check if ray tracing extension is available */
+      sycl::platform platform = sycl_device.get_platform();
+      ze_driver_handle_t hDriver = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(platform);
+
+      uint32_t count = 0;
+      std::vector<ze_driver_extension_properties_t> extensions;
+      ze_result_t result = ZeWrapper::zeDriverGetExtensionProperties(hDriver,&count,extensions.data());
+      if (result != ZE_RESULT_SUCCESS) return -1;
+
+      extensions.resize(count);
+      result = ZeWrapper::zeDriverGetExtensionProperties(hDriver,&count,extensions.data());
+      if (result != ZE_RESULT_SUCCESS) return -1;
+
+      bool ze_extension_ray_tracing = false;
+      for (uint32_t i=0; i<extensions.size(); i++)
+      {
+        //std::cout << extensions[i].name << " version " << extensions[i].version << std::endl;
+
+        if (strncmp("ZE_extension_raytracing",extensions[i].name,sizeof(extensions[i].name)))
+          continue;
+
+        ze_extension_ray_tracing = true;
+          break;
+      }
+      if (!ze_extension_ray_tracing)
+        return -1;
     }
-    if (!ze_extension_ray_tracing)
-      return -1;
-  
-#if 0
 
-    /* check if GPU device is supported */
-    ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(sycl_device);
+    {
+      /* check if ray queries are supported */
+      ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(sycl_device);
 
-    /* check if ray tracing hardware is supported */
-    ze_device_raytracing_ext_properties_t raytracing_properties;
-    memset(&raytracing_properties,0,sizeof(raytracing_properties));
-    raytracing_properties.stype = ZE_STRUCTURE_TYPE_DEVICE_RAYTRACING_EXT_PROPERTIES;
-    raytracing_properties.pNext = nullptr;
-    
-    ze_device_module_properties_t module_properties;
-    memset(&module_properties,0,sizeof(module_properties));
-    module_properties.stype = ZE_STRUCTURE_TYPE_DEVICE_MODULE_PROPERTIES;
-    module_properties.pNext = &raytracing_properties;
+      /* check if ray tracing hardware is supported */
+      ze_device_raytracing_ext_properties_t raytracing_properties;
+      memset(&raytracing_properties,0,sizeof(raytracing_properties));
+      raytracing_properties.stype = ZE_STRUCTURE_TYPE_DEVICE_RAYTRACING_EXT_PROPERTIES;
+      raytracing_properties.pNext = nullptr;
       
-    ze_result_t result = zeDeviceGetModuleProperties(hDevice, &module_properties);
-    if (result != ZE_RESULT_SUCCESS) return -1;
+      ze_device_module_properties_t module_properties;
+      memset(&module_properties,0,sizeof(module_properties));
+      module_properties.stype = ZE_STRUCTURE_TYPE_DEVICE_MODULE_PROPERTIES;
+      module_properties.pNext = &raytracing_properties;
 
-    const bool rayQuerySupported = raytracing_properties.flags & ZE_DEVICE_RAYTRACING_EXT_FLAG_RAYQUERY;
-    if (!rayQuerySupported)
-      return -1;
-#endif
+      ze_result_t result = ZeWrapper::zeDeviceGetModuleProperties(hDevice, &module_properties);
+      if (result != ZE_RESULT_SUCCESS) return -1;
+
+      const bool rayQuerySupported = raytracing_properties.flags & ZE_DEVICE_RAYTRACING_EXT_FLAG_RAYQUERY;
+      if (!rayQuerySupported)
+        return -1;
+    }
 
     return sycl_device.get_info<sycl::info::device::max_compute_units>();
   }
 
-#else
+#if 0
 
   int rthwifIsSYCLDeviceSupported(const sycl::device& device)
   {
@@ -161,8 +165,6 @@ namespace embree
   }
 
 #endif
-
-#if defined(EMBREE_LEVEL_ZERO)
 
   void* rthwifAllocAccelBuffer(size_t bytes, sycl::device device, sycl::context context)
   {
@@ -196,7 +198,7 @@ namespace embree
     host_desc.flags = ZE_HOST_MEM_ALLOC_FLAG_BIAS_CACHED;
     
     void* ptr = nullptr;
-    ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,rtasProp.rtasBufferAlignment,hDevice,&ptr);
+    ze_result_t result = ZeWrapper::zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,rtasProp.rtasBufferAlignment,hDevice,&ptr);
     if (result != ZE_RESULT_SUCCESS)
       throw_RTCError(RTC_ERROR_OUT_OF_MEMORY,"rtas memory allocation failed");
 
@@ -207,12 +209,12 @@ namespace embree
   {
     if (ptr == nullptr) return;
     ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
-    ze_result_t result = zeMemFree(hContext,ptr);
+    ze_result_t result = ZeWrapper::zeMemFree(hContext,ptr);
     if (result != ZE_RESULT_SUCCESS)
       throw_RTCError(RTC_ERROR_OUT_OF_MEMORY,"rtas memory free failed");
   }
 
-#else
+#if 0
 
   void* rthwifAllocAccelBuffer(size_t bytes, sycl::device device, sycl::context context)
   {
