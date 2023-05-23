@@ -1,0 +1,82 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 11,
+    "patch": 0
+  },
+  "include": [
+    "../../../scripts/cmake-presets/os.json", 
+    "../../../scripts/cmake-presets/package.json",
+    "../../../scripts/cmake-presets/compiler.json",
+    "../../../scripts/cmake-presets/tbb.json"
+  ],
+  "configurePresets": [
+    {
+      "name": "linux-gcc-tbb2021_9_0",
+      "inherits": ["linux", "env", "gcc", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "embree_DIR": "$env{EMBREE_CONFIG_DIR}"
+      }
+    },
+    {
+      "name": "linux-icx-tbb2021_9_0",
+      "inherits": ["linux", "env", "icx", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "embree_DIR": "$env{EMBREE_CONFIG_DIR}"
+      }
+    },
+    {
+      "name": "linux-clang-tbb2021_9_0",
+      "inherits": ["linux", "env", "clang", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "embree_DIR": "$env{EMBREE_CONFIG_DIR}"
+      }
+    },
+
+    {
+      "name": "macos-gcc-tbb2021_9_0",
+      "inherits": ["macos", "env", "gcc", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "embree_DIR": "$env{EMBREE_CONFIG_DIR}"
+      }
+    },
+    {
+      "name": "macos-clang-tbb2021_9_0",
+      "inherits": ["macos", "env", "clang", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "embree_DIR": "$env{EMBREE_CONFIG_DIR}"
+      }
+    },
+
+
+    {
+      "name": "windows-icx-tbb2021_9_0",
+      "inherits": ["windows", "env", "icx-windows", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "embree_DIR": "$env{EMBREE_CONFIG_DIR}"
+      }
+    },
+    {
+      "name": "windows-v142-tbb2021_9_0",
+      "inherits": ["windows", "env", "v142", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "embree_DIR": "$env{EMBREE_CONFIG_DIR}"
+      }
+    }
+  ]
+}

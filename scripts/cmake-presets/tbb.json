@@ -1,0 +1,17 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 23,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "tbb2021_9_0",
+      "cacheVariables": {
+        "EMBREE_TASKING_SYSTEM": "TBB",
+        "TBB_DIR": "$env{EMBREE_TBB_2021_9_0_DIR}"
+      }
+    }
+  ]
+}

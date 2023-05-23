@@ -3,6 +3,7 @@
 ## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
+
 import sys
 import subprocess
 import os
@@ -64,6 +65,7 @@ else:
 NAS = os.environ["STORAGE_PATH"] + "/packages/apps"
 if "klocwork:ON" in sys.argv:
   NAS = "/NAS/packages/apps"
+
 
 # path of oneapi installation on windows machines
 ONE_API_PATH_WINDOWS="C:\\Program Files (x86)\\Intel\\oneAPI\\compiler"
