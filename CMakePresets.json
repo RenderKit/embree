@@ -1,0 +1,182 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 11,
+    "patch": 0
+  },
+  "include": [
+    "scripts/cmake-presets/os.json", 
+    "scripts/cmake-presets/package.json",
+    "scripts/cmake-presets/compiler.json",
+    "scripts/cmake-presets/tbb.json"
+  ],
+  "configurePresets": [
+    {
+      "name": "package-linux-gcc-ispc1_19_0-tbb2021_9_0",
+      "inherits": ["package-linux", "env", "gcc", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+
+    {
+      "name": "package-linux-icx-ispc1_19_0-tbb2021_9_0",
+      "inherits": ["package-linux", "env", "icx", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+
+    {
+      "name": "package-linux-clang-ispc1_19_0-tbb2021_9_0",
+      "inherits": ["package-linux", "env", "clang", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+
+    {
+      "name": "package-static-linux-gcc-ispc1_19_0-tbb2021_9_0",
+      "inherits": ["package-linux", "env", "gcc", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+
+    {
+      "name": "package-static-linux-icx-ispc1_19_0-tbb2021_9_0",
+      "inherits": ["package-linux", "env", "icx", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+
+    {
+      "name": "package-static-linux-clang-ispc1_19_0-tbb2021_9_0",
+      "inherits": ["package-linux", "env", "clang", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+
+    {
+      "name": "package-linux-icx-sycl-ispc1_19_0-tbb2021_9_0",
+      "inherits": ["package-linux", "env", "icx", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+    {
+      "name": "package-linux-dpcpp-ispc1_19_0-tbb2021_9_0",
+      "inherits": ["package-linux", "env", "dpcpp", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    },
+
+
+
+    {
+      "name": "package-macos-gcc-ispc1_19_0-tbb2021_9_0",
+      "inherits": ["package-macos", "env", "gcc", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+
+    {
+      "name": "package-macos-clang-ispc1_19_0-tbb2021_9_0",
+      "inherits": ["package-macos", "env", "clang", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+
+
+
+    {
+      "name": "package-windows-icx-ispc1_19_0-tbb2021_9_0",
+      "inherits": ["package-windows", "env", "icx-windows", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+
+    {
+      "name": "package-windows-v142-ispc1_19_0-tbb2021_9_0",
+      "inherits": ["package-windows", "env", "v142", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    },
+
+    {
+      "name": "package-windows-v141-ispc1_19_0-tbb2021_9_0",
+      "inherits": ["package-windows", "env", "v141", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    },
+
+    {
+      "name": "package-windows-v140-ispc1_19_0-tbb2021_9_0",
+      "inherits": ["package-windows", "env", "v140", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    },
+    
+    {
+      "name": "package-static-windows-icx-ispc1_19_0-tbb2021_9_0",
+      "inherits": ["package-static-windows", "env", "icx-windows", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+
+    {
+      "name": "package-static-windows-v142-ispc1_19_0-tbb2021_9_0",
+      "inherits": ["package-static-windows", "env", "v142", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    }
+  ]
+}

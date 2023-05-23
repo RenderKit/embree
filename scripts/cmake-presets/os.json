@@ -1,0 +1,93 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 23,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "windows",
+      "hidden": true,
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "environment": {
+        "BINARY_EXTENSION": ".exe",
+        "APPS_PATH": "$env{STORAGE_PATH}\\packages\\apps",
+        "EMBREE_ISPC_VERSION_SUFFIX": "windows",
+        "EMBREE_TBB_VERSION_SUFFIX": "windows"
+      }
+    },
+
+    {
+      "name": "macos",
+      "hidden": true,
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Darwin"
+      },
+      "environment": {
+        "BINARY_EXTENSION": "",
+        "APPS_PATH": "$env{STORAGE_PATH}/packages/apps",
+        "EMBREE_ISPC_VERSION_SUFFIX": "osx",
+        "EMBREE_TBB_VERSION_SUFFIX": "osx"
+      }
+    },
+
+    {
+      "name": "linux",
+      "hidden": true,
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "environment": {
+        "BINARY_EXTENSION": "",
+        "APPS_PATH": "$env{STORAGE_PATH}/packages/apps",
+        "EMBREE_ISPC_VERSION_SUFFIX": "linux",
+        "EMBREE_TBB_VERSION_SUFFIX": "linux"
+      }
+    },
+
+    {
+      "name": "env",
+      "hidden": true,
+      "environment": {
+        "EMBREE_CLANG_3_0_0_PP": "$env{APPS_PATH}/clang/v3.0.0/bin/clang++",
+        "EMBREE_CLANG_3_0_0": "$env{APPS_PATH}/clang/v3.0.0/bin/clang",
+        "EMBREE_CLANG_5_0_0_PP": "$env{APPS_PATH}/clang/v3.0.0/bin/clang++",
+        "EMBREE_CLANG_5_0_0": "$env{APPS_PATH}/clang/v3.0.0/bin/clang",
+        "EMBREE_CLANG_PP": "clang++",
+        "EMBREE_CLANG": "clang",
+
+        "EMBREE_ISPC_1_12_0_PATH": "$env{APPS_PATH}/ispc/1.12.0-$env{EMBREE_ISPC_VERSION_SUFFIX}/bin/ispc$env{BINARY_EXTENSION}",
+        "EMBREE_ISPC_1_13_0_PATH": "$env{APPS_PATH}/ispc/1.13.0-$env{EMBREE_ISPC_VERSION_SUFFIX}/bin/ispc$env{BINARY_EXTENSION}",
+        "EMBREE_ISPC_1_14_1_PATH": "$env{APPS_PATH}/ispc/1.14.1-$env{EMBREE_ISPC_VERSION_SUFFIX}/bin/ispc$env{BINARY_EXTENSION}",
+        "EMBREE_ISPC_1_15_0_PATH": "$env{APPS_PATH}/ispc/1.15.0-$env{EMBREE_ISPC_VERSION_SUFFIX}/bin/ispc$env{BINARY_EXTENSION}",
+        "EMBREE_ISPC_1_16_1_PATH": "$env{APPS_PATH}/ispc/1.16.1-$env{EMBREE_ISPC_VERSION_SUFFIX}/bin/ispc$env{BINARY_EXTENSION}",
+        "EMBREE_ISPC_1_17_0_PATH": "$env{APPS_PATH}/ispc/1.17.0-$env{EMBREE_ISPC_VERSION_SUFFIX}/bin/ispc$env{BINARY_EXTENSION}",
+        "EMBREE_ISPC_1_18_1_PATH": "$env{APPS_PATH}/ispc/1.18.1-$env{EMBREE_ISPC_VERSION_SUFFIX}/bin/ispc$env{BINARY_EXTENSION}",
+        "EMBREE_ISPC_1_19_0_PATH": "$env{APPS_PATH}/ispc/1.19.0-$env{EMBREE_ISPC_VERSION_SUFFIX}/bin/ispc$env{BINARY_EXTENSION}",
+        "EMBREE_ISPC_PATH": "",
+
+
+        "EMBREE_TBB_2019_2_DIR": "$env{APPS_PATH}/tbb/tbb-2019.2-$env{EMBREE_TBB_VERSION_SUFFIX}/cmake",
+        "EMBREE_TBB_2019_9_DIR": "$env{APPS_PATH}/tbb/tbb-2019.9-$env{EMBREE_TBB_VERSION_SUFFIX}/cmake",
+        "EMBREE_TBB_2020_2_DIR": "$env{APPS_PATH}/tbb/tbb-2020.2-$env{EMBREE_TBB_VERSION_SUFFIX}/cmake",
+        "EMBREE_TBB_2021_1_1_DIR": "$env{APPS_PATH}/tbb/tbb-2021.1.1-$env{EMBREE_TBB_VERSION_SUFFIX}/lib/cmake/tbb",
+        "EMBREE_TBB_2021_2_0_DIR": "$env{APPS_PATH}/tbb/tbb-2021.2.0-$env{EMBREE_TBB_VERSION_SUFFIX}/lib/cmake/tbb",
+        "EMBREE_TBB_2021_3_0_DIR": "$env{APPS_PATH}/tbb/tbb-2021.3.0-$env{EMBREE_TBB_VERSION_SUFFIX}/lib/cmake/tbb",
+        "EMBREE_TBB_2021_5_0_DIR": "$env{APPS_PATH}/tbb/tbb-2021.5.0-$env{EMBREE_TBB_VERSION_SUFFIX}/lib/cmake/tbb",
+        "EMBREE_TBB_2021_7_0_DIR": "$env{APPS_PATH}/tbb/tbb-2021.7.0-$env{EMBREE_TBB_VERSION_SUFFIX}/lib/cmake/tbb",
+        "EMBREE_TBB_2021_9_0_DIR": "$env{APPS_PATH}/tbb/tbb-2021.9.0-$env{EMBREE_TBB_VERSION_SUFFIX}/lib/cmake/tbb",
+        "EMBREE_TBB_DIR": ""
+      }
+    }
+  ]
+}
+

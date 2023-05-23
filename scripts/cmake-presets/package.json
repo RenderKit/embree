@@ -1,0 +1,95 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 23,
+    "patch": 0
+  },
+  "include": ["os.json"],
+  "configurePresets": [
+    {
+      "name": "package",
+      "hidden": true,
+      "cacheVariables": {
+        "BUILD_TESTING": "ON",
+        "EMBREE_TESTING_INSTALL_TESTS": "ON",
+        "EMBREE_TUTORIALS_OPENIMAGEIO": "OFF",
+        "EMBREE_TUTORIALS_LIBJPEG": "OFF",
+        "EMBREE_TUTORIALS_LIBPNG": "OFF",
+        "EMBREE_ZIP_MODE": "ON",
+        "EMBREE_INSTALL_DEPENDENCIES": "ON",
+        "EMBREE_BUILD_GLFW_FROM_SOURCE": "ON",
+        "CMAKE_INSTALL_INCLUDEDIR": "include",
+        "CMAKE_INSTALL_LIBDIR": "lib",
+        "CMAKE_INSTALL_DOCDIR": "doc",
+        "CMAKE_INSTALL_BINDIR": "bin",
+        "CMAKE_INSTALL_TESTDIR": "testing"
+      }
+    },
+    {
+      "name": "package-static",
+      "hidden": true,
+      "inherits": "package",
+      "cacheVariables": {
+        "EMBREE_STATIC_LIB": "ON"
+      }
+    },
+
+
+    {
+      "name": "package-linux",
+      "hidden": true,
+      "inherits": ["package", "linux"],
+      "cacheVariables": {
+        "CMAKE_SKIP_INSTALL_RPATH": "OFF"
+      }
+    },
+    {
+      "name": "package-static-linux",
+      "hidden": true,
+      "inherits": ["package-static", "linux"],
+      "cacheVariables": {
+        "CMAKE_SKIP_INSTALL_RPATH": "OFF"
+      }
+    },
+
+
+    {
+      "name": "package-macos",
+      "hidden": true,
+      "inherits": ["package", "macos"],
+      "cacheVariables": {
+        "CMAKE_SKIP_INSTALL_RPATH": "OFF",
+        "CMAKE_MACOSX_RPATH": "ON"
+      }
+    },
+    {
+      "name": "package-static-macos",
+      "hidden": true,
+      "inherits": ["package-static", "macos"],
+      "cacheVariables": {
+        "CMAKE_SKIP_INSTALL_RPATH": "OFF",
+        "CMAKE_MACOSX_RPATH": "ON"
+      }
+    },
+
+
+    {
+      "name": "package-windows",
+      "hidden": true,
+      "inherits": ["package", "windows"],
+      "cacheVariables": {
+        "CMAKE_INSTALL_DATAROOTDIR": ""
+      }
+    },
+    {
+      "name": "package-static-windows",
+      "hidden": true,
+      "inherits": ["package-static", "windows"],
+      "cacheVariables": {
+        "CMAKE_INSTALL_DATAROOTDIR": ""
+      }
+    }
+  ]
+}
+

@@ -1,0 +1,155 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 23,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "gcc",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_C_COMPILER": "gcc"
+      }
+    },
+    {
+      "name": "clang",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_C_COMPILER": "clang"
+      }
+    },
+    {
+      "name": "clang4",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "$env{EMBREE_CLANG_4_0_0_PP}",
+        "CMAKE_C_COMPILER": "$env{EMBREE_CLANG_4_0_0}"
+      }
+    },
+    {
+      "name": "clang5",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "$env{EMBREE_CLANG_5_0_0_PP}",
+        "CMAKE_C_COMPILER": "$env{EMBREE_CLANG_5_0_0}"
+      }
+    },
+    {
+      "name": "dpcpp",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_C_COMPILER": "clang"
+      }
+    },
+    {
+      "name": "icx",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "icpx",
+        "CMAKE_C_COMPILER": "icx"
+      }
+    },
+    {
+      "name": "icx-windows",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "icx",
+        "CMAKE_C_COMPILER": "icx"
+      }
+    },
+    {
+      "name": "v142",
+      "generator": "Visual Studio 16 2019",
+      "architecture": "x64",
+      "toolset": "V142"
+    },
+    {
+      "name": "v142-clang",
+      "generator": "Visual Studio 16 2019",
+      "architecture": "x64",
+      "toolset": "LLVM_v142"
+    },
+    {
+      "name": "v141",
+      "generator": "Visual Studio 15 2017Win64",
+      "toolset": "V141"
+    },
+    {
+      "name": "v141-icc19",
+      "generator": "Visual Studio 15 2017Win64",
+      "toolset": "Intel C++ Compiler 19.0"
+    },
+    {
+      "name": "v141-icc18",
+      "generator": "Visual Studio 15 2017Win64",
+      "toolset": "Intel C++ Compiler 18.0"
+    },
+    {
+      "name": "v141-clang",
+      "generator": "Visual Studio 15 2017Win64",
+      "toolset": "v141_clang_c2"
+    },
+    {
+      "name": "v140",
+      "generator": "Visual Studio 14 2015Win64",
+      "toolset": "V140"
+    },
+    {
+      "name": "v140-icc19",
+      "generator": "Visual Studio 14 2015Win64",
+      "toolset": "Intel C++ Compiler 19.0"
+    },
+    {
+      "name": "v140-icc18",
+      "generator": "Visual Studio 14 2015Win64",
+      "toolset": "Intel C++ Compiler 18.0"
+    },
+    {
+      "name": "v140-icc17",
+      "generator": "Visual Studio 14 2015Win64",
+      "toolset": "Intel C++ Compiler 17.0"
+    },
+    {
+      "name": "v120",
+      "generator": "Visual Studio 12 2013Win64",
+      "toolset": "V120"
+    },
+    {
+      "name": "v120-icc17",
+      "generator": "Visual Studio 12 2013Win64",
+      "toolset": "Intel C++ Compiler 17.0"
+    },
+    {
+      "name": "v120-icc16",
+      "generator": "Visual Studio 12 2013Win64",
+      "toolset": "Intel C++ Compiler 16.0"
+    },
+    {
+      "name": "v120-icc15",
+      "generator": "Visual Studio 12 2013Win64",
+      "toolset": "Intel C++ Compiler XE 15.0"
+    },
+    {
+      "name": "v110",
+      "generator": "Visual Studio 11 2012Win64",
+      "toolset": "V110"
+    },
+
+
+    {
+      "name": "ispc1_18_1",
+      "cacheVariables": {
+        "EMBREE_ISPC_SUPPORT": "ON",
+        "EMBREE_ISPC_EXECUTABLE": "$env{EMBREE_ISPC_1_18_1_PATH}"
+      }
+    },
+    {
+      "name": "ispc1_19_0",
+      "cacheVariables": {
+        "EMBREE_ISPC_SUPPORT": "ON",
+        "EMBREE_ISPC_EXECUTABLE": "$env{EMBREE_ISPC_1_19_0_PATH}"
+      }
+    }
+  ]
+}

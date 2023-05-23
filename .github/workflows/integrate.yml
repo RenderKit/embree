@@ -1,0 +1,759 @@
+## Copyright 2022 Intel Corporation
+## SPDX-License-Identifier: Apache-2.0
+
+name: integrate
+
+# same as nightly...
+on:
+  schedule:
+    - cron:  '00 00 * * *'
+  workflow_dispatch:
+
+jobs:
+#####################################################################
+# Integration Tests
+####################################################################
+
+
+####################################################################
+# Windows
+####################################################################
+  windows-ICX-ISPC1_19_0-TBB2021_9_0:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    with:
+      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
+      artifact-out: windows-ICX-ISPC1_19_0-TBB2021_9_0
+      artifact-path: ./build/embree-*.zip
+      shell: cmd
+      cmd: |
+        call "C:\\Program Files (x86)\\Intel\\oneAPI\\compiler\\2023.1.0\\env\\vars.bat"
+        cmake --preset package-windows-icx-ispc1_19_0-tbb2021_9_0
+        cmake --build build --config Release --target package
+        del build\embree-*-testing.zip
+        del build\embree-*-Unspecified.zip
+
+  windows-ICX-ISPC1_19_0-TBB2021_9_0-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    needs: ["windows-ICX-ISPC1_19_0-TBB2021_9_0"]
+    with:
+      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
+      artifact-in: windows-ICX-ISPC1_19_0-TBB2021_9_0
+      shell: cmd
+      cmd: |
+        call "C:\\Program Files (x86)\\Intel\\oneAPI\\compiler\\2023.1.0\\env\\vars.bat"
+        call tests\integration\test_embree_release\unpack-windows.bat
+        cmake --preset windows-icx-tbb2021_9_0
+        cmake --build build --config Release
+        .\build\test.exe
+
+  # build ICX -> test something else does not work
+
+
+
+  windows-v142-ISPC1_19_0-TBB2021_9_0:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    with:
+      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
+      artifact-out: windows-v142-ISPC1_19_0-TBB2021_9_0
+      artifact-path: ./build/embree-*.zip
+      shell: cmd
+      cmd: |
+        cmake --preset package-windows-v142-ispc1_19_0-tbb2021_9_0
+        cmake --build build --config Release --target package
+        del build\embree-*-testing.zip
+        del build\embree-*-Unspecified.zip
+
+  windows-v142-ISPC1_19_0-TBB2021_9_0-test-v142:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    needs: ["windows-v142-ISPC1_19_0-TBB2021_9_0"]
+    with:
+      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
+      artifact-in: windows-v142-ISPC1_19_0-TBB2021_9_0
+      shell: cmd
+      cmd: |
+        call tests\integration\test_embree_release\unpack-windows.bat
+        cmake --preset windows-v142-tbb2021_9_0
+        cmake --build build --config Release
+        .\build\Release\test.exe
+
+  windows-v142-ISPC1_19_0-TBB2021_9_0-test-ICX:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    needs: ["windows-v142-ISPC1_19_0-TBB2021_9_0"]
+    with:
+      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
+      artifact-in: windows-v142-ISPC1_19_0-TBB2021_9_0
+      shell: cmd
+      cmd: |
+        call "C:\\Program Files (x86)\\Intel\\oneAPI\\compiler\\2023.1.0\\env\\vars.bat"
+        call tests\integration\test_embree_release\unpack-windows.bat
+        cmake --preset windows-icx-tbb2021_9_0
+        cmake --build build --config Release
+        .\build\test.exe
+
+
+
+
+
+####################################################################
+# Windows STATIC
+####################################################################
+  windows-static-ICX-ISPC1_19_0-TBB2021_9_0:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    with:
+      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
+      artifact-out: windows-static-ICX-ISPC1_19_0-TBB2021_9_0
+      artifact-path: ./build/embree-*.zip
+      shell: cmd
+      cmd: |
+        call "C:\\Program Files (x86)\\Intel\\oneAPI\\compiler\\2023.1.0\\env\\vars.bat"
+        cmake --preset package-static-windows-icx-ispc1_19_0-tbb2021_9_0
+        cmake --build build --config Release --target package
+        del build\embree-*-testing.zip
+        del build\embree-*-Unspecified.zip
+
+  windows-static-ICX-ISPC1_19_0-TBB2021_9_0-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    needs: ["windows-static-ICX-ISPC1_19_0-TBB2021_9_0"]
+    with:
+      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
+      artifact-in: windows-static-ICX-ISPC1_19_0-TBB2021_9_0
+      shell: cmd
+      cmd: |
+        call "C:\\Program Files (x86)\\Intel\\oneAPI\\compiler\\2023.1.0\\env\\vars.bat"
+        call tests\integration\test_embree_release\unpack-windows.bat
+        cmake --preset windows-icx-tbb2021_9_0
+        cmake --build build --config Release
+        .\build\test.exe
+
+  # build ICX -> test something else does not work
+
+
+
+  windows-static-v142-ISPC1_19_0-TBB2021_9_0:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    with:
+      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
+      artifact-out: windows-static-v142-ISPC1_19_0-TBB2021_9_0
+      artifact-path: ./build/embree-*.zip
+      shell: cmd
+      cmd: |
+        cmake --preset package-windows-v142-ispc1_19_0-tbb2021_9_0
+        cmake --build build --config Release --target package
+        del build\embree-*-testing.zip
+        del build\embree-*-Unspecified.zip
+
+  windows-static-v142-ISPC1_19_0-TBB2021_9_0-test-v142:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    needs: ["windows-static-v142-ISPC1_19_0-TBB2021_9_0"]
+    with:
+      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
+      artifact-in: windows-static-v142-ISPC1_19_0-TBB2021_9_0
+      shell: cmd
+      cmd: |
+        call tests\integration\test_embree_release\unpack-windows.bat
+        cmake --preset windows-v142-tbb2021_9_0
+        cmake --build build --config Release
+        .\build\Release\test.exe
+
+  windows-static-v142-ISPC1_19_0-TBB2021_9_0-test-ICX:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    needs: ["windows-static-v142-ISPC1_19_0-TBB2021_9_0"]
+    with:
+      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
+      artifact-in: windows-static-v142-ISPC1_19_0-TBB2021_9_0
+      shell: cmd
+      cmd: |
+        call "C:\\Program Files (x86)\\Intel\\oneAPI\\compiler\\2023.1.0\\env\\vars.bat"
+        call tests\integration\test_embree_release\unpack-windows.bat
+        cmake --preset windows-icx-tbb2021_9_0
+        cmake --build build --config Release
+        .\build\test.exe
+        
+
+
+
+
+
+
+
+
+
+####################################################################
+# Linux
+####################################################################
+  linux-GCC-ISPC1_19_0-TBB2021_9_0:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-out: linux-GCC-ISPC1_19_0-TBB2021_9_0
+      artifact-path: ./build/*.tar.gz
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        $CMAKE_EXE --preset package-linux-gcc-ispc1_19_0-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release --target package
+        rm build/embree-*-testing.tar.gz
+        rm build/embree-*-Unspecified.tar.gz
+
+  linux-GCC-ISPC1_19_0-TBB2021_9_0-test-GCC:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    needs: [ "linux-GCC-ISPC1_19_0-TBB2021_9_0" ]
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-in: linux-GCC-ISPC1_19_0-TBB2021_9_0
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source tests/integration/test_embree_release/unpack-linux.sh
+        $CMAKE_EXE --preset linux-gcc-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release
+        ./build/test
+
+  linux-GCC-ISPC1_19_0-TBB2021_9_0-test-CLANG:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    needs: [ "linux-GCC-ISPC1_19_0-TBB2021_9_0" ]
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-in: linux-GCC-ISPC1_19_0-TBB2021_9_0
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source tests/integration/test_embree_release/unpack-linux.sh
+        $CMAKE_EXE --preset linux-clang-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release
+        ./build/test
+
+  linux-GCC-ISPC1_19_0-TBB2021_9_0-test-ICX:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    needs: [ "linux-GCC-ISPC1_19_0-TBB2021_9_0" ]
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-in: linux-GCC-ISPC1_19_0-TBB2021_9_0
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source $NAS_LINUX/intel/oneAPI/compiler/2023.1.0/env/vars.sh
+        source tests/integration/test_embree_release/unpack-linux.sh
+        $CMAKE_EXE --preset linux-icx-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release
+        ./build/test
+
+
+
+  linux-ICX-ISPC1_19_0-TBB2021_9_0:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-out: linux-ICX-ISPC1_19_0-TBB2021_9_0
+      artifact-path: ./build/*.tar.gz
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source $NAS_LINUX/intel/oneAPI/compiler/2023.1.0/env/vars.sh
+        $CMAKE_EXE --preset package-linux-icx-ispc1_19_0-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release --target package
+        rm build/embree-*-testing.tar.gz
+        rm build/embree-*-Unspecified.tar.gz
+
+  linux-ICX-ISPC1_19_0-TBB2021_9_0-test-GCC:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    needs: [ "linux-ICX-ISPC1_19_0-TBB2021_9_0" ]
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-in: linux-ICX-ISPC1_19_0-TBB2021_9_0
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source tests/integration/test_embree_release/unpack-linux.sh
+        $CMAKE_EXE --preset linux-gcc-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release
+        ./build/test
+
+  linux-ICX-ISPC1_19_0-TBB2021_9_0-test-CLANG:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    needs: [ "linux-ICX-ISPC1_19_0-TBB2021_9_0" ]
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-in: linux-ICX-ISPC1_19_0-TBB2021_9_0
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source tests/integration/test_embree_release/unpack-linux.sh
+        $CMAKE_EXE --preset linux-clang-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release
+        ./build/test
+
+  linux-ICX-ISPC1_19_0-TBB2021_9_0-test-ICX:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    needs: [ "linux-ICX-ISPC1_19_0-TBB2021_9_0" ]
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-in: linux-ICX-ISPC1_19_0-TBB2021_9_0
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source $NAS_LINUX/intel/oneAPI/compiler/2023.1.0/env/vars.sh
+        source tests/integration/test_embree_release/unpack-linux.sh
+        $CMAKE_EXE --preset linux-icx-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release
+        ./build/test
+
+
+
+  linux-CLANG-ISPC1_19_0-TBB2021_9_0:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-out: linux-CLANG-ISPC1_19_0-TBB2021_9_0
+      artifact-path: ./build/*.tar.gz
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        $CMAKE_EXE --preset package-linux-clang-ispc1_19_0-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release --target package
+        rm build/embree-*-testing.tar.gz
+        rm build/embree-*-Unspecified.tar.gz
+
+  linux-CLANG-ISPC1_19_0-TBB2021_9_0-test-GCC:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    needs: [ "linux-CLANG-ISPC1_19_0-TBB2021_9_0" ]
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-in: linux-CLANG-ISPC1_19_0-TBB2021_9_0
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source tests/integration/test_embree_release/unpack-linux.sh
+        $CMAKE_EXE --preset linux-gcc-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release
+        ./build/test
+
+  linux-CLANG-ISPC1_19_0-TBB2021_9_0-test-CLANG:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    needs: [ "linux-CLANG-ISPC1_19_0-TBB2021_9_0" ]
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-in: linux-CLANG-ISPC1_19_0-TBB2021_9_0
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source tests/integration/test_embree_release/unpack-linux.sh
+        $CMAKE_EXE --preset linux-clang-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release
+        ./build/test
+
+  linux-CLANG-ISPC1_19_0-TBB2021_9_0-test-ICX:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    needs: [ "linux-CLANG-ISPC1_19_0-TBB2021_9_0" ]
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-in: linux-CLANG-ISPC1_19_0-TBB2021_9_0
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source $NAS_LINUX/intel/oneAPI/compiler/2023.1.0/env/vars.sh
+        source tests/integration/test_embree_release/unpack-linux.sh
+        $CMAKE_EXE --preset linux-icx-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release
+        ./build/test
+
+
+
+
+
+####################################################################
+# Linux STATIC
+####################################################################
+  linux-static-GCC-ISPC1_19_0-TBB2021_9_0:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-out: linux-static-GCC-ISPC1_19_0-TBB2021_9_0
+      artifact-path: ./build/*.tar.gz
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        $CMAKE_EXE --preset package-static-linux-gcc-ispc1_19_0-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release --target package
+        rm build/embree-*-testing.tar.gz
+        rm build/embree-*-Unspecified.tar.gz
+
+  linux-static-GCC-ISPC1_19_0-TBB2021_9_0-test-GCC:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    needs: [ "linux-static-GCC-ISPC1_19_0-TBB2021_9_0" ]
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-in: linux-static-GCC-ISPC1_19_0-TBB2021_9_0
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source tests/integration/test_embree_release/unpack-linux.sh
+        $CMAKE_EXE --preset linux-gcc-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release
+        ./build/test
+
+  linux-static-GCC-ISPC1_19_0-TBB2021_9_0-test-CLANG:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    needs: [ "linux-static-GCC-ISPC1_19_0-TBB2021_9_0" ]
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-in: linux-static-GCC-ISPC1_19_0-TBB2021_9_0
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source tests/integration/test_embree_release/unpack-linux.sh
+        $CMAKE_EXE --preset linux-clang-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release
+        ./build/test
+
+  linux-static-GCC-ISPC1_19_0-TBB2021_9_0-test-ICX:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    needs: [ "linux-static-GCC-ISPC1_19_0-TBB2021_9_0" ]
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-in: linux-static-GCC-ISPC1_19_0-TBB2021_9_0
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source $NAS_LINUX/intel/oneAPI/compiler/2023.1.0/env/vars.sh
+        source tests/integration/test_embree_release/unpack-linux.sh
+        $CMAKE_EXE --preset linux-icx-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release
+        ./build/test
+
+
+
+  linux-static-ICX-ISPC1_19_0-TBB2021_9_0:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-out: linux-static-ICX-ISPC1_19_0-TBB2021_9_0
+      artifact-path: ./build/*.tar.gz
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source $NAS_LINUX/intel/oneAPI/compiler/2023.1.0/env/vars.sh
+        $CMAKE_EXE --preset package-static-linux-icx-ispc1_19_0-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release --target package
+        rm build/embree-*-testing.tar.gz
+        rm build/embree-*-Unspecified.tar.gz
+
+  linux-static-ICX-ISPC1_19_0-TBB2021_9_0-test-GCC:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    needs: [ "linux-static-ICX-ISPC1_19_0-TBB2021_9_0" ]
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-in: linux-static-ICX-ISPC1_19_0-TBB2021_9_0
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source tests/integration/test_embree_release/unpack-linux.sh
+        $CMAKE_EXE --preset linux-gcc-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release
+        ./build/test
+
+  linux-static-ICX-ISPC1_19_0-TBB2021_9_0-test-CLANG:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    needs: [ "linux-static-ICX-ISPC1_19_0-TBB2021_9_0" ]
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-in: linux-static-ICX-ISPC1_19_0-TBB2021_9_0
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source tests/integration/test_embree_release/unpack-linux.sh
+        $CMAKE_EXE --preset linux-clang-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release
+        ./build/test
+
+  linux-static-ICX-ISPC1_19_0-TBB2021_9_0-test-ICX:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    needs: [ "linux-static-ICX-ISPC1_19_0-TBB2021_9_0" ]
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-in: linux-static-ICX-ISPC1_19_0-TBB2021_9_0
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source $NAS_LINUX/intel/oneAPI/compiler/2023.1.0/env/vars.sh
+        source tests/integration/test_embree_release/unpack-linux.sh
+        $CMAKE_EXE --preset linux-icx-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release
+        ./build/test
+
+
+
+  linux-static-CLANG-ISPC1_19_0-TBB2021_9_0:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-out: linux-static-CLANG-ISPC1_19_0-TBB2021_9_0
+      artifact-path: ./build/*.tar.gz
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        $CMAKE_EXE --preset package-static-linux-clang-ispc1_19_0-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release --target package
+        rm build/embree-*-testing.tar.gz
+        rm build/embree-*-Unspecified.tar.gz
+
+  linux-static-CLANG-ISPC1_19_0-TBB2021_9_0-test-GCC:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    needs: [ "linux-static-CLANG-ISPC1_19_0-TBB2021_9_0" ]
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-in: linux-static-CLANG-ISPC1_19_0-TBB2021_9_0
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source tests/integration/test_embree_release/unpack-linux.sh
+        $CMAKE_EXE --preset linux-gcc-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release
+        ./build/test
+
+  linux-static-CLANG-ISPC1_19_0-TBB2021_9_0-test-CLANG:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    needs: [ "linux-static-CLANG-ISPC1_19_0-TBB2021_9_0" ]
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-in: linux-static-CLANG-ISPC1_19_0-TBB2021_9_0
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source tests/integration/test_embree_release/unpack-linux.sh
+        $CMAKE_EXE --preset linux-clang-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release
+        ./build/test
+
+  linux-static-CLANG-ISPC1_19_0-TBB2021_9_0-test-ICX:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    needs: [ "linux-static-CLANG-ISPC1_19_0-TBB2021_9_0" ]
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-in: linux-static-CLANG-ISPC1_19_0-TBB2021_9_0
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source $NAS_LINUX/intel/oneAPI/compiler/2023.1.0/env/vars.sh
+        source tests/integration/test_embree_release/unpack-linux.sh
+        $CMAKE_EXE --preset linux-icx-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release
+        ./build/test
+
+
+
+
+
+####################################################################
+# Linux SYCL
+####################################################################
+  linux-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    with:
+      image: embree/ubuntu:22.04
+      options: --device=/dev/dri:/dev/dri
+      runs-on: '[ "Linux", "docker", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-release.env
+      artifact-out: linux-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0
+      artifact-path: ./build/*.tar.gz
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source ${NAS_LINUX}/intel/oneAPI/compiler/2023.0.0/env/vars.sh
+        $CMAKE_EXE --preset package-linux-icx-sycl-ispc1_19_0-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release --target package
+        rm build/embree-*-testing.tar.gz
+        rm build/embree-*-Unspecified.tar.gz
+
+  linux-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-test-ICX:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    needs: [ "linux-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0" ]
+    with:
+      image: embree/ubuntu:22.04
+      options: --device=/dev/dri:/dev/dri
+      runs-on: '[ "Linux", "docker", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-release.env
+      artifact-in: linux-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source $NAS_LINUX/intel/oneAPI/compiler/2023.1.0/env/vars.sh
+        source tests/integration/test_embree_release/unpack-linux.sh
+        $CMAKE_EXE --preset linux-icx-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release
+        ./build/test
+        
+
+
+
+  linux-SYCL-dpcpp-ISPC1_19_0-TBB2021_9_0:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    with:
+      image: embree/ubuntu:22.04
+      options: --device=/dev/dri:/dev/dri
+      runs-on: '[ "Linux", "docker", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-release.env ./.github/workflows/gfx-ubuntu22-release.env
+      artifact-out: linux-SYCL-dpcpp-ISPC1_19_0-TBB2021_9_0
+      artifact-path: ./build/*.tar.gz
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source $DPCPP_ROOT/startup.sh
+        $CMAKE_EXE --preset package-linux-dpcpp-ispc1_19_0-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release --target package
+        rm build/embree-*-testing.tar.gz
+        rm build/embree-*-Unspecified.tar.gz
+
+  linux-SYCL-dpcpp-ISPC1_19_0-TBB2021_9_0-test-ICX:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    needs: [ "linux-SYCL-dpcpp-ISPC1_19_0-TBB2021_9_0" ]
+    with:
+      image: embree/ubuntu:22.04
+      options: --device=/dev/dri:/dev/dri
+      runs-on: '[ "Linux", "docker", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-release.env ./.github/workflows/gfx-ubuntu22-release.env
+      artifact-in: linux-SYCL-dpcpp-ISPC1_19_0-TBB2021_9_0
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        source $NAS_LINUX/intel/oneAPI/compiler/2023.1.0/env/vars.sh
+        source tests/integration/test_embree_release/unpack-linux.sh
+        $CMAKE_EXE --preset linux-icx-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release
+        ./build/test
+
+
+
+
+
+
+
+
+
+
+####################################################################
+# MacOS
+####################################################################
+  macos-GCC-ISPC1_19_0-TBB2021_9_0:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@devel
+    with:
+      runs-on: '[ "macOS", "build", "x86_64" ]'
+      artifact-out: macos-GCC-ISPC1_19_0-TBB2021_9_0
+      artifact-path: ./build/*.zip
+      cmd: |
+        source scripts/cmake-presets/macos-env.sh
+        $CMAKE_EXE --preset package-macos-gcc-ispc1_19_0-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release --target package
+        rm build/embree-*-testing.zip
+        rm build/embree-*-Unspecified.zip
+
+  macos-GCC-ISPC1_19_0-TBB2021_9_0-test-GCC:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@devel
+    needs: [ "macos-GCC-ISPC1_19_0-TBB2021_9_0" ]
+    with:
+      runs-on: '[ "macOS", "build", "x86_64" ]'
+      artifact-in: macos-GCC-ISPC1_19_0-TBB2021_9_0
+      cmd: |
+        source scripts/cmake-presets/macos-env.sh
+        source tests/integration/test_embree_release/unpack-macos.sh
+        $CMAKE_EXE --preset macos-gcc-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release
+        ./build/test
+
+  macos-GCC-ISPC1_19_0-TBB2021_9_0-test-CLANG:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@devel
+    needs: [ "macos-GCC-ISPC1_19_0-TBB2021_9_0" ]
+    with:
+      runs-on: '[ "macOS", "build", "x86_64" ]'
+      artifact-in: macos-GCC-ISPC1_19_0-TBB2021_9_0
+      cmd: |
+        source scripts/cmake-presets/macos-env.sh
+        source tests/integration/test_embree_release/unpack-macos.sh
+        $CMAKE_EXE --preset macos-clang-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release
+        ./build/test
+
+
+#  TODO: cant find tbb/tbb.h ???
+#  macos-CLANG-ISPC1_19_0-TBB2021_9_0:
+#    secrets: inherit
+#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@devel
+#    with:
+#      runs-on: '[ "macOS", "build", "x86_64" ]'
+#      artifact-out: macos-CLANG-ISPC1_19_0-TBB2021_9_0
+#      artifact-path: ./build/*.zip
+#      cmd: |
+#        source scripts/cmake-presets/macos-env.sh
+#        $CMAKE_EXE --preset package-macos-gcc-ispc1_19_0-tbb2021_9_0
+#        $CMAKE_EXE --build build --config Release --target package
+#        rm build/embree-*-testing.zip
+#        rm build/embree-*-Unspecified.zip
+#
+#  macos-CLANG-ISPC1_19_0-TBB2021_9_0-test-GCC:
+#    secrets: inherit
+#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@devel
+#    needs: [ "macos-CLANG-ISPC1_19_0-TBB2021_9_0" ]
+#    with:
+#      runs-on: '[ "macOS", "build", "x86_64" ]'
+#      artifact-in: macos-CLANG-ISPC1_19_0-TBB2021_9_0
+#      cmd: |
+#        source scripts/cmake-presets/macos-env.sh
+#        source tests/integration/test_embree_release/unpack-macos.sh
+#        $CMAKE_EXE --preset macos-gcc-tbb2021_9_0
+#        $CMAKE_EXE --build build --config Release
+#        ./build/test
+#
+#  macos-CLANG-ISPC1_19_0-TBB2021_9_0-test-CLANG:
+#    secrets: inherit
+#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@devel
+#    needs: [ "macos-CLANG-ISPC1_19_0-TBB2021_9_0" ]
+#    with:
+#      runs-on: '[ "macOS", "build", "x86_64" ]'
+#      artifact-in: macos-CLANG-ISPC1_19_0-TBB2021_9_0
+#      cmd: |
+#        source scripts/cmake-presets/macos-env.sh
+#        source tests/integration/test_embree_release/unpack-macos.sh
+#        $CMAKE_EXE --preset macos-clang-tbb2021_9_0
+#        $CMAKE_EXE --build build --config Release
+#        ./build/test
