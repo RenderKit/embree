@@ -32,7 +32,7 @@ namespace embree
   size_t NX = 50; 
   size_t NZ = 50;
 
-  SpinLock mutex;
+  MutexSys mutex;
 
   bool pause = false;
 
@@ -84,7 +84,7 @@ void CollideFunc (void* userPtr, RTCCollision* collisions, unsigned int num_coll
   if (num_collisions == 0) 
     return;
 
-  Lock<SpinLock> lock(mutex);
+  Lock<MutexSys> lock(mutex);
   for (size_t i=0; i<num_collisions; i++)
   {
     const unsigned geomID0 = collisions[i].geomID0;

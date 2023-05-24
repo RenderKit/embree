@@ -10,10 +10,6 @@
 
 #include "../../common/tasking/taskscheduler.h"
 
-#if defined(APPLE) && defined(__aarch64__)
-#include <mutex>
-#endif
-
 namespace embree
 {
   class FastAllocator
@@ -136,11 +132,7 @@ namespace embree
       {
         assert(alloc_i);
         if (alloc.load() == alloc_i) return;
-#if defined(APPLE) && defined(__aarch64__)
-        std::scoped_lock lock(mutex);
-#else
-        Lock<SpinLock> lock(mutex);
-#endif
+        Lock<MutexSys> lock(mutex);
         //if (alloc.load() == alloc_i) return; // not required as only one thread calls bind
         if (alloc.load()) {
           alloc.load()->bytesUsed   += alloc0.getUsedBytes()   + alloc1.getUsedBytes();
@@ -158,11 +150,7 @@ namespace embree
       {
         assert(alloc_i);
         if (alloc.load() != alloc_i) return;
-#if defined(APPLE) && defined(__aarch64__)
-        std::scoped_lock lock(mutex);
-#else
-        Lock<SpinLock> lock(mutex);
-#endif
+        Lock<MutexSys> lock(mutex);
         if (alloc.load() != alloc_i) return; // required as a different thread calls unbind
         alloc.load()->bytesUsed   += alloc0.getUsedBytes()   + alloc1.getUsedBytes();
         alloc.load()->bytesFree   += alloc0.getFreeBytes()   + alloc1.getFreeBytes();
@@ -173,11 +161,7 @@ namespace embree
       }
 
     public:
-#if defined(APPLE) && defined(__aarch64__)
-      std::mutex mutex;
-#else
-      SpinLock mutex;        //!< required as unbind is called from other threads
-#endif
+      MutexSys mutex;
       std::atomic<FastAllocator*> alloc;  //!< parent allocator
       ThreadLocal alloc0;
       ThreadLocal alloc1;
@@ -212,7 +196,7 @@ namespace embree
       {
         threadUsedBlocks[i] = nullptr;
         threadBlocks[i] = nullptr;
-        assert(!slotMutex[i].isLocked());
+        //assert(!slotMutex[i].isLocked());
       }
     }
 
@@ -253,11 +237,7 @@ namespace embree
       ThreadLocal2* alloc = thread_local_allocator2;
       if (alloc == nullptr) {
         thread_local_allocator2 = alloc = new ThreadLocal2;
-#if defined(APPLE) && defined(__aarch64__)
-        std::scoped_lock lock(s_thread_local_allocators_lock);
-#else
-        Lock<SpinLock> lock(s_thread_local_allocators_lock);
-#endif
+        Lock<MutexSys> lock(s_thread_local_allocators_lock);
         s_thread_local_allocators.push_back(make_unique(alloc));
       }
       return alloc;
@@ -267,11 +247,7 @@ namespace embree
 
     __forceinline void join(ThreadLocal2* alloc)
     {
-#if defined(APPLE) && defined(__aarch64__)
-      std::scoped_lock lock(s_thread_local_allocators_lock);
-#else
-      Lock<SpinLock> lock(thread_local_allocators_lock);
-#endif
+      Lock<MutexSys> lock(s_thread_local_allocators_lock);
       thread_local_allocators.push_back(alloc);
     }
 
@@ -538,11 +514,7 @@ namespace embree
         /* parallel block creation in case of no freeBlocks, avoids single global mutex */
         if (likely(freeBlocks.load() == nullptr))
         {
-#if defined(APPLE) && defined(__aarch64__)
-          std::scoped_lock lock(slotMutex[slot]);
-#else
-          Lock<SpinLock> lock(slotMutex[slot]);
-#endif
+          Lock<MutexSys> lock(slotMutex[slot]);
           if (myUsedBlocks == threadUsedBlocks[slot]) {
             const size_t alignedBytes = (bytes+(align-1)) & ~(align-1);
             const size_t allocSize = max(min(growSize,maxGrowSize),alignedBytes);
@@ -555,11 +527,7 @@ namespace embree
 
         /* if this fails allocate new block */
         {
-#if defined(APPLE) && defined(__aarch64__)
-          std::scoped_lock lock(mutex);
-#else
-          Lock<SpinLock> lock(mutex);
-#endif
+          Lock<MutexSys> lock(mutex);
           if (myUsedBlocks == threadUsedBlocks[slot])
           {
             if (freeBlocks.load() != nullptr) {
@@ -581,11 +549,7 @@ namespace embree
     /*! add new block */
     void addBlock(void* ptr, ssize_t bytes)
     {
-#if defined(APPLE) && defined(__aarch64__)
-      std::scoped_lock lock(mutex);
-#else
-      Lock<SpinLock> lock(mutex);
-#endif
+      Lock<MutexSys> lock(mutex);
       const size_t sizeof_Header = offsetof(Block,data[0]);
       void* aptr = (void*) ((((size_t)ptr)+maxAlignment-1) & ~(maxAlignment-1));
       size_t ofs = (size_t) aptr - (size_t) ptr;
@@ -1013,12 +977,8 @@ namespace embree
     size_t growSize;
     size_t maxGrowSize;
 
-    SpinLock mutex;
-#if defined(APPLE) && defined(__aarch64__)
-    std::mutex slotMutex[MAX_THREAD_USED_BLOCK_SLOTS];
-#else
-    PaddedSpinLock slotMutex[MAX_THREAD_USED_BLOCK_SLOTS];
-#endif
+    MutexSys mutex;
+    MutexSys slotMutex[MAX_THREAD_USED_BLOCK_SLOTS];
     std::atomic<Block*> threadUsedBlocks[MAX_THREAD_USED_BLOCK_SLOTS];
     std::atomic<Block*> threadBlocks[MAX_THREAD_USED_BLOCK_SLOTS];
     std::atomic<Block*> usedBlocks;
@@ -1034,14 +994,9 @@ namespace embree
     std::atomic<size_t> bytesWasted;
 
     static __thread ThreadLocal2* thread_local_allocator2;
-    static SpinLock s_thread_local_allocators_lock;
+    static MutexSys s_thread_local_allocators_lock;
     static std::vector<std::unique_ptr<ThreadLocal2>> s_thread_local_allocators;
 
-#if defined(APPLE) && defined(__aarch64__)
-    std::mutex thread_local_allocators_lock;
-#else
-    SpinLock thread_local_allocators_lock;
-#endif
     std::vector<ThreadLocal2*> thread_local_allocators;
     AllocationType atype;
 
