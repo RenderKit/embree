@@ -242,7 +242,7 @@ namespace embree
     }
 
     __forceinline Ref<Geometry> get_locked(size_t i)  {
-      Lock<SpinLock> lock(geometriesMutex);
+      Lock<MutexSys> lock(geometriesMutex);
       assert(i < geometries.size()); 
       return geometries[i]; 
     }
@@ -285,7 +285,7 @@ namespace embree
     RTCSceneFlags scene_flags;
     RTCBuildQuality quality_flags;
     MutexSys buildMutex;
-    SpinLock geometriesMutex;
+    MutexSys geometriesMutex;
 
 #if defined(EMBREE_SYCL_SUPPORT)
   public:

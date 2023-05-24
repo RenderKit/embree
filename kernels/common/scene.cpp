@@ -638,7 +638,7 @@ namespace embree
 
   unsigned Scene::bind(unsigned geomID, Ref<Geometry> geometry) 
   {
-    Lock<SpinLock> lock(geometriesMutex);
+    Lock<MutexSys> lock(geometriesMutex);
     if (geomID == RTC_INVALID_GEOMETRY_ID) {
       geomID = id_pool.allocate();
       if (geomID == RTC_INVALID_GEOMETRY_ID)
@@ -664,7 +664,7 @@ namespace embree
 
   void Scene::detachGeometry(size_t geomID)
   {
-    Lock<SpinLock> lock(geometriesMutex);
+    Lock<MutexSys> lock(geometriesMutex);
     
     if (geomID >= geometries.size())
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry ID");

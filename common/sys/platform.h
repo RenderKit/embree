@@ -20,6 +20,7 @@
 #include <cstring>
 #include <stdint.h>
 #include <functional>
+#include <mutex>
 
 #if defined(EMBREE_SYCL_SUPPORT)
 

@@ -1,6 +1,9 @@
 Version History
 ---------------
 
+### Embree 4.1.1
+-   Improved BVH build performance on many core machines for applications that oversubscribe threads.
+
 ### Embree 4.1.0
 -   Added support for Intel® Data Center GPU Max Series.
 -   Added ARM64 Linux support.
