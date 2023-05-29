@@ -1,0 +1,5 @@
+-i instance_array_mb.xml
+--ambientlight 1.5 1.5 1.5
+--instancing group
+--size 1024 512
+

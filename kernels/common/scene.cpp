@@ -591,6 +591,52 @@ namespace embree
 #endif
   }
 
+  void Scene::createInstanceArrayAccel()
+  {
+#if defined(EMBREE_GEOMETRY_INSTANCE_ARRAY)
+
+    // if (device->object_accel == "default") 
+    {
+#if defined (EMBREE_TARGET_SIMD8)
+      if (device->canUseAVX() && !isCompactAccel()) {
+        if (quality_flags != RTC_BUILD_QUALITY_LOW) {
+          accels_add(device->bvh8_factory->BVH8InstanceArray(this, BVHFactory::BuildVariant::STATIC));
+        } else {
+          accels_add(device->bvh8_factory->BVH8InstanceArray(this, BVHFactory::BuildVariant::DYNAMIC));
+        }
+      } 
+      else
+#endif
+      {
+        if (quality_flags != RTC_BUILD_QUALITY_LOW) {
+          accels_add(device->bvh4_factory->BVH4InstanceArray(this, BVHFactory::BuildVariant::STATIC));
+        } else {
+          accels_add(device->bvh4_factory->BVH4InstanceArray(this, BVHFactory::BuildVariant::DYNAMIC));
+        }
+      }
+    }
+    // else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown instance accel "+device->instance_accel);
+#endif
+  }
+
+  void Scene::createInstanceArrayMBAccel()
+  {
+#if defined(EMBREE_GEOMETRY_INSTANCE_ARRAY)
+
+    //if (device->instance_accel_mb == "default")
+    {
+#if defined (EMBREE_TARGET_SIMD8)
+      if (device->canUseAVX() && !isCompactAccel())
+        accels_add(device->bvh8_factory->BVH8InstanceArrayMB(this));
+      else
+#endif
+        accels_add(device->bvh4_factory->BVH4InstanceArrayMB(this));
+    }
+    //else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown instance mblur accel "+device->instance_accel_mb);
+#endif
+  }
+
+
   void Scene::createGridAccel()
   {
 #if defined(EMBREE_GEOMETRY_GRID)
@@ -707,11 +753,13 @@ namespace embree
       if (getNumPrimitives(Geometry::MTY_CURVES,false)) createHairAccel();
       if (getNumPrimitives(Geometry::MTY_CURVES,true)) createHairMBAccel();
       if (getNumPrimitives(UserGeometry::geom_type,false)) createUserGeometryAccel();
-      if (getNumPrimitives(UserGeometry::geom_type,true)) createUserGeometryMBAccel();      
+      if (getNumPrimitives(UserGeometry::geom_type,true)) createUserGeometryMBAccel();
       if (getNumPrimitives(Geometry::MTY_INSTANCE_CHEAP,false)) createInstanceAccel();
       if (getNumPrimitives(Geometry::MTY_INSTANCE_CHEAP,true)) createInstanceMBAccel();
       if (getNumPrimitives(Geometry::MTY_INSTANCE_EXPENSIVE,false)) createInstanceExpensiveAccel();
       if (getNumPrimitives(Geometry::MTY_INSTANCE_EXPENSIVE,true)) createInstanceExpensiveMBAccel();
+      if (getNumPrimitives(Geometry::MTY_INSTANCE_ARRAY,false)) createInstanceArrayAccel();
+      if (getNumPrimitives(Geometry::MTY_INSTANCE_ARRAY,true)) createInstanceArrayMBAccel();
 
       flags_modified = false;
       enabled_geometry_types = new_enabled_geometry_types;

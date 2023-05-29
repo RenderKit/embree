@@ -354,5 +354,6 @@ namespace embree
     IF_ENABLED_QUADS(template size_t createMortonCodeArray<QuadMesh>(QuadMesh* mesh COMMA mvector<BVHBuilderMorton::BuildPrim>& morton COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_USER (template size_t createMortonCodeArray<UserGeometry>(UserGeometry* mesh COMMA mvector<BVHBuilderMorton::BuildPrim>& morton COMMA BuildProgressMonitor& progressMonitor));
     IF_ENABLED_INSTANCE (template size_t createMortonCodeArray<Instance>(Instance* mesh COMMA mvector<BVHBuilderMorton::BuildPrim>& morton COMMA BuildProgressMonitor& progressMonitor));
+    IF_ENABLED_INSTANCE_ARRAY (template size_t createMortonCodeArray<InstanceArray>(InstanceArray* mesh COMMA mvector<BVHBuilderMorton::BuildPrim>& morton COMMA BuildProgressMonitor& progressMonitor));
   }
 }

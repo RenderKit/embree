@@ -132,6 +132,7 @@ namespace embree
     if (!rayQuerySupported)
       return -1;
 
+    (void)ze_rtas_builder;
     //if (!ze_rtas_builder) // for now we do not need the rtas extension yet!
     //  return -1;
 
@@ -459,6 +460,7 @@ namespace embree
       case Geometry::GTY_ORIENTED_DISC_POINT: return ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_PROCEDURAL; break;
       
       case Geometry::GTY_USER_GEOMETRY     : return ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_PROCEDURAL; break;
+      case Geometry::GTY_INSTANCE_ARRAY    : return ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_PROCEDURAL; break;
 
 #if RTC_MAX_INSTANCE_LEVEL_COUNT < 2
       case Geometry::GTY_INSTANCE_CHEAP    :

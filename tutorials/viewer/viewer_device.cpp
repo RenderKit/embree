@@ -142,6 +142,19 @@ AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime
   return (1.0f-ftime)*AffineSpace3fa(instance->spaces[itime+0]) + ftime*AffineSpace3fa(instance->spaces[itime+1]);
 }
 
+AffineSpace3fa calculate_interpolated_space (ISPCInstanceArray* instanceArray, unsigned int primID, float gtime)
+{
+  if (instanceArray->numTimeSteps == 1)
+    return AffineSpace3fa(instanceArray->spaces_array[0][primID]);
+
+   /* calculate time segment itime and fractional time ftime */
+  const int time_segments = instanceArray->numTimeSteps-1;
+  const float time = gtime*(float)(time_segments);
+  const int itime = clamp((int)(floor(time)),(int)0,time_segments-1);
+  const float ftime = time - (float)(itime);
+  return (1.0f-ftime)*AffineSpace3fa(instanceArray->spaces_array[itime+0][primID]) + ftime*AffineSpace3fa(instanceArray->spaces_array[itime+1][primID]);
+}
+
 typedef ISPCInstance* ISPCInstancePtr;
 
 unsigned int postIntersect(const TutorialData& data, const Ray& ray, DifferentialGeometry& dg)
@@ -154,11 +167,21 @@ unsigned int postIntersect(const TutorialData& data, const Ray& ray, Differentia
     const unsigned int instID = ray.instID[i];
     if (instID == -1) break;
 
-    ISPCInstance* instance = (ISPCInstancePtr) geometries[instID];
-    local2world = local2world * calculate_interpolated_space(instance,ray.time());
+    if (geometries[instID]->type == INSTANCE) {
+      ISPCInstance* instance = (ISPCInstancePtr) geometries[instID];
+      local2world = local2world * calculate_interpolated_space(instance,ray.time());
+      assert(instance->child->type == GROUP);
+      geometries = ((ISPCGroup*)instance->child)->geometries;
+    }
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+    else if (geometries[instID]->type == INSTANCE_ARRAY) {
+      ISPCInstanceArray* instanceArray = (ISPCInstanceArray*) geometries[instID];
+      local2world = local2world * calculate_interpolated_space(instanceArray, ray.instPrimID[i],ray.time());
+      assert(instanceArray->child->type == GROUP);
+      geometries = ((ISPCGroup*)instanceArray->child)->geometries;
+    }
+#endif
 
-    assert(instance->child->type == GROUP);
-    geometries = ((ISPCGroup*)instance->child)->geometries;
   }
 
   ISPCGeometry* mesh = geometries[ray.geomID];

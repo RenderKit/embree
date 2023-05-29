@@ -48,6 +48,7 @@ SET(EMBREE_LIBRARY_FILES
   common/geometry.cpp
   common/scene_user_geometry.cpp
   common/scene_instance.cpp
+  common/scene_instance_array.cpp
   common/scene_triangle_mesh.cpp
   common/scene_quad_mesh.cpp
   common/scene_curves.cpp
@@ -62,6 +63,7 @@ SET(EMBREE_LIBRARY_FILES
 
   geometry/primitive4.cpp
   geometry/instance_intersector.cpp
+  geometry/instance_array_intersector.cpp
   geometry/curve_intersector_virtual_4v.cpp
   geometry/curve_intersector_virtual_4i.cpp
   geometry/curve_intersector_virtual_4i_mb.cpp
@@ -114,6 +116,7 @@ MACRO(embree_files TARGET ISA)
       
   SET(${TARGET}
     geometry/instance_intersector.cpp
+    geometry/instance_array_intersector.cpp
     geometry/curve_intersector_virtual_4v.cpp
     geometry/curve_intersector_virtual_4i.cpp
     geometry/curve_intersector_virtual_4i_mb.cpp
@@ -131,6 +134,7 @@ MACRO(embree_files TARGET ISA)
     LIST(APPEND ${TARGET}
       common/scene_user_geometry.cpp
       common/scene_instance.cpp
+      common/scene_instance_array.cpp
       common/scene_triangle_mesh.cpp
       common/scene_quad_mesh.cpp 
       common/scene_curves.cpp

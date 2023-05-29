@@ -39,6 +39,8 @@
       RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,
 
       RTC_FORMAT_GRID,
+
+      RTC_FORMAT_QUATERNION_DECOMPOSITION
     };
 
 #### DESCRIPTION
@@ -58,14 +60,16 @@ of (size 2,3,4, etc.). This format is typcally used to specify to
 format of vertex buffers, e.g. the `RTC_FORMAT_FLOAT3` type for vertex
 buffers of triangle meshes.
 
-The `RTC_FORMAT_FLOAT3X4_ROW_MAJOR` and
-`RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR` formats, specify a 3x4 floating
-point matrix layed out either row major or column major. The
-`RTC_FORMAT_FLOAT4X4_ROW_MAJOR` and `RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR`
-formats, specify a 4x4 floating point matrix layed out either row
-major or column major. These matrix formats are used in the
-[rtcSetGeometryTransform] function in order to set a transformation
-matrix for geometries.
+The `RTC_FORMAT_FLOAT3X4_ROW_MAJOR` and `RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR`
+formats, specify a 3x4 floating point matrix layed out either row major or
+column major. The `RTC_FORMAT_FLOAT4X4_ROW_MAJOR` and
+`RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR` formats, specify a 4x4 floating point matrix
+layed out either row major or column major. The
+`RTC_FORMAT_QUATERNION_DECOMPOSITION` format specifies a structure that
+represents a quaternion decomposition (see [RTCQuaternionDecomposition]) of an affine
+transformation. These formats are used in the [rtcSetGeometryTransform]
+function or in geometry buffers with type `RTC_BUFFER_TYPE_TRANSFORM` in order
+to set a transformation matrix for instance and instance array geometries.
 
 The `RTC_FORMAT_GRID` is a special data format used to specify grid
 primitives of layout RTCGrid when creating grid geometries
@@ -77,3 +81,4 @@ primitives of layout RTCGrid when creating grid geometries
 
 [rtcSetGeometryBuffer], [rtcSetSharedGeometryBuffer],
 [rtcSetNewGeometryBuffer], [rtcSetGeometryTransform]
+[RTCQuaternionDecomposition]

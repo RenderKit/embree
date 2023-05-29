@@ -43,6 +43,9 @@ namespace embree
     IF_ENABLED_INSTANCE(DEFINE_INTERSECTOR4(BVH8InstanceIntersector4Chunk, BVHNIntersectorKChunk<8 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA InstanceIntersectorK<4>> >));
     IF_ENABLED_INSTANCE(DEFINE_INTERSECTOR4(BVH8InstanceMBIntersector4Chunk, BVHNIntersectorKChunk<8 COMMA 4 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersectorK_1<4 COMMA InstanceIntersectorKMB<4>> >));
 
+    IF_ENABLED_INSTANCE_ARRAY(DEFINE_INTERSECTOR4(BVH8InstanceArrayIntersector4Chunk, BVHNIntersectorKChunk<8 COMMA 4 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<4 COMMA InstanceArrayIntersectorK<4>> >));
+    IF_ENABLED_INSTANCE_ARRAY(DEFINE_INTERSECTOR4(BVH8InstanceArrayMBIntersector4Chunk, BVHNIntersectorKChunk<8 COMMA 4 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersectorK_1<4 COMMA InstanceArrayIntersectorKMB<4>> >));
+
     IF_ENABLED_GRIDS(DEFINE_INTERSECTOR4(BVH8GridIntersector4HybridMoeller, BVHNIntersectorKHybrid<8 COMMA 4 COMMA BVH_AN1 COMMA false COMMA SubGridIntersectorKMoeller <8 COMMA 4 COMMA true> >));
     IF_ENABLED_GRIDS(DEFINE_INTERSECTOR4(BVH8GridIntersector4HybridPluecker, BVHNIntersectorKHybrid<8 COMMA 4 COMMA BVH_AN1 COMMA true COMMA SubGridIntersectorKPluecker <8 COMMA 4 COMMA true> >));
 

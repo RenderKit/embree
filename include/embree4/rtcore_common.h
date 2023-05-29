@@ -147,7 +147,9 @@ enum RTCFormat
   RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR = 0x9244,
 
   /* special 12-byte format for grids */
-  RTC_FORMAT_GRID = 0xA001
+  RTC_FORMAT_GRID = 0xA001,
+
+  RTC_FORMAT_QUATERNION_DECOMPOSITION = 0xB001,
 };
 
 /* Build quality levels */
@@ -290,6 +292,8 @@ enum RTCFeatureFlags
 
   RTC_FEATURE_FLAG_32_BIT_RAY_MASK = 1 << 28,
 
+  RTC_FEATURE_FLAG_INSTANCE_ARRAY = 1 << 29,
+
   RTC_FEATURE_FLAG_ALL = 0xffffffff,
 };
 
@@ -334,19 +338,26 @@ struct RTCRayQueryContext
   unsigned int instStackSize;                        // Number of instances currently on the stack.
 #endif
   unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; // The current stack of instance ids.
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+  unsigned int instPrimID[RTC_MAX_INSTANCE_LEVEL_COUNT]; // The current stack of instance primitive ids.
+#endif
 };
 
 /* Initializes an ray query context. */
 RTC_FORCEINLINE void rtcInitRayQueryContext(struct RTCRayQueryContext* context)
 {
   unsigned l = 0;
-  
+
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   context->instStackSize = 0;
 #endif
 
-  for (; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+  for (; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l) {
     context->instID[l] = RTC_INVALID_GEOMETRY_ID;
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+    context->instPrimID[l] = RTC_INVALID_GEOMETRY_ID;
+#endif
+  }
 }
 
 /* Point query structure for closest point query */
@@ -404,6 +415,11 @@ struct RTC_ALIGN(16) RTCPointQueryContext
   // instance ids.
   unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT];
 
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+  // instance prim ids.
+  unsigned int instPrimID[RTC_MAX_INSTANCE_LEVEL_COUNT];
+#endif
+
   // number of instances currently on the stack.
   unsigned int instStackSize;
 };
@@ -411,8 +427,16 @@ struct RTC_ALIGN(16) RTCPointQueryContext
 /* Initializes an ray query context. */
 RTC_FORCEINLINE void rtcInitPointQueryContext(struct RTCPointQueryContext* context)
 {
+  unsigned l = 0;
+
   context->instStackSize = 0;
-  context->instID[0] = RTC_INVALID_GEOMETRY_ID;
+
+  for (; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l) {
+    context->instID[l] = RTC_INVALID_GEOMETRY_ID;
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+    context->instPrimID[l] = RTC_INVALID_GEOMETRY_ID;
+#endif
+  }
 }
 
 struct RTC_ALIGN(16) RTCPointQueryFunctionArguments

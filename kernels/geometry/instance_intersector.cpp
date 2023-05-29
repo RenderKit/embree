@@ -5,6 +5,8 @@
 #include "../common/scene.h"
 #include "../common/instance_stack.h"
 
+#include <mutex>
+
 namespace embree
 {
   namespace isa
@@ -20,7 +22,7 @@ namespace embree
         return;
 #endif
       RTCRayQueryContext* user_context = context->user;
-      if (likely(instance_id_stack::push(user_context, prim.instID_)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_, 0)))
       {
         const AffineSpace3fa world2local = instance->getWorld2Local();
         const Vec3ff ray_org = ray.org;
@@ -47,7 +49,7 @@ namespace embree
       
       RTCRayQueryContext* user_context = context->user;
       bool occluded = false;
-      if (likely(instance_id_stack::push(user_context, prim.instID_)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_, 0)))
       {
         const AffineSpace3fa world2local = instance->getWorld2Local();
         const Vec3ff ray_org = ray.org;
@@ -75,7 +77,7 @@ namespace embree
                            && similarityTransform(world2local, &similarityScale);
       assert((similtude && similarityScale > 0) || !similtude);
 
-      if (likely(instance_id_stack::push(context->userContext, prim.instID_, world2local, local2world)))
+      if (likely(instance_id_stack::push(context->userContext, prim.instID_, 0, world2local, local2world)))
       {
         PointQuery query_inst;
         query_inst.time = query->time;
@@ -109,7 +111,7 @@ namespace embree
 #endif
       
       RTCRayQueryContext* user_context = context->user;
-      if (likely(instance_id_stack::push(user_context, prim.instID_)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_, 0)))
       {
         const AffineSpace3fa world2local = instance->getWorld2Local(ray.time());
         const Vec3ff ray_org = ray.org;
@@ -136,7 +138,7 @@ namespace embree
       
       RTCRayQueryContext* user_context = context->user;
       bool occluded = false;
-      if (likely(instance_id_stack::push(user_context, prim.instID_)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_, 0)))
       {
         const AffineSpace3fa world2local = instance->getWorld2Local(ray.time());
         const Vec3ff ray_org = ray.org;
@@ -163,7 +165,7 @@ namespace embree
       const bool similtude = context->query_type == POINT_QUERY_TYPE_SPHERE
                            && similarityTransform(world2local, &similarityScale);
 
-      if (likely(instance_id_stack::push(context->userContext, prim.instID_, world2local, local2world)))
+      if (likely(instance_id_stack::push(context->userContext, prim.instID_, 0, world2local, local2world)))
       {
         PointQuery query_inst;
         query_inst.time = query->time;
@@ -191,7 +193,6 @@ namespace embree
     {
       vbool<K> valid = valid_i;
       const Instance* instance = prim.instance;
-      //ray.geomID = 10;
       
       /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
@@ -200,7 +201,7 @@ namespace embree
 #endif
         
       RTCRayQueryContext* user_context = context->user;
-      if (likely(instance_id_stack::push(user_context, prim.instID_)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_, 0)))
       {
         AffineSpace3vf<K> world2local = instance->getWorld2Local();
         const Vec3vf<K> ray_org = ray.org;
@@ -229,7 +230,7 @@ namespace embree
         
       RTCRayQueryContext* user_context = context->user;
       vbool<K> occluded = false;
-      if (likely(instance_id_stack::push(user_context, prim.instID_)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_, 0)))
       {
         AffineSpace3vf<K> world2local = instance->getWorld2Local();
         const Vec3vf<K> ray_org = ray.org;
@@ -259,7 +260,7 @@ namespace embree
 #endif
         
       RTCRayQueryContext* user_context = context->user;
-      if (likely(instance_id_stack::push(user_context, prim.instID_)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_, 0)))
       {
         AffineSpace3vf<K> world2local = instance->getWorld2Local<K>(valid, ray.time());
         const Vec3vf<K> ray_org = ray.org;
@@ -288,7 +289,7 @@ namespace embree
         
       RTCRayQueryContext* user_context = context->user;
       vbool<K> occluded = false;
-      if (likely(instance_id_stack::push(user_context, prim.instID_)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_, 0)))
       {
         AffineSpace3vf<K> world2local = instance->getWorld2Local<K>(valid, ray.time());
         const Vec3vf<K> ray_org = ray.org;

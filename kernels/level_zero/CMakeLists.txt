@@ -14,7 +14,7 @@ if (EMBREE_LEVEL_ZERO_API_HEADER_DIR)
   MESSAGE("-- Use level zero API header from ${EMBREE_LEVEL_ZERO_API_HEADER_DIR}")
 else()
   MESSAGE("-- Download level zero API header")
-  set(EMBREE_LEVEL_ZERO_API_HEADER_DIR ${CMAKE_CURRENT_BINARY_DIR}/_deps/level_zero)
+  set(EMBREE_LEVEL_ZERO_API_HEADER_DIR ${CMAKE_BINARY_DIR}/_deps/level_zero)
   file(DOWNLOAD
     https://github.com/oneapi-src/level-zero/raw/v1.10/include/ze_api.h
     ${EMBREE_LEVEL_ZERO_API_HEADER_DIR}/ze_api.h)

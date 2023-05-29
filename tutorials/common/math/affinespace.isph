@@ -124,6 +124,11 @@ inline uniform AffineSpace3f make_AffineSpace3f_translate(const uniform Vec3f& p
   return make_AffineSpace3f(make_Vec3f(1,0,0),make_Vec3f(0,1,0),make_Vec3f(0,0,1),p); 
 }
 
+/*! return translation matrix */
+inline AffineSpace3f make_AffineSpace3f_translate(const Vec3f& p) {
+  return make_AffineSpace3f(make_Vec3f(1,0,0),make_Vec3f(0,1,0),make_Vec3f(0,0,1),p);
+}
+
 /*! return matrix for rotation around arbitrary axis and point */
 inline uniform AffineSpace3f make_AffineSpace3f_rotate   (const uniform Vec3f& p, const uniform Vec3f& u, const uniform float& r) { 
   return (make_AffineSpace3f_translate(+p) * make_AffineSpace3f(make_LinearSpace3f_rotate(u,r))) * make_AffineSpace3f_translate(neg(p));  

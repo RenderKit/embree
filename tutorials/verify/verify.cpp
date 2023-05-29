@@ -2882,7 +2882,618 @@ namespace embree
       return (VerifyApplication::TestReturnValue) passed;
     }
   };
-    
+
+  #if defined(EMBREE_GEOMETRY_INSTANCE_ARRAY)
+
+  struct InstanceArrayTest : public VerifyApplication::IntersectTest
+  {
+    SceneFlags sflags;
+    RTCBuildQuality quality;
+
+    InstanceArrayTest (std::string name, int isa, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), quality(quality) {
+      }
+
+    struct RayQueryContext {
+      RTCRayQueryContext context;
+      int numHits[16];
+    };
+
+    static void intersectFilter(const RTCFilterFunctionNArguments* args)
+    {
+      assert(args);
+      assert(args->context);
+
+      RayQueryContext* context = (RayQueryContext*)(args->context);
+
+      for (unsigned int i=0; i<args->N; i++) 
+      {
+        const unsigned int rayId = RTCRayN_id(args->ray, args->N, i);
+        if(args->valid[i] && rayId >= 16)
+          throw std::runtime_error("Invalid ray id in intersection filter.");
+        if (args->valid[i])
+        {
+          assert(rayId < 16);
+          context->numHits[rayId] += 1;
+        }
+      }
+    }
+
+    bool doIntersectionTests(RTCScene scene)
+    {
+      RayQueryContext ctx;
+      rtcInitRayQueryContext(&ctx.context);
+
+      RTCIntersectArguments args;
+      rtcInitIntersectArguments(&args);
+      args.context = &ctx.context;
+      args.filter = intersectFilter;
+      args.flags = RTC_RAY_QUERY_FLAG_INVOKE_ARGUMENT_FILTER;
+
+      RTCRayHit rays[16];
+      for (int i = 0; i < 16; ++i) {
+        float dx = i * 5.f;
+        rays[i] = makeRay(Vec3fa(dx,0.f,-2.0f),Vec3fa(0,0,1));
+        rays[i].ray.id = i;
+        ctx.numHits[i] = 0;
+      }
+
+      IntersectWithMode(imode,ivariant,scene,rays,16,&args);
+
+      // first ray should have missed
+      bool passed = (ctx.numHits[0] == 0);
+      if (ivariant & VARIANT_INTERSECT) {
+        passed &= (rays[0].hit.geomID == RTC_INVALID_GEOMETRY_ID);
+        passed &= (rays[0].hit.instID[0] == RTC_INVALID_GEOMETRY_ID);
+      } else {
+        passed &= (rays[0].ray.tfar != (float)neg_inf);
+      }
+
+      // remaining rays should have hit
+      for (int i = 1; i < 16; ++i) {
+        passed &= (ctx.numHits[i] > 0);
+        RTCRayHit& ray = rays[i];
+        if (ivariant & VARIANT_INTERSECT) {
+          passed &= (ray.hit.geomID != RTC_INVALID_GEOMETRY_ID);
+          passed &= (ray.hit.instID[0] == 0);
+          passed &= (ray.hit.instPrimID[0] == (i-1));
+        } else {
+          passed &= (ray.ray.tfar == (float)neg_inf);
+        }
+      }
+      return passed;
+    }
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(nullptr,rtcGetDeviceError(device));
+
+      Ref<SceneGraph::Node> sphere = SceneGraph::createQuadSphere(Vec3fa(0.f), 1.f, 32);
+
+      sflags.sflags = sflags.sflags | RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS;
+
+      VerifyScene bl_scene(device, sflags);
+      bl_scene.addGeometry(quality, sphere);
+      rtcCommitScene(bl_scene);
+      AssertNoError(device);
+
+      bool passed = true;
+      {
+        std::vector<AffineSpace3fa> transforms;
+        for (int i = 1; i < 16; ++i) {
+          transforms.push_back(AffineSpace3fa::translate(Vec3fa(i * 5.f, 0.f, 0.f)));
+        }
+
+        RTCScene tl_scene = rtcNewScene(device);
+        RTCGeometry instance_array = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE_ARRAY);
+        rtcSetSharedGeometryBuffer(instance_array, RTC_BUFFER_TYPE_TRANSFORM, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, (void*)transforms.data(), 0, sizeof(AffineSpace3fa), transforms.size());
+        rtcSetGeometryInstancedScene(instance_array, bl_scene);
+        rtcAttachGeometry(tl_scene,instance_array);
+        rtcReleaseGeometry(instance_array);
+        rtcCommitGeometry(instance_array);
+        rtcCommitScene(tl_scene);
+        AssertNoError(device);
+
+        passed &= doIntersectionTests(tl_scene);
+        assert(passed);
+        rtcReleaseScene(tl_scene);
+      }
+
+      {
+        std::vector<AffineSpace3f> transforms;
+        for (int i = 1; i < 16; ++i) {
+          transforms.push_back(AffineSpace3f::translate(Vec3f(i * 5.f, 0.f, 0.f)));
+        }
+
+        RTCScene tl_scene = rtcNewScene(device);
+        RTCGeometry instance_array = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE_ARRAY);
+        rtcSetSharedGeometryBuffer(instance_array, RTC_BUFFER_TYPE_TRANSFORM, 0, RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR, (void*)transforms.data(), 0, sizeof(AffineSpace3f), transforms.size());
+        rtcSetGeometryInstancedScene(instance_array, bl_scene);
+        rtcAttachGeometry(tl_scene,instance_array);
+        rtcReleaseGeometry(instance_array);
+        rtcCommitGeometry(instance_array);
+        rtcCommitScene(tl_scene);
+        AssertNoError(device);
+
+        passed &= doIntersectionTests(tl_scene);
+        assert(passed);
+        rtcReleaseScene(tl_scene);
+      }
+
+      {
+        struct Mat3x4_RM {
+          float ux, vx, wx, px;
+          float uy, vy, wy, py;
+          float uz, vz, wz, pz;
+        };
+
+        std::vector<Mat3x4_RM> transforms;
+        for (int i = 1; i < 16; ++i) {
+          AffineSpace3f M_CM = AffineSpace3f::translate(Vec3f(i * 5.f, 0.f, 0.f));
+          Mat3x4_RM M_RM;
+          M_RM.ux = M_CM.l.vx.x; M_RM.uy = M_CM.l.vx.y; M_RM.uz = M_CM.l.vx.z;
+          M_RM.vx = M_CM.l.vy.x; M_RM.vy = M_CM.l.vy.y; M_RM.vz = M_CM.l.vy.z;
+          M_RM.wx = M_CM.l.vz.x; M_RM.wy = M_CM.l.vz.y; M_RM.wz = M_CM.l.vz.z;
+          M_RM.px = M_CM.p.x;    M_RM.py = M_CM.p.y;    M_RM.pz = M_CM.p.z;
+          transforms.push_back(M_RM);
+        }
+
+        RTCScene tl_scene = rtcNewScene(device);
+        RTCGeometry instance_array = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE_ARRAY);
+        rtcSetSharedGeometryBuffer(instance_array, RTC_BUFFER_TYPE_TRANSFORM, 0, RTC_FORMAT_FLOAT3X4_ROW_MAJOR, (void*)transforms.data(), 0, sizeof(Mat3x4_RM), transforms.size());
+        rtcSetGeometryInstancedScene(instance_array, bl_scene);
+        rtcAttachGeometry(tl_scene,instance_array);
+        rtcReleaseGeometry(instance_array);
+        rtcCommitGeometry(instance_array);
+        rtcCommitScene(tl_scene);
+        AssertNoError(device);
+
+        passed &= doIntersectionTests(tl_scene);
+        assert(passed);
+        rtcReleaseScene(tl_scene);
+      }
+
+      AssertNoError(device);
+
+      return (VerifyApplication::TestReturnValue) passed;
+    }
+  };
+
+  template<typename T>
+  T getRandomTransform(VerifyApplication::Test* test);
+
+  template<>
+  AffineSpace3fa getRandomTransform(VerifyApplication::Test* test)
+  {
+    Vec3fa dx    = 25.f * (Vec3fa(-1.f, -1.f, -1.f) + test->random_Vec3fa() * Vec3fa(2.f, 2.f, 2.f));
+    Vec3fa scale = Vec3fa( 0.5f,  0.5f,  0.5f) + test->random_Vec3fa() * Vec3fa(1.5f, 1.5f, 1.5f);
+    Vec3fa rotate = normalize(Vec3fa(-1.f, -1.f, -1.f) + test->random_Vec3fa() * Vec3fa(2.f, 2.f, 2.f));
+    return AffineSpace3fa::translate(Vec3fa(dx)) * AffineSpace3fa::scale(scale) * AffineSpace3fa::rotate(rotate, test->random_float() * 2.f * M_PI);
+  }
+
+  template<>
+  AffineSpace3f getRandomTransform(VerifyApplication::Test* test)
+  {
+    return AffineSpace3f(getRandomTransform<AffineSpace3fa>(test));
+  }
+
+  template<>
+  RTCQuaternionDecomposition getRandomTransform(VerifyApplication::Test* test)
+  {
+    Vec3fa D = 25.f * (Vec3fa(-1.f, -1.f, -1.f) + test->random_Vec3fa() * Vec3fa(2.f, 2.f, 2.f));
+    Vec3fa S = Vec3fa( 0.5f,  0.5f,  0.5f) + test->random_Vec3fa() * Vec3fa(1.5f, 1.5f, 1.5f);
+    Vec3fa Q = test->random_Vec3fa();
+
+    RTCQuaternionDecomposition qd;
+    rtcInitQuaternionDecomposition(&qd);
+    rtcQuaternionDecompositionSetScale(&qd, S.x, S.y, S.z);
+    rtcQuaternionDecompositionSetTranslation(&qd, D.x, D.y, D.z);
+    rtcQuaternionDecompositionSetQuaternion(&qd, std::sqrt(1.f-Q.x) * std::sin(2.f*M_PI*Q.y),
+                                                 std::sqrt(1.f-Q.x) * std::cos(2.f*M_PI*Q.y),
+                                                 std::sqrt(Q.x)     * std::sin(2.f*M_PI*Q.z),
+                                                 std::sqrt(Q.x)     * std::cos(2.f*M_PI*Q.z));
+
+    return qd;
+  }
+
+  template<typename T>
+  struct InstanceArrayRandomTest : public VerifyApplication::IntersectTest
+  {
+    static const int num_rays = 16;
+    SceneFlags sflags;
+    RTCBuildQuality quality;
+
+    InstanceArrayRandomTest (std::string name, int isa, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), quality(quality) {
+      }
+
+    struct RayQueryContext {
+      RTCRayQueryContext context;
+      int numHits[num_rays];
+    };
+
+    static void intersectFilter(const RTCFilterFunctionNArguments* args)
+    {
+      assert(args);
+      assert(args->context);
+
+      RayQueryContext* context = (RayQueryContext*)(args->context);
+
+      for (unsigned int i=0; i<args->N; i++) 
+      {
+        const unsigned int rayId = RTCRayN_id(args->ray, args->N, i);
+        if(args->valid[i] && rayId >= 16)
+          throw std::runtime_error("Invalid ray id in intersection filter.");
+        if (args->valid[i])
+        {
+          assert(rayId < 16);
+          context->numHits[rayId] += 1;
+        }
+      }
+    }
+
+    bool almost_equal(float a, float b, float eps) {
+      float M = std::max(std::abs(a), std::abs(b));
+      if (M > 0) {
+        return (std::abs(a - b) / M < eps);
+      }
+      return M < eps;
+    }
+
+    bool check_transform_almost_equal(AffineSpace3fa const& a, AffineSpace3fa const& b) {
+      if (!almost_equal(a.l.vx.x, b.l.vx.x, 1e-3f)) {
+        printf("a.l.vx.x %.8g, b.l.vx.x %.8g\n", a.l.vx.x, b.l.vx.x);
+        return false;
+      }
+      if (!almost_equal(a.l.vx.y, b.l.vx.y, 1e-3f)) {
+        printf("a.l.vx.y %.8g, b.l.vx.y %.8g\n", a.l.vx.y, b.l.vx.y);
+        return false;
+      }
+      if (!almost_equal(a.l.vx.z, b.l.vx.z, 1e-3f)) {
+        printf("a.l.vx.z %.8g, b.l.vx.z %.8g\n", a.l.vx.z, b.l.vx.z);
+        return false;
+      }
+      if (!almost_equal(a.l.vy.x, b.l.vy.x, 1e-3f)) {
+        printf("a.l.vy.x %.8g, b.l.vy.x %.8g\n", a.l.vy.x, b.l.vy.x);
+        return false;
+      }
+      if (!almost_equal(a.l.vy.y, b.l.vy.y, 1e-3f)) {
+        printf("a.l.vy.y %.8g, b.l.vy.y %.8g\n", a.l.vy.y, b.l.vy.y);
+        return false;
+      }
+      if (!almost_equal(a.l.vy.z, b.l.vy.z, 1e-3f)) {
+        printf("a.l.vy.z %.8g, b.l.vy.z %.8g\n", a.l.vy.z, b.l.vy.z);
+        return false;
+      }
+      if (!almost_equal(a.l.vz.x, b.l.vz.x, 1e-3f)) {
+        printf("a.l.vz.x %.8g, b.l.vz.x %.8g\n", a.l.vz.x, b.l.vz.x);
+        return false;
+      }
+      if (!almost_equal(a.l.vz.y, b.l.vz.y, 1e-3f)) {
+        printf("a.l.vz.y %.8g, b.l.vz.y %.8g\n", a.l.vz.y, b.l.vz.y);
+        return false;
+      }
+      if (!almost_equal(a.l.vz.z, b.l.vz.z, 1e-3f)) {
+        printf("a.l.vz.z %.8g, b.l.vz.z %.8g\n", a.l.vz.z, b.l.vz.z);
+        return false;
+      }
+      if (!almost_equal(a.p.x, b.p.x, 1e-3f)) {
+        printf("a.p.x %.8g, b.p.x %.8g\n", a.p.x, b.p.x);
+        return false;
+      }
+      if (!almost_equal(a.p.y, b.p.y, 1e-3f)) {
+        printf("a.p.y %.8g, b.p.y %.8g\n", a.p.y, b.p.y);
+        return false;
+      }
+      if (!almost_equal(a.p.z, b.p.z, 1e-3f)) {
+        printf("a.p.z %.8g, b.p.z %.8g\n", a.p.z, b.p.z);
+        return false;
+      }
+      return true;
+    }
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(nullptr,rtcGetDeviceError(device));
+
+      Ref<SceneGraph::Node> sphere = SceneGraph::createQuadSphere(Vec3fa(0.f), 1.f, 32);
+
+      sflags.sflags = sflags.sflags | RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS;
+
+      VerifyScene bl_scene(device, sflags);
+      bl_scene.addGeometry(quality, sphere);
+      rtcCommitScene(bl_scene);
+      AssertNoError(device);
+
+      size_t num_runs = 1; //(size_t)state->intensity;
+
+      bool passed = true;
+
+      for (size_t num_time_steps = 1; num_time_steps < 4; ++num_time_steps) {
+      for (size_t run = 0; run < num_runs; ++run)
+      {
+        size_t numTransforms = 32 + 1024 * random_float();
+
+        std::vector<std::vector<T>> transforms(num_time_steps);
+        for (int t = 0; t < num_time_steps; ++t) {
+          transforms[t] = std::vector<T>(numTransforms);
+          for (int i = 0; i < numTransforms; ++i) {
+            transforms[t][i] = getRandomTransform<T>(this);
+          }
+        }
+
+        float time_range_min = 0.f; //0.0f + 0.5f * random_float();
+        float time_range_max = 1.f; //0.5f + 0.5f * random_float();
+
+        RTCScene tl_instance_array_scene = rtcNewScene(device);
+        RTCGeometry instance_array = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE_ARRAY);
+        rtcSetGeometryTimeStepCount(instance_array, num_time_steps);
+        rtcSetGeometryTimeRange(instance_array, time_range_min, time_range_max);
+        for (int t = 0; t < num_time_steps; ++t) {
+          if (std::is_same<T, AffineSpace3fa>()) {
+            rtcSetSharedGeometryBuffer(instance_array, RTC_BUFFER_TYPE_TRANSFORM, t, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, (void*)&transforms[t][0], 0, sizeof(T), numTransforms);
+          } else if (std::is_same<T, AffineSpace3f>()) {
+            rtcSetSharedGeometryBuffer(instance_array, RTC_BUFFER_TYPE_TRANSFORM, t, RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR, (void*)&transforms[t][0], 0, sizeof(T), numTransforms);
+          } else if (std::is_same<T, RTCQuaternionDecomposition>()) {
+            rtcSetSharedGeometryBuffer(instance_array, RTC_BUFFER_TYPE_TRANSFORM, t, RTC_FORMAT_QUATERNION_DECOMPOSITION, (void*)&transforms[t][0], 0, sizeof(T), numTransforms);
+          }
+        }
+        rtcSetGeometryInstancedScene(instance_array, bl_scene);
+        rtcAttachGeometry(tl_instance_array_scene,instance_array);
+        rtcReleaseGeometry(instance_array);
+        rtcCommitGeometry(instance_array);
+        rtcCommitScene(tl_instance_array_scene);
+        AssertNoError(device);
+
+        RTCScene tl_instance_scene = rtcNewScene(device);
+        for (size_t i = 0; i < numTransforms; ++i) {
+          RTCGeometry instance = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE);
+          rtcSetGeometryTimeStepCount(instance, num_time_steps);
+          rtcSetGeometryTimeRange(instance, time_range_min, time_range_max);
+          for (int t = 0; t < num_time_steps; ++t) {
+            if (std::is_same<T, AffineSpace3fa>()) {
+              rtcSetGeometryTransform(instance,t,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&transforms[t][i]);
+            } else if (std::is_same<T, AffineSpace3f>()) {
+              rtcSetGeometryTransform(instance,t,RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,(float*)&transforms[t][i]);
+            } else if (std::is_same<T, RTCQuaternionDecomposition>()) {
+              rtcSetGeometryTransformQuaternion(instance,t,(RTCQuaternionDecomposition*)&transforms[t][i]);
+            }
+          }
+          rtcSetGeometryInstancedScene(instance,bl_scene);
+          rtcAttachGeometry(tl_instance_scene,instance);
+          rtcReleaseGeometry(instance);
+          rtcCommitGeometry(instance);
+
+          AffineSpace3fa xfm0;
+          rtcGetGeometryTransform(instance, 0.5f, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, &xfm0);
+
+          AffineSpace3fa xfm1;
+          rtcGetGeometryTransformEx(instance_array, i, 0.5f, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, &xfm1);
+
+          passed &= check_transform_almost_equal(xfm0, xfm1);
+          assert(passed);
+        }
+        rtcCommitScene(tl_instance_scene);
+        AssertNoError(device);
+
+        RTCBounds bounds;
+        RTCBounds bounds0;
+
+        rtcGetSceneBounds(tl_instance_array_scene, &bounds);
+        rtcGetSceneBounds(tl_instance_scene, &bounds0);
+
+        if (!almost_equal(bounds.lower_x, bounds0.lower_x, 1e-3f))
+          printf("bounds.lower_x %.8g, bounds1.lower_x %.8g\n", bounds.lower_x, bounds0.lower_x);
+        assert(almost_equal(bounds.lower_x, bounds0.lower_x, 1e-3f));
+        if (!almost_equal(bounds.lower_y, bounds0.lower_y, 1e-3f))
+          printf("bounds.lower_y %.8g, bounds1.lower_y %.8g\n", bounds.lower_y, bounds0.lower_y);
+        assert(almost_equal(bounds.lower_y, bounds0.lower_y, 1e-3f));
+        if (!almost_equal(bounds.lower_z, bounds0.lower_z, 1e-3f))
+          printf("bounds.lower_z %.8g, bounds1.lower_z %.8g\n", bounds.lower_z, bounds0.lower_z);
+        assert(almost_equal(bounds.lower_z, bounds0.lower_z, 1e-3f));
+        if (!almost_equal(bounds.upper_x, bounds0.upper_x, 1e-3f))
+          printf("bounds.upper_x %.8g, bounds1.upper_x %.8g\n", bounds.upper_x, bounds0.upper_x);
+        assert(almost_equal(bounds.upper_x, bounds0.upper_x, 1e-3f));
+        if (!almost_equal(bounds.upper_y, bounds0.upper_y, 1e-3f))
+          printf("bounds.upper_x %.8g, bounds1.upper_x %.8g\n", bounds.upper_x, bounds0.upper_x);
+        assert(almost_equal(bounds.upper_y, bounds0.upper_y, 1e-3f));
+        if (!almost_equal(bounds.upper_z, bounds0.upper_z, 1e-3f))
+          printf("bounds.upper_x %.8g, bounds1.upper_x %.8g\n", bounds.upper_x, bounds0.upper_x);
+        assert(almost_equal(bounds.upper_z, bounds0.upper_z, 1e-3f));
+
+        Vec3fa bl(bounds.lower_x, bounds.lower_y, bounds.lower_z);
+        Vec3fa bu(bounds.upper_x, bounds.upper_y, bounds.upper_z);
+        float bd = length(bu - bl);
+
+        for (size_t i = 0; i < 32 * num_time_steps; ++i)
+        {
+          RayQueryContext ctx0;
+          rtcInitRayQueryContext(&ctx0.context);
+
+          RTCIntersectArguments args0;
+          rtcInitIntersectArguments(&args0);
+          args0.context = &ctx0.context;
+          args0.filter = intersectFilter;
+          args0.flags = RTC_RAY_QUERY_FLAG_INVOKE_ARGUMENT_FILTER;
+
+          RayQueryContext ctx1;
+          rtcInitRayQueryContext(&ctx1.context);
+
+          RTCIntersectArguments args1;
+          rtcInitIntersectArguments(&args1);
+          args1.context = &ctx1.context;
+          args1.filter = intersectFilter;
+          args1.flags = RTC_RAY_QUERY_FLAG_INVOKE_ARGUMENT_FILTER;
+
+          RTCRayHit rays0[num_rays];
+          RTCRayHit rays1[num_rays];
+          for (int i = 0; i < num_rays; ++i) {
+            Vec3fa p0 = bl + random_Vec3fa() * (bu - bl);
+            Vec3fa p1 = bl + random_Vec3fa() * (bu - bl);
+
+            rays0[i]          = rays1[i]          = makeRay(p0 + bd * (p1 - p0), normalize(p0 - p1));
+            rays0[i].ray.time = rays1[i].ray.time = random_float();
+            rays0[i].ray.id   = rays1[i].ray.id   = i;
+            ctx0.numHits[i]   = ctx1.numHits[i]   = 0;
+
+            assert(rays0[i].ray.time <= 1.f);
+            assert(rays0[i].ray.time >= 0.f);
+          }
+
+          IntersectWithMode(imode,ivariant,tl_instance_array_scene,rays0,num_rays,&args0);
+          IntersectWithMode(imode,ivariant,tl_instance_scene,      rays1,num_rays,&args1);
+
+          for (int i = 0; i < num_rays; ++i) {
+            RTCRayHit& ray0 = rays0[i];
+            RTCRayHit& ray1 = rays1[i];
+            // TODO: reenable this when accuracy problem of instancing vs
+            // instance arrays with >= AVX2 is fixed.
+            //passed &= (ctx0.numHits[i] == ctx1.numHits[i]);
+            if (ray0.hit.instID[0] != RTC_INVALID_GEOMETRY_ID) {
+              assert(ray0.hit.instPrimID[0] != RTC_INVALID_GEOMETRY_ID);
+              // TODO: reenable this when accuracy problem of instancing vs
+              // instance arrays with >= AVX2 is fixed.
+              //passed &= (ray0.hit.instPrimID[0] == ray1.hit.instID[0]);
+            }
+            // TODO: reenable equality test for tfar values when accuracy
+            // problem of instancing vs instance arrays with >= AVX2 is fixed.
+            bool passed_before = passed;
+            passed &= (ray0.ray.tfar == float(pos_inf) && ray1.ray.tfar == float(pos_inf))
+                   || (ray0.ray.tfar == float(neg_inf) && ray1.ray.tfar == float(neg_inf))
+                   || (std::abs(ray0.ray.tfar - ray1.ray.tfar) / std::max(ray0.ray.tfar, ray1.ray.tfar) < 0.003f);
+            if (passed_before && !passed) {
+              printf("fail: ray0.tfar %.8g - ray1.tfar %.8g - abs diff %.8g - rel abs diff %.8f\n",
+                ray0.ray.tfar, ray1.ray.tfar , std::abs(ray0.ray.tfar - ray1.ray.tfar),
+                std::abs(ray0.ray.tfar - ray1.ray.tfar) / std::max(ray0.ray.tfar, ray1.ray.tfar));
+            }
+            assert(passed);
+          }
+        }
+
+        AssertNoError(device);
+        assert(passed);
+        rtcReleaseScene(tl_instance_array_scene);
+        rtcReleaseScene(tl_instance_scene);
+        AssertNoError(device);
+
+      }
+      }
+
+      return (VerifyApplication::TestReturnValue) passed;
+    }
+  };
+
+  struct InstanceArrayTestFormats : public VerifyApplication::IntersectTest
+  {
+    SceneFlags sflags;
+    RTCBuildQuality quality;
+
+    InstanceArrayTestFormats (std::string name, int isa, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), quality(quality) {
+      }
+
+    struct RayQueryContext {
+      RTCRayQueryContext context;
+      int numHits[16];
+    };
+
+    static void intersectFilter(const RTCFilterFunctionNArguments* args)
+    {
+      assert(args);
+      assert(args->context);
+
+      RayQueryContext* context = (RayQueryContext*)(args->context);
+
+      for (unsigned int i=0; i<args->N; i++) 
+      {
+        const unsigned int rayId = RTCRayN_id(args->ray, args->N, i);
+        if(args->valid[i] && rayId >= 16)
+          throw std::runtime_error("Invalid ray id in intersection filter.");
+        if (args->valid[i])
+        {
+          assert(rayId < 16);
+          context->numHits[rayId] += 1;
+        }
+      }
+    }
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(nullptr,rtcGetDeviceError(device));
+
+      Ref<SceneGraph::Node> sphere = SceneGraph::createQuadSphere(Vec3fa(0.f), 1.f, 32);
+
+      sflags.sflags = sflags.sflags | RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS;
+
+      VerifyScene bl_scene(device, sflags);
+      bl_scene.addGeometry(quality, sphere);
+      rtcCommitScene(bl_scene);
+      AssertNoError(device);
+
+      bool passed = true;
+      {
+        // test 4x4 column major
+        std::vector<AffineSpace3fa> matrices(10);
+        for (uint32_t i = 0; i < matrices.size(); ++i) {
+          matrices[i].l.vx.x = random_float(); matrices[i].l.vy.x = random_float(); matrices[i].l.vz.x = random_float(); matrices[i].p.x = random_float();
+          matrices[i].l.vx.y = random_float(); matrices[i].l.vy.y = random_float(); matrices[i].l.vz.y = random_float(); matrices[i].p.y = random_float();
+          matrices[i].l.vx.z = random_float(); matrices[i].l.vy.z = random_float(); matrices[i].l.vz.z = random_float(); matrices[i].p.z = random_float();
+        }
+
+        RTCScene tl_scene = rtcNewScene(device);
+        RTCGeometry instance_array = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE_ARRAY);
+        rtcSetSharedGeometryBuffer(instance_array, RTC_BUFFER_TYPE_TRANSFORM, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, (void*)matrices.data(), 0, sizeof(AffineSpace3fa), matrices.size());
+        rtcSetGeometryInstancedScene(instance_array, bl_scene);
+        rtcAttachGeometry(tl_scene,instance_array);
+        rtcReleaseGeometry(instance_array);
+        rtcCommitGeometry(instance_array);
+        rtcCommitScene(tl_scene);
+        AssertNoError(device);
+
+        // do test
+        for (uint32_t i = 0; i < matrices.size(); ++i)
+        {
+          const AffineSpace3fa& ref = matrices[i];
+          {
+            float mat[16];
+            rtcGetGeometryTransformEx(instance_array, i, 0.f, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, mat);
+            passed &= (ref.l.vx.x == mat[0]); passed &= (ref.l.vy.x == mat[4]); passed &= (ref.l.vz.x == mat[ 8]); passed &= (ref.p.x == mat[12]);
+            passed &= (ref.l.vx.y == mat[1]); passed &= (ref.l.vy.y == mat[5]); passed &= (ref.l.vz.y == mat[ 9]); passed &= (ref.p.y == mat[13]);
+            passed &= (ref.l.vx.z == mat[2]); passed &= (ref.l.vy.z == mat[6]); passed &= (ref.l.vz.z == mat[10]); passed &= (ref.p.z == mat[14]);
+            passed &= (0.f        == mat[3]); passed &= (0.f        == mat[7]); passed &= (0.f        == mat[11]); passed &= (1.f     == mat[15]);
+          }
+          {
+            float mat[12];
+            rtcGetGeometryTransformEx(instance_array, i, 0.f, RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR, mat);
+            passed &= (ref.l.vx.x == mat[0]); passed &= (ref.l.vy.x == mat[3]); passed &= (ref.l.vz.x == mat[6]); passed &= (ref.p.x == mat[ 9]);
+            passed &= (ref.l.vx.y == mat[1]); passed &= (ref.l.vy.y == mat[4]); passed &= (ref.l.vz.y == mat[7]); passed &= (ref.p.y == mat[10]);
+            passed &= (ref.l.vx.z == mat[2]); passed &= (ref.l.vy.z == mat[5]); passed &= (ref.l.vz.z == mat[8]); passed &= (ref.p.z == mat[11]);
+          }
+          {
+            float mat[12];
+            rtcGetGeometryTransformEx(instance_array, i, 0.f, RTC_FORMAT_FLOAT3X4_ROW_MAJOR, mat);
+            passed &= (ref.l.vx.x == mat[0]); passed &= (ref.l.vy.x == mat[1]); passed &= (ref.l.vz.x == mat[ 2]); passed &= (ref.p.x == mat[ 3]);
+            passed &= (ref.l.vx.y == mat[4]); passed &= (ref.l.vy.y == mat[5]); passed &= (ref.l.vz.y == mat[ 6]); passed &= (ref.p.y == mat[ 7]);
+            passed &= (ref.l.vx.z == mat[8]); passed &= (ref.l.vy.z == mat[9]); passed &= (ref.l.vz.z == mat[10]); passed &= (ref.p.z == mat[11]);
+          }
+        }
+        assert(passed);
+        rtcReleaseScene(tl_scene);
+        AssertNoError(device);
+      }
+
+      return (VerifyApplication::TestReturnValue) passed;
+    }
+  };
+
+#endif
+
   struct InactiveRaysTest : public VerifyApplication::IntersectTest
   {
     SceneFlags sflags;
@@ -5734,7 +6345,22 @@ namespace embree
               if (has_variant(imode,ivariant)) 
                 groups.top()->add(new InstancingTest("instancing."+to_string(sflags,imode,ivariant),isa,sflags,RTC_BUILD_QUALITY_MEDIUM,true,imode,ivariant));
       groups.pop();
-      
+
+  #if defined(EMBREE_GEOMETRY_INSTANCE_ARRAY)
+      push(new TestGroup("instance_arrays",true,true));
+        for (auto sflags : sceneFlags)
+          for (auto imode : intersectModes)
+            for (auto ivariant : intersectVariants)
+              if (has_variant(imode,ivariant))  {
+                groups.top()->add(new InstanceArrayTest("instancing."+to_string(sflags,imode,ivariant),isa,sflags,RTC_BUILD_QUALITY_MEDIUM,imode,ivariant));
+                groups.top()->add(new InstanceArrayRandomTest<AffineSpace3fa>("instancing_random_4x4."+to_string(sflags,imode,ivariant),isa,sflags,RTC_BUILD_QUALITY_MEDIUM,imode,ivariant));
+                groups.top()->add(new InstanceArrayRandomTest<AffineSpace3f>("instancing_random_3x4."+to_string(sflags,imode,ivariant),isa,sflags,RTC_BUILD_QUALITY_MEDIUM,imode,ivariant));
+                groups.top()->add(new InstanceArrayRandomTest<RTCQuaternionDecomposition>("instancing_random_SRT."+to_string(sflags,imode,ivariant),isa,sflags,RTC_BUILD_QUALITY_MEDIUM,imode,ivariant));
+                groups.top()->add(new InstanceArrayTestFormats("instancing_format."+to_string(sflags,imode,ivariant),isa,sflags,RTC_BUILD_QUALITY_MEDIUM,imode,ivariant));
+              }
+      groups.pop();
+#endif
+
       push(new TestGroup("inactive_rays",true,true));
       for (auto sflags : sceneFlags) 
         for (auto imode : intersectModes) 

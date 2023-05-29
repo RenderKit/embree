@@ -15,6 +15,7 @@
 #include "subdivpatch1.h"
 #include "object.h"
 #include "instance.h"
+#include "instance_array.h"
 #include "subgrid.h"
 
 namespace embree
@@ -142,4 +143,28 @@ namespace embree
   size_t SubGridQBVH8::Type::getBytes(const char* This) const {
     return sizeof(SubGridQBVH8);
   }
+
+  /********************** Instance Array **************************/
+#if 0
+  template<>
+  const char* InstanceArrayPrimitive<8>::Type::name () const {
+    return "instance_array_8";
+  }
+
+  template<>
+  size_t InstanceArrayPrimitive<8>::Type::sizeActive(const char* This) const {
+    return ((InstanceArrayPrimitive<8>*)This)->size();
+  }
+
+  template<>
+  size_t InstanceArrayPrimitive<8>::Type::sizeTotal(const char* This) const {
+    return 8;
+  }
+
+  template<>
+  size_t InstanceArrayPrimitive<8>::Type::getBytes(const char* This) const {
+    return sizeof(InstanceArrayPrimitive<8>);
+  }
+#endif
+
 }

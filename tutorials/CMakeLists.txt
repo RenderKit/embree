@@ -100,6 +100,7 @@ ADD_SUBDIRECTORY(collide)
 ADD_SUBDIRECTORY(next_hit)
 ADD_SUBDIRECTORY(multiscene_geometry)
 ADD_SUBDIRECTORY(ray_mask)
+ADD_SUBDIRECTORY(forest)
 
 ADD_SUBDIRECTORY(embree_tests)
 

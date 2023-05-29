@@ -236,15 +236,26 @@ RTC_FORCEINLINE void rtcIntersectV(RTCScene scene, varying RTCRayHit* uniform ra
 /* Forwards ray inside user geometry callback. */
 RTC_API void rtcForwardIntersect1(const uniform RTCIntersectFunctionNArguments* uniform args, RTCScene scene, uniform RTCRay* uniform ray, uniform unsigned int instID);
 
+/* Forwards ray inside user geometry callback. Extended to handle instance arrays using instPrimID parameter. */
+RTC_API void rtcForwardIntersect1Ex(const uniform RTCIntersectFunctionNArguments* uniform args, RTCScene scene, uniform RTCRay* uniform ray, uniform unsigned int instID, uniform unsigned int instPrimID);
+
 /* Forwards ray packet of size 4 inside user geometry callback. */
 RTC_API void rtcForwardIntersect4(const uniform int* uniform valid, const uniform RTCIntersectFunctionNArguments* uniform args, RTCScene scene, void* uniform ray4, uniform unsigned int instID);
+
+/* Forwards ray packet of size 4 inside user geometry callback. Extended to handle instance arrays using instPrimID parameter. */
+RTC_API void rtcForwardIntersect4Ex(const uniform int* uniform valid, const uniform RTCIntersectFunctionNArguments* uniform args, RTCScene scene, void* uniform ray4, uniform unsigned int instID, uniform unsigned int instPrimID);
 
 /* Forwards ray packet of size 8 inside user geometry callback. */
 RTC_API void rtcForwardIntersect8(const uniform int* uniform valid, const uniform RTCIntersectFunctionNArguments* uniform args, RTCScene scene, void* uniform ray8, uniform unsigned int instID);
 
+/* Forwards ray packet of size 8 inside user geometry callback. Extended to handle instance arrays using instPrimID parameter. */
+RTC_API void rtcForwardIntersect8Ex(const uniform int* uniform valid, const uniform RTCIntersectFunctionNArguments* uniform args, RTCScene scene, void* uniform ray8, uniform unsigned int instID, uniform unsigned int instPrimID);
+
 /* Forwards ray packet of size 16 inside user geometry callback. */
 RTC_API void rtcForwardIntersect16(const uniform int* uniform valid, const uniform RTCIntersectFunctionNArguments* uniform args, RTCScene scene, void* uniform ray16, uniform unsigned int instID);
 
+/* Forwards ray packet of size 16 inside user geometry callback. Extended to handle instance arrays using instPrimID parameter. */
+RTC_API void rtcForwardIntersect16Ex(const uniform int* uniform valid, const uniform RTCIntersectFunctionNArguments* uniform args, RTCScene scene, void* uniform ray16, uniform unsigned int instID, uniform unsigned int instPrimID);
 
 /* Forwards ray intersection query inside user geometry callback. */
 RTC_FORCEINLINE void rtcForwardIntersectV(const uniform RTCIntersectFunctionNArguments* uniform args, RTCScene scene, varying RTCRay* uniform iray, uniform unsigned int instID)
@@ -259,6 +270,21 @@ RTC_FORCEINLINE void rtcForwardIntersectV(const uniform RTCIntersectFunctionNArg
     rtcForwardIntersect8((uniform int* uniform)&imask, args, scene, iray, instID);
   else if (sizeof(varying float) == 64)
     rtcForwardIntersect16((uniform int* uniform)&imask, args, scene, iray, instID);
+}
+
+/* Forwards ray intersection query inside user geometry callback. Extended to handle instance arrays using instPrimID parameter. */
+RTC_FORCEINLINE void rtcForwardIntersectVEx(const uniform RTCIntersectFunctionNArguments* uniform args, RTCScene scene, varying RTCRay* uniform iray, uniform unsigned int instID, uniform unsigned int instPrimID)
+{
+  varying bool mask = __mask;
+  unmasked {
+    varying int imask = mask ? -1 : 0;
+  }
+  if (sizeof(varying float) == 16)
+    rtcForwardIntersect4Ex((uniform int* uniform)&imask, args, scene, iray, instID, instPrimID);
+  else if (sizeof(varying float) == 32)
+    rtcForwardIntersect8Ex((uniform int* uniform)&imask, args, scene, iray, instID, instPrimID);
+  else if (sizeof(varying float) == 64)
+    rtcForwardIntersect16Ex((uniform int* uniform)&imask, args, scene, iray, instID, instPrimID);
 }
 
 
@@ -294,14 +320,26 @@ RTC_FORCEINLINE void rtcOccludedV(RTCScene scene, varying RTCRay* uniform ray, u
 /* Forwards single occlusion ray inside user geometry callback. */
 RTC_API void rtcForwardOccluded1(const uniform RTCOccludedFunctionNArguments* uniform args, RTCScene scene, uniform RTCRay* uniform ray, uniform unsigned int instID);
 
+/* Forwards single occlusion ray inside user geometry callback.  Extended to handle instance arrays using instPrimID parameter.*/
+RTC_API void rtcForwardOccluded1Ex(const uniform RTCOccludedFunctionNArguments* uniform args, RTCScene scene, uniform RTCRay* uniform ray, uniform unsigned int instID, uniform unsigned int instPrimID);
+
 /* Forwards occlusion ray packet of size 4 inside user geometry callback. */
 RTC_API void rtcForwardOccluded4(const uniform int* uniform valid, const uniform RTCOccludedFunctionNArguments* uniform args, RTCScene scene, void* uniform ray4, uniform unsigned int instID);
+
+/* Forwards occlusion ray packet of size 4 inside user geometry callback. Extended to handle instance arrays using instPrimID parameter. */
+RTC_API void rtcForwardOccluded4Ex(const uniform int* uniform valid, const uniform RTCOccludedFunctionNArguments* uniform args, RTCScene scene, void* uniform ray4, uniform unsigned int instID, uniform unsigned int instPrimID);
 
 /* Forwards occlusion ray packet of size 8 inside user geometry callback. */
 RTC_API void rtcForwardOccluded8(const uniform int* uniform valid, const uniform RTCOccludedFunctionNArguments* uniform args, RTCScene scene, void* uniform ray8, uniform unsigned int instID);
 
+/* Forwards occlusion ray packet of size 8 inside user geometry callback. Extended to handle instance arrays using instPrimID parameter. */
+RTC_API void rtcForwardOccluded8Ex(const uniform int* uniform valid, const uniform RTCOccludedFunctionNArguments* uniform args, RTCScene scene, void* uniform ray8, uniform unsigned int instID, uniform unsigned int instPrimID);
+
 /* Forwards occlusion ray packet of size 16 inside user geometry callback. */
 RTC_API void rtcForwardOccluded16(const uniform int* uniform valid, const uniform RTCOccludedFunctionNArguments* uniform args, RTCScene scene, void* uniform ray16, uniform unsigned int instID);
+
+/* Forwards occlusion ray packet of size 16 inside user geometry callback. Extended to handle instance arrays using instPrimID parameter. */
+RTC_API void rtcForwardOccluded16Ex(const uniform int* uniform valid, const uniform RTCOccludedFunctionNArguments* uniform args, RTCScene scene, void* uniform ray16, uniform unsigned int instID, uniform unsigned int instPrimID);
 
 /* Forwards ray occlusion query inside user geometry callback. */
 RTC_FORCEINLINE void rtcForwardOccludedV(const uniform RTCOccludedFunctionNArguments* uniform args, RTCScene scene, varying RTCRay* uniform iray, uniform unsigned int instID)
@@ -317,6 +355,22 @@ RTC_FORCEINLINE void rtcForwardOccludedV(const uniform RTCOccludedFunctionNArgum
     rtcForwardOccluded8((uniform int* uniform)&imask, args, scene, iray, instID);
   else if (sizeof(varying float) == 64)
     rtcForwardOccluded16((uniform int* uniform)&imask, args, scene, iray, instID);
+}
+
+/* Forwards ray occlusion query inside user geometry callback. Extended to handle instance arrays using instPrimID parameter. */
+RTC_FORCEINLINE void rtcForwardOccludedVEx(const uniform RTCOccludedFunctionNArguments* uniform args, RTCScene scene, varying RTCRay* uniform iray, uniform unsigned int instID, uniform unsigned int instPrimID)
+{
+  varying bool mask = __mask;
+  unmasked {
+    varying int imask = mask ? -1 : 0;
+  }
+
+  if (sizeof(varying float) == 16)
+    rtcForwardOccluded4Ex((uniform int* uniform)&imask, args, scene, iray, instID, instPrimID);
+  else if (sizeof(varying float) == 32)
+    rtcForwardOccluded8Ex((uniform int* uniform)&imask, args, scene, iray, instID, instPrimID);
+  else if (sizeof(varying float) == 64)
+    rtcForwardOccluded16Ex((uniform int* uniform)&imask, args, scene, iray, instID, instPrimID);
 }
 
 

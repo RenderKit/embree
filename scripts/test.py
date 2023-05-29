@@ -323,6 +323,8 @@ def runConfig(config):
     conf.append("-D EMBREE_GEOMETRY_USER="+config["USERGEOM"])
   if "INSTANCE" in config:
     conf.append("-D EMBREE_GEOMETRY_INSTANCE="+config["INSTANCE"])
+  if "INSTANCE_ARRAY" in config:
+    conf.append("-D EMBREE_GEOMETRY_INSTANCE_ARRAY="+config["INSTANCE_ARRAY"])
   if "POINT" in config:
     conf.append("-D EMBREE_GEOMETRY_POINT="+config["POINT"])
   if "GLFW" in config:

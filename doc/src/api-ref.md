@@ -184,6 +184,11 @@
 ```
 \pagebreak
 
+## RTC_GEOMETRY_TYPE_INSTANCE_ARRAY
+``` {include=src/api/RTC_GEOMETRY_TYPE_INSTANCE_ARRAY.md}
+```
+\pagebreak
+
 ## RTCCurveFlags
 ``` {include=src/api/RTCCurveFlags.md}
 ```
@@ -355,6 +360,11 @@
 ```
 \pagebreak
 
+## rtcSetGeometryInstancedScenes
+``` {include=src/api/rtcSetGeometryInstancedScenes.md}
+```
+\pagebreak
+
 ## rtcSetGeometryTransform
 ``` {include=src/api/rtcSetGeometryTransform.md}
 ```
@@ -367,6 +377,11 @@
 
 ## rtcGetGeometryTransform
 ``` {include=src/api/rtcGetGeometryTransform.md}
+```
+\pagebreak
+
+## rtcGetGeometryTransformEx
+``` {include=src/api/rtcGetGeometryTransformEx.md}
 ```
 \pagebreak
 

@@ -22,8 +22,9 @@ namespace embree
       template<int N, bool robust>
       static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHit& ray, RayQueryContext* context, const Primitive* prim, size_t num, const TravRay<N,robust> &tray, size_t& lazy_node)
       {
-        for (size_t i=0; i<num; i++)
+        for (size_t i=0; i<num; i++) {
           Intersector::intersect(pre,ray,context,prim[i]);
+        }
       }
 
       template<int N, bool robust>
@@ -35,7 +36,7 @@ namespace embree
         }
         return false;
       }
-      
+
       template<int N>
       static __forceinline bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t num, const TravPointQuery<N> &tquery, size_t& lazy_node)
       {

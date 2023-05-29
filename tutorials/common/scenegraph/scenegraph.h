@@ -137,8 +137,16 @@ namespace embree
         return empty;
       }
 
+      virtual BBox3fa bounds(size_t i) const {
+        return empty;
+      }
+
       /* calculates linear bounding box of node */
       virtual LBBox3fa lbounds() const {
+        return empty;
+      }
+
+      virtual LBBox3fa lbounds(size_t i) const {
         return empty;
       }
 
@@ -322,6 +330,33 @@ namespace embree
         }
         else
           THROW_RUNTIME_ERROR("number of transformations does not match");
+      }
+
+      friend __forceinline std::vector<Transformations> operator* ( const std::vector<Transformations>& a, const Transformations& b )
+      {
+        std::vector<Transformations> result;
+        for (size_t i = 0; i < a.size(); ++i) {
+          result.push_back(a[i] * b);
+        }
+        return result;
+      }
+
+      friend __forceinline std::vector<Transformations> operator* ( const Transformations& a, const std::vector<Transformations>& b )
+      {
+        return b * a;
+      }
+
+      friend __forceinline std::vector<Transformations> operator* ( const std::vector<Transformations>& a, const std::vector<Transformations>& b )
+      {
+        if(a.size() != b.size())
+          THROW_RUNTIME_ERROR("number of transformations does not match");
+
+        std::vector<Transformations> result;
+        for (size_t i = 0; i < a.size(); ++i) {
+          result.push_back(a[i] * b[i]);
+        }
+
+        return result;
       }
 
       AffineSpace3ff interpolate (const float gtime) const
@@ -693,7 +728,93 @@ namespace embree
       Transformations spaces;
       Ref<Node> child;
     };
-    
+
+    struct MultiTransformNode : public Node
+    {
+      ALIGNED_STRUCT_(16);
+
+      MultiTransformNode (const avector<AffineSpace3fa>& xfm, const Ref<Node>& child)
+        : child(child)
+      {
+        for (const AffineSpace3fa& space : xfm) {
+          spaces.push_back(Transformations(space));
+        }
+      }
+
+      MultiTransformNode (const avector<AffineSpace3fa>& xfm0, const avector<AffineSpace3fa>& xfm1, const Ref<Node>& child)
+        : child(child)
+      {
+        assert(xfm0.size() == xfm1.size());
+        for (size_t i = 0; i < xfm0.size(); ++i) {
+          spaces.push_back(Transformations(xfm0[i], xfm1[i]));
+        }
+      }
+
+      MultiTransformNode (const avector<avector<AffineSpace3ff>>& spaces_in, const Ref<Node>& child)
+        : child(child)
+      {
+        assert(spaces_in.size() > 0);
+        const size_t time_steps = spaces_in.size();
+        const size_t array_size = spaces_in[0].size();
+        for (size_t i = 0; i < array_size; ++i) {
+          avector<AffineSpace3ff> s;
+          for (size_t j = 0; j < time_steps; ++j) {
+            s.push_back(spaces_in[j][i]);
+          }
+          spaces.push_back(Transformations(s));
+        }
+      }
+
+      MultiTransformNode(const std::vector<Transformations>& spaces, const Ref<Node>& child)
+        : spaces(spaces), child(child) {}
+
+      virtual void setMaterial(Ref<MaterialNode> material) {
+        child->setMaterial(material);
+      }
+
+      virtual void print(std::ostream& cout, int depth);
+
+      virtual void calculateStatistics(Statistics& stat);
+      virtual void calculateInDegree();
+      virtual bool calculateClosed(bool group_instancing);
+      virtual void resetInDegree();
+
+      virtual BBox3fa bounds(size_t i) const {
+        return spaces[i].bounds(child->bounds());
+      }
+
+      virtual LBBox3fa lbounds(size_t i) const {
+        return spaces[i].lbounds(child->lbounds());
+      }
+
+      virtual size_t numPrimitives() const {
+        return child->numPrimitives();
+      }
+
+      virtual AffineSpace3ff get(size_t i, float time) const
+      {
+        if (spaces[i].size() <= 1) return spaces[i][0];
+
+        int numTimeSteps = spaces[i].size();
+
+        BBox1f time_range = spaces[i].time_range;
+        time = frac((time-time_range.lower)/time_range.size());
+        time = (numTimeSteps-1)*time;
+        int   itime = (int)floor(time);
+        itime = min(max(itime,0),(int)numTimeSteps-2);
+        float ftime = time - (float)itime;
+
+        const AffineSpace3ff xfm0 = spaces[i][itime+0];
+        const AffineSpace3ff xfm1 = spaces[i][itime+1];
+        const AffineSpace3ff xfm  = lerp(xfm0,xfm1,ftime);
+        return xfm;
+      }
+
+    public:
+      std::vector<Transformations> spaces;
+      Ref<Node> child;
+    };
+
     struct GroupNode : public Node
     { 
       GroupNode (const size_t N = 0) { 

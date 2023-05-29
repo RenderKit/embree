@@ -1,0 +1,171 @@
+<?xml version="1.0"?>
+<scene>
+	<PerspectiveCamera name="mainCamera" from="25 0 35" to="25 0 0" up="0 1 0" fov="70"/>
+
+  <assign type="scene">
+		<QuadMesh id="quad">
+			<material>
+				<code>"OBJ"</code>
+				<parameters>
+					<float3 name="Kd">1.0 1.0 1.0</float3>
+				</parameters>
+			</material>
+			<positions>
+				-2 -2  0
+				 2 -2  0
+				 2  2  0
+				-2  2  0
+			</positions>
+			<indices>
+				0 1 2 3
+			</indices>
+		</QuadMesh>
+  </assign>
+
+	<!-- Regular Instances -->
+
+  <Transform>
+    <AffineSpace translate="-15 20 0"/>
+		<ref id="quad"/>
+	</Transform>
+  <Transform>
+    <AffineSpace translate="-10 20 0"/>
+		<ref id="quad"/>
+	</Transform>
+  <Transform>
+    <AffineSpace translate="-5 20 0"/>
+		<ref id="quad"/>
+	</Transform>
+  <Transform>
+    <AffineSpace translate="0 20 0"/>
+		<ref id="quad"/>
+	</Transform>
+  <Transform>
+    <AffineSpace translate="5 20 0"/>
+		<ref id="quad"/>
+	</Transform>
+  <Transform>
+    <AffineSpace translate="10 20 0"/>
+		<ref id="quad"/>
+	</Transform>
+  <Transform>
+    <AffineSpace translate="15 20 0"/>
+		<ref id="quad"/>
+	</Transform>
+
+  <Transform time_steps="2">
+    <AffineSpace translate="-15 5 0"/>
+    <AffineSpace translate="-15 10 0"/>
+		<ref id="quad"/>
+	</Transform>
+  <Transform time_steps="2">
+    <AffineSpace translate="-10 5 0"/>
+    <AffineSpace translate="-10 10 0"/>
+		<ref id="quad"/>
+	</Transform>
+  <Transform time_steps="2">
+    <AffineSpace translate="-5 5 0"/>
+    <AffineSpace translate="-5 10 0"/>
+		<ref id="quad"/>
+	</Transform>
+  <Transform time_steps="2">
+    <AffineSpace translate="0 5 0"/>
+    <AffineSpace translate="0 10 0"/>
+		<ref id="quad"/>
+	</Transform>
+  <Transform time_steps="2">
+    <AffineSpace translate="5 5 0"/>
+    <AffineSpace translate="5 10 0"/>
+		<ref id="quad"/>
+	</Transform>
+  <Transform time_steps="2">
+    <AffineSpace translate="10 5 0"/>
+    <AffineSpace translate="10 10 0"/>
+		<ref id="quad"/>
+	</Transform>
+  <Transform time_steps="2">
+    <AffineSpace translate="15 5 0"/>
+    <AffineSpace translate="15 10 0"/>
+		<ref id="quad"/>
+	</Transform>
+
+	<!-- Regular Instances Quaternions -->
+
+  <Transform time_steps="2">
+    <Quaternion shift="40 10 0" translate="0 10 0" rotate="0 0 1 0"/>
+    <Quaternion shift="35 5 0" translate="0 10 0" rotate="0 0 1 90"/>
+		<ref id="quad"/>
+	</Transform>
+  <Transform time_steps="2">
+    <Quaternion shift="30 5 0" translate="10 0 0" rotate="0 0 1 0"/>
+    <Quaternion shift="25 10 0" translate="10 0 0" rotate="0 0 1 90"/>
+		<ref id="quad"/>
+	</Transform>
+  <Transform time_steps="2">
+    <Quaternion shift="65 10 0" translate="0 10 0" rotate="0 0 1 0"/>
+    <Quaternion shift="60 5 0" translate="0 10 0" rotate="0 0 1 90"/>
+		<ref id="quad"/>
+	</Transform>
+  <Transform time_steps="2">
+    <Quaternion shift="55 5 0" translate="10 0 0" rotate="0 0 1 0"/>
+    <Quaternion shift="50 10 0" translate="10 0 0" rotate="0 0 1 90"/>
+		<ref id="quad"/>
+	</Transform>
+
+	<!-- Instance Arrays -->
+
+  <MultiTransform time_steps="2">
+    <AffineSpaceArray>
+			<AffineSpace translate="-15 -5 0"/>
+			<AffineSpace translate="-10 -5 0"/>
+			<AffineSpace translate="-5 -5 0"/>
+			<AffineSpace translate="0 -5 0"/>
+			<AffineSpace translate="5 -5 0"/>
+			<AffineSpace translate="10 -5 0"/>
+			<AffineSpace translate="15 -5 0"/>
+		</AffineSpaceArray>
+    <AffineSpaceArray>
+			<AffineSpace translate="-15 -10 0"/>
+			<AffineSpace translate="-10 -10 0"/>
+			<AffineSpace translate="-5 -10 0"/>
+			<AffineSpace translate="0 -10 0"/>
+			<AffineSpace translate="5 -10 0"/>
+			<AffineSpace translate="10 -10 0"/>
+			<AffineSpace translate="15 -10 0"/>
+		</AffineSpaceArray>
+		<ref id="quad"/>
+	</MultiTransform>
+
+  <MultiTransform>
+    <AffineSpaceArray>
+			<AffineSpace translate="-15 -20 0"/>
+			<AffineSpace translate="-10 -20 0"/>
+			<AffineSpace translate="-5 -20 0"/>
+			<AffineSpace translate="0 -20 0"/>
+			<AffineSpace translate="5 -20 0"/>
+			<AffineSpace translate="10 -20 0"/>
+			<AffineSpace translate="15 -20 0"/>
+		</AffineSpaceArray>
+		<ref id="quad"/>
+	</MultiTransform>
+
+	<!-- Instance Array Quaternions -->
+
+	<MultiTransform time_steps="2">
+		<QuaternionArray>
+			<Quaternion shift="40 -30 0" translate="0 10 0" rotate="0 0 1 0"/>
+			<Quaternion shift="30 -5 0" translate="10 0 0" rotate="0 0 1 0"/>
+			<Quaternion shift="65 -30 0" translate="0 10 0" rotate="0 0 1 0"/>
+			<Quaternion shift="55 -5 0" translate="10 0 0" rotate="0 0 1 0"/>
+		</QuaternionArray>
+		<QuaternionArray>
+			<Quaternion shift="35 -5 0" translate="0 10 0" rotate="0 0 1 90"/>
+			<Quaternion shift="25 -30 0" translate="10 0 0" rotate="0 0 1 90"/>
+			<Quaternion shift="60 -5 0" translate="0 10 0" rotate="0 0 1 90"/>
+			<Quaternion shift="50 -30 0" translate="10 0 0" rotate="0 0 1 90"/>
+		</QuaternionArray>
+		<ref id="quad"/>
+	</MultiTransform>
+
+
+</scene>

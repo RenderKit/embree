@@ -117,7 +117,7 @@ e.g. just triangles in this example.
 
 Inside the SYCL `parallel_for` loop you can use rendering related functions,
 such as the `rtcIntersect1` and `rtcOccluded1` functions to trace rays,
-`rtcForwardIntersect1` and `rtcForwardOccluded1` to continue object
+`rtcForwardIntersect1/Ex` and `rtcForwardOccluded1/Ex` to continue object
 traversal from inside a user geometry callback, 
 and `rtcGetGeometryUserDataFromScene` to get the user data pointer of some
 geometry.
