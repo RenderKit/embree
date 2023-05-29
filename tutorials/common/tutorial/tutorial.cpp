@@ -100,13 +100,13 @@ namespace embree
 
   TutorialApplication* TutorialApplication::instance = nullptr;
 
-  TutorialApplication::TutorialApplication (const std::string& tutorialName, int features)
+  TutorialApplication::TutorialApplication (const std::string& tutorialName, int features, int w, int h)
 
     : Application(features),
       tutorialName(tutorialName),
 
-      width(512),
-      height(512),
+      width(w),
+      height(h),
       pixels(nullptr),
 
       outputImageFilename(""),

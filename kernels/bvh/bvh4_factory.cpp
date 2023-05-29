@@ -17,6 +17,7 @@
 #include "../geometry/subdivpatch1.h"
 #include "../geometry/object.h"
 #include "../geometry/instance.h"
+#include "../geometry/instance_array.h"
 #include "../geometry/subgrid.h"
 #include "../common/accelinstance.h"
 
@@ -66,6 +67,9 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4InstanceIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4InstanceMBIntersector1);
 
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH4InstanceArrayIntersector1);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH4InstanceArrayMBIntersector1);
+
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4GridIntersector1Moeller);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4GridMBIntersector1Moeller);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4GridIntersector1Pluecker);
@@ -103,6 +107,9 @@ namespace embree
 
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4InstanceIntersector4Chunk);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4InstanceMBIntersector4Chunk);
+
+  DECLARE_SYMBOL2(Accel::Intersector4,BVH4InstanceArrayIntersector4Chunk);
+  DECLARE_SYMBOL2(Accel::Intersector4,BVH4InstanceArrayMBIntersector4Chunk);
 
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4GridIntersector4HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4GridMBIntersector4HybridMoeller);
@@ -142,6 +149,9 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4InstanceIntersector8Chunk);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4InstanceMBIntersector8Chunk);
 
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH4InstanceArrayIntersector8Chunk);
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH4InstanceArrayMBIntersector8Chunk);
+
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4GridIntersector8HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4GridMBIntersector8HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4GridIntersector8HybridPluecker);
@@ -180,6 +190,9 @@ namespace embree
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4InstanceIntersector16Chunk);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4InstanceMBIntersector16Chunk);
 
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH4InstanceArrayIntersector16Chunk);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH4InstanceArrayMBIntersector16Chunk);
+
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4GridIntersector16HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4GridMBIntersector16HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4GridIntersector16HybridPluecker);
@@ -190,6 +203,7 @@ namespace embree
   DECLARE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelQuadMeshSAH,void* COMMA Scene* COMMA bool);
   DECLARE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelVirtualSAH,void* COMMA Scene* COMMA bool);
   DECLARE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelInstanceSAH,void* COMMA Scene* COMMA Geometry::GTypeMask COMMA bool);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelInstanceArraySAH,void* COMMA Scene* COMMA Geometry::GTypeMask COMMA bool);
 
   DECLARE_ISA_FUNCTION(Builder*,BVH4Curve4vBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH4Curve4iBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
@@ -220,7 +234,10 @@ namespace embree
 
   DECLARE_ISA_FUNCTION(Builder*,BVH4InstanceSceneBuilderSAH,void* COMMA Scene* COMMA Geometry::GTypeMask);
   DECLARE_ISA_FUNCTION(Builder*,BVH4InstanceMBSceneBuilderSAH,void* COMMA Scene* COMMA Geometry::GTypeMask);
-  
+
+  DECLARE_ISA_FUNCTION(Builder*,BVH4InstanceArraySceneBuilderSAH,void* COMMA Scene* COMMA Geometry::GTypeMask);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4InstanceArrayMBSceneBuilderSAH,void* COMMA Scene* COMMA Geometry::GTypeMask);
+
   DECLARE_ISA_FUNCTION(Builder*,BVH4GridSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH4GridMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
 
@@ -249,6 +266,7 @@ namespace embree
     IF_ENABLED_QUADS (SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderTwoLevelQuadMeshSAH));
     IF_ENABLED_USER (SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderTwoLevelVirtualSAH));
     IF_ENABLED_INSTANCE (SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderTwoLevelInstanceSAH));
+    IF_ENABLED_INSTANCE_ARRAY (SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderTwoLevelInstanceArraySAH));
 
     IF_ENABLED_CURVES_OR_POINTS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Curve4vBuilder_OBB_New));
     IF_ENABLED_CURVES_OR_POINTS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Curve4iBuilder_OBB_New));
@@ -279,7 +297,10 @@ namespace embree
 
     IF_ENABLED_INSTANCE(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4InstanceSceneBuilderSAH));
     IF_ENABLED_INSTANCE(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4InstanceMBSceneBuilderSAH));
-    
+
+    IF_ENABLED_INSTANCE_ARRAY(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4InstanceArraySceneBuilderSAH));
+    IF_ENABLED_INSTANCE_ARRAY(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4InstanceArrayMBSceneBuilderSAH));
+
     IF_ENABLED_GRIDS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4GridSceneBuilderSAH));
     IF_ENABLED_GRIDS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4GridMBSceneBuilderSAH));
 
@@ -332,6 +353,9 @@ namespace embree
     IF_ENABLED_INSTANCE(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512(features,BVH4InstanceIntersector1));
     IF_ENABLED_INSTANCE(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512(features,BVH4InstanceMBIntersector1));
 
+    IF_ENABLED_INSTANCE_ARRAY(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512(features,BVH4InstanceArrayIntersector1));
+    IF_ENABLED_INSTANCE_ARRAY(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512(features,BVH4InstanceArrayMBIntersector1));
+
     IF_ENABLED_GRIDS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512(features,BVH4GridIntersector1Moeller));
     IF_ENABLED_GRIDS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512(features,BVH4GridMBIntersector1Moeller))
     IF_ENABLED_GRIDS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512(features,BVH4GridIntersector1Pluecker));
@@ -372,7 +396,10 @@ namespace embree
 
     IF_ENABLED_INSTANCE(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512(features,BVH4InstanceIntersector4Chunk));
     IF_ENABLED_INSTANCE(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512(features,BVH4InstanceMBIntersector4Chunk));
-    
+
+    IF_ENABLED_INSTANCE_ARRAY(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512(features,BVH4InstanceArrayIntersector4Chunk));
+    IF_ENABLED_INSTANCE_ARRAY(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512(features,BVH4InstanceArrayMBIntersector4Chunk));
+
     IF_ENABLED_QUADS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512(features,BVH4Quad4vIntersector4HybridMoeller));
 
     IF_ENABLED_GRIDS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512(features,BVH4GridIntersector4HybridMoeller));
@@ -407,12 +434,15 @@ namespace embree
 
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512(features,BVH4SubdivPatch1Intersector8));
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512(features,BVH4SubdivPatch1MBIntersector8));
-    
+
     IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512(features,BVH4VirtualIntersector8Chunk));
     IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512(features,BVH4VirtualMBIntersector8Chunk));
 
     IF_ENABLED_INSTANCE(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512(features,BVH4InstanceIntersector8Chunk));
     IF_ENABLED_INSTANCE(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512(features,BVH4InstanceMBIntersector8Chunk));
+
+    IF_ENABLED_INSTANCE_ARRAY(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512(features,BVH4InstanceArrayIntersector8Chunk));
+    IF_ENABLED_INSTANCE_ARRAY(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512(features,BVH4InstanceArrayMBIntersector8Chunk));
 
     IF_ENABLED_GRIDS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512(features,BVH4GridIntersector8HybridMoeller));
     IF_ENABLED_GRIDS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512(features,BVH4GridMBIntersector8HybridMoeller));
@@ -452,6 +482,9 @@ namespace embree
 
     IF_ENABLED_INSTANCE(SELECT_SYMBOL_INIT_AVX512(features,BVH4InstanceIntersector16Chunk));
     IF_ENABLED_INSTANCE(SELECT_SYMBOL_INIT_AVX512(features,BVH4InstanceMBIntersector16Chunk));
+
+    IF_ENABLED_INSTANCE_ARRAY(SELECT_SYMBOL_INIT_AVX512(features,BVH4InstanceArrayIntersector16Chunk));
+    IF_ENABLED_INSTANCE_ARRAY(SELECT_SYMBOL_INIT_AVX512(features,BVH4InstanceArrayMBIntersector16Chunk));
 
     IF_ENABLED_GRIDS(SELECT_SYMBOL_INIT_AVX512(features,BVH4GridIntersector16HybridMoeller));
     IF_ENABLED_GRIDS(SELECT_SYMBOL_INIT_AVX512(features,BVH4GridMBIntersector16HybridMoeller));
@@ -813,6 +846,32 @@ namespace embree
     intersectors.intersector4  = BVH4InstanceMBIntersector4Chunk();
     intersectors.intersector8  = BVH4InstanceMBIntersector8Chunk();
     intersectors.intersector16 = BVH4InstanceMBIntersector16Chunk();
+#endif
+    return intersectors;
+  }
+
+  Accel::Intersectors BVH4Factory::BVH4InstanceArrayIntersectors(BVH4* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1  = BVH4InstanceArrayIntersector1();
+#if defined (EMBREE_RAY_PACKETS)
+    intersectors.intersector4  = BVH4InstanceArrayIntersector4Chunk();
+    intersectors.intersector8  = BVH4InstanceArrayIntersector8Chunk();
+    intersectors.intersector16 = BVH4InstanceArrayIntersector16Chunk();
+#endif
+    return intersectors;
+  }
+
+  Accel::Intersectors BVH4Factory::BVH4InstanceArrayMBIntersectors(BVH4* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1  = BVH4InstanceArrayMBIntersector1();
+#if defined (EMBREE_RAY_PACKETS)
+    intersectors.intersector4  = BVH4InstanceArrayMBIntersector4Chunk();
+    intersectors.intersector8  = BVH4InstanceArrayMBIntersector8Chunk();
+    intersectors.intersector16 = BVH4InstanceArrayMBIntersector16Chunk();
 #endif
     return intersectors;
   }
@@ -1190,6 +1249,35 @@ namespace embree
     Accel::Intersectors intersectors = BVH4InstanceMBIntersectors(accel);
     auto gtype = isExpensive ? Geometry::MTY_INSTANCE_EXPENSIVE : Geometry::MTY_INSTANCE_CHEAP;
     Builder* builder = BVH4InstanceMBSceneBuilderSAH(accel,scene,gtype);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4Factory::BVH4InstanceArray(Scene* scene, BuildVariant bvariant)
+  {
+    BVH4* accel = new BVH4(InstanceArrayPrimitive::type,scene);
+    Accel::Intersectors intersectors = BVH4InstanceArrayIntersectors(accel);
+    auto gtype = Geometry::MTY_INSTANCE_ARRAY;
+
+    Builder* builder = nullptr;
+    if (scene->device->object_builder == "default") {
+      switch (bvariant) {
+      case BuildVariant::STATIC      : builder = BVH4InstanceArraySceneBuilderSAH(accel,scene,gtype); break;
+      case BuildVariant::DYNAMIC     : builder = BVH4BuilderTwoLevelInstanceArraySAH(accel,scene,gtype,false); break;
+      case BuildVariant::HIGH_QUALITY: assert(false); break;
+      }
+    }
+    else if (scene->device->object_builder == "sah") { builder = BVH4InstanceArraySceneBuilderSAH(accel,scene,gtype); }
+    else if (scene->device->object_builder == "dynamic") { builder = BVH4BuilderTwoLevelInstanceArraySAH(accel,scene,gtype,false); }
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->object_builder+" for BVH4<Object>");
+
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4Factory::BVH4InstanceArrayMB(Scene* scene)
+  {
+    BVH4* accel = new BVH4(InstanceArrayPrimitive::type,scene);
+    Accel::Intersectors intersectors = BVH4InstanceArrayMBIntersectors(accel);
+    Builder* builder = BVH4InstanceArrayMBSceneBuilderSAH(accel,scene,Geometry::MTY_INSTANCE_ARRAY);
     return new AccelInstance(accel,builder,intersectors);
   }
 

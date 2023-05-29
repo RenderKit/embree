@@ -36,6 +36,7 @@ inline Hit castRay(RTCScene scene,
   rayhit.ray.flags = 0;
   rayhit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
   rayhit.hit.instID[0] = RTC_INVALID_GEOMETRY_ID;
+  rayhit.hit.instPrimID[0] = RTC_INVALID_GEOMETRY_ID;
 
   rtcIntersect1(scene, &rayhit);
 

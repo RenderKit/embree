@@ -39,6 +39,7 @@ namespace embree
     if (features & RTC_FEATURE_FLAG_DISC_POINT) out += "DISC_POINT ";
     if (features & RTC_FEATURE_FLAG_ORIENTED_DISC_POINT) out += "ORIENTED_DISC_POINT ";
     if (features & RTC_FEATURE_FLAG_INSTANCE) out += "INSTANCE ";
+    if (features & RTC_FEATURE_FLAG_INSTANCE_ARRAY) out += "INSTANCE_ARRAY ";
     if (features & RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS) out += "FILTER_FUNCTION_IN_ARGUMENTS ";
     if (features & RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_GEOMETRY) out += "FILTER_FUNCTION_IN_GEOMETRY ";
     if (features & RTC_FEATURE_FLAG_USER_GEOMETRY_CALLBACK_IN_ARGUMENTS) out += "USER_GEOMETRY_CALLBACK_IN_ARGUMENTS ";
@@ -78,6 +79,7 @@ namespace embree
     case TRIANGLE_MESH: delete (ISPCTriangleMesh*) geom; break;
     case SUBDIV_MESH  : delete (ISPCSubdivMesh*) geom; break;
     case INSTANCE: delete (ISPCInstance*) geom; break;
+    case INSTANCE_ARRAY: delete (ISPCInstanceArray*) geom; break;
     case GROUP: delete (ISPCGroup*) geom; break;
     case QUAD_MESH: delete (ISPCQuadMesh*) geom; break;
     case CURVES: delete (ISPCHairSet*) geom; break;
@@ -751,6 +753,97 @@ namespace embree
     }
   }
 
+  ISPCInstanceArray::ISPCInstanceArray (RTCDevice device, unsigned int numTimeSteps)
+    : geom(INSTANCE_ARRAY), child(nullptr), startTime(0.0f), endTime(1.0f), numTimeSteps(numTimeSteps), numInstances(0), quaternion(false), spaces_array(nullptr)
+  {
+    assert(numTimeSteps);
+    geom.geometry = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE_ARRAY);
+  }
+
+  ISPCInstanceArray::ISPCInstanceArray (RTCDevice device, TutorialScene* scene, Ref<SceneGraph::MultiTransformNode> in)
+    : geom(INSTANCE_ARRAY), child(nullptr), startTime(0.0f), endTime(1.0f), numTimeSteps(1), quaternion(false), spaces_array(nullptr)
+  {
+    if (in->spaces.size() == 0) {
+      THROW_RUNTIME_ERROR("MultiTransformNode invalid. has no transforms.");
+    }
+    numInstances = in->spaces.size();
+
+    geom.geometry = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE_ARRAY);
+
+    if (g_animation_mode)
+    {
+      spaces_array = (AffineSpace3fa**) alignedUSMMalloc(sizeof(AffineSpace3fa*),16);
+      child = ISPCScene::convertGeometry(device,scene,in->child);
+
+      spaces_array[0] = (AffineSpace3fa*) alignedUSMMalloc(numInstances*sizeof(AffineSpace3fa),16);
+      for (size_t i = 0; i < numInstances; ++i) {
+        spaces_array[0][i] = in->get(i, 0.0f);
+      }
+    }
+    else
+    {
+      numTimeSteps = (unsigned)in->spaces[0].size();
+      if (numTimeSteps == 0) {
+        THROW_RUNTIME_ERROR("MultiTransformNode invalid. numTimeSteps can not be 0.");
+      }
+      child = ISPCScene::convertGeometry(device,scene,in->child);
+      startTime  = in->spaces[0].time_range.lower;
+      endTime    = in->spaces[0].time_range.upper;
+      quaternion = in->spaces[0].quaternion;
+      spaces_array = (AffineSpace3fa**) alignedUSMMalloc(numTimeSteps*sizeof(AffineSpace3fa*),16);
+      for (size_t i=0; i<numTimeSteps; i++) {
+        spaces_array[i] = (AffineSpace3fa*) alignedUSMMalloc(numInstances*sizeof(AffineSpace3fa),16);
+        for (size_t j = 0; j < numInstances; ++j)
+          spaces_array[i][j] = in->spaces[j][i];
+      }
+    }
+  }
+
+  ISPCInstanceArray::~ISPCInstanceArray() {
+    for (size_t i = 0; i < numTimeSteps; ++i)
+      alignedUSMFree(spaces_array[i]);
+    alignedUSMFree(spaces_array);
+  }
+
+  void ISPCInstanceArray::commit()
+  {
+    if (child->type != GROUP)
+      THROW_RUNTIME_ERROR("invalid scene structure");
+
+    ISPCGroup* group = (ISPCGroup*) child;
+    RTCScene scene_inst = group->scene;
+
+    if (numTimeSteps == 1 || g_animation_mode)
+    {
+      RTCGeometry g = geom.geometry;
+      rtcSetGeometryInstancedScene(g,scene_inst);
+      rtcSetGeometryTimeStepCount(g,1);
+      if (quaternion) {
+        rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_TRANSFORM, 0, RTC_FORMAT_QUATERNION_DECOMPOSITION, (void*)&spaces_array[0][0].l.vx.x, 0, sizeof(AffineSpace3fa), numInstances);
+      } else {
+        rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_TRANSFORM, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, (void*)&spaces_array[0][0].l.vx.x, 0, sizeof(AffineSpace3fa), numInstances);
+      }
+      rtcSetGeometryUserData(g, this);
+      rtcCommitGeometry(g);
+    }
+    else
+    {
+      RTCGeometry g = geom.geometry;
+      rtcSetGeometryInstancedScene(g,scene_inst);
+      rtcSetGeometryTimeStepCount(g,numTimeSteps);
+      rtcSetGeometryTimeRange(g,startTime,endTime);
+      for (unsigned t=0; t<numTimeSteps; t++) {
+        if (quaternion) {
+          rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_TRANSFORM, t, RTC_FORMAT_QUATERNION_DECOMPOSITION, (void*)&spaces_array[t][0].l.vx.x, 0, sizeof(AffineSpace3fa), numInstances);
+        } else {
+          rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_TRANSFORM, t, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, (void*)&spaces_array[t][0].l.vx.x, 0, sizeof(AffineSpace3fa), numInstances);
+        }
+      }
+      rtcSetGeometryUserData(g, this);
+      rtcCommitGeometry(g);
+    }
+  }
+
   ISPCGroup::ISPCGroup( RTCDevice device, unsigned int numGeometries )
     : geom(GROUP), scene(rtcNewScene(device)), geometries(nullptr), numGeometries(numGeometries), requiredInstancingDepth(0)
   {
@@ -799,6 +892,9 @@ namespace embree
       geom = (ISPCGeometry*) new ISPCGridMesh(device,scene,mesh); 
     else if (Ref<SceneGraph::TransformNode> mesh = in.dynamicCast<SceneGraph::TransformNode>())
       geom = (ISPCGeometry*) new ISPCInstance(device,scene,mesh);
+    else if (Ref<SceneGraph::MultiTransformNode> mesh = in.dynamicCast<SceneGraph::MultiTransformNode>()) {
+      geom = (ISPCGeometry*) new ISPCInstanceArray(device,scene,mesh);
+    }
     else if (Ref<SceneGraph::GroupNode> mesh = in.dynamicCast<SceneGraph::GroupNode>())
       geom = (ISPCGeometry*) new ISPCGroup(device,scene,mesh);
     else if (Ref<SceneGraph::PointSetNode> mesh = in.dynamicCast<SceneGraph::PointSetNode>())
@@ -905,6 +1001,7 @@ namespace embree
   }
 
   unsigned int ConvertInstance(RTCDevice device, ISPCInstance* instance, RTCBuildQuality quality, RTCSceneFlags flags, unsigned int depth, RTCFeatureFlags& used_features);
+  unsigned int ConvertInstanceArray(RTCDevice device, ISPCInstanceArray* instance, RTCBuildQuality quality, RTCSceneFlags flags, unsigned int depth, RTCFeatureFlags& used_features);
 
   unsigned int ConvertGroup(RTCDevice device, ISPCGroup* group, RTCBuildQuality quality, RTCSceneFlags flags, unsigned int depth, RTCFeatureFlags& used_features)
   {
@@ -934,6 +1031,10 @@ namespace embree
         unsigned int reqDepth = ConvertInstance(device,(ISPCInstance*) geometry, quality, flags, depth, used_features);
         requiredInstancingDepth = max(requiredInstancingDepth, reqDepth);
       }
+      else if (geometry->type == INSTANCE_ARRAY) {
+        unsigned int reqDepth = ConvertInstanceArray(device,(ISPCInstanceArray*) geometry, quality, flags, depth, used_features);
+        requiredInstancingDepth = max(requiredInstancingDepth, reqDepth);
+      }
       else
         assert(false);
     }
@@ -949,6 +1050,27 @@ namespace embree
     used_features |= RTC_FEATURE_FLAG_INSTANCE;
     if (instance->numTimeSteps > 1) used_features |= RTC_FEATURE_FLAG_MOTION_BLUR;
     
+    if (instance->child->type != GROUP)
+      THROW_RUNTIME_ERROR("invalid scene structure");
+
+    ISPCGroup* group = (ISPCGroup*) instance->child;
+    unsigned int requiredInstancingDepth = 1+ConvertGroup(device, group, quality, flags, depth+1, used_features);
+
+    if (depth + requiredInstancingDepth > RTC_MAX_INSTANCE_LEVEL_COUNT)
+      THROW_RUNTIME_ERROR("scene instancing depth is too large");
+
+    if (instance->geom.visited) return requiredInstancingDepth;
+    instance->geom.visited = true;
+    instance->commit();
+
+    return requiredInstancingDepth;
+  }
+
+  unsigned int ConvertInstanceArray(RTCDevice device, ISPCInstanceArray* instance, RTCBuildQuality quality, RTCSceneFlags flags, unsigned int depth, RTCFeatureFlags& used_features)
+  {
+    used_features |= RTC_FEATURE_FLAG_INSTANCE_ARRAY;
+    if (instance->numTimeSteps > 1) used_features |= RTC_FEATURE_FLAG_MOTION_BLUR;
+
     if (instance->child->type != GROUP)
       THROW_RUNTIME_ERROR("invalid scene structure");
 
@@ -992,6 +1114,8 @@ namespace embree
         ConvertPoints(g_device,(ISPCPointSet*) geometry, quality, flags, used_features);
       else if (geometry->type == INSTANCE)
         ConvertInstance(g_device, (ISPCInstance*) geometry, quality, flags, 0, used_features);
+      else if (geometry->type == INSTANCE_ARRAY)
+        ConvertInstanceArray(g_device, (ISPCInstanceArray*) geometry, quality, flags, 0, used_features);
       else
         assert(false);
 
@@ -1018,13 +1142,23 @@ namespace embree
     for (unsigned int geomID=0; geomID<scene_in->numGeometries; geomID++)
     {
       ISPCGeometry* geometry = scene_in->geometries[geomID];
-      if (geometry->type != INSTANCE) continue;
-      ISPCInstance* inst = (ISPCInstance*) geometry;
 
-      Ref<SceneGraph::TransformNode> node = tutorial_scene->geometries[geomID].dynamicCast<SceneGraph::TransformNode>();
-      assert(node);
-      inst->spaces[0] = node->get(time);
-      inst->commit();
+      if (geometry->type == INSTANCE) {
+        ISPCInstance* inst = (ISPCInstance*) geometry;
+        Ref<SceneGraph::TransformNode> node = tutorial_scene->geometries[geomID].dynamicCast<SceneGraph::TransformNode>();
+        assert(node);
+        inst->spaces[0] = node->get(time);
+        inst->commit();
+      }
+      else if (geometry->type == INSTANCE_ARRAY) {
+        ISPCInstanceArray* inst = (ISPCInstanceArray*) geometry;
+        Ref<SceneGraph::MultiTransformNode> node = tutorial_scene->geometries[geomID].dynamicCast<SceneGraph::MultiTransformNode>();
+        assert(node);
+        for (size_t i = 0; i < inst->numInstances; ++i) {
+          inst->spaces_array[0][i] = node->get(i, time);
+        }
+        inst->commit();
+      }
     }
 
     rtcCommitScene(scene_in->scene);

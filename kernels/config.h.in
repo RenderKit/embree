@@ -1,6 +1,8 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+#include "../include/embree4/rtcore_config.h"
+
 #cmakedefine EMBREE_RAY_MASK
 #cmakedefine EMBREE_STAT_COUNTERS
 #cmakedefine EMBREE_BACKFACE_CULLING
@@ -14,6 +16,7 @@
 #cmakedefine EMBREE_GEOMETRY_SUBDIVISION
 #cmakedefine EMBREE_GEOMETRY_USER
 #cmakedefine EMBREE_GEOMETRY_INSTANCE
+// EMBREE_GEOMETRY_INSTANCE_ARRAY is defined in rtcore_config.h
 #cmakedefine EMBREE_GEOMETRY_GRID
 #cmakedefine EMBREE_GEOMETRY_POINT
 #cmakedefine EMBREE_RAY_PACKETS
@@ -68,6 +71,12 @@
   #define IF_ENABLED_INSTANCE(x) x
 #else
   #define IF_ENABLED_INSTANCE(x)
+#endif
+
+#if defined(EMBREE_GEOMETRY_INSTANCE_ARRAY)
+  #define IF_ENABLED_INSTANCE_ARRAY(x) x
+#else
+  #define IF_ENABLED_INSTANCE_ARRAY(x)
 #endif
 
 #if defined(EMBREE_GEOMETRY_GRID)

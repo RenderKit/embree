@@ -10,6 +10,7 @@
 #include "scene_quad_mesh.h"
 #include "scene_user_geometry.h"
 #include "scene_instance.h"
+#include "scene_instance_array.h"
 #include "scene_curves.h"
 #include "scene_line_segments.h"
 #include "scene_subdiv_mesh.h"
@@ -165,6 +166,8 @@ namespace embree
     void createInstanceMBAccel();
     void createInstanceExpensiveAccel();
     void createInstanceExpensiveMBAccel();
+    void createInstanceArrayAccel();
+    void createInstanceArrayMBAccel();
     void createGridAccel();
     void createGridMBAccel();
 
@@ -354,7 +357,10 @@ namespace embree
       
       if (mask & Geometry::MTY_INSTANCE_EXPENSIVE)
         count += mblur  ? world.numMBInstancesExpensive : world.numInstancesExpensive;
-      
+
+      if (mask & Geometry::MTY_INSTANCE_ARRAY)
+        count += mblur  ? world.numMBInstanceArrays : world.numInstanceArrays;
+
       if (mask & Geometry::MTY_GRID_MESH)
         count += mblur  ? world.numMBGrids : world.numGrids;
       

@@ -397,7 +397,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       dpcpp-version: intel/2023.1
       cmd: |
-        python scripts/test.py configure platform:x64 build:Debug compiler:ICX ispc:ispc1.12.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.2.0 intensity:2 maxinstancelevelcount:4
+        python scripts/test.py configure platform:x64 build:Debug compiler:ICX ispc:ispc1.13.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.2.0 intensity:2 maxinstancelevelcount:4
         python scripts/test.py build
         python scripts/test.py test
   #     python scripts/test.py test sde:hsw
@@ -409,7 +409,7 @@ jobs:
       image: embree/fedora:32
       runs-on: '[ "Linux", "docker", "avx512" ]'
       cmd: |
-        python scripts/test.py configure platform:x64 build:Debug compiler:GCC ispc:ispc isa:AVX512 tasking:TBB COMPACT_POLYS:ON MIN_WIDTH:ON intensity:2
+        python scripts/test.py configure platform:x64 build:Debug compiler:GCC ispc:ispc1.13.0 isa:AVX512 tasking:TBB COMPACT_POLYS:ON MIN_WIDTH:ON intensity:2
         python scripts/test.py build
         python scripts/test.py test
 
@@ -421,7 +421,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       dpcpp-version: intel/2023.1
       cmd: |
-        python scripts/test.py configure platform:x64 build:Debug compiler:ICX ispc:ispc1.12.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.7.0 intensity:2 maxinstancelevelcount:4
+        python scripts/test.py configure platform:x64 build:Debug compiler:ICX ispc:ispc1.13.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.7.0 intensity:2 maxinstancelevelcount:4
         python scripts/test.py build
         python scripts/test.py test
 
@@ -454,7 +454,7 @@ jobs:
       image: embree/ubuntu:20.04
       runs-on: '[ "Linux", "docker", "build" ]'
       cmd: |
-        python scripts/test.py configure platform:x64 build:Debug compiler:GCC ispc:ispc1.12.0 isa:AVX2 frequency_level:simd256 tasking:TBB intensity:1 api_namespace:myembree
+        python scripts/test.py configure platform:x64 build:Debug compiler:GCC ispc:ispc1.13.0 isa:AVX2 frequency_level:simd256 tasking:TBB intensity:1 api_namespace:myembree
         python scripts/test.py build
         python scripts/test.py test
 

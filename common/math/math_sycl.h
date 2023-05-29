@@ -75,8 +75,6 @@ namespace embree
   __forceinline float floor( const float x ) { return sycl::floor(x); }
   __forceinline float ceil ( const float x ) { return sycl::ceil(x); }
   __forceinline float frac ( const float x ) { return x-floor(x); }
-  __forceinline float sincos ( const float phi, float* sin, float* cos ) { return *sin = sycl::sincos(phi, cos); }
-  __forceinline float sincosf ( const float phi, float* sin, float* cos ) { return *sin = sycl::sincos(phi, cos); }
 
   //__forceinline double abs  ( const double x ) { return ::fabs(x); }
   //__forceinline double sign ( const double x ) { return x<0?-1.0:1.0; }

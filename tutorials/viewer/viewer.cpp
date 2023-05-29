@@ -105,6 +105,7 @@ namespace embree
             else if (feature == "FLAT_CURVES") feature_mask |= RTC_FEATURE_FLAG_FLAT_CURVES;
             else if (feature == "NORMAL_ORIENTED_CURVES") feature_mask |= RTC_FEATURE_FLAG_NORMAL_ORIENTED_CURVES;
             else if (feature == "INSTANCE") feature_mask |= RTC_FEATURE_FLAG_INSTANCE;
+            else if (feature == "INSTANCE_ARRAY") feature_mask |= RTC_FEATURE_FLAG_INSTANCE_ARRAY;
             else if (feature == "FILTER_FUNCTION_IN_ARGUMENTS") feature_mask |= RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS;
             else if (feature == "FILTER_FUNCTION_IN_GEOMETRY") feature_mask |= RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_GEOMETRY;
             else if (feature == "FILTER_FUNCTION") feature_mask |= RTC_FEATURE_FLAG_FILTER_FUNCTION;

@@ -135,8 +135,12 @@ namespace embree
     rh.hit.v = 0.0f;
     rh.hit.geomID = -1;
     rh.hit.primID = -1;
-    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l) {
       rh.hit.instID[l] = RTC_INVALID_GEOMETRY_ID;
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+      rh.hit.instPrimID[l] = RTC_INVALID_GEOMETRY_ID;
+#endif
+    }
   }
 
   __forceinline RTCRayHit makeRay(const Vec3fa& org, const Vec3fa& dir) 
@@ -147,8 +151,12 @@ namespace embree
     rh.ray.tnear = 0.0f; rh.ray.tfar = inf;
     rh.ray.time = 0; rh.ray.mask = -1;
     rh.hit.geomID = rh.hit.primID = -1;
-    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l) {
       rh.hit.instID[l] = RTC_INVALID_GEOMETRY_ID;
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+      rh.hit.instPrimID[l] = RTC_INVALID_GEOMETRY_ID;
+#endif
+    }
     return rh;
   }
 
@@ -160,8 +168,12 @@ namespace embree
     rh.ray.tnear = tnear; rh.ray.tfar = tfar;
     rh.ray.time = 0; rh.ray.mask = -1;
     rh.hit.geomID = rh.hit.primID = -1;
-    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l) {
       rh.hit.instID[l] = RTC_INVALID_GEOMETRY_ID;
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+      rh.hit.instPrimID[l] = RTC_INVALID_GEOMETRY_ID;
+#endif
+    }
     return rh;
   }
 
@@ -176,8 +188,12 @@ namespace embree
     rh.ray.mask = -1;
     rh.ray.id = -1;
     rh.hit.geomID = rh.hit.primID = -1;
-    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l) {
       rh.hit.instID[l] = RTC_INVALID_GEOMETRY_ID;
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+      rh.hit.instPrimID[l] = RTC_INVALID_GEOMETRY_ID;
+#endif
+    }
     return rh;
   }
 
@@ -196,6 +212,9 @@ namespace embree
     rh.ray.mask = -1;
     rh.ray.id = -1;
     rh.hit.geomID = rh.hit.primID = rh.hit.instID[0] = -1;
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+    rh.hit.instPrimID[0] = RTC_INVALID_GEOMETRY_ID;
+#endif
   }
 
   __forceinline void fastMakeRay(RTCRayHit& ray, const Vec3fa& org, RandomSampler& sampler)
@@ -211,8 +230,12 @@ namespace embree
     rh.ray.tnear = tnear; rh.ray.tfar = tfar;
     rh.ray.time = 0; rh.ray.mask = -1; rh.ray.id = -1;
     rh.hit.geomID = rh.hit.primID = -1;
-    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l) {
       rh.hit.instID[l] = RTC_INVALID_GEOMETRY_ID;
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+      rh.hit.instPrimID[l] = RTC_INVALID_GEOMETRY_ID;
+#endif
+    }
     return rh;
   }
 
@@ -232,6 +255,9 @@ namespace embree
     if (*(int*)&ray0.hit.u      != *(int*)&ray1.hit.u     ) return true;
     if (*(int*)&ray0.hit.v      != *(int*)&ray1.hit.v     ) return true;
     if (*(int*)&ray0.hit.instID != *(int*)&ray1.hit.instID) return true;
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+    if (*(int*)&ray0.hit.instPrimID != *(int*)&ray1.hit.instPrimID) return true;
+#endif
     if (*(int*)&ray0.hit.geomID != *(int*)&ray1.hit.geomID) return true;
     if (*(int*)&ray0.hit.primID != *(int*)&ray1.hit.primID) return true;
     if (*(int*)&ray0.hit.Ng_x  != *(int*)&ray1.hit.Ng_x ) return true;
@@ -258,6 +284,16 @@ namespace embree
       if (rh.hit.instID[l] == RTC_INVALID_GEOMETRY_ID)
         break;
     }
+    cout << embree_endl;
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+    cout << "  instPrimID =";
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+    {
+      cout << " " << rh.hit.instPrimID[l];
+      if (rh.hit.instID[l] == RTC_INVALID_GEOMETRY_ID)
+        break;
+    }
+#endif
     cout << embree_endl
          << "  geomID = " << rh.hit.geomID << embree_endl
          << "  primID = " << rh.hit.primID <<  embree_endl
@@ -289,8 +325,12 @@ namespace embree
     ray_o.hit.Ng_y[i] = ray_i.hit.Ng_y;
     ray_o.hit.Ng_z[i] = ray_i.hit.Ng_z;
 
-    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l) {
       ray_o.hit.instID[l][i] = ray_i.hit.instID[l];
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+      ray_o.hit.instPrimID[l][i] = ray_i.hit.instPrimID[l];
+#endif
+    }
   }
 
   __forceinline void setRay(RTCRayHit8& ray_o, size_t i, const RTCRayHit& ray_i)
@@ -314,8 +354,12 @@ namespace embree
     ray_o.hit.Ng_y[i] = ray_i.hit.Ng_y;
     ray_o.hit.Ng_z[i] = ray_i.hit.Ng_z;
 
-    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l) {
       ray_o.hit.instID[l][i] = ray_i.hit.instID[l];
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+      ray_o.hit.instPrimID[l][i] = ray_i.hit.instPrimID[l];
+#endif
+    }
   }
 
   __forceinline void setRay(RTCRayHit16& ray_o, size_t i, const RTCRayHit& ray_i)
@@ -339,8 +383,12 @@ namespace embree
     ray_o.hit.Ng_y[i] = ray_i.hit.Ng_y;
     ray_o.hit.Ng_z[i] = ray_i.hit.Ng_z;
 
-    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l) {
       ray_o.hit.instID[l][i] = ray_i.hit.instID[l];
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+      ray_o.hit.instPrimID[l][i] = ray_i.hit.instPrimID[l];
+#endif
+    }
   }
 
   __forceinline void setRay(RTCRayHitN* rayhit_o, unsigned int N, unsigned int i, const RTCRayHit& ray_i)
@@ -366,8 +414,12 @@ namespace embree
     RTCHitN_Ng_y(hit_o,N,i) = ray_i.hit.Ng_y;
     RTCHitN_Ng_z(hit_o,N,i) = ray_i.hit.Ng_z;
 
-    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l) {
       RTCHitN_instID(hit_o,N,i,l) = ray_i.hit.instID[l];
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+      RTCHitN_instPrimID(hit_o,N,i,l) = ray_i.hit.instPrimID[l];
+#endif
+    }
   }
 
   __forceinline RTCRayHit getRay(RTCRayHit4& ray_i, size_t i)
@@ -392,8 +444,12 @@ namespace embree
     ray_o.hit.Ng_y = ray_i.hit.Ng_y[i];
     ray_o.hit.Ng_z = ray_i.hit.Ng_z[i];
 
-    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l) {
       ray_o.hit.instID[l] = ray_i.hit.instID[l][i];
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+      ray_o.hit.instPrimID[l] = ray_i.hit.instPrimID[l][i];
+#endif
+    }
 
     return ray_o;
   }
@@ -420,8 +476,12 @@ namespace embree
     ray_o.hit.Ng_y = ray_i.hit.Ng_y[i];
     ray_o.hit.Ng_z = ray_i.hit.Ng_z[i];
 
-    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l) {
       ray_o.hit.instID[l] = ray_i.hit.instID[l][i];
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+      ray_o.hit.instPrimID[l] = ray_i.hit.instPrimID[l][i];
+#endif
+    }
 
     return ray_o;
   }
@@ -448,8 +508,12 @@ namespace embree
     ray_o.hit.Ng_y = ray_i.hit.Ng_y[i];
     ray_o.hit.Ng_z = ray_i.hit.Ng_z[i];
 
-    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l) {
       ray_o.hit.instID[l] = ray_i.hit.instID[l][i];
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+      ray_o.hit.instPrimID[l] = ray_i.hit.instPrimID[l][i];
+#endif
+    }
     return ray_o;
   }
 
@@ -477,8 +541,12 @@ namespace embree
     ray_o.hit.Ng_y = RTCHitN_Ng_y(hit_i,N,i);
     ray_o.hit.Ng_z = RTCHitN_Ng_z(hit_i,N,i);
 
-    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l) {
       ray_o.hit.instID[l] = RTCHitN_instID(hit_i, N, i, l);
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+      ray_o.hit.instPrimID[l] = RTCHitN_instPrimID(hit_i, N, i, l);
+#endif
+    }
 
     return ray_o;
   }

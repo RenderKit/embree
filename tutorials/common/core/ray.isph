@@ -21,6 +21,9 @@ struct Ray1
   uniform int primID;    //!< primitive ID
   uniform int geomID;    //!< geometry ID
   uniform int instID[RTC_MAX_INSTANCE_LEVEL_COUNT];    //!< instance ID
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+  uniform int instPrimID[RTC_MAX_INSTANCE_LEVEL_COUNT];    //!< instance ID
+#endif
   varying int align[0];  //!< aligns ray on stack to at least 16 bytes
 };
 
@@ -48,6 +51,9 @@ struct Ray
   int primID;    //!< primitive ID
   int geomID;    //!< geometry ID
   int instID[RTC_MAX_INSTANCE_LEVEL_COUNT];    //!< instance ID
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+  int instPrimID[RTC_MAX_INSTANCE_LEVEL_COUNT];    //!< instance ID
+#endif
 };
 
 inline varying RTCRayHit* uniform RTCRayHit_(varying Ray& ray)
@@ -89,6 +95,9 @@ inline Ray make_Ray(const Vec3f org,
   ray.geomID = geomID;
   ray.primID = primID;
   ray.instID[0] = RTC_INVALID_GEOMETRY_ID;
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+  ray.instPrimID[0] = RTC_INVALID_GEOMETRY_ID;
+#endif
   return ray;
 }
 
@@ -111,6 +120,9 @@ inline void init_Ray(Ray &ray,
   ray.geomID = geomID;
   ray.primID = primID;
   ray.instID[0] = RTC_INVALID_GEOMETRY_ID;
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+  ray.instPrimID[0] = RTC_INVALID_GEOMETRY_ID;
+#endif
 }
 
 inline bool noHit(const Ray& r) { return r.geomID < 0; }

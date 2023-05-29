@@ -52,6 +52,11 @@ SYCL_EXTERNAL __attribute__((always_inline)) void rtcIntersect1(RTCScene hscene,
 
 SYCL_EXTERNAL __attribute__((always_inline)) void rtcForwardIntersect1(const RTCIntersectFunctionNArguments* args_, RTCScene scene, struct RTCRay* iray, unsigned int instID)
 {
+  return rtcForwardIntersect1Ex(args_, scene, iray, instID, 0);
+}
+
+SYCL_EXTERNAL __attribute__((always_inline)) void rtcForwardIntersect1Ex(const RTCIntersectFunctionNArguments* args_, RTCScene scene, struct RTCRay* iray, unsigned int instID, unsigned int instPrimID)
+{
   IntersectFunctionNArguments* args = (IntersectFunctionNArguments*) args_;
   assert(args->N == 1);
   assert(args->forward_scene == nullptr);
@@ -64,7 +69,7 @@ SYCL_EXTERNAL __attribute__((always_inline)) void rtcForwardIntersect1(const RTC
   oray->dir.y = iray->dir_y;
   oray->dir.z = iray->dir_z;
   args->forward_scene = scene;
-  instance_id_stack::push(args->context, instID);
+  instance_id_stack::push(args->context, instID, instPrimID);
 }
 
 SYCL_EXTERNAL __attribute__((always_inline)) void rtcOccluded1(RTCScene hscene, struct RTCRay* ray, struct RTCOccludedArguments* args)
@@ -85,7 +90,11 @@ SYCL_EXTERNAL __attribute__((always_inline)) void rtcOccluded1(RTCScene hscene, 
   rtcOccludedRTHW(hscene, context, ray, args);
 }
 
-SYCL_EXTERNAL __attribute__((always_inline)) void rtcForwardOccluded1(const RTCOccludedFunctionNArguments* args_, RTCScene scene, struct RTCRay* iray, unsigned int instID)
+SYCL_EXTERNAL __attribute__((always_inline)) void rtcForwardOccluded1(const RTCOccludedFunctionNArguments *args_, RTCScene scene, struct RTCRay *iray, unsigned int instID){
+  return rtcForwardOccluded1Ex(args_, scene, iray, instID, 0);
+}
+
+SYCL_EXTERNAL __attribute__((always_inline)) void rtcForwardOccluded1Ex(const RTCOccludedFunctionNArguments *args_, RTCScene scene, struct RTCRay *iray, unsigned int instID, unsigned int instPrimID)
 {
   OccludedFunctionNArguments* args = (OccludedFunctionNArguments*) args_;
   assert(args->N == 1);
@@ -99,7 +108,7 @@ SYCL_EXTERNAL __attribute__((always_inline)) void rtcForwardOccluded1(const RTCO
   oray->dir.y = iray->dir_y;
   oray->dir.z = iray->dir_z;
   args->forward_scene = scene;
-  instance_id_stack::push(args->context, instID);
+  instance_id_stack::push(args->context, instID, instPrimID);
 }
 
 SYCL_EXTERNAL __attribute__((always_inline)) void* rtcGetGeometryUserDataFromScene (RTCScene hscene, unsigned int geomID)

@@ -64,6 +64,9 @@ namespace embree
         ray.primID = primID;
         ray.geomID = geomID;
         instance_id_stack::copy_UU(context->user->instID, ray.instID);
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+        instance_id_stack::copy_UU(context->user->instPrimID, ray.instPrimID);
+#endif
         return true;
       }
     };
@@ -163,6 +166,9 @@ namespace embree
         ray.primID[k] = primID;
         ray.geomID[k] = geomID;
         instance_id_stack::copy_UV<K>(context->user->instID, ray.instID, k);
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+        instance_id_stack::copy_UV<K>(context->user->instPrimID, ray.instPrimID, k);
+#endif
         return true;
       }
     };
@@ -287,6 +293,9 @@ namespace embree
         ray.primID = primIDs[i];
         ray.geomID = geomID;
         instance_id_stack::copy_UU(context->user->instID, ray.instID);
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+        instance_id_stack::copy_UU(context->user->instPrimID, ray.instPrimID);
+#endif
         return true;
 
       }
@@ -424,6 +433,9 @@ namespace embree
         ray.primID = primID;
         ray.geomID = geomID;
         instance_id_stack::copy_UU(context->user->instID, ray.instID);
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+        instance_id_stack::copy_UU(context->user->instPrimID, ray.instPrimID);
+#endif
         return true;
       }
     };
@@ -534,6 +546,9 @@ namespace embree
         vuint<K>::store(valid,&ray.primID,primID);
         vuint<K>::store(valid,&ray.geomID,geomID);
         instance_id_stack::copy_UV<K>(context->user->instID, ray.instID, valid);
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+        instance_id_stack::copy_UV<K>(context->user->instPrimID, ray.instPrimID, valid);
+#endif
         return valid;
       }
     };
@@ -649,6 +664,9 @@ namespace embree
         vuint<K>::store(valid,&ray.primID,primID);
         vuint<K>::store(valid,&ray.geomID,geomID);
         instance_id_stack::copy_UV<K>(context->user->instID, ray.instID, valid);
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+        instance_id_stack::copy_UV<K>(context->user->instPrimID, ray.instPrimID, valid);
+#endif
         return valid;
       }
     };
@@ -783,6 +801,9 @@ namespace embree
         ray.primID[k] = primIDs[i];
         ray.geomID[k] = geomID;
         instance_id_stack::copy_UV<K>(context->user->instID, ray.instID, k);
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+        instance_id_stack::copy_UV<K>(context->user->instPrimID, ray.instPrimID, k);
+#endif
         return true;
       }
     };
@@ -923,6 +944,9 @@ namespace embree
         ray.primID[k] = primID;
         ray.geomID[k] = geomID;
         instance_id_stack::copy_UV<K>(context->user->instID, ray.instID, k);
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+        instance_id_stack::copy_UV<K>(context->user->instPrimID, ray.instPrimID, k);
+#endif
         return true;
       }
     };

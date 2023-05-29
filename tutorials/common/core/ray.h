@@ -39,6 +39,9 @@
       : org(org,tnear), dir(dir,time), tfar(tfar), mask(mask), primID(primID), geomID(geomID)
     {
       instID[0] = RTC_INVALID_GEOMETRY_ID;
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+      instPrimID[0] = RTC_INVALID_GEOMETRY_ID;
+#endif
     }
 
     /*! Tests if we hit something. */
@@ -61,6 +64,9 @@
     unsigned int primID;           //!< primitive ID
     unsigned int geomID;           //!< geometry ID
     unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT];           //!< instance ID
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+    unsigned int instPrimID[RTC_MAX_INSTANCE_LEVEL_COUNT];           //!< instance primitive ID
+#endif
 
     __forceinline float &tnear() { return org.w; };
     __forceinline float &time()  { return dir.w; };
@@ -115,6 +121,10 @@ __forceinline RTCRay* RTCRay1_(Ray& ray) {
     
     for (size_t i=0; i<RTC_MAX_INSTANCE_LEVEL_COUNT; i++)
       cout << "instID" << i << " = " << ray.instID[i] << ", ";
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+    for (size_t i=0; i<RTC_MAX_INSTANCE_LEVEL_COUNT; i++)
+      cout << "instPrimID" << i << " = " << ray.instPrimID[i] << ", ";
+#endif
         
     return cout << "geomID = " << ray.geomID << ", primID = " << ray.primID <<  ", " << "u = " << ray.u <<  ", v = " << ray.v << ", Ng = " << ray.Ng << " }";
   }

@@ -1,0 +1,32 @@
+// Copyright 2009-2021 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+#include "../common/tutorial/tutorial_device.isph"
+
+struct TutorialData
+{
+  RTCScene g_scene;
+  uniform Triangle* uniform tree_triangles[6];
+  uniform Vec3fa* uniform tree_vertex_colors[6];
+  uniform Triangle* uniform terrain_triangles;
+  uniform unsigned int trees_selected[6];
+  uniform unsigned int* uniform tree_ids;
+  uniform AffineSpace3f* uniform tree_transforms;
+  uniform bool use_instance_array;
+};
+
+inline void TutorialData_Constructor(uniform TutorialData* uniform This)
+{
+  This->g_scene = NULL;
+  This->tree_ids = NULL;
+  This->tree_transforms = NULL;
+  This->terrain_triangles = NULL;
+}
+
+inline void TutorialData_Destructor(uniform TutorialData* uniform This)
+{
+  rtcReleaseScene (This->g_scene); This->g_scene = NULL;
+
+  if(This->tree_ids) delete[] This->tree_ids;
+  if(This->tree_transforms) delete[] This->tree_transforms;
+}

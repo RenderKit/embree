@@ -61,7 +61,7 @@ namespace embree
 #endif
   };
 
-  enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, CURVES, INSTANCE, GROUP, QUAD_MESH, GRID_MESH, POINTS };
+  enum ISPCType { TRIANGLE_MESH, SUBDIV_MESH, CURVES, INSTANCE, INSTANCE_ARRAY, GROUP, QUAD_MESH, GRID_MESH, POINTS };
 
   struct ISPCGeometry
   {
@@ -315,6 +315,34 @@ namespace embree
     unsigned int numTimeSteps;
     bool quaternion;
     AffineSpace3fa* spaces;
+  };
+
+  struct ISPCInstanceArray
+  {
+#if !defined(ISPC)
+    ALIGNED_STRUCT_USM_(16);
+
+    ISPCInstanceArray(RTCDevice device, unsigned int numTimeSteps = 1);
+    ISPCInstanceArray(RTCDevice device, TutorialScene* scene, Ref<SceneGraph::MultiTransformNode> in);
+    ~ISPCInstanceArray();
+
+    void commit();
+
+  private:
+    ISPCInstanceArray(const ISPCInstanceArray& other) DELETED; // do not implement
+    ISPCInstanceArray& operator= (const ISPCInstanceArray& other) DELETED; // do not implement
+
+  public:
+#endif
+
+    ISPCGeometry geom;
+    ISPCGeometry* child;
+    float startTime;
+    float endTime;
+    unsigned int numTimeSteps;
+    unsigned int numInstances;
+    bool quaternion;
+    AffineSpace3fa** spaces_array;
   };
 
   struct ISPCGroup

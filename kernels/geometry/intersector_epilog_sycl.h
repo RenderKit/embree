@@ -65,7 +65,10 @@ namespace embree
       ray.Ng.z = hit_i.Ng.z;
       ray.geomID = geomID;
       ray.primID = primID;
-      instance_id_stack::copy_UU(context->user, ray.instID);
+      instance_id_stack::copy_UU(context->user, context->user->instID, ray.instID);
+#if defined(EMBREE_GEOMETRY_INSTANCE_ARRAY)
+      instance_id_stack::copy_UU(context->user, context->user->instPrimID, ray.instPrimID);
+#endif
       return true;
     }
     
@@ -109,7 +112,10 @@ namespace embree
       ray.Ng.z = Ng.z;
       ray.geomID = geomID;
       ray.primID = primID;
-      instance_id_stack::copy_UU(context->user, ray.instID);
+      instance_id_stack::copy_UU(context->user, context->user->instID, ray.instID);
+#if defined(EMBREE_GEOMETRY_INSTANCE_ARRAY)
+      instance_id_stack::copy_UU(context->user, context->user->instPrimID, ray.instPrimID);
+#endif
       return true;
     }
   };

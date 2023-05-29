@@ -6,6 +6,7 @@
 [imgUserGeometry]: images/user_geometry.jpg
 [imgViewer]: images/viewer.jpg
 [imgInstancedGeometry]: images/instanced_geometry.jpg
+[imgForest]: images/forest.jpg
 [imgMultiLevelInstancing]: images/multi_level_instancing.jpg
 [imgIntersectionFilter]: images/intersection_filter.jpg
 [imgPathtracer]: images/pathtracer.jpg

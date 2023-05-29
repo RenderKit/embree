@@ -6,6 +6,7 @@
 [imgUserGeometry]: https://embree.github.io/images/user_geometry.jpg
 [imgViewer]: https://embree.github.io/images/viewer.jpg
 [imgInstancedGeometry]: https://embree.github.io/images/instanced_geometry.jpg
+[imgForest]: https://embree.github.io/images/forest.jpg
 [imgMultiLevelInstancing]: https://embree.github.io/images/multi_level_instancing.jpg
 [imgIntersectionFilter]: https://embree.github.io/images/intersection_filter.jpg
 [imgPathtracer]: https://embree.github.io/images/pathtracer.jpg

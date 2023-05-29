@@ -27,13 +27,14 @@ namespace embree
         numUserGeometries(0), numMBUserGeometries(0), 
         numInstancesCheap(0), numMBInstancesCheap(0), 
         numInstancesExpensive(0), numMBInstancesExpensive(0), 
+        numInstanceArrays(0), numMBInstanceArrays(0),
         numGrids(0), numMBGrids(0),
         numSubGrids(0), numMBSubGrids(0), 
         numPoints(0), numMBPoints(0) {}
 
     __forceinline size_t size() const {
-      return    numTriangles + numQuads + numBezierCurves + numLineSegments + numSubdivPatches + numUserGeometries + numInstancesCheap + numInstancesExpensive + numGrids + numPoints
-              + numMBTriangles + numMBQuads + numMBBezierCurves + numMBLineSegments + numMBSubdivPatches + numMBUserGeometries + numMBInstancesCheap + numMBInstancesExpensive + numMBGrids + numMBPoints;
+      return    numTriangles + numQuads + numBezierCurves + numLineSegments + numSubdivPatches + numUserGeometries + numInstancesCheap + numInstancesExpensive + numInstanceArrays + numGrids + numPoints
+              + numMBTriangles + numMBQuads + numMBBezierCurves + numMBLineSegments + numMBSubdivPatches + numMBUserGeometries + numMBInstancesCheap + numMBInstancesExpensive + numMBInstanceArrays + numMBGrids + numMBPoints;
     }
 
     __forceinline unsigned int enabledGeometryTypesMask() const
@@ -46,8 +47,9 @@ namespace embree
       if (numUserGeometries) mask |= 1 << 4;
       if (numInstancesCheap) mask |= 1 << 5;
       if (numInstancesExpensive) mask |= 1 << 6;
-      if (numGrids) mask |= 1 << 7;
-      if (numPoints) mask |= 1 << 8;
+      if (numInstanceArrays) mask |= 1 << 7;
+      if (numGrids) mask |= 1 << 8;
+      if (numPoints) mask |= 1 << 9;
 
       unsigned int maskMB = 0;
       if (numMBTriangles) maskMB |= 1 << 0;
@@ -57,8 +59,9 @@ namespace embree
       if (numMBUserGeometries) maskMB |= 1 << 4;
       if (numMBInstancesCheap) maskMB |= 1 << 5;
       if (numMBInstancesExpensive) maskMB |= 1 << 6;
-      if (numMBGrids) maskMB |= 1 << 7;
-      if (numMBPoints) maskMB |= 1 << 8;
+      if (numMBInstanceArrays) maskMB |= 1 << 7;
+      if (numMBGrids) maskMB |= 1 << 8;
+      if (numMBPoints) maskMB |= 1 << 9;
       
       return (mask<<8) + maskMB;
     }
@@ -83,6 +86,8 @@ namespace embree
       ret.numMBInstancesCheap = numMBInstancesCheap + rhs.numMBInstancesCheap;
       ret.numInstancesExpensive = numInstancesExpensive + rhs.numInstancesExpensive;
       ret.numMBInstancesExpensive = numMBInstancesExpensive + rhs.numMBInstancesExpensive;
+      ret.numInstanceArrays = numInstanceArrays + rhs.numInstanceArrays;
+      ret.numMBInstanceArrays = numMBInstanceArrays + rhs.numMBInstanceArrays;
       ret.numGrids = numGrids + rhs.numGrids;
       ret.numMBGrids = numMBGrids + rhs.numMBGrids;
       ret.numSubGrids = numSubGrids + rhs.numSubGrids;
@@ -110,6 +115,8 @@ namespace embree
     size_t numMBInstancesCheap;      //!< number of enabled motion blurred cheap instances
     size_t numInstancesExpensive;    //!< number of enabled expensive instances
     size_t numMBInstancesExpensive;  //!< number of enabled motion blurred expensive instances
+    size_t numInstanceArrays;        //!< number of enabled instance arrays
+    size_t numMBInstanceArrays;      //!< number of enabled motion blurred instance arrays
     size_t numGrids;                 //!< number of enabled grid geometries
     size_t numMBGrids;               //!< number of enabled motion blurred grid geometries
     size_t numSubGrids;              //!< number of enabled grid geometries
@@ -162,6 +169,7 @@ namespace embree
       GTY_USER_GEOMETRY = 29,
       GTY_INSTANCE_CHEAP = 30,
       GTY_INSTANCE_EXPENSIVE = 31,
+      GTY_INSTANCE_ARRAY = 24,
       GTY_END = 32,
 
       GTY_BASIS_LINEAR = 0,
@@ -231,6 +239,7 @@ namespace embree
       MTY_INSTANCE_CHEAP = 1ul << GTY_INSTANCE_CHEAP,
       MTY_INSTANCE_EXPENSIVE = 1ul << GTY_INSTANCE_EXPENSIVE,
       MTY_INSTANCE = MTY_INSTANCE_CHEAP | MTY_INSTANCE_EXPENSIVE,
+      MTY_INSTANCE_ARRAY = 1ul << GTY_INSTANCE_ARRAY,
 
       MTY_ALL = -1
     };
@@ -483,6 +492,11 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry");
     }
 
+    /*! Sets the instanced scenes */
+    virtual void setInstancedScenes(const RTCScene* scenes, size_t numScenes) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry");
+    }
+
     /*! Sets transformation of the instance */
     virtual void setTransform(const AffineSpace3fa& transform, unsigned int timeStep) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
@@ -495,7 +509,12 @@ namespace embree
 
     /*! Returns the transformation of the instance */
     virtual AffineSpace3fa getTransform(float time) {
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry");
+    }
+
+    /*! Returns the transformation of the instance */
+    virtual AffineSpace3fa getTransform(size_t instance, float time) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry");
     }
 
     /*! for user geometries only */

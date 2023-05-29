@@ -76,7 +76,7 @@ typedef unmasked void (*uniform RTCErrorFunction)(void* uniform userPtr, uniform
 RTC_API void rtcSetDeviceErrorFunction(RTCDevice device, uniform RTCErrorFunction error, void* uniform userPtr);
 
 /* Memory monitor callback function */
-typedef uniform bool (*uniform RTCMemoryMonitorFunction)(uniform intptr_t bytes, uniform bool post);
+typedef unmasked uniform bool (*uniform RTCMemoryMonitorFunction)(void* uniform ptr, uniform intptr_t bytes, uniform bool post);
 
 /* Sets the memory monitor callback function. */
 RTC_API void rtcSetDeviceMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunction memoryMonitor, void* uniform userPtr);

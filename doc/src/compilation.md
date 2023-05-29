@@ -34,7 +34,6 @@ Linux
   - Intel® Implicit SPMD Program Compiler 1.15.0
   - Intel® Implicit SPMD Program Compiler 1.14.1
   - Intel® Implicit SPMD Program Compiler 1.13.0
-  - Intel® Implicit SPMD Program Compiler 1.12.0
   
 macOS x86
 
@@ -600,6 +599,9 @@ parameters that can be configured in CMake:
   geometries (ON by default).
 
 + `EMBREE_GEOMETRY_INSTANCE`: Enables support for instances (ON by
+  default).
+
++ `EMBREE_GEOMETRY_INSTANCE_ARRAY`: Enables support for instance arrays (ON by
   default).
 
 + `EMBREE_GEOMETRY_USER`: Enables support for user-defined geometries

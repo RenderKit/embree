@@ -68,7 +68,7 @@ namespace embree
   class TutorialApplication : public Application
   {
   public:
-    TutorialApplication (const std::string& tutorialName, const int features);
+    TutorialApplication (const std::string& tutorialName, const int features, int width = 512, int height = 512);
     virtual ~TutorialApplication();
 
   private:

@@ -64,6 +64,18 @@ namespace embree
     tab(cout, depth); cout << "}" << std::endl;
   }
 
+  void SceneGraph::MultiTransformNode::print(std::ostream& cout, int depth)
+  {
+    cout << "MultiTransformNode @ " << this << " { " << std::endl;
+    tab(cout, depth+1); cout << "closed = " << closed << std::endl;
+    tab(cout, depth+1); cout << "numInstances = " << spaces.size() << std::endl;
+    if (spaces.size() > 0) {
+      tab(cout, depth+1); cout << "numTimeSteps = " << spaces[0].size() << std::endl;
+    }
+    tab(cout, depth+1); cout << "child = "; child->print(cout,depth+1);
+    tab(cout, depth); cout << "}" << std::endl;
+  }
+
   void SceneGraph::GroupNode::print(std::ostream& cout, int depth)
   {
     cout << "GroupNode @ " << this << " { " << std::endl;
@@ -216,6 +228,23 @@ namespace embree
     }
   }
 
+  void SceneGraph::MultiTransformNode::calculateStatistics(Statistics& stat)
+  {
+    indegree++;
+    if (indegree == 1)
+    {
+      child->calculateStatistics(stat);
+
+      for (size_t i = 0; i < spaces.size(); ++i) {
+        stat.numTransformNodes++;
+        if (child->indegree == 1)
+          stat.numTransformedObjects++;
+
+        if (spaces[i].size() > 1) child->calculateStatistics(stat); // break instance up when motion blur is used
+      }
+    }
+  }
+
   void SceneGraph::GroupNode::calculateStatistics(Statistics& stat)
   {
     indegree++;
@@ -309,6 +338,16 @@ namespace embree
     }
   }
 
+  void SceneGraph::MultiTransformNode::calculateInDegree()
+  {
+    indegree++;
+    if (indegree == 1) {
+      child->calculateInDegree();
+      for (size_t i = 0; i < spaces.size(); ++i)
+        if (spaces[i].size() > 1) child->calculateInDegree(); // break instance up when motion blur is used
+    }
+  }
+
   void SceneGraph::GroupNode::calculateInDegree()
   {
     indegree++;
@@ -359,6 +398,18 @@ namespace embree
       hasLightOrCamera = child->hasLightOrCamera;
     }
     return closed && (indegree == 1);
+  }
+
+  bool SceneGraph::MultiTransformNode::calculateClosed(bool group_instancing)
+  {
+    assert(indegree);
+    if (!closed) {
+      closed = group_instancing;
+      closed &= child->calculateClosed(group_instancing);
+      hasLightOrCamera = child->hasLightOrCamera;
+    }
+    return closed && (indegree == 1);
+
   }
 
   bool SceneGraph::GroupNode::calculateClosed(bool group_instancing)
@@ -431,6 +482,16 @@ namespace embree
   }
 
   void SceneGraph::TransformNode::resetInDegree()
+  {
+    closed = false;
+    if (indegree == 1) {
+      child->resetInDegree();
+      if (spaces.size() > 1) child->resetInDegree(); // break instance up when motion blur is used
+    }
+    indegree--;
+  }
+
+  void SceneGraph::MultiTransformNode::resetInDegree()
   {
     closed = false;
     if (indegree == 1) {
@@ -1137,6 +1198,10 @@ namespace embree
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
       xfmNode->spaces.time_range = time_range;
     }
+    else if (Ref<SceneGraph::MultiTransformNode> xfmNode = node.dynamicCast<SceneGraph::MultiTransformNode>()) {
+      for (size_t i = 0; i < xfmNode->spaces.size(); ++i)
+        xfmNode->spaces[i].time_range = time_range;
+    }
     else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
     {
       for (size_t i=0; i<groupNode->children.size(); i++) 
@@ -1229,6 +1294,9 @@ namespace embree
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
       xfmNode->child = convert_triangles_to_quads(xfmNode->child,prop);
     } 
+    else if (Ref<SceneGraph::MultiTransformNode> xfmNode = node.dynamicCast<SceneGraph::MultiTransformNode>()) {
+      xfmNode->child = convert_triangles_to_quads(xfmNode->child,prop);
+    }
     else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
     {
       for (size_t i=0; i<groupNode->children.size(); i++) 
@@ -1279,6 +1347,9 @@ namespace embree
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
       xfmNode->child = convert_quads_to_grids(xfmNode->child, resX, resY);
     } 
+    else if (Ref<SceneGraph::MultiTransformNode> xfmNode = node.dynamicCast<SceneGraph::MultiTransformNode>()) {
+      xfmNode->child = convert_quads_to_grids(xfmNode->child, resX, resY);
+    }
     else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
     {
       for (size_t i=0; i<groupNode->children.size(); i++) 
@@ -1323,7 +1394,10 @@ namespace embree
   {
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
       xfmNode->child = convert_grids_to_quads(xfmNode->child);
-    } 
+    }
+    else if (Ref<SceneGraph::MultiTransformNode> xfmNode = node.dynamicCast<SceneGraph::MultiTransformNode>()) {
+      xfmNode->child = convert_grids_to_quads(xfmNode->child);
+    }
     else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
     {
       for (size_t i=0; i<groupNode->children.size(); i++) 
@@ -1448,6 +1522,9 @@ namespace embree
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
       xfmNode->child = my_merge_quads_to_grids(xfmNode->child);
     }
+    else if (Ref<SceneGraph::MultiTransformNode> xfmNode = node.dynamicCast<SceneGraph::MultiTransformNode>()) {
+      xfmNode->child = my_merge_quads_to_grids(xfmNode->child);
+    }
     else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
     {
       for (size_t i=0; i<groupNode->children.size(); i++) 
@@ -1528,7 +1605,10 @@ namespace embree
   {
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
       xfmNode->child = convert_quads_to_subdivs(xfmNode->child);
-    } 
+    }
+    else if (Ref<SceneGraph::MultiTransformNode> xfmNode = node.dynamicCast<SceneGraph::MultiTransformNode>()) {
+      xfmNode->child = convert_quads_to_subdivs(xfmNode->child);
+    }
     else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
     {
       for (size_t i=0; i<groupNode->children.size(); i++) 
@@ -1570,6 +1650,9 @@ namespace embree
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
       xfmNode->child = convert_bezier_to_lines(xfmNode->child);
     }
+    else if (Ref<SceneGraph::MultiTransformNode> xfmNode = node.dynamicCast<SceneGraph::MultiTransformNode>()) {
+      xfmNode->child = convert_bezier_to_lines(xfmNode->child);
+    }
     else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
     {
       for (size_t i=0; i<groupNode->children.size(); i++) 
@@ -1597,6 +1680,9 @@ namespace embree
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
       xfmNode->child = convert_flat_to_round_curves(xfmNode->child);
     }
+    else if (Ref<SceneGraph::MultiTransformNode> xfmNode = node.dynamicCast<SceneGraph::MultiTransformNode>()) {
+      xfmNode->child = convert_flat_to_round_curves(xfmNode->child);
+    }
     else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
     {
       for (size_t i=0; i<groupNode->children.size(); i++) 
@@ -1619,6 +1705,9 @@ namespace embree
    Ref<SceneGraph::Node> SceneGraph::convert_round_to_flat_curves(Ref<SceneGraph::Node> node)
   {
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      xfmNode->child = convert_round_to_flat_curves(xfmNode->child);
+    }
+    else if (Ref<SceneGraph::MultiTransformNode> xfmNode = node.dynamicCast<SceneGraph::MultiTransformNode>()) {
       xfmNode->child = convert_round_to_flat_curves(xfmNode->child);
     }
     else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
@@ -1645,6 +1734,9 @@ namespace embree
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
       convert_bezier_to_bspline(xfmNode->child);
     }
+    else if (Ref<SceneGraph::MultiTransformNode> xfmNode = node.dynamicCast<SceneGraph::MultiTransformNode>()) {
+      convert_bezier_to_bspline(xfmNode->child);
+    }
     else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
     {
       for (size_t i=0; i<groupNode->children.size(); i++) 
@@ -1662,6 +1754,9 @@ namespace embree
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
       convert_bspline_to_bezier(xfmNode->child);
     }
+    else if (Ref<SceneGraph::MultiTransformNode> xfmNode = node.dynamicCast<SceneGraph::MultiTransformNode>()) {
+      convert_bspline_to_bezier(xfmNode->child);
+    }
     else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
     {
       for (size_t i=0; i<groupNode->children.size(); i++) 
@@ -1676,6 +1771,9 @@ namespace embree
   Ref<SceneGraph::Node> SceneGraph::convert_bezier_to_hermite(Ref<SceneGraph::Node> node)
   {
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      convert_bezier_to_hermite(xfmNode->child);
+    }
+    else if (Ref<SceneGraph::MultiTransformNode> xfmNode = node.dynamicCast<SceneGraph::MultiTransformNode>()) {
       convert_bezier_to_hermite(xfmNode->child);
     }
     else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
@@ -1698,6 +1796,16 @@ namespace embree
           return nullptr;
       } else {
         if (xfmNode->spaces.size() > 1)
+          return node;
+      }
+      xfmNode->child = remove_mblur(xfmNode->child, mblur);
+    }
+    else if (Ref<SceneGraph::MultiTransformNode> xfmNode = node.dynamicCast<SceneGraph::MultiTransformNode>()) {
+      if (mblur) {
+        if (xfmNode->spaces.size() == 0 || xfmNode->spaces[0].size() > 1)
+          return nullptr;
+      } else {
+        if (xfmNode->spaces.size() > 0 && xfmNode->spaces[0].size() > 1)
           return node;
       }
       xfmNode->child = remove_mblur(xfmNode->child, mblur);
@@ -1737,9 +1845,14 @@ namespace embree
 
   void SceneGraph::convert_mblur_to_nonmblur(Ref<Node> node)
   {
-     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
-       xfmNode->spaces.spaces.resize(1);
-       convert_mblur_to_nonmblur(xfmNode->child);
+    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+      xfmNode->spaces.spaces.resize(1);
+      convert_mblur_to_nonmblur(xfmNode->child);
+    }
+    else if (Ref<SceneGraph::MultiTransformNode> xfmNode = node.dynamicCast<SceneGraph::MultiTransformNode>()) {
+      for (size_t i = 0; i < xfmNode->spaces.size(); ++i)
+        xfmNode->spaces[i].spaces.resize(1);
+      convert_mblur_to_nonmblur(xfmNode->child);
     }
     else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
     {
@@ -1867,7 +1980,11 @@ namespace embree
     {
       if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
         convertGeometries(group,xfmNode->child, spaces*xfmNode->spaces);
-      } 
+      }
+      else if (Ref<SceneGraph::MultiTransformNode> xfmNode = node.dynamicCast<SceneGraph::MultiTransformNode>()) {
+        for (size_t i = 0; i < xfmNode->spaces.size(); ++i)
+          convertGeometries(group,xfmNode->child, spaces*xfmNode->spaces[i]);
+      }
       else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
         for (const auto& child : groupNode->children) convertGeometries(group,child,spaces);
       }
@@ -1903,6 +2020,24 @@ namespace embree
       return object_mapping[node];
     }
 
+    void convertInstances(std::vector<Ref<SceneGraph::Node>>& group, const Ref<SceneGraph::Node>& node, const std::vector<SceneGraph::Transformations>& spaces)
+    {
+      if (node->isClosed()) {
+        //if (group.size() % 10000 == 0) std::cout << "." << std::flush;
+        group.push_back(new SceneGraph::MultiTransformNode(spaces,lookupGeometries(node)));
+      }
+      else if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
+        for (size_t i = 0; i < spaces.size(); ++i)
+          convertInstances(group,xfmNode->child, spaces[i]*xfmNode->spaces);
+      }
+      else if (Ref<SceneGraph::MultiTransformNode> xfmNode = node.dynamicCast<SceneGraph::MultiTransformNode>()) {
+        convertInstances(group,xfmNode->child, spaces*xfmNode->spaces);
+      }
+      else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
+        for (const auto& child : groupNode->children) convertInstances(group,child,spaces);
+      }
+    }
+
     void convertInstances(std::vector<Ref<SceneGraph::Node>>& group, const Ref<SceneGraph::Node>& node, const SceneGraph::Transformations& spaces)
     {
       if (node->isClosed()) {
@@ -1911,7 +2046,10 @@ namespace embree
       }
       else if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
         convertInstances(group,xfmNode->child, spaces*xfmNode->spaces);
-      } 
+      }
+      else if (Ref<SceneGraph::MultiTransformNode> xfmNode = node.dynamicCast<SceneGraph::MultiTransformNode>()) {
+        convertInstances(group,xfmNode->child, spaces*xfmNode->spaces);
+      }
       else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
         for (const auto& child : groupNode->children) convertInstances(group,child,spaces);
       }
@@ -1948,7 +2086,13 @@ namespace embree
         auto new_node = new SceneGraph::TransformNode(xfmNode->spaces,convertMultiLevelInstances(xfmNode->child));
         object_mapping[node] = new_node;
         group.push_back(new_node);
-      } 
+      }
+      else if (Ref<SceneGraph::MultiTransformNode> xfmNode = node.dynamicCast<SceneGraph::MultiTransformNode>())
+      {
+        auto new_node = new SceneGraph::MultiTransformNode(xfmNode->spaces,convertMultiLevelInstances(xfmNode->child));
+        object_mapping[node] = new_node;
+        group.push_back(new_node);
+      }
     }
       
     Ref<SceneGraph::Node> convertMultiLevelInstances(const Ref<SceneGraph::Node>& node)

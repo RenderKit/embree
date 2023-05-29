@@ -20,22 +20,32 @@ static_assert(RTC_MAX_INSTANCE_LEVEL_COUNT > 0,
  * Push an instance to the stack. 
  */
 template<typename Context>
-RTC_FORCEINLINE bool push(Context context, 
-                          unsigned instanceId)
+RTC_FORCEINLINE bool push(Context context,
+                          unsigned instanceId,
+                          unsigned instancePrimId)
 {
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   const bool spaceAvailable = context->instStackSize < RTC_MAX_INSTANCE_LEVEL_COUNT;
-  /* We assert here because instances are silently dropped when the stack is full. 
+  /* We assert here because instances are silently dropped when the stack is full.
      This might be quite hard to find in production. */
-  assert(spaceAvailable); 
-  if (likely(spaceAvailable))
-    context->instID[context->instStackSize++] = instanceId;
+  assert(spaceAvailable);
+  if (likely(spaceAvailable)) {
+    context->instID[context->instStackSize] = instanceId;
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+    context->instPrimID[context->instStackSize] = instancePrimId;
+#endif
+    context->instStackSize++;
+  }
   return spaceAvailable;
 #else
   const bool spaceAvailable = (context->instID[0] == RTC_INVALID_GEOMETRY_ID);
-  assert(spaceAvailable); 
-  if (likely(spaceAvailable))
+  assert(spaceAvailable);
+  if (likely(spaceAvailable)) {
     context->instID[0] = instanceId;
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+    context->instPrimID[0] = instancePrimId;
+#endif
+  }
   return spaceAvailable;
 #endif
 }
@@ -50,10 +60,17 @@ RTC_FORCEINLINE void pop(Context context)
   assert(context);
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   assert(context->instStackSize > 0);
-  context->instID[--context->instStackSize] = RTC_INVALID_GEOMETRY_ID;
+  --context->instStackSize;
+  context->instID[context->instStackSize] = RTC_INVALID_GEOMETRY_ID;
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+  context->instPrimID[context->instStackSize] = RTC_INVALID_GEOMETRY_ID;
+#endif
 #else
   assert(context->instID[0] != RTC_INVALID_GEOMETRY_ID);
   context->instID[0] = RTC_INVALID_GEOMETRY_ID;
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+  context->instPrimID[0] = RTC_INVALID_GEOMETRY_ID;
+#endif
 #endif
 }
 
@@ -61,6 +78,7 @@ RTC_FORCEINLINE void pop(Context context)
 /* Push an instance to the stack. Used for point queries*/
 RTC_FORCEINLINE bool push(RTCPointQueryContext* context,
                           unsigned int instanceId,
+                          unsigned int instancePrimId,
                           AffineSpace3fa const& w2i,
                           AffineSpace3fa const& i2w)
 {
@@ -68,6 +86,9 @@ RTC_FORCEINLINE bool push(RTCPointQueryContext* context,
   const size_t stackSize = context->instStackSize;
   assert(stackSize < RTC_MAX_INSTANCE_LEVEL_COUNT);
   context->instID[stackSize] = instanceId;
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+  context->instPrimID[stackSize] = instancePrimId;
+#endif
 
   AffineSpace3fa_store_unaligned(w2i,(AffineSpace3fa*)context->world2inst[stackSize]);
   AffineSpace3fa_store_unaligned(i2w,(AffineSpace3fa*)context->inst2world[stackSize]);
@@ -96,7 +117,11 @@ RTC_FORCEINLINE void pop(RTCPointQueryContext* context)
 #else
   assert(context->instID[0] != RTC_INVALID_GEOMETRY_ID);
 #endif
-  context->instID[--context->instStackSize] = RTC_INVALID_GEOMETRY_ID;
+  --context->instStackSize;
+  context->instID[context->instStackSize] = RTC_INVALID_GEOMETRY_ID;
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+  context->instPrimID[context->instStackSize] = RTC_INVALID_GEOMETRY_ID;
+#endif
 }
 
 /*
@@ -120,10 +145,8 @@ RTC_FORCEINLINE void copy_UU(const unsigned* src, unsigned* tgt)
 #endif
 }
 
-RTC_FORCEINLINE void copy_UU(const RTCRayQueryContext* context, unsigned* tgt)
+RTC_FORCEINLINE void copy_UU(const RTCRayQueryContext* context, const unsigned* src, unsigned* tgt)
 {
-  const unsigned* src = context->instID;
-
 #if (RTC_MAX_INSTANCE_LEVEL_COUNT == 1)
   tgt[0] = src[0];
   

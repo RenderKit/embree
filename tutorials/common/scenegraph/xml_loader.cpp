@@ -273,6 +273,7 @@ namespace embree
     avector<Vec3fa> loadVec3faArray(const Ref<XML>& xml);
     avector<Vec3ff> loadVec3ffArray(const Ref<XML>& xml);
     avector<AffineSpace3ff> loadAffineSpace3faArray(const Ref<XML>& xml);
+    avector<AffineSpace3ff> loadQuaternionArray(const Ref<XML>& xml);
     std::vector<unsigned> loadUIntArray(const Ref<XML>& xml);
     std::vector<unsigned char> loadUCharArray(const Ref<XML>& xml);
     std::vector<Vec2i> loadVec2iArray(const Ref<XML>& xml);
@@ -423,6 +424,8 @@ namespace embree
       shift = string_to_Vec3f(xml->parm("shift"));
     if (xml->parm("rotate") != "") {
       q = string_to_Vec4f(xml->parm("rotate"));
+      // convert from degree to radians
+      q.w = 2.f*M_PI/360.f*q.w;
       Quaternion3f Q = Quaternion3f::rotate(Vec3fa(q.x, q.y, q.z), q.w);
       q = Vec4f(Q.i, Q.j, Q.k, Q.r);
     }
@@ -431,9 +434,9 @@ namespace embree
     }
 
     AffineSpace3ff res(LinearSpace3fa(
-      Vec3ff(scale.x, skew.x, skew.y, q.x),
-      Vec3ff(shift.x, scale.y, skew.z, q.y),
-      Vec3ff(shift.y, shift.z, scale.z, q.z)),
+      Vec3ff(scale.x, shift.x, shift.y, q.x),
+      Vec3ff(skew.x, scale.y, shift.z, q.y),
+      Vec3ff(skew.y, skew.z, scale.z, q.z)),
       Vec3ff(translate.x, translate.y, translate.z, q.w));
 
     if (xml->body.size() == 16) {
@@ -566,13 +569,39 @@ namespace embree
   {
     if (!xml) return avector<AffineSpace3ff>();
 
-    if (xml->parm("ofs") == "") 
+    if (xml->name == "AffineSpaceArray") {
+      avector<AffineSpace3ff> spaceArray;
+      for (size_t i = 0; i < xml->size(); ++i) {
+        auto child = xml->child(i);
+        AffineSpace3ff space = AffineSpace3ff(load<AffineSpace3fa>(child));
+        spaceArray.push_back(space);
+      }
+      return spaceArray;
+    }
+    else if (xml->parm("ofs") != "") {
+      std::vector<AffineSpace3f> temp = loadBinary<std::vector<AffineSpace3f>>(xml);
+      avector<AffineSpace3ff> data; data.resize(temp.size());
+      for (size_t i=0; i<temp.size(); i++) data[i] = AffineSpace3ff(AffineSpace3fa(temp[i]));
+      return data;
+    }
+    else
       THROW_RUNTIME_ERROR(xml->loc.str()+": invalid AffineSpace3fa array");
+  }
 
-    std::vector<AffineSpace3f> temp = loadBinary<std::vector<AffineSpace3f>>(xml);
-    avector<AffineSpace3ff> data; data.resize(temp.size());
-    for (size_t i=0; i<temp.size(); i++) data[i] = AffineSpace3ff(AffineSpace3fa(temp[i]));
-    return data;
+  avector<AffineSpace3ff> XMLLoader::loadQuaternionArray(const Ref<XML>& xml)
+  {
+    if (!xml) return avector<AffineSpace3ff>();
+
+    if (xml->name == "QuaternionArray") {
+      avector<AffineSpace3ff> spaceArray;
+      for (size_t i = 0; i < xml->size(); ++i) {
+        auto child = xml->child(i);
+        spaceArray.push_back(loadQuaternion(child));
+      }
+      return spaceArray;
+    }
+    else
+      THROW_RUNTIME_ERROR(xml->loc.str()+": invalid Quaternion array");
   }
 
   std::vector<unsigned> XMLLoader::loadUIntArray(const Ref<XML>& xml)
@@ -1296,25 +1325,23 @@ namespace embree
     bool is_bspline = false;
     bool is_hermite = false;
     bool is_catmulrom = false;
-    bool is_flat = false;
-    bool is_round = false;
     bool is_normaloriented = false;
     std::string phairtype = xml->parm("hairtype");
-    if (phairtype == "linear_flat")                    { hairtype = RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE;                  is_linear = true;     is_flat = true; }
-    else if (phairtype == "linear_round")              { hairtype = RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE;                 is_linear = true;     is_round = true; }
-    else if (phairtype == "bezier_flat")               { hairtype = RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE;                  is_bezier = true;     is_flat = true; }
-    else if (phairtype == "bezier_round")              { hairtype = RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE;                 is_bezier = true;     is_round = true; }
+    if (phairtype == "linear_flat")                    { hairtype = RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE;                  is_linear = true;                               }
+    else if (phairtype == "linear_round")              { hairtype = RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE;                 is_linear = true;                               }
+    else if (phairtype == "bezier_flat")               { hairtype = RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE;                  is_bezier = true;                               }
+    else if (phairtype == "bezier_round")              { hairtype = RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE;                 is_bezier = true;                               }
     else if (phairtype == "bezier_normaloriented")     { hairtype = RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE;       is_bezier = true;     is_normaloriented = true; }
-    else if (phairtype == "bspline_flat")              { hairtype = RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE;                 is_bspline = true;    is_flat = true; }
-    else if (phairtype == "bspline_round")             { hairtype = RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE;                is_bspline = true;    is_round = true; }
+    else if (phairtype == "bspline_flat")              { hairtype = RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE;                 is_bspline = true;                              }
+    else if (phairtype == "bspline_round")             { hairtype = RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE;                is_bspline = true;                              }
     else if (phairtype == "bspline_normaloriented")    { hairtype = RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE;      is_bspline = true;    is_normaloriented = true; }
-    else if (phairtype == "hermite_flat")              { hairtype = RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE;                 is_hermite = true;    is_flat = true; }
-    else if (phairtype == "hermite_round")             { hairtype = RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE;                is_hermite = true;    is_round = true; }
+    else if (phairtype == "hermite_flat")              { hairtype = RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE;                 is_hermite = true;                              }
+    else if (phairtype == "hermite_round")             { hairtype = RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE;                is_hermite = true;                              }
     else if (phairtype == "hermite_normaloriented")    { hairtype = RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE;      is_hermite = true;    is_normaloriented = true; }
-    else if (phairtype == "catmulrom_flat")            { hairtype = RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE;             is_catmulrom = true;  is_flat = true; }
-    else if (phairtype == "catmulrom_round")           { hairtype = RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE;            is_catmulrom = true;  is_round = true; }
+    else if (phairtype == "catmulrom_flat")            { hairtype = RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE;             is_catmulrom = true;                            }
+    else if (phairtype == "catmulrom_round")           { hairtype = RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE;            is_catmulrom = true;                            }
     else if (phairtype == "catmulrom_normaloriented")  { hairtype = RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE;  is_catmulrom = true;  is_normaloriented = true; }
-    else                                               { hairtype = RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE;                 is_bezier = true;     is_round = true; }
+    else                                               { hairtype = RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE;                 is_bezier = true;                               }
 
     Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
     Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(material,BBox1f(0,1),0);
@@ -1564,15 +1591,46 @@ namespace embree
 
   Ref<SceneGraph::Node> XMLLoader::loadMultiTransformNode(const Ref<XML>& xml) 
   {
-    avector<AffineSpace3ff> spaces = loadAffineSpace3faArray(xml->children[0]);
-    Ref<SceneGraph::Node> child = loadNode(xml->children[1]);
-    
-    /* instantiate the object group with all transformations */
-    Ref<SceneGraph::GroupNode> igroup = new SceneGraph::GroupNode;
-    for (size_t i=0; i<spaces.size(); i++)
-      igroup->add(new SceneGraph::TransformNode(spaces[i],child));
-    
-    return igroup.dynamicCast<SceneGraph::Node>();
+    /* parse number of time steps to use for instanced geometry */
+    int time_steps = 1;
+    std::string str_time_steps = xml->parm("time_steps");
+    if (str_time_steps != "") time_steps = max(1,std::stoi(str_time_steps));
+
+    bool quaternion = false;
+    avector<AffineSpace3ff> space;
+    avector<avector<AffineSpace3ff>> spaces(time_steps);
+    size_t j = 0;
+    for (size_t i=0; i<time_steps; i++) {
+      if (xml->children[i]->name == "AffineSpaceArray") {
+        spaces[j++] = loadAffineSpace3faArray(xml->children[i]);
+      }
+      else if (xml->children[i]->name == "QuaternionArray") {
+        spaces[j++] = loadQuaternionArray(xml->children[i]);
+        quaternion = true;
+      }
+      else {
+        THROW_RUNTIME_ERROR(xml->loc.str()+": unknown transformation representation");
+      }
+    }
+    assert(j == time_steps);
+
+    if (xml->size() == time_steps+1) {
+      auto node = new SceneGraph::MultiTransformNode(spaces,loadNode(xml->children[time_steps]));
+      for (size_t i = 0; i < node->spaces.size(); ++i) {
+        node->spaces[i].quaternion = quaternion;
+      }
+      return node;
+    }
+
+    Ref<SceneGraph::GroupNode> group = new SceneGraph::GroupNode;
+    for (size_t i=time_steps; i<xml->size(); i++)
+      group->add(loadNode(xml->children[i]));
+
+    auto node = new  SceneGraph::MultiTransformNode(spaces,group.dynamicCast<SceneGraph::Node>());
+    for (size_t i = 0; i < node->spaces.size(); ++i) {
+      node->spaces[i].quaternion = quaternion;
+    }
+    return node;
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadTransform2Node(const Ref<XML>& xml) 

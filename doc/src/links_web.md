@@ -7,6 +7,7 @@
 [Stream Viewer]: tutorials.html#stream-viewer
 [User Geometry]: tutorials.html#user-geometry
 [Instanced Geometry]: tutorials.html#instanced-geometry
+[Instance Array Geometry]: tutorials.html#instance-array-geometry
 [Multi Level Instancing]: tutorials.html#multi-level-instancing
 [Intersection Filter]: tutorials.html#intersection-filter
 [Hair]: tutorials.html#hair

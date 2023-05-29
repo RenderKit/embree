@@ -48,7 +48,8 @@ enum RTCGeometryType
   RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE  = 60, // flat normal-oriented Catmull-Rom curves
 
   RTC_GEOMETRY_TYPE_USER     = 120, // user-defined geometry
-  RTC_GEOMETRY_TYPE_INSTANCE = 121  // scene instance
+  RTC_GEOMETRY_TYPE_INSTANCE = 121,  // scene instance
+  RTC_GEOMETRY_TYPE_INSTANCE_ARRAY = 122,  // scene instance array
 };
 
 /* Interpolation modes for subdivision surfaces */
@@ -219,6 +220,9 @@ RTC_SYCL_API void rtcInvokeOccludedFilterFromGeometry(const struct RTCOccludedFu
 /* Sets the instanced scene of an instance geometry. */
 RTC_API void rtcSetGeometryInstancedScene(RTCGeometry geometry, RTCScene scene);
 
+/* Sets the instanced scenes of an instance array geometry. */
+RTC_API void rtcSetGeometryInstancedScenes(RTCGeometry geometry, RTCScene* scenes, size_t numScenes);
+
 /* Sets the transformation of an instance for the specified time step. */
 RTC_API void rtcSetGeometryTransform(RTCGeometry geometry, unsigned int timeStep, enum RTCFormat format, const void* xfm);
 
@@ -228,6 +232,12 @@ RTC_API void rtcSetGeometryTransformQuaternion(RTCGeometry geometry, unsigned in
 /* Returns the interpolated transformation of an instance for the specified time. */
 RTC_API void rtcGetGeometryTransform(RTCGeometry geometry, float time, enum RTCFormat format, void* xfm);
 
+/*
+ * Returns the interpolated transformation of the instPrimID'th instance of an
+ * instance array for the specified time. If geometry is an regular instance,
+ * instPrimID must be 0.
+ */
+RTC_API void rtcGetGeometryTransformEx(RTCGeometry geometry, unsigned int instPrimID, float time, enum RTCFormat format, void* xfm);
 
 /* Sets the uniform tessellation rate of the geometry. */
 RTC_API void rtcSetGeometryTessellationRate(RTCGeometry geometry, float tessellationRate);
