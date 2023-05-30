@@ -65,7 +65,6 @@ jobs:
   ########################################
   # Linux DG2
   ########################################
-  
   linux-DG2-JIT-INTERNAL:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
