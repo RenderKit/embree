@@ -461,6 +461,13 @@ namespace embree
     const uint32_t device_id = device_props.deviceId;
     if (vendor_id != 0x8086) return ZE_RESULT_ERROR_UNKNOWN;
 
+    /* disabling of device check through env variable */
+    const char* disable_device_check = getenv("EMBREE_DISABLE_DEVICEID_CHECK");
+    if (disable_device_check && strcmp(disable_device_check,"1") == 0) {
+      pProperties->rtasFormat = (ze_rtas_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1;
+      return ZE_RESULT_SUCCESS;
+    }
+
     bool dg2 =
       (0x4F80 <= device_id && device_id <= 0x4F88) ||
       (0x5690 <= device_id && device_id <= 0x5698) ||

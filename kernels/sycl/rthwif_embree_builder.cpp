@@ -81,12 +81,6 @@ namespace embree
 
   int rthwifIsSYCLDeviceSupported(const sycl::device& sycl_device)
   {
-
-    /* disabling of device check through env variable */
-    const char* disable_device_check = getenv("EMBREE_DISABLE_DEVICEID_CHECK");
-    if (disable_device_check && strcmp(disable_device_check,"1") == 0)
-      return 1;
-
     if (ZeWrapper::init() != ZE_RESULT_SUCCESS)
       return -1;
 
