@@ -33,13 +33,7 @@
 
 #define ZE_APICALL_
 
-#include <level_zero/ze_wrapper.h>
-
-#if !defined(ZE_RTAS_BUILDER_EXP_NAME)
-#undef ZE_APIEXPORT
-#define ZE_APIEXPORT RTHWIF_API_EXPORT
-#include "ze_rtas.h"
-#endif
+#include "level_zero/ze_wrapper.h"
 
 RTHWIF_API ze_result_t zeRTASBuilderCreateExpImpl(ze_driver_handle_t hDriver, const ze_rtas_builder_exp_desc_t *pDescriptor, ze_rtas_builder_exp_handle_t *phBuilder);
 
