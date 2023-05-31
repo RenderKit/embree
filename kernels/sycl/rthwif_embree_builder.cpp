@@ -10,7 +10,6 @@
 #include "../common/scene.h"
 #include "../builders/primrefgen.h"
 #include "../rthwif/rtbuild/rtbuild.h"
-#include "../level_zero/ze_wrapper.h"
 
 namespace embree
 {
