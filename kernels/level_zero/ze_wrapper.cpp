@@ -21,22 +21,22 @@
 #include <cassert>
 #include <mutex>
 
-typedef ze_result_t (__cdecl *embreeZeMemFree)(ze_context_handle_t, void*);
-typedef ze_result_t (__cdecl *embreeZeMemAllocShared)(ze_context_handle_t, const ze_device_mem_alloc_desc_t*, const ze_host_mem_alloc_desc_t*, size_t, size_t, ze_device_handle_t, void**);
-typedef ze_result_t (__cdecl *embreeZeDriverGetExtensionProperties)(ze_driver_handle_t, uint32_t*, ze_driver_extension_properties_t*);
-typedef ze_result_t (__cdecl *embreeZeDeviceGetProperties)(ze_device_handle_t, ze_device_properties_t*);
-typedef ze_result_t (__cdecl *embreeZeDeviceGetModuleProperties)(ze_device_handle_t, ze_device_module_properties_t*);
+typedef decltype(zeMemFree)* TyZeMemFree;
+typedef decltype(zeMemAllocShared)* TyZeMemAllocShared;
+typedef decltype(zeDriverGetExtensionProperties)* TyZeDriverGetExtensionProperties;
+typedef decltype(zeDeviceGetProperties)* TyZeDeviceGetProperties;
+typedef decltype(zeDeviceGetModuleProperties)* TyZeDeviceGetModuleProperties;
 
 namespace {
 
 ZeWrapper zeWrapper;
 std::mutex zeWrapperMutex;
 void* handle = nullptr;
-embreeZeMemFree zeMemFreeInternal = nullptr;
-embreeZeMemAllocShared zeMemAllocSharedInternal = nullptr;
-embreeZeDriverGetExtensionProperties zeDriverGetExtensionPropertiesInternal = nullptr;
-embreeZeDeviceGetProperties zeDeviceGetPropertiesInternal = nullptr;
-embreeZeDeviceGetModuleProperties zeDeviceGetModulePropertiesInternal = nullptr;
+TyZeMemFree zeMemFreeInternal = nullptr;
+TyZeMemAllocShared zeMemAllocSharedInternal = nullptr;
+TyZeDriverGetExtensionProperties zeDriverGetExtensionPropertiesInternal = nullptr;
+TyZeDeviceGetProperties zeDeviceGetPropertiesInternal = nullptr;
+TyZeDeviceGetModuleProperties zeDeviceGetModulePropertiesInternal = nullptr;
 
 }
 
@@ -92,11 +92,11 @@ ze_result_t ZeWrapper::init()
 
   try {
     handle = load_module();
-    zeMemFreeInternal = find_symbol<embreeZeMemFree>(handle, "zeMemFree");
-    zeMemAllocSharedInternal = find_symbol<embreeZeMemAllocShared>(handle, "zeMemAllocShared");
-    zeDriverGetExtensionPropertiesInternal = find_symbol<embreeZeDriverGetExtensionProperties>(handle, "zeDriverGetExtensionProperties");
-    zeDeviceGetPropertiesInternal = find_symbol<embreeZeDeviceGetProperties>(handle, "zeDeviceGetProperties");
-    zeDeviceGetModulePropertiesInternal = find_symbol<embreeZeDeviceGetModuleProperties>(handle, "zeDeviceGetModuleProperties");
+    zeMemFreeInternal = find_symbol<TyZeMemFree>(handle, "zeMemFree");
+    zeMemAllocSharedInternal = find_symbol<TyZeMemAllocShared>(handle, "zeMemAllocShared");
+    zeDriverGetExtensionPropertiesInternal = find_symbol<TyZeDriverGetExtensionProperties>(handle, "zeDriverGetExtensionProperties");
+    zeDeviceGetPropertiesInternal = find_symbol<TyZeDeviceGetProperties>(handle, "zeDeviceGetProperties");
+    zeDeviceGetModulePropertiesInternal = find_symbol<TyZeDeviceGetModuleProperties>(handle, "zeDeviceGetModuleProperties");
   } catch(std::exception& e) {
     std::cerr << "Error: Initializing ZeWrapper failed: " << e.what() << std::endl;
     return ZE_RESULT_ERROR_UNKNOWN;
