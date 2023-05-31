@@ -3,7 +3,11 @@
 
 #pragma once
 
-#include <ze_api.h>
+#include "ze_api.h"
+
+#if !defined(ZE_RTAS_BUILDER_EXP_NAME)
+#include "ze_rtas.h"
+#endif
 
 struct ZeWrapper
 {

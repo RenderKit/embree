@@ -445,6 +445,8 @@ namespace embree
     VALIDATE(hDevice);
     VALIDATE(pProperties);
 
+    ZeWrapper::init();
+    
     /* fill properties */
     pProperties->flags = 0;
     pProperties->rtasFormat = (ze_rtas_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_INVALID;
