@@ -468,18 +468,38 @@ namespace embree
       return ZE_RESULT_SUCCESS;
     }
 
-    bool dg2 =
+    /* DG2 */
+    const bool dg2 =
       (0x4F80 <= device_id && device_id <= 0x4F88) ||
       (0x5690 <= device_id && device_id <= 0x5698) ||
       (0x56A0 <= device_id && device_id <= 0x56A6) ||
       (0x56B0 <= device_id && device_id <= 0x56B3) ||
       (0x56C0 <= device_id && device_id <= 0x56C1);
 
-    bool pvc =
+    if (dg2) {
+      pProperties->rtasFormat = (ze_rtas_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1;
+      return ZE_RESULT_SUCCESS;
+    }
+
+    /* PVC */
+    const bool pvc =
       (0x0BD0 <= device_id && device_id <= 0x0BDB) ||
       (device_id == 0x0BE5                       );
 
-    if (dg2 || pvc) {
+    if (pvc) {
+      pProperties->rtasFormat = (ze_rtas_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1;
+      return ZE_RESULT_SUCCESS;
+    }
+
+    /* MTL */
+    const bool mtl =
+      (device_id == 0x7D40) ||
+      (device_id == 0x7D55) ||
+      (device_id == 0x7DD5) ||
+      (device_id == 0x7D45) ||
+      (device_id == 0x7D60);
+
+    if (mtl) {
       pProperties->rtasFormat = (ze_rtas_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1;
       return ZE_RESULT_SUCCESS;
     }
