@@ -31,11 +31,16 @@
 #  define RTHWIF_API_EXPORT RTHWIF_API_EXTERN_C __attribute__ ((visibility ("default")))
 #endif
 
+typedef enum _ze_raytracing_accel_format_internal_t {
+  ZE_RTAS_DEVICE_FORMAT_EXP_INVALID = 0,      // invalid acceleration structure format
+  ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1 = 1,    // acceleration structure format version 1
+  ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_2 = 2,    // acceleration structure format version 2
+  ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_MAX = 2
+} ze_raytracing_accel_format_internal_t;
+
 RTHWIF_API_EXPORT ze_result_t ZE_APICALL zeRTASBuilderCreateExpImpl(ze_driver_handle_t hDriver, const ze_rtas_builder_exp_desc_t *pDescriptor, ze_rtas_builder_exp_handle_t *phBuilder);
 
 RTHWIF_API_EXPORT ze_result_t ZE_APICALL zeRTASBuilderDestroyExpImpl(ze_rtas_builder_exp_handle_t hBuilder);
-
-RTHWIF_API_EXPORT ze_result_t ZE_APICALL zeDeviceGetRTASPropertiesExpImpl( const ze_device_handle_t hDevice, ze_rtas_device_exp_properties_t* pRtasProp );
 
 RTHWIF_API_EXPORT ze_result_t ZE_APICALL zeDriverRTASFormatCompatibilityCheckExpImpl( ze_driver_handle_t hDriver,
                                                                                        const ze_rtas_format_exp_t accelFormat,

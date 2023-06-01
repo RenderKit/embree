@@ -21,8 +21,6 @@ struct ZeWrapper
   static ze_result_t zeDeviceGetProperties(ze_device_handle_t, ze_device_properties_t*);
   static ze_result_t zeDeviceGetModuleProperties(ze_device_handle_t, ze_device_module_properties_t*);
 
-  static ze_result_t zeDeviceGetRTASPropertiesExp( const ze_device_handle_t hDevice, ze_rtas_device_exp_properties_t* pRtasProp );
-  
   static ze_result_t zeRTASBuilderCreateExp(ze_driver_handle_t hDriver, const ze_rtas_builder_exp_desc_t *pDescriptor, ze_rtas_builder_exp_handle_t *phBuilder);
   static ze_result_t zeRTASBuilderDestroyExp(ze_rtas_builder_exp_handle_t hBuilder);
   static ze_result_t zeDriverRTASFormatCompatibilityCheckExp( ze_driver_handle_t hDriver,

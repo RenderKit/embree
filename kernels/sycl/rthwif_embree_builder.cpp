@@ -165,9 +165,10 @@ namespace embree
     ze_device_handle_t  hDevice  = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
 
     ze_rtas_device_exp_properties_t rtasProp = { ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES };
-    ze_result_t err = ZeWrapper::zeDeviceGetRTASPropertiesExp(hDevice, &rtasProp );
+    ze_device_properties_t devProp = { ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES, &rtasProp };
+    ze_result_t err = ZeWrapper::zeDeviceGetProperties(hDevice, &devProp );
     if (err != ZE_RESULT_SUCCESS)
-      throw std::runtime_error("get rtas device properties failed");
+      throw_RTCError(RTC_ERROR_UNKNOWN, "zeDeviceGetProperties properties failed");
 
     ze_raytracing_mem_alloc_ext_desc_t rt_desc;
     rt_desc.stype = ZE_STRUCTURE_TYPE_RAYTRACING_MEM_ALLOC_EXT_DESC;
@@ -569,9 +570,10 @@ namespace embree
       throw_RTCError(RTC_ERROR_UNKNOWN, "parallel operation creation failed");
 
     ze_rtas_device_exp_properties_t rtasProp = { ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES };
-    err = ZeWrapper::zeDeviceGetRTASPropertiesExp(hDevice, &rtasProp );
+    ze_device_properties_t devProp = { ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES, &rtasProp };
+    err = ZeWrapper::zeDeviceGetProperties(hDevice, &devProp );
     if (err != ZE_RESULT_SUCCESS)
-      throw_RTCError(RTC_ERROR_UNKNOWN, "get rtas device properties failed");
+      throw_RTCError(RTC_ERROR_UNKNOWN, "zeDeviceGetProperties properties failed");
 
     /* estimate static accel size */
     BBox1f time_range(0,1);

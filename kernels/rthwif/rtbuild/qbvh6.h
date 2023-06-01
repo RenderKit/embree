@@ -5,6 +5,7 @@
 
 #include "qnode.h"
 #include "statistics.h"
+#include "rtbuild.h"
 
 namespace embree
 {
@@ -22,13 +23,6 @@ namespace embree
     return 2 * ((offset + 127) / 128);
   }
 
-  typedef enum _ze_raytracing_accel_format_internal_t {
-    ZE_RTAS_DEVICE_FORMAT_EXP_INVALID = 0,      // invalid acceleration structure format
-    ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1 = 1, // acceleration structure format version 1
-    ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_2 = 2, // acceleration structure format version 2
-    ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_MAX = 2
-  } ze_raytracing_accel_format_internal_t;
-    
   struct QBVH6
   {
     typedef NodeRef Node;
