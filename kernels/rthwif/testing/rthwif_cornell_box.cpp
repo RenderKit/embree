@@ -92,11 +92,12 @@ void* alloc_accel_buffer(size_t bytes, sycl::device device, sycl::context contex
 {
   ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
   ze_device_handle_t  hDevice  = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
-
+  
   ze_rtas_device_exp_properties_t rtasProp = { ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES };
-  ze_result_t err = ZeWrapper::zeDeviceGetRTASPropertiesExp(hDevice, &rtasProp );
+  ze_device_properties_t devProp = { ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES, &rtasProp };
+  ze_result_t err = ZeWrapper::zeDeviceGetProperties(hDevice, &devProp );
   if (err != ZE_RESULT_SUCCESS)
-    throw std::runtime_error("get rtas device properties failed");
+    throw std::runtime_error("zeDeviceGetProperties failed");
   
   ze_raytracing_mem_alloc_ext_desc_t rt_desc;
   rt_desc.stype = ZE_STRUCTURE_TYPE_RAYTRACING_MEM_ALLOC_EXT_DESC;
@@ -320,9 +321,10 @@ void* build_rtas(sycl::device device, sycl::context context)
   
   /* get acceleration structure format for this device */
   ze_rtas_device_exp_properties_t rtasProp = { ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES };
-  err = ZeWrapper::zeDeviceGetRTASPropertiesExp(hDevice, &rtasProp );
+  ze_device_properties_t devProp = { ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES, &rtasProp };
+  err = ZeWrapper::zeDeviceGetProperties(hDevice, &devProp );
   if (err != ZE_RESULT_SUCCESS)
-    throw std::runtime_error("get rtas device properties failed");
+    throw std::runtime_error("zeDeviceGetProperties failed");
 
   /* create parallel operation for parallel build */
   ze_rtas_parallel_operation_exp_handle_t hParallelOperation = nullptr;

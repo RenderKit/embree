@@ -29,6 +29,7 @@ namespace {
 ZeWrapper zeWrapper;
 std::mutex zeWrapperMutex;
 void* handle = nullptr;
+bool use_internal_implementation = false;
 
 decltype(zeMemFree)* zeMemFreeInternal = nullptr;
 decltype(zeMemAllocShared)* zeMemAllocSharedInternal = nullptr;
@@ -118,6 +119,8 @@ ze_result_t ZeWrapper::init()
       zeRTASParallelOperationDestroyExpInternal = find_symbol<decltype(zeRTASParallelOperationDestroyExp)*>(handle,"zeRTASParallelOperationDestroyExp");
       zeRTASParallelOperationGetPropertiesExpInternal = find_symbol<decltype(zeRTASParallelOperationGetPropertiesExp)*>(handle,"zeRTASParallelOperationGetPropertiesExp");
       zeRTASParallelOperationJoinExpInternal = find_symbol<decltype(zeRTASParallelOperationJoinExp)*>(handle,"zeRTASParallelOperationJoinExp");
+
+      use_internal_implementation = false;
       
     } catch (std::exception& e) {
 
@@ -131,6 +134,8 @@ ze_result_t ZeWrapper::init()
       zeRTASParallelOperationDestroyExpInternal = &zeRTASParallelOperationDestroyExpImpl;
       zeRTASParallelOperationGetPropertiesExpInternal = &zeRTASParallelOperationGetPropertiesExpImpl;
       zeRTASParallelOperationJoinExpInternal = &zeRTASParallelOperationJoinExpImpl;
+
+      use_internal_implementation = true;
     }
     
   } catch (std::exception& e) {
@@ -164,22 +169,6 @@ ze_result_t ZeWrapper::zeDriverGetExtensionProperties(ze_driver_handle_t ze_hand
   return zeDriverGetExtensionPropertiesInternal(ze_handle, ptr, props);
 }
 
-ze_result_t ZeWrapper::zeDeviceGetProperties(ze_device_handle_t ze_handle, ze_device_properties_t* props)
-{
-  if (!handle || !zeDeviceGetPropertiesInternal)
-    throw std::runtime_error("ZeWrapper not initialized, call ZeWrapper::init() first.");
-  
-  return zeDeviceGetPropertiesInternal(ze_handle, props);
-}
-
-ze_result_t ZeWrapper::zeDeviceGetModuleProperties(ze_device_handle_t ze_handle, ze_device_module_properties_t* props)
-{
-  if (!handle || !zeDeviceGetModulePropertiesInternal)
-    throw std::runtime_error("ZeWrapper not initialized, call ZeWrapper::init() first.");
-  
-  return zeDeviceGetModulePropertiesInternal(ze_handle, props);
-}
-
 #define VALIDATE(arg) \
   {\
   ze_result_t result = validate(arg);\
@@ -208,14 +197,7 @@ ze_result_t validate(ze_rtas_device_exp_properties_t* pProperties)
   return ZE_RESULT_SUCCESS;
 }
 
-typedef enum _ze_raytracing_accel_format_internal_t {
-  ZE_RTAS_DEVICE_FORMAT_EXP_INVALID = 0,      // invalid acceleration structure format
-  ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1 = 1, // acceleration structure format version 1
-  ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_2 = 2, // acceleration structure format version 2
-  ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_MAX = 2
-} ze_raytracing_accel_format_internal_t;
-
-ze_result_t ZeWrapper::zeDeviceGetRTASPropertiesExp( const ze_device_handle_t hDevice, ze_rtas_device_exp_properties_t* pProperties )
+ze_result_t zeDeviceGetRTASPropertiesExp( const ze_device_handle_t hDevice, ze_rtas_device_exp_properties_t* pProperties )
 {
   /* input validation */
   VALIDATE(hDevice);
@@ -281,6 +263,37 @@ ze_result_t ZeWrapper::zeDeviceGetRTASPropertiesExp( const ze_device_handle_t hD
   }
   
   return ZE_RESULT_ERROR_UNKNOWN;
+}
+
+ze_result_t ZeWrapper::zeDeviceGetProperties(ze_device_handle_t ze_handle, ze_device_properties_t* props)
+{
+  if (!handle || !zeDeviceGetPropertiesInternal)
+    throw std::runtime_error("ZeWrapper not initialized, call ZeWrapper::init() first.");
+
+  if (use_internal_implementation)
+  {
+    if (props->pNext && ((ze_base_properties_t*)props->pNext)->stype == ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES)
+    {
+      ze_result_t result = zeDeviceGetRTASPropertiesExp(ze_handle, (ze_rtas_device_exp_properties_t*)props->pNext);
+      if (result != ZE_RESULT_SUCCESS) return result;
+      
+      void* pNext = props->pNext;
+      props->pNext = ((ze_base_properties_t*)props->pNext)->pNext;
+      result = zeDeviceGetPropertiesInternal(ze_handle, props);
+      props->pNext = pNext;
+      return result;
+    }
+  }
+    
+  return zeDeviceGetPropertiesInternal(ze_handle, props);
+}
+
+ze_result_t ZeWrapper::zeDeviceGetModuleProperties(ze_device_handle_t ze_handle, ze_device_module_properties_t* props)
+{
+  if (!handle || !zeDeviceGetModulePropertiesInternal)
+    throw std::runtime_error("ZeWrapper not initialized, call ZeWrapper::init() first.");
+  
+  return zeDeviceGetModulePropertiesInternal(ze_handle, props);
 }
 
 ze_result_t ZeWrapper::zeRTASBuilderCreateExp(ze_driver_handle_t hDriver, const ze_rtas_builder_exp_desc_t *pDescriptor, ze_rtas_builder_exp_handle_t *phBuilder)
