@@ -9,7 +9,7 @@
 #include "rthwif_embree_builder.h"
 #include "../common/scene.h"
 #include "../builders/primrefgen.h"
-#include "../rthwif/rtbuild/rtbuild.h"
+#include "../level_zero/ze_wrapper.h"
 
 namespace embree
 {
@@ -165,7 +165,7 @@ namespace embree
     ze_device_handle_t  hDevice  = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
 
     ze_rtas_device_exp_properties_t rtasProp = { ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES };
-    ze_result_t err = zeDeviceGetRTASPropertiesExp(hDevice, &rtasProp );
+    ze_result_t err = ZeWrapper::zeDeviceGetRTASPropertiesExp(hDevice, &rtasProp );
     if (err != ZE_RESULT_SUCCESS)
       throw std::runtime_error("get rtas device properties failed");
 
@@ -460,7 +460,7 @@ namespace embree
     /* create L0 builder object */
     ze_rtas_builder_exp_desc_t builderDesc = { ZE_STRUCTURE_TYPE_RTAS_BUILDER_EXP_DESC };
     ze_rtas_builder_exp_handle_t hBuilder = nullptr;
-    ze_result_t err = zeRTASBuilderCreateExp(hDriver, &builderDesc, &hBuilder);
+    ze_result_t err = ZeWrapper::zeRTASBuilderCreateExp(hDriver, &builderDesc, &hBuilder);
     if (err != ZE_RESULT_SUCCESS)
       throw_RTCError(RTC_ERROR_UNKNOWN, "ze_rtas_builder creation failed");
     
@@ -564,12 +564,12 @@ namespace embree
     }
 
     ze_rtas_parallel_operation_exp_handle_t parallelOperation = nullptr;
-    err = zeRTASParallelOperationCreateExp(hDriver, &parallelOperation);
+    err = ZeWrapper::zeRTASParallelOperationCreateExp(hDriver, &parallelOperation);
     if (err != ZE_RESULT_SUCCESS)
       throw_RTCError(RTC_ERROR_UNKNOWN, "parallel operation creation failed");
 
     ze_rtas_device_exp_properties_t rtasProp = { ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES };
-    err = zeDeviceGetRTASPropertiesExp(hDevice, &rtasProp );
+    err = ZeWrapper::zeDeviceGetRTASPropertiesExp(hDevice, &rtasProp );
     if (err != ZE_RESULT_SUCCESS)
       throw_RTCError(RTC_ERROR_UNKNOWN, "get rtas device properties failed");
 
@@ -590,7 +590,7 @@ namespace embree
 #endif
     
     ze_rtas_builder_exp_properties_t sizeTotal = { ZE_STRUCTURE_TYPE_RTAS_BUILDER_EXP_PROPERTIES };
-    err = zeRTASBuilderGetBuildPropertiesExp(hBuilder,&args,&sizeTotal);
+    err = ZeWrapper::zeRTASBuilderGetBuildPropertiesExp(hBuilder,&args,&sizeTotal);
     if (err != ZE_RESULT_SUCCESS)
       throw_RTCError(RTC_ERROR_UNKNOWN,"BVH size estimate failed");
 
@@ -625,7 +625,7 @@ namespace embree
         size_t accelBufferBytes = sizeTotal.rtasBufferSizeBytesExpected;
         bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };
         
-        err = zeRTASBuilderBuildExp(hBuilder,&args,
+        err = ZeWrapper::zeRTASBuilderBuildExp(hBuilder,&args,
                                         scratchBuffer.data(),scratchBuffer.size(),
                                         accelBuffer, accelBufferBytes,
                                         parallelOperation,
@@ -635,11 +635,11 @@ namespace embree
           assert(err == ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE);
 
           ze_rtas_parallel_operation_exp_properties_t prop = { ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES };
-          err = zeRTASParallelOperationGetPropertiesExp(parallelOperation,&prop);
+          err = ZeWrapper::zeRTASParallelOperationGetPropertiesExp(parallelOperation,&prop);
           if (err != ZE_RESULT_SUCCESS)
             throw_RTCError(RTC_ERROR_UNKNOWN, "get max concurrency failed");
           
-          parallel_for(prop.maxConcurrency, [&](uint32_t) { err = zeRTASParallelOperationJoinExp(parallelOperation); });
+          parallel_for(prop.maxConcurrency, [&](uint32_t) { err = ZeWrapper::zeRTASParallelOperationJoinExp(parallelOperation); });
         }
         
         fullBounds.extend(*(BBox3f*) &bounds);
@@ -662,12 +662,12 @@ namespace embree
       throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
 
     /* destroy parallel operation */
-    err = zeRTASParallelOperationDestroyExp(parallelOperation);
+    err = ZeWrapper::zeRTASParallelOperationDestroyExp(parallelOperation);
     if (err != ZE_RESULT_SUCCESS)
       throw_RTCError(RTC_ERROR_UNKNOWN, "parallel operation destruction failed");
 
     /* destroy rtas builder again */
-    err = zeRTASBuilderDestroyExp(hBuilder);
+    err = ZeWrapper::zeRTASBuilderDestroyExp(hBuilder);
     if (err != ZE_RESULT_SUCCESS)
       throw_RTCError(RTC_ERROR_UNKNOWN, "ze_rtas_builder destruction failed");
     

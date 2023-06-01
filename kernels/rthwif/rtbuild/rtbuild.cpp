@@ -421,7 +421,7 @@ namespace embree
     return ZE_RESULT_SUCCESS;
   }
   
-  RTHWIF_API ze_result_t zeRTASBuilderCreateExpImpl(ze_driver_handle_t hDriver, const ze_rtas_builder_exp_desc_t *pDescriptor, ze_rtas_builder_exp_handle_t *phBuilder)
+  RTHWIF_API_EXPORT ze_result_t ZE_APICALL zeRTASBuilderCreateExpImpl(ze_driver_handle_t hDriver, const ze_rtas_builder_exp_desc_t *pDescriptor, ze_rtas_builder_exp_handle_t *phBuilder)
   {
     /* input validation */
     VALIDATE(hDriver);
@@ -432,86 +432,16 @@ namespace embree
     return ZE_RESULT_SUCCESS;
   }
 
-  RTHWIF_API ze_result_t zeRTASBuilderDestroyExpImpl(ze_rtas_builder_exp_handle_t hBuilder)
+  RTHWIF_API_EXPORT ze_result_t ZE_APICALL zeRTASBuilderDestroyExpImpl(ze_rtas_builder_exp_handle_t hBuilder)
   {
     VALIDATE(hBuilder);
     delete (ze_rtas_builder*) hBuilder;
     return ZE_RESULT_SUCCESS;
   }
 
-  RTHWIF_API ze_result_t zeDeviceGetRTASPropertiesExpImpl( const ze_device_handle_t hDevice, ze_rtas_device_exp_properties_t* pProperties )
-  {
-    /* input validation */
-    VALIDATE(hDevice);
-    VALIDATE(pProperties);
-
-    ZeWrapper::init();
-    
-    /* fill properties */
-    pProperties->flags = 0;
-    pProperties->rtasFormat = (ze_rtas_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_INVALID;
-    pProperties->rtasBufferAlignment = 128;
-
-    /* check for supported device ID */
-    ze_device_properties_t device_props{ ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES };
-    ze_result_t status = ZeWrapper::zeDeviceGetProperties(hDevice, &device_props);
-    if (status != ZE_RESULT_SUCCESS)
-      return status;
-
-    /* check for Intel vendor */
-    const uint32_t vendor_id = device_props.vendorId;
-    const uint32_t device_id = device_props.deviceId;
-    if (vendor_id != 0x8086) return ZE_RESULT_ERROR_UNKNOWN;
-
-    /* disabling of device check through env variable */
-    const char* disable_device_check = getenv("EMBREE_DISABLE_DEVICEID_CHECK");
-    if (disable_device_check && strcmp(disable_device_check,"1") == 0) {
-      pProperties->rtasFormat = (ze_rtas_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1;
-      return ZE_RESULT_SUCCESS;
-    }
-
-    /* DG2 */
-    const bool dg2 =
-      (0x4F80 <= device_id && device_id <= 0x4F88) ||
-      (0x5690 <= device_id && device_id <= 0x5698) ||
-      (0x56A0 <= device_id && device_id <= 0x56A6) ||
-      (0x56B0 <= device_id && device_id <= 0x56B3) ||
-      (0x56C0 <= device_id && device_id <= 0x56C1);
-
-    if (dg2) {
-      pProperties->rtasFormat = (ze_rtas_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1;
-      return ZE_RESULT_SUCCESS;
-    }
-
-    /* PVC */
-    const bool pvc =
-      (0x0BD0 <= device_id && device_id <= 0x0BDB) ||
-      (device_id == 0x0BE5                       );
-
-    if (pvc) {
-      pProperties->rtasFormat = (ze_rtas_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1;
-      return ZE_RESULT_SUCCESS;
-    }
-
-    /* MTL */
-    const bool mtl =
-      (device_id == 0x7D40) ||
-      (device_id == 0x7D55) ||
-      (device_id == 0x7DD5) ||
-      (device_id == 0x7D45) ||
-      (device_id == 0x7D60);
-
-    if (mtl) {
-      pProperties->rtasFormat = (ze_rtas_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1;
-      return ZE_RESULT_SUCCESS;
-    }
-
-    return ZE_RESULT_ERROR_UNKNOWN;
-  }
-  
-  RTHWIF_API ze_result_t zeRTASBuilderDeviceFormatCompatibilityCheckExpImpl( ze_rtas_builder_exp_handle_t hBuilder,
-                                                                             const ze_rtas_format_exp_t accelFormat,
-                                                                             const ze_rtas_format_exp_t otherAccelFormat )
+  RTHWIF_API_EXPORT ze_result_t ZE_APICALL zeRTASBuilderFormatCompatibilityCheckExpImpl( ze_rtas_builder_exp_handle_t hBuilder,
+                                                                                         const ze_rtas_format_exp_t accelFormat,
+                                                                                         const ze_rtas_format_exp_t otherAccelFormat )
   {
     /* input validation */
     VALIDATE(hBuilder);
@@ -537,9 +467,9 @@ namespace embree
     };
   }
   
-  RTHWIF_API ze_result_t zeRTASBuilderGetBuildPropertiesExpImpl(ze_rtas_builder_exp_handle_t hBuilder,
-                                                                const ze_rtas_builder_build_op_exp_desc_t* args,
-                                                                ze_rtas_builder_exp_properties_t* pProp)
+  RTHWIF_API_EXPORT ze_result_t ZE_APICALL zeRTASBuilderGetBuildPropertiesExpImpl(ze_rtas_builder_exp_handle_t hBuilder,
+                                                                                  const ze_rtas_builder_build_op_exp_desc_t* args,
+                                                                                  ze_rtas_builder_exp_properties_t* pProp)
   {
     /* input validation */
     VALIDATE(hBuilder);
@@ -724,12 +654,12 @@ namespace embree
     return ZE_RESULT_ERROR_UNKNOWN;
   }
   
-  RTHWIF_API ze_result_t zeRTASBuilderBuildExpImpl(ze_rtas_builder_exp_handle_t hBuilder,
-                                                   const ze_rtas_builder_build_op_exp_desc_t* args,
-                                                   void *pScratchBuffer, size_t scratchBufferSizeBytes,
-                                                   void *pRtasBuffer, size_t rtasBufferSizeBytes,
-                                                   ze_rtas_parallel_operation_exp_handle_t hParallelOperation,
-                                                   void *pBuildUserPtr, ze_rtas_aabb_exp_t *pBounds, size_t *pRtasBufferSizeBytes)
+  RTHWIF_API_EXPORT ze_result_t ZE_APICALL zeRTASBuilderBuildExpImpl(ze_rtas_builder_exp_handle_t hBuilder,
+                                                                     const ze_rtas_builder_build_op_exp_desc_t* args,
+                                                                     void *pScratchBuffer, size_t scratchBufferSizeBytes,
+                                                                     void *pRtasBuffer, size_t rtasBufferSizeBytes,
+                                                                     ze_rtas_parallel_operation_exp_handle_t hParallelOperation,
+                                                                     void *pBuildUserPtr, ze_rtas_aabb_exp_t *pBounds, size_t *pRtasBufferSizeBytes)
   {
     /* input validation */
     VALIDATE(hBuilder);
@@ -768,7 +698,7 @@ namespace embree
     }
   }
 
-  RTHWIF_API ze_result_t zeRTASParallelOperationCreateExpImpl(ze_driver_handle_t hDriver, ze_rtas_parallel_operation_exp_handle_t* phParallelOperation)
+  RTHWIF_API_EXPORT ze_result_t ZE_APICALL zeRTASParallelOperationCreateExpImpl(ze_driver_handle_t hDriver, ze_rtas_parallel_operation_exp_handle_t* phParallelOperation)
   {
     /* input validation */
     VALIDATE(hDriver);
@@ -779,7 +709,7 @@ namespace embree
     return ZE_RESULT_SUCCESS;
   }
   
-  RTHWIF_API ze_result_t zeRTASParallelOperationDestroyExpImpl( ze_rtas_parallel_operation_exp_handle_t hParallelOperation )
+  RTHWIF_API_EXPORT ze_result_t ZE_APICALL zeRTASParallelOperationDestroyExpImpl( ze_rtas_parallel_operation_exp_handle_t hParallelOperation )
   {
     /* input validation */
     VALIDATE(hParallelOperation);
@@ -789,7 +719,7 @@ namespace embree
     return ZE_RESULT_SUCCESS;
   }
   
-  RTHWIF_API ze_result_t zeRTASParallelOperationGetPropertiesExpImpl( ze_rtas_parallel_operation_exp_handle_t hParallelOperation, ze_rtas_parallel_operation_exp_properties_t* pProperties )
+  RTHWIF_API_EXPORT ze_result_t ZE_APICALL zeRTASParallelOperationGetPropertiesExpImpl( ze_rtas_parallel_operation_exp_handle_t hParallelOperation, ze_rtas_parallel_operation_exp_properties_t* pProperties )
   {
     /* input validation */
     VALIDATE(hParallelOperation);
@@ -801,7 +731,7 @@ namespace embree
     return ZE_RESULT_SUCCESS;
   }
   
-  RTHWIF_API ze_result_t zeRTASParallelOperationJoinExpImpl( ze_rtas_parallel_operation_exp_handle_t hParallelOperation)
+  RTHWIF_API_EXPORT ze_result_t ZE_APICALL zeRTASParallelOperationJoinExpImpl( ze_rtas_parallel_operation_exp_handle_t hParallelOperation)
   {
     /* check for valid handle */
     VALIDATE(hParallelOperation);
