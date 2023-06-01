@@ -632,7 +632,7 @@ namespace embree
                                         &time_range, &bounds, nullptr);
         if (parallelOperation)
         {
-          assert(err == ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE);
+          assert(err == ZE_RESULT_EXP_RTAS_BUILD_DEFERRED);
 
           ze_rtas_parallel_operation_exp_properties_t prop = { ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES };
           err = ZeWrapper::zeRTASParallelOperationGetPropertiesExp(parallelOperation,&prop);
@@ -644,7 +644,7 @@ namespace embree
         
         fullBounds.extend(*(BBox3f*) &bounds);
 
-        if (err == ZE_RESULT_EXP_ERROR_RETRY_RTAS_BUILD)
+        if (err == ZE_RESULT_EXP_RTAS_BUILD_RETRY)
         {
           if (sizeTotal.rtasBufferSizeBytesExpected == sizeTotal.rtasBufferSizeBytesMaxRequired)
             throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
@@ -655,7 +655,7 @@ namespace embree
         
         if (err != ZE_RESULT_SUCCESS) break;
       }
-      if (err != ZE_RESULT_EXP_ERROR_RETRY_RTAS_BUILD) break;
+      if (err != ZE_RESULT_EXP_RTAS_BUILD_RETRY) break;
     }
 
     if (err != ZE_RESULT_SUCCESS)
