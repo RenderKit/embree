@@ -278,25 +278,24 @@ namespace embree
 
   struct ze_rtas_parallel_operation_t
   {
-    //ze_rtas_parallel_operation_t(ze_rtas_builder_exp_handle_t hBuilder)
-    //: hBuilder(hBuilder) {}
-    
     ze_rtas_parallel_operation_t() {
     }
 
     ~ze_rtas_parallel_operation_t() {
       magick = 0x0;
-      //hBuilder = nullptr;
     }
 
-    bool verify() const {
-      //return (magick == MAGICK) && (validate(hBuilder) == ZE_RESULT_SUCCESS);
-      return (magick == MAGICK);
+    ze_result_t verify() const
+    {
+      if (magick != MAGICK)
+        return ZE_RESULT_ERROR_INVALID_ARGUMENT;
+
+      return ZE_RESULT_SUCCESS;
     }
     
     enum { MAGICK = 0xE84567E1 };
     uint32_t magick = MAGICK;
-    //ze_rtas_builder_exp_handle_t hBuilder = nullptr;
+    std::atomic<bool> object_in_use = false;
     ze_result_t errorCode = ZE_RESULT_SUCCESS;
     tbb::task_group group;
   };
@@ -306,10 +305,7 @@ namespace embree
     if (hParallelOperation == nullptr)
       return ZE_RESULT_ERROR_INVALID_NULL_HANDLE;
     
-    if (!((ze_rtas_parallel_operation_t*)hParallelOperation)->verify())
-      return ZE_RESULT_ERROR_INVALID_ARGUMENT;
-
-    return ZE_RESULT_SUCCESS;
+    return ((ze_rtas_parallel_operation_t*)hParallelOperation)->verify();
   }
 
   ze_result_t validate(const ze_rtas_builder_exp_desc_t* pDescriptor)
@@ -439,12 +435,12 @@ namespace embree
     return ZE_RESULT_SUCCESS;
   }
 
-  RTHWIF_API_EXPORT ze_result_t ZE_APICALL zeRTASBuilderFormatCompatibilityCheckExpImpl( ze_rtas_builder_exp_handle_t hBuilder,
-                                                                                         const ze_rtas_format_exp_t accelFormat,
-                                                                                         const ze_rtas_format_exp_t otherAccelFormat )
+  RTHWIF_API_EXPORT ze_result_t ZE_APICALL zeDriverRTASFormatCompatibilityCheckExpImpl( ze_driver_handle_t hDriver,
+                                                                                        const ze_rtas_format_exp_t accelFormat,
+                                                                                        const ze_rtas_format_exp_t otherAccelFormat )
   {
     /* input validation */
-    VALIDATE(hBuilder);
+    VALIDATE(hDriver);
     VALIDATE(accelFormat);
     VALIDATE(otherAccelFormat);
 
@@ -645,7 +641,7 @@ namespace embree
                            (BBox3f*) pBounds, pRtasBufferSizeBytes,
                            args->rtasFormat, args->buildQuality, args->buildFlags, verbose, dispatchGlobalsPtr);
     if (!success) {
-      return ZE_RESULT_EXP_ERROR_RETRY_RTAS_BUILD;
+      return ZE_RESULT_EXP_RTAS_BUILD_RETRY;
     }
     return ZE_RESULT_SUCCESS;
   }
@@ -673,8 +669,11 @@ namespace embree
       VALIDATE(hParallelOperation);
       
       ze_rtas_parallel_operation_t* op = (ze_rtas_parallel_operation_t*) hParallelOperation;
-      //if (op->hBuilder != hBuilder)
-      //  return ZE_RESULT_ERROR_INVALID_ARGUMENT;
+      
+      if (op->object_in_use.load())
+        return ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE;
+      
+      op->object_in_use.store(true);
       
       g_arena.execute([&](){ op->group.run([=](){
          op->errorCode = zeRTASBuilderBuildExpBody(args,
@@ -683,7 +682,7 @@ namespace embree
                                                        pBuildUserPtr, pBounds, pRtasBufferSizeBytes);
                                             });
                        });
-      return ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE;
+      return ZE_RESULT_EXP_RTAS_BUILD_DEFERRED;
     }
     /* ... otherwise we just execute inside task arena to avoid spawning of TBB worker threads */
     else
@@ -724,7 +723,11 @@ namespace embree
     /* input validation */
     VALIDATE(hParallelOperation);
     VALIDATE(pProperties);
-   
+
+    ze_rtas_parallel_operation_t* op = (ze_rtas_parallel_operation_t*) hParallelOperation;
+    if (!op->object_in_use.load())
+      return ZE_RESULT_ERROR_INVALID_ARGUMENT;
+    
     /* return properties */
     pProperties->flags = 0;
     pProperties->maxConcurrency = tbb::this_task_arena::max_concurrency();
@@ -738,6 +741,7 @@ namespace embree
     
     ze_rtas_parallel_operation_t* op = (ze_rtas_parallel_operation_t*) hParallelOperation;
     g_arena.execute([&](){ op->group.wait(); });
+    op->object_in_use.store(false); // this is slighty too early
     return op->errorCode;
   }
 }

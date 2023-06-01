@@ -25,9 +25,9 @@ struct ZeWrapper
   
   static ze_result_t zeRTASBuilderCreateExp(ze_driver_handle_t hDriver, const ze_rtas_builder_exp_desc_t *pDescriptor, ze_rtas_builder_exp_handle_t *phBuilder);
   static ze_result_t zeRTASBuilderDestroyExp(ze_rtas_builder_exp_handle_t hBuilder);
-  static ze_result_t zeRTASBuilderFormatCompatibilityCheckExp( ze_rtas_builder_exp_handle_t hBuilder,
-                                                               const ze_rtas_format_exp_t accelFormat,
-                                                               const ze_rtas_format_exp_t otherAccelFormat);
+  static ze_result_t zeDriverRTASFormatCompatibilityCheckExp( ze_driver_handle_t hDriver,
+                                                              const ze_rtas_format_exp_t accelFormat,
+                                                              const ze_rtas_format_exp_t otherAccelFormat);
   static ze_result_t zeRTASBuilderGetBuildPropertiesExp(ze_rtas_builder_exp_handle_t hBuilder,
                                                         const ze_rtas_builder_build_op_exp_desc_t* args,
                                                         ze_rtas_builder_exp_properties_t* pProp);

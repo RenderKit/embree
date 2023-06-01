@@ -1236,7 +1236,7 @@ struct Scene
 
         if (parallelOperation)
         {
-          assert(err == ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE);
+          assert(err == ZE_RESULT_EXP_RTAS_BUILD_DEFERRED);
           
           ze_rtas_parallel_operation_exp_properties_t prop = { ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES };
           err = ZeWrapper::zeRTASParallelOperationGetPropertiesExp(parallelOperation,&prop);
@@ -1282,7 +1282,7 @@ struct Scene
 
         if (parallelOperation)
         {
-          assert(err == ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE);
+          assert(err == ZE_RESULT_EXP_RTAS_BUILD_DEFERRED);
           
           ze_rtas_parallel_operation_exp_properties_t prop = { ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES };
           err = ZeWrapper::zeRTASParallelOperationGetPropertiesExp(parallelOperation,&prop);
@@ -1294,7 +1294,7 @@ struct Scene
           });
         }
         
-        if (err != ZE_RESULT_EXP_ERROR_RETRY_RTAS_BUILD)
+        if (err != ZE_RESULT_EXP_RTAS_BUILD_RETRY)
           break;
 
         if (accelBufferBytesOut < bytes || size.rtasBufferSizeBytesMaxRequired < accelBufferBytesOut )

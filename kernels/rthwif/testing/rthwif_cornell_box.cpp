@@ -367,12 +367,13 @@ void* build_rtas(sycl::device device, sycl::context context)
                                   hParallelOperation,
                                   nullptr, &bounds, &accelBufferBytesOut);
   
-  if (err != ZE_RESULT_ERROR_HANDLE_OBJECT_IN_USE)
+  if (err != ZE_RESULT_EXP_RTAS_BUILD_DEFERRED)
     throw std::runtime_error("zeRTASBuilderBuildExp failed");
 
   /* after the build is started one can query number of threads to use for the build */
   ze_rtas_parallel_operation_exp_properties_t prop = { ZE_STRUCTURE_TYPE_RTAS_PARALLEL_OPERATION_EXP_PROPERTIES };
   err = ZeWrapper::zeRTASParallelOperationGetPropertiesExp(hParallelOperation,&prop);
+
   if (err != ZE_RESULT_SUCCESS)
     throw std::runtime_error("zeRTASParallelOperationGetPropertiesExp failed");
 

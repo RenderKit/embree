@@ -38,7 +38,7 @@ decltype(zeDeviceGetModuleProperties)* zeDeviceGetModulePropertiesInternal = nul
 
 decltype(zeRTASBuilderCreateExp)* zeRTASBuilderCreateExpInternal = nullptr;
 decltype(zeRTASBuilderDestroyExp)* zeRTASBuilderDestroyExpInternal = nullptr;
-decltype(zeRTASBuilderFormatCompatibilityCheckExp)* zeRTASBuilderFormatCompatibilityCheckExpInternal = nullptr;
+decltype(zeDriverRTASFormatCompatibilityCheckExp)* zeDriverRTASFormatCompatibilityCheckExpInternal = nullptr;
 decltype(zeRTASBuilderGetBuildPropertiesExp)* zeRTASBuilderGetBuildPropertiesExpInternal = nullptr;
 decltype(zeRTASBuilderBuildExp)* zeRTASBuilderBuildExpInternal = nullptr;
   
@@ -110,7 +110,7 @@ ze_result_t ZeWrapper::init()
     try {
       zeRTASBuilderCreateExpInternal = find_symbol<decltype(zeRTASBuilderCreateExp)*>(handle,"zeRTASBuilderCreateExp");
       zeRTASBuilderDestroyExpInternal = find_symbol<decltype(zeRTASBuilderDestroyExp)*>(handle,"zeRTASBuilderDestroyExp");
-      zeRTASBuilderFormatCompatibilityCheckExpInternal = find_symbol<decltype(zeRTASBuilderFormatCompatibilityCheckExp)*>(handle,"zeRTASBuilderFormatCompatibilityCheckExp");
+      zeDriverRTASFormatCompatibilityCheckExpInternal = find_symbol<decltype(zeDriverRTASFormatCompatibilityCheckExp)*>(handle,"zeDriverRTASFormatCompatibilityCheckExp");
       zeRTASBuilderGetBuildPropertiesExpInternal = find_symbol<decltype(zeRTASBuilderGetBuildPropertiesExp)*>(handle,"zeRTASBuilderGetBuildPropertiesExp");
       zeRTASBuilderBuildExpInternal = find_symbol<decltype(zeRTASBuilderBuildExp)*>(handle,"zeRTASBuilderBuildExp");
       
@@ -123,7 +123,7 @@ ze_result_t ZeWrapper::init()
 
       zeRTASBuilderCreateExpInternal = &zeRTASBuilderCreateExpImpl;
       zeRTASBuilderDestroyExpInternal = &zeRTASBuilderDestroyExpImpl;
-      zeRTASBuilderFormatCompatibilityCheckExpInternal = &zeRTASBuilderFormatCompatibilityCheckExpImpl;
+      zeDriverRTASFormatCompatibilityCheckExpInternal = &zeDriverRTASFormatCompatibilityCheckExpImpl;
       zeRTASBuilderGetBuildPropertiesExpInternal = &zeRTASBuilderGetBuildPropertiesExpImpl;
       zeRTASBuilderBuildExpInternal = &zeRTASBuilderBuildExpImpl;
       
@@ -299,14 +299,14 @@ ze_result_t ZeWrapper::zeRTASBuilderDestroyExp(ze_rtas_builder_exp_handle_t hBui
   return zeRTASBuilderDestroyExpInternal(hBuilder);
 }
 
-ze_result_t ZeWrapper::zeRTASBuilderFormatCompatibilityCheckExp( ze_rtas_builder_exp_handle_t hBuilder,
+ze_result_t ZeWrapper::zeDriverRTASFormatCompatibilityCheckExp( ze_driver_handle_t hDriver,
                                                                  const ze_rtas_format_exp_t accelFormat,
                                                                  const ze_rtas_format_exp_t otherAccelFormat)
 {
-  if (!handle || !zeRTASBuilderFormatCompatibilityCheckExpInternal)
+  if (!handle || !zeDriverRTASFormatCompatibilityCheckExpInternal)
     throw std::runtime_error("ZeWrapper not initialized, call ZeWrapper::init() first.");
   
-  return zeRTASBuilderFormatCompatibilityCheckExpInternal( hBuilder, accelFormat, otherAccelFormat);
+  return zeDriverRTASFormatCompatibilityCheckExpInternal( hDriver, accelFormat, otherAccelFormat);
 }
 
 ze_result_t ZeWrapper::zeRTASBuilderGetBuildPropertiesExp(ze_rtas_builder_exp_handle_t hBuilder,
