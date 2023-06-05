@@ -2,7 +2,7 @@
 
 models_dir=./embree-models/
 git lfs install
-git clone https://${RENDERKIT_GITHUB_TOKEN}@github.com/intel-sandbox/embree-models.git $models_dir
+git clone https://${RENDERKIT_GITHUB_TOKEN}@github.com/intel-innersource/libraries.graphics.renderkit.embree.models-benchmark.git $models_dir
 
 ecs_files=($(find $models_dir -name "*.ecs"))
 
