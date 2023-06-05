@@ -671,6 +671,10 @@ typedef struct _ze_rtas_builder_build_op_exp_desc_t
     uint32_t numGeometries;                                                 ///< [in] number of geometries in geometry infos array, can be zero when
                                                                             ///< `ppGeometries` is NULL
 
+#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
+  void* dispatchGlobalsPtr;
+#endif
+  
 } ze_rtas_builder_build_op_exp_desc_t;
 
 ///////////////////////////////////////////////////////////////////////////////
