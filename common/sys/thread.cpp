@@ -6,7 +6,7 @@
 #include "estring.h"
 
 #include <iostream>
-#if defined(__ARM_NEON)
+#if defined(__ARM_NEON) || defined(_M_ARM64)
 #include "../simd/arm/emulation.h"
 #else
 #include <xmmintrin.h>

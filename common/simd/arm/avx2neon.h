@@ -1,12 +1,17 @@
 #pragma once
 
-#if !defined(__aarch64__)
+#if !defined(__aarch64__) && !defined(_M_ARM64)
 #error "avx2neon is only supported for AARCH64"
 #endif
 
 #include "sse2neon.h"
 
+#if defined(_MSC_VER)
+#define AVX2NEON_ABI static inline  __forceinline
+#include <intrin.h>
+#else
 #define AVX2NEON_ABI static inline  __attribute__((always_inline))
+#endif
 
 
 struct __m256 {
@@ -63,7 +68,11 @@ __m128i _mm_blend_epi32 (__m128i a, __m128i b, const int imm8)
 AVX2NEON_ABI
 int _mm_movemask_popcnt(__m128 a)
 {
+#if defined(_MSC_VER)
+    return _CountOneBits(_mm_movemask_ps(a));
+#else
     return __builtin_popcount(_mm_movemask_ps(a));
+#endif
 }
 
 AVX2NEON_ABI
@@ -72,7 +81,11 @@ __m128 _mm_maskload_ps (float const * mem_addr, __m128i mask)
     float32x4_t res;
     uint32x4_t mask_u32 = vreinterpretq_u32_m128i(mask);
     for (int i=0;i<4;i++) {
+#if !defined(_M_ARM64)
         if (mask_u32[i] & 0x80000000) res[i] = mem_addr[i]; else res[i] = 0;
+#else
+        if (mask_u32.n128_u32[i] & 0x80000000) res.n128_f32[i] = mem_addr[i]; else res.n128_f32[i] = 0;
+#endif
     }
     return vreinterpretq_m128_f32(res);
 }
@@ -83,7 +96,11 @@ void _mm_maskstore_ps (float * mem_addr, __m128i mask, __m128 a)
     float32x4_t a_f32 = vreinterpretq_f32_m128(a);
     uint32x4_t mask_u32 = vreinterpretq_u32_m128i(mask);
     for (int i=0;i<4;i++) {
+#if !defined(_M_ARM64)
         if (mask_u32[i] & 0x80000000) mem_addr[i] = a_f32[i];
+#else
+        if (mask_u32.n128_u32[i] & 0x80000000) mem_addr[i] = a_f32.n128_f32[i];
+#endif
     }
 }
 
@@ -93,7 +110,11 @@ void _mm_maskstore_epi32 (int * mem_addr, __m128i mask, __m128i a)
     uint32x4_t mask_u32 = vreinterpretq_u32_m128i(mask);
     int32x4_t a_s32 = vreinterpretq_s32_m128i(a);
     for (int i=0;i<4;i++) {
+#if !defined(_M_ARM64)
         if (mask_u32[i] & 0x80000000) mem_addr[i] = a_s32[i];
+#else
+        if (mask_u32.n128_u32[i] & 0x80000000) mem_addr[i] = a_s32.n128_i32[i];
+#endif
     }
 }
 
@@ -125,7 +146,11 @@ inline float32x4_t dpps_neon<0x7f>(const float32x4_t& a,const float32x4_t& b)
 {
     float v;
     float32x4_t m = _mm_mul_ps(a,b);
+#if !defined(_M_ARM64)
     m[3] = 0;
+#else
+    m.n128_f32[3] = 0;
+#endif
     v = vaddvq_f32(m);
     return _mm_set1_ps(v);
 }
@@ -149,7 +174,11 @@ __m128 _mm_permutevar_ps (__m128 a, __m128i b)
     float32x4_t x;
     for (int i=0;i<4;i++)
     {
+#if !defined(_M_ARM64)
         x[i] = a[b_u32[i]];
+#else
+        x.n128_f32[i] = a.n128_f32[b_u32.n128_u32[i]];
+#endif
     }
     return vreinterpretq_m128_f32(x);
 }
@@ -618,8 +647,18 @@ AVX2NEON_ABI
 __m256i _mm256_set_epi64x (int64_t e3, int64_t e2, int64_t e1, int64_t e0)
 {
     __m256i res;
+#if !defined(_M_ARM64)
     int64x2_t t0 = {e0,e1};
     int64x2_t t1 = {e2,e3};
+#else
+    int64x2_t t0;
+    t0.n128_i64[0] = e0;
+    t0.n128_i64[1] = e1;
+
+    int64x2_t t1;
+    t1.n128_i64[0] = e2;
+    t1.n128_i64[1] = e3;
+#endif
     res.lo = __m128i(t0);
     res.hi = __m128i(t1);
     return res;
@@ -628,8 +667,18 @@ AVX2NEON_ABI
 __m256i _mm256_setr_epi64x (int64_t e0, int64_t e1, int64_t e2, int64_t e3)
 {
     __m256i res;
+#if !defined(_M_ARM64)
     int64x2_t t0 = {e0,e1};
     int64x2_t t1 = {e2,e3};
+#else
+    int64x2_t t0;
+    t0.n128_i64[0] = e0;
+    t0.n128_i64[1] = e1;
+
+    int64x2_t t1;
+    t1.n128_i64[0] = e2;
+    t1.n128_i64[1] = e3;
+#endif
     res.lo = __m128i(t0);
     res.hi = __m128i(t1);
     return res;
@@ -640,8 +689,19 @@ __m256i _mm256_setr_epi64x (int64_t e0, int64_t e1, int64_t e2, int64_t e3)
 AVX2NEON_ABI
 __m256i _mm256_set_epi8 (char e31, char e30, char e29, char e28, char e27, char e26, char e25, char e24, char e23, char e22, char e21, char e20, char e19, char e18, char e17, char e16, char e15, char e14, char e13, char e12, char e11, char e10, char e9, char e8, char e7, char e6, char e5, char e4, char e3, char e2, char e1, char e0)
 {
+#if(_M_ARM64)
+    char lo_arr[16] = {e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,e10,e11,e12,e13,e14,e15};
+    char hi_arr[16] = {e16,e17,e18,e19,e20,e21,e22,e23,e24,e25,e26,e27,e28,e29,e30,e31};
+    int8x16_t lo;
+    int8x16_t hi;
+    for(char i = 0; i < 16; i++) {
+        lo.n128_i8[i] = lo_arr[i];
+        hi.n128_i8[i] = hi_arr[i];
+    }
+#else
     int8x16_t lo = {e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,e10,e11,e12,e13,e14,e15};
     int8x16_t hi = {e16,e17,e18,e19,e20,e21,e22,e23,e24,e25,e26,e27,e28,e29,e30,e31};
+#endif
     __m256i res;
     res.lo = lo; res.hi = hi;
     return res;
@@ -650,8 +710,19 @@ __m256i _mm256_set_epi8 (char e31, char e30, char e29, char e28, char e27, char 
 AVX2NEON_ABI
 __m256i _mm256_setr_epi8 (char e0, char e1, char e2, char e3, char e4, char e5, char e6, char e7, char e8, char e9, char e10, char e11, char e12, char e13, char e14, char e15, char e16, char e17, char e18, char e19, char e20, char e21, char e22, char e23, char e24, char e25, char e26, char e27, char e28, char e29, char e30, char e31)
 {
+#if(_M_ARM64)
+    char lo_arr[16] = {e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,e10,e11,e12,e13,e14,e15};
+    char hi_arr[16] = {e16,e17,e18,e19,e20,e21,e22,e23,e24,e25,e26,e27,e28,e29,e30,e31};
+    int8x16_t lo;
+    int8x16_t hi;
+    for(char i = 0; i < 16; i++) {
+        lo.n128_i8[i] = lo_arr[i];
+        hi.n128_i8[i] = hi_arr[i];
+    }
+#else
     int8x16_t lo = {e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,e10,e11,e12,e13,e14,e15};
     int8x16_t hi = {e16,e17,e18,e19,e20,e21,e22,e23,e24,e25,e26,e27,e28,e29,e30,e31};
+#endif
     __m256i res;
     res.lo = lo; res.hi = hi;
     return res;
@@ -661,8 +732,19 @@ __m256i _mm256_setr_epi8 (char e0, char e1, char e2, char e3, char e4, char e5, 
 AVX2NEON_ABI
 __m256i _mm256_set_epi16 (short e15, short e14, short e13, short e12, short e11, short e10, short e9, short e8, short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0)
 {
+#if(_M_ARM64)
+    short lo_arr[8] = {e0,e1,e2,e3,e4,e5,e6,e7};
+    short hi_arr[8] = {e8,e9,e10,e11,e12,e13,e14,e15};
+    int16x8_t lo;
+    int16x8_t hi;
+    for(char i = 0; i < 8; i++) {
+        lo.n128_i8[i] = lo_arr[i];
+        hi.n128_i8[i] = hi_arr[i];
+    }
+#else
     int16x8_t lo = {e0,e1,e2,e3,e4,e5,e6,e7};
     int16x8_t hi = {e8,e9,e10,e11,e12,e13,e14,e15};
+#endif
     __m256i res;
     res.lo = lo; res.hi = hi;
     return res;
@@ -671,8 +753,19 @@ __m256i _mm256_set_epi16 (short e15, short e14, short e13, short e12, short e11,
 AVX2NEON_ABI
 __m256i _mm256_setr_epi16 (short e0, short e1, short e2, short e3, short e4, short e5, short e6, short e7, short e8, short e9, short e10, short e11, short e12, short e13, short e14, short e15)
 {
+#if(_M_ARM64)
+    short lo_arr[8] = {e0,e1,e2,e3,e4,e5,e6,e7};
+    short hi_arr[8] = {e8,e9,e10,e11,e12,e13,e14,e15};
+    int16x8_t lo;
+    int16x8_t hi;
+    for(char i = 0; i < 8; i++) {
+        lo.n128_i8[i] = lo_arr[i];
+        hi.n128_i8[i] = hi_arr[i];
+    }
+#else
     int16x8_t lo = {e0,e1,e2,e3,e4,e5,e6,e7};
     int16x8_t hi = {e8,e9,e10,e11,e12,e13,e14,e15};
+#endif
     __m256i res;
     res.lo = lo; res.hi = hi;
     return res;
@@ -767,15 +860,19 @@ double _mm256_permute4x64_pd_select(__m256d a, const int imm8)
 {
     switch (imm8 & 3) {
         case 0:
-            return ((float64x2_t)a.lo)[0];
+            return vgetq_lane_f64(a.lo, 0);
         case 1:
-            return ((float64x2_t)a.lo)[1];
+            return vgetq_lane_f64(a.lo, 1);
         case 2:
-            return ((float64x2_t)a.hi)[0];
+            return vgetq_lane_f64(a.hi, 0);
         case 3:
-            return ((float64x2_t)a.hi)[1];
+            return vgetq_lane_f64(a.hi, 1);
     }
+#if !defined(_M_ARM64)
     __builtin_unreachable();
+#else
+    __assume(0);
+#endif
     return 0;
 }
 
@@ -783,10 +880,10 @@ AVX2NEON_ABI
 __m256d _mm256_permute4x64_pd (__m256d a, const int imm8)
 {
     float64x2_t lo,hi;
-    lo[0] = _mm256_permute4x64_pd_select(a,imm8 >> 0);
-    lo[1] = _mm256_permute4x64_pd_select(a,imm8 >> 2);
-    hi[0] = _mm256_permute4x64_pd_select(a,imm8 >> 4);
-    hi[1] = _mm256_permute4x64_pd_select(a,imm8 >> 6);
+    lo = vsetq_lane_f64(_mm256_permute4x64_pd_select(a,imm8 >> 0), lo, 0);
+    lo = vsetq_lane_f64(_mm256_permute4x64_pd_select(a,imm8 >> 2), lo, 1);
+    hi = vsetq_lane_f64(_mm256_permute4x64_pd_select(a,imm8 >> 4), hi, 0);
+    hi = vsetq_lane_f64(_mm256_permute4x64_pd_select(a,imm8 >> 6), hi, 1);
 
     __m256d res;
     res.lo = lo; res.hi = hi;
@@ -846,6 +943,13 @@ __m256i _mm256_permute4x64_epi64 (const __m256i a, const int imm8)
         (uint8_t)(((imm8 >> 6) & 0x3) * sz),
     };
 
+    // We have to do this shifting because MSVC is strictly adhering to the CPP
+    // standard, in particular C++03 8.5.1 sub-section 15, which states that
+    // unions must be initialized by their first member type.
+    //
+    // NOTE: We assume little endian here, as per the Windows ARM64 ABI.
+
+#if !defined(_M_ARM64)
     uint8x16_t idx_lo = {
         // lo[0] bytes
         (uint8_t)(u64[0]+0), (uint8_t)(u64[0]+1), (uint8_t)(u64[0]+2), (uint8_t)(u64[0]+3),
@@ -864,6 +968,26 @@ __m256i _mm256_permute4x64_epi64 (const __m256i a, const int imm8)
         (uint8_t)(u64[3]+0), (uint8_t)(u64[3]+1), (uint8_t)(u64[3]+2), (uint8_t)(u64[3]+3),
         (uint8_t)(u64[3]+4), (uint8_t)(u64[3]+5), (uint8_t)(u64[3]+6), (uint8_t)(u64[3]+7),
     };
+#else
+    uint8x16_t idx_lo = {
+        // lo[0] bytes
+        ((uint64_t)(u64[0]+0) <<  0) | ((uint64_t)(u64[0]+1) <<  8) | ((uint64_t)(u64[0]+2) << 16) | ((uint64_t)(u64[0]+3) << 24) |
+        ((uint64_t)(u64[0]+4) << 32) | ((uint64_t)(u64[0]+5) << 40) | ((uint64_t)(u64[0]+6) << 48) | ((uint64_t)(u64[0]+7) << 56),
+
+        // lo[1] bytes
+        ((uint64_t)(u64[1]+0) <<  0) | ((uint64_t)(u64[1]+1) <<  8) | ((uint64_t)(u64[1]+2) << 16) | ((uint64_t)(u64[1]+3) << 24) |
+        ((uint64_t)(u64[1]+4) << 32) | ((uint64_t)(u64[1]+5) << 40) | ((uint64_t)(u64[1]+6) << 48) | ((uint64_t)(u64[1]+7) << 56)
+    };
+    uint8x16_t idx_hi = {
+        // hi[0] bytes
+        ((uint64_t)(u64[2]+0) <<  0) | ((uint64_t)(u64[2]+1) <<  8) | ((uint64_t)(u64[2]+2) << 16) | ((uint64_t)(u64[2]+3) << 24) |
+        ((uint64_t)(u64[2]+4) << 32) | ((uint64_t)(u64[2]+5) << 40) | ((uint64_t)(u64[2]+6) << 48) | ((uint64_t)(u64[2]+7) << 56),
+
+        // hi[1] bytes
+        ((uint64_t)(u64[3]+0) <<  0) | ((uint64_t)(u64[3]+1) <<  8) | ((uint64_t)(u64[3]+2) << 16) | ((uint64_t)(u64[3]+3) << 24) |
+        ((uint64_t)(u64[3]+4) << 32) | ((uint64_t)(u64[3]+5) << 40) | ((uint64_t)(u64[3]+6) << 48) | ((uint64_t)(u64[3]+7) << 56)
+    };
+#endif
 
     uint8x16_t lo = vqtbl2q_u8(tbl, idx_lo);
     uint8x16_t hi = vqtbl2q_u8(tbl, idx_hi);
@@ -1114,8 +1238,13 @@ void _mm256_maskstore_ps (float * mem_addr, __m256i mask, __m256 a)
     float32x4_t a_hi = a.hi;
 
     for (int i=0;i<4;i++) {
+#if !defined(_M_ARM64)
         if (mask_lo[i] & 0x80000000) mem_addr[i] = a_lo[i];
         if (mask_hi[i] & 0x80000000) mem_addr[i+4] = a_hi[i];
+#else
+        if (mask_lo.n128_u32[i] & 0x80000000) mem_addr[i] = a_lo.n128_f32[i];
+        if (mask_hi.n128_u32[i] & 0x80000000) mem_addr[i+4] = a_hi.n128_f32[i];
+#endif
     }
 }
 
@@ -1146,6 +1275,15 @@ __m256i _mm256_blend_epi32 (__m256i a, __m256i b, const int imm8)
 
 }
 
+#if defined(_M_ARM64)
+// This is required as sse2neon's implementation uses the type "uint16_t"
+// which is a narrowing covnersion that MSVC doesn't like, and produces noisy warnings.
+// However, we know this is constrained to 0-255 as per the docs, so can disable it.
+//
+// TL;DR: Get rid of noisy MSVC warning that we can safely ignore.
+#pragma warning(push)
+#pragma warning(disable: 4838)
+#endif
 AVX2NEON_ABI
 __m256i _mm256_blend_epi16 (__m256i a, __m256i b, const int imm8)
 {
@@ -1154,7 +1292,9 @@ __m256i _mm256_blend_epi16 (__m256i a, __m256i b, const int imm8)
     res.hi = _mm_blend_epi16(a.hi,b.hi,imm8);
     return res;
 }
-
+#if defined(_M_ARM64)
+#pragma warning(pop)
+#endif
 
 
 AVX2NEON_ABI
@@ -1165,8 +1305,13 @@ __m256i _mm256_i32gather_epi32 (int const* base_addr, __m256i vindex, const int 
     int32x4_t lo,hi;
     for (int i=0;i<4;i++)
     {
+#if !defined(_M_ARM64)
         lo[i] = *(int32_t *)((char *) base_addr + (vindex_lo[i]*scale));
         hi[i] = *(int32_t *)((char *) base_addr + (vindex_hi[i]*scale));
+#else
+        lo.n128_i32[i] = *(int32_t *)((char *) base_addr + (vindex_lo.n128_i32[i]*scale));
+        hi.n128_i32[i] = *(int32_t *)((char *) base_addr + (vindex_hi.n128_i32[i]*scale));
+#endif
     }
 
     __m256i res;
@@ -1186,8 +1331,13 @@ __m256i _mm256_mask_i32gather_epi32 (__m256i src, int const* base_addr, __m256i 
     lo = hi = _mm_setzero_si128();
     for (int i=0;i<4;i++)
     {
+#if !defined(_M_ARM64)
         if (mask_lo[i] >> 31) lo[i] = *(int32_t *)((char *) base_addr + (vindex_lo[i]*scale));
         if (mask_hi[i] >> 31) hi[i] = *(int32_t *)((char *) base_addr + (vindex_hi[i]*scale));
+#else
+        if (mask_lo.n128_u32[i] >> 31) lo.n128_i32[i] = *(int32_t *)((char *) base_addr + (vindex_lo.n128_i32[i]*scale));
+        if (mask_hi.n128_u32[i] >> 31) hi.n128_i32[i] = *(int32_t *)((char *) base_addr + (vindex_hi.n128_i32[i]*scale));
+#endif
     }
 
     __m256i res;

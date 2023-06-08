@@ -16,6 +16,10 @@ IF (EMBREE_STACK_PROTECTOR)
 ELSE()
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /GS-")          # do not protect against return address overrides
 ENDIF()
+IF (EMBREE_ARM)
+  # sse2neon uses the new preprocessor
+  SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /Zc:preprocessor")
+ENDIF()
 MACRO(DISABLE_STACK_PROTECTOR_FOR_FILE file)
   IF (EMBREE_STACK_PROTECTOR)
     SET_SOURCE_FILES_PROPERTIES(${file} PROPERTIES COMPILE_FLAGS "/GS-")

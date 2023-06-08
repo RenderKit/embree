@@ -98,7 +98,7 @@ namespace embree
     name[2] = cpuinfo[2];
     name[3] = 0;
     return (char*)name;
-#elif defined(__ARM_NEON)
+#elif defined(__ARM_NEON) || defined(_M_ARM64)
     return "ARM";
 #else
     return "Unknown";
@@ -174,7 +174,7 @@ namespace embree
     if (DisplayFamily_DisplayModel == 0x0685) return CPU::XEON_PHI_KNIGHTS_MILL;
     if (DisplayFamily_DisplayModel == 0x0657) return CPU::XEON_PHI_KNIGHTS_LANDING;
     
-#elif defined(__ARM_NEON)
+#elif defined(__ARM_NEON) || defined(_M_ARM64)
     return CPU::ARM;
 #endif
     
@@ -346,7 +346,7 @@ namespace embree
 
     return cpu_features;
 
-#elif defined(__ARM_NEON) || defined(__EMSCRIPTEN__)
+#elif defined(__ARM_NEON) || defined(_M_ARM64) || defined(__EMSCRIPTEN__)
 
     int cpu_features = CPU_FEATURE_NEON|CPU_FEATURE_SSE|CPU_FEATURE_SSE2;
     cpu_features |= CPU_FEATURE_SSE3|CPU_FEATURE_SSSE3|CPU_FEATURE_SSE42;

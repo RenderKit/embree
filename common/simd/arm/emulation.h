@@ -4,7 +4,7 @@
 #pragma once
 
 /* Make precision match SSE, at the cost of some performance */
-#if !defined(__aarch64__)
+#if !defined(__aarch64__) && !defined(_M_ARM64)
 #  define SSE2NEON_PRECISE_DIV 1
 #  define SSE2NEON_PRECISE_SQRT 1
 #endif
@@ -33,16 +33,6 @@ __forceinline __m128 _mm_broadcast_ss (float const * mem_addr)
 #define _MM_MASK_DENORM 0x100
 #define _MM_SET_EXCEPTION_MASK(x)
 // #define _MM_SET_FLUSH_ZERO_MODE(x)
-
-__forceinline int _mm_getcsr()
-{
-  return 0;
-}
-
-__forceinline void _mm_mfence()
-{
-  __sync_synchronize();
-}
 
 __forceinline __m128i _mm_load4epu8_epi32(__m128i *ptr)
 {

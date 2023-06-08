@@ -144,7 +144,7 @@ namespace embree
   }
 
   bool State::checkISASupport() {
-#if defined(__ARM_NEON)
+#if defined(__ARM_NEON) || defined(_M_ARM64)
     /*
      * NEON CPU type is a mixture of NEON and SSE2
      */
@@ -170,7 +170,7 @@ namespace embree
      * functions */
 #if defined(DEBUG)
 #if defined(EMBREE_TARGET_SSE2)
-#if !defined(__ARM_NEON)
+#if !defined(__ARM_NEON) || defined(_M_ARM64)
     assert(sse2::getISA() <= SSE2);
 #endif
 #endif

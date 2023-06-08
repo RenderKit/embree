@@ -306,7 +306,7 @@ namespace embree
         intersector16.intersect(valid,this,ray,context);
       }
       
-#if defined(__SSE__) || defined(__ARM_NEON)
+#if defined(__SSE__) || defined(__ARM_NEON) || defined(_M_ARM64)
       __forceinline void intersect(const vbool4& valid, RayHitK<4>& ray, RayQueryContext* context) {
         const vint<4> mask = valid.mask32();
         intersect4(&mask,(RTCRayHit4&)ray,context);
@@ -367,7 +367,7 @@ namespace embree
         intersector16.occluded(valid,this,ray,context);
       }
       
-#if defined(__SSE__) || defined(__ARM_NEON)
+#if defined(__SSE__) || defined(__ARM_NEON) || defined(_M_ARM64)
       __forceinline void occluded(const vbool4& valid, RayK<4>& ray, RayQueryContext* context) {
         const vint<4> mask = valid.mask32();
         occluded4(&mask,(RTCRay4&)ray,context);

@@ -44,7 +44,7 @@ namespace embree
     __forceinline vfloat(float a, float b, float c, float d) : v(_mm_set_ps(d, c, b, a)) {}
 
     __forceinline explicit vfloat(const vint4& a) : v(_mm_cvtepi32_ps(a)) {}
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(_M_ARM64)
     __forceinline explicit vfloat(const vuint4& x) {
         v = vcvtq_f32_u32(vreinterpretq_u32_s32(x.v));
     }
@@ -114,7 +114,7 @@ namespace embree
 #endif
   }
 
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(_M_ARM64)
     static __forceinline vfloat4 load(const char* ptr) {
         return __m128(_mm_load4epi8_f32(((__m128i*)ptr)));
     }
@@ -128,7 +128,7 @@ namespace embree
     }
 #endif
 
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(_M_ARM64)
     static __forceinline vfloat4 load(const unsigned char* ptr) {
         return __m128(_mm_load4epu8_f32(((__m128i*)ptr)));
     }
@@ -143,7 +143,7 @@ namespace embree
     }
 #endif
 
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(_M_ARM64)
     static __forceinline vfloat4 load(const short* ptr) {
         return __m128(_mm_load4epi16_f32(((__m128i*)ptr)));
     }
@@ -164,7 +164,7 @@ namespace embree
     static __forceinline void store_nt(void* ptr, const vfloat4& v)
     {
 #if defined (__SSE4_1__)
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(_M_ARM64)
       _mm_stream_ps((float*)ptr,v);
 #else
       _mm_stream_ps((float*)ptr,v);
@@ -176,7 +176,7 @@ namespace embree
 
     template<int scale = 4>
     static __forceinline vfloat4 gather(const float* ptr, const vint4& index) {
-#if defined(__AVX2__) && !defined(__aarch64__)
+#if defined(__AVX2__) && !defined(__aarch64__) && !defined(_M_ARM64)
       return _mm_i32gather_ps(ptr, index, scale);
 #else
       return vfloat4(
@@ -192,7 +192,7 @@ namespace embree
       vfloat4 r = zero;
 #if defined(__AVX512VL__)
       return _mm_mmask_i32gather_ps(r, mask, index, ptr, scale);
-#elif defined(__AVX2__)  && !defined(__aarch64__)
+#elif defined(__AVX2__)  && !defined(__aarch64__) && !defined(_M_ARM64)
       return _mm_mask_i32gather_ps(r, ptr, index, mask, scale);
 #else
       if (likely(mask[0])) r[0] = *(float*)(((char*)ptr)+scale*index[0]);
@@ -246,7 +246,7 @@ namespace embree
     friend __forceinline vfloat4 select(const vboolf4& m, const vfloat4& t, const vfloat4& f) {
 #if defined(__AVX512VL__)
       return _mm_mask_blend_ps(m, f, t);
-#elif defined(__SSE4_1__) || (defined(__aarch64__))
+#elif defined(__SSE4_1__) || (defined(__aarch64__) || defined(_M_ARM64))
       return _mm_blendv_ps(f, t, m);
 #else
       return _mm_or_ps(_mm_and_ps(m, t), _mm_andnot_ps(m, f)); 
@@ -279,7 +279,7 @@ namespace embree
   __forceinline vfloat4 toFloat(const vint4&   a) { return vfloat4(a); }
 
   __forceinline vfloat4 operator +(const vfloat4& a) { return a; }
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(_M_ARM64)
   __forceinline vfloat4 operator -(const vfloat4& a) {
     return vnegq_f32(a);
   }
@@ -287,7 +287,7 @@ namespace embree
   __forceinline vfloat4 operator -(const vfloat4& a) { return _mm_xor_ps(a, _mm_castsi128_ps(_mm_set1_epi32(0x80000000))); }
 #endif
 
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(_M_ARM64)
   __forceinline vfloat4 abs(const vfloat4& a) { return _mm_abs_ps(a); }
 #else
   __forceinline vfloat4 abs(const vfloat4& a) { return _mm_and_ps(a, _mm_castsi128_ps(_mm_set1_epi32(0x7fffffff))); }
@@ -303,7 +303,7 @@ namespace embree
 
   __forceinline vfloat4 rcp(const vfloat4& a)
   {
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(_M_ARM64)
     return vfloat4(vdivq_f32(vdupq_n_f32(1.0f),a.v));
 #else
 
@@ -319,14 +319,14 @@ namespace embree
     return _mm_add_ps(r,_mm_mul_ps(r, _mm_sub_ps(vfloat4(1.0f), _mm_mul_ps(a, r))));  // computes r + r * (1 - a * r)
 #endif
 
-#endif  //defined(__aarch64__)
+#endif  //defined(__aarch64__) || defined(_M_ARM64)
   }
   __forceinline vfloat4 sqr (const vfloat4& a) { return _mm_mul_ps(a,a); }
   __forceinline vfloat4 sqrt(const vfloat4& a) { return _mm_sqrt_ps(a); }
 
   __forceinline vfloat4 rsqrt(const vfloat4& a)
   {
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(_M_ARM64)
     vfloat4 r = _mm_rsqrt_ps(a);
     r = vmulq_f32(r, vrsqrtsq_f32(vmulq_f32(a, r), r));
     r = vmulq_f32(r, vrsqrtsq_f32(vmulq_f32(a, r), r));
@@ -392,7 +392,7 @@ namespace embree
   __forceinline vfloat4 max(const vfloat4& a, float          b) { return _mm_max_ps(a,vfloat4(b)); }
   __forceinline vfloat4 max(float          a, const vfloat4& b) { return _mm_max_ps(vfloat4(a),b); }
 
-#if defined(__SSE4_1__) || defined(__aarch64__)
+#if defined(__SSE4_1__) || defined(__aarch64__) || defined(_M_ARM64)
 
     __forceinline vfloat4 mini(const vfloat4& a, const vfloat4& b) {
       const vint4 ai = _mm_castps_si128(a);
@@ -435,7 +435,7 @@ namespace embree
   /// Ternary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-#if defined(__AVX2__) || defined(__ARM_NEON)
+#if defined(__AVX2__) || defined(__ARM_NEON) || defined(_M_ARM64)
   __forceinline vfloat4 madd (const vfloat4& a, const vfloat4& b, const vfloat4& c) { return _mm_fmadd_ps(a,b,c); }
   __forceinline vfloat4 msub (const vfloat4& a, const vfloat4& b, const vfloat4& c) { return _mm_fmsub_ps(a,b,c); }
   __forceinline vfloat4 nmadd(const vfloat4& a, const vfloat4& b, const vfloat4& c) { return _mm_fnmadd_ps(a,b,c); }
@@ -479,7 +479,7 @@ namespace embree
   __forceinline vboolf4 operator ==(const vfloat4& a, const vfloat4& b) { return _mm_cmpeq_ps (a, b); }
   __forceinline vboolf4 operator !=(const vfloat4& a, const vfloat4& b) { return _mm_cmpneq_ps(a, b); }
   __forceinline vboolf4 operator < (const vfloat4& a, const vfloat4& b) { return _mm_cmplt_ps (a, b); }
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(_M_ARM64)
   __forceinline vboolf4 operator >=(const vfloat4& a, const vfloat4& b) { return _mm_cmpge_ps (a, b); }
   __forceinline vboolf4 operator > (const vfloat4& a, const vfloat4& b) { return _mm_cmpgt_ps (a, b); }
 #else
@@ -560,7 +560,7 @@ namespace embree
   /// Rounding Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(_M_ARM64)
   __forceinline vfloat4 floor(const vfloat4& a) { return vrndmq_f32(a.v); } // towards -inf
   __forceinline vfloat4 ceil (const vfloat4& a) { return vrndpq_f32(a.v); } // toward +inf
   __forceinline vfloat4 trunc(const vfloat4& a) { return vrndq_f32(a.v); } // towards 0
@@ -579,7 +579,7 @@ namespace embree
   __forceinline vfloat4 frac(const vfloat4& a) { return a-floor(a); }
 
   __forceinline vint4 floori(const vfloat4& a) {
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(_M_ARM64)
     return vcvtq_s32_f32(floor(a));
 #elif defined(__SSE4_1__)
     return vint4(floor(a));
@@ -595,14 +595,27 @@ namespace embree
   __forceinline vfloat4 unpacklo(const vfloat4& a, const vfloat4& b) { return _mm_unpacklo_ps(a, b); }
   __forceinline vfloat4 unpackhi(const vfloat4& a, const vfloat4& b) { return _mm_unpackhi_ps(a, b); }
 
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(_M_ARM64)
       template<int i0, int i1, int i2, int i3>
       __forceinline vfloat4 shuffle(const vfloat4& v) {
+#if !defined(_M_ARM64)
           return vreinterpretq_f32_u8(vqtbl1q_u8( (uint8x16_t)v.v, _MN_SHUFFLE(i0, i1, i2, i3)));
+#else
+          // Avoids C4576 (no mixing C+CPP syntax), and C4002 (comma inside macro invocation)
+          uint8x16_t _shuffle = _MN_SHUFFLE(i0, i1, i2, i3);
+          return vreinterpretq_f32_u8(vqtbl1q_u8( (uint8x16_t)v.v, _shuffle));
+#endif
       }
       template<int i0, int i1, int i2, int i3>
       __forceinline vfloat4 shuffle(const vfloat4& a, const vfloat4& b) {
+#if !defined(_M_ARM64)
           return vreinterpretq_f32_u8(vqtbl2q_u8( (uint8x16x2_t){(uint8x16_t)a.v, (uint8x16_t)b.v}, _MF_SHUFFLE(i0, i1, i2, i3)));
+#else
+          // Avoids C4576 (no mixing C+CPP syntax), and C4002 (comma inside macro invocation)
+          uint8x16_t _shuffle = _MF_SHUFFLE(i0, i1, i2, i3);
+          uint8x16x2_t _ab = {(uint8x16_t)a.v, (uint8x16_t)b.v};
+          return vreinterpretq_f32_u8(vqtbl2q_u8( _ab, _shuffle));
+#endif
       }
 #else
   template<int i0, int i1, int i2, int i3>
@@ -616,7 +629,7 @@ namespace embree
   }
 #endif
 
-#if defined(__SSE3__) && !defined(__aarch64__)
+#if defined(__SSE3__) && !defined(__aarch64__) && !defined(_M_ARM64)
   template<> __forceinline vfloat4 shuffle<0, 0, 2, 2>(const vfloat4& v) { return _mm_moveldup_ps(v); }
   template<> __forceinline vfloat4 shuffle<1, 1, 3, 3>(const vfloat4& v) { return _mm_movehdup_ps(v); }
   template<> __forceinline vfloat4 shuffle<0, 1, 0, 1>(const vfloat4& v) { return _mm_castpd_ps(_mm_movedup_pd(_mm_castps_pd(v))); }
@@ -627,14 +640,14 @@ namespace embree
     return shuffle<i,i,i,i>(v);
   }
 
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(_M_ARM64)
   template<int i> __forceinline float extract(const vfloat4& a) { return a[i]; }
 #else
   template<int i> __forceinline float extract   (const vfloat4& a) { return _mm_cvtss_f32(shuffle<i>(a)); }
   template<>      __forceinline float extract<0>(const vfloat4& a) { return _mm_cvtss_f32(a); }
 #endif
 
-#if defined (__SSE4_1__) && !defined(__aarch64__)
+#if defined (__SSE4_1__) && !defined(__aarch64__) && !defined(_M_ARM64)
   template<int dst, int src, int clr> __forceinline vfloat4 insert(const vfloat4& a, const vfloat4& b) { return _mm_insert_ps(a, b, (dst << 4) | (src << 6) | clr); }
   template<int dst, int src> __forceinline vfloat4 insert(const vfloat4& a, const vfloat4& b) { return insert<dst, src, 0>(a, b); }
   template<int dst> __forceinline vfloat4 insert(const vfloat4& a, const float b) { return insert<dst, 0>(a, _mm_set_ss(b)); }
@@ -736,7 +749,7 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(_M_ARM64)
   __forceinline vfloat4 vreduce_min(const vfloat4& v) { float h = vminvq_f32(v); return vdupq_n_f32(h); }
   __forceinline vfloat4 vreduce_max(const vfloat4& v) { float h = vmaxvq_f32(v); return vdupq_n_f32(h); }
   __forceinline vfloat4 vreduce_add(const vfloat4& v) { float h = vaddvq_f32(v); return vdupq_n_f32(h); }
@@ -746,7 +759,7 @@ namespace embree
   __forceinline vfloat4 vreduce_add(const vfloat4& v) { vfloat4 h = shuffle<1,0,3,2>(v)   + v ; return shuffle<2,3,0,1>(h)   + h ; }
 #endif
 
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(_M_ARM64)
   __forceinline float reduce_min(const vfloat4& v) { return vminvq_f32(v); }
   __forceinline float reduce_max(const vfloat4& v) { return vmaxvq_f32(v); }
   __forceinline float reduce_add(const vfloat4& v) { return vaddvq_f32(v); }
