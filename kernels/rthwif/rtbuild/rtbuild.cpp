@@ -629,7 +629,13 @@ namespace embree
     /* dispatch globals ptr for debugging purposes */
     void* dispatchGlobalsPtr = nullptr;
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
-    dispatchGlobalsPtr = args->dispatchGlobalsPtr;
+    if (args->pNext) {
+      zet_base_desc_t_* next = (zet_base_desc_t_*) args->pNext;
+      if (next->stype == ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_DEBUG_EXP_DESC) {
+        ze_rtas_builder_build_op_debug_exp_desc_t* debug_ext = (ze_rtas_builder_build_op_debug_exp_desc_t*) next;
+        dispatchGlobalsPtr = debug_ext->dispatchGlobalsPtr;
+      }
+    }
 #endif
 
     bool verbose = false;

@@ -6,11 +6,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "ze_api.h"
-
-#if !defined(ZE_RTAS_BUILDER_EXP_NAME)
-#include "../../level_zero/ze_rtas.h"
-#endif
+#include "../../level_zero/ze_wrapper.h"
 
 #if defined(__cplusplus)
 #  define RTHWIF_API_EXTERN_C extern "C"

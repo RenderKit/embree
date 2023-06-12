@@ -343,8 +343,12 @@ void* build_rtas(sycl::device device, sycl::context context)
   buildOp.buildFlags = 0;
   buildOp.ppGeometries = (const ze_rtas_builder_geometry_info_exp_t **) descs.data();
   buildOp.numGeometries = descs.size();
+
+  /* just for debugging purposes */
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
-  buildOp.dispatchGlobalsPtr = dispatchGlobalsPtr;
+  ze_rtas_builder_build_op_debug_exp_desc_t buildOpDebug = { ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_DEBUG_EXP_DESC };
+  buildOpDebug.dispatchGlobalsPtr = dispatchGlobalsPtr;
+  buildOp.pNext = &buildOpDebug;
 #endif
 
   /* query required buffer sizes */

@@ -9,6 +9,22 @@
 #include "ze_rtas.h"
 #endif
 
+//////////////////////
+// Debug extension
+
+#define ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_DEBUG_EXP_DESC ((ze_structure_type_t)0x00020020)  ///< ::ze_rtas_builder_build_op_debug_exp_desc_t
+
+typedef struct _ze_rtas_builder_build_op_debug_exp_desc_t
+{
+  ze_structure_type_t stype;                                              ///< [in] type of this structure
+  const void* pNext;                                                      ///< [in][optional] must be null or a pointer to an extension-specific
+                                                                          ///< structure (i.e. contains stype and pNext).
+  void* dispatchGlobalsPtr;
+  
+} ze_rtas_builder_build_op_debug_exp_desc_t;
+
+////////////////////
+
 struct ZeWrapper
 {
   ~ZeWrapper();
