@@ -587,8 +587,12 @@ namespace embree
     args.buildFlags = convertBuildFlags(scene->scene_flags,scene->quality_flags);
     args.ppGeometries = (const ze_rtas_builder_geometry_info_exp_t**) geomDescr.data();
     args.numGeometries = geomDescr.size();
+
+     /* just for debugging purposes */
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
-    args.dispatchGlobalsPtr = dynamic_cast<DeviceGPU*>(scene->device)->dispatchGlobalsPtr;
+    ze_rtas_builder_build_op_debug_exp_desc_t buildOpDebug = { ZE_STRUCTURE_TYPE_RTAS_BUILDER_BUILD_OP_DEBUG_EXP_DESC };
+    buildOpDebug.dispatchGlobalsPtr = dynamic_cast<DeviceGPU*>(scene->device)->dispatchGlobalsPtr;
+    args.pNext = &buildOpDebug;
 #endif
     
     ze_rtas_builder_exp_properties_t sizeTotal = { ZE_STRUCTURE_TYPE_RTAS_BUILDER_EXP_PROPERTIES };
