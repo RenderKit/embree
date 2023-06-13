@@ -235,7 +235,6 @@ Embree is tested using the following compilers under Windows:
   - oneAPI DPC++/C++ Compiler 2023-04-17
   - Visual Studio 2019
   - Visual Studio 2017
-  - Visual Studio 2015 (Update\ 1)
   - Intel® Implicit SPMD Program Compiler 1.19.0
   - Intel® Implicit SPMD Program Compiler 1.18.1
   - Intel® Implicit SPMD Program Compiler 1.17.0

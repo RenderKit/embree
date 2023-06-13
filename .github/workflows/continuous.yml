@@ -448,26 +448,6 @@ jobs:
   ########################################
   # Windows
   ########################################
-  windows-V140:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@devel
-    with:
-      runs-on: '[ "Windows", "NAS", "build" ]'
-      cmd: |
-        python scripts/test.py configure platform:x64 threads:4 build:RelWithDebInfo compiler:V140 ispc:ispc1.16.1 isa:SSE2 tasking:TBB2020.2 intensity:2
-        python scripts/test.py build
-        python scripts/test.py test
-
-  windows-V141:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@devel
-    with:
-      runs-on: '[ "Windows", "NAS", "build" ]'
-      cmd: |
-        python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.17.0 isa:SSE2 tasking:TBB2020.2 intensity:2 maxinstancelevelcount:8
-        python scripts/test.py build
-        python scripts/test.py test
-
   windows-V142:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@devel
@@ -560,8 +540,6 @@ jobs:
       - linux-ubuntu20_04-GCC-NAMESPACE
       - linux-ubuntu20_04-ICX
       - linux-centos7_4-GCC
-      - windows-V140
-      - windows-V141
       - windows-V142
       - windows-ICX
       - macosx-ARM-NEON-AVX2

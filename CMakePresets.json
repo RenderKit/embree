@@ -177,6 +177,18 @@
         "CMAKE_BUILD_TYPE": "Release",
         "EMBREE_MAX_ISA": "SSE2"
       }
+    },
+
+    {
+      "name": "package-windows-icx-sycl-ispc1_19_0-tbb2021_9_0",
+      "inherits": ["package-windows", "env", "icx-windows", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
     }
   ]
 }

@@ -54,7 +54,6 @@ if (BUILD_TESTING OR EMBREE_TESTING_INSTALL_TESTS)
   ENDFUNCTION()
 
   MACRO (ADD_EMBREE_GENERIC_TEST testname executable)  
-    message("add test ${testname} ${executable} ${ARGN}")
     ADD_TEST(NAME ${testname}
              WORKING_DIRECTORY "${MY_PROJECT_BINARY_DIR}"
              COMMAND ${executable} ${ARGN})
@@ -426,11 +425,8 @@ if (BUILD_TESTING OR EMBREE_TESTING_INSTALL_TESTS)
       endif()
     endif()
 
-    message("${testname}        ${conditions} ${matchconditions} ${intensity} ${EMBREE_TESTING_INTENSITY}")
-
     # LESS_EQUAL not supported on all CI runners
     if (matchconditions AND ((intensity LESS EMBREE_TESTING_INTENSITY) OR (intensity EQUAL EMBREE_TESTING_INTENSITY)))
-      message("matchconditions || intensity")
       SET(args "")
       if (inputfile)
         list(APPEND args "${inputtype} ${inputfile}")
@@ -465,9 +461,7 @@ if (BUILD_TESTING OR EMBREE_TESTING_INSTALL_TESTS)
           endif()
         endif()
       else()
-        message("no memcheck")
         if (no_postfix)
-          message("no postfix")
           ADD_EMBREE_GENERIC_TEST(${testname} ${executable} ${args})
         else()
           if((NOT ${EMBREE_SYCL_SUPPORT}) OR (NOT ${EMBREE_TESTING_ONLY_SYCL_TESTS}))

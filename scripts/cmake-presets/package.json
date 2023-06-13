@@ -60,7 +60,8 @@
       "inherits": ["package", "macos"],
       "cacheVariables": {
         "CMAKE_SKIP_INSTALL_RPATH": "OFF",
-        "CMAKE_MACOSX_RPATH": "ON"
+        "CMAKE_MACOSX_RPATH": "ON",
+        "EMBREE_SIGN_FILE": "$env{SIGN_FILE_MAC}"
       }
     },
     {
@@ -69,7 +70,8 @@
       "inherits": ["package-static", "macos"],
       "cacheVariables": {
         "CMAKE_SKIP_INSTALL_RPATH": "OFF",
-        "CMAKE_MACOSX_RPATH": "ON"
+        "CMAKE_MACOSX_RPATH": "ON",
+        "EMBREE_SIGN_FILE": "$env{SIGN_FILE_MAC}"
       }
     },
 
