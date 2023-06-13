@@ -298,6 +298,14 @@ IF(WIN32)
     ADD_TEST(NAME "BuildPackage" WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}" COMMAND ${PACKAGE_SCRIPT} ${CMAKE_BUILD_TYPE} "${PACKAGE_BASE_NAME}" "${ARCH}")
   ENDIF()
 
+  add_custom_target(
+    post_package "${PROJECT_SOURCE_DIR}/scripts/package_post_build_win.bat" "${PACKAGE_BASE_NAME}" "${ARCH}"
+  )
+
+  add_custom_target(
+    test_package "${PROJECT_SOURCE_DIR}/scripts/package_test_win.bat" "${PACKAGE_BASE_NAME}" "${ARCH}"
+  )
+
 # MacOSX specific settings
 ELSEIF(APPLE)
 
@@ -312,22 +320,28 @@ ELSEIF(APPLE)
     ADD_TEST(NAME "BuildPackage" WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}" COMMAND "${PROJECT_SOURCE_DIR}/scripts/package_macosx.sh" ${CMAKE_BUILD_TYPE} "${PACKAGE_BASE_NAME}" "${EMBREE_SIGN_FILE}")
   ENDIF()
 
+  add_custom_target(
+    post_package "${PROJECT_SOURCE_DIR}/scripts/package_post_build_macosx.sh" ${PACKAGE_BASE_NAME} ${EMBREE_SIGN_FILE}
+  )
+
+  add_custom_target(
+    test_package "${PROJECT_SOURCE_DIR}/scripts/package_test_macosx.sh" ${PACKAGE_BASE_NAME}
+  )
+
 # Linux specific settings
 ELSE()
 
   SET(CPACK_GENERATOR TGZ)
   SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.x86_64.linux")
-  #SET(CPACK_MONOLITHIC_INSTALL 1)
-  IF (EMBREE_TESTING_PACKAGE)
-    IF (EMBREE_SYCL_SUPPORT)
-      SET(PACKAGE_SCRIPT "${PROJECT_SOURCE_DIR}/scripts/package_linux_dpcpp.sh")
-    ELSE()
-      SET(PACKAGE_SCRIPT "${PROJECT_SOURCE_DIR}/scripts/package_linux.sh")
-    ENDIF()
-    ADD_TEST(NAME "BuildPackage" WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}" COMMAND ${PACKAGE_SCRIPT}
-      ${EMBREE_ZIP_MODE} ${EMBREE_LIBRARY_NAME} ${EMBREE_VERSION} ${EMBREE_VERSION_MAJOR} "${EMBREE_SIGN_FILE}")
-  ENDIF()
-  
+
+  add_custom_target(
+    post_package "${PROJECT_SOURCE_DIR}/scripts/package_post_build_linux.sh" ${EMBREE_VERSION}
+  )
+
+  add_custom_target(
+    test_package "${PROJECT_SOURCE_DIR}/scripts/package_test_linux.sh" ${EMBREE_VERSION}
+  )
+
 ENDIF()
 
 IF (EMBREE_TESTING_PACKAGE)

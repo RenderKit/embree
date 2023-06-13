@@ -13,30 +13,35 @@ jobs:
 #####################################################################
 # Release Builds
 ####################################################################
-
   release-windows-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
       artifact-out: release-windows-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
-      artifact-path: ./build/*.zip
+      artifact-path: ./build/embree-*.zip
+      shell: cmd
       cmd: |
-        python scripts/test.py configure platform:x64 build:Release compiler:ICX2023.1.0 ispc:ispc1.19.0 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.9.0 intensity:4 package:ZIP
-        python scripts/test.py build
-        python scripts/test.py test
+        call "C:\\Program Files (x86)\\Intel\\oneAPI\\compiler\\2023.1.0\\env\\vars.bat"
+        cmake --preset package-windows-icx-ispc1_19_0-tbb2021_9_0
+        cmake --build build --config Release --target package
+        cmake --build build --target post_package
+        cmake --build build --target test_package
+
 
   release-macosx-x64-Release-CLANG-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@devel
     with:
-      runs-on: '[ "macOS", "sign", "avx2", "x86_64" ]'
+      runs-on: '[ "macOS", "build", "x86_64" ]'
       artifact-out: release-macosx-x64-Release-CLANG-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
       artifact-path: ./build/*.zip
       cmd: |
-        scripts/test.py configure platform:x64 build:Release compiler:CLANG ispc:ispc1.19.0 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB2021.9.0 intensity:4 package:ZIP
-        scripts/test.py build
-        scripts/test.py test
+        source scripts/cmake-presets/macos-env.sh
+        $CMAKE_EXE --preset package-macos-gcc-ispc1_19_0-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release --target package
+        $CMAKE_EXE --build build --target post_package
+
 
   release-linux-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP:
     secrets: inherit
@@ -47,15 +52,17 @@ jobs:
       artifact-out: release-linux-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
       artifact-path: ./build/*.tar.gz
       cmd: |
-        scripts/test.py configure platform:x64 build:Release compiler:ICX2023.1.0 ispc:ispc1.19.0 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.9.0 intensity:4 package:ZIP
-        scripts/test.py build
-        scripts/test.py test
+        source scripts/cmake-presets/linux-env.sh
+        source $NAS_LINUX/intel/oneAPI/compiler/2023.1.0/env/vars.sh
+        $CMAKE_EXE --preset package-linux-icx-ispc1_19_0-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release --target package
+        $CMAKE_EXE --build build --target post_package
+        $CMAKE_EXE --build build --target test_package
 
 
 #####################################################################
 # DPC++ Release Builds
 ####################################################################
-
   release-windows-x64-Release-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@devel
@@ -65,10 +72,14 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-internal.env
       artifact-out: release-windows-x64-Release-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
       artifact-path: ./build/*.zip
+      shell: cmd
       cmd: |
-        python scripts/test.py configure platform:x64 build:Release compiler:ICX2023.1.0 EMBREE_SYCL_SUPPORT:ON sycl:none gfx:RELEASE ispc:ispc1.19.0 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.9.0 intensity:4 package:ZIP
-        python scripts/test.py build
-        python scripts/test.py test
+        call "C:\\Program Files (x86)\\Intel\\oneAPI\\compiler\\2023.1.0\\env\\vars.bat"
+        cmake --preset package-windows-icx-sycl-ispc1_19_0-tbb2021_9_0
+        cmake --build build --config Release --target package
+        cmake --build build --target post_package
+        cmake --build build --target test_package
+
 
   # FIXME: remove this AOT release once JIT properly tested in CI
   #release-windows-x64-Release-SYCL-ICX2023_0_0-AOT-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP:
@@ -83,11 +94,12 @@ jobs:
   #      python scripts/test.py build
   #      python scripts/test.py test
 
+
   release-linux-x64-Release-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
     with:
-      image: embree/ubuntu:20.04
+      image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
@@ -95,9 +107,12 @@ jobs:
       artifact-out: release-linux-x64-Release-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
       artifact-path: ./build/*.tar.gz
       cmd: |
-        scripts/test.py configure platform:x64 build:Release compiler:ICX2023.1.0 EMBREE_SYCL_SUPPORT:ON sycl:none gfx:RELEASE ispc:ispc1.19.0 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.9.0 intensity:4 package:ZIP
-        scripts/test.py build
-        scripts/test.py test
+        source scripts/cmake-presets/linux-env.sh
+        source ${NAS_LINUX}/intel/oneAPI/compiler/2023.0.0/env/vars.sh
+        $CMAKE_EXE --preset package-linux-icx-sycl-ispc1_19_0-tbb2021_9_0
+        $CMAKE_EXE --build build --config Release --target package
+        $CMAKE_EXE --build build --target post_package
+        $CMAKE_EXE --build build --target test_package
 
 
 #####################################################################
