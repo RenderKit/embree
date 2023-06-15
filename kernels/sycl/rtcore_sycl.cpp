@@ -117,6 +117,25 @@ SYCL_EXTERNAL __attribute__((always_inline)) void* rtcGetGeometryUserDataFromSce
   //return nullptr;
 }
 
+SYCL_EXTERNAL __attribute__((always_inline)) void rtcGetGeometryTransformFromScene(RTCScene hscene, unsigned int geomID, float time, enum RTCFormat format, void* xfm)
+{
+  Scene* scene = (Scene*) hscene;
+  //RTC_CATCH_BEGIN;
+  //RTC_TRACE(rtcGetGeometryTransformFromScene);
+  //RTC_ENTER_DEVICE(hscene);
+  AffineSpace3fa transform = one;
+  Geometry* geom = scene->get(geomID);
+  if (geom->getTypeMask() & Geometry::MTY_INSTANCE) {
+    Instance* instance = (Instance*) geom;
+    if (likely(instance->numTimeSteps <= 1))
+      transform = instance->getLocal2World();
+    else
+      transform = instance->getLocal2World(time);
+  }
+  storeTransform(transform, format, (float*)xfm);
+  //RTC_CATCH_END2(geometry);
+}
+
 SYCL_EXTERNAL __attribute__((always_inline)) void rtcInvokeIntersectFilterFromGeometry(const RTCIntersectFunctionNArguments* args_i, const RTCFilterFunctionNArguments* filter_args)
 {
 #if EMBREE_SYCL_GEOMETRY_CALLBACK

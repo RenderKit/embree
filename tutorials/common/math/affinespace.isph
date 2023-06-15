@@ -88,6 +88,10 @@ inline uniform Vec3f xfmVector(const uniform AffineSpace3f a, const uniform Vec3
 inline varying Vec3f xfmVector(const uniform AffineSpace3f a, const varying Vec3f v) { return xfmVector(a.l,v); }
 inline varying Vec3f xfmVector(const varying AffineSpace3f a, const varying Vec3f v) { return xfmVector(a.l,v); }
 
+inline uniform Vec3f xfmNormal(const uniform AffineSpace3f a, const uniform Vec3f v) { return xfmNormal(a.l,v); }
+inline varying Vec3f xfmNormal(const uniform AffineSpace3f a, const varying Vec3f v) { return xfmNormal(a.l,v); }
+inline varying Vec3f xfmNormal(const varying AffineSpace3f a, const varying Vec3f v) { return xfmNormal(a.l,v); }
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Comparison Operators
 ////////////////////////////////////////////////////////////////////////////////

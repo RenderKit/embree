@@ -201,6 +201,10 @@ inline varying bool ne(const varying LinearSpace3f &a, const varying LinearSpace
 inline uniform LinearSpace3f rcp(const uniform LinearSpace3f &l) { return rcp(det(l))*adjoint(l); }
 inline varying LinearSpace3f rcp(const varying LinearSpace3f &l) { return rcp(det(l))*adjoint(l); }
 
+inline uniform Vec3f xfmNormal(const uniform LinearSpace3f l, const uniform Vec3f v) { return xfmVector(transposed(rcp(l)),v); }
+inline varying Vec3f xfmNormal(const uniform LinearSpace3f l, const varying Vec3f v) { return xfmVector(transposed(rcp(l)),v); }
+inline varying Vec3f xfmNormal(const varying LinearSpace3f l, const varying Vec3f v) { return xfmVector(transposed(rcp(l)),v); }
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Interpolation

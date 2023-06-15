@@ -186,7 +186,12 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
     /* calculate shading normal in world space */
     Vec3fa Ns = ray.Ng;
     if (ray.instID[0] != RTC_INVALID_GEOMETRY_ID)
-      Ns = xfmVector(data.normal_xfm[ray.instID[0]],Ns);
+    {
+      AffineSpace3fa xfm;
+      rtcGetGeometryTransformFromScene(data.g_scene,ray.instID[0],0.0f,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&xfm);
+      Ns = xfmNormal(xfm,Ns);
+      //Ns = xfmVector(data.normal_xfm[ray.instID[0]],Ns);
+    }
     Ns = normalize(Ns);
 
     /* calculate diffuse color of geometries */

@@ -110,6 +110,9 @@ RTC_API RTCGeometry rtcGetGeometryThreadSafe(RTCScene scene, unsigned int geomID
 /* Gets the user-defined data pointer of the geometry. This function is not thread safe and should get used during rendering. */
 RTC_SYCL_API void* rtcGetGeometryUserDataFromScene(RTCScene scene, unsigned int geomID);
 
+/* Returns the interpolated transformation of an instance for the specified time. */
+RTC_SYCL_API void rtcGetGeometryTransformFromScene(RTCScene scene, unsigned int geomID, float time, enum RTCFormat format, void* xfm);
+
 
 /* Commits the scene. */
 RTC_API void rtcCommitScene(RTCScene scene);

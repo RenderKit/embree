@@ -18,7 +18,9 @@ pointer previously set with `rtcSetGeometryUserData` from the geometry
 with index `geomID` from the specified scene `scene`. When
 `rtcSetGeometryUserData` was not called yet, `NULL` is returned.
 
-This function is supposed to be used during rendering.
+In contrast to the `rtcGetGeometryUserData` function, the
+`rtcGetGeometryUserDataFromScene` function an get used during
+rendering inside a SYCL kernel.
 
 #### EXIT STATUS
 

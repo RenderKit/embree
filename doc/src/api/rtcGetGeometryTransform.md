@@ -35,6 +35,11 @@ Possible formats for the returned matrix are:
   in column-major form as a 4×4 homogeneous matrix with last row equal
   to (0, 0, 0, 1).
 
+This function is supposed to be used during rendering, but only
+supported on the CPU and not inside SYCL kernels on the GPU. Inside a
+SYCL kernel the `rtcGetGeometryTransformFromScene` function has to get
+used.
+
 #### EXIT STATUS
 
 On failure an error code is set that can be queried using
@@ -42,4 +47,4 @@ On failure an error code is set that can be queried using
 
 #### SEE ALSO
 
-[RTC_GEOMETRY_TYPE_INSTANCE], [rtcSetGeometryTransform]
+[RTC_GEOMETRY_TYPE_INSTANCE], [rtcSetGeometryTransform], [rtcGetGeometryTransformFromScene]
