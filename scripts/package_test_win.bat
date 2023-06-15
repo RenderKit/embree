@@ -3,12 +3,11 @@ rem ## SPDX-License-Identifier: Apache-2.0
 
 @echo off
 
-set outfile=%1
-set outarch=%2
+set package_name=%1
 
 mkdir embree_install
-tar -xf %outfile%.%outarch%.windows.tar.gz -C embree_install
-tar -xf %outfile%.%outarch%.windows-testing.tar.gz -C embree_install
+tar -xf %package_name%.tar.gz -C embree_install
+tar -xf %package_name%-testing.tar.gz -C embree_install
 
 cd embree_install/testing
 cmake -B build -DEMBREE_TESTING_INTENSITY=4
