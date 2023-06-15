@@ -370,6 +370,10 @@
 ```
 \pagebreak
 
+## rtcGetGeometryTransformFromScene
+``` {include=src/api/rtcGetGeometryTransformFromScene.md}
+```
+\pagebreak
 
 ## rtcSetGeometryTessellationRate
 ``` {include=src/api/rtcSetGeometryTessellationRate.md}

@@ -1157,37 +1157,7 @@ RTC_NAMESPACE_BEGIN;
     return space;
   }
 
-  void storeTransform(const AffineSpace3fa& space, RTCFormat format, float* xfm)
-  {
-    switch (format)
-    {
-    case RTC_FORMAT_FLOAT3X4_ROW_MAJOR:
-      xfm[ 0] = space.l.vx.x;  xfm[ 1] = space.l.vy.x;  xfm[ 2] = space.l.vz.x;  xfm[ 3] = space.p.x;
-      xfm[ 4] = space.l.vx.y;  xfm[ 5] = space.l.vy.y;  xfm[ 6] = space.l.vz.y;  xfm[ 7] = space.p.y;
-      xfm[ 8] = space.l.vx.z;  xfm[ 9] = space.l.vy.z;  xfm[10] = space.l.vz.z;  xfm[11] = space.p.z;
-      break;
-
-    case RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR:
-      xfm[ 0] = space.l.vx.x;  xfm[ 1] = space.l.vx.y;  xfm[ 2] = space.l.vx.z;
-      xfm[ 3] = space.l.vy.x;  xfm[ 4] = space.l.vy.y;  xfm[ 5] = space.l.vy.z;
-      xfm[ 6] = space.l.vz.x;  xfm[ 7] = space.l.vz.y;  xfm[ 8] = space.l.vz.z;
-      xfm[ 9] = space.p.x;     xfm[10] = space.p.y;     xfm[11] = space.p.z;
-      break;
-
-    case RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR:
-      xfm[ 0] = space.l.vx.x;  xfm[ 1] = space.l.vx.y;  xfm[ 2] = space.l.vx.z;  xfm[ 3] = 0.f;
-      xfm[ 4] = space.l.vy.x;  xfm[ 5] = space.l.vy.y;  xfm[ 6] = space.l.vy.z;  xfm[ 7] = 0.f;
-      xfm[ 8] = space.l.vz.x;  xfm[ 9] = space.l.vz.y;  xfm[10] = space.l.vz.z;  xfm[11] = 0.f;
-      xfm[12] = space.p.x;     xfm[13] = space.p.y;     xfm[14] = space.p.z;     xfm[15] = 1.f;
-      break;
-
-    default:
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid matrix format");
-      break;
-    }
-  }
-
-  RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeStep, RTCFormat format, const void* xfm)
+RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeStep, RTCFormat format, const void* xfm)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
@@ -1240,10 +1210,21 @@ RTC_NAMESPACE_BEGIN;
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcGetGeometryTransform);
-    RTC_ENTER_DEVICE(hgeometry);
+    //RTC_ENTER_DEVICE(hgeometry); // no allocation required
     const AffineSpace3fa transform = geometry->getTransform(time);
     storeTransform(transform, format, (float*)xfm);
     RTC_CATCH_END2(geometry);
+  }
+
+  RTC_API void rtcGetGeometryTransformFromScene(RTCScene hscene, unsigned int geomID, float time, RTCFormat format, void* xfm)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetGeometryTransformFromScene);
+    //RTC_ENTER_DEVICE(hscene); // no allocation required
+    const AffineSpace3fa transform = scene->get(geomID)->getTransform(time);
+    storeTransform(transform, format, (float*)xfm);
+    RTC_CATCH_END2(scene);
   }
 
   RTC_API void rtcInvokeIntersectFilterFromGeometry(const struct RTCIntersectFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
