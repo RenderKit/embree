@@ -31,6 +31,18 @@
         "EMBREE_MAX_ISA": "AVX512"
       }
     },
+    {
+      "name": "package-linux-icx-ispc1_19_0-tbb2021_9_0-perf",
+      "inherits": ["package-linux", "env", "icx", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512",
+        "EMBREE_USE_GOOGLE_BENCHMARK": "ON",
+        "EMBREE_BUILD_GOOGLE_BENCHMARK_FROM_SOURCE": "ON"
+      }
+    },
+
 
     {
       "name": "package-linux-clang-ispc1_19_0-tbb2021_9_0",
@@ -83,6 +95,21 @@
         "EMBREE_MAX_ISA": "AVX512"
       }
     },
+    {
+      "name": "package-linux-icx-sycl-ispc1_19_0-tbb2021_9_0-perf",
+      "inherits": ["package-linux", "env", "icx", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "AVX512",
+        "EMBREE_USE_GOOGLE_BENCHMARK": "ON",
+        "EMBREE_BUILD_GOOGLE_BENCHMARK_FROM_SOURCE": "ON",
+        "EMBREE_NO_SPLASH": "ON"
+      }
+    },
+
     {
       "name": "package-linux-dpcpp-ispc1_19_0-tbb2021_9_0",
       "inherits": ["package-linux", "env", "dpcpp", "ispc1_19_0", "tbb2021_9_0"],
