@@ -3,13 +3,12 @@ rem ## SPDX-License-Identifier: Apache-2.0
 
 @echo off
 
-set outfile=%1
-set outarch=%2
-set signfile=%3
+set package_name=%1
+set signfile=%2
 
-REN %outfile%.%outarch%.windows-embree.zip %outfile%.%outarch%.windows.zip
-REN %outfile%.%outarch%.windows-embree-testing.zip %outfile%.%outarch%.windows-testing.zip
-DEL %outfile%.%outarch%.windows-Unspecified.zip
+REN %package_name%-embree.zip %package_name%.zip
+REN %package_name%-embree-testing.zip %package_name%-testing.zip
+DEL %package_name%-Unspecified.zip
 
 
 IF %ERRORLEVEL% NEQ 0 (
@@ -17,8 +16,8 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 IF [%signfile%] NEQ [] (
-  %signfile% %outfile%.%outarch%.windows.zip
-  %signfile% %outfile%.%outarch%.windows-testing.zip
+  %signfile% %package_name%.zip
+  %signfile% %package_name%-testing.zip
 )
 
 IF %ERRORLEVEL% NEQ 0 (

@@ -171,3 +171,21 @@ jobs:
       artifact-in-linux: release-linux-x64-Release-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
       path: "build/*.zip build/*.gz"
       artifact-out-name: "antivirus-scan-dpcpp"
+
+
+#####################################################################
+# Testing package
+#####################################################################
+  test-package:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    need: [release-linux-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP]
+    with:
+      runs-on: '[ "Linux", "docker", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-release.env
+      artifact-out: release-testing-PACKAGE-ZIP
+      artifact-path: ./build/*.tar.gz
+      cmd: |
+        rm embree-?.?.?.x86_64.linux.tar.gz
+        mv embree-4.1.0.x86_64.linux-testing.tar.gz embree-4.1.0-testing.tar.gz

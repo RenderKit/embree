@@ -3,12 +3,12 @@
 ## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
-EMBREE_VERSION=$1
+PACKAGE_NAME=$1
 
 echo $EMBREE_VERSION
 
-mv embree-${EMBREE_VERSION}.x86_64.linux-embree.tar.gz embree-${EMBREE_VERSION}.x86_64.linux.tar.gz
-mv embree-${EMBREE_VERSION}.x86_64.linux-embree-testing.tar.gz embree-${EMBREE_VERSION}.x86_64.linux-testing.tar.gz
-rm embree-${EMBREE_VERSION}.x86_64.linux-Unspecified.tar.gz
+mv ${PACKAGE_NAME}-embree.tar.gz ${PACKAGE_NAME}.tar.gz
+mv ${PACKAGE_NAME}-embree-testing.tar.gz ${PACKAGE_NAME}-testing.tar.gz
+rm ${PACKAGE_NAME}-Unspecified.tar.gz
 
 ls -l *.tar.gz

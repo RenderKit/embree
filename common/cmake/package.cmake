@@ -237,6 +237,7 @@ SET(CPACK_PACKAGE_NAME "Intel(R) Embree Ray Tracing Kernels")
 SET(CPACK_PACKAGE_FILE_NAME "embree-${EMBREE_VERSION}${EMBREE_VERSION_NOTE}")
 IF (EMBREE_SYCL_SUPPORT)
   SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.sycl")
+  SET(EMBREE_VERSION_SUFFIX)
 ENDIF()
 #SET(CPACK_PACKAGE_ICON "${PROJECT_SOURCE_DIR}/embree-doc/images/icon.png")
 #SET(CPACK_PACKAGE_RELOCATABLE TRUE)
@@ -290,8 +291,8 @@ IF(WIN32)
   ENDIF()
 
   SET(CPACK_GENERATOR ZIP)
-  SET(PACKAGE_BASE_NAME "${CPACK_PACKAGE_FILE_NAME}")
   SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.${ARCH}.windows")
+  SET(PACKAGE_BASE_NAME "${CPACK_PACKAGE_FILE_NAME}")
   #SET(CPACK_MONOLITHIC_INSTALL 1)
   IF (EMBREE_TESTING_PACKAGE)
     SET(PACKAGE_SCRIPT "${PROJECT_SOURCE_DIR}/scripts/package_win.bat")
@@ -299,11 +300,11 @@ IF(WIN32)
   ENDIF()
 
   add_custom_target(
-    post_package "${PROJECT_SOURCE_DIR}/scripts/package_post_build_win.bat" "${PACKAGE_BASE_NAME}" "${ARCH}"
+    post_package "${PROJECT_SOURCE_DIR}/scripts/package_post_build_win.bat" "${PACKAGE_BASE_NAME}"
   )
 
   add_custom_target(
-    test_package "${PROJECT_SOURCE_DIR}/scripts/package_test_win.bat" "${PACKAGE_BASE_NAME}" "${ARCH}"
+    test_package "${PROJECT_SOURCE_DIR}/scripts/package_test_win.bat" "${PACKAGE_BASE_NAME}"
   )
 
 # MacOSX specific settings
@@ -333,13 +334,17 @@ ELSE()
 
   SET(CPACK_GENERATOR TGZ)
   SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.x86_64.linux")
+  SET(PACKAGE_BASE_NAME "${CPACK_PACKAGE_FILE_NAME}")
+  IF (EMBREE_SYCL_SUPPORT)
+    SET(EMBREE_VERSION_SYCL_SUFFIX "-beta.sycl")
+  ENDIF()
 
   add_custom_target(
-    post_package "${PROJECT_SOURCE_DIR}/scripts/package_post_build_linux.sh" ${EMBREE_VERSION}
+    post_package "${PROJECT_SOURCE_DIR}/scripts/package_post_build_linux.sh" ${PACKAGE_BASE_NAME}
   )
 
   add_custom_target(
-    test_package "${PROJECT_SOURCE_DIR}/scripts/package_test_linux.sh" ${EMBREE_VERSION}
+    test_package "${PROJECT_SOURCE_DIR}/scripts/package_test_linux.sh" ${PACKAGE_BASE_NAME}
   )
 
 ENDIF()
