@@ -70,11 +70,11 @@ ray and the potential hit are in object space.
 The filter callback function has the task to check for each valid ray
 whether it wants to accept or reject the corresponding hit. To reject
 a hit, the filter callback function just has to write `0` to the
-integer valid mask of the corresponding ray. To accept the hit, it just
-has to leave the valid mask set to `-1`. The filter function is further
-allowed to change the hit and decrease the `tfar` value of the ray but
-it should not modify other ray data nor any inactive components of the
-ray or hit.
+integer valid mask of the corresponding ray. To accept the hit, it
+just has to leave the valid mask set to `-1`. When accepting a hit,
+the filter function is further allowed to change the hit and decrease
+the `tfar` value of the ray but it should not modify other ray data
+nor any inactive components of the ray or hit.
 
 ``` {include=src/api/inc/reorder_callback_intersect.md}
 ```
