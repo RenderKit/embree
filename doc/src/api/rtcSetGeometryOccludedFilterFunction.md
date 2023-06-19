@@ -25,7 +25,7 @@ further invocations overwrite the previously set callback function.
 Passing `NULL` as function pointer disables the registered callback
 function.
 
-The registered intersection filter function is invoked for every hit
+The registered occlusion filter function is invoked for every hit
 encountered during the `rtcOccluded`-type ray queries and can accept
 or reject that hit. The feature can be used to define a silhouette for
 a primitive and reject hits that are outside the silhouette. E.g. a
@@ -35,6 +35,14 @@ hit points lie inside or outside the leaf.
 Please see the description of the
 `rtcSetGeometryIntersectFilterFunction` for a description of the
 filter callback function.
+
+The `rtcOccluded`-type functions terminate traversal when a hit got
+committed. As filter functions can only set the `tfar` distance of the
+ray for a committed hit, the occlusion filter cannot influence the
+`tfar` value of subsequent traversal, as that directly ends. For that
+reason `rtcOccluded` and occlusion filters cannot get used to gather
+the next n-hits, and `rtcIntersect` and intersection filters should
+get used instead.
 
 #### EXIT STATUS
 
