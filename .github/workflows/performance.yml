@@ -14,7 +14,7 @@ jobs:
   # Linux build
   ########################################
 
-  linux-build-DG2-DPCPP:
+  linux-build-SYCL-DPCPP:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
     with:
@@ -23,7 +23,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-release.env
-      artifact-out: linux-DG2-DPCPP
+      artifact-out: linux-SYCL-DPCPP
       artifact-path: ./build/*.tar.gz
       cmd: |
         source scripts/cmake-presets/linux-env.sh
@@ -50,16 +50,41 @@ jobs:
   linux-test-DG2-A770-perf:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    needs: ["linux-build-DG2-DPCPP"]
+    needs: ["linux-build-SYCL-DPCPP"]
     with:
       image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2", "perf", "A770" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-release.env
-      artifact-in: linux-DG2-DPCPP
+      artifact-in: linux-SYCL-DPCPP
       setup-benny: true
       cmd: |
+        source <(scripts/test.py env --debug)
+        cd build
+        tar -xf embree-?.?.?-beta.sycl.x86_64.linux.tar.gz
+        cd bin
+        chmod +x ../embree-vars.sh
+        ../embree-vars.sh
+        $GITHUB_WORKSPACE/scripts/run-perf.sh gpu
+
+
+  linux-test-PVC-perf:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    needs: ["linux-build-SYCL-DPCPP"]
+    with:
+      image: embree/ubuntu:22.04
+      options: --device=/dev/dri:/dev/dri
+      runs-on: '[ "Linux", "docker", "pvc", "perf" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-release.env
+      artifact-in: linux-SYCL-DPCPP
+      setup-benny: true
+      cmd: |
+        export NEOReadDebugKeys=1
+        # Run it on single tile (disable implicit scaling)
+        export EnableImplicitScaling=0
         source <(scripts/test.py env --debug)
         cd build
         tar -xf embree-?.?.?-beta.sycl.x86_64.linux.tar.gz
