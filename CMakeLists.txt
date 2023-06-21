@@ -6,11 +6,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.1.0)
 SET(EMBREE_VERSION_MAJOR 4)
 SET(EMBREE_VERSION_MINOR 1)
 SET(EMBREE_VERSION_PATCH 0)
-IF (EMBREE_SYCL_SUPPORT)
-  SET(EMBREE_VERSION_NOTE "-beta") # Embree SYCL version is in beta phase
-ELSE()
-  SET(EMBREE_VERSION_NOTE "")
-ENDIF()
+SET(EMBREE_VERSION_NOTE "")
 
 SET(EMBREE_VERSION ${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH})
 MATH(EXPR EMBREE_VERSION_NUMBER "10000*${EMBREE_VERSION_MAJOR} + 100*${EMBREE_VERSION_MINOR} + ${EMBREE_VERSION_PATCH}")
@@ -150,15 +146,6 @@ OPTION(EMBREE_STACK_PROTECTOR "When enabled Embree compiles with stack protectio
 
 IF (NOT APPLE)
   OPTION(EMBREE_SYCL_SUPPORT "Enables SYCL GPU support." OFF)
-  OPTION(EMBREE_NO_SPLASH "Enables/Disables the Embree splash." OFF)
-  IF (EMBREE_SYCL_SUPPORT AND NOT EMBREE_NO_SPLASH)
-    MESSAGE(WARNING
-       "==================================================================================\n"
-       "  The SYCL support of Embree is in beta phase. Current functionality, quality,    \n"
-       "  and GPU performance may not reflect that of the final product. Please read the  \n"
-       "  documentation section \"Embree SYCL Known Issues\" for known limitations.       \n"
-       "==================================================================================\n")
-  ENDIF()
 ENDIF()
 CMAKE_DEPENDENT_OPTION(EMBREE_SYCL_LARGEGRF "Enables SYCL large GRF support." OFF "EMBREE_SYCL_SUPPORT" OFF)
 CMAKE_DEPENDENT_OPTION(EMBREE_SYCL_DBG "Enables DPC++ debug info." OFF "EMBREE_SYCL_SUPPORT" OFF)
@@ -174,9 +161,6 @@ ENDIF()
 
 IF (EMBREE_SYCL_SUPPORT)
   ADD_DEFINITIONS("-DEMBREE_SYCL_SUPPORT")  # FIXME: only use define from rtcore_config.h
-ENDIF()
-IF (EMBREE_NO_SPLASH)
-  ADD_DEFINITIONS("-DEMBREE_NO_SPLASH")  # FIXME: only use define from rtcore_config.h
 ENDIF()
 
 CMAKE_DEPENDENT_OPTION(EMBREE_SYCL_RT_SIMULATION "Using hardware simulation" OFF "EMBREE_SYCL_SUPPORT" OFF)

@@ -5,7 +5,7 @@
 #include "../common/tutorial/benchmark_render.h"
 
 #if defined(EMBREE_SYCL_TUTORIAL)
-#  define NAME "dynamic_scene_sycl (beta)"
+#  define NAME "dynamic_scene_sycl"
 #  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
 #else
 #  define NAME "dynamic_scene"
