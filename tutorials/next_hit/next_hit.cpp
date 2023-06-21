@@ -4,7 +4,7 @@
 #include "../common/tutorial/tutorial.h"
 
 #if defined(EMBREE_SYCL_TUTORIAL)
-#  define NAME "next_hit_sycl (beta)"
+#  define NAME "next_hit_sycl"
 #  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
 #else
 #  define NAME "next_hit"

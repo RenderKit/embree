@@ -5,7 +5,7 @@
 #include "../common/tutorial/benchmark_render.h"
 
 #if defined(EMBREE_SYCL_TUTORIAL)
-#  define NAME "grid_geometry_sycl (beta)"
+#  define NAME "grid_geometry_sycl"
 #  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
 #else
 #  define NAME "grid_geometry"

@@ -62,7 +62,7 @@ jobs:
       cmd: |
         source <(scripts/test.py env --debug)
         cd build
-        tar -xf embree-?.?.?-beta.sycl.x86_64.linux.tar.gz
+        tar -xf embree-?.?.?.sycl.x86_64.linux.tar.gz
         cd bin
         chmod +x ../embree-vars.sh
         ../embree-vars.sh
@@ -87,7 +87,7 @@ jobs:
         export EnableImplicitScaling=0
         source <(scripts/test.py env --debug)
         cd build
-        tar -xf embree-?.?.?-beta.sycl.x86_64.linux.tar.gz
+        tar -xf embree-?.?.?.sycl.x86_64.linux.tar.gz
         cd bin
         chmod +x ../embree-vars.sh
         ../embree-vars.sh

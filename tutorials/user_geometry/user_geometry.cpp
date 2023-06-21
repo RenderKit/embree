@@ -5,7 +5,7 @@
 #include "../common/tutorial/benchmark_render.h"
 
 #if defined(EMBREE_SYCL_TUTORIAL)
-#  define NAME "user_geometry_sycl (beta)"
+#  define NAME "user_geometry_sycl"
 #  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
 #else
 #  define NAME "user_geometry"
