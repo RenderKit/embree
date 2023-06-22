@@ -179,7 +179,7 @@ jobs:
   test-package:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
-    need: [release-linux-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP]
+    needs: [release-linux-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP]
     with:
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
