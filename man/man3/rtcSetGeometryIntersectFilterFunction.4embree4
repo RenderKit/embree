@@ -88,9 +88,9 @@ To reject a hit, the filter callback function just has to write
 \f[C]0\f[R] to the integer valid mask of the corresponding ray.
 To accept the hit, it just has to leave the valid mask set to
 \f[C]-1\f[R].
-The filter function is further allowed to change the hit and decrease
-the \f[C]tfar\f[R] value of the ray but it should not modify other ray
-data nor any inactive components of the ray or hit.
+When accepting a hit, the filter function is further allowed to change
+the hit and decrease the \f[C]tfar\f[R] value of the ray but it should
+not modify other ray data nor any inactive components of the ray or hit.
 .IP
 .nf
 \f[C]

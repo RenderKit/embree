@@ -1,6 +1,14 @@
 Version History
 ---------------
 
+### Embree 4.2.0
+-   SYCL version of Embree with GPU support is no longer in beta phase.
+-   Improved BVH build performance on many core machines for applications that oversubscribe threads.
+-   Added rtcGetGeometryTransformFromScene API function that can get used inside SYCL kernels.
+-   No longer linking to ze_loader in SYCL mode to avoid Intel(R) oneAPI Level Zero dependency
+    for CPU rendering.
+-   Releasing test package to test Embree.
+
 ### Embree 4.1.0
 -   Added support for Intel® Data Center GPU Max Series.
 -   Added ARM64 Linux support.

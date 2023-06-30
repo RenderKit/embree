@@ -155,3 +155,20 @@ help of the device option in ocloc tool:
 
     ocloc compile --help
 
+
+Building Embree Tests
+---------------------
+
+Embree is released with a bundle of tests in an optional testing package.
+To run these tests extract the testing package in the same folder as your embree installation.
+e.g.:
+    
+    tar -xzf embree-<EMBREE_VERSION>-testing.zip -C /path/to/installed/embree
+
+The tests are extracted into a new folder inside you embree installation and can be run with:
+
+    cd /path/to/installed/embree/testing
+    cmake -B build
+    cmake --build build target=tests
+
+
