@@ -184,8 +184,9 @@ jobs:
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-release.env
+      artifact-in: release-linux-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
       artifact-out: release-testing-PACKAGE-ZIP
       artifact-path: ./build/*.tar.gz
       cmd: |
-        rm embree-?.?.?.x86_64.linux.tar.gz
-        mv embree-4.1.0.x86_64.linux-testing.tar.gz embree-4.1.0-testing.tar.gz
+        rm build/embree-4.2.0.x86_64.linux.tar.gz
+        mv build/embree-4.2.0.x86_64.linux-testing.tar.gz build/embree-4.2.0-testing.tar.gz

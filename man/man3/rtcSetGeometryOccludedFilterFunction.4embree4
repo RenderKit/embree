@@ -33,7 +33,7 @@ further invocations overwrite the previously set callback function.
 Passing \f[C]NULL\f[R] as function pointer disables the registered
 callback function.
 .PP
-The registered intersection filter function is invoked for every hit
+The registered occlusion filter function is invoked for every hit
 encountered during the \f[C]rtcOccluded\f[R]-type ray queries and can
 accept or reject that hit.
 The feature can be used to define a silhouette for a primitive and
@@ -45,6 +45,15 @@ hit points lie inside or outside the leaf.
 Please see the description of the
 \f[C]rtcSetGeometryIntersectFilterFunction\f[R] for a description of the
 filter callback function.
+.PP
+The \f[C]rtcOccluded\f[R]-type functions terminate traversal when a hit
+got committed.
+As filter functions can only set the \f[C]tfar\f[R] distance of the ray
+for a committed hit, the occlusion filter cannot influence the
+\f[C]tfar\f[R] value of subsequent traversal, as that directly ends.
+For that reason \f[C]rtcOccluded\f[R] and occlusion filters cannot get
+used to gather the next n-hits, and \f[C]rtcIntersect\f[R] and
+intersection filters should get used instead.
 .SS EXIT STATUS
 .PP
 On failure an error code is set that can be queried using

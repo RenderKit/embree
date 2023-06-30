@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 4.1.0
+% Embree: High Performance Ray Tracing Kernels 4.2.0
 % Intel Corporation
 
 Intel® Embree Overview
@@ -100,7 +100,7 @@ Windows Installation
 --------------------
 
 Embree linked against Visual Studio 2015 are provided as a ZIP file
-[embree-4.1.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v4.1.0/embree-4.1.0.x64.vc14.windows.zip). After
+[embree-4.2.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v4.2.0/embree-4.2.0.x64.vc14.windows.zip). After
 unpacking this ZIP file, you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree.
@@ -110,13 +110,13 @@ Linux Installation
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-4.1.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v4.1.0/embree-4.1.0.x86_64.linux.tar.gz). Unpack
+[embree-4.2.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v4.2.0/embree-4.2.0.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    tar xzf embree-4.1.0.x86_64.linux.tar.gz
-    source embree-4.1.0.x86_64.linux/embree-vars.sh
+    tar xzf embree-4.2.0.x86_64.linux.tar.gz
+    source embree-4.2.0.x86_64.linux/embree-vars.sh
 
 We recommend adding a relative `RPATH` to your application that points
 to the location where Embree (and TBB) can be found, e.g. `$ORIGIN/../lib`.
@@ -126,12 +126,12 @@ macOS Installation
 ------------------
 
 The macOS version of Embree is also delivered as a ZIP file:
-[embree-4.1.0.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v4.1.0/embree-4.1.0.x86_64.macosx.zip). Unpack
+[embree-4.2.0.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v4.2.0/embree-4.2.0.x86_64.macosx.zip). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    unzip embree-4.1.0.x64.macosx.zip    source embree-4.1.0.x64.macosx/embree-vars.sh
+    unzip embree-4.2.0.x64.macosx.zip    source embree-4.2.0.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided ZIP file. The library name of that Embree
@@ -156,7 +156,7 @@ set the `TBB_DIR` variable to the path containing `TBB-config.cmake` of a local
 TBB install, in case you do not have TBB installed globally on your system,
 e.g:
 
-    cmake -D embree_DIR=path_to_embree_package/lib/cmake/embree-4.1.0/ \
+    cmake -D embree_DIR=path_to_embree_package/lib/cmake/embree-4.2.0/ \
           -D TBB_DIR=path_to_tbb_package/lib/cmake/tbb/ \
           ..
 
@@ -248,6 +248,23 @@ To get a list of all device supported by AOT compilation look at the
 help of the device option in ocloc tool:
 
     ocloc compile --help
+
+
+Building Embree Tests
+---------------------
+
+Embree is released with a bundle of tests in an optional testing package.
+To run these tests extract the testing package in the same folder as your embree installation.
+e.g.:
+    
+    tar -xzf embree-4.2.0-testing.zip -C /path/to/installed/embree
+
+The tests are extracted into a new folder inside you embree installation and can be run with:
+
+    cd /path/to/installed/embree/testing
+    cmake -B build
+    cmake --build build target=tests
+
 
 Compiling Embree
 ================
@@ -486,7 +503,6 @@ Embree is tested using the following compilers under Windows:
   - oneAPI DPC++/C++ Compiler 2023-04-17
   - Visual Studio 2019
   - Visual Studio 2017
-  - Visual Studio 2015 (Update 1)
   - Intel® Implicit SPMD Program Compiler 1.19.0
   - Intel® Implicit SPMD Program Compiler 1.18.1
   - Intel® Implicit SPMD Program Compiler 1.17.0
@@ -4920,10 +4936,10 @@ The filter callback function has the task to check for each valid ray
 whether it wants to accept or reject the corresponding hit. To reject a
 hit, the filter callback function just has to write `0` to the integer
 valid mask of the corresponding ray. To accept the hit, it just has to
-leave the valid mask set to `-1`. The filter function is further
-allowed to change the hit and decrease the `tfar` value of the ray but
-it should not modify other ray data nor any inactive components of the
-ray or hit.
+leave the valid mask set to `-1`. When accepting a hit, the filter
+function is further allowed to change the hit and decrease the `tfar`
+value of the ray but it should not modify other ray data nor any
+inactive components of the ray or hit.
 
 When performing ray queries using `rtcIntersect1`, it is guaranteed
 that the packet size is 1 when the callback is invoked. When performing
@@ -4986,7 +5002,7 @@ further invocations overwrite the previously set callback function.
 Passing `NULL` as function pointer disables the registered callback
 function.
 
-The registered intersection filter function is invoked for every hit
+The registered occlusion filter function is invoked for every hit
 encountered during the `rtcOccluded`-type ray queries and can accept or
 reject that hit. The feature can be used to define a silhouette for a
 primitive and reject hits that are outside the silhouette. E.g. a tree
@@ -4996,6 +5012,14 @@ points lie inside or outside the leaf.
 Please see the description of the
 `rtcSetGeometryIntersectFilterFunction` for a description of the filter
 callback function.
+
+The `rtcOccluded`-type functions terminate traversal when a hit got
+committed. As filter functions can only set the `tfar` distance of the
+ray for a committed hit, the occlusion filter cannot influence the
+`tfar` value of subsequent traversal, as that directly ends. For that
+reason `rtcOccluded` and occlusion filters cannot get used to gather
+the next n-hits, and `rtcIntersect` and intersection filters should get
+used instead.
 
 #### EXIT STATUS {#exit-status}
 
@@ -5200,7 +5224,9 @@ previously set with `rtcSetGeometryUserData`. When
 `rtcSetGeometryUserData` was not called yet, `NULL` is returned.
 
 This function is supposed to be used during rendering, but only
-supported on the CPU and in SYCL on the GPU.
+supported on the CPU and not inside SYCL kernels on the GPU. Inside a
+SYCL kernel the `rtcGetGeometryUserDataFromScene` function has to get
+used.
 
 #### EXIT STATUS {#exit-status}
 
@@ -5209,7 +5235,7 @@ On failure an error code is set that can be queried using
 
 #### SEE ALSO {#see-also}
 
-[rtcSetGeometryUserData]
+[rtcSetGeometryUserData], [rtcGetGeometryUserDataFromScene]
 
 ```{=tex}
 
@@ -5235,7 +5261,9 @@ pointer previously set with `rtcSetGeometryUserData` from the geometry
 with index `geomID` from the specified scene `scene`. When
 `rtcSetGeometryUserData` was not called yet, `NULL` is returned.
 
-This function is supposed to be used during rendering.
+In contrast to the `rtcGetGeometryUserData` function, the
+`rtcGetGeometryUserDataFromScene` function an get used during rendering
+inside a SYCL kernel.
 
 #### EXIT STATUS {#exit-status}
 
@@ -5931,6 +5959,11 @@ Possible formats for the returned matrix are:
     out in column-major form as a 4×4 homogeneous matrix with last row
     equal to (0, 0, 0, 1).
 
+This function is supposed to be used during rendering, but only
+supported on the CPU and not inside SYCL kernels on the GPU. Inside a
+SYCL kernel the `rtcGetGeometryTransformFromScene` function has to get
+used.
+
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
@@ -5938,7 +5971,65 @@ On failure an error code is set that can be queried using
 
 #### SEE ALSO {#see-also}
 
-[RTC\_GEOMETRY\_TYPE\_INSTANCE], [rtcSetGeometryTransform]
+[RTC\_GEOMETRY\_TYPE\_INSTANCE], [rtcSetGeometryTransform],
+[rtcGetGeometryTransformFromScene]
+
+```{=tex}
+
+```
+rtcGetGeometryTransformFromScene
+--------------------------------
+
+#### NAME {#name}
+
+    rtcGetGeometryTransformFromScene - returns the interpolated instance
+      transformation for the specified time
+
+#### SYNOPSIS {#synopsis}
+
+    #include <embree4/rtcore.h>
+
+    void rtcGetGeometryTransformFromScene(
+      RTCScene scene,
+      unsigned int geomID,
+      float time,
+      enum RTCFormat format,
+      void* xfm
+    );
+
+#### DESCRIPTION {#description}
+
+The `rtcGetGeometryTransformFromScene` function returns the
+interpolated local to world transformation (`xfm` output parameter) of
+an instance geometry specified by its geometry ID (`geomID` parameter)
+of a scene (`scene` parameter) for a particular time (`time` parameter
+in range $[0,1]$) in the specified format (`format` parameter).
+
+Possible formats for the returned matrix are:
+
+-   `RTC_FORMAT_FLOAT3X4_ROW_MAJOR`: The 3×4 float matrix is laid out
+    in row-major form.
+
+-   `RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR`: The 3×4 float matrix is laid
+    out in column-major form.
+
+-   `RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR`: The 3×4 float matrix is laid
+    out in column-major form as a 4×4 homogeneous matrix with last row
+    equal to (0, 0, 0, 1).
+
+In contrast to the `rtcGetGeometryTransform` function, the
+`rtcGetGeometryTransformFromScene` function can get used during
+rendering inside a SYCL kernel.
+
+#### EXIT STATUS {#exit-status}
+
+On failure an error code is set that can be queried using
+`rtcGetDeviceError`.
+
+#### SEE ALSO {#see-also}
+
+[RTC\_GEOMETRY\_TYPE\_INSTANCE], [rtcSetGeometryTransform],
+[rtcGetGeometryTransform]
 
 ```{=tex}
 

@@ -27,11 +27,13 @@ When \f[C]rtcSetGeometryUserData\f[R] was not called yet, \f[C]NULL\f[R]
 is returned.
 .PP
 This function is supposed to be used during rendering, but only
-supported on the CPU and in SYCL on the GPU.
+supported on the CPU and not inside SYCL kernels on the GPU.
+Inside a SYCL kernel the \f[C]rtcGetGeometryUserDataFromScene\f[R]
+function has to get used.
 .SS EXIT STATUS
 .PP
 On failure an error code is set that can be queried using
 \f[C]rtcGetDeviceError\f[R].
 .SS SEE ALSO
 .PP
-[rtcSetGeometryUserData]
+[rtcSetGeometryUserData], [rtcGetGeometryUserDataFromScene]
