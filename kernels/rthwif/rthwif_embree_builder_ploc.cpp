@@ -374,56 +374,6 @@ namespace embree
     
     sycl::queue  &gpu_queue  = *(sycl::queue*)sycl_queue;
 
-#if 0
-    const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
-    const uint32_t numGeometries                = args.numGeometries;  
-    
-    // ===================================    
-    // === prefetch builder scene data ===
-    // ===================================
-    
-    for (size_t geomID = 0; geomID < numGeometries; geomID++)
-    {
-      const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
-      if (geom == nullptr) continue;    
-      switch (geom->geometryType) {
-      case RTHWIF_GEOMETRY_TYPE_TRIANGLES  :
-      {
-        RTHWIF_GEOMETRY_TRIANGLES_DESC *t = (RTHWIF_GEOMETRY_TRIANGLES_DESC*)geom;
-        if (t->vertexBuffer)   gpu_queue.prefetch(t->vertexBuffer,t->vertexCount*t->vertexStride);
-        if (t->triangleBuffer) gpu_queue.prefetch(t->triangleBuffer,t->triangleCount*t->triangleStride);      
-        gpu_queue.prefetch(t,sizeof(RTHWIF_GEOMETRY_TRIANGLES_DESC));
-        break;
-      }
-      case RTHWIF_GEOMETRY_TYPE_QUADS      :
-      {
-        RTHWIF_GEOMETRY_QUADS_DESC *q = (RTHWIF_GEOMETRY_QUADS_DESC*)geom;
-        if (q->vertexBuffer) gpu_queue.prefetch(q->vertexBuffer,q->vertexCount*q->vertexStride);
-        if (q->quadBuffer) gpu_queue.prefetch(q->quadBuffer,q->quadCount*q->quadStride);      
-        gpu_queue.prefetch(q,sizeof(RTHWIF_GEOMETRY_QUADS_DESC));      
-        break;
-      }
-      case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR :
-      {
-        RTHWIF_GEOMETRY_AABBS_FPTR_DESC *a = (RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geom;
-        gpu_queue.prefetch(a,sizeof(RTHWIF_GEOMETRY_AABBS_FPTR_DESC));
-        break;
-      }
-      case RTHWIF_GEOMETRY_TYPE_INSTANCE   :
-      {
-        RTHWIF_GEOMETRY_INSTANCE_DESC *i = (RTHWIF_GEOMETRY_INSTANCE_DESC*)geom;
-        gpu_queue.prefetch(i->bounds,sizeof(RTHWIF_AABB));      
-        gpu_queue.prefetch(i,sizeof(RTHWIF_GEOMETRY_INSTANCE_DESC));
-        break;
-      }
-      default: assert(false); break;        
-      };                    
-    };
-
-    if (geometries) gpu_queue.prefetch(geometries,sizeof(RTHWIF_GEOMETRY_DESC*)*numGeometries);
-    if (args.accelBuffer)   gpu_queue.prefetch(args.accelBuffer  ,args.accelBufferBytes);
-    if (args.scratchBuffer) gpu_queue.prefetch(args.scratchBuffer,args.scratchBufferBytes);  
-#endif  
     // ======================================================    
     // === DUMMY KERNEL TO TRIGGER REMAINING USM TRANSFER ===
     // ======================================================
@@ -835,15 +785,6 @@ namespace embree
         // ===============================================================================================================
         // ========================================== rebalance BVH2 if degenerated ======================================
         // ===============================================================================================================
-#if 0
-        uint32_t maxDepth = 0;
-        for (uint32_t i=0;i<numPrims;i++)
-        {
-          const uint32_t depth = getBVH2Depth(bvh2,cluster_index_source[i],numPrimitives);
-          maxDepth = max(maxDepth,depth);
-        }
-        PRINT(maxDepth);
-#endif
         
         double rebalanceBVH2_time = 0.0f;
         rebalanceBVH2(gpu_queue,bvh2,bvh2_subtree_size,numPrimitives,rebalanceBVH2_time,verbose1);
@@ -851,15 +792,6 @@ namespace embree
           PRINT(rebalanceBVH2_time);
         timer.add_to_device_timer(BuildTimer::BUILD,rebalanceBVH2_time);
 
-#if 0
-        maxDepth = 0;
-        for (uint32_t i=0;i<numPrims;i++)
-        {
-          const uint32_t depth = getBVH2Depth(bvh2,cluster_index_source[i],numPrimitives);
-          maxDepth = max(maxDepth,depth);
-        }
-        PRINT(maxDepth);        
-#endif
         // ===============================================================================================================
         // ===============================================================================================================
         // ===============================================================================================================
@@ -972,7 +904,6 @@ namespace embree
     if (args.accelBufferBytesOut)
       *args.accelBufferBytesOut = args.accelBufferBytes;
 
-#if 1
     if (verbose2)
     {
       gpu::waitOnQueueAndCatchException(gpu_queue);
@@ -982,9 +913,7 @@ namespace embree
       stats.print(std::cout);
       stats.print_raw(std::cout);
       PRINT("VERBOSE STATS DONE");
-      exit(0);
     }        
-#endif
     
     if (host_device_tasks) sycl::free(host_device_tasks,gpu_queue.get_context());      
     
