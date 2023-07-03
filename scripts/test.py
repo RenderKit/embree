@@ -434,7 +434,6 @@ def runConfig(config):
       sys.stderr.write("unknown package mode: "+OS+":"+config["package"])
       sys.exit(1)
 
-<<<<<<< HEAD
   if OS == "linux" and compiler.startswith("dpcpp"):
     # some additional debug output of gfx and dpcpp version
     which_clang = str(subprocess.check_output(escape(" && ".join(env)) + " && which clang++", shell=True, stderr=subprocess.PIPE).decode('utf-8').rstrip("\n"))
@@ -443,8 +442,6 @@ def runConfig(config):
     which_ocloc = str(subprocess.check_output(escape(" && ".join(env)) + " && which ocloc", shell=True, stderr=subprocess.PIPE).decode('utf-8').rstrip("\n"))
     print("DEBUG - GFX version:", gfx_dir, " - which ocloc: ", which_ocloc)
 
-=======
->>>>>>> carsten/embree4_gpubuild_merge_devel_rtas_support
   if rtcore:
     conf.append("-D EMBREE_CONFIG="+(",".join(rtcore)))
 
