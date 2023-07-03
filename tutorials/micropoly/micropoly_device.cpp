@@ -1006,35 +1006,35 @@ __forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const 
       });
       waitOnEventAndCatchException(event);
       const double dt = gpu::getDeviceExecutionTiming(event);
-      //PRINT(dt * 1E-3);
       ((ISPCCamera*)&_camera)->render_time = dt * 1E-3;        
     }
     else
     {
       
       static unsigned int frameNo = 1;
-      
+#if defined(ENABLE_OIDN)      
       bool denoise = rendering_mode == RENDER_PATH_TRACER_DENOISE;
-      GBufferOutput *output  = denoiser->outputBuffer;
+#else
+      bool denoise = false;
+#endif      
       GBuffer *gBuffer  = denoiser->gBuffer[frameNo%2];
-      GBuffer *prev_gBuffer = denoiser->gBuffer[1-(frameNo%2)];
-      GBufferOutput *colorBuffer0  = denoiser->colorBuffer[frameNo%2];
-      GBufferOutput *colorBuffer1  = denoiser->colorBuffer[1-(frameNo%2)];
-      
       sycl::event eventRender = renderFramePathTracer(pixels,width,height,time,local_camera,data,user_spp,gBuffer,frameNo,denoise);
       waitOnEventAndCatchException(eventRender);
       
       const double dt = gpu::getDeviceExecutionTiming(eventRender);
       ((ISPCCamera*)&_camera)->render_time = dt * 1E-3;        
 
-      const ISPCCamera *const local_camera = global_camera;
-
       const bool first = frameNo == 1;
 
       double t0 = getSeconds();                                                    
 
+#if defined(ENABLE_OIDN)
       if (denoise)
       {
+        GBufferOutput *output  = denoiser->outputBuffer;
+        GBuffer *prev_gBuffer = denoiser->gBuffer[1-(frameNo%2)];
+        GBufferOutput *colorBuffer0  = denoiser->colorBuffer[frameNo%2];
+
 #if ENABLE_FP16_GBUFFER == 0
     OIDNFormat format = OIDN_FORMAT_FLOAT3;
 #else
@@ -1063,7 +1063,6 @@ __forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const 
         oidnCommitFilter(denoiser->filter);
         denoiser->checkError();    
         
-        double t0 = getSeconds();                                                    
         denoiser->execute();
 
 
@@ -1128,7 +1127,7 @@ __forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const 
         }
                 
       }
-      
+#endif
       double dt0 = (getSeconds()-t0)*1000.0;                                            
       avg_denoising_time.add(dt0);
       

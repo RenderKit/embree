@@ -8,7 +8,9 @@
 #include "../common/tutorial/scene_device.h"
 
 #include "meshoptimizer.h"
+#if defined(ENABLE_OIDN)
 #include <OpenImageDenoise/oidn.h>
+#endif
 
 #include "../../kernels/rthwif/builder/gpu/lcgbp.h"
 #include "../../kernels/rthwif/builder/gpu/morton.h"
@@ -191,8 +193,10 @@ struct Denoiser
   static constexpr float EPSILON = 0.00001f;
   static constexpr float ECON = 2.71828f;
   
+#if defined(ENABLE_OIDN)
   OIDNDevice device;
   OIDNFilter filter;
+#endif  
   GBuffer *gBuffer[2];
   GBufferOutput *colorBuffer[2];
   Vec3f *momentsBuffer[2];
@@ -228,31 +232,17 @@ struct Denoiser
 
   void checkError()
   {
+#if defined(ENABLE_OIDN)
     const char *errorMessage;    
     if (oidnGetDeviceError(device, &errorMessage) != OIDN_ERROR_NONE) {
       std::cerr << "OIDN error: " << errorMessage << std::endl;
       FATAL("OIDN ERROR");
     }
-   
+#endif   
   }
   
   Denoiser(const uint width, const uint height) : width(width), height(height)
-  {
-    PRINT(sizeof(GBuffer));
-    
-    std::cout << "Init Denoiser...";
-    device = oidnNewDevice(OIDN_DEVICE_TYPE_SYCL);
-    checkError();
-    oidnCommitDevice(device);
-    checkError();    
-    filter = oidnNewFilter(device, "RT"); // generic ray tracing filter      
-    checkError();
-
-#if ENABLE_FP16_GBUFFER == 0
-    OIDNFormat format = OIDN_FORMAT_FLOAT3;
-#else
-    OIDNFormat format = OIDN_FORMAT_HALF3;
-#endif
+  {    
     
     // FIXME
 
@@ -272,9 +262,6 @@ struct Denoiser
     varianceBuffer[0] = (float*)alignedUSMMalloc(sizeof(float)*width*height,64,mode);
     varianceBuffer[1] = (float*)alignedUSMMalloc(sizeof(float)*width*height,64,mode);
     varianceBuffer[2] = (float*)alignedUSMMalloc(sizeof(float)*width*height,64,mode);
-    
-    
-    filterInit(FILTER_SIZE);
 
     for (uint i=0;i<width*height;i++)
     {
@@ -288,6 +275,24 @@ struct Denoiser
     
     //outputBuffer  = (GBufferOutput*)alignedUSMMalloc(sizeof(GBufferOutput)*width*height,64,EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE);
     outputBuffer  = (GBufferOutput*)alignedUSMMalloc(sizeof(GBufferOutput)*width*height,64,mode);
+
+#if defined(ENABLE_OIDN)
+    std::cout << "Init Denoiser...";
+    device = oidnNewDevice(OIDN_DEVICE_TYPE_SYCL);
+    checkError();
+    oidnCommitDevice(device);
+    checkError();    
+    filter = oidnNewFilter(device, "RT"); // generic ray tracing filter      
+    checkError();
+
+#if ENABLE_FP16_GBUFFER == 0
+    OIDNFormat format = OIDN_FORMAT_FLOAT3;
+#else
+    OIDNFormat format = OIDN_FORMAT_HALF3;
+#endif
+    
+    filterInit(FILTER_SIZE);
+
 
     oidnSetSharedFilterImage(filter, "color",  gBuffer[0],
                              format, width, height, offsetof(GBuffer, color), sizeof(GBuffer), sizeof(GBuffer) * width); // beauty
@@ -316,18 +321,23 @@ struct Denoiser
     checkError();
     
     std::cout << "done" << std::endl;
+#endif    
   }
 
   __forceinline void execute()
   {
+#if defined(ENABLE_OIDN)
     oidnExecuteFilter(filter);
     checkError();    
+#endif    
   }
 
   ~Denoiser()
   {
+#if defined(ENABLE_OIDN)
     oidnReleaseFilter(filter);    
     oidnReleaseDevice(device);    
+#endif    
   }
 };
   

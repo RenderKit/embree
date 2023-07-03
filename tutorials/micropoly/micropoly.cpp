@@ -107,9 +107,11 @@ namespace embree
       else if (key == GLFW_KEY_F11) {
         user_rendering_mode = RENDER_PATH_TRACER;
       }
+#if defined(ENABLE_OIDN)
       else if (key == GLFW_KEY_F12) {
         user_rendering_mode = RENDER_PATH_TRACER_DENOISE;
-      }                              
+      }                 
+#endif                   
       else if (key == GLFW_KEY_KP_SUBTRACT) {
         user_spp -= user_spp > 0 ? 1 : 0;
       }            
