@@ -53,11 +53,7 @@ namespace embree
     const size_t node_size           = estimateSizeInternalNodes(numQuads,numInstances,numProcedurals,numLossyCompressedGeometries,conservative);
     const size_t leaf_size           = estimateSizeLeafNodes(numQuads,numInstances,numProcedurals,numLossyCompressedGeometries);
     const size_t lcg_size            = estimateLossyCompressedGeometriesSize(numLossyCompressedGeometries);    
-    // PRINT(node_size);
-    // PRINT(leaf_size);    
-    //PRINT(lcg_size);
     const size_t totalSize           = header + node_size + leaf_size + lcg_size;
-    // PRINT(totalSize);
     return totalSize;
   }
 
@@ -918,18 +914,7 @@ namespace embree
     if (host_device_tasks) sycl::free(host_device_tasks,gpu_queue.get_context());      
     
     if (unlikely(verbose1))
-#if 1
       std::cout << "=> BVH build time: host = " << timer.get_total_host_time() << " ms , device = " << timer.get_total_device_time() << " ms , numPrimitives (original) = " << expected_numPrimitives << " , numPrimitives (build) = " << numPrimitives << std::endl;
-#else
-    {
-    static double total_sum = 0.0f;
-    static uint32_t entries = 0;
-    total_sum += timer.get_total_device_time();
-    entries++;
-    if (entries % (4*4096)) PRINT(total_sum / entries);
-    //PRINT4(gpu::getDeviceExecutionTiming(memset_event),gpu::getDeviceExecutionTiming(compute_lod_event),gpu::getDeviceExecutionTiming(select_clusterIDs_event),total);
-    }
-#endif    
   
     return RTHWIF_ERROR_NONE;    
   }
