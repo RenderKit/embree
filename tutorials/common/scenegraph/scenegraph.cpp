@@ -1309,7 +1309,6 @@ namespace embree
 
   Ref<SceneGraph::Node> SceneGraph::subdivide_grids( Ref<SceneGraph::GridMeshNode> gmesh )
   {
-    PING;
     RandomSampler sampler;
     RandomSampler_init(sampler, 0, 0, 0);
     BBox3fa bounds(empty);
@@ -1358,8 +1357,6 @@ namespace embree
         bounds.extend( positions[y*new_resX+x] );
       }
 
-    PRINT(bounds);
-    
     return new_gmesh.dynamicCast<SceneGraph::Node>();
     //return convert_grids_to_quads( new_gmesh.dynamicCast<SceneGraph::Node>() );    
   }

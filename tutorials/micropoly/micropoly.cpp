@@ -4,7 +4,7 @@
 #include "../common/tutorial/tutorial.h"
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/benchmark_render.h"
-#include "nanite_geometry_device.h"
+#include "micropoly_device.h"
 
 #if defined(EMBREE_SYCL_TUTORIAL)
 #  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
@@ -140,7 +140,7 @@ namespace embree
 
 int main(int argc, char** argv) {
   if (embree::TutorialBenchmark::benchmark(argc, argv)) {
-    return embree::TutorialBenchmark(embree::renderBenchFunc<embree::Tutorial>).main(argc, argv, "nanite_geometry");
+    return embree::TutorialBenchmark(embree::renderBenchFunc<embree::Tutorial>).main(argc, argv, "MicroPoly Hardware RayTracing");
   }
   return embree::Tutorial().main(argc,argv);
 }

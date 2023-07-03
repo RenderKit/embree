@@ -13,7 +13,6 @@
 #include "../../kernels/rthwif/builder/gpu/lcgbp.h"
 #include "../../kernels/rthwif/builder/gpu/morton.h"
 
-//#include "../../kernels/subdiv/bspline_curve.h"
 
 #define ENABLE_DAG 1
 #define ALLOC_DEVICE_MEMORY 1

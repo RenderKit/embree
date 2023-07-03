@@ -1,7 +1,7 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "nanite_geometry_device.h"
+#include "micropoly_device.h"
 
 #if defined(USE_GLFW)
 
@@ -198,9 +198,7 @@ namespace embree {
         const int neighbor_right  = current_x<lcg_resX-1 ? numLCGBP+1        : -1;
         const int neighbor_bottom = current_y<lcg_resY-1 ? numLCGBP+lcg_resX : -1;
         const int neighbor_left   = current_x>0          ? numLCGBP-1        : -1;                
-
-        //PRINT4(neighbor_top,neighbor_right,neighbor_bottom,neighbor_left);
-        
+ 
         new (&current) LCGBP(v0,v1,v2,v3,numLCGBP++,u_range,v_range,neighbor_top,neighbor_right,neighbor_bottom,neighbor_left);
         
         current.encode(start_x,start_y,vtx,gridResX,gridResY);
@@ -214,10 +212,9 @@ namespace embree {
             gridBounds.extend(new_v);
             
             const float error = length(new_v-org_v);
-            if (error > 0.1)
+            if (error > 0.1f)
             {
               PRINT5(x,y,LCGBP::as_uint(new_v.x),LCGBP::as_uint(new_v.y),LCGBP::as_uint(new_v.z));              
-              //exit(0);
             }
             avg_error += (double)error;
             max_error = max(max_error,(double)error);
@@ -228,7 +225,6 @@ namespace embree {
     PRINT2((float)(avg_error / num_error),max_error);
     bounds.extend(gridBounds);
     minLODDistance = length(bounds.size()) / RELATIVE_MIN_LOD_DISTANCE_FACTOR;
-    PRINT( minLODDistance );
   }
 
   LCG_Scene *global_lcgbp_scene = nullptr;
@@ -251,7 +247,6 @@ namespace embree {
       const unsigned int grid_resX = grid->grids[i].resX;
       const unsigned int grid_resY = grid->grids[i].resY;
       const unsigned int numInitialSubGrids = ((grid_resX-1) / LCGBP::GRID_RES_QUAD) * ((grid_resY-1) / LCGBP::GRID_RES_QUAD);
-      //PRINT(numInitialSubGrids);
       numLCGBP  += numInitialSubGrids;
     }
     PRINT(numLCGBP);
@@ -282,7 +277,6 @@ namespace embree {
     const Vec3f d = getTexel3f(texture,u,v);
     vtx.z += d.z*scale;
     return vtx;
-    //return vtx + d*scale;
   }
 
 
@@ -333,7 +327,6 @@ namespace embree {
     //EmbreeUSMMode mode = EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE;
     EmbreeUSMMode mode = EmbreeUSMMode::EMBREE_USM_SHARED;    
     global_camera = (ISPCCamera*)alignedUSMMalloc(sizeof(ISPCCamera)*4,64,mode);
-    //memset(global_camera,0,sizeof(ISPCCamera)*4);
     
     if (camera_mode == 2 && camera_file)
     {
@@ -352,11 +345,7 @@ namespace embree {
       camera_path_device = (ISPCCamera*)alignedUSMMalloc(sizeof(ISPCCamera)*camera_path.size(),64,mode);
 
       sycl::event camera_event = global_gpu_queue->memcpy(camera_path_device,&*camera_path.begin(),sizeof(ISPCCamera)*camera_path.size());
-      gpu::waitOnEventAndCatchException(camera_event);      
-      
-      //for (uint i=0;i<camera_path.size();i++)
-      //  PRINT2(i,camera_path[i].xfm.l.vz);
-      //   camera_path_device[i] = camera_path[i];
+      gpu::waitOnEventAndCatchException(camera_event);            
     }
     
     TutorialData_Constructor(&data);
@@ -543,8 +532,6 @@ namespace embree {
       global_lcgbp_scene->geometry = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY);
       rtcCommitGeometry(global_lcgbp_scene->geometry);
       global_lcgbp_scene->geomID = rtcAttachGeometry(data.g_scene,global_lcgbp_scene->geometry);
-
-      //exit(0);
 
       for (int z=0;z<3;z++)
         for (int y=0;y<8;y++)
@@ -814,13 +801,6 @@ namespace embree {
       ImGui::Text("Triangles / Frame:             %d (out of %d)",global_lcgbp_scene->numLCMeshClusterQuadsPerFrame*2,global_lcgbp_scene->numLCQuadsTotal*2);      
       ImGui::Text("64-bytes QBVH6 Blocks / Frame: %d (out of %d)",global_lcgbp_scene->numLCMeshClusterBlocksPerFrame,global_lcgbp_scene->numLCBlocksTotal);            
     }
-#if 0
-    ImGui::DragFloat("sigLumin",(float*)&g_sigLumin,0.1,1,10);
-    ImGui::DragFloat("sigNormal",(float*)&g_sigNormal,0.01,0,1);
-    ImGui::DragFloat("sigDepth",(float*)&g_sigDepth,0.5,0.1,100);
-    //ImGui::DragFloat("sigDepth",(float*)&g_sigDepth,0.1,0.1,10);
-#endif    
-
   }
     
   
@@ -831,26 +811,20 @@ namespace embree {
                                  const float time,
                                  const ISPCCamera& _camera)
   {
-    //PING;
     const uint frameID = camera_path.size() ? ((frameIndex) % camera_path.size()) : 0;
-    //PRINT3(frameID,camera_mode,camera_path.size());
     
     if (global_lcgbp_scene->patches)
       global_lcgbp_scene->patches = patch_anim[((frameIndex)/4) % patch_anim.size()];
-      //global_lcgbp_scene->patches = patch_anim[((frameIndex)/4) % patch_anim.size()];
-#if 1  
+
     if (camera_mode == 1)
       camera_path.push_back(_camera);
-#endif
 
     // FIXME
     if (frameIndex == 0)
       global_camera[0] = _camera;
 
-#if 1    
     global_camera[1].xfm = global_camera[0].xfm;
     global_camera[2].xfm = rcp(global_camera[0].xfm);    
-#endif
     
     if (camera_mode != 2)
     {      
@@ -862,17 +836,6 @@ namespace embree {
       sycl::event camera_event = global_gpu_queue->memcpy(global_camera,&camera_path_device[frameID],sizeof(ISPCCamera));
       gpu::waitOnEventAndCatchException(camera_event);
     }
-
-#if 0    
-    if (frameIndex % 2)
-    {
-      PING;
-      global_camera->xfm.l.vx = Vec3f(0.685872, -0, -0.727722);
-      global_camera->xfm.l.vx = Vec3f(-0.518118, -0.702207, -0.488322);
-      global_camera->xfm.l.vz = Vec3f(-1203.37, 1528.24, 185.017);
-      global_camera->xfm.p = Vec3f(0.0507026, 0.0672121, 0.0535436);
-    }
-#endif    
     
     if (!denoiser)
       denoiser = new Denoiser(width,height);
@@ -896,7 +859,6 @@ namespace embree {
 #endif      
     }
 
-    //PRINT(local_lcgbp_scene->numSubdivPatches);
     if (local_lcgbp_scene->numSubdivPatches)
     {      
       select_clusters_lod_patches(local_lcgbp_scene,width,height,global_camera);                  
@@ -904,27 +866,7 @@ namespace embree {
     
     waitOnQueueAndCatchException(*global_gpu_queue);  // FIXME            
     
-
-#if 0
-    uint less96 = 0;
-    size_t readBytes = 0;
-    for (uint i=0;i<local_lcgbp_scene->numLCMeshClusterRootsPerFrame;i++)
-    {
-      const uint clusterID = local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[i];
-      LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[clusterID];
-      if (cur.numQuads <= 96)
-        less96++;
-      readBytes += sizeof(LossyCompressedMeshCluster);
-      readBytes += cur.tmp*64;
-    }
-    PRINT3(readBytes,less96,local_lcgbp_scene->numLCMeshClusterRootsPerFrame);
-#endif
-
     double dt0_lod = (getSeconds()-t0_lod)*1000.0;
-
-    //PRINT( local_lcgbp_scene->lcm_cluster );
-    //PRINT( local_lcgbp_scene->numLCMeshClusterRootsPerFrame );
-    //PRINT( local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame );
     
     rtcSetLCData(local_lcgbp_scene->geometry, local_lcgbp_scene->numCurrentLCGBPStates, local_lcgbp_scene->lcgbp_state, local_lcgbp_scene->lcm_cluster, local_lcgbp_scene->numLCMeshClusterRootsPerFrame,local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame);
     
@@ -962,76 +904,6 @@ namespace embree {
                                      bool denoise);
 
 
-__forceinline void computeDenoisedImage(const int x,
-                                        const int y,
-                                        const int width,
-                                        const int height,
-                                        const GBufferOutput* const denoisedInput,
-                                        GBufferOutput* const denoisedOutput,
-                                        const GBuffer* const gBuffer,
-                                        const int filterSize,
-                                        const float* const kernel,
-                                        const Vec2i* const offset,
-                                        const float cPhi,
-                                        const float pPhi,
-                                        const float nPhi,
-                                        const float stepWidth)
-{
-  const int index = y * width + x;
-  Vec3f colorSum(0.f); // store color sum here
-  float weightSum = 0.f;
-  // get current pixel's 2D coordinates
-  // loop over all the pixels in the filter
-  for (int i = 0; i < filterSize; ++i) {
-    // compute filter pixel coordinate
-    int o_x = offset[i].x;
-    int o_y = offset[i].y;
-    int pix_x = x + o_x * stepWidth;
-    int pix_y = y + o_y * stepWidth;
-
-    //if (pix_x < 0 || pix_x >= width || pix_y < 0 || pix_y >= height) continue; // skip out of bound coordinates
-    // Clamp to edges
-    if (pix_x < 0) pix_x = 0;
-    else if (pix_x >= width) pix_x = width - 1;
-    if (pix_y < 0) pix_y = 0;
-    else if (pix_y >= height) pix_y = height - 1;
-
-    int pix_idx = pix_x + (pix_y * width);
-
-    // Compute c_w
-    Vec3f diff = fp_convert(denoisedInput[index]) - fp_convert(denoisedInput[pix_idx]);
-    float len = dot(diff, diff);
-    float c_w = min(expf(-(len) / cPhi), 1.f);
-
-    // Compute n_w
-    diff = gBuffer[index].get_normal() - gBuffer[pix_idx].get_normal();
-    len = dot(diff, diff);
-    float n_w = min(expf(-(len) / nPhi), 1.f);
-
-    // Compute p_w
-#if 1
-    diff = gBuffer[index].position - gBuffer[pix_idx].position;
-    len = dot(diff, diff);
-#else
-    len = abs(gBuffer[index].t - gBuffer[pix_idx].t);
-#endif    
-    float p_w = min(expf(-(len) / pPhi), 1.f);
-
-    // weight
-    float w = c_w * n_w * p_w;
-    colorSum += fp_convert(denoisedInput[pix_idx]) * w * kernel[i];
-    weightSum += w * kernel[i];
-
-    // do regular gaussian blur
-    //colorSum += (kernel[i] * denoisedInput[pix_idx]);
-    //weightSum += kernel[i];
-  }
-
-  // write the output
-  denoisedOutput[index] = fp_convert(colorSum * 1.0f / weightSum);
-}
-
-
 inline Vec2f mix2(const Vec2f &x, const Vec2f &y, const float &a)
 {
   return x * (1.0 - a) + y * a;
@@ -1040,17 +912,10 @@ inline Vec2f mix2(const Vec2f &x, const Vec2f &y, const float &a)
 inline Vec3f mix3(const Vec3f &x, const Vec3f &y, const float &a)
 {
   return x * (1.0 - a) + y * a;
-}
-
-inline float satDot(const Vec3f& a, const Vec3f& b) {
-  return max(dot(a, b), 0.f);
-}
-  
-      
+}      
 
 #define NORMAL_DISTANCE 0.1f
 #define PLANE_DISTANCE 1.0f
-
 
 __forceinline Vec3f temporalAccumulate(const int idx,
                                        const int width,
@@ -1102,7 +967,6 @@ __forceinline Vec3f temporalAccumulate(const int idx,
 }
 
 
-
   
 __forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz)
   {
@@ -1149,7 +1013,6 @@ __forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const 
     {
       
       static unsigned int frameNo = 1;
-      //PRINT(frameNo);
       
       bool denoise = rendering_mode == RENDER_PATH_TRACER_DENOISE;
       GBufferOutput *output  = denoiser->outputBuffer;
@@ -1169,118 +1032,6 @@ __forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const 
       const bool first = frameNo == 1;
 
       double t0 = getSeconds();                                                    
-
-#if 0     
-      sycl::event eventTA = global_gpu_queue->submit([=](sycl::handler& cgh) {
-        const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-        cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16)      
-                         {
-                           const unsigned int x = item.get_global_id(1); if (x >= width ) return;
-                           const unsigned int y = item.get_global_id(0); if (y >= height) return;          
-                           //if (gBuffer[y*width+x].primID != -1)
-                           {
-                             const int idx = y * width + x;
-                             const Vec3f pos = gBuffer[idx].position;
-                             //const Vec3f pos = local_camera[0].xfm.p + normalize(x*local_camera[0].xfm.l.vx + y*local_camera[0].xfm.l.vy + local_camera[0].xfm.l.vz) * gBuffer[y*width+x].t;
-                             const Vec3f prev_pos = xfmPoint(local_camera[2].xfm,pos);
-                             const Vec2f prev_xy = Vec2f(prev_pos.x / prev_pos.z,prev_pos.y / prev_pos.z);
-                             Vec2i motion = Vec2i(prev_xy.x, prev_xy.y);
-                             int motionIdx = -1;
-                             if (motion.x >= 0 && motion.x < width &&
-                                 motion.y >= 0 && motion.y < height)
-                               motionIdx = motion.y * width + motion.x;
-
-                             Vec3f current_color = fp_convert(gBuffer[idx].color);
-                             bool diff = first;
-                             Vec3f last_color = temporalAccumulate(idx,width,height,motionIdx,gBuffer,prev_gBuffer,diff);
-                             const float Alpha = diff ? 0.0f : 0.2f;
-                             Vec3f accumColor = mix3(last_color, current_color, Alpha);
-
-                             //gBuffer[idx].color = fp_convert(accumColor);
-                             //if (!diff) accumColor.y = 0;  
-                             colorBuffer0[idx] = fp_convert(accumColor);
-
-                           }
-                           // else
-                           //   colorBuffer0[y*width+x] = fp_convert(gBuffer[y*width+x].color);
-                         });
-      });
-      waitOnEventAndCatchException(eventTA);
-      {
-        sycl::event event_denoising = global_gpu_queue->submit([=](sycl::handler& cgh) {
-          const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-          cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16) {
-              const unsigned int x = item.get_global_id(1); if (x >= width ) return;
-              const unsigned int y = item.get_global_id(0); if (y >= height) return;
-              gBuffer[y*width+x].color = colorBuffer0[y*width+x];
-                
-            });
-        });
-        waitOnEventAndCatchException(event_denoising);
-      }
-#endif
-        
-#if 0
-      Denoiser *local_denoiser = denoiser;
-      const float c_phi = g_sigLumin; //11.789f;
-      const float n_phi = g_sigNormal; //0.610f;
-      const float p_phi = g_sigDepth; //0.407f;
-      
-      const float* const kernel = local_denoiser->hst_filter;
-      const Vec2i* const offset = local_denoiser->hst_offset;
-      const int num_iters = 6;
-      for (int i = 0; i < num_iters; ++i) {      
-        sycl::event eventFilter = global_gpu_queue->submit([=](sycl::handler& cgh) {
-          const GBufferOutput *const inputB  = (i % 2) == 0 ? colorBuffer0 : colorBuffer1;
-                GBufferOutput *const outputB = (i % 2) == 0 ? colorBuffer1 : colorBuffer0;
-          
-          const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-          cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16)      
-                           {
-                             const unsigned int x = item.get_global_id(1); if (x >= width ) return;
-                             const unsigned int y = item.get_global_id(0); if (y >= height) return;
-                             computeDenoisedImage(x,y,width,height,inputB,outputB,gBuffer,FILTER_SIZE*FILTER_SIZE,kernel,offset,c_phi * powf(2, -i),
-                                                  p_phi,
-                                                  n_phi,
-                                                  powf(2, i));
-                             
-                             if (i == num_iters-1)
-                             {
-                               Vec3f c = fp_convert(outputB[y*width+x]);
-                               unsigned int r = (unsigned int) (255.01f * clamp(c.x,0.0f,1.0f));
-                               unsigned int g = (unsigned int) (255.01f * clamp(c.y,0.0f,1.0f));
-                               unsigned int b = (unsigned int) (255.01f * clamp(c.z,0.0f,1.0f));
-                               pixels[y*width+x] = (b << 16) + (g << 8) + r;                                                       
-                             }
-                           });
-        });
-        waitOnEventAndCatchException(eventFilter);
-      }
-#endif
-      
-#if 0     
-      sycl::event outputC = global_gpu_queue->submit([=](sycl::handler& cgh) {
-        const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-        cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16)      
-                         {
-                           const unsigned int x = item.get_global_id(1); if (x >= width ) return;
-                           const unsigned int y = item.get_global_id(0); if (y >= height) return;
-                           const float alpha = 0.5f;
-                           Vec3f c = fp_convert(colorBuffer0[y*width+x]);
-                           unsigned int r = (unsigned int) (255.01f * clamp(c.x,0.0f,1.0f));
-                           unsigned int g = (unsigned int) (255.01f * clamp(c.y,0.0f,1.0f));
-                           unsigned int b = (unsigned int) (255.01f * clamp(c.z,0.0f,1.0f));
-                           pixels[y*width+x] = (b << 16) + (g << 8) + r;
-                               
-                           //gBuffer[y*width+x].color = fp_convert(colorBuffer0[y*width+x]);
-                           //output[y*width+x] = fp_convert(colorBuffer0[y*width+x])/(gBuffer[y*width+x].N);
-                           //output[y*width+x] = fp_convert(Vec3f(devVariance[y*width+x]));
-                           //output[y*width+x] = colorBuffer0[y*width+x];
-                         });
-      });
-      waitOnEventAndCatchException(outputC);
-#endif
-      
 
       if (denoise)
       {
@@ -1316,8 +1067,6 @@ __forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const 
         denoiser->execute();
 
 
-#if 1
-
         {
           sycl::event event_denoising = global_gpu_queue->submit([=](sycl::handler& cgh) {
             const sycl::nd_range<2> nd_range = make_nd_range(height,width);
@@ -1336,11 +1085,9 @@ __forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const 
                            {
                              const unsigned int x = item.get_global_id(1); if (x >= width ) return;
                              const unsigned int y = item.get_global_id(0); if (y >= height) return;          
-                             //if (gBuffer[y*width+x].primID != -1)
                              {
                                const int idx = y * width + x;
                                const Vec3f pos = gBuffer[idx].position;
-                               //const Vec3f pos = local_camera[0].xfm.p + normalize(x*local_camera[0].xfm.l.vx + y*local_camera[0].xfm.l.vy + local_camera[0].xfm.l.vz) * gBuffer[y*width+x].t;
                                const Vec3f prev_pos = xfmPoint(local_camera[2].xfm,pos);
                                const Vec2f prev_xy = Vec2f(prev_pos.x / prev_pos.z,prev_pos.y / prev_pos.z);
                                Vec3f current_color = fp_convert(gBuffer[idx].color);
@@ -1357,85 +1104,11 @@ __forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const 
                                Vec3f accumColor = current_color;
                                if (!diff) accumColor = mix3(last_color, current_color, Alpha);
 
-                               //gBuffer[idx].color = fp_convert(accumColor);
-                               //if (diff) accumColor.y = 0;  
                                colorBuffer0[idx] = fp_convert(accumColor);
                              }
-                             // else
-                             //   colorBuffer0[y*width+x] = fp_convert(gBuffer[y*width+x].color);
                            });
         });
         waitOnEventAndCatchException(eventTA);
-
-#if 0      
-        {
-          int x = 943;
-          int y = 619;
-          PRINT2( fp_convert(gBuffer[y*width+x].color), fp_convert(colorBuffer0[y*width+x]) );
-
-          {
-            const int idx = y * width + x;
-            const Vec3f pos = gBuffer[idx].position;
-            //const Vec3f pos = local_camera[0].xfm.p + normalize(x*local_camera[0].xfm.l.vx + y*local_camera[0].xfm.l.vy + local_camera[0].xfm.l.vz) * gBuffer[y*width+x].t;
-            const Vec3f prev_pos = xfmPoint(local_camera[2].xfm,pos);
-            const Vec2f prev_xy = Vec2f(prev_pos.x / prev_pos.z,prev_pos.y / prev_pos.z);
-            Vec3f current_color = fp_convert(gBuffer[idx].color);
-            Vec2i motion = Vec2i(prev_xy.x, prev_xy.y);                               
-            int motionIdx = -1;
-            if (motion.x >= 0 && motion.x < width &&
-                motion.y >= 0 && motion.y < height)
-              motionIdx = motion.y * width + motion.x;
-
-            bool diff = first;
-            Vec3f last_color = temporalAccumulate(idx,width,height,motionIdx,gBuffer,prev_gBuffer,diff);
-            const float Alpha = 0.2f;
-            Vec3f accumColor = current_color;
-            if (!diff) accumColor = mix3(last_color, current_color, Alpha);
-
-            PRINT4(diff,motion,current_color,last_color);
-            PRINT2(gBuffer[idx].t,prev_gBuffer[motionIdx].t);
-            PRINT2(fp_convert(gBuffer[idx].color),fp_convert(prev_gBuffer[motionIdx].color));
-
-            const Vec3f cur_c = fp_convert(gBuffer[idx].color);
-            const Vec3f prev_c = fp_convert(prev_gBuffer[motionIdx].color);
-            const float cur_lum = luminance(cur_c);
-            const float prev_lum = luminance(prev_c);
-            
-            PRINT4(cur_c,prev_c,cur_lum,prev_lum);
-
-            PRINT(abs(1.0f - abs(cur_lum-prev_lum)/cur_lum));            
-
-            BNSSSampler1SPP cur_sampler;
-            BNSSSampler1SPP prev_sampler;
-
-            int cur_frame_idx = frameNo;
-            int prev_frame_idx = frameNo-1;
-            
-            cur_sampler.InitSampler(x,y,0,0);
-            const int xr = motion.x;
-            const int yr = motion.y;
-            
-            prev_sampler.InitSampler(xr,yr,0,0);
-            
-            const Vec2f cur_dxy = cur_sampler.Get2D();
-            const Vec2f prev_dxy = prev_sampler.Get2D();
-            
-            PosRadius posr = getPosRadius(x + cur_dxy.x,y + cur_dxy.y,gBuffer[idx].t,gBuffer[idx].get_normal(),local_camera[0].xfm);
-            PosRadius prev_posr = getPosRadius(xr + prev_dxy.x,yr + prev_dxy.y,prev_gBuffer[motionIdx].t,prev_gBuffer[motionIdx].get_normal(),local_camera[1].xfm);
-            
-            PRINT2(posr.pos,posr.radius);
-            PRINT2(prev_posr.pos,prev_posr.radius);
-            const float factor = 2.0f;
-            PRINT2(distance(prev_posr.pos, posr.pos),factor * prev_posr.radius);
-            
-            //gBuffer[idx].color = fp_convert(accumColor);
-            //if (diff) accumColor.y = 0;  
-            //colorBuffer0[idx] = fp_convert(accumColor);
-            for (int t=0;t<32;t++)
-              PRINT3(x,y+t,gBuffer[(y+t)*width+x].t);
-          }          
-        }
-#endif        
         
         {
           sycl::event event_denoising = global_gpu_queue->submit([=](sycl::handler& cgh) {
@@ -1445,8 +1118,6 @@ __forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const 
                 const unsigned int y = item.get_global_id(0); if (y >= height) return;
                 Vec3f c = fp_convert(colorBuffer0[y*width+x]);
                 gBuffer[y*width+x].color = fp_convert(c);
-                //if (x == 943 && y == 619) c = Vec3f(1,0,0);
-                //output[y*width+x] = colorBuffer0[y*width+x];
                 unsigned int r = (unsigned int) (255.01f * clamp(c.x,0.0f,1.0f));
                 unsigned int g = (unsigned int) (255.01f * clamp(c.y,0.0f,1.0f));
                 unsigned int b = (unsigned int) (255.01f * clamp(c.z,0.0f,1.0f));
@@ -1455,46 +1126,11 @@ __forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const 
           });
           waitOnEventAndCatchException(event_denoising);
         }
-        
-#endif
-        
-        // sycl::event event_denoising = global_gpu_queue->submit([=](sycl::handler& cgh) {
-        //   const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-        //   cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD(16) {
-        //     const unsigned int x = item.get_global_id(1); if (x >= width ) return;
-        //     const unsigned int y = item.get_global_id(0); if (y >= height) return;
-        //     Vec3f c = fp_convert(output[y*width+x]);
-        //     //gBuffer[y*width+x].color = fp_convert(c);
-        //     //Vec3f c = albedo[y*width+x];
-            
-        //     unsigned int r = (unsigned int) (255.01f * clamp(c.x,0.0f,1.0f));
-        //     unsigned int g = (unsigned int) (255.01f * clamp(c.y,0.0f,1.0f));
-        //     unsigned int b = (unsigned int) (255.01f * clamp(c.z,0.0f,1.0f));
-        //     pixels[y*width+x] = (b << 16) + (g << 8) + r;                        
-        //   });
-        // });
-        // waitOnEventAndCatchException(event_denoising);
-        
+                
       }
       
       double dt0 = (getSeconds()-t0)*1000.0;                                            
       avg_denoising_time.add(dt0);
-
-
-#if 0
-      FileName fileName = std::string("dump")  + std::to_string(frameNo) + std::string(".ppm");
-      PRINT(fileName.c_str());
-      Ref<Image> image = new Image4uc(width, height);
-      for (int y=0;y<height;y++)
-        for (int x=0;x<width;x++)
-        {
-          const Vec3f c = fp_convert(colorBuffer0[y*width+x]);
-          image->set(x,y,Color4(c.x,c.y,c.z,0.0f));
-        }
-      
-      storeImage(image, fileName);      
-#endif
-      //if (frameNo == 26) exit(0);
       
       frameNo++;      
     }

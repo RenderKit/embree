@@ -1,4 +1,4 @@
-#include "nanite_geometry_device.h"
+#include "micropoly_device.h"
 #include "../../kernels/rthwif/builder/gpu/lcgbp.h"
 #include "../../kernels/rthwif/builder/gpu/morton.h"
 
