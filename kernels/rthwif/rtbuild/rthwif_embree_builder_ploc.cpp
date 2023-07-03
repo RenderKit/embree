@@ -1,6 +1,3 @@
-//#include "../../sycl/rthwif_embree.h"
-//#include "../../sycl/rthwif_embree_builder.h"
-//#include "../rttrace/rthwif_internal.h"
 #include "rtbuild.h"
 #include "rthwif_embree_builder_ploc.h"
 #include "qbvh6.h"
@@ -971,7 +968,7 @@ ZE_APIEXPORT ze_result_t ZE_APICALL zeRTASPrefetchAccelGPUExp( const ze_rtas_bui
     if (pRtasBufferSizeBytes)
       *pRtasBufferSizeBytes = rtasBufferSizeBytes;
 
-#if 1
+#if 0
     if (verbose2)
     {
       gpu::waitOnQueueAndCatchException(gpu_queue);      
