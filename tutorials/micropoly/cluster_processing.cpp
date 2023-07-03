@@ -26,7 +26,6 @@
 
 namespace embree {
 
-  //typedef gpu::HilbertCodePrimitive64x32Bits3D SpaceCurveType;
   typedef gpu::MortonCodePrimitive64x32Bits3D SpaceCurveType;
 
   uint findVertex(std::vector<Vec3f> &vertices, const Vec3f &cv)
@@ -131,7 +130,6 @@ namespace embree {
         bounds.extend(vertices[i]);
     }
     
-    void reorderMorton();
     void reorderPLOC();
     
     uint computeTriangleStrip();
@@ -145,83 +143,7 @@ namespace embree {
       return false;
     }
   };
-
   
-  void QuadMeshCluster::reorderMorton()
-  {
-    const uint numQuads = quads.size();
-    Quad *new_quads = new Quad[numQuads];
-    BBox3f centroidBounds(empty);
-
-    for (uint i=0;i<numQuads;i++)
-    {
-      const uint v0 = quads[i].v0;
-      const uint v1 = quads[i].v1;
-      const uint v2 = quads[i].v2;
-      const uint v3 = quads[i].v3;
-
-      const Vec3f &vtx0 = vertices[v0];
-      const Vec3f &vtx1 = vertices[v1];
-      const Vec3f &vtx2 = vertices[v2];
-      const Vec3f &vtx3 = vertices[v3];
-
-      BBox3f quadBounds(empty);
-      quadBounds.extend(vtx0);
-      quadBounds.extend(vtx1);
-      quadBounds.extend(vtx2);
-      quadBounds.extend(vtx3);
-      centroidBounds.extend(quadBounds.center());
-    }
-
-    const Vec3f lower = centroidBounds.lower;
-    const Vec3f diag = centroidBounds.size();
-    const Vec3f inv_diag  = diag != Vec3fa(0.0f) ? Vec3fa(1.0f) / diag : Vec3fa(0.0f);
-
-    std::vector<SpaceCurveType> mcodes;
-
-    for (uint i=0;i<numQuads;i++)
-    {
-      const uint v0 = quads[i].v0;
-      const uint v1 = quads[i].v1;
-      const uint v2 = quads[i].v2;
-      const uint v3 = quads[i].v3;
-
-      const Vec3f &vtx0 = vertices[v0];
-      const Vec3f &vtx1 = vertices[v1];
-      const Vec3f &vtx2 = vertices[v2];
-      const Vec3f &vtx3 = vertices[v3];
-
-      BBox3fa quadBounds(empty);
-      quadBounds.extend(vtx0);
-      quadBounds.extend(vtx1);
-      quadBounds.extend(vtx2);
-      quadBounds.extend(vtx3);
-            
-      const uint grid_size = 1 << 21; // 3*21 = 63
-      const Vec3f grid_base = lower;
-      const Vec3f grid_extend = diag;
-      
-      const Vec3f grid_scale = ((float)grid_size * 0.99f) * inv_diag;
-      const Vec3f centroid =  quadBounds.center();
-
-      const Vec3f gridpos_f = (centroid-grid_base)*grid_scale;                                                                      
-      const uint gx = (uint)gridpos_f.x;
-      const uint gy = (uint)gridpos_f.y;
-      const uint gz = (uint)gridpos_f.z;
-      const uint64_t code = bitInterleave64<uint64_t>(gx,gy,gz);
-      mcodes.push_back(SpaceCurveType(code,i));      
-    }
-
-    std::sort(mcodes.begin(), mcodes.end()); 
-    for (uint i=0;i<numQuads;i++)
-      new_quads[i] = quads[mcodes[i].getIndex()];
-
-    for (uint i=0;i<numQuads;i++)
-      quads[i] = new_quads[i];
-    delete [] new_quads;
-  }
-
-
   void QuadMeshCluster::reorderPLOC()
   {
     const uint numQuads = quads.size();
@@ -234,7 +156,6 @@ namespace embree {
     uint *nearest_neighborID = new uint[numQuads];
     
     BBox3f centroidBounds(empty);
-    //PRINT(numQuads);
 
     for (uint i=0;i<numQuads;i++)
     {
@@ -281,7 +202,6 @@ namespace embree {
       quadBounds.extend(vtx3);
 
       bounds[i] = quadBounds;
-      //PRINT2(i,quadBounds);
             
       const uint grid_size = 1 << 21; // 3*21 = 63
       const Vec3f grid_base = lower;
@@ -663,14 +583,6 @@ namespace embree {
       const size_t new_numTriangles = new_numIndices/3;
       DBG_PRINT3(expectedTriangles,new_numTriangles,result_error);
 
-      // std::vector<uint> new_vertices;
-      // for (uint i=0;i<new_numTriangles;i++)
-      // {
-      //   countVertexIDs(new_vertices, new_triangles[i].v0);
-      //   countVertexIDs(new_vertices, new_triangles[i].v1);
-      //   countVertexIDs(new_vertices, new_triangles[i].v2);      
-      // }
-
       for (size_t i=0; i<new_numTriangles; i++)
       {
         const int a0 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+0].v0 ]);
@@ -823,14 +735,6 @@ namespace embree {
       
       DBG_PRINT2(expectedTriangles,new_numTriangles);
 
-      // std::vector<uint> new_vertices;
-      // for (uint i=0;i<new_numTriangles;i++)
-      // {
-      //   countVertexIDs(new_vertices, new_triangles[i].v0);
-      //   countVertexIDs(new_vertices, new_triangles[i].v1);
-      //   countVertexIDs(new_vertices, new_triangles[i].v2);      
-      // }      
-
       for (size_t i=0; i<new_numTriangles; i++)
       {
         const int a0 = findVertex(quadMesh.vertices, mesh.vertices[ new_triangles[i+0].v0 ]);
@@ -886,8 +790,6 @@ namespace embree {
       }
       else
         quadMeshes.push_back(quadMesh);        
-      // else
-      //   break;
     }
 
     DBG_PRINT(quadMeshes.size());
@@ -1074,13 +976,6 @@ namespace embree {
           int start = std::max((int)c-SEARCH_RADIUS,0);
           int end   = std::min((int)c+SEARCH_RADIUS+1,(int)cur_numPrims);
           int plus  = 1;
-          if (0) //(c % 2) && 0)
-          {
-            std::swap(start,end);
-            end--;
-            start--;
-            plus = -1;
-          }
           for (int i=start;i!=end;i+=plus)            
             if (i != c && index_buffer[i] != -1)
             {
@@ -1370,7 +1265,7 @@ namespace embree {
       //numClusterQuads += clusters[i].quads.size();
     }
 
-    uint iteration = 0;
+    //uint iteration = 0;
     
     const uint MAX_DEPTH_LIMIT = 16;
 
@@ -1383,18 +1278,7 @@ namespace embree {
 #endif
     
     while(current_numClusters > 1 && generateLODs)
-    {
-      //if (iteration == 0) break;
-      
-      uint cur_numQuads = 0;
-      for (uint i=0;i<current_numClusters;i++)
-      {
-        const uint clusterID = index_buffer[i];
-        cur_numQuads +=  clusters[clusterID].quads.size();
-        //PRINT2(i,clusters[clusterID].quads.size());
-      }
-      //PRINT3(iteration,current_numClusters,cur_numQuads);
-      
+    {      
       for (uint i=0;i<current_numClusters;i++)
         nearest_neighborID[i] = -1;
 
@@ -1416,13 +1300,6 @@ namespace embree {
           int start = std::max((int)c-SEARCH_RADIUS,0);
           int end   = std::min((int)c+SEARCH_RADIUS+1,(int)current_numClusters);
           int plus  = 1;
-          if (0) //c % 2)
-          {
-            std::swap(start,end);
-            end--;
-            start--;
-            plus = -1;
-          }
           for (int i=start;i!=end;i+=plus)            
             if (i != c && index_buffer[i] != -1)
             {
@@ -1457,7 +1334,6 @@ namespace embree {
                 }
               }
             }
-          //PRINT3(c,nn,numSharedBorderVertices);
 #endif          
           nearest_neighborID[c] = nn;                  
         }
@@ -1481,17 +1357,9 @@ namespace embree {
             {
               const uint leftClusterID = index_buffer[i];
               const uint rightClusterID = index_buffer[nearest_neighborID[i]];
-
-              // if (intersect(clusters[leftClusterID].bounds,clusters[rightClusterID].bounds).empty())
-              // {
-              //   PRINT2(leftClusterID,rightClusterID);
-              // }
               
               DBG_PRINT4("MERGE",leftClusterID,rightClusterID,getSimplificationRatio(clusters[leftClusterID], clusters[rightClusterID]));
               const uint newDepth =  std::max(clusters[leftClusterID].depth,clusters[rightClusterID].depth)+1;
-
-
-              //PRINT3(leftClusterID,rightClusterID,getNumSharedBorderVertices(clusters[leftClusterID],clusters[rightClusterID]));
               
               std::vector<QuadMeshCluster> new_clusters;
 #if ENABLE_DAG == 1
@@ -1569,11 +1437,8 @@ namespace embree {
                 tmp_buffer[i] = index_buffer[i];
                 tmp_buffer[nearest_neighborID[i]] = index_buffer[nearest_neighborID[i]];                
                 //nearest_neighborID[nearest_neighborID[i]] = -1;
-                //exit(0);
               }
             }
-            //else
-            //  tmp_buffer[i] = -1;
           }
           else
             tmp_buffer[i] = index_buffer[i];              
@@ -1592,23 +1457,15 @@ namespace embree {
           index_buffer[new_numClusters++] = tmp_buffer[i];
 
 
-      // uint new_numClusterQuads = 0;
-      // for (uint i=0;i<new_numClusters;i++)
-      //   new_numClusterQuads += clusters[ index_buffer[i] ].quads.size();
 
       uint numTmpRoots = 0;
       for (uint i=0;i<numClusters;i++)      
         if (clusters[i].lod_root)
         {
-          //PRINT2(i,clusters[i].lod_root);
           numTmpRoots++;
         }
           
-      iteration++;
-      //numClusterQuads = new_numClusterQuads;
-      
-      //PRINT3(iteration,new_numClusters,current_numClusters);
-
+      //iteration++;
 
       if (!merged_pair)
       {
@@ -1625,7 +1482,6 @@ namespace embree {
         }
         break; // couldn't merge any clusters anymore
       }
-      //if (current_numClusters == new_numClusters) break; // couldn't merge any clusters anymore
       
       current_numClusters = new_numClusters;
 
@@ -1807,9 +1663,6 @@ namespace embree {
     vertices.push_back(cv);
     return vertices.size()-1;
   }
-
-  
-
   
   std::vector<Quad> extractQuads(TriangleMesh &mesh)
   {

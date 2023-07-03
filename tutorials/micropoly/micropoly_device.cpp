@@ -776,15 +776,18 @@ namespace embree {
   {
     const unsigned int numTrianglesPerGrid9x9 = 8*8*2;
     const unsigned int numTrianglesPerGrid33x33 = 32*32*2;
-    //ImGui::Text("BVH Build Time: %4.4f ms",avg_bvh_build_time.get());
+
+    // WARNING: ALL TIMINGS ARE HOST TIMINGS, MUCH SLOWER THAN DEVICE TIMINGS    
     ImGui::Text("SPP:                %d",user_spp);        
-    ImGui::Text("Per Frame Overhead: %4.4f ms",avg_bvh_build_time.get());
-    ImGui::Text("LOD Selection Time: %4.4f ms",avg_lod_selection_time.get());
+    ImGui::Text("LOD Selection Time    : %4.4f ms (host)",avg_lod_selection_time.get());
+    ImGui::Text("Cluster QBVH6 + Fusing: %4.4f ms (host)",avg_bvh_build_time.get());
+    ImGui::Text("Per Frame Overhead    : %4.4f ms (host)",avg_bvh_build_time.get()+avg_lod_selection_time.get());
+
     ImGui::DragInt("LOD Threshold",(int*)&g_lod_threshold,1,2,1000);
     
     RenderMode rendering_mode = user_rendering_mode;
     if (rendering_mode == RENDER_PATH_TRACER_DENOISE)
-      ImGui::Text("Denoising Time: %4.4f ms",avg_denoising_time.get());
+      ImGui::Text("Denoising Time: %4.4f ms (host)",avg_denoising_time.get());
 
     if (global_lcgbp_scene->numLCGBP)
     {

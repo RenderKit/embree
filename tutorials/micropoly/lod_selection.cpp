@@ -43,8 +43,6 @@ namespace embree {
     return false;
   }
   
-  //static const unsigned int NUM_TOTAL_QUAD_NODES_PER_RTC_LCG = (1-(1<<(2*LCG_Scene::LOD_LEVELS)))/(1-4);
-
   struct LODPatchLevel
   {
     unsigned int level;
@@ -243,7 +241,6 @@ namespace embree {
     const unsigned int wgSize = 16*1;
     const unsigned int numLCGBP = local_lcgbp_scene->numLCGBP;
     const float minLODDistance = local_lcgbp_scene->minLODDistance;    
-    //const unsigned int numLCMeshClusters = local_lcgbp_scene->numLCMeshClusters;
     sycl::event init_event =  global_gpu_queue->submit([&](sycl::handler &cgh) {
       cgh.single_task([=]() {
         local_lcgbp_scene->numCurrentLCGBPStates = 0;
@@ -251,9 +248,6 @@ namespace embree {
     });
 
     waitOnEventAndCatchException(init_event);
-
-    //void *lcg_ptr = nullptr;
-    //unsigned int lcg_num_prims = 0;
       
     const sycl::nd_range<1> nd_range1(alignTo(numLCGBP,wgSize),sycl::range<1>(wgSize));              
     sycl::event compute_lod_event = global_gpu_queue->submit([=](sycl::handler& cgh){
@@ -357,14 +351,6 @@ namespace embree {
         });
     });
     waitOnEventAndCatchException(compute_lod_event);
-#if 0
-    static double total_sum = 0.0f;
-    static uint entries = 0;
-    total_sum += gpu::getDeviceExecutionTiming(compute_lod_event) + gpu::getDeviceExecutionTiming(init_event);
-    entries++;
-    if (entries % 4096) PRINT(total_sum / entries);
-    //PRINT4(gpu::getDeviceExecutionTiming(memset_event),gpu::getDeviceExecutionTiming(compute_lod_event),gpu::getDeviceExecutionTiming(select_clusterIDs_event),total);
-#endif    
   }
 
   __forceinline uint writeSubgroup(uint *dest, const uint value, const bool cond)
@@ -508,28 +494,6 @@ namespace embree {
     // ================================================================================================================================
     // ================================================================================================================================
     // ================================================================================================================================
-
-#if 0
-    waitOnQueueAndCatchException(*global_gpu_queue);
-
-    for (uint i=0;i<local_lcgbp_scene->numLCMeshClusters;i++)
-    {
-      const LossyCompressedMeshCluster &cur = local_lcgbp_scene->lcm_cluster[ i ];              
-        
-      if (active_state[i])
-      {
-        if (cur.hasChildren())
-        {
-          //const LossyCompressedMeshCluster &neighbor = local_lcgbp_scene->lcm_cluster[ cur.neighborID ];              
-          if (active_state[ cur.leftID ] || active_state[ cur.rightID ])
-          {
-            PRINT6(i,cur.neighborID,cur.leftID,cur.rightID,(uint)active_state[ cur.leftID],(uint)active_state[ cur.rightID]);
-          }
-        }
-      }
-    }
-    waitOnQueueAndCatchException(*global_gpu_queue);    
-#endif
     
     const uint wgSize_select = 512;
     const sycl::nd_range<1> nd_range2(alignTo(numLCMeshClusters,wgSize_select),sycl::range<1>(wgSize_select));              
@@ -596,14 +560,6 @@ namespace embree {
     });
     waitOnEventAndCatchException(select_clusterIDs_event);
 
-#if 0
-    static double total_sum = 0.0f;
-    static uint entries = 0;
-    total_sum += gpu::getDeviceExecutionTiming(memset_event)+gpu::getDeviceExecutionTiming(compute_lod_event)+gpu::getDeviceExecutionTiming(select_clusterIDs_event);
-    entries++;
-    if (entries % (4*4096)) PRINT2("LOD selection",total_sum / entries);
-    //PRINT4(gpu::getDeviceExecutionTiming(memset_event),gpu::getDeviceExecutionTiming(compute_lod_event),gpu::getDeviceExecutionTiming(select_clusterIDs_event),total);
-#endif    
   }
 
 
@@ -786,24 +742,6 @@ namespace embree {
         const LossyCompressedMeshCluster &cluster = lcgbp_scene->lcm_cluster[ clusterID ];
         PRINT3((int)cluster.numQuads,(int)cluster.numBlocks,(int)cluster.lod_level);
         PRINT3((int)cluster.leftID,(int)cluster.rightID,(int)cluster.neighborID);
-#if 0        
-        LossyCompressedMesh *mesh = cluster.mesh;
-        const Vec3f lower = mesh->bounds.lower;
-        const Vec3f diag = mesh->bounds.size() * (1.0f / CompressedVertex::RES_PER_DIM);
-        // const uint width = 1024;
-        // const uint height = 1024;
-        const Vec3f org = camera.xfm.p;
-        const Vec3f vx = camera.xfm.l.vx;
-        const Vec3f vy = camera.xfm.l.vy;
-        const Vec3f vz = camera.xfm.l.vz;
-        
-        const BBox3f cluster_bounds(cluster.bounds.lower.decompress(lower,diag),cluster.bounds.upper.decompress(lower,diag));
-        PRINT2(cluster_bounds,area(cluster_bounds));
-#endif        
-        // const Vec2f diag2 = projectBBox3fToPlane( BBox3f(cluster_bounds.lower-org,cluster_bounds.upper-org), vx,vy,vz, width,height,true);
-        // PRINT3(diag2,length(diag2),length(diag2)<lod_threshold);
-        // bool subdivide = subdivideLOD(BBox3f(cluster_bounds.lower-org,cluster_bounds.upper-org),vx,vy,vz, width,height,lod_threshold);
-        // PRINT(subdivide);
       }
     }
 #endif    
@@ -1070,23 +1008,6 @@ namespace embree {
         });
     });
     waitOnEventAndCatchException(compute_lod_event);
-
-    
-
-#if 0
-    static double total_sum = 0.0f;
-    static uint entries = 0;
-    total_sum += gpu::getDeviceExecutionTiming(compute_lod_event); 
-    entries++;
-    if (entries % 4096) PRINT(total_sum / entries);
-    //PRINT4(gpu::getDeviceExecutionTiming(memset_event),gpu::getDeviceExecutionTiming(compute_lod_event),gpu::getDeviceExecutionTiming(select_clusterIDs_event),total);
-#endif    
-    
-    
-    //PRINT(local_lcgbp_scene->patch_mesh->numVertices);
-    //PRINT(local_lcgbp_scene->patch_mesh->numQuads);
-
-    //gpu::waitOnQueueAndCatchException(*global_gpu_queue);        
     
   }  
  

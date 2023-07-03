@@ -223,7 +223,7 @@ namespace embree {
     Vec3fa L = Vec3fa(0.0f);
     Vec3fa Lw = Vec3fa(1.0f);
     Medium medium = make_Medium_Vacuum();
-    float time = 0.0f; //RandomSampler_get1D(sampler);
+    float time = 0.0f; 
 
     /* initialize ray */
     Ray ray(Vec3fa(camera.xfm.p),
@@ -283,12 +283,7 @@ namespace embree {
       dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
       dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
 
-      /*! Compute  simple volumetric effect. */
       Vec3fa c = Vec3fa(1.0f);
-      //const Vec3fa transmission = medium.transmission;
-      // if (ne(transmission,Vec3fa(1.0f)))
-      //   c = c * pow(transmission,ray.tfar);
-
       /* calculate BRDF */
       BRDF brdf;
       int numMaterials = data.ispc_scene->numMaterials;
@@ -315,9 +310,7 @@ namespace embree {
         //Light_SampleRes ls = l->sample(l,dg,RandomSampler_get2D(sampler));
         Light_SampleRes ls = Lights_sample(l,dg,sampler.Get2D());
         if (ls.pdf <= 0.0f) continue;
-        //Vec3fa transparency = Vec3fa(1.0f);
         Ray shadow(dg.P,ls.dir,dg.eps,ls.dist,time);
-        //context.userRayExt = &transparency;
 
         RTCOccludedArguments sargs;
         rtcInitOccludedArguments(&sargs);
@@ -362,14 +355,8 @@ namespace embree {
       sampler.InitSampler(x, y, data.spp+i /*+(frameNo%4) */,0);
 
       const Vec2f dxy = sampler.Get2D();
-      /* calculate pixel color */
       const float fx = x + dxy.x;
-      const float fy = y + dxy.y;
-    
-    
-      /* calculate pixel color */
-      //float fx = x + RandomSampler_get1D(sampler);
-      //float fy = y + RandomSampler_get1D(sampler);
+      const float fy = y + dxy.y;        
       L = L + renderPixelFunction(data,fx,fy,sampler,camera,gb,features);
     }
     L = L/(float)data.spp;
@@ -409,9 +396,6 @@ namespace embree {
           const RTCFeatureFlags feature_mask = RTC_FEATURE_FLAG_ALL;
           GBuffer gb;
           gb.clear();
-          // gb.normal = fp_convert(Vec3f(1,0,0));
-          // gb.albedo = fp_convert(Vec3f(0,0,0));
-          // gb.N = 1;
           Vec3f c = renderPixelPathTracer(ldata,x,y,pixels,width,height,frameNo,camera,gb,feature_mask);
 
           c.x = clamp(c.x,0.0f,1.0f);
