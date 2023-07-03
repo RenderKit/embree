@@ -289,3 +289,7 @@ export void device_cleanup ()
   rtcReleaseScene (data.g_scene); data.g_scene = NULL;
   TutorialData_Destructor(&data);
 }
+
+export void device_gui ()
+{
+}

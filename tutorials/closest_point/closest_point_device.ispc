@@ -813,3 +813,7 @@ export void device_cleanup ()
   rtcReleaseScene (g_sceneUserDefinedInstance); g_scene0 = NULL;
   rtcReleaseDevice(g_device); g_device = NULL;
 }
+
+export void device_gui()
+{
+}

@@ -196,4 +196,9 @@ namespace embree
   /* called by the C++ code for cleanup */
   extern "C" void device_cleanup () {
   }
+
+   extern "C" void device_gui()
+{
+}
+
 }

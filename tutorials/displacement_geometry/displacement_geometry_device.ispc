@@ -283,3 +283,8 @@ export void device_cleanup ()
 {
   rtcReleaseScene (g_scene); g_scene = NULL;
 }
+
+export void device_gui ()
+{
+}
+

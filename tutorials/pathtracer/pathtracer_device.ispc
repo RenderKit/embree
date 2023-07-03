@@ -1836,3 +1836,8 @@ export void device_cleanup ()
   TutorialData_Destructor(&data);
   
 } // device_cleanup
+
+export void device_gui ()
+{
+}
+

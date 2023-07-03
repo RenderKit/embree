@@ -253,3 +253,8 @@ export void device_cleanup ()
   rtcReleaseDevice(g_device); g_device = NULL;
   delete[] g_points; g_points = NULL;
 }
+
+export void device_gui ()
+{
+}
+

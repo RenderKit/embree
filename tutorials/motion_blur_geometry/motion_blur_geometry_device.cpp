@@ -804,4 +804,9 @@ extern "C" void device_cleanup ()
   TutorialData_Destructor(&data);
 }
 
+ extern "C" void device_gui()
+{
+}
+
+
 } // namespace embree

@@ -495,3 +495,8 @@ export void device_cleanup ()
 {
   TutorialData_Destructor(&data);
 }
+
+export void device_gui ()
+{
+}
+

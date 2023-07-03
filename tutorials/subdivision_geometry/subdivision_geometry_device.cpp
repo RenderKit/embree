@@ -287,4 +287,8 @@ extern "C" void device_cleanup ()
   rtcReleaseScene (g_scene); g_scene = nullptr;
 }
 
+ extern "C" void device_gui()
+{
+}
+
 } // namespace embree

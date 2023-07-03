@@ -369,5 +369,10 @@ namespace embree {
   {
     TutorialData_Destructor(&data);
   }
+
+   extern "C" void device_gui()
+{
+}
+
   
 } // namespace embree

@@ -664,4 +664,9 @@ namespace embree {
   extern "C" void device_cleanup ()
   {
   }
+
+   extern "C" void device_gui()
+{
+}
+
 } // namespace embree

@@ -380,6 +380,11 @@ export void device_cleanup ()
   TutorialData_Destructor(&g_data);
 }
 
+export void device_gui ()
+{
+}
+
+
 /*
  * This must be here for the linker to find, but we will not use it.
  */
