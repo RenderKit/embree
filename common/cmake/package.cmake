@@ -300,7 +300,7 @@ IF(WIN32)
   ENDIF()
 
   add_custom_target(
-    post_package "${PROJECT_SOURCE_DIR}/scripts/package_post_build_win.bat" "${PACKAGE_BASE_NAME}"
+    post_package "${PROJECT_SOURCE_DIR}/scripts/package_post_build_win.bat" "${PACKAGE_BASE_NAME}" "${EMBREE_SIGN_FILE}"
   )
 
   add_custom_target(
