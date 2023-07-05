@@ -1,6 +1,19 @@
 Version History
 ---------------
 
+### Embree 4.1.0
+-   Added support for Intel® Data Center GPU Max Series.
+-   Added ARM64 Linux support.
+-   Added EMBREE_BACKFACE_CULLING_SPHERES cmake option. The new cmake option defaults to OFF.
+
+### Embree 4.0.1
+-   Improved performance for Tiger Lake, Comet Lake, Cannon Lake, Kaby Lake,
+    and Skylake client CPUs by using 256 bit SIMD instructions by default.
+-   Fixed broken motion blur of RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE geometry type.
+-   Fixed bvh build retry issue for TBB 2020.3
+-   Added support for Intel® Data Center GPU Flex Series
+-   Fixed issue on systems without a SYCL platform.
+
 ### Embree 4.0.0
 -   This Embree release adds support for Intel® Arc™ GPUs through SYCL.
 -   The SYCL support of Embree is in beta phase. Current functionality, quality,

@@ -50,12 +50,23 @@ EMBREE_VERSION_MAJOR=$4
 EMBREE_SIGN_FILE=$5
 
 # create package
-make -j 16 preinstall
+#make -j 16 preinstall
+
+cmake --build . --target package
+
 #check_symbols lib${EMBREE_LIBRARY_NAME}.so GLIBC 2 14 0    # GCC 4.8
 #check_symbols lib${EMBREE_LIBRARY_NAME}.so GLIBCXX 3 4 14
 #check_symbols lib${EMBREE_LIBRARY_NAME}.so CXXABI 1 3 0
 
-make -j 16 package
+#make -j 16 package
+
+cmake --build . --target package
+
+if [ "$EMBREE_ZIP_MODE" == "ON" ]; then
+  mv embree-${EMBREE_VERSION}-beta.sycl.x86_64.linux-embree.tar.gz embree-${EMBREE_VERSION}-beta.sycl.x86_64.linux.tar.gz
+  mv embree-${EMBREE_VERSION}-beta.sycl.x86_64.linux-embree-testing.tar.gz embree-${EMBREE_VERSION}-beta.sycl.x86_64.linux-testing.tar.gz
+  rm embree-${EMBREE_VERSION}-beta.sycl.x86_64.linux-Unspecified.tar.gz
+fi
 
 if [ "$EMBREE_ZIP_MODE" == "OFF" ]; then
 

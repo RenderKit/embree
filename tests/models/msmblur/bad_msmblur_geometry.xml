@@ -1,0 +1,136 @@
+<?xml version="1.0"?>
+<scene>
+  <assign type="scene" id="tri">
+    <TriangleMesh>
+      <material id="9">
+        <code>"Matte"</code>
+        <parameters>
+          <float3 name="reflectance">0.5 0.5 0.5</float3>
+        </parameters>
+      </material>
+      <positions>
+        -0.8 10 0
+        0 12 0
+        +0.8 10 0
+      </positions>
+      <triangles>
+        0 1 2
+      </triangles>
+    </TriangleMesh>
+  </assign>
+  <assign type="scene" id="ring">
+    <Group>
+      <Transform><AffineSpace rotate_z="0"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="10"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="20"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="30"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="40"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="50"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="60"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="70"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="80"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="90"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="100"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="110"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="120"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="130"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="140"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="150"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="160"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="170"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="180"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="190"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="200"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="210"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="220"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="230"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="240"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="250"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="260"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="270"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="280"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="290"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="300"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="310"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="320"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="330"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="340"/><ref id="tri"/></Transform>
+      <Transform><AffineSpace rotate_z="350"/><ref id="tri"/></Transform>
+    </Group>
+  </assign>
+  <Animation>
+    <Transform><AffineSpace rotate_z="0"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="10"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="20"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="30"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="40"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="50"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="60"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="70"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="80"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="90"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="100"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="110"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="120"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="130"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="140"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="150"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="160"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="170"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="180"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="190"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="200"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="210"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="220"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="230"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="240"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="250"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="260"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="270"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="280"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="290"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="300"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="310"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="320"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="330"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="340"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="350"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="360"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="370"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="380"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="390"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="400"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="410"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="420"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="430"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="440"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="450"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="460"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="470"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="480"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="490"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="500"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="510"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="520"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="530"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="540"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="550"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="560"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="570"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="580"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="590"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="600"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="610"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="620"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="630"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="640"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="650"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="660"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="670"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="680"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="690"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="700"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="710"/><ref id="ring"/></Transform>
+    <Transform><AffineSpace rotate_z="720"/><ref id="ring"/></Transform>
+  </Animation>
+</scene>

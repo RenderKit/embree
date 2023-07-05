@@ -202,6 +202,8 @@ namespace embree
         PrimRef* const prims;
       };
 
+#if !defined(RTHWIF_STANDALONE)
+    
     /*! Performs standard object binning */
     template<typename PrimRefMB, size_t BINS>
       struct HeuristicArrayBinningMB
@@ -242,5 +244,6 @@ namespace embree
           new (&rset) SetMB(right,set.prims,range<size_t>(center,end  ),set.time_range);
         }
       };
+#endif
   }
 }

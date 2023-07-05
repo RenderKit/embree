@@ -637,7 +637,7 @@ STBIWDEF int stbi_write_tga(char const *filename, int x, int y, int comp, const 
 #ifndef STBI_WRITE_NO_STDIO
 
 #if defined(__INTEL_LLVM_COMPILER) && defined(WIN32)
-inline float my_frexp(float value, int* exp)
+inline float embree_frexp(float value, int* exp)
 {
    // using the Intel(R) oneAPI DPC++/C++ Compiler with -no-intel-libs results
    // in an unresolved external symbol "__imp_frexp" error and therefore we
@@ -658,7 +658,7 @@ static void stbiw__linear_to_rgbe(unsigned char *rgbe, float *linear)
       rgbe[0] = rgbe[1] = rgbe[2] = rgbe[3] = 0;
    } else {
 #if defined(__INTEL_LLVM_COMPILER) && defined(WIN32)
-      float normalize = (float) my_frexp(maxcomp, &exponent) * 256.0f/maxcomp;
+      float normalize = (float) embree_frexp(maxcomp, &exponent) * 256.0f/maxcomp;
 #else
       float normalize = (float) frexp(maxcomp, &exponent) * 256.0f/maxcomp;
 #endif

@@ -50,13 +50,30 @@ EMBREE_VERSION_MAJOR=$4
 EMBREE_SIGN_FILE=$5
 
 # create package
-make -j 16 preinstall
+#make -j 16 preinstall
+cmake --build . --target package
 
 check_symbols lib${EMBREE_LIBRARY_NAME}.so GLIBC 2 28 0
 check_symbols lib${EMBREE_LIBRARY_NAME}.so GLIBCXX 3 4 22
 check_symbols lib${EMBREE_LIBRARY_NAME}.so CXXABI 1 3 11
 
-make -j 16 package
+#make -j 16 package
+cmake --build . --target package
+
+if [ "$EMBREE_ZIP_MODE" == "ON" ]; then
+  # rename packages and make sure they contain a 'parent folder', so that not a truckload of files and folders are extracted unintentionally into the working directory
+  mkdir embree-${EMBREE_VERSION}.x86_64.linux
+  tar -xzf embree-${EMBREE_VERSION}.x86_64.linux-embree.tar.gz -C embree-${EMBREE_VERSION}.x86_64.linux
+  rm embree-${EMBREE_VERSION}.x86_64.linux-embree.tar.gz
+  tar -czvf embree-${EMBREE_VERSION}.x86_64.linux.tar.gz embree-${EMBREE_VERSION}.x86_64.linux
+
+  mkdir embree-${EMBREE_VERSION}-testing.x86_64.linux
+  tar -xzf embree-${EMBREE_VERSION}.x86_64.linux-embree-testing.tar.gz -C embree-${EMBREE_VERSION}-testing.x86_64.linux
+  rm embree-${EMBREE_VERSION}.x86_64.linux-embree-testing.tar.gz
+  tar -czvf embree-${EMBREE_VERSION}-testing.x86_64.linux.tar.gz embree-${EMBREE_VERSION}-testing.x86_64.linux
+
+  rm embree-${EMBREE_VERSION}.x86_64.linux-Unspecified.tar.gz
+fi
 
 if [ "$EMBREE_ZIP_MODE" == "OFF" ]; then
 

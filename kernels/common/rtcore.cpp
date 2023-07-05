@@ -9,10 +9,6 @@
 #include "context.h"
 #include "../geometry/filter.h"
 #include "../../include/embree4/rtcore_ray.h"
-
-#if defined(EMBREE_SYCL_SUPPORT)
-#include "../rthwif/rthwif_embree_builder.h"
-#endif
 using namespace embree;
 
 RTC_NAMESPACE_BEGIN;
@@ -41,7 +37,8 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewSYCLDevice);
     Lock<MutexSys> lock(g_mutex);
-    
+
+#if !defined(EMBREE_NO_SPLASH)
     std::cout << std::endl;
     std::cout << "==================================================================================" << std::endl;
     std::cout << "  The SYCL support of Embree is in beta phase. Current functionality, quality,    " << std::endl;
@@ -49,7 +46,8 @@ RTC_NAMESPACE_BEGIN;
     std::cout << "  documentation section \"Embree SYCL Known Issues\" for known limitations.       " << std::endl;
     std::cout << "==================================================================================" << std::endl;
     std::cout << std::endl;
-    
+#endif
+
     DeviceGPU* device = new DeviceGPU(sycl_context,config);
     return (RTCDevice) device->refInc();
     RTC_CATCH_END(nullptr);

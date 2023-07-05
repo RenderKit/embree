@@ -3,7 +3,8 @@
 
 #pragma once
 
-#include "../builders/primrefgen.h"
+#include "../../common/algorithms/parallel_reduce.h"
+#include "../../common/algorithms/parallel_sort.h"
 #include "../builders/heuristic_spatial.h"
 #include "../builders/splitter.h"
 
@@ -226,7 +227,9 @@ namespace embree
     }
     
 #endif
-    
+
+#if !defined(RTHWIF_STANDALONE)
+
     template<typename Mesh, typename SplitterFactory>    
       PrimInfo createPrimRefArray_presplit(Geometry* geometry, unsigned int geomID, size_t numPrimRefs, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
     {
@@ -248,6 +251,7 @@ namespace embree
 	}
       return pinfo;	
     }
+#endif
     
     template<typename SplitPrimitiveFunc, typename ProjectedPrimitiveAreaFunc, typename PrimVector>
     PrimInfo createPrimRefArray_presplit(size_t numPrimRefs,
@@ -417,6 +421,8 @@ namespace embree
       return pinfo1;	
     }
 
+#if !defined(RTHWIF_STANDALONE)
+    
      template<typename Mesh, typename SplitterFactory>    
       PrimInfo createPrimRefArray_presplit(Scene* scene, Geometry::GTypeMask types, bool mblur, size_t numPrimRefs, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
     {
@@ -460,6 +466,6 @@ namespace embree
       
       return createPrimRefArray_presplit(numPrimRefs,prims,pinfo,split_primitive,primitiveArea);
     }
-    
+#endif 
   }
 }

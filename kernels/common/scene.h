@@ -22,7 +22,7 @@
 #include "geometry.h"
 
 #if defined(EMBREE_SYCL_SUPPORT)
-#include "../rthwif/rthwif_embree_builder.h"
+#include "../sycl/rthwif_embree_builder.h"
 #endif
 
 namespace embree

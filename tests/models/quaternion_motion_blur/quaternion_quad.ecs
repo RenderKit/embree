@@ -1,0 +1,4 @@
+-i quaternion_quad.xml
+--ambientlight 0.8 0.8 0.8
+--instancing geometry
+

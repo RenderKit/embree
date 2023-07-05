@@ -4,9 +4,8 @@
 #pragma once
 
 #include "../common/scene.h"
-#include "../common/primref.h"
-#include "../common/primref_mb.h"
 #include "priminfo.h"
+#include "priminfo_mb.h"
 #include "bvh_builder_morton.h"
 
 namespace embree

@@ -562,7 +562,6 @@ namespace embree {
       PRINT(patch_anim.size());
     }
     
-
     /* update scene */
     //rtcCommitScene (data.g_scene);
   }
@@ -839,6 +838,7 @@ namespace embree {
       sycl::event camera_event = global_gpu_queue->memcpy(global_camera,&camera_path_device[frameID],sizeof(ISPCCamera));
       gpu::waitOnEventAndCatchException(camera_event);
     }
+
     
     if (!denoiser)
       denoiser = new Denoiser(width,height);
@@ -868,6 +868,7 @@ namespace embree {
     }
     
     waitOnQueueAndCatchException(*global_gpu_queue);  // FIXME            
+
     
     double dt0_lod = (getSeconds()-t0_lod)*1000.0;
     
@@ -880,6 +881,7 @@ namespace embree {
     
     rtcCommitGeometry(local_lcgbp_scene->geometry);
 
+    
     /* commit changes to scene */
     rtcCommitScene (data.g_scene);
     
@@ -889,7 +891,6 @@ namespace embree {
     
     
 #endif
-
     frameIndex++;
 
   }

@@ -1,0 +1,4 @@
+-i round_line_segments_9.xml
+--vp 0.0481011495 0.4872536659 0.447288543 --vi 0.06167092919 2.966756821 -0.2481440008 --vu 0 1 0 --fov 90 --righthanded
+--shader eyelight
+

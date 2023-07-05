@@ -7,9 +7,6 @@ INCLUDE(tutorial)
 ADD_TUTORIAL(displacement_geometry)
 ADD_TUTORIAL_ISPC(displacement_geometry)
 
-SET(EMBREE_SYCL_SUPPORT OFF)
-IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
-  ADD_EMBREE_TEST(displacement_geometry)
 ENDIF()
 
-ENDIF()
+ADD_EMBREE_TEST_ECS(displacement_geometry embree_displacement_geometry)

@@ -3,8 +3,11 @@
 
 #pragma once
 
+#if !defined(RTHWIF_STANDALONE)
 #include "../common/scene.h"
-#include "../common/primref.h"
+#endif
+
+#include "../builders/primref.h"
 
 namespace embree
 {
@@ -113,7 +116,9 @@ namespace embree
       new (&left_o ) PrimRef(intersect(left ,prim.bounds()),prim.geomID(), prim.primID());
       new (&right_o) PrimRef(intersect(right,prim.bounds()),prim.geomID(), prim.primID());
     }
-    
+
+#if !defined(RTHWIF_STANDALONE)
+
     struct TriangleSplitter
     {
       __forceinline TriangleSplitter(const Scene* scene, const PrimRef& prim)
@@ -229,7 +234,7 @@ namespace embree
     private:
       const Scene* scene;
     };
-    
+#endif 
   }
 }
 

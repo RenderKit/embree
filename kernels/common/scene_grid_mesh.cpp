@@ -154,7 +154,7 @@ namespace embree
         const Grid& g = grid(primID);
         for (ssize_t y=0; y<ssize_t(g.resY)-1; y++)
           for (ssize_t x=0; x<ssize_t(g.resX)-1; x++)
-            quadID_to_primID_xy[quadID++] = { primID, (ushort) x, (ushort) y };
+            quadID_to_primID_xy[quadID++] = { primID, (uint16_t) x, (uint16_t) y };
       }
     }
 

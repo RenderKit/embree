@@ -193,10 +193,15 @@ namespace embree
   const char* symbols[3] = { "=", ",", "|" };
 
   bool State::parseFile(const FileName& fileName)
-  {
-    FILE* f = fopen(fileName.c_str(),"r");
-    if (!f) return false;
-    Ref<Stream<int> > file = new FileStream(f,fileName);
+  { 
+    Ref<Stream<int> > file;
+    try {
+      file = new FileStream(fileName);
+    }
+    catch (std::runtime_error& e) {
+      (void) e;
+      return false;
+    }
     
     std::vector<std::string> syms;
     for (size_t i=0; i<sizeof(symbols)/sizeof(void*); i++) 

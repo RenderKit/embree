@@ -8,8 +8,6 @@ ADD_TUTORIAL(grid_geometry)
 ADD_TUTORIAL_ISPC(grid_geometry)
 ADD_TUTORIAL_SYCL(grid_geometry)
 
-IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
-  ADD_EMBREE_TEST(grid_geometry)
 ENDIF()
 
-ENDIF()
+ADD_EMBREE_TEST_ECS(grid_geometry embree_grid_geometry)

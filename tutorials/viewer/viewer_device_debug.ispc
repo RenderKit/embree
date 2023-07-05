@@ -258,7 +258,7 @@ Vec3f renderPixelDebugShader(const uniform DebugShaderData& data, float x, float
       return make_Vec3f(1.0f,1.0f,1.0f);
 
   case SHADER_UV:
-    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f,0.0f,1.0f);
+    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f,0.0f,0.0f);
     else return make_Vec3f(ray.u,ray.v,1.0f-ray.u-ray.v);
 
   case SHADER_TEXCOORDS:
@@ -286,7 +286,7 @@ Vec3f renderPixelDebugShader(const uniform DebugShaderData& data, float x, float
 
   case SHADER_NG:
 
-    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f,0.0f,1.0f);
+    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f,0.0f,0.0f);
     else return abs(normalize(make_Vec3f(ray.Ng.x,ray.Ng.y,ray.Ng.z)));
     //else return normalize(make_Vec3f(ray.Ng.x,ray.Ng.y,ray.Ng.z));
 

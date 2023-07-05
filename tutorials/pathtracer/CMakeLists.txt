@@ -10,32 +10,49 @@ ADD_TUTORIAL(pathtracer)
 ADD_TUTORIAL_ISPC(pathtracer)
 ADD_TUTORIAL_SYCL(pathtracer)
 
-IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 1)
-  ADD_EMBREE_MODELS_TEST(test-models-intensive2.txt pathtracer_coherent pathtracer pathtracer --coherent)
-#  ADD_EMBREE_MODELS_TEST(test-models-intensity2.txt pathtracer pathtracer pathtracer)
-ENDIF()
 
-IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 2)
-#  ADD_EMBREE_MODELS_TEST(test-models-intensive3.txt pathtracer_coherent pathtracer pathtracer --coherent)  # FIXME: triggers IGC bug with pathtracer of curve0 model
-#  ADD_EMBREE_MODELS_TEST(test-models-intensity3.txt pathtracer pathtracer pathtracer)
-ENDIF()
+SET(pathtracer_tests
+  "models/curves/curve0.ecs"
+  "models/curves/curve1.ecs"
+  "models/curves/curve2.ecs"
+  "models/curves/curve3.ecs"
+  "models/curves/curve4.ecs"
+  #"models/curves/curve5.ecs"
+  "models/curves/oriented_curve0.ecs"
+  "models/curves/oriented_curve1.ecs"
+  "models/curves/oriented_curve2.ecs"
+  "models/curves/oriented_curve3.ecs"
+  "models/curves/oriented_curve4.ecs"
+  "models/curves/oriented_bspline_curve_twisted.ecs"
+  "models/curves/oriented_hermite_curve_twisted.ecs"
 
-IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 3)
-  
-  ADD_EMBREE_MODELS_TEST(test-models-intensity4.txt pathtracer pathtracer pathtracer)
+  "models/msmblur/curves_msmblur.ecs"
+  "models/msmblur/curves_msmblur2.ecs"
+  "models/msmblur/lines_msmblur.ecs"
+  "models/msmblur/lines_msmblur2.ecs"
+  "models/msmblur/mblur_time_range_triangle.ecs"
+  "models/msmblur/mblur_time_range_quad.ecs"
+  "models/msmblur/mblur_time_range_grid.ecs"
+  "models/msmblur/mblur_time_range_curve.ecs"
+  "models/msmblur/mblur_time_range_line.ecs"
+  "models/msmblur/mblur_time_range_instancing.ecs"
+  "models/msmblur/mblur_time_range_sphere.ecs"
+  "models/msmblur/mblur_time_range_disc.ecs"
+  "models/msmblur/mblur_time_range_oriented_disc.ecs"
 
-  set_tests_properties(pathtracer_sophie_sophie PROPERTIES DISABLED True)
-  set_tests_properties(pathtracer_sophie_mblur_sophie_mblur PROPERTIES DISABLED True)
-  
-  IF (EMBREE_ISPC_SUPPORT)
-    set_tests_properties(pathtracer_sophie_sophie_ispc PROPERTIES DISABLED True)
-    set_tests_properties(pathtracer_sophie_mblur_sophie_mblur_ispc PROPERTIES DISABLED True)
-  ENDIF()
+  "models/points/points.ecs"
 
-  IF (EMBREE_SYCL_SUPPORT)
-    set_tests_properties(pathtracer_sophie_sophie_sycl PROPERTIES DISABLED True)
-    set_tests_properties(pathtracer_sophie_mblur_sophie_mblur_sycl PROPERTIES DISABLED True)
-  ENDIF()
+  "models/quaternion_motion_blur/quaternion_quad.ecs"
+)
 
-ENDIF()
 
+# EMBREE_SYCL_AOT_DEVICES != none   => see issue #1209
+foreach(t ${pathtracer_tests})
+  STRING(REPLACE "/" "_" testname "${t}")
+  ADD_EMBREE_TEST_ECS("pathtracer_${testname}" embree_pathtracer ECS "${t}" INTENSITY 2 CONDITION "EMBREE_SYCL_AOT_DEVICES != none")
+endforeach()
+
+foreach(t ${pathtracer_tests})
+  STRING(REPLACE "/" "_" testname "${t}")
+  ADD_EMBREE_TEST_ECS("pathtracer_coherent_${testname}" embree_pathtracer ECS "${t}" INTENSITY 3 CONDITION "EMBREE_SYCL_AOT_DEVICES != none" ARGS --coherent)
+endforeach()

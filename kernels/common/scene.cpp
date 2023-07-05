@@ -11,8 +11,11 @@
 #include "../../common/algorithms/parallel_reduce.h"
 
 #if defined(EMBREE_SYCL_SUPPORT)
-#  include "../rthwif/rthwif_embree_builder.h"
+#  include "../sycl/rthwif_embree_builder.h"
 #endif
+
+#include "../sycl/rthwif_embree.h"
+#include "../rthwif/rttrace/rttrace.h"
 
 
 namespace embree
@@ -52,7 +55,13 @@ namespace embree
     device->refInc();
 
     intersectors = Accel::Intersectors(missing_rtcCommit);
-    
+
+    /* use proper device and context for SYCL allocations */
+#if defined(EMBREE_SYCL_SUPPORT)
+    if (DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device))
+      hwaccel = AccelBuffer(AccelAllocator<char>(gpu_device->getGPUDevice(),gpu_device->getGPUContext()),0);
+#endif
+  
     /* one can overwrite flags through device for debugging */
     if (device->quality_flags != -1)
       quality_flags = (RTCBuildQuality) device->quality_flags;

@@ -1,0 +1,2 @@
+-i mblur_time_range_grid.xml
+--dirlight -1 -1 1 30 30 30  --dirlight -1 -1 1 30 30 30  

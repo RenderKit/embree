@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<scene>
+	<PerspectiveCamera name="mainCamera" from="0 0 20" to="0 0 0" up="0 1 0" fov="70"/>
+
+  <assign type="scene">
+		<QuadMesh id="quad">
+			<material>
+				<code>"OBJ"</code>
+				<parameters>
+					<float name="d">1.000000</float>
+					<float3 name="Kd">0.5 0.25 0.1</float3>
+					<float3 name="Ks">0.000000 0.000000 0.000000</float3>
+					<float name="Ns">1.000000</float>
+				</parameters>
+			</material>
+			<positions>
+				-2 -2  0
+				 2 -2  0
+				 2  2  0
+				-2  2  0
+			</positions>
+			<indices>
+				0 1 2 3
+			</indices>
+		</QuadMesh>
+  </assign>
+
+  <Transform id="0">
+    <Quaternion>
+       1  0  0  0
+       8  1  0  0
+       2 -1  1  0
+			 0  0  0  1
+		</Quaternion>
+		<ref id="quad"/>
+	</Transform>
+  <Transform id="1">
+    <Quaternion>
+       1  0  0  0
+       0  1  0  0
+       2  0  1  0
+			 0  0  0  1
+		</Quaternion>
+		<ref id="quad"/>
+	</Transform>
+	<TransformAnimation id="2">
+    <Quaternion>
+       1  0  0  0
+       -10  1  0  0
+       -10  0  1  0
+			 0  0  -0.382683456  0.923879564
+		</Quaternion>
+    <Quaternion>
+       1  0  0  0
+       -10  1  0  0
+       -10  0  1  0
+			 0  0  -0.382683456  0.923879564
+		</Quaternion>
+		<ref id="quad"/>
+	</TransformAnimation>
+	<TransformAnimation id="3">
+    <Quaternion>
+       1  0  0  0
+       0  1  0  0
+       -10  0  1  0
+			 0  0  0  1
+		</Quaternion>
+    <Quaternion>
+       1  0  0  0
+       0  1  0  0
+       -10  0  1  0
+			 0  0  -0.382683456  0.923879564
+		</Quaternion>
+		<ref id="quad"/>
+	</TransformAnimation>
+</scene>

@@ -1,0 +1,3 @@
+-i tri_bad_linear.xml
+-ambientlight 1 1 1
+-instancing scene_group

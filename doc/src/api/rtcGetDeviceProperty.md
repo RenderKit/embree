@@ -63,6 +63,14 @@ Possible properties to query are:
     back face culling is enabled. This is only the case if Embree is
     compiled with `EMBREE_BACKFACE_CULLING` enabled.
 
++   `RTC_DEVICE_PROPERTY_BACKFACE_CULLING_CURVES_ENABLED`: Queries whether
+    back face culling for curves is enabled. This is only the case if Embree is
+    compiled with `EMBREE_BACKFACE_CULLING_CURVES` enabled.
+
++   `RTC_DEVICE_PROPERTY_BACKFACE_CULLING_SPHERES_ENABLED`: Queries whether
+    back face culling for spheres is enabled. This is only the case if Embree is
+    compiled with `EMBREE_BACKFACE_CULLING_SPHERES` enabled.
+
 +   `RTC_DEVICE_PROPERTY_COMPACT_POLYS_ENABLED`: Queries whether
     compact polys is enabled. This is only the case if Embree is
     compiled with `EMBREE_COMPACT_POLYS` enabled.

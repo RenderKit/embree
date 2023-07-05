@@ -279,11 +279,11 @@ struct State {
 
 __forceinline size_t alignTo(const size_t size, const size_t alignment) { return ((size+alignment-1)/alignment)*alignment; }
 
-void animateSphereGPU (const uint numSpheres, float time)
+void animateSphereGPU (const unsigned int numSpheres, float time)
 {
   State state[NUM_SPHERES];
 
-  for (uint id=0;id<numSpheres;id++)
+  for (unsigned int id=0;id<numSpheres;id++)
   {
     /* animate vertices */
     RTCGeometry geom = rtcGetGeometry(data.g_scene,id);
@@ -322,7 +322,7 @@ void animateSphereGPU (const uint numSpheres, float time)
   
   event.wait_and_throw();
 
-  for (uint id=0;id<numSpheres;id++)  
+  for (unsigned int id=0;id<numSpheres;id++)  
   {
     /* commit mesh */
     RTCGeometry geom = rtcGetGeometry(data.g_scene,id);    

@@ -1,0 +1,5 @@
+-i lines_msmblur2.xml
+-vp 1.067781925 1.75217855 -2.020211935 -vi 2.269771099 0.03516346589 2.465278149 -vu 0 1 0 -fov 90
+--dirlight -1 -1 1 30 30 30
+--compare-threshold 64   # requires larger threshold because of unstable hit at line segment end points
+

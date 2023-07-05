@@ -24,10 +24,6 @@
 
 #include "../../common/sys/alloc.h"
 
-#if defined(EMBREE_SYCL_SUPPORT)
-#include "../rthwif/rthwif_embree_builder.h"
-#endif
-
 namespace embree
 {
   /*! some global variables that can be set via rtcSetParameter1i for debugging purposes */
@@ -173,6 +169,9 @@ namespace embree
 #endif
 #if defined (EMBREE_BACKFACE_CULLING_CURVES)
     v += "backfacecullingcurves ";
+#endif
+#if defined (EMBREE_BACKFACE_CULLING_SPHERES)
+    v += "backfacecullingspheres ";
 #endif
 #if defined(EMBREE_FILTER_FUNCTION)
     v += "intersection_filter ";
@@ -481,6 +480,12 @@ namespace embree
     case RTC_DEVICE_PROPERTY_BACKFACE_CULLING_CURVES_ENABLED: return 0;
 #endif
 
+#if defined(EMBREE_BACKFACE_CULLING_SPHERES)
+    case RTC_DEVICE_PROPERTY_BACKFACE_CULLING_SPHERES_ENABLED: return 1;
+#else
+    case RTC_DEVICE_PROPERTY_BACKFACE_CULLING_SPHERES_ENABLED: return 0;
+#endif
+
 #if defined(EMBREE_COMPACT_POLYS)
     case RTC_DEVICE_PROPERTY_COMPACT_POLYS_ENABLED: return 1;
 #else
@@ -598,7 +603,7 @@ namespace embree
       std::cout << std::endl;
     }
     
-    dispatchGlobalsPtr = rthwifInit(gpu_device, gpu_context);
+    dispatchGlobalsPtr = zeRTASInitExp(gpu_device, gpu_context);
   }
 
   DeviceGPU::~DeviceGPU()

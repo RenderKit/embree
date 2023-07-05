@@ -9,6 +9,7 @@ import os
 import ctypes
 import pickle
 import re
+import shutil
 
 cwd = os.getcwd()
 
@@ -60,13 +61,9 @@ else:
   print("unknown platform: "+ sys.platform);
   sys.exit(1)
 
-NAS = ""
-if OS == "windows":
-  NAS = os.environ["NAS_WINDOWS"]
-elif OS == "linux":
-  NAS = os.environ["NAS_LINUX"]
-elif OS == "macosx":
-  NAS = os.environ["NAS_MACOSX"]
+NAS = os.environ["STORAGE_PATH"] + "/packages/apps"
+if "klocwork:ON" in sys.argv:
+  NAS = "/NAS/packages/apps"
 
 # path of oneapi installation on windows machines
 ONE_API_PATH_WINDOWS="C:\\Program Files (x86)\\Intel\\oneAPI\\compiler"
@@ -87,9 +84,11 @@ def runConfig(config):
   if "threads" in config:
     threads = config["threads"]
 
+  # TODO: not used in any of the workflow definitions
   if "memcheck" in config:
     conf.append("-D EMBREE_TESTING_MEMCHECK="+config["memcheck"]+"")
 
+  # TODO: this is not used anywhere in embree cmake...
   if "sde" in config:
     conf.append("-D EMBREE_TESTING_SDE="+config["sde"]+"")
 
@@ -114,6 +113,7 @@ def runConfig(config):
   if "EMBREE_SYCL_SUPPORT" in config:
     enable_sycl_support = True
     conf.append("-D EMBREE_SYCL_SUPPORT="+config["EMBREE_SYCL_SUPPORT"])
+    conf.append("-D EMBREE_TESTING_ONLY_SYCL_TESTS=ON")
 
   #if "package" in config and OS == 'linux': # we need up to date cmake for RPMs to work properly
   #  env.append("module load cmake")
@@ -198,27 +198,14 @@ def runConfig(config):
       conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
     elif (compiler.startswith("ICX")):
       env.append("source "+NAS+"/intel/oneAPI/compiler/"+compiler[3:]+"/env/vars.sh")
-      conf.append("-D CMAKE_CXX_COMPILER=icpx -D CMAKE_C_COMPILER=icx")
-      if enable_sycl_support:
-        if os.environ["GFX_DRIVER_ROOT"] :
-          gfx_dir = os.environ["GFX_DRIVER_ROOT"] + "/install"
-        else :
-          print("Error GFX_DRIVER_ROOT is not set")
-          sys.exit(1)
-
-        # set up backend
-        env.append("export SYCL_DEVICE_FILTER=level_zero")
-        sys.stderr.write("gfx_dir = "+gfx_dir+"\n")
-
-        env.append("export PATH="+gfx_dir+"/usr/bin:"+gfx_dir+"/usr/local/bin:$PATH")
-        LD_LIBRARY_PATH_SYCL=gfx_dir+"/usr/lib/x86_64-linux-gnu:" + gfx_dir+"/usr/local/lib"
-        os.environ["LD_LIBRARY_PATH_SYCL"]=LD_LIBRARY_PATH_SYCL
-        env.append("export LD_LIBRARY_PATH="+LD_LIBRARY_PATH_SYCL+":$LD_LIBRARY_PATH")
-        env.append("export OCL_ICD_FILENAMES="+gfx_dir+"/usr/lib/x86_64-linux-gnu/intel-opencl/libigdrcl.so"+":"+gfx_dir+"/usr/local/lib/intel-opencl/libigdrcl.so")
-        env.append("export OCL_ICD_VENDORS="+gfx_dir+"/etc/OpenCL/vendors/intel.icd")
-    elif (compiler.startswith("DPCPP")):
-      env.append("source "+NAS+"/intel/"+compiler[5:]+"/compiler/latest/env/vars.sh")
-      conf.append("-D CMAKE_CXX_COMPILER=dpcpp -D CMAKE_C_COMPILER=icx")
+      conf.append("-G Ninja -DCMAKE_CXX_COMPILER=icpx -DCMAKE_C_COMPILER=icx")
+    elif (compiler.startswith("ICC")):
+      conf.append("-D CMAKE_CXX_COMPILER="+NAS+"/intel/"+compiler[3:]+"/bin/icpc -D CMAKE_C_COMPILER="+NAS+"/intel/"+compiler[3:]+"/bin/icc")
+    elif (compiler.startswith("CLANG")):
+      conf.append("-D CMAKE_CXX_COMPILER="+NAS+"/clang/v"+compiler[5:]+"/bin/clang++ -D CMAKE_C_COMPILER="+NAS+"/clang/v"+compiler[5:]+"/bin/clang")
+    elif (compiler.startswith("dpcpp")):
+      env.append("source " + os.environ["DPCPP_ROOT"] + "/startup.sh")
+      conf.append("-G Ninja -D CMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang")
     else:
       raise ValueError('unknown compiler: ' + compiler + '')
 
@@ -328,26 +315,13 @@ def runConfig(config):
     conf.append("-D EMBREE_API_NAMESPACE="+config["api_namespace"])
     conf.append("-D EMBREE_LIBRARY_NAME="+config["api_namespace"])  # we test different library name at the same time
     conf.append("-D EMBREE_ISPC_SUPPORT=OFF")
-  if "STATIC_LIB" in config:
-    conf.append("-D EMBREE_STATIC_LIB="+config["STATIC_LIB"])
-  if "TUTORIALS" in config:
-    conf.append("-D EMBREE_TUTORIALS="+config["TUTORIALS"])
-  if "BACKFACE_CULLING" in config:
-    conf.append("-D EMBREE_BACKFACE_CULLING="+config["BACKFACE_CULLING"])
-  if "BACKFACE_CULLING_CURVES" in config:
-    conf.append("-D EMBREE_BACKFACE_CULLING_CURVES="+config["BACKFACE_CULLING_CRUVES"])
-  if "IGNORE_INVALID_RAYS" in config:
-    conf.append("-D EMBREE_IGNORE_INVALID_RAYS="+config["IGNORE_INVALID_RAYS"])
-  if "FILTER_FUNCTION" in config:
-     conf.append("-D EMBREE_FILTER_FUNCTION="+config["FILTER_FUNCTION"])
-  if "LARGEGRF" in config:
-    conf.append("-D EMBREE_SYCL_LARGEGRF="+config["LARGEGRF"])
-  if "RAY_MASK" in config:
-    conf.append("-D EMBREE_RAY_MASK="+config["RAY_MASK"])
-  if "RAY_PACKETS" in config:
-    conf.append("-D EMBREE_RAY_PACKETS="+config["RAY_PACKETS"])
-  if "STAT_COUNTERS" in config:
-    conf.append("-D EMBREE_STAT_COUNTERS="+config["STAT_COUNTERS"])
+
+  # Add embree specific optons
+  for opt in ["LEVEL_ZERO", "STATIC_LIB", "TUTORIALS", "BACKFACE_CULLING", "BACKFACE_CULLING_CURVES", "IGNORE_INVALID_RAYS", "FILTER_FUNCTION", "LARGEGRF", "RAY_MASK", "RAY_PACKETS", "STAT_COUNTERS", "COMPACT_POLYS", "MIN_WIDTH"]:
+    if opt in config:
+      conf.append("-D EMBREE_"+opt+"="+config[opt])
+
+  # TODO: check if we want to chonge the names of theese options, so that the pattern fits here as well
   if "TRI" in config:
     conf.append("-D EMBREE_GEOMETRY_TRIANGLE="+config["TRI"])
   if "QUAD" in config:
@@ -359,15 +333,11 @@ def runConfig(config):
   if "SUBDIV" in config:
     conf.append("-D EMBREE_GEOMETRY_SUBDIVISION="+config["SUBDIV"])
   if "USERGEOM" in config:
-      conf.append("-D EMBREE_GEOMETRY_USER="+config["USERGEOM"])
+    conf.append("-D EMBREE_GEOMETRY_USER="+config["USERGEOM"])
   if "INSTANCE" in config:
     conf.append("-D EMBREE_GEOMETRY_INSTANCE="+config["INSTANCE"])
   if "POINT" in config:
     conf.append("-D EMBREE_GEOMETRY_POINT="+config["POINT"])
-  if "COMPACT_POLYS" in config:
-    conf.append("-D EMBREE_COMPACT_POLYS="+config["COMPACT_POLYS"])
-  if "MIN_WIDTH" in config:
-    conf.append("-D EMBREE_MIN_WIDTH="+config["MIN_WIDTH"])
   if "GLFW" in config:
     conf.append("-D EMBREE_TUTORIALS_GLFW="+config["GLFW"])
   if "frequency_level" in config:
@@ -381,6 +351,10 @@ def runConfig(config):
     conf.append("-D EMBREE_SYCL_TEST="+config["sycl_test"])
   if "rt_validation_api" in config:
     conf.append("-D EMBREE_SYCL_RT_VALIDATION_API="+config["rt_validation_api"])
+  if "test_only_sycl" in config:
+    conf.append("-D EMBREE_TESTING_ONLY_SYCL_TESTS="+config["test_only_sycl"])
+  else:
+    conf.append("-D EMBREE_TESTING_ONLY_SYCL_TESTS=OFF")
 
   if "EMBREE_USE_GOOGLE_BENCHMARK" in config:
     conf.append("-D EMBREE_USE_GOOGLE_BENCHMARK="+config["EMBREE_USE_GOOGLE_BENCHMARK"])
@@ -388,6 +362,11 @@ def runConfig(config):
     conf.append("-D EMBREE_USE_GOOGLE_BENCHMARK=OFF")
   if "EMBREE_GOOGLE_BENCHMARK_DIR" in config:
     conf.append("-D benchmark_DIR:PATH="+config["EMBREE_GOOGLE_BENCHMARK_DIR"])
+
+  if "EMBREE_BUILD_GOOGLE_BENCHMARK_FROM_SOURCE" in config:
+    conf.append("-D EMBREE_BUILD_GOOGLE_BENCHMARK_FROM_SOURCE=ON")
+  else:
+    conf.append("-D EMBREE_BUILD_GOOGLE_BENCHMARK_FROM_SOURCE=OFF")
 
   if "package" in config:
     SIGN_FILE = ""
@@ -399,6 +378,8 @@ def runConfig(config):
       SIGN_FILE = os.environ["SIGN_FILE_MAC"]
     conf.append("-D EMBREE_SIGN_FILE="+SIGN_FILE)
 
+    conf.append("-D BUILD_TESTING=ON")
+    conf.append("-D EMBREE_TESTING_INSTALL_TESTS=ON")
     conf.append("-D EMBREE_TESTING_PACKAGE=ON")
     conf.append("-D EMBREE_TUTORIALS_OPENIMAGEIO=OFF")
     conf.append("-D EMBREE_TUTORIALS_LIBJPEG=OFF")
@@ -412,6 +393,7 @@ def runConfig(config):
       conf.append("-D CMAKE_INSTALL_LIBDIR=lib")
       conf.append("-D CMAKE_INSTALL_DOCDIR=doc")
       conf.append("-D CMAKE_INSTALL_BINDIR=bin")
+      conf.append("-D CMAKE_INSTALL_TESTDIR=testing")
     elif OS == "macosx" and config["package"] == "ZIP":
       conf.append("-D EMBREE_INSTALL_DEPENDENCIES=ON")
       conf.append("-D EMBREE_ZIP_MODE=ON")
@@ -421,6 +403,7 @@ def runConfig(config):
       conf.append("-D CMAKE_INSTALL_LIBDIR=lib")
       conf.append("-D CMAKE_INSTALL_DOCDIR=doc")
       conf.append("-D CMAKE_INSTALL_BINDIR=bin")
+      conf.append("-D CMAKE_INSTALL_TESTDIR=testing")
     elif OS == "windows" and config["package"] == "ZIP":
       conf.append("-D EMBREE_INSTALL_DEPENDENCIES=ON")
       conf.append("-D EMBREE_BUILD_GLFW_FROM_SOURCE=ON")
@@ -430,6 +413,7 @@ def runConfig(config):
       conf.append("-D CMAKE_INSTALL_DATAROOTDIR=")
       conf.append("-D CMAKE_INSTALL_DOCDIR=doc")
       conf.append("-D CMAKE_INSTALL_BINDIR=bin")
+      conf.append("-D CMAKE_INSTALL_TESTDIR=testing")
     else:
       sys.stderr.write("unknown package mode: "+OS+":"+config["package"])
       sys.exit(1)
@@ -444,15 +428,16 @@ def runConfig(config):
 
   if rtcore:
     conf.append("-D EMBREE_CONFIG="+(",".join(rtcore)))
+    
+  if "dumptests" in config:
+    conf.append("-D EMBREE_TESTING_DUMPTESTS=" + config["dumptests"])
+  if "dumpformat" in config:
+    conf.append("-D EMBREE_TESTING_DUMPFORMAT=" + config["dumpformat"])
 
   ctest_suffix = ""
   ctest_suffix += " -D EMBREE_TESTING_INTENSITY="+str(g_intensity)
   if "klocwork" in config:
     ctest_suffix += " -D EMBREE_TESTING_KLOCWORK="+config["klocwork"]
-  if "update_models" in config:
-    ctest_suffix += " -D EMBREE_UPDATE_MODELS="+config["update_models"]
-  else:
-    ctest_suffix += " -D EMBREE_UPDATE_MODELS=ON"
 
   ctest_suffix += " -D CTEST_CONFIGURATION_TYPE=\""+build+"\""
   ctest_suffix += " -D CTEST_BUILD_OPTIONS=\"" + escape(" ".join(conf))+"\""
@@ -472,8 +457,24 @@ def run(mode):
   if mode != "build" and OS == "linux":
     ctest_env += "export LD_LIBRARY_PATH="+os.getcwd()+"/build:$LD_LIBRARY_PATH && "
 
+  # pick sde executable
+  # don't use sde if no sde cpuid is specified
+  sde_cmd = ""
+  if mode == "test" and "sde" in g_config:
+    if OS == "linux":
+      sde_cmd = os.path.sep.join([NAS, 'sde', 'lin', 'sde64'])
+    elif OS == "macosx":
+      sde_cmd = os.path.sep.join([NAS, 'sde', 'mac', 'sde64'])
+    elif OS == "windows":
+      sde_cmd = os.path.sep.join([NAS, 'sde', 'win', 'sde64'])
+    else:
+      sys.stderr.write("unknown operating system "+OS)
+      sys.exit(1)
+    
+    sde_cmd = sde_cmd + " -" + g_config['sde'] + " -- "
+
   if mode == "test" or mode == "build":
-    cmd = ctest_env + "ctest -VV -S "+ os.path.join("scripts","test.cmake -DSTAGE="+mode+" -DTHREADS="+threads+" -DBUILD_SUFFIX=\""+cmake_build_suffix+"\"") + ctest_suffix
+    cmd = ctest_env + sde_cmd + "ctest -VV -S "+ os.path.join("scripts","test.cmake -DSTAGE="+mode+" -DTHREADS="+threads+" -DBUILD_SUFFIX=\""+cmake_build_suffix+"\"") + ctest_suffix
   else:
     cmd = ctest_env + os.path.join("scripts",mode)
 

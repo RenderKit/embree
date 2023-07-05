@@ -1,0 +1,990 @@
+<?xml version="1.0"?>
+
+<scene>
+  <Group>
+
+    <PerspectiveCamera name="camera0" from="12.83367538 4.15518856 -0.9859005213" to="11.40260315 2.667051315 -1.832547545" up="0 1 0" fov="90"/>
+    <PerspectiveCamera name="camera1" from="7.719883919 4.531505108 -0.8752419949" to="6.16069603 3.087519646 -1.818861723" up="0 1 0" fov="90"/>
+    <PerspectiveCamera name="camera2" from="2.697155952 4.218435764 -1.416107535" to="1.343595505 2.840871334 -2.011230946" up="0 1 0" fov="90"/>
+    <PerspectiveCamera name="camera3" from="-2.363547325 3.914859295 -1.026577711" to="-3.583497524 2.624310017 -1.74011004" up="0 1 0" fov="90"/>
+    <PerspectiveCamera name="camera4" from="-6.937560558 4.564787865 -1.462943673" to="-8.512095451 2.85711503 -2.127221107" up="0 1 0" fov="90"/>
+
+     <DirectionalLight>
+      <AffineSpace>
+        1 0 0 0
+        0 0 -1 0
+        0 1 0 0
+      </AffineSpace>
+      <E>3 3 3</E>
+     </DirectionalLight>
+     
+    <TriangleMesh>
+      <positions>
+        -20 0 -20
+        -20 0 +20
+        +20 0 +20
+        +20 0 -20
+      </positions>
+      <triangles>
+        0 2 1
+        0 3 2
+      </triangles>
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">0.8 0.8 0.9</float3>
+        </parameters>
+      </material>
+    </TriangleMesh>
+
+    <!-- mblur band -->
+<!--
+    <Transform>
+      <AffineSpace translate="10 1 0"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+
+        <animated_positions>
+          <positions>
+            -2 0 0 0.3
+            -1 0 0 0.3
+            1 0 0 0.3
+            2 0 0 0.3
+          </positions>
+          <positions>
+            -2 0 0 1.3
+            -1 0 0 0.3
+            1 0 0 0.3
+            2 0 0 0.3
+          </positions>
+        </animated_positions>
+
+        <animated_normals>
+          <normals>
+            0 1 0
+            0 1 0
+            0 1 0
+            0 1 0
+          </normals>
+          <normals>
+            0 1 0
+            0 1 0
+            0 0 -1
+            0 0 -1
+          </normals>
+        </animated_normals>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+-->
+
+    <!-- straight band -->
+    <Transform>
+      <AffineSpace translate="5 1 0"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+        
+        <positions>
+          -2 0 0 0.3
+          -1 0 0 0.3
+          1 0 0 0.3
+          2 0 0 0.3
+        </positions>
+        
+        <normals>
+          0 1 0
+          0 1 0
+          0 1 0
+          0 1 0
+        </normals>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+
+    <!-- twisted band -->
+    <Transform>
+      <AffineSpace translate="0 1 0"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+        
+        <positions>
+          -2 0 0 0.3
+          -1 1 0 0.3
+          1 0 1 0.3
+          2 0 0 0.3
+        </positions>
+        
+        <normals>
+          0 0 1
+          0 0 1
+          0 1 0
+          0 1 0
+        </normals>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+
+    <!-- varying width straight band -->
+    <Transform>
+      <AffineSpace translate="-5 1 0"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+        
+        <positions>
+          -2 0 0 0.0
+          -1 0 0 1.0
+          1 0 0 1.0
+          2 0 0 0.0
+        </positions>
+        
+        <normals>
+          0 1 0
+          0 1 0
+          0 1 0
+          0 1 0
+        </normals>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+
+    <!-- varying width twisted band -->
+    <Transform>
+      <AffineSpace translate="-10 1 0"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+
+        <positions>
+          -2 0 0 0.2
+          -1 1 0 1
+          1 0 1 1
+          2 0 0 0.2
+        </positions>
+        
+        <normals>
+          0 0 1
+          0 0 1
+          0 1 0
+          0 1 0
+        </normals>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+
+    <!-- mblur closed loop -->
+<!--
+   <Transform>
+      <AffineSpace translate="10 2 -2"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+
+        <animated_positions>
+          <positions>
+            0 -1.5 0 0.2
+            1 -1.5 0 0.2
+            1.5 -1 0 0.2
+            1.5  0 0 0.2
+            1.5  1 0 0.2
+            1  1.5 0 0.2
+            0  1.5 0 0.2
+            -1  1.5 0 0.2
+            -1.5  1 0 0.2
+            -1.5  0 0 0.2
+            -1.5 -1 0 0.2
+            -1 -1.5 0 0.2
+            0 -1.5 0 0.2
+          </positions>
+          <positions>
+            0 -1.5 0 0.4
+            1 -1.5 0 0.2
+            1.5 -1 0 0.2
+            1.5  0 0 0.2
+            1.5  1 0 0.2
+            1  1.0 0 0.2
+            0  1.0 0 0.2
+            -1  1.0 0 0.2
+            -1.5  1 0 0.2
+            -1.5  0 0 0.2
+            -1.5 -1 0 0.2
+            -1 -1.5 0 0.4
+            0 -1.5 0 0.4
+          </positions>
+        </animated_positions>
+
+        <animated_normals>
+          <normals>
+            0 1 0
+            0 1 0
+            -1 0 0
+            -1 0 0
+            -1 0 0
+            0 -1 0
+            0 -1 0
+            0 -1 0
+            1 0 0
+            1 0 0
+            1 0 0
+            0 1 0
+            0 1 0
+          </normals>
+          <normals>
+            0 1 0
+            0 1 0
+            0 0 -1
+            0 0 -1
+            0 0 -1
+            0 -1 0
+            0 -1 0
+            0 -1 0
+            1 0 0
+            1 0 0
+            1 0 0
+            0 1 0
+            0 1 0
+          </normals>
+        </animated_normals>
+        
+        <indices>
+          0 3 6 9
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+-->
+
+    <!-- closed loop -->
+<!--    <Transform>
+      <AffineSpace translate="5 2 -2"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+        
+        <positions>
+           0 -1.5 0 0.2
+           1 -1.5 0 0.2
+           1.5 -1 0 0.2
+           1.5  0 0 0.2
+           1.5  1 0 0.2
+           1  1.5 0 0.2
+           0  1.5 0 0.2
+          -1  1.5 0 0.2
+          -1.5  1 0 0.2
+          -1.5  0 0 0.2
+          -1.5 -1 0 0.2
+          -1 -1.5 0 0.2
+           0 -1.5 0 0.2
+        </positions>
+        
+        <normals>
+          0 1 0
+          0 1 0
+          -1 0 0
+          -1 0 0
+          -1 0 0
+          0 -1 0
+          0 -1 0
+          0 -1 0
+          1 0 0
+          1 0 0
+          1 0 0
+          0 1 0
+          0 1 0
+        </normals>
+        
+        <indices>
+          0 3 6 9
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+-->
+
+    <!-- twisted closed loop (moebius band) -->
+<!--    <Transform>
+      <AffineSpace translate="0 2 -2"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+        
+        <positions>
+           0 -1.5 0 0.2
+           1 -1.5 0 0.2
+           1.5 -1 0 0.2
+           1.5  0 0 0.2
+           1.5  1 0 0.2
+           1  1.5 0 0.2
+           0  1.5 0 0.2
+          -1  1.5 0 0.2
+          -1.5  1 0 0.2
+          -1.5  0 0 0.2
+          -1.5 -1 0 0.2
+          -1 -1.5 0 0.2
+           0 -1.5 0 0.2
+        </positions>
+        
+        <normals>
+          0 1 0
+          0 1 0
+          -1 0 -1
+          -1 0 -1
+          -1 0 -1
+          0 0 -1
+          0 0 -1
+          0 0 -1
+          -1 0 -1
+          -1 0 -1
+          -1 0 -1
+          0 -1 0
+          0 -1 0
+        </normals>
+        
+        <indices>
+          0 3 6 9
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+-->
+
+    <!-- varying radius closed loop -->
+<!--    <Transform>
+      <AffineSpace translate="-5 2 -2"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+        
+        <positions>
+           0 -1.5 0 0.2
+           1 -1.5 0 0.2
+           1.5 -1 0 0.5
+           1.5  0 0 0.5
+           1.5  1 0 0.5
+           1  1.5 0 0.8
+           0  1.5 0 0.8
+          -1  1.5 0 0.8
+          -1.5  1 0 0.5
+          -1.5  0 0 0.5
+          -1.5 -1 0 0.5
+          -1 -1.5 0 0.2
+           0 -1.5 0 0.2
+        </positions>
+        
+        <normals>
+          0 1 0
+          0 1 0
+          -1 0 0
+          -1 0 0
+          -1 0 0
+          0 -1 0
+          0 -1 0
+          0 -1 0
+          1 0 0
+          1 0 0
+          1 0 0
+          0 1 0
+          0 1 0
+        </normals>
+        
+        <indices>
+          0 3 6 9
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+-->
+
+    <!-- twisted varying radius closed loop (moebius band) -->
+<!--    <Transform>
+      <AffineSpace translate="-10 2 -2"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+        
+        <positions>
+           0 -1.5 0 0.2
+           1 -1.5 0 0.2
+           1.5 -1 0 0.5
+           1.5  0 0 0.5
+           1.5  1 0 0.5
+           1  1.5 0 0.8
+           0  1.5 0 0.8
+          -1  1.5 0 0.8
+          -1.5  1 0 0.5
+          -1.5  0 0 0.5
+          -1.5 -1 0 0.5
+          -1 -1.5 0 0.2
+           0 -1.5 0 0.2
+        </positions>
+        
+        <normals>
+          0 1 0
+          0 1 0
+          -1 0 -1
+          -1 0 -1
+          -1 0 -1
+          0 0 -1
+          0 0 -1
+          0 0 -1
+          -1 0 -1
+          -1 0 -1
+          -1 0 -1
+          0 -1 0
+          0 -1 0
+        </normals>
+        
+        <indices>
+          0 3 6 9
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+-->
+
+    <!-- mblur loop -->
+<!--    <Transform>
+      <AffineSpace translate="10 1 -4"/>
+      
+      <Curves basis="hermite" type="normal_oriented">
+
+        <animated_positions>
+          <positions>
+            -2 0 0 0.2
+            2 0 -1 0.2
+          </positions>
+          <positions>
+            -2 0 0 0.2
+            2 0 -1 0.2
+          </positions>
+        </animated_positions>
+
+        <animated_tangents>
+          <tangents>
+            21 9 0 0
+            21 -9 -3 0
+          </tangents>
+          <tangents>
+            30 9 0 0
+            30 -9 -3 0
+          </tangents>
+        </animated_tangents>
+
+        <animated_normals>
+          <normals>
+            0 1 0
+            0 1 0
+          </normals>
+          <normals>
+            0 1 0
+            0 1 0
+          </normals>
+        </animated_normals>
+
+        <animated_normal_derivatives>
+          <normal_derivatives>
+            0 0 0
+            0 0 0
+          </normal_derivatives>
+          <normal_derivatives>
+            0 0 0
+            0 0 0
+          </normal_derivatives>
+        </animated_normal_derivatives>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+-->
+
+    <!-- loop -->
+<!--    <Transform>
+      <AffineSpace translate="5 1 -4"/>
+      
+      <Curves basis="hermite" type="normal_oriented">
+        
+        <positions>
+          -2 0 0 0.2
+          2 0 -1 0.2
+        </positions>
+
+        <tangents>
+          21 9 0 0
+          21 -9 -3 0
+        </tangents>
+        
+        <normals>
+          0 1 0
+          0 1 0
+        </normals>
+
+        <normal_derivatives>
+          0 0 0
+          0 0 0
+        </normal_derivatives>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+-->
+    <!-- twisted loop -->
+<!--    <Transform>
+      <AffineSpace translate="0 1 -4"/>
+      
+      <Curves basis="hermite" type="normal_oriented">
+        
+        <positions>
+          -2 0 0 0.2
+          2 0 -1 0.2
+        </positions>
+
+        <tangents>
+          21 9 0 0
+          21 -9 -3 0
+        </tangents>
+        
+        <normals>
+          0 1 0
+          0 0 1
+        </normals>
+
+        <normal_derivatives>
+          0 0 0
+          0 0 0
+        </normal_derivatives>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+-->
+
+    <!-- varying radius loop -->
+<!--    <Transform>
+      <AffineSpace translate="-5 1 -4"/>
+      
+      <Curves basis="hermite" type="normal_oriented">
+        
+        <positions>
+          -2 0 0 0.1
+          2 0 -1 0.1
+        </positions>
+
+        <tangents>
+          21 9 0 1.2
+          21 -9 -3 -1.2
+        </tangents>
+        
+        <normals>
+          0 1 0
+          0 1 0
+        </normals>
+
+        <normal_derivatives>
+          0 0 0
+          0 0 0
+        </normal_derivatives>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+-->
+
+    <!-- twisted varying radius loop -->
+<!--    <Transform>
+      <AffineSpace translate="-10 1 -4"/>
+      
+      <Curves basis="hermite" type="normal_oriented">
+        
+        <positions>
+          -2 0 0 0.1
+          2 0 -1 0.1
+        </positions>
+
+        <tangents>
+          21 9 0 4.2
+          21 -9 -3 -4.2
+        </tangents>
+        
+        <normals>
+          0 1 0
+          0 0 1
+        </normals>
+
+        <normal_derivatives>
+          0 0 0
+          0 0 0
+        </normal_derivatives>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+-->
+
+    <!-- mblur degenerate loop -->
+<!--    <Transform>
+      <AffineSpace translate="10 1 -6"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+
+        <animated_positions>
+          <positions>
+            -2 0 0 0.2
+            2 4 0 0.2
+            -2 4 0 0.2
+            2 0 0 0.2
+          </positions>
+          <positions>
+            -2 0 0 0.4
+            1 2 0 0.2
+            -1 2 0 0.2
+            2 0 0 0.4
+          </positions>
+        </animated_positions>
+
+        <animated_normals>
+          <normals>
+            0 1 0
+            0 1 0
+            0 1 0
+            0 1 0
+          </normals>
+          <normals>
+            0 1 0
+            0 1 0
+            0 1 0
+            0 1 0
+          </normals>
+        </animated_normals>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+-->
+
+    <!-- degenerate loop -->
+<!--    <Transform>
+      <AffineSpace translate="5 1 -6"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+        
+        <positions>
+          -2 0 0 0.2
+          2 4 0 0.2
+          -2 4 0 0.2
+          2 0 0 0.2
+        </positions>
+        
+        <normals>
+          0 1 0
+          0 1 0
+          0 1 0
+          0 1 0
+        </normals>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+-->
+
+    <!-- varying radius degenerate loop -->
+<!--    <Transform>
+      <AffineSpace translate="0 1 -6"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+        
+        <positions>
+          -2 0 0 0.2
+          2 4 0 0.5
+          -2 4 0 0.5
+          2 0 0 0.2
+        </positions>
+        
+        <normals>
+          0 1 0
+          0 1 0
+          0 1 0
+          0 1 0
+        </normals>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+-->
+
+    <!-- twisted degenerate loop -->
+<!--    <Transform>
+      <AffineSpace translate="-5 1 -6"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+        
+        <positions>
+          -2 0 0 0.2
+          2 4 0 0.2
+          -2 4 0 0.2
+          2 0 0 0.2
+        </positions>
+        
+        <normals>
+          0 1 0
+          0 1 0
+          0 0 1
+          0 0 1
+        </normals>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+-->
+
+    <!-- varying radius twisted degenerate loop -->
+<!--    <Transform>
+      <AffineSpace translate="-10 1 -6"/>
+      
+      <Curves basis="bezier" type="normal_oriented">
+        
+        <positions>
+          -2 0 0 0.2
+          2 4 0 0.5
+          -2 4 0 0.5
+          2 0 0 0.2
+        </positions>
+        
+        <normals>
+          0 1 0
+          0 1 0
+          0 0 1
+          0 0 1
+        </normals>
+        
+        <indices>
+          0
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+-->
+    
+    <!-- long band using BSpline basis -->
+<!--    <Transform>
+      <AffineSpace translate="-10 1 -8"/>
+      
+      <Curves basis="bspline" type="normal_oriented">
+        
+        <positions>
+          -6 0 0 0.5
+          -2 0 0 0.5
+          2 0 0 0.5
+          6 0 0 0.5
+          10 0 0 0.5
+          14 0 0 0.5
+          18 0 0 0.5
+          22 0 0 0.5 
+        </positions>
+        
+        <normals>
+          0 1 0
+          0 0 -1
+          0 -1 0
+          0 0 1
+          0 1 0
+          0 0 -1
+          0 -1 0
+          0 0 1
+        </normals>
+        
+        <indices>
+          0 1 2 3 4
+        </indices>
+        
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 0 0</float3>
+          </parameters>
+        </material>
+        
+      </Curves>
+    </Transform>
+-->    
+  </Group>
+</scene>

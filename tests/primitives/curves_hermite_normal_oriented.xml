@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<scene>
+    <Curves id="1" basis="hermite" type="normal_oriented">
+        <positions>
+            -1 -1 0 0
+            1 1 0 0.3
+        </positions>
+        <tangents>
+            0 1 0 0.2
+            0 1 0 0.1
+        </tangents>
+        <normals>
+          0 0 1
+          0 0 1
+        </normals>
+        <normal_derivatives>
+          -0.0152 +0.1736 0.0
+          -0.0452 +0.1684 0.0
+        </normal_derivatives>
+      <indices>
+        0
+      </indices>
+      <curveid>
+        0
+    </curveid>
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">0.8 0.8 0.8</float3>
+        </parameters>
+      </material>
+    </Curves>
+</scene>

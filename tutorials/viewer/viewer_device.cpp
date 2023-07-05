@@ -206,6 +206,7 @@ void renderPixelStandard(const TutorialData& data,
   rtcIntersect1(data.scene,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
+
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
     pixels[y*width+x] = 0;
@@ -309,9 +310,8 @@ extern "C" void renderFrameStandard (int* pixels,
 {
 #if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION)
   TutorialData ldata = data;
-
-#if 0 //defined(USE_SPECIALIZATION_CONSTANTS)
-  PING;
+  
+#if defined(USE_SPECIALIZATION_CONSTANTS)
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh) {
     cgh.set_specialization_constant<spec_feature_mask>(g_feature_mask);
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);

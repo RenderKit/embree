@@ -20,20 +20,16 @@ using sycl::uint8;
 using sycl::uint4;
 using sycl::uint3;
 using sycl::uint2;
-//using sycl::uint;
-using sycl::ulong;
 using sycl::uchar16;
 using sycl::uchar8;
 using sycl::uchar4;
 using sycl::uchar3;
 using sycl::uchar2;
-using sycl::uchar;
 using sycl::ushort16;
 using sycl::ushort8;
 using sycl::ushort4;
 using sycl::ushort3;
 using sycl::ushort2;
-using sycl::ushort;
 
 using sycl::fmax;
 using sycl::fmin;
@@ -52,91 +48,9 @@ SYCL_EXTERNAL extern float atomic_min(volatile LOCAL  float *p, float val);
 SYCL_EXTERNAL extern float atomic_max(volatile GLOBAL float *p, float val);
 SYCL_EXTERNAL extern float atomic_max(volatile LOCAL  float *p, float val);
 
-SYCL_EXTERNAL extern "C" uint32_t intel_sub_group_ballot(bool valid);
+SYCL_EXTERNAL extern "C" unsigned int intel_sub_group_ballot(bool valid);
 
 SYCL_EXTERNAL extern "C" void __builtin_IB_assume_uniform(void *p);
-
-// Load message caching control
-
-  enum LSC_LDCC {
-    LSC_LDCC_DEFAULT,
-    LSC_LDCC_L1UC_L3UC,     // Override to L1 uncached and L3 uncached
-    LSC_LDCC_L1UC_L3C,      // Override to L1 uncached and L3 cached
-    LSC_LDCC_L1C_L3UC,      // Override to L1 cached and L3 uncached
-    LSC_LDCC_L1C_L3C,       // Override to L1 cached and L3 cached
-    LSC_LDCC_L1S_L3UC,      // Override to L1 streaming load and L3 uncached
-    LSC_LDCC_L1S_L3C,       // Override to L1 streaming load and L3 cached
-    LSC_LDCC_L1IAR_L3C,     // Override to L1 invalidate-after-read, and L3 cached
-  };
-
- 
-
-// Store message caching control (also used for atomics)
-
-  enum LSC_STCC {
-    LSC_STCC_DEFAULT,
-    LSC_STCC_L1UC_L3UC,     // Override to L1 uncached and L3 uncached
-    LSC_STCC_L1UC_L3WB,     // Override to L1 uncached and L3 written back
-    LSC_STCC_L1WT_L3UC,     // Override to L1 written through and L3 uncached
-    LSC_STCC_L1WT_L3WB,     // Override to L1 written through and L3 written back
-    LSC_STCC_L1S_L3UC,      // Override to L1 streaming and L3 uncached
-    LSC_STCC_L1S_L3WB,      // Override to L1 streaming and L3 written back
-    LSC_STCC_L1WB_L3WB,     // Override to L1 written through and L3 written back
-  };
-
- 
-
-///////////////////////////////////////////////////////////////////////
-
-// LSC Loads
-
-///////////////////////////////////////////////////////////////////////
-
-//SYCL_EXTERNAL extern "C"  uint          __builtin_IB_lsc_load_global_uchar_to_uint (const GLOBAL sycl::uchar  *base, int elemOff, enum LSC_LDCC cacheOpt);     //D8U32
-//SYCL_EXTERNAL extern "C"  uint          __builtin_IB_lsc_load_global_ushort_to_uint(const GLOBAL sycl::ushort *base, int elemOff, enum LSC_LDCC cacheOpt);   //D16U32
-//SYCL_EXTERNAL extern "C"  uint          __builtin_IB_lsc_load_global_uint  (const GLOBAL unsigned int  *base, int elemOff, enum LSC_LDCC cacheOpt);       //D32V1
-//SYCL_EXTERNAL extern "C"  sycl::uint2   __builtin_IB_lsc_load_global_uint2 (const GLOBAL sycl::uint  *base, int elemOff, enum LSC_LDCC cacheOpt);     //D32V2
-//SYCL_EXTERNAL extern "C"  sycl::uint3   __builtin_IB_lsc_load_global_uint3 (const GLOBAL sycl::uint  *base, int elemOff, enum LSC_LDCC cacheOpt);     //D32V3
-//SYCL_EXTERNAL extern "C"  sycl::uint4   __builtin_IB_lsc_load_global_uint4 (const GLOBAL sycl::uint  *base, int elemOff, enum LSC_LDCC cacheOpt);     //D32V4
-//SYCL_EXTERNAL extern "C"  sycl::uint8   __builtin_IB_lsc_load_global_uint8 (const GLOBAL sycl::uint  *base, int elemOff, enum LSC_LDCC cacheOpt);     //D32V8
-//SYCL_EXTERNAL extern "C"  sycl::ulong   __builtin_IB_lsc_load_global_ulong (const GLOBAL sycl::ulong *base, int elemOff, enum LSC_LDCC cacheOpt);    //D64V1
-//SYCL_EXTERNAL extern "C"  sycl::ulong2  __builtin_IB_lsc_load_global_ulong2(const GLOBAL sycl::ulong *base, int elemOff, enum LSC_LDCC cacheOpt);  //D64V2
-//SYCL_EXTERNAL extern "C"  sycl::ulong3  __builtin_IB_lsc_load_global_ulong3(const GLOBAL sycl::ulong *base, int elemOff, enum LSC_LDCC cacheOpt);  //D64V3
-//SYCL_EXTERNAL extern "C"  sycl::ulong4  __builtin_IB_lsc_load_global_ulong4(const GLOBAL sycl::ulong *base, int elemOff, enum LSC_LDCC cacheOpt);  //D64V4
-//SYCL_EXTERNAL extern "C"  sycl::ulong8  __builtin_IB_lsc_load_global_ulong8(const GLOBAL sycl::ulong *base, int elemOff, enum LSC_LDCC cacheOpt);  //D64V8
-  
-//     global address space
-//SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_uchar_from_uint (GLOBAL uchar  *base, int immElemOff, uint val, const int);     //D8U32
-//SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_ushort_from_uint(GLOBAL ushort *base, int immElemOff, uint val, const int);  //D16U32
-//SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_uint  (GLOBAL uint   *base, int immElemOff,       uint   val, const int);        //D32V1
-//SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_uint2 (GLOBAL uint  *base, int immElemOff, uint2  val, const int);     //D32V2
-//SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_uint3 (GLOBAL uint  *base, int immElemOff, uint3  val, const int);     //D32V3
-//SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_uint4 (GLOBAL uint  *base, int immElemOff, uint4  val, const int);     //D32V4
-//SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_uint8 (GLOBAL uint  *base, int immElemOff, uint8  val, const int);     //D32V8
-//SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_ulong (GLOBAL ulong  *base, int immElemOff, ulong  val, const int);     //D64V1
-//SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_ulong2(GLOBAL ulong *base, int immElemOff, ulong2 val, const int);  //D64V2
-//SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_ulong3(GLOBAL ulong *base, int immElemOff, ulong3 val, const int);  //D64V3
-//SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_ulong4(GLOBAL ulong *base, int immElemOff, ulong4 val, const int);  //D64V4
-//SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_ulong8(GLOBAL ulong *base, int immElemOff, ulong8 val, const int);  //D64V8
-
-///////////////////////////////////////////////////////////////////////
-// prefetching
-///////////////////////////////////////////////////////////////////////
-//
-// LSC Pre-Fetch Load functions with CacheControls
-//     global address space
-//SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_uchar (const GLOBAL sycl::uchar  *base, int immElemOff, enum LSC_LDCC cacheOpt); //D8U32
-//SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_ushort(const GLOBAL sycl::ushort *base, int immElemOff, enum LSC_LDCC cacheOpt); //D16U32
-//SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_uint  (const GLOBAL sycl::uint   *base, int immElemOff, enum LSC_LDCC cacheOpt); //D32V1
-//SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_uint2 (const GLOBAL sycl::uint  *base, int immElemOff, enum LSC_LDCC cacheOpt); //D32V2
-//SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_uint3 (const GLOBAL sycl::uint  *base, int immElemOff, enum LSC_LDCC cacheOpt); //D32V3
-//SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_uint4 (const GLOBAL sycl::uint  *base, int immElemOff, enum LSC_LDCC cacheOpt); //D32V4
-//SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_uint8 (const GLOBAL sycl::uint  *base, int immElemOff, enum LSC_LDCC cacheOpt); //D32V8
-//SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_ulong (const GLOBAL sycl::ulong  *base, int immElemOff, enum LSC_LDCC cacheOpt); //D64V1
-//SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_ulong2(const GLOBAL sycl::ulong *base, int immElemOff, enum LSC_LDCC cacheOpt); //D64V2
-//SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_ulong3(const GLOBAL sycl::ulong *base, int immElemOff, enum LSC_LDCC cacheOpt); //D64V3
-//SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_ulong4(const GLOBAL sycl::ulong *base, int immElemOff, enum LSC_LDCC cacheOpt); //D64V4
-//SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_ulong8(const GLOBAL sycl::ulong *base, int immElemOff, enum LSC_LDCC cacheOpt); //D64V8
 
 #else
 
@@ -158,7 +72,7 @@ inline uint32_t intel_sub_group_ballot(bool valid) { return 0; }
 /* creates a temporary that is enforced to be uniform */
 #define SYCL_UNIFORM_VAR(Ty,tmp,k)					\
   Ty tmp##_data;							\
-  Ty* p##tmp##_data = (Ty*) sub_group_broadcast((ulong)&tmp##_data,k);	\
+  Ty* p##tmp##_data = (Ty*) sub_group_broadcast((uint64_t)&tmp##_data,k);	\
   Ty& tmp = *p##tmp##_data;
 
 #if !defined(__forceinline)

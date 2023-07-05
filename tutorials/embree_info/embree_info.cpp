@@ -35,7 +35,7 @@ int main() {
     embree::printAllSYCLDevices();
     rtcReleaseDevice(device);
   } catch (std::exception& e) {
-    std::cerr << "Failed to SYCL Embree GPU device. Reason: " << e.what() << std::endl;
+    std::cerr << "Failed to create a SYCL Embree GPU device. Reason: " << e.what() << std::endl;
     embree::printAllSYCLDevices();
     return 1;
   }

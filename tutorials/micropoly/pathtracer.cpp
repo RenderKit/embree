@@ -1,6 +1,6 @@
 #include "micropoly_device.h"
-#include "../../kernels/rthwif/builder/gpu/lcgbp.h"
-#include "../../kernels/rthwif/builder/gpu/morton.h"
+#include "../../kernels/rthwif/rtbuild/gpu/lcgbp.h"
+#include "../../kernels/rthwif/rtbuild/gpu/morton.h"
 
 #include "../common/tutorial/optics.h"
 #include "../common/lights/ambient_light.cpp"

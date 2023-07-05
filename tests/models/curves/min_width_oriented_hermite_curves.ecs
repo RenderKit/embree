@@ -1,0 +1,4 @@
+-i min_width_oriented_hermite_curves.xml
+--vp -1.647270441 2.47990942 -1.056543231 --vi 0.6200277805 -0.1673879623 0.8650610447 --vu 0 1 0 --fov 90 --righthanded
+--min-width 64 16
+
