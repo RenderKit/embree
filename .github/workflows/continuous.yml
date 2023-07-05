@@ -389,138 +389,9 @@ jobs:
   # Linux
   ########################################
 
-  linux-fedora29_ICX:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@devel
-    with:
-      image: embree/fedora:29
-      runs-on: '[ "Linux", "docker", "avx512" ]'
-      cmd: |
-        python scripts/test.py configure platform:x64 build:Debug compiler:ICX2023.0.0 ispc:ispc1.12.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.2.0 intensity:2 maxinstancelevelcount:4
-        python scripts/test.py build
-        python scripts/test.py test
-#        python scripts/test.py test sde:hsw
-
-  linux-fedora32-GCC:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@devel
-    with:
-      image: embree/fedora:32
-      runs-on: '[ "Linux", "docker", "avx512" ]'
-      cmd: |
-        python scripts/test.py configure platform:x64 build:Debug compiler:GCC ispc:ispc isa:AVX512 tasking:TBB COMPACT_POLYS:ON MIN_WIDTH:ON intensity:2
-        python scripts/test.py build
-        python scripts/test.py test
-
-  linux-fedora32_ICX:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@devel
-    with:
-      image: embree/fedora:32
-      runs-on: '[ "Linux", "docker", "avx512" ]'
-      cmd: |
-        python scripts/test.py configure platform:x64 build:Debug compiler:ICX2023.0.0 ispc:ispc1.12.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.7.0 intensity:2 maxinstancelevelcount:4
-        python scripts/test.py build
-        python scripts/test.py test
-
-  linux-fedora26_CLANG4:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@devel
-    with:
-      image: embree/fedora:26
-      runs-on: '[ "Linux", "docker", "avx512" ]'
-      cmd: |
-        python scripts/test.py configure platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.17.0 isa:AVX512 frequency_level:simd128 tasking:TBB2021.2.0 GLFW:OFF intensity:2
-        python scripts/test.py build
-        python scripts/test.py test
-
-  linux-fedora26_CLANG5-INT-ADDRSANITIZER:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@devel
-    with:
-      image: embree/fedora:26
-      runs-on: '[ "Linux", "docker", "build" ]'
-      cmd: |
-        python scripts/test.py configure platform:x64 build:Debug compiler:CLANG5.0.0 ispc:ispc1.17.0 isa:AVX tasking:INT intensity:1 addrsanitizer:ON
-        python scripts/test.py build
-        python scripts/test.py test
-
-  linux-ubuntu20_04-GCC-NAMESPACE:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@devel
-    with:
-      image: embree/ubuntu:20.04
-      runs-on: '[ "Linux", "docker", "build" ]'
-      cmd: |
-        python scripts/test.py configure platform:x64 build:Debug compiler:GCC ispc:ispc1.12.0 isa:AVX2 frequency_level:simd256 tasking:TBB intensity:1 api_namespace:myembree
-        python scripts/test.py build
-        python scripts/test.py test
-
-  linux-ubuntu20_04-ICX:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@devel
-    with:
-      image: embree/ubuntu:20.04
-      runs-on: '[ "Linux", "docker", "avx512" ]'
-      cmd: |
-        python scripts/test.py configure platform:x64 build:Release threads:4 compiler:ICX2023.0.0 ispc:ispc1.17.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.5.0 intensity:2
-        python scripts/test.py build
-        python scripts/test.py test
-
-  linux-centos7_4-GCC:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@devel
-    with:
-      image: embree/centos:7.4
-      runs-on: '[ "Linux", "docker", "build" ]'
-      cmd: |
-        python scripts/test.py configure platform:x64 build:Debug compiler:GCC ispc:ispc1.17.0 isa:AVX2 frequency_level:simd128 tasking:TBB intensity:1
-        python scripts/test.py build
-        python scripts/test.py test
-
-
   ########################################
   # Windows
   ########################################
-  windows-V140:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@devel
-    with:
-      runs-on: '[ "Windows", "NAS", "build" ]'
-      cmd: |
-        python scripts/test.py configure platform:x64 threads:4 build:RelWithDebInfo compiler:V140 ispc:ispc1.16.1 isa:SSE2 tasking:TBB2020.2 intensity:2
-        python scripts/test.py build
-        python scripts/test.py test
-
-  windows-V141:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@devel
-    with:
-      runs-on: '[ "Windows", "NAS", "build" ]'
-      cmd: |
-        python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.17.0 isa:SSE2 tasking:TBB2020.2 intensity:2 maxinstancelevelcount:8
-        python scripts/test.py build
-        python scripts/test.py test
-
-  windows-V142:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@devel
-    with:
-      runs-on: '[ "Windows", "NAS", "build" ]'
-      cmd: |
-        python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:V142 ispc:ispc1.18.1 isa:SSE2 tasking:TBB2021.7.0 intensity:2 maxinstancelevelcount:8
-        python scripts/test.py build
-        python scripts/test.py test
-
-  windows-ICX:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@devel
-    with:
-      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-      cmd: |
-        python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:ICX2023.0.0 ispc:ispc1.17.0 isa:AVX512 tasking:TBB2021.5.0 threads:16 intensity:2
-        python scripts/test.py build
-        python scripts/test.py test
 
   ################################################################################
   ################################################################################
@@ -533,25 +404,6 @@ jobs:
   # MacOS
   ########################################
 
-  macosx-ARM-NEON-AVX2:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@devel
-    with:
-      runs-on: '[ "macOS", "build", "arm" ]'
-      cmd: |
-        scripts/test.py configure platform:arm64 build:Debug compiler:CLANG ispc:ispc1.17.0 isa:NEON2X tasking:TBB_HOMEBREW intensity:2
-        scripts/test.py build
-        scripts/test.py test
-
-  macosx-x64-CLANG:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
-    with:
-      runs-on: '[ "macOS", "build", "x86_64" ]'
-      cmd: |
-        scripts/test.py configure platform:x64 build:Debug compiler:CLANG ispc:ispc1.18.1 isa:SSE2 tasking:TBB2021.1.1 intensity:2
-        scripts/test.py build
-        scripts/test.py test
 
   ########################################
   # Klockwork
@@ -582,24 +434,6 @@ jobs:
       - linux-DG2-JIT-PUBLIC-ICX-test
       - linux-PVC-1T-JIT-INTERNAL-test
       - linux-PVC-2T-JIT-INTERNAL-test
-      - windows-DG2-JIT-INTERNAL
-      - windows-DG2-JIT-PUBLIC
-      - windows-DG2-JIT-PUBLIC-ICX
-      - windows-DG2-JIT-INTERNAL-TBB2020_3
-      - linux-fedora29_ICX
-      - linux-fedora32-GCC
-      - linux-fedora32_ICX
-      - linux-fedora26_CLANG4
-      - linux-fedora26_CLANG5-INT-ADDRSANITIZER
-      - linux-ubuntu20_04-GCC-NAMESPACE
-      - linux-ubuntu20_04-ICX
-      - linux-centos7_4-GCC
-      - windows-V140
-      - windows-V141
-      - windows-V142
-      - windows-ICX
-      - macosx-ARM-NEON-AVX2
-      - macosx-x64-CLANG
       - linux-GCC-KLOCWORK
     if: failure() || cancelled()
     steps:

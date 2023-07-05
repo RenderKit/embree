@@ -850,10 +850,6 @@ namespace embree {
                                    const ISPCCamera* const _camera)
   {
     const uint32_t numSubdivPatches = local_lcgbp_scene->numSubdivPatches;    
-    const BBox3f geometryBounds   = local_lcgbp_scene->patch_mesh->bounds;
-    const Vec3f geometry_lower    = geometryBounds.lower;
-    const Vec3f geometry_diag     = geometryBounds.size();
-    const Vec3f geometry_inv_diag = geometry_diag != Vec3fa(0.0f) ? Vec3fa(1.0f) / geometry_diag : Vec3fa(0.0f);
 
      sycl::event init_event =  global_gpu_queue->submit([&](sycl::handler &cgh) {
       cgh.single_task([=]() {
@@ -879,6 +875,12 @@ namespace embree {
       
       cgh.depends_on(init_event);                                                   
       cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16) {
+
+	  const BBox3f geometryBounds   = local_lcgbp_scene->patch_mesh->bounds;
+	  const Vec3f geometry_lower    = geometryBounds.lower;
+	  const Vec3f geometry_diag     = geometryBounds.size();
+	  const Vec3f geometry_inv_diag = geometry_diag != Vec3fa(0.0f) ? Vec3fa(1.0f) / geometry_diag : Vec3fa(0.0f);
+	  
           const unsigned int i = item.get_global_id(0);
 
           uint32_t &quad_counter       = *_quad_counter.get_pointer();

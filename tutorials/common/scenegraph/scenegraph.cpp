@@ -1242,20 +1242,20 @@ namespace embree
     return node;
   }
 
-  int findVertex(std::map<Vec3f,uint> &vertex_map, const Vec3f &v, int &allocID)
+  int findVertex(std::map<Vec3f,uint32_t> &vertex_map, const Vec3f &v, int &allocID)
   {
     auto e = vertex_map.find(v);
     if (e != vertex_map.end()) { return e->second; }
     int ID = allocID++;
-    vertex_map.insert(std::pair<Vec3f,uint>(v,ID));
+    vertex_map.insert(std::pair<Vec3f,uint32_t>(v,ID));
     //PRINT(ID);
     return ID;
   }
 
   int findVertex(avector<Vec3fa> &positions, const Vec3fa &v)
   {
-    //for (uint i=std::max((int)positions.size()-1024,0);i<positions.size();i++)
-    for (uint i=0;i<positions.size();i++)    
+    //for (uint32_t i=std::max((int)positions.size()-1024,0);i<positions.size();i++)
+    for (uint32_t i=0;i<positions.size();i++)    
       if (positions[i] == v) return i;    
     int ID = positions.size();
     positions.push_back(v);
@@ -1312,28 +1312,28 @@ namespace embree
     BBox3fa bounds(empty);
     typedef Vec3fa Vertex;
     SceneGraph::GridMeshNode::Grid &grid = gmesh->grids[0];
-    const uint resX = grid.resX;
-    const uint resY = grid.resY;
+    const uint32_t resX = grid.resX;
+    const uint32_t resY = grid.resY;
     
     PRINT4(grid.startVtx,grid.lineStride,grid.resX,grid.resY);
-    static const uint REPLICATION_FACTOR_X = 2;
-    static const uint REPLICATION_FACTOR_Y = 2;
+    static const uint32_t REPLICATION_FACTOR_X = 2;
+    static const uint32_t REPLICATION_FACTOR_Y = 2;
     
-    const uint new_resX = grid.resX*REPLICATION_FACTOR_X;
-    const uint new_resY = grid.resY*REPLICATION_FACTOR_Y;
-    const uint new_lineStride = new_resX;      
+    const uint32_t new_resX = grid.resX*REPLICATION_FACTOR_X;
+    const uint32_t new_resY = grid.resY*REPLICATION_FACTOR_Y;
+    const uint32_t new_lineStride = new_resX;      
     Ref<SceneGraph::GridMeshNode> new_gmesh = new SceneGraph::GridMeshNode(gmesh->material,gmesh->time_range,0);
     new_gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(0,new_lineStride,new_resX,new_resY));
     new_gmesh->positions.push_back(avector<Vertex>());      
     avector<Vertex> &positions = new_gmesh->positions[0];
     positions.resize(new_resX*new_resY);
-    for (uint y=0;y<new_resY;y++)
-      for (uint x=0;x<new_resX;x++)
+    for (uint32_t y=0;y<new_resY;y++)
+      for (uint32_t x=0;x<new_resX;x++)
       {
-        const uint sx = x/REPLICATION_FACTOR_X;
-        const uint sy = y/REPLICATION_FACTOR_Y;
-        const uint sx1 = std::min(sx+1,resX-1);
-        const uint sy1 = std::min(sy+1,resY-1);
+        const uint32_t sx = x/REPLICATION_FACTOR_X;
+        const uint32_t sy = y/REPLICATION_FACTOR_Y;
+        const uint32_t sx1 = std::min(sx+1,resX-1);
+        const uint32_t sy1 = std::min(sy+1,resY-1);
         
         
         const Vec3fa v0 = gmesh->positions[0][sy*grid.lineStride+sx];
@@ -1382,7 +1382,7 @@ namespace embree
 
     
     avector<Vec3fa> positions;
-    std::map<Vec3f,uint> vertex_map;
+    std::map<Vec3f,uint32_t> vertex_map;
     int ID = 0;
     PRINT( qmesh->quads.size() );
     for (size_t i=0; i<qmesh->quads.size(); i++)
@@ -1407,8 +1407,8 @@ namespace embree
       //PRINT(displace_height);
       //PRINT4(v0,v1,v2,v3);
       int indices[resY][resX];
-      for (uint y=0;y<resY;y++)
-        for (uint x=0;x<resX;x++)
+      for (uint32_t y=0;y<resY;y++)
+        for (uint32_t x=0;x<resX;x++)
         {
           const float u = (float)x / (resX-1);
           const float v = (float)y / (resY-1);
@@ -1433,8 +1433,8 @@ namespace embree
           indices[y][x] =  index;
         }
 
-      for (uint y=0;y<resY-1;y++)
-        for (uint x=0;x<resX-1;x++)
+      for (uint32_t y=0;y<resY-1;y++)
+        for (uint32_t x=0;x<resX-1;x++)
         {
           int n0 = indices[y+0][x+0];
           int n1 = indices[y+0][x+1];
@@ -1449,7 +1449,7 @@ namespace embree
 
     positions.resize(vertex_map.size());
     
-    for (std::map<Vec3f,uint>::iterator i=vertex_map.begin(); i != vertex_map.end(); i++)
+    for (std::map<Vec3f,uint32_t>::iterator i=vertex_map.begin(); i != vertex_map.end(); i++)
       positions[(*i).second] = (*i).first;
 
     displaced_qmesh->positions.push_back(positions);
