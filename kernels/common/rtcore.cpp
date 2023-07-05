@@ -1430,10 +1430,12 @@ RTC_NAMESPACE_BEGIN;
 
     case RTC_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY:
     {
+#if defined(EMBREE_SYCL_SUPPORT)      
       createLossyCompressedGeometryTy createLossyCompressedGeometry = nullptr;
       SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(device->enabled_cpu_features,createLossyCompressedGeometry);
       Geometry* geom = createLossyCompressedGeometry(device);
-      return (RTCGeometry) geom->refInc();      
+      return (RTCGeometry) geom->refInc();
+#endif      
     }    
     
     default:
@@ -1728,7 +1730,7 @@ RTC_NAMESPACE_BEGIN;
     return nullptr;
   }
 
-RTC_API void rtcSetLCData(RTCGeometry hgeometry, uint numLCGs, void* pLCGs, void* pLCMs, uint numLCGMs, void* pLCMIDs)    
+RTC_API void rtcSetLCData(RTCGeometry hgeometry, unsigned int numLCGs, void* pLCGs, void* pLCMs, unsigned int numLCGMs, void* pLCMIDs)    
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
