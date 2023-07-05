@@ -126,7 +126,7 @@ namespace embree
           return;
         }
 
-        uint patchID = 0;
+        unsigned int patchID = 0;
 
         char* patch_file = "patches.bin";
 
@@ -145,10 +145,10 @@ namespace embree
             patch_eval_subdivision(mesh->getHalfEdge(0,f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
               SubdivPatch1Base patch(unsigned(geomID),unsigned(f),subPatch,mesh,0,uv,edge_level,subdiv,VSIZEX);
-              uint type = 0;
-              uint geomID = 0;
-              uint primID = patchID;
-              uint flags = 0;
+              unsigned int type = 0;
+              unsigned int geomID = 0;
+              unsigned int primID = patchID;
+              unsigned int flags = 0;
 #if 1              
               if (patch.type == SubdivPatch1::BEZIER_PATCH) 
               {
@@ -172,7 +172,7 @@ namespace embree
               else
               {
                 type = 3;                                
-                PRINT((uint)patch.type);
+                PRINT((unsigned int)patch.type);
                 PRINT("SOMETHING ELSE");
 
 #if 1                
@@ -191,13 +191,13 @@ namespace embree
                 type = 0;
                 PRINT("DONE");
               }
-              output.write((char*)&type,sizeof(uint));
-              output.write((char*)&geomID,sizeof(uint));
-              output.write((char*)&primID,sizeof(uint));
-              output.write((char*)&flags,sizeof(uint));
+              output.write((char*)&type,sizeof(unsigned int));
+              output.write((char*)&geomID,sizeof(unsigned int));
+              output.write((char*)&primID,sizeof(unsigned int));
+              output.write((char*)&flags,sizeof(unsigned int));
               
-              for (uint y=0;y<4;y++)
-                for (uint x=0;x<4;x++)
+              for (unsigned int y=0;y<4;y++)
+                for (unsigned int x=0;x<4;x++)
                 {
                   output.write((char*)&patch.patch_v[y][x],sizeof(Vec3f));
                   //PRINT3(y,x,patch.patch_v[y][x]);

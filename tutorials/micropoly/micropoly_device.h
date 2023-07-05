@@ -43,12 +43,17 @@ extern "C" ISPCScene* g_ispc_scene;
     RENDER_PATH_TRACER_DENOISE = 11,                
   };
 
-
+#if defined(EMBREE_SYCL_SUPPORT)
 #define ENABLE_FP16_GBUFFER 1
+#else
+#define ENABLE_FP16_GBUFFER 0  
+#endif  
 
 #if ENABLE_FP16_GBUFFER == 1
-  typedef sycl::vec<sycl::opencl::cl_half, 3>  Vec3fp16;
-  typedef sycl::vec<sycl::opencl::cl_half, 2>  Vec2fp16;
+  //typedef sycl::vec<sycl::opencl::cl_half, 3>  Vec3fp16;
+  //typedef sycl::vec<sycl::opencl::cl_half, 2>  Vec2fp16;
+  typedef sycl::vec<sycl::half, 3>  Vec3fp16;
+  typedef sycl::vec<sycl::half, 2>  Vec2fp16;
 
   __forceinline Vec3f    fp_convert(const Vec3fp16 &v) { return Vec3f((float)v.x(),(float)v.y(),(float)v.z()); }
   __forceinline Vec3fp16 fp_convert(const Vec3f    &v) { return Vec3fp16(v.x,v.y,v.z);  }

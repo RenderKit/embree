@@ -122,7 +122,7 @@ namespace embree
       cout << tab(depth) << "PrimLeafDesc {" << std::endl;
       cout << tab(depth) << "  shaderIndex = " << shaderIndex << std::endl;
       cout << tab(depth) << "  geomMask = " << std::bitset<8>(geomMask) << std::endl;
-      cout << tab(depth) << "  geomFlags = " << (uint)getGeomFlags() << std::endl;
+      cout << tab(depth) << "  geomFlags = " << (unsigned int)getGeomFlags() << std::endl;
       cout << tab(depth) << "  geomIndex = " << geomIndex << std::endl;
       cout << tab(depth) << "}";
 #endif
