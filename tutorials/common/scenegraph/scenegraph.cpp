@@ -7,7 +7,6 @@
 #include "obj_loader.h"
 #include "ply_loader.h"
 #include "corona_loader.h"
-#include "rtas_loader.h"
 #include "../tutorial/noise.h"
 
 namespace embree
@@ -22,7 +21,6 @@ namespace embree
     else if (toLowerCase(filename.ext()) == std::string("ply" )) return loadPLY(filename);
     else if (toLowerCase(filename.ext()) == std::string("xml" )) return loadXML(filename);
     else if (toLowerCase(filename.ext()) == std::string("scn" )) return loadCorona(filename);
-    else if (toLowerCase(filename.ext()) == std::string("rtas" )) return loadRTAS(filename);    
     else throw std::runtime_error("unknown scene format: " + filename.ext());
   }
 
