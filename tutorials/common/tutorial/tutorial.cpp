@@ -1081,23 +1081,26 @@ namespace embree
   
   void TutorialApplication::render(unsigned* pixels, const unsigned width, const unsigned height, const float time, const ISPCCamera& camera)
   {
-#if 0
-    device_render(pixels,width,height,time,camera);
-    renderFrame((int*)pixels,width,height,time,camera);
-#else    
-    device_render(pixels_device,width,height,time,camera);
-    renderFrame((int*)pixels_device,width,height,time,camera);
-#if defined(EMBREE_SYCL_SUPPORT)  
-    sycl::event event_memcpy = global_gpu_queue->memcpy(pixels,pixels_device,width*height*sizeof(unsigned));
-    try {
-      event_memcpy.wait_and_throw();
-    } catch (sycl::exception const& e) {
-      std::cout << "Caught synchronous SYCL exception:\n"
-                << e.what() << std::endl;
-      FATAL("SYCL Exception");     
-    }
-#endif    
-#endif    
+#if defined(EMBREE_SYCL_SUPPORT)
+    if (global_gpu_queue)
+      {
+	device_render(pixels_device,width,height,time,camera);
+	renderFrame((int*)pixels_device,width,height,time,camera);	
+	sycl::event event_memcpy = global_gpu_queue->memcpy(pixels,pixels_device,width*height*sizeof(unsigned));
+	try {
+	  event_memcpy.wait_and_throw();
+	} catch (sycl::exception const& e) {
+	  std::cout << "Caught synchronous SYCL exception:\n"
+		    << e.what() << std::endl;
+	  FATAL("SYCL Exception");     
+	}
+      }
+    else
+#endif      
+      {
+	device_render(pixels,width,height,time,camera);
+	renderFrame((int*)pixels,width,height,time,camera);	
+      }
   }
   
   void TutorialApplication::run(int argc, char** argv)

@@ -1230,7 +1230,7 @@ namespace embree
           qbvh->dispatchGlobalsPtr = (uint64_t) dispatchGlobalsPtr;
 
 
-#if 1
+#if 0
           BVHStatistics stats2 = qbvh->computeStatistics();
           stats2.print(std::cout);
           stats2.print_raw(std::cout);
