@@ -24,8 +24,8 @@
 
 namespace embree {
 
-extern "C" uint user_spp;
-extern "C" uint g_max_path_length;
+extern "C" uint32_t user_spp;
+extern "C" uint32_t g_max_path_length;
 extern "C" ISPCScene* g_ispc_scene;
 
   enum RenderMode {
@@ -218,7 +218,7 @@ struct Denoiser
 #else  
   Vec3f   *outputBuffer;
 #endif  
-  uint width, height;
+  uint32_t width, height;
 
 
   void filterInit(int filterSize) {
@@ -246,7 +246,7 @@ struct Denoiser
 #endif   
   }
   
-  Denoiser(const uint width, const uint height) : width(width), height(height)
+  Denoiser(const uint32_t width, const uint32_t height) : width(width), height(height)
   {    
     
     // FIXME
@@ -268,14 +268,14 @@ struct Denoiser
     varianceBuffer[1] = (float*)alignedUSMMalloc(sizeof(float)*width*height,64,mode);
     varianceBuffer[2] = (float*)alignedUSMMalloc(sizeof(float)*width*height,64,mode);
 
-    for (uint i=0;i<width*height;i++)
+    for (uint32_t i=0;i<width*height;i++)
     {
       gBuffer[0][i].clear();
       gBuffer[1][i].clear();
     }
 
-    for (uint i=0;i<width*height;i++) colorBuffer[0][i] = GBufferOutput(0.0f);
-    for (uint i=0;i<width*height;i++) colorBuffer[1][i] = GBufferOutput(0.0f);      
+    for (uint32_t i=0;i<width*height;i++) colorBuffer[0][i] = GBufferOutput(0.0f);
+    for (uint32_t i=0;i<width*height;i++) colorBuffer[1][i] = GBufferOutput(0.0f);      
     
     
     //outputBuffer  = (GBufferOutput*)alignedUSMMalloc(sizeof(GBufferOutput)*width*height,64,EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE);
@@ -363,7 +363,7 @@ struct TutorialData
 
     static const unsigned int BEZIER = 0;
       
-    uint type,geomID,primID,flags;
+    uint32_t type,geomID,primID,flags;
     Vec3f v[4][4];
 
     __forceinline Patch() {}
@@ -434,8 +434,8 @@ struct TutorialData
     float minLODDistance;
 
     /* --- pick --- */
-    uint pick_geomID;
-    uint pick_primID;
+    uint32_t pick_geomID;
+    uint32_t pick_primID;
     Vec3f pick_pos;
     
     LCG_Scene(const unsigned int maxNumLCGBP);

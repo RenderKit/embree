@@ -338,7 +338,7 @@ namespace embree {
       PRINT(length);
       input.seekg (0, std::ios::beg);
       camera_path.resize(length);
-      for (uint i=0;i<camera_path.size();i++)
+      for (uint32_t i=0;i<camera_path.size();i++)
         input.read((char*)&camera_path[i],sizeof(ISPCCamera));
       input.close();
       PRINT(camera_path.size());
@@ -423,7 +423,7 @@ namespace embree {
       // ========== make bounds of DAG2 neighbor nodes similar to cause same decision in lod selection ==============
 
 #if 1      
-      for (uint i=0;i<lcm_clusters.size();i++)
+      for (uint32_t i=0;i<lcm_clusters.size();i++)
         if (lcm_clusters[i].hasNeighbor())
           lcm_clusters[i].bounds.extend( lcm_clusters[lcm_clusters[i].neighborID].bounds );
 #endif
@@ -504,7 +504,7 @@ namespace embree {
       PRINT("READING PATCHES DONE");
 
       global_lcgbp_scene->bounds = BBox3f(empty);
-      for (uint i=0;i<global_lcgbp_scene->numSubdivPatches;i++)
+      for (uint32_t i=0;i<global_lcgbp_scene->numSubdivPatches;i++)
         global_lcgbp_scene->bounds.extend(global_lcgbp_scene->patches[i].bounds());
 
       /* --- init single lossy compressed mesh -- */
@@ -554,7 +554,7 @@ namespace embree {
             file.close();
             patch_anim.push_back(new_patch);
 
-            for (uint i=0;i<global_lcgbp_scene->numSubdivPatches;i++)
+            for (uint32_t i=0;i<global_lcgbp_scene->numSubdivPatches;i++)
               global_lcgbp_scene->patch_mesh->bounds.extend(new_patch[i].bounds());
 
           }
@@ -813,7 +813,7 @@ namespace embree {
                                  const float time,
                                  const ISPCCamera& _camera)
   {
-    const uint frameID = camera_path.size() ? ((frameIndex) % camera_path.size()) : 0;
+    const uint32_t frameID = camera_path.size() ? ((frameIndex) % camera_path.size()) : 0;
     
     if (global_lcgbp_scene->patches)
       global_lcgbp_scene->patches = patch_anim[((frameIndex)/4) % patch_anim.size()];
@@ -1151,7 +1151,7 @@ __forceinline Vec2f projectVertexToPlane(const Vec3f &p, const Vec3f &vx, const 
     
       std::ofstream output(camera_file,std::ios::out|std::ios::binary);
       if (!output) FATAL("cannot open camera file");
-      for (uint i=0;i<camera_path.size();i++)
+      for (uint32_t i=0;i<camera_path.size();i++)
         output.write((char*)&camera_path[i],sizeof(ISPCCamera));
       output.close();
     }

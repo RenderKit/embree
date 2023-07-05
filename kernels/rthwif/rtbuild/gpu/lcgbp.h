@@ -470,9 +470,9 @@ namespace embree {
     CompressedAABB3f bounds;   // 12 bytes
     LossyCompressedMesh *mesh; // 8 bytes    
     
-    uint leftID;            
-    uint rightID; 
-    uint neighborID;
+    uint32_t leftID;            
+    uint32_t rightID; 
+    uint32_t neighborID;
     unsigned int offsetIndices;
     unsigned int offsetVertices;       // 16 bytes
     

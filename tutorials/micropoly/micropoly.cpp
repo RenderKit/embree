@@ -16,8 +16,8 @@ namespace embree
 {
 
   extern "C" RenderMode user_rendering_mode;
-  extern "C" uint user_spp;
-  extern "C" uint g_lod_threshold;
+  extern "C" uint32_t user_spp;
+  extern "C" uint32_t g_lod_threshold;
   extern "C" char* camera_file;
   extern "C" unsigned int camera_mode;
   extern "C" unsigned int frameIndex;

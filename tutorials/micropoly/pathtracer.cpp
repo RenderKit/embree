@@ -370,7 +370,7 @@ namespace embree {
                                      const float time,
                                      const ISPCCamera* const local_camera,
                                      TutorialData &data,
-                                     uint user_spp,
+                                     uint32_t user_spp,
                                      GBuffer *gbuffer,
                                      const unsigned int frameNo,
                                      bool denoise)

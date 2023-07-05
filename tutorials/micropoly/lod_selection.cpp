@@ -210,7 +210,7 @@ namespace embree {
     return subdivide;
   }
 
-  __forceinline bool subdivideLOD(const BBox3f &bounds, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz, const uint width, const uint height, const float THRESHOLD)
+  __forceinline bool subdivideLOD(const BBox3f &bounds, const Vec3f &vx, const Vec3f &vy, const Vec3f &vz, const uint32_t width, const uint32_t height, const float THRESHOLD)
   {
 #if 1
     const Vec2f diag = projectBBox3fToPlane( bounds, vx,vy,vz, width,height,true);
@@ -353,11 +353,11 @@ namespace embree {
     waitOnEventAndCatchException(compute_lod_event);
   }
 
-  __forceinline uint writeSubgroup(uint *dest, const uint value, const bool cond)
+  __forceinline uint32_t writeSubgroup(uint32_t *dest, const uint32_t value, const bool cond)
   {
-    const uint count = cond ? 1 : 0;
-    const uint exclusive_scan  = sub_group_exclusive_scan(count, std::plus<uint>());
-    const uint reduction       = sub_group_reduce(count, std::plus<uint>());
+    const uint32_t count = cond ? 1 : 0;
+    const uint32_t exclusive_scan  = sub_group_exclusive_scan(count, std::plus<uint32_t>());
+    const uint32_t reduction       = sub_group_reduce(count, std::plus<uint32_t>());
     dest[exclusive_scan] = value;
     sub_group_barrier();                                       
     return reduction;
@@ -400,21 +400,21 @@ namespace embree {
 
     const float lod_threshold = g_lod_threshold;
 
-    const uint wgSizeComputeLOD = 16;
+    const uint32_t wgSizeComputeLOD = 16;
     const sycl::nd_range<1> nd_range1(alignTo(numRootsTotal,wgSizeComputeLOD),sycl::range<1>(wgSize));
     sycl::event compute_lod_event = global_gpu_queue->submit([=](sycl::handler& cgh){
       cgh.depends_on(memset_event);        
       cgh.depends_on(init_event);
-      sycl::local_accessor< uint, 1> _localIDs(sycl::range<1>(256),cgh);
+      sycl::local_accessor< uint32_t, 1> _localIDs(sycl::range<1>(256),cgh);
       
       cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16) {
         const unsigned int i = item.get_global_id(0);
-        const uint subgroupLocalID = get_sub_group_local_id();
-        const uint subgroupSize    = get_sub_group_size();            
+        const uint32_t subgroupLocalID = get_sub_group_local_id();
+        const uint32_t subgroupSize    = get_sub_group_size();            
 
-        uint *const localIDs = _localIDs.get_pointer();
+        uint32_t *const localIDs = _localIDs.get_pointer();
         
-        uint clusterID = -1;
+        uint32_t clusterID = -1;
         const ISPCCamera& camera = *_camera;
         const Vec3f org = camera.xfm.p;
         const Vec3f vx = camera.xfm.l.vx;
@@ -454,7 +454,7 @@ namespace embree {
           const int cur_startID = std::max(numIDs-(int)subgroupSize,0);
           const int cur_numIDs = numIDs-cur_startID;
           const int cur_index = std::min(cur_startID+(int)subgroupLocalID,numIDs-1);
-          const uint currentID = localIDs[cur_index];
+          const uint32_t currentID = localIDs[cur_index];
           const bool active = (cur_startID + subgroupLocalID) < numIDs;
           numIDs -= cur_numIDs;
           
@@ -495,25 +495,25 @@ namespace embree {
     // ================================================================================================================================
     // ================================================================================================================================
     
-    const uint wgSize_select = 512;
+    const uint32_t wgSize_select = 512;
     const sycl::nd_range<1> nd_range2(alignTo(numLCMeshClusters,wgSize_select),sycl::range<1>(wgSize_select));              
     sycl::event select_clusterIDs_event = global_gpu_queue->submit([=](sycl::handler& cgh){
-      sycl::local_accessor< uint      ,  0> _cluster_counter(cgh);
-      sycl::local_accessor< uint      ,  0> _global_offset(cgh);      
-      sycl::local_accessor< uint      ,  0> _quad_counter(cgh);
-      sycl::local_accessor< uint      ,  0> _block_counter(cgh);
-      sycl::local_accessor< uint, 1> _localIDs(sycl::range<1>(512),cgh);
+      sycl::local_accessor< uint32_t      ,  0> _cluster_counter(cgh);
+      sycl::local_accessor< uint32_t      ,  0> _global_offset(cgh);      
+      sycl::local_accessor< uint32_t      ,  0> _quad_counter(cgh);
+      sycl::local_accessor< uint32_t      ,  0> _block_counter(cgh);
+      sycl::local_accessor< uint32_t, 1> _localIDs(sycl::range<1>(512),cgh);
       
 
       cgh.depends_on(compute_lod_event);        
         
       cgh.parallel_for(nd_range2,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16) {
         const unsigned int i = item.get_global_id(0);
-        uint &cluster_counter  = *_cluster_counter.get_pointer();
-        uint &global_offset    = *_global_offset.get_pointer();        
-        uint &quad_counter     = *_quad_counter.get_pointer();
-        uint &block_counter    = *_block_counter.get_pointer();
-        uint *const localIDs   = _localIDs.get_pointer();
+        uint32_t &cluster_counter  = *_cluster_counter.get_pointer();
+        uint32_t &global_offset    = *_global_offset.get_pointer();        
+        uint32_t &quad_counter     = *_quad_counter.get_pointer();
+        uint32_t &block_counter    = *_block_counter.get_pointer();
+        uint32_t *const localIDs   = _localIDs.get_pointer();
 
         cluster_counter = 0;
         quad_counter = 0;
@@ -538,8 +538,8 @@ namespace embree {
 
         item.barrier(sycl::access::fence_space::local_space);
           
-        const uint localID = item.get_local_id(0);
-        const uint groupSize = wgSize_select; //item.get_group_size(0);
+        const uint32_t localID = item.get_local_id(0);
+        const uint32_t groupSize = wgSize_select; //item.get_group_size(0);
 
         if (localID == 0)
         {
@@ -553,7 +553,7 @@ namespace embree {
 
         item.barrier(sycl::access::fence_space::local_space);
 
-        for (uint i=localID;i<cluster_counter;i+=groupSize)
+        for (uint32_t i=localID;i<cluster_counter;i+=groupSize)
           local_lcgbp_scene->lcm_cluster_roots_IDs_per_frame[global_offset+i] = localIDs[i];
         
       });
@@ -583,17 +583,17 @@ namespace embree {
     const float lod_threshold = g_lod_threshold;
     const sycl::nd_range<1> nd_range1(alignTo(numRootsTotal,wgSize),sycl::range<1>(wgSize));              
     sycl::event compute_lod_event = global_gpu_queue->submit([=](sycl::handler& cgh){
-      sycl::local_accessor< uint      ,  0> _cluster_counter(cgh);
-      sycl::local_accessor< uint      ,  0> _quad_counter(cgh);
-      sycl::local_accessor< uint      ,  0> _block_counter(cgh);
+      sycl::local_accessor< uint32_t      ,  0> _cluster_counter(cgh);
+      sycl::local_accessor< uint32_t      ,  0> _quad_counter(cgh);
+      sycl::local_accessor< uint32_t      ,  0> _block_counter(cgh);
 
       cgh.depends_on(init_event);
         
       cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16) {
         const unsigned int i = item.get_global_id(0);
-        uint &cluster_counter    = *_cluster_counter.get_pointer();
-        uint &quad_counter       = *_quad_counter.get_pointer();
-        uint &block_counter      = *_block_counter.get_pointer();
+        uint32_t &cluster_counter    = *_cluster_counter.get_pointer();
+        uint32_t &quad_counter       = *_quad_counter.get_pointer();
+        uint32_t &block_counter      = *_block_counter.get_pointer();
 
         cluster_counter = 0;
         quad_counter = 0;
@@ -644,8 +644,8 @@ namespace embree {
               bool subdivide = subdivideLOD(BBox3f(bounds_lower,bounds_upper),vx,vy,vz,width,height,lod_threshold);
               if (subdivide && cur.hasChildren() && (numStackEntries+2 <= STACK_SIZE))
               {
-                const uint lID = cur.leftID;
-                const uint rID = cur.rightID;
+                const uint32_t lID = cur.leftID;
+                const uint32_t rID = cur.rightID;
                 stack[numStackEntries+0] = lID;
                 stack[numStackEntries+1] = rID;
                 numStackEntries+=2;
@@ -674,7 +674,7 @@ namespace embree {
 
         item.barrier(sycl::access::fence_space::local_space);
           
-        const uint localID = item.get_local_id(0);
+        const uint32_t localID = item.get_local_id(0);
         if (localID == 0)
         {
           if (quad_counter > 0)
@@ -738,7 +738,7 @@ namespace embree {
 
       if (lcgbp_scene->numLCMeshClusters)
       {
-        const uint clusterID = lcgbp_scene->pick_primID;
+        const uint32_t clusterID = lcgbp_scene->pick_primID;
         const LossyCompressedMeshCluster &cluster = lcgbp_scene->lcm_cluster[ clusterID ];
         PRINT3((int)cluster.numQuads,(int)cluster.numBlocks,(int)cluster.lod_level);
         PRINT3((int)cluster.leftID,(int)cluster.rightID,(int)cluster.neighborID);
@@ -849,7 +849,7 @@ namespace embree {
                                    const unsigned int height,
                                    const ISPCCamera* const _camera)
   {
-    const uint numSubdivPatches = local_lcgbp_scene->numSubdivPatches;    
+    const uint32_t numSubdivPatches = local_lcgbp_scene->numSubdivPatches;    
     const BBox3f geometryBounds   = local_lcgbp_scene->patch_mesh->bounds;
     const Vec3f geometry_lower    = geometryBounds.lower;
     const Vec3f geometry_diag     = geometryBounds.size();
@@ -874,15 +874,15 @@ namespace embree {
     const sycl::nd_range<1> nd_range1(alignTo(numSubdivPatches,wgSize),sycl::range<1>(wgSize));              
     sycl::event compute_lod_event = global_gpu_queue->submit([=](sycl::handler& cgh){
 
-      sycl::local_accessor< uint      ,  0> _quad_counter(cgh);
-      sycl::local_accessor< uint      ,  0> _block_counter(cgh);
+      sycl::local_accessor< uint32_t      ,  0> _quad_counter(cgh);
+      sycl::local_accessor< uint32_t      ,  0> _block_counter(cgh);
       
       cgh.depends_on(init_event);                                                   
       cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16) {
           const unsigned int i = item.get_global_id(0);
 
-          uint &quad_counter       = *_quad_counter.get_pointer();
-          uint &block_counter      = *_block_counter.get_pointer();
+          uint32_t &quad_counter       = *_quad_counter.get_pointer();
+          uint32_t &block_counter      = *_block_counter.get_pointer();
           
           quad_counter = 0;
           block_counter = 0;
@@ -995,7 +995,7 @@ namespace embree {
 
           item.barrier(sycl::access::fence_space::local_space);
           
-          const uint localID = item.get_local_id(0);
+          const uint32_t localID = item.get_local_id(0);
           if (localID == 0)
           {
             if (quad_counter > 0)
