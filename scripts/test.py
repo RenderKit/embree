@@ -179,12 +179,6 @@ def runConfig(config):
       env.append('"'+ONE_API_PATH_WINDOWS+'\\'+compiler[3:]+'\\env\\vars.bat"')
       conf.append("-G Ninja -D CMAKE_CXX_COMPILER=icx -DCMAKE_C_COMPILER=icx")
     elif (compiler.startswith("dpcpp")):
-      if os.environ["DPCPP_ROOT"] and os.environ["GFX_DRIVER_ROOT"] :
-        dpcpp_dir = os.environ["DPCPP_ROOT"]
-        gfx_dir = os.environ["GFX_DRIVER_ROOT"]
-      else :
-        print("Error DPCPP_ROOT or GFX_DRIVER_ROOT is not set")
-        sys.exit(1)
       cmake_build_suffix=""
       env.append("call " + os.environ["DPCPP_ROOT"] + "\\startup.bat")
       conf.append("-G Ninja -D CMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang")
@@ -417,14 +411,6 @@ def runConfig(config):
     else:
       sys.stderr.write("unknown package mode: "+OS+":"+config["package"])
       sys.exit(1)
-
-  if OS == "linux" and compiler.startswith("dpcpp"):
-    # some additional debug output of gfx and dpcpp version
-    which_clang = str(subprocess.check_output(escape(" && ".join(env)) + " && which clang++", shell=True, stderr=subprocess.PIPE).decode('utf-8').rstrip("\n"))
-    print("DEBUG - DPCPP version:", dpcpp_dir, " - which clang++: ", which_clang)
-      
-    which_ocloc = str(subprocess.check_output(escape(" && ".join(env)) + " && which ocloc", shell=True, stderr=subprocess.PIPE).decode('utf-8').rstrip("\n"))
-    print("DEBUG - GFX version:", gfx_dir, " - which ocloc: ", which_ocloc)
 
   if rtcore:
     conf.append("-D EMBREE_CONFIG="+(",".join(rtcore)))
