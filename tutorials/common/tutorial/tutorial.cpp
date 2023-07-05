@@ -1087,6 +1087,7 @@ namespace embree
 #else    
     device_render(pixels_device,width,height,time,camera);
     renderFrame((int*)pixels_device,width,height,time,camera);
+#if defined(EMBREE_SYCL_SUPPORT)  
     sycl::event event_memcpy = global_gpu_queue->memcpy(pixels,pixels_device,width*height*sizeof(unsigned));
     try {
       event_memcpy.wait_and_throw();
@@ -1095,6 +1096,7 @@ namespace embree
                 << e.what() << std::endl;
       FATAL("SYCL Exception");     
     }
+#endif    
 #endif    
   }
   

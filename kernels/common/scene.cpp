@@ -12,11 +12,11 @@
 
 #if defined(EMBREE_SYCL_SUPPORT)
 #  include "../sycl/rthwif_embree_builder.h"
-#endif
 
 #include "../sycl/rthwif_embree.h"
 #include "../rthwif/rttrace/rttrace.h"
 
+#endif
 
 namespace embree
 {
