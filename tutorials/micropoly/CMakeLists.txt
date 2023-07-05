@@ -2,7 +2,7 @@
 ## SPDX-License-Identifier: Apache-2.0
 
 INCLUDE(tutorial)
-find_package(TBB 4.1 REQUIRED ${EMBREE_TBB_COMPONENT})
+## find_package(TBB 4.1 REQUIRED ${EMBREE_TBB_COMPONENT})
 FIND_PACKAGE(OpenImageDenoise)
 
 IF (OpenImageDenoise_FOUND)
