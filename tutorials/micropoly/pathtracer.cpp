@@ -345,8 +345,8 @@ namespace embree {
                               const RTCFeatureFlags features)
   {
     //RandomSampler sampler;
-    //PCGSampler sampler;
-    BNSSSampler1SPP sampler;
+    PCGSampler sampler;
+    //BNSSSampler1SPP sampler;
     
     Vec3fa L = Vec3fa(0.0f);
 

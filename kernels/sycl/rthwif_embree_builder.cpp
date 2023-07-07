@@ -696,7 +696,7 @@ namespace embree
       size.rtasBufferSizeBytesExpected  = maxTimeSegments*sizeTotal.rtasBufferSizeBytesExpected;
       size.rtasBufferSizeBytesMaxRequired = maxTimeSegments*sizeTotal.rtasBufferSizeBytesMaxRequired;
       size_t bytes = headerBytes+size.rtasBufferSizeBytesExpected;
-      
+
       /* allocate BVH data */
       if (accel.size() < bytes)
 	{
