@@ -724,7 +724,6 @@ namespace embree
                                      scratchBuffer,sizeTotal.scratchBufferSizeBytes,
                                      accelBuffer, accelBufferBytes,
                                      &time_range, &bounds, nullptr,&sycl_queue,gpu_device->verbose); //FIXME nullptr ????
-        
 #else        
         err = zeRTASBuilderBuildExp(hBuilder,&args,
                                     scratchBuffer.data(),scratchBuffer.size(),
@@ -744,7 +743,6 @@ namespace embree
           parallel_for(prop.maxConcurrency, [&](uint32_t) { err = zeRTASParallelOperationJoinExp(parallelOperation); });
         }
 #endif
-        
         if (err == ZE_RESULT_SUCCESS) // added if        
           fullBounds.extend(*(BBox3f*) &bounds);
 
@@ -768,14 +766,12 @@ namespace embree
     // === moving this to device code prevents USM down and up transfer of accel ===
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-
     EmbreeHWAccel hwaccel;
     hwaccel.numTimeSegments = maxTimeSegments;
     for (size_t i=0; i<maxTimeSegments; i++)
       hwaccel.AccelTable[i] = (char*)accel.data() + headerBytes + i*sizeTotal.rtasBufferSizeBytesExpected;    
     sycl::event queue_event =  sycl_queue.memcpy(accel.data(),&hwaccel,sizeof(EmbreeHWAccel)+sizeof(void*)*(maxTimeSegments-1));
     queue_event.wait();
-    
 #else    
     /* destroy parallel operation */
     err = zeRTASParallelOperationDestroyExp(parallelOperation);
@@ -795,13 +791,11 @@ namespace embree
 #endif
     
     // =============================================================================
-    
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     sycl::free(geomDescr        ,gpu_device->getGPUContext());
     sycl::free(geomDescrData    ,gpu_device->getGPUContext());    
     sycl::free(scratchBuffer    ,gpu_device->getGPUContext());
 #endif
-    
     return fullBounds;
   }
 
