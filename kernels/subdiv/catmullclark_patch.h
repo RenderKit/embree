@@ -524,12 +524,10 @@ namespace embree
       const Vertex t0_m = ring[i0].getSecondLimitTangent();
           
       const unsigned i1 = subPatch+1 == N ? 0 : subPatch+1;
-      //const Vertex t1_p = ring[i1].getLimitTangent();
       const Vertex t1_m = ring[i1].getSecondLimitTangent();
       
       const unsigned i2 = subPatch == 0 ? N-1 : subPatch-1;
       const Vertex t2_p = ring[i2].getLimitTangent();
-      const Vertex t2_m = ring[i2].getSecondLimitTangent();
       
       const Vertex b00 = ring[i0].getLimitVertex();
       const Vertex b03 = ring[i1].getLimitVertex();
@@ -538,11 +536,9 @@ namespace embree
       const Vertex b01 = madd(1.0/3.0f,t0_p,b00);
       const Vertex b11 = madd(1.0/3.0f,t0_m,b00);
       
-      //const Vertex b13 = madd(1.0/3.0f,t1_p,b03);
       const Vertex b02 = madd(1.0/3.0f,t1_m,b03);
           
       const Vertex b22 = madd(1.0/3.0f,t2_p,b33);
-      //const Vertex b23 = madd(1.0/3.0f,t2_m,b33);
           
       new (&curves[0]) BezierCurve(b00,b01,b02,b03);
       new (&curves[1]) BezierCurve(b33,b22,b11,b00);
