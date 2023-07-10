@@ -227,7 +227,6 @@ namespace embree
     };
     if (!isAddrCanonical((uint64_t)ptr))
       throw_RTCError(RTC_ERROR_OUT_OF_MEMORY,"rtas memory allocation out of 48 bit address range");
-    
     return ptr;
   }
 
@@ -596,14 +595,13 @@ namespace embree
 
     const size_t numGeometries = scene->size();
 
-    auto alloc_mode = sycl::ext::oneapi::property::usm::device_read_only();
-    
+    //auto alloc_mode = sycl::ext::oneapi::property::usm::device_read_only();    
     /* fill geomdesc buffers */    
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     const size_t geomDescrBytes = sizeof(ze_rtas_builder_geometry_info_exp_t*)*numGeometries;
-    ze_rtas_builder_geometry_info_exp_t** geomDescr = (ze_rtas_builder_geometry_info_exp_t**)sycl::aligned_alloc_shared(64,geomDescrBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),alloc_mode);
+    ze_rtas_builder_geometry_info_exp_t** geomDescr = (ze_rtas_builder_geometry_info_exp_t**)sycl::aligned_alloc(64,geomDescrBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::usm::alloc::host);
     assert(geomDescr);        
-    char *geomDescrData = (char*)sycl::aligned_alloc_shared(64,totalBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),alloc_mode);
+    char *geomDescrData = (char*)sycl::aligned_alloc_shared(64,totalBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext());
     assert(geomDescrData);
 #else    
     /* fill geomdesc buffers */
