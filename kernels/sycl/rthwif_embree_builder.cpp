@@ -764,12 +764,19 @@ namespace embree
     // === moving this to device code prevents USM down and up transfer of accel ===
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-    EmbreeHWAccel hwaccel;
-    hwaccel.numTimeSegments = maxTimeSegments;
+    char header[headerBytes];    
+    EmbreeHWAccel *hwaccel = (EmbreeHWAccel *)header;
+    hwaccel->numTimeSegments = maxTimeSegments;
     for (size_t i=0; i<maxTimeSegments; i++)
-      hwaccel.AccelTable[i] = (char*)accel.data() + headerBytes + i*sizeTotal.rtasBufferSizeBytesExpected;    
-    sycl::event queue_event =  sycl_queue.memcpy(accel.data(),&hwaccel,sizeof(EmbreeHWAccel)+sizeof(void*)*(maxTimeSegments-1));
-    queue_event.wait();
+      hwaccel->AccelTable[i] = (char*)accel.data() + headerBytes + i*sizeTotal.rtasBufferSizeBytesExpected;    
+    sycl::event queue_event =  sycl_queue.memcpy(accel.data(),hwaccel,headerBytes);
+    try {
+      queue_event.wait_and_throw();
+     } catch (sycl::exception const& e) {
+        std::cout << "Caught synchronous SYCL exception:\n"
+                  << e.what() << std::endl;
+        FATAL("SYCL Exception");     
+    }     
 #else    
     /* destroy parallel operation */
     err = zeRTASParallelOperationDestroyExp(parallelOperation);
