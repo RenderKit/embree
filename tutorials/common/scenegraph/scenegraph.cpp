@@ -7,7 +7,6 @@
 #include "obj_loader.h"
 #include "ply_loader.h"
 #include "corona_loader.h"
-#include "../tutorial/noise.h"
 
 namespace embree
 {
@@ -1242,223 +1241,6 @@ namespace embree
     return node;
   }
 
-  int findVertex(std::map<Vec3f,uint32_t> &vertex_map, const Vec3f &v, int &allocID)
-  {
-    auto e = vertex_map.find(v);
-    if (e != vertex_map.end()) { return e->second; }
-    int ID = allocID++;
-    vertex_map.insert(std::pair<Vec3f,uint32_t>(v,ID));
-    //PRINT(ID);
-    return ID;
-  }
-
-  int findVertex(avector<Vec3fa> &positions, const Vec3fa &v)
-  {
-    //for (uint32_t i=std::max((int)positions.size()-1024,0);i<positions.size();i++)
-    for (uint32_t i=0;i<positions.size();i++)    
-      if (positions[i] == v) return i;    
-    int ID = positions.size();
-    positions.push_back(v);
-    return ID;
-  }
-  
-
-  struct BilinearPatch
-  {
-    const Vec3f v0,v1,v2,v3;
-    
-    __forceinline BilinearPatch(const Vec3f &v0,const Vec3f &v1,const Vec3f &v2,const Vec3f &v3) : v0(v0),v1(v1),v2(v2),v3(v3) {}                                    
-    __forceinline Vec3f eval(const float u, const float v) const
-    {
-      return lerp(lerp(v0,v1,u),lerp(v3,v2,u),v);
-    }
-
-    __forceinline Vec3f normal(const float u, const float v) const
-    {
-      const Vec3f edgeU0 = v1 - v0;
-      const Vec3f edgeU1 = v2 - v3;
-
-      const Vec3f edgeV0 = v3 - v0;
-      const Vec3f edgeV1 = v2 - v1;
-      
-      Vec3f du = lerp(edgeU0, edgeU1, v);
-      Vec3f dv = lerp(edgeV0, edgeV1, u);      
-      return normalize(cross(du, dv));
-    }
-    
-  };    
-  
-
-   Ref<SceneGraph::Node> SceneGraph::subdivide_grids(Ref<SceneGraph::Node> node)
-  {
-    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
-      xfmNode->child = subdivide_grids(xfmNode->child);
-    } 
-    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
-    {
-      for (size_t i=0; i<groupNode->children.size(); i++) 
-        groupNode->children[i] = subdivide_grids(groupNode->children[i]);
-    }
-    else if (Ref<SceneGraph::GridMeshNode> qmesh = node.dynamicCast<SceneGraph::GridMeshNode>()) {
-      return subdivide_grids(qmesh);
-    }
-    return node;    
-  }
-
-  Ref<SceneGraph::Node> SceneGraph::subdivide_grids( Ref<SceneGraph::GridMeshNode> gmesh )
-  {
-    RandomSampler sampler;
-    RandomSampler_init(sampler, 0, 0, 0);
-    BBox3fa bounds(empty);
-    typedef Vec3fa Vertex;
-    SceneGraph::GridMeshNode::Grid &grid = gmesh->grids[0];
-    const uint32_t resX = grid.resX;
-    const uint32_t resY = grid.resY;
-    
-    PRINT4(grid.startVtx,grid.lineStride,grid.resX,grid.resY);
-    static const uint32_t REPLICATION_FACTOR_X = 2;
-    static const uint32_t REPLICATION_FACTOR_Y = 2;
-    
-    const uint32_t new_resX = grid.resX*REPLICATION_FACTOR_X;
-    const uint32_t new_resY = grid.resY*REPLICATION_FACTOR_Y;
-    const uint32_t new_lineStride = new_resX;      
-    Ref<SceneGraph::GridMeshNode> new_gmesh = new SceneGraph::GridMeshNode(gmesh->material,gmesh->time_range,0);
-    new_gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(0,new_lineStride,new_resX,new_resY));
-    new_gmesh->positions.push_back(avector<Vertex>());      
-    avector<Vertex> &positions = new_gmesh->positions[0];
-    positions.resize(new_resX*new_resY);
-    for (uint32_t y=0;y<new_resY;y++)
-      for (uint32_t x=0;x<new_resX;x++)
-      {
-        const uint32_t sx = x/REPLICATION_FACTOR_X;
-        const uint32_t sy = y/REPLICATION_FACTOR_Y;
-        const uint32_t sx1 = std::min(sx+1,resX-1);
-        const uint32_t sy1 = std::min(sy+1,resY-1);
-        
-        
-        const Vec3fa v0 = gmesh->positions[0][sy*grid.lineStride+sx];
-        const Vec3fa v1 = gmesh->positions[0][sy*grid.lineStride+sx1];
-        const Vec3fa v2 = gmesh->positions[0][sy1*grid.lineStride+sx1];
-        const Vec3fa v3 = gmesh->positions[0][sy1*grid.lineStride+sx];
-        
-        BilinearPatch bpatch(v0,v1,v2,v3);
-
-        const float u = 0.0f + (x%2) * 0.5f;
-        const float v = 0.0f + (y%2) * 0.5f;
-
-        Vec3fa p = bpatch.eval(u,v);
-        //p += RandomSampler_get1D(sampler) * Vec3fa(0,0.01,0);
-        //p += random(p) * Vec3fa(0,0.1,0);
-        positions[y*new_resX+x] = p;
-
-        //positions[y*new_resX+x].z += noise(Vec3f((float)x/(new_resX),(float)y/(new_resY),0)) * 10;
-        bounds.extend( positions[y*new_resX+x] );
-      }
-
-    return new_gmesh.dynamicCast<SceneGraph::Node>();
-    //return convert_grids_to_quads( new_gmesh.dynamicCast<SceneGraph::Node>() );    
-  }
-  
-  Ref<SceneGraph::Node> SceneGraph::displace_quads_noise(Ref<SceneGraph::Node> node, const unsigned int resX, const unsigned int resY, const float displace_height)
-  {
-    if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
-      xfmNode->child = displace_quads_noise(xfmNode->child,resX,resY,displace_height);
-    } 
-    else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) 
-    {
-      for (size_t i=0; i<groupNode->children.size(); i++) 
-        groupNode->children[i] = displace_quads_noise(groupNode->children[i],resX,resY,displace_height);
-    }
-    else if (Ref<SceneGraph::QuadMeshNode> qmesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) {
-      return displace_quads_noise(qmesh,resX,resY,displace_height);
-    }
-    return node;
-  }
-
-  Ref<SceneGraph::Node> SceneGraph::displace_quads_noise( Ref<SceneGraph::QuadMeshNode> qmesh , const unsigned int resX, const unsigned int resY, const float displace_height )
-  {
-
-    Ref<SceneGraph::QuadMeshNode> displaced_qmesh = new SceneGraph::QuadMeshNode(qmesh->material,qmesh->time_range,0);
-
-    
-    avector<Vec3fa> positions;
-    std::map<Vec3f,uint32_t> vertex_map;
-    int ID = 0;
-    PRINT( qmesh->quads.size() );
-    for (size_t i=0; i<qmesh->quads.size(); i++)
-    {
-      if ((i % (1024*1024)) == 0) PRINT2(i,qmesh->quads.size());
-      
-      const int a0 = qmesh->quads[i+0].v0;
-      const int a1 = qmesh->quads[i+0].v1;
-      const int a2 = qmesh->quads[i+0].v2;
-      const int a3 = qmesh->quads[i+0].v3;
-
-      const Vec3fa v0 = qmesh->positions[0][a0];
-      const Vec3fa v1 = qmesh->positions[0][a1];
-      const Vec3fa v2 = qmesh->positions[0][a2];
-      const Vec3fa v3 = qmesh->positions[0][a3];
-      //const Vec3fa center = (v0+v1+v2+v3)/4;
-
-      BilinearPatch bpatch(v0,v1,v2,v3);
-
-      const Vec3f Ng0 = normalize(cross(v1-v0,v3-v0));
-      const Vec3f Ng1 = -normalize(cross(v1-v2,v3-v2));
-      //PRINT(displace_height);
-      //PRINT4(v0,v1,v2,v3);
-      int indices[resY][resX];
-      for (uint32_t y=0;y<resY;y++)
-        for (uint32_t x=0;x<resX;x++)
-        {
-          const float u = (float)x / (resX-1);
-          const float v = (float)y / (resY-1);
-          Vec3f p(v0); //= bpatch.eval(u,v);
-          Vec3f normal = (u+v<1.0f) ? Ng0 : Ng1; //bpatch.eval(u,v);
-          //if (u > 0.0f && u < 1.0f && v > 0.0f && v < 1.0f)
-
-          if (x == 0) p = lerp(v0,v3,v);
-          if (x == resX-1) p = lerp(v1,v2,v);
-          if (y == 0) p = lerp(v0,v1,u);
-          if (y == resY-1) p = lerp(v3,v2,u);          
-          if (x != 0 && x != resX-1 && y != 0 && y != resY-1)
-          {
-            p = bpatch.eval(u,v);
-            p += normal * abs(noise(p)) * Vec3f(displace_height);
-          }
-
-          //int index = findVertex(positions,p);
-          //PRINT4(x,y,p,index);
-          
-          int index = findVertex(vertex_map,p,ID);
-          indices[y][x] =  index;
-        }
-
-      for (uint32_t y=0;y<resY-1;y++)
-        for (uint32_t x=0;x<resX-1;x++)
-        {
-          int n0 = indices[y+0][x+0];
-          int n1 = indices[y+0][x+1];
-          int n2 = indices[y+1][x+1];
-          int n3 = indices[y+1][x+0];          
-          displaced_qmesh->quads.push_back(SceneGraph::QuadMeshNode::Quad(n0,n1,n2,n3));
-        }
-    }
-    PRINT( displaced_qmesh->quads.size() );
-    
-    //PRINT(vertex_map.size());
-
-    positions.resize(vertex_map.size());
-    
-    for (std::map<Vec3f,uint32_t>::iterator i=vertex_map.begin(); i != vertex_map.end(); i++)
-      positions[(*i).second] = (*i).first;
-
-    displaced_qmesh->positions.push_back(positions);
-    PRINT( displaced_qmesh->positions[0].size() );
-    
-    return displaced_qmesh.dynamicCast<SceneGraph::Node>();
-  }
-
-  
   Ref<SceneGraph::Node> SceneGraph::convert_quads_to_grids ( Ref<SceneGraph::QuadMeshNode> qmesh , const unsigned int resX, const unsigned int resY )
   {
     const size_t timeSteps = qmesh->positions.size();
@@ -1489,8 +1271,6 @@ namespace embree
       assert(startVtx + resX * resY == gmesh->positions[0].size());
       gmesh->grids.push_back(SceneGraph::GridMeshNode::Grid(startVtx,lineStride,resX,resY));
     }
-    PRINT(gmesh->grids.size());
-    PRINT2(gmesh->grids[0].resX,gmesh->grids[0].resY);
     return gmesh.dynamicCast<SceneGraph::Node>();
   }
 
@@ -1512,7 +1292,6 @@ namespace embree
 
   Ref<SceneGraph::Node> SceneGraph::convert_grids_to_quads ( Ref<SceneGraph::GridMeshNode> gmesh )
   {
-    PING;
     Ref<SceneGraph::QuadMeshNode> qmesh = new SceneGraph::QuadMeshNode(gmesh->material,gmesh->time_range,0);
 
     for (size_t i=0; i<gmesh->numPrimitives(); i++)
@@ -1747,7 +1526,6 @@ namespace embree
       
   Ref<SceneGraph::Node> SceneGraph::convert_quads_to_subdivs(Ref<SceneGraph::Node> node)
   {
-    PING;
     if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
       xfmNode->child = convert_quads_to_subdivs(xfmNode->child);
     } 
@@ -1762,6 +1540,7 @@ namespace embree
 
       for (auto& p : tmesh->positions)
         smesh->positions.push_back(p);
+
       for (size_t i=0; i<tmesh->quads.size(); i++) {
         smesh->position_indices.push_back(tmesh->quads[i].v0);
         smesh->position_indices.push_back(tmesh->quads[i].v1);

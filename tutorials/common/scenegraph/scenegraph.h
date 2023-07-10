@@ -43,12 +43,7 @@ namespace embree
     Ref<Node> convert_quads_to_grids( Ref<Node> node, const unsigned resX, const unsigned resY );
     Ref<Node> convert_grids_to_quads( Ref<GridMeshNode> gmesh);
     Ref<Node> convert_grids_to_quads( Ref<Node> node);
-    Ref<Node> displace_quads_noise(Ref<Node> node, const unsigned int resX, const unsigned int resY, const float displace_height);    
-    Ref<Node> displace_quads_noise(Ref<QuadMeshNode> qmesh, const unsigned int resX, const unsigned int resY, const float displace_height);
 
-    Ref<Node> subdivide_grids( Ref<GridMeshNode> gmesh);
-    Ref<Node> subdivide_grids( Ref<Node> node);
-    
     Ref<Node> remove_mblur(Ref<Node> node, bool mblur);
     void convert_mblur_to_nonmblur(Ref<Node> node);
 
@@ -744,18 +739,12 @@ namespace embree
         for (auto child : children) n += child->numPrimitives();
         return n;
       }
-      
+
       void triangles_to_quads(float prop = inf)
       {
         for (size_t i=0; i<children.size(); i++)
           children[i] = convert_triangles_to_quads(children[i],prop);
       }
-
-      void displace_quads(const unsigned int resX, const unsigned int resY, const float displace_height)
-      {
-        for (size_t i=0; i<children.size(); i++)
-          children[i] = displace_quads_noise(children[i],resX,resY,displace_height);
-      }      
 
       void quads_to_grids(unsigned int resX, unsigned int resY)
       {
@@ -822,13 +811,6 @@ namespace embree
         for (size_t i=0; i<children.size(); i++)
           SceneGraph::remove_mblur(children[i], mblur);
       }
-
-      void subdivide_grids_all()
-      {
-        for (size_t i=0; i<children.size(); i++)
-          children[i] = subdivide_grids(children[i]);
-      }
-      
 
       virtual void setMaterial(Ref<MaterialNode> material) {
         for (auto& child : children) child->setMaterial(material);
@@ -978,7 +960,7 @@ namespace embree
           time_range(imesh->time_range),
           positions(transformMSMBlurVec3faBuffer(imesh->positions,spaces)),
           normals(transformMSMBlurNormalBuffer(imesh->normals,spaces)),
-          texcoords(imesh->texcoords), triangles(imesh->triangles), material(imesh->material) { }
+          texcoords(imesh->texcoords), triangles(imesh->triangles), material(imesh->material) {}
       
       virtual void setMaterial(Ref<MaterialNode> material) {
         this->material = material;
