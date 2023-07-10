@@ -1,6 +1,3 @@
-//#include "../../sycl/rthwif_embree.h"
-//#include "../../sycl/rthwif_embree_builder.h"
-//#include "../rttrace/rthwif_internal.h"
 #include "rtbuild.h"
 #include "rthwif_embree_builder_ploc.h"
 #include "qbvh6.h"

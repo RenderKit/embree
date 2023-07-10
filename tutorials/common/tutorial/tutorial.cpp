@@ -1316,19 +1316,11 @@ namespace embree
       case MERGE_QUADS_TO_GRIDS         : scene->merge_quads_to_grids(); break;
       case CONVERT_QUADS_TO_GRIDS       : scene->quads_to_grids(grid_resX,grid_resY); break;
       case CONVERT_GRIDS_TO_QUADS       : scene->grids_to_quads(); break;
-      case CONVERT_MBLUR_TO_NONMBLUR    : convert_mblur_to_nonmblur(scene.dynamicCast<SceneGraph::Node>()); break;
-      case SUBDIVIDE_GRIDS              : scene->subdivide_grids_all(); break;
-        
+      case CONVERT_MBLUR_TO_NONMBLUR    : convert_mblur_to_nonmblur(scene.dynamicCast<SceneGraph::Node>()); break;        
       default : throw std::runtime_error("unsupported scene graph operation");
       }
     }
-    
-    if (displace)
-    {
-      PRINT("DISPLACE QUADS");
-      scene->displace_quads(displace_resX,displace_resY,displace_height);
-    }
-    
+        
     Application::instance->log(1,"converting scene done");
 
     if (verbosity >= 1) {

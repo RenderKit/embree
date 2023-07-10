@@ -114,7 +114,11 @@ namespace embree
             });
           }
           return PrimInfo(p,g,empty);
-        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo(a.begin+b.begin,a.end+b.end,empty); });
+        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo {
+	  const size_t start = a.begin+b.begin;
+	  const size_t end = a.end+b.end;
+	  return PrimInfo(start,end,empty);
+	});
         size_t numSubPatches = pinfo1.begin;
         if (numSubPatches == 0) {
           bvh->set(BVH::emptyNode,empty,0);
@@ -249,7 +253,11 @@ namespace embree
             sMB += count * mesh->numTimeSteps;
           }
           return PrimInfoMB(s,sMB);
-        }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB(a.begin()+b.begin(),a.end()+b.end()); });
+        }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB {
+	  const size_t start = a.begin()+b.begin();
+	  const size_t end   = a.end()+b.end();
+	  return PrimInfoMB(start,end); }
+	  );
 
         numSubPatches = pinfo.begin();
         numSubPatchesMB = pinfo.end();

@@ -55,17 +55,15 @@ namespace embree
     Ref<SceneGraph::Node> geometry()
     {
       Ref<SceneGraph::MaterialNode> mnode = new OBJMaterial(1.0f,Vec3fa(1.0f),Vec3fa(0.0f),1.0f);
-      Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(mnode,BBox1f(0,1),1);
-      
+      Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(mnode,1);
+
       const size_t width = texture->width;
       const size_t height = texture->height;
       
       mesh->positions[0].resize(height*width);
       for (size_t y=0; y<height; y++) 
-        for (size_t x=0; x<width; x++)
-        {
+        for (size_t x=0; x<width; x++) 
           mesh->positions[0][y*width+x] = at(x,y);
-        }
 
       mesh->triangles.resize(2*(height-1)*(width-1));
       for (size_t y=0; y<height-1; y++) {
@@ -168,49 +166,16 @@ namespace embree
         }
       }
 
-      else if (tag == "-grid_distribute") {
-        Ref<SceneGraph::Node> object = SceneGraph::load(path + cin->getFileName());
-        const uint32_t GRID_RES_X = cin->getInt();
-        const uint32_t GRID_RES_Y = cin->getInt();
-                
-        BBox3fa bb = object->bounds();
-        Vec3fa center = bb.center();
-        Vec3fa length = bb.size();
-
-        for (uint32_t i=0;i<GRID_RES_Y;i++)
-          for (uint32_t j=0;j<GRID_RES_X;j++)          
-          {
-            //const AffineSpace3fa space = AffineSpace3fa::translate(Vec3fa(i*length.x,0,j*length.z));
-            const AffineSpace3fa space = AffineSpace3fa::translate(Vec3fa(i*length.x,j*length.y,0));
-            g_scene->add(new SceneGraph::TransformNode(space,object));
-          }
-      }
-      
-
       /* convert triangles to quads */
       else if (tag == "-convert-triangles-to-quads") {
         g_scene->triangles_to_quads();
       }
-
-      else if (tag == "-displace") {
-        const int resX = cin->getInt();        
-        const int resY = cin->getInt();
-        const float distance = cin->getFloat();
-        g_scene->displace_quads(resX,resY,distance);
-      }      
 
       /* convert to subdivs */
       else if (tag == "-convert-to-subdivs") {
         g_scene->triangles_to_quads();
         g_scene->quads_to_subdivs();
       }
-
-      /* convert to grids */
-      else if (tag == "-merge-triangles-to-grids") {
-        g_scene->triangles_to_quads(inf);
-        g_scene->merge_quads_to_grids();
-      }
-      
 
       /* convert bezier to lines */
       else if (tag == "-convert-bezier-to-lines") {
@@ -254,7 +219,7 @@ namespace embree
 
       /* distribute model */
       else if (tag == "-distribute") {
-        const FileName objectFile = cin->getFileName();        
+        const FileName objectFile = cin->getFileName();
         Ref<SceneGraph::Node> object = SceneGraph::load(path + objectFile);
         if (referenceObjects) object->fileName = objectFile;
         Ref<Image> distribution = loadImage(path + cin->getFileName());
@@ -321,8 +286,6 @@ namespace embree
 
       /* output filename */
       else if (tag == "-o") {
-        float convert_tris_to_quads_prop = inf;
-        g_scene->triangles_to_quads(convert_tris_to_quads_prop);
         SceneGraph::store(g_scene.dynamicCast<SceneGraph::Node>(),path + cin->getFileName(),embedTextures,referenceMaterials,binaryFormat);
       }
 
