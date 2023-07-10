@@ -254,8 +254,8 @@ namespace embree
           }
           return PrimInfoMB(s,sMB);
         }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB {
-	  const size_t start = a.begin()+b.begin();
-	  const size_t end   = a.end()+b.end();
+	  const size_t start = a.get_begin()+b.get_begin();
+	  const size_t end   = a.get_end()+b.get_end();
 	  return PrimInfoMB(start,end); }
 	  );
 

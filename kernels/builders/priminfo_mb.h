@@ -61,6 +61,15 @@ namespace embree
       __forceinline size_t end() const {
         return object_range.end();
       }
+
+      __forceinline size_t get_begin() const {
+        return object_range.begin();
+      }
+
+      __forceinline size_t get_end() const {
+        return object_range.end();
+      }
+      
       
       /*! returns the number of primitives */
       __forceinline size_t size() const { 

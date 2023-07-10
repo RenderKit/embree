@@ -601,7 +601,6 @@ namespace embree
     else if (quality_flags == RTC_BUILD_QUALITY_MEDIUM) return "MediumQuality";
     else if (quality_flags == RTC_BUILD_QUALITY_HIGH  ) return "HighQuality";
     else if (quality_flags == RTC_BUILD_QUALITY_REFIT ) return "RefitQuality";
-    assert(false);
     return "";
   }
 
