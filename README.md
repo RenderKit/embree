@@ -4,79 +4,79 @@
 Real-Time Ray Tracing of Micro-Poly Geometry with Hierarchical Level of Detail Embree Branch
 ============================================================================================
 
+Runs on Ubuntu Linux 22.03 and 23.04
+
 Required cmake settings:
 
- BUILD_SHARED_LIBS                OFF
- BUILD_TESTING                    OFF
- CMAKE_BUILD_TYPE                 Release
- CMAKE_CXX_COMPILER               /opt/intel/oneapi/compiler/2023.1.0/linux/bin/icpx
- CMAKE_INSTALL_PREFIX             /usr/local
- CMAKE_VERBOSE_MAKEFILE           OFF
- EMBREE_ADDRESS_SANITIZER         OFF
- EMBREE_API_NAMESPACE
- EMBREE_BACKFACE_CULLING          OFF
- EMBREE_BACKFACE_CULLING_CURVES   OFF
- EMBREE_BACKFACE_CULLING_SPHERE   OFF
- EMBREE_BUILDER_TBB_STATIC        OFF
- EMBREE_BUILD_GLFW_FROM_SOURCE    OFF
- EMBREE_BUILD_GOOGLE_BENCHMARK_   OFF
- EMBREE_COMPACT_POLYS             OFF
- EMBREE_CURVE_SELF_INTERSECTION   2.0
- EMBREE_DISC_POINT_SELF_INTERSE   ON
- EMBREE_FILTER_FUNCTION           OFF
- EMBREE_GEOMETRY_CURVE            OFF
- EMBREE_GEOMETRY_GRID             OFF
- EMBREE_GEOMETRY_INSTANCE         ON
- EMBREE_GEOMETRY_POINT            OFF
- EMBREE_GEOMETRY_QUAD             ON
- EMBREE_GEOMETRY_SUBDIVISION      OFF
- EMBREE_GEOMETRY_TRIANGLE         ON
- EMBREE_GEOMETRY_USER             OFF
- EMBREE_IGNORE_CMAKE_CXX_FLAGS    ON
- EMBREE_IGNORE_INVALID_RAYS       OFF
- EMBREE_ISA_AVX                   OFF
- EMBREE_ISA_AVX2                  OFF
- EMBREE_ISA_AVX512                OFF
- EMBREE_ISA_SSE2                  ON
- EMBREE_ISA_SSE42                 OFF
- EMBREE_ISPC_SUPPORT              OFF
- EMBREE_LEVEL_ZERO                OFF
- EMBREE_LIBRARY_NAME              embree4
- EMBREE_MAX_INSTANCE_LEVEL_COUN   1
- EMBREE_MAX_ISA                   NONE
- EMBREE_MIN_WIDTH                 OFF
- EMBREE_NO_SPLASH                 OFF
- EMBREE_RAY_MASK                  ON
- EMBREE_RAY_PACKETS               ON
- EMBREE_RTHWIF_STATIC_LIB         ON
- EMBREE_STACK_PROTECTOR           OFF
- EMBREE_STATIC_LIB                ON
- EMBREE_STAT_COUNTERS             OFF
- EMBREE_SYCL_AOT_DEVICES          none
- EMBREE_SYCL_GPU_BVH_BUILDER      ON
- EMBREE_SYCL_SUPPORT              ON
- EMBREE_TASKING_SYSTEM            TBB
- EMBREE_TBB_COMPONENT             tbb
- EMBREE_TUTORIALS                 ON
- EMBREE_TUTORIALS_GLFW            ON
- EMBREE_TUTORIALS_LIBJPEG         OFF
- EMBREE_TUTORIALS_LIBPNG          OFF
- EMBREE_TUTORIALS_OPENIMAGEIO     OFF
- EMBREE_USE_GOOGLE_BENCHMARK      OFF
- GLFW_INSTALL                     ON
- GLFW_USE_OSMESA                  OFF
- GLFW_USE_WAYLAND                 OFF
- GLFW_VULKAN_STATIC               OFF
- OpenImageDenoise_DIR             OpenImageDenoise_DIR-NOTFOUND
- TBB_DIR                          /home/cbenthin/Projects/oneapi-tbb-2021.6.0/lib/cmake/tbb
- glfw3_DIR                        glfw3_DIR-NOTFOUND
+ - BUILD_SHARED_LIBS                OFF
+ - BUILD_TESTING                    OFF
+ - CMAKE_BUILD_TYPE                 Release
+ - CMAKE_CXX_COMPILER               /opt/intel/oneapi/compiler/2023.1.0/linux/bin/icpx
+ - CMAKE_INSTALL_PREFIX             /usr/local
+ - CMAKE_VERBOSE_MAKEFILE           OFF
+ - EMBREE_ADDRESS_SANITIZER         OFF
+ - EMBREE_API_NAMESPACE
+ - EMBREE_BACKFACE_CULLING          OFF
+ - EMBREE_BACKFACE_CULLING_CURVES   OFF
+ - EMBREE_BACKFACE_CULLING_SPHERE   OFF
+ - EMBREE_BUILDER_TBB_STATIC        OFF
+ - EMBREE_BUILD_GLFW_FROM_SOURCE    OFF
+ - EMBREE_BUILD_GOOGLE_BENCHMARK_   OFF
+ - EMBREE_COMPACT_POLYS             OFF
+ - EMBREE_CURVE_SELF_INTERSECTION   2.0
+ - EMBREE_DISC_POINT_SELF_INTERSE   ON
+ - EMBREE_FILTER_FUNCTION           OFF
+ - EMBREE_GEOMETRY_CURVE            OFF
+ - EMBREE_GEOMETRY_GRID             OFF
+ - EMBREE_GEOMETRY_INSTANCE         ON
+ - EMBREE_GEOMETRY_POINT            OFF
+ - EMBREE_GEOMETRY_QUAD             ON
+ - EMBREE_GEOMETRY_SUBDIVISION      OFF
+ - EMBREE_GEOMETRY_TRIANGLE         ON
+ - EMBREE_GEOMETRY_USER             OFF
+ - EMBREE_IGNORE_CMAKE_CXX_FLAGS    ON
+ - EMBREE_IGNORE_INVALID_RAYS       OFF
+ - EMBREE_ISA_AVX                   OFF
+ - EMBREE_ISA_AVX2                  OFF
+ - EMBREE_ISA_AVX512                OFF
+ - EMBREE_ISA_SSE2                  ON
+ - EMBREE_ISA_SSE42                 OFF
+ - EMBREE_ISPC_SUPPORT              OFF
+ - EMBREE_LEVEL_ZERO                OFF
+ - EMBREE_LIBRARY_NAME              embree4
+ - EMBREE_MAX_INSTANCE_LEVEL_COUN   1
+ - EMBREE_MAX_ISA                   NONE
+ - EMBREE_MIN_WIDTH                 OFF
+ - EMBREE_NO_SPLASH                 OFF
+ - EMBREE_RAY_MASK                  ON
+ - EMBREE_RAY_PACKETS               ON
+ - EMBREE_RTHWIF_STATIC_LIB         ON
+ - EMBREE_STACK_PROTECTOR           OFF
+ - EMBREE_STATIC_LIB                ON
+ - EMBREE_STAT_COUNTERS             OFF
+ - EMBREE_SYCL_AOT_DEVICES          none
+ - EMBREE_SYCL_GPU_BVH_BUILDER      ON
+ - EMBREE_SYCL_SUPPORT              ON
+ - EMBREE_TASKING_SYSTEM            TBB
+ - EMBREE_TBB_COMPONENT             tbb
+ - EMBREE_TUTORIALS                 ON
+ - EMBREE_TUTORIALS_GLFW            ON
+ - EMBREE_TUTORIALS_LIBJPEG         OFF
+ - EMBREE_TUTORIALS_LIBPNG          OFF
+ - EMBREE_TUTORIALS_OPENIMAGEIO     OFF
+ - EMBREE_USE_GOOGLE_BENCHMARK      OFF
+ - GLFW_INSTALL                     ON
+ - GLFW_USE_OSMESA                  OFF
+ - GLFW_USE_WAYLAND                 OFF
+ - GLFW_VULKAN_STATIC               OFF
+ - OpenImageDenoise_DIR             OpenImageDenoise_DIR-NOTFOUND
+ - TBB_DIR                          /home/cbenthin/Projects/oneapi-tbb-2021.6.0/lib/cmake/tbb
+ - glfw3_DIR                        glfw3_DIR-NOTFOUND
 
 Example Usage
 =============
 
 ./embree_micropoly_sycl -c ./statuette.ecs --verbose 0 --convert-triangles-to-quads  -size 1920 1080 --ambientlight 0.3 0.3 0.3
-
-
 
 
 Intel® Embree Overview
