@@ -56,6 +56,11 @@ namespace embree
       intersectionFilterN(nullptr), occlusionFilterN(nullptr), pointQueryFunc(nullptr)
   {
     device->refInc();
+    numLCGs = 0;
+    numLCMs = 0;
+    pLCGs = nullptr;
+    pLCMs = nullptr;
+    pLCMIDs = nullptr;
   }
 
   Geometry::~Geometry()
