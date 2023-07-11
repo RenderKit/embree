@@ -272,7 +272,6 @@ namespace embree
 
   TutorialApplication::~TutorialApplication()
   {
-    PING;
     g_ispc_scene = nullptr;
     ispc_scene = nullptr;
     device_cleanup();

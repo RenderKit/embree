@@ -218,8 +218,7 @@ namespace embree
             evalLocalGrid(rpatch,srange,lx0,lx1,ly0,ly1);
             return;
           } else {
-            //IrregularFillPatch ipatch(patch,border0,border1,border2,border3);
-            IrregularFillPatch ipatch(patch);
+            IrregularFillPatch ipatch(patch,border0,border1,border2,border3);
             evalLocalGrid(ipatch,srange,lx0,lx1,ly0,ly1);
             return;
           }
