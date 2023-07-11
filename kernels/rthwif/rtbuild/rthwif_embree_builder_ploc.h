@@ -1504,7 +1504,6 @@ namespace embree
    __forceinline void writeNodeFast(void *_dest, const int relative_block_offset, const gpu::AABB3f &parent_bounds, const uint32_t numChildren, const gpu::AABB3f child_bounds[6], const NodeType default_type)
   {
     uint32_t *dest = (uint*)_dest;    
-    //PRINT3(dest,numChildren,relative_block_offset);
 
     const float _ulp = std::numeric_limits<float>::epsilon();
     const float up = 1.0f + float(_ulp);  
@@ -1835,7 +1834,6 @@ namespace embree
    __forceinline void writeNodeFast(void *_dest, const int relative_block_offset, const CompressedAABB3f &parent_bounds, const uint32_t numChildren, const CompressedAABB3f child_bounds[6], const NodeType default_type, const Vec3f &start, const Vec3f &diag)
    {
      uint32_t *dest = (uint*)_dest;    
-     //PRINT3(dest,numChildren,relative_block_offset);
 
      const float _ulp = std::numeric_limits<float>::epsilon();
      const float up = 1.0f + float(_ulp);  

@@ -117,7 +117,6 @@ namespace embree
             if (ty & CatmullClarkRing::TYPE_REGULAR) { 
               RegularPatch(patch,border0,border1,border2,border3).eval(valid,uv.x,uv.y,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale,dstride,N);
             } else {
-              //IrregularFillPatch(patch,border0,border1,border2,border3).eval(valid,uv.x,uv.y,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale,dstride,N);
               IrregularFillPatch(patch).eval(valid,uv.x,uv.y,P,dPdu,dPdv,ddPdudu,ddPdvdv,ddPdudv,dscale,dstride,N);
             }
           }

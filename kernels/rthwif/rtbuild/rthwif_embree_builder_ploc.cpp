@@ -891,9 +891,7 @@ ZE_APIEXPORT ze_result_t ZE_APICALL zeRTASPrefetchAccelGPUExp( const ze_rtas_bui
     
     if (unlikely(convert_success == false))
     {
-      //if (args.accelBufferBytesOut) *args.accelBufferBytesOut = estimateAccelBufferSize(numQuads, numInstances, numProcedurals, numLossyCompressedGeometries, true);
       if (pRtasBufferSizeBytes) *pRtasBufferSizeBytes = estimateAccelBufferSize(numQuads, numInstances, numProcedurals, numLossyCompressedGeometries, true); 
-      //if (pRtasBufferSizeBytes) *pRtasBufferSizeBytes = estimateAccelBufferSize(numQuads, numInstances, numProcedurals, true); 
       if (host_device_tasks) sycl::free(host_device_tasks,gpu_queue.get_context());      
       return ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY;
     }

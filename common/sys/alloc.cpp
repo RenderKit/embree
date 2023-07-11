@@ -104,7 +104,6 @@ namespace embree
     if (size != 0 && ptr == nullptr)
       throw std::bad_alloc();
 
-    //PRINT3(ptr,size,mode);
     return ptr;
   }
   
@@ -120,7 +119,6 @@ namespace embree
   void alignedSYCLFree(sycl::context* context, void* ptr)
   {
     assert(context);
-    //PRINT2("FREE", ptr);
     if (ptr) {
       sycl::free(ptr,*context);
     }

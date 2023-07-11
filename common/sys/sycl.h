@@ -35,7 +35,6 @@ using sycl::fmax;
 using sycl::fmin;
 
 #ifdef __SYCL_DEVICE_ONLY__
-#define USE_IGC_INTRINSICS 1
 #define GLOBAL __attribute__((opencl_global))
 #define LOCAL  __attribute__((opencl_local))
 
