@@ -508,8 +508,7 @@ extern "C" void renderFrameStandard (int* pixels,
     const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
-  }); 
-#endif
+  });
 
   if (!data.visualize_errors)
   {
@@ -522,6 +521,8 @@ extern "C" void renderFrameStandard (int* pixels,
       }
     }
   }
+  
+#endif  
 }
 
 /* called by the C++ code to render */
