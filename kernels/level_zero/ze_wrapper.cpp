@@ -24,30 +24,27 @@
 #include <mutex>
 #include <string.h>
 
-namespace {
+bool ZeWrapper::use_internal_rtas_builder = false;
 
-ZeWrapper zeWrapper;
-std::mutex zeWrapperMutex;
-void* handle = nullptr;
-bool use_internal_implementation = false;
+static std::mutex zeWrapperMutex;
+static void* handle = nullptr;
 
-decltype(zeMemFree)* zeMemFreeInternal = nullptr;
-decltype(zeMemAllocShared)* zeMemAllocSharedInternal = nullptr;
-decltype(zeDriverGetExtensionProperties)* zeDriverGetExtensionPropertiesInternal = nullptr;
-decltype(zeDeviceGetProperties)* zeDeviceGetPropertiesInternal = nullptr;
-decltype(zeDeviceGetModuleProperties)* zeDeviceGetModulePropertiesInternal = nullptr;
+static decltype(zeMemFree)* zeMemFreeInternal = nullptr;
+static decltype(zeMemAllocShared)* zeMemAllocSharedInternal = nullptr;
+static decltype(zeDriverGetExtensionProperties)* zeDriverGetExtensionPropertiesInternal = nullptr;
+static decltype(zeDeviceGetProperties)* zeDeviceGetPropertiesInternal = nullptr;
+static decltype(zeDeviceGetModuleProperties)* zeDeviceGetModulePropertiesInternal = nullptr;
 
-decltype(zeRTASBuilderCreateExp)* zeRTASBuilderCreateExpInternal = nullptr;
-decltype(zeRTASBuilderDestroyExp)* zeRTASBuilderDestroyExpInternal = nullptr;
-decltype(zeDriverRTASFormatCompatibilityCheckExp)* zeDriverRTASFormatCompatibilityCheckExpInternal = nullptr;
-decltype(zeRTASBuilderGetBuildPropertiesExp)* zeRTASBuilderGetBuildPropertiesExpInternal = nullptr;
-decltype(zeRTASBuilderBuildExp)* zeRTASBuilderBuildExpInternal = nullptr;
+static decltype(zeRTASBuilderCreateExp)* zeRTASBuilderCreateExpInternal = nullptr;
+static decltype(zeRTASBuilderDestroyExp)* zeRTASBuilderDestroyExpInternal = nullptr;
+static decltype(zeDriverRTASFormatCompatibilityCheckExp)* zeDriverRTASFormatCompatibilityCheckExpInternal = nullptr;
+static decltype(zeRTASBuilderGetBuildPropertiesExp)* zeRTASBuilderGetBuildPropertiesExpInternal = nullptr;
+static decltype(zeRTASBuilderBuildExp)* zeRTASBuilderBuildExpInternal = nullptr;
   
-decltype(zeRTASParallelOperationCreateExp)* zeRTASParallelOperationCreateExpInternal = nullptr;
-decltype(zeRTASParallelOperationDestroyExp)* zeRTASParallelOperationDestroyExpInternal = nullptr; 
-decltype(zeRTASParallelOperationGetPropertiesExp)* zeRTASParallelOperationGetPropertiesExpInternal = nullptr;
-decltype(zeRTASParallelOperationJoinExp)* zeRTASParallelOperationJoinExpInternal = nullptr;
-}
+static decltype(zeRTASParallelOperationCreateExp)* zeRTASParallelOperationCreateExpInternal = nullptr;
+static decltype(zeRTASParallelOperationDestroyExp)* zeRTASParallelOperationDestroyExpInternal = nullptr; 
+static decltype(zeRTASParallelOperationGetPropertiesExp)* zeRTASParallelOperationGetPropertiesExpInternal = nullptr;
+static decltype(zeRTASParallelOperationJoinExp)* zeRTASParallelOperationJoinExpInternal = nullptr;
 
 template<typename T>
 T find_symbol(void* handle, std::string const& symbol) {
@@ -120,7 +117,7 @@ ze_result_t ZeWrapper::init()
       zeRTASParallelOperationGetPropertiesExpInternal = find_symbol<decltype(zeRTASParallelOperationGetPropertiesExp)*>(handle,"zeRTASParallelOperationGetPropertiesExp");
       zeRTASParallelOperationJoinExpInternal = find_symbol<decltype(zeRTASParallelOperationJoinExp)*>(handle,"zeRTASParallelOperationJoinExp");
 
-      use_internal_implementation = false;
+      use_internal_rtas_builder = false;
       
     } catch (std::exception& e) {
 
@@ -135,11 +132,10 @@ ze_result_t ZeWrapper::init()
       zeRTASParallelOperationGetPropertiesExpInternal = &zeRTASParallelOperationGetPropertiesExpImpl;
       zeRTASParallelOperationJoinExpInternal = &zeRTASParallelOperationJoinExpImpl;
 
-      use_internal_implementation = true;
+      use_internal_rtas_builder = true;
     }
     
   } catch (std::exception& e) {
-    std::cerr << "Error: Initializing ZeWrapper failed: " << e.what() << std::endl;
     return ZE_RESULT_ERROR_UNKNOWN;
   }
   return ZE_RESULT_SUCCESS;
@@ -270,7 +266,7 @@ ze_result_t ZeWrapper::zeDeviceGetProperties(ze_device_handle_t ze_handle, ze_de
   if (!handle || !zeDeviceGetPropertiesInternal)
     throw std::runtime_error("ZeWrapper not initialized, call ZeWrapper::init() first.");
 
-  if (use_internal_implementation)
+  if (use_internal_rtas_builder)
   {
     if (props->pNext && ((ze_base_properties_t*)props->pNext)->stype == ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXP_PROPERTIES)
     {
