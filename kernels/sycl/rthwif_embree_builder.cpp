@@ -83,81 +83,73 @@ namespace embree
     if (ZeWrapper::init() != ZE_RESULT_SUCCESS)
       return -1;
 
+    /* check if ray tracing extension is available */
+    sycl::platform platform = sycl_device.get_platform();
+    ze_driver_handle_t hDriver = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(platform);
+    
+    uint32_t count = 0;
+    std::vector<ze_driver_extension_properties_t> extensions;
+    ze_result_t result = ZeWrapper::zeDriverGetExtensionProperties(hDriver,&count,extensions.data());
+    if (result != ZE_RESULT_SUCCESS) return -1;
+    
+    extensions.resize(count);
+    result = ZeWrapper::zeDriverGetExtensionProperties(hDriver,&count,extensions.data());
+    if (result != ZE_RESULT_SUCCESS) return -1;
+    
+    bool ze_extension_ray_tracing = false;
+    bool ze_rtas_builder = false;
+    for (uint32_t i=0; i<extensions.size(); i++)
     {
-      /* check if ray tracing extension is available */
-      sycl::platform platform = sycl_device.get_platform();
-      ze_driver_handle_t hDriver = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(platform);
-
-      uint32_t count = 0;
-      std::vector<ze_driver_extension_properties_t> extensions;
-      ze_result_t result = ZeWrapper::zeDriverGetExtensionProperties(hDriver,&count,extensions.data());
-      if (result != ZE_RESULT_SUCCESS) return -1;
-
-      extensions.resize(count);
-      result = ZeWrapper::zeDriverGetExtensionProperties(hDriver,&count,extensions.data());
-      if (result != ZE_RESULT_SUCCESS) return -1;
-
-      bool ze_extension_ray_tracing = false;
-      for (uint32_t i=0; i<extensions.size(); i++)
-      {
-        //std::cout << extensions[i].name << " version " << extensions[i].version << std::endl;
-
-        if (strncmp("ZE_extension_raytracing",extensions[i].name,sizeof(extensions[i].name)))
-          continue;
-
-        ze_extension_ray_tracing = true;
-          break;
-      }
-      if (!ze_extension_ray_tracing)
-        return -1;
-    }
-
-    {
-      /* check if ray queries are supported */
-      ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(sycl_device);
-
-      /* check if ray tracing hardware is supported */
-      ze_device_raytracing_ext_properties_t raytracing_properties;
-      memset(&raytracing_properties,0,sizeof(raytracing_properties));
-      raytracing_properties.stype = ZE_STRUCTURE_TYPE_DEVICE_RAYTRACING_EXT_PROPERTIES;
-      raytracing_properties.pNext = nullptr;
+      //std::cout << extensions[i].name << " version " << extensions[i].version << std::endl;
       
-      ze_device_module_properties_t module_properties;
-      memset(&module_properties,0,sizeof(module_properties));
-      module_properties.stype = ZE_STRUCTURE_TYPE_DEVICE_MODULE_PROPERTIES;
-      module_properties.pNext = &raytracing_properties;
+      if (strncmp("ZE_extension_raytracing",extensions[i].name,sizeof(extensions[i].name)) == 0)
+        ze_extension_ray_tracing = true;
+      
+      if (strncmp("ZE_experimental_rtas_builder",extensions[i].name,sizeof(extensions[i].name)) == 0)
+        ze_rtas_builder = true;
+    }
+    if (!ze_extension_ray_tracing)
+      return -1;
 
-      ze_result_t result = ZeWrapper::zeDeviceGetModuleProperties(hDevice, &module_properties);
-      if (result != ZE_RESULT_SUCCESS) return -1;
+    /* check if ray queries are supported */
+    ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(sycl_device);
+    
+    /* check if ray tracing hardware is supported */
+    ze_device_raytracing_ext_properties_t raytracing_properties;
+    memset(&raytracing_properties,0,sizeof(raytracing_properties));
+    raytracing_properties.stype = ZE_STRUCTURE_TYPE_DEVICE_RAYTRACING_EXT_PROPERTIES;
+    raytracing_properties.pNext = nullptr;
+    
+    ze_device_module_properties_t module_properties;
+    memset(&module_properties,0,sizeof(module_properties));
+    module_properties.stype = ZE_STRUCTURE_TYPE_DEVICE_MODULE_PROPERTIES;
+    module_properties.pNext = &raytracing_properties;
+    
+    result = ZeWrapper::zeDeviceGetModuleProperties(hDevice, &module_properties);
+    if (result != ZE_RESULT_SUCCESS) return -1;
+    
+    const bool rayQuerySupported = raytracing_properties.flags & ZE_DEVICE_RAYTRACING_EXT_FLAG_RAYQUERY;
+    if (!rayQuerySupported)
+      return -1;
 
-      const bool rayQuerySupported = raytracing_properties.flags & ZE_DEVICE_RAYTRACING_EXT_FLAG_RAYQUERY;
-      if (!rayQuerySupported)
+    /* check ZE_experimental_rtas_builder extension */
+    if (ze_rtas_builder)
+    {
+      /* if extension is present all extension symbols need to be there */
+      if (ZeWrapper::use_internal_rtas_builder)
         return -1;
+
+      /* check if extension library can get loaded */
+      ze_rtas_parallel_operation_exp_handle_t hParallelOperation;
+      ze_result_t result = ZeWrapper::zeRTASParallelOperationCreateExp(hDriver, &hParallelOperation);
+      if (result == ZE_RESULT_ERROR_DEPENDENCY_UNAVAILABLE) return -1;
+
+      if (result == ZE_RESULT_SUCCESS)
+        ZeWrapper::zeRTASParallelOperationDestroyExp(hParallelOperation);
     }
 
     return sycl_device.get_info<sycl::info::device::max_compute_units>();
   }
-
-#if 0
-
-  int rthwifIsSYCLDeviceSupported(const sycl::device& device)
-  {
-    // TODO: SYCL currently has no functionality to check if a GPU has RTHW
-    // capabilities. Therefore, we return true when the device is a GPU,
-    // the backend is level_zero, and the GPU has 8 threads per EU because
-    // that indicates raytracing hardware.
-    uint32_t threadsPerEU = 0;
-    if (device.has(sycl::aspect::ext_intel_gpu_hw_threads_per_eu)) {
-      threadsPerEU = device.get_info<sycl::ext::intel::info::device::gpu_hw_threads_per_eu>();
-    }
-    sycl::platform platform = device.get_platform();
-    if(!device.is_gpu() || (threadsPerEU < 8) || (platform.get_info<sycl::info::platform::name>() != "Intel(R) Level-Zero"))
-      return -1;
-    else
-      return device.get_info<sycl::info::device::max_compute_units>();
-  }
-
-#endif
 
   void* rthwifAllocAccelBuffer(size_t bytes, sycl::device device, sycl::context context)
   {
