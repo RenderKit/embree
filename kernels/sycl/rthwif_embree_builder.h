@@ -13,10 +13,10 @@ namespace embree
 {
   class Scene;
   
-  void* rthwifAllocAccelBuffer(size_t bytes, sycl::device device, sycl::context context);
+  void* rthwifAllocAccelBuffer(Device* embree_device, size_t bytes, sycl::device device, sycl::context context);
 
-  void rthwifFreeAccelBuffer(void* ptr, sycl::context context);
-  
+  void rthwifFreeAccelBuffer(Device* embree_device, void* ptr, size_t bytes, sycl::context context);
+
   /*! allocator that performs BVH memory allocations */
   template<typename T>
     struct AccelAllocator
@@ -32,19 +32,19 @@ namespace embree
       AccelAllocator()
         : device(nullptr), context(nullptr) {}
       
-      AccelAllocator(const sycl::device& device, const sycl::context& context)
-        : device(&device), context(&context) {}
+      AccelAllocator(Device* embree_device, const sycl::device& device, const sycl::context& context)
+        : embree_device(embree_device), device(&device), context(&context) {}
       
       __forceinline pointer allocate( size_type n ) {
         if (context && device)
-          return (pointer) rthwifAllocAccelBuffer(n*sizeof(T),*device,*context);
+          return (pointer) rthwifAllocAccelBuffer(embree_device,n*sizeof(T),*device,*context);
         else
           return nullptr;
       }
       
       __forceinline void deallocate( pointer p, size_type n ) {
         if (context)
-          rthwifFreeAccelBuffer(p,*context);
+          rthwifFreeAccelBuffer(embree_device,p,n*sizeof(T),*context);
       }
       
       __forceinline void construct( pointer p, const_reference val ) {
@@ -57,6 +57,7 @@ namespace embree
 
       private:
 
+      Device* embree_device;
       const sycl::device* device;
       const sycl::context* context;
     };
