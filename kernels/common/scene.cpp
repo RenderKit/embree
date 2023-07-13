@@ -56,7 +56,7 @@ namespace embree
     /* use proper device and context for SYCL allocations */
 #if defined(EMBREE_SYCL_SUPPORT)
     if (DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device))
-      hwaccel = AccelBuffer(AccelAllocator<char>(gpu_device->getGPUDevice(),gpu_device->getGPUContext()),0);
+      hwaccel = AccelBuffer(AccelAllocator<char>(device,gpu_device->getGPUDevice(),gpu_device->getGPUContext()),0);
 #endif
        
     /* one can overwrite flags through device for debugging */
