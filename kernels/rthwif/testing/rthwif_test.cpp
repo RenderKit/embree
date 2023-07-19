@@ -10,6 +10,23 @@
 #include <CL/sycl.hpp>
 #include "tbb/tbb.h"
 
+#if defined(ZE_RAYTRACING)
+#include "../rtbuild/sys/sysinfo.h"
+#include "../rtbuild/sys/vector.h"
+#include "../rtbuild/math/vec2.h"
+#include "../rtbuild/math/vec3.h"
+#include "../rtbuild/math/bbox.h"
+#include "../rtbuild/math/affinespace.h"
+#else
+#include "../../../common/sys/sysinfo.h"
+#include "../../../common/sys/vector.h"
+#include "../../../common/math/vec2.h"
+#include "../../../common/math/vec3.h"
+#include "../../../common/math/bbox.h"
+#include "../../../common/math/lbbox.h"
+#include "../../../common/math/affinespace.h"
+#endif
+
 #define _USE_MATH_DEFINES
 #include <math.h>
 
@@ -25,52 +42,9 @@ namespace embree {
   double getSeconds();
 }
 
-#define PRINT(x) std::cout << #x << " = " << x << std::endl;
-
 sycl::device device;
 sycl::context context;
 void* dispatchGlobalsPtr = nullptr;
-
-#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
-#define CONSTANT __attribute__((opencl_constant))
-#else
-#define CONSTANT
-#endif
-
-#define sycl_printf0(format, ...) {               \
-    static const CONSTANT char fmt[] = format;               \
-    sycl::ext::oneapi::experimental::printf(fmt, __VA_ARGS__ );   \
-  }
-
-#define sycl_print_str(format) {               \
-    static const CONSTANT char fmt[] = format;               \
-    sycl::ext::oneapi::experimental::printf(fmt);   \
-  }
-
-void sycl_print_float(float x)
-{
-  int i = (int)sycl::trunc(x);
-  int f = (int)sycl::trunc(1000.0f*(x-i));
-  sycl_printf0("%i.%i",i,f);
-}
-
-#define sycl_printf_float(str, x) \
-  {                               \
-    sycl_print_str(str);          \
-    sycl_print_float(x);          \
-    sycl_print_str("\n");         \
-  }
-
-#define sycl_printf_float3(str, v)                              \
-{                                                               \
-  sycl_print_str(str);                                          \
-  sycl_print_float(v.x());                                      \
-  sycl_print_str(" ");                                          \
-  sycl_print_float(v.y());                                      \
-  sycl_print_str(" ");                                          \
-  sycl_print_float(v.z());                                      \
-  sycl_print_str("\n");                                         \
-}
 
 struct RandomSampler {
   unsigned int s;
@@ -229,10 +203,6 @@ std::ostream& operator<<(std::ostream& out, const intel_float3& v) {
   return out << "(" << v.x << "," << v.y << "," << v.z  << ")";
 }
 
-std::ostream& operator<<(std::ostream& out, const sycl::float3& v) {
-  return out << "(" << v.x() << "," << v.y() << "," << v.z()  << ")";
-}
-
 void compareTestOutput(uint32_t tid, uint32_t& errors, const TestOutput& test, const TestOutput& expected)
 {
 #define COMPARE(member)                 \
@@ -258,9 +228,9 @@ void compareTestOutput(uint32_t tid, uint32_t& errors, const TestOutput& test, c
     }                                                                   \
   }
 #define COMPARE3I(member,eps) {                                          \
-    const bool x = fabs(test.member.x-expected.member.x) > eps;     \
-    const bool y = fabs(test.member.y-expected.member.y) > eps;     \
-    const bool z = fabs(test.member.z-expected.member.z) > eps;     \
+    const bool x = test.member.x != expected.member.x;     \
+    const bool y = test.member.y != expected.member.y;     \
+    const bool z = test.member.z != expected.member.z;     \
     if (x || y || z) {                                                  \
       if (errors < 16)                                                  \
         std::cout << "test" << tid << " " #member " mismatch: output " << test.member << " != expected " << expected.member << std::endl; \
@@ -347,7 +317,7 @@ public:
 };
 
 sycl::float3 xfmPoint (const LinearSpace3f& m, const sycl::float3& p) {
-  return p.x()*m.vx + p.y()*m.vy + p.z()*m.vz;
+  return p.x()*m.vx + (p.y()*m.vy + p.z()*m.vz);
 }
 
 struct Transform
@@ -373,11 +343,11 @@ std::ostream& operator<<(std::ostream& out, const Transform& t) {
 }
 
 sycl::float3 xfmPoint (const Transform& m, const sycl::float3& p) {
-  return p.x()*m.vx + p.y()*m.vy + p.z()*m.vz + m.p;
+  return p.x()*m.vx + (p.y()*m.vy + (p.z()*m.vz + m.p));
 }
 
 sycl::float3 xfmVector (const Transform& m, const sycl::float3& v) {
-  return v.x()*m.vx + v.y()*m.vy + v.z()*m.vz;
+  return v.x()*m.vx + (v.y()*m.vy + v.z()*m.vz);
 }
 
 Transform operator* (const Transform& a, const Transform& b) {
@@ -386,9 +356,23 @@ Transform operator* (const Transform& a, const Transform& b) {
 
 Transform rcp( const Transform& a )
 {
+#if 1 // match builder math for rcp to have bit accurate data to compare against
+  embree::Vec3f vx(a.vx.x(), a.vx.y(), a.vx.z());
+  embree::Vec3f vy(a.vy.x(), a.vy.y(), a.vy.z());
+  embree::Vec3f vz(a.vz.x(), a.vz.y(), a.vz.z());
+  embree::Vec3f  p(a. p.x(), a. p.y(), a. p.z());
+  embree::AffineSpace3f l(embree::LinearSpace3f(vx,vy,vz),p);
+  embree::AffineSpace3f il = rcp(l);
+  sycl::float3 ivx(il.l.vx.x, il.l.vx.y, il.l.vx.z);
+  sycl::float3 ivy(il.l.vy.x, il.l.vy.y, il.l.vy.z);
+  sycl::float3 ivz(il.l.vz.x, il.l.vz.y, il.l.vz.z);
+  sycl::float3  ip(il.p.x, il.p.y, il.p.z);
+  return Transform(ivx,ivy,ivz,ip);
+#else
   const LinearSpace3f l = { a.vx, a.vy, a.vz };
   const LinearSpace3f il = l.inverse();
   return Transform(il.vx, il.vy, il.vz, -xfmPoint(il,a.p));
+#endif
 }
 
 Transform RandomSampler_getTransform(RandomSampler& self)
