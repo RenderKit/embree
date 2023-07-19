@@ -2067,19 +2067,10 @@ void* allocDispatchGlobals(sycl::device device, sycl::context context)
 
 int main(int argc, char* argv[])
 {
-  if (ZeWrapper::init() != ZE_RESULT_SUCCESS) {
-    std::cerr << "ZeWrapper not successfully initialized" << std::endl;
-    return 1;
-  }
-
-#if defined(ZE_RAYTRACING_RT_SIMULATION)
-  RTCore::Init();
-  RTCore::SetXeVersion((RTCore::XeVersion)ZE_RAYTRACING_DEVICE);
-#endif
-
   TestType test = TestType::TRIANGLES_COMMITTED_HIT;
   InstancingType inst = InstancingType::NONE;
   BuildMode buildMode = BuildMode::BUILD_EXPECTED_SIZE;
+  ZeWrapper::RTAS_BUILD_MODE rtas_build_mode = ZeWrapper::RTAS_BUILD_MODE::AUTO;
   
   bool jit_cache = false;
   uint32_t numThreads = tbb::this_task_arena::max_concurrency();
@@ -2093,8 +2084,17 @@ int main(int argc, char* argv[])
   /* parse all command line options */
   for (size_t i=1; i<argc; i++)
   {
-    if (strcmp(argv[i], "--triangles-committed-hit") == 0) {
-    test = TestType::TRIANGLES_COMMITTED_HIT;
+    if (strcmp(argv[i], "--internal-rtas-builder") == 0) {
+      rtas_build_mode = ZeWrapper::RTAS_BUILD_MODE::INTERNAL;
+    }
+    else if (strcmp(argv[i], "--level-zero-rtas-builder") == 0) {
+      rtas_build_mode = ZeWrapper::RTAS_BUILD_MODE::LEVEL_ZERO;
+    }
+    else if (strcmp(argv[i], "--default-rtas-builder") == 0) {
+      rtas_build_mode = ZeWrapper::RTAS_BUILD_MODE::AUTO;
+    }
+    else if (strcmp(argv[i], "--triangles-committed-hit") == 0) {
+      test = TestType::TRIANGLES_COMMITTED_HIT;
     }
     else if (strcmp(argv[i], "--triangles-potential-hit") == 0) {
       test = TestType::TRIANGLES_POTENTIAL_HIT;
@@ -2157,6 +2157,21 @@ int main(int argc, char* argv[])
 
   if (jit_cache)
     std::cout << "WARNING: JIT caching is not supported!" << std::endl;
+
+  if (ZeWrapper::init(rtas_build_mode) != ZE_RESULT_SUCCESS) {
+    std::cerr << "ZeWrapper not successfully initialized" << std::endl;
+    return 1;
+  }
+
+  if (ZeWrapper::use_internal_rtas_builder)
+    std::cout << "using internal RTAS builder" << std::endl;
+  else
+    std::cout << "using Level Zero RTAS builder" << std::endl;
+
+#if defined(ZE_RAYTRACING_RT_SIMULATION)
+  RTCore::Init();
+  RTCore::SetXeVersion((RTCore::XeVersion)ZE_RAYTRACING_DEVICE);
+#endif
 
   tbb::global_control tbb_threads(tbb::global_control::max_allowed_parallelism,numThreads);
     
