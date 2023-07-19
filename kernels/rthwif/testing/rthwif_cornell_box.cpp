@@ -454,19 +454,42 @@ void render(unsigned int x, unsigned int y, void* bvh, unsigned int* pixels, uns
 int main(int argc, char* argv[])
 {
   /* use can specify reference image to compare against */
+  ZeWrapper::RTAS_BUILD_MODE rtas_build_mode = ZeWrapper::RTAS_BUILD_MODE::AUTO;
   char* reference_img = NULL;
-  if (argc > 2 && std::string(argv[1]) == std::string("--compare"))
-    reference_img = argv[2];
+  for (int i=1; i<argc; i++)
+  {
+    if (strcmp(argv[i], "--compare") == 0) {
+      if (++i >= argc) throw std::runtime_error("--compare: filename expected");
+      reference_img = argv[i];
+    }
+    else if (strcmp(argv[i], "--internal-rtas-builder") == 0) {
+      rtas_build_mode = ZeWrapper::RTAS_BUILD_MODE::INTERNAL;
+    }
+    else if (strcmp(argv[i], "--level-zero-rtas-builder") == 0) {
+      rtas_build_mode = ZeWrapper::RTAS_BUILD_MODE::LEVEL_ZERO;
+    }
+    else if (strcmp(argv[i], "--default-rtas-builder") == 0) {
+      rtas_build_mode = ZeWrapper::RTAS_BUILD_MODE::AUTO;
+    }
+    else {
+      throw std::runtime_error("unknown command line argument");
+    }
+  }
 
   /* create SYCL objects */
   sycl::device device = sycl::device(sycl::gpu_selector_v);
   sycl::queue queue = sycl::queue(device,exception_handler);
   sycl::context context = queue.get_context();
 
-  if (ZeWrapper::init() != ZE_RESULT_SUCCESS) {
+  if (ZeWrapper::init(rtas_build_mode) != ZE_RESULT_SUCCESS) {
     std::cerr << "ZeWrapper not successfully initialized" << std::endl;
     return 1;
   }
+
+  if (ZeWrapper::use_internal_rtas_builder)
+    std::cout << "using internal RTAS builder" << std::endl;
+  else
+    std::cout << "using Level Zero RTAS builder" << std::endl;
 
 #if defined(ZE_RAYTRACING_RT_SIMULATION)
   RTCore::Init();
