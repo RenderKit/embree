@@ -234,6 +234,47 @@ RTC_API void rtcSetGeometryTransformQuaternion(RTCGeometry geometry, uniform uns
 /* Returns the interpolated transformation of an instance for the specified time. */
 RTC_API void rtcGetGeometryTransform(RTCGeometry geometry, uniform float time, uniform RTCFormat format, void* uniform xfm);
 
+/* Returns the interpolated transformation of an instance for the specified time. Varying version. */
+inline void rtcGetGeometryTransform(RTCGeometry geometry, varying float time, uniform RTCFormat format, void* uniform xfm)
+{
+  varying float vmatrix[12];
+  foreach_unique(utime in time)
+  {
+    uniform float umatrix[12];
+    rtcGetGeometryTransform(geometry,utime,RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,umatrix);
+    for (int uniform j=0; j<12; j++) vmatrix[j] = umatrix[j];
+  }
+
+  /* store to desired layout */
+  varying float* vxfm = (varying float*) xfm;
+  
+  switch (format)
+  {
+  case RTC_FORMAT_FLOAT3X4_ROW_MAJOR:
+    vxfm[ 0] = vmatrix[0];  vxfm[ 1] = vmatrix[3];  vxfm[ 2] = vmatrix[6];  vxfm[ 3] = vmatrix[9];
+    vxfm[ 4] = vmatrix[1];  vxfm[ 5] = vmatrix[4];  vxfm[ 6] = vmatrix[7];  vxfm[ 7] = vmatrix[10];
+    vxfm[ 8] = vmatrix[2];  vxfm[ 9] = vmatrix[5];  vxfm[10] = vmatrix[8];  vxfm[11] = vmatrix[11];
+    break;
+    
+  case RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR:
+    vxfm[ 0] = vmatrix[0];  vxfm[ 1] = vmatrix[1];  vxfm[ 2] = vmatrix[2];
+    vxfm[ 3] = vmatrix[3];  vxfm[ 4] = vmatrix[4];  vxfm[ 5] = vmatrix[5];
+    vxfm[ 6] = vmatrix[6];  vxfm[ 7] = vmatrix[7];  vxfm[ 8] = vmatrix[8];
+    vxfm[ 9] = vmatrix[9];  vxfm[10] = vmatrix[10]; vxfm[11] = vmatrix[11];
+    break;
+    
+  case RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR:
+    vxfm[ 0] = vmatrix[0];  vxfm[ 1] = vmatrix[1];  vxfm[ 2] = vmatrix[2];  vxfm[ 3] = 0.f;
+    vxfm[ 4] = vmatrix[3];  vxfm[ 5] = vmatrix[4];  vxfm[ 6] = vmatrix[5];  vxfm[ 7] = 0.f;
+    vxfm[ 8] = vmatrix[6];  vxfm[ 9] = vmatrix[7];  vxfm[10] = vmatrix[8];  vxfm[11] = 0.f;
+    vxfm[12] = vmatrix[9];  vxfm[13] = vmatrix[10]; vxfm[14] = vmatrix[11]; vxfm[15] = 1.f;
+    break;
+    
+  default:
+    break;
+  }
+}
+
 
 /* Sets the uniform tessellation rate of the geometry. */
 RTC_API void rtcSetGeometryTessellationRate(RTCGeometry geometry, uniform float tessellationRate);
