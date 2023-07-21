@@ -1085,7 +1085,7 @@ namespace embree
   void TutorialApplication::create_device()
   {
 #if defined(EMBREE_SYCL_SUPPORT) && defined(EMBREE_SYCL_TUTORIAL)
-    
+
     /* create SYCL device */
     if (features & FEATURE_SYCL)
     {

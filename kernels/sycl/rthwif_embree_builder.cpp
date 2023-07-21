@@ -132,21 +132,8 @@ namespace embree
     if (!rayQuerySupported)
       return -1;
 
-    /* check ZE_experimental_rtas_builder extension */
-    if (ze_rtas_builder)
-    {
-      /* if extension is present all extension symbols need to be there */
-      if (ZeWrapper::use_internal_rtas_builder)
-        return -1;
-
-      /* check if extension library can get loaded */
-      ze_rtas_parallel_operation_exp_handle_t hParallelOperation;
-      ze_result_t result = ZeWrapper::zeRTASParallelOperationCreateExp(hDriver, &hParallelOperation);
-      if (result == ZE_RESULT_ERROR_DEPENDENCY_UNAVAILABLE) return -1;
-
-      if (result == ZE_RESULT_SUCCESS)
-        ZeWrapper::zeRTASParallelOperationDestroyExp(hParallelOperation);
-    }
+    //if (!ze_rtas_builder) // for now we do not need the rtas extension yet!
+    //  return -1;
 
     return sycl_device.get_info<sycl::info::device::max_compute_units>();
   }
