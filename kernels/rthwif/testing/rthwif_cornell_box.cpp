@@ -486,7 +486,7 @@ int main(int argc, char* argv[])
     return 1;
   }
 
-  if (ZeWrapper::use_internal_rtas_builder)
+  if (ZeWrapper::rtas_builder == ZeWrapper::INTERNAL)
     std::cout << "using internal RTAS builder" << std::endl;
   else
     std::cout << "using Level Zero RTAS builder" << std::endl;

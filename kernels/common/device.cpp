@@ -24,6 +24,10 @@
 
 #include "../../common/sys/alloc.h"
 
+#if defined(EMBREE_SYCL_SUPPORT)
+#  include "../level_zero/ze_wrapper.h"
+#endif
+
 namespace embree
 {
   /*! some global variables that can be set via rtcSetParameter1i for debugging purposes */
@@ -584,11 +588,60 @@ namespace embree
   DeviceGPU::DeviceGPU(sycl::context sycl_context, const char* cfg)
     : Device(cfg), gpu_context(sycl_context)
   {
+    /* initialize ZeWrapper */
+    if (ZeWrapper::init() != ZE_RESULT_SUCCESS)
+       throw_RTCError(RTC_ERROR_UNKNOWN, "cannot initialize ZeWrapper");
+     
     /* take first device as default device */
     auto devices = gpu_context.get_devices();
     if (devices.size() == 0)
       throw_RTCError(RTC_ERROR_UNKNOWN, "SYCL context contains no device");
     gpu_device = devices[0];
+
+    /* check if RTAS build extension is available */
+    sycl::platform platform = gpu_device.get_platform();
+    ze_driver_handle_t hDriver = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(platform);
+    
+    uint32_t count = 0;
+    std::vector<ze_driver_extension_properties_t> extensions;
+    ze_result_t result = ZeWrapper::zeDriverGetExtensionProperties(hDriver,&count,extensions.data());
+    if (result != ZE_RESULT_SUCCESS)
+      throw_RTCError(RTC_ERROR_UNKNOWN, "zeDriverGetExtensionProperties failed");
+    
+    extensions.resize(count);
+    result = ZeWrapper::zeDriverGetExtensionProperties(hDriver,&count,extensions.data());
+    if (result != ZE_RESULT_SUCCESS)
+      throw_RTCError(RTC_ERROR_UNKNOWN, "zeDriverGetExtensionProperties failed");
+    
+    bool ze_rtas_builder = false;
+    for (uint32_t i=0; i<extensions.size(); i++)
+    {
+      if (strncmp("ZE_experimental_rtas_builder",extensions[i].name,sizeof(extensions[i].name)) == 0)
+        ze_rtas_builder = true;
+    }
+
+    if (ze_rtas_builder)
+    {
+      ZeWrapper::initRTASBuilder(ZeWrapper::LEVEL_ZERO);
+      
+      if (State::verbosity(1))
+        std::cout << "  Level Zero RTAS Builder" << std::endl;
+    }
+    else
+    {
+      ZeWrapper::initRTASBuilder(ZeWrapper::INTERNAL);
+
+      if (State::verbosity(1))
+        std::cout << "  Internal RTAS Builder" << std::endl;
+    }
+
+    /* check if extension library can get loaded */
+    ze_rtas_parallel_operation_exp_handle_t hParallelOperation;
+    result = ZeWrapper::zeRTASParallelOperationCreateExp(hDriver, &hParallelOperation);
+    if (result == ZE_RESULT_ERROR_DEPENDENCY_UNAVAILABLE)
+      throw_RTCError(RTC_ERROR_UNKNOWN, "Level Zero RTAS Build Extension cannot get loaded");
+    if (result == ZE_RESULT_SUCCESS)
+      ZeWrapper::zeRTASParallelOperationDestroyExp(hParallelOperation);
 
     gpu_maxWorkGroupSize = getGPUDevice().get_info<sycl::info::device::max_work_group_size>();
     gpu_maxComputeUnits  = getGPUDevice().get_info<sycl::info::device::max_compute_units>();    
