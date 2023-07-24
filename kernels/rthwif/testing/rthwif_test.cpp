@@ -2147,11 +2147,6 @@ int main(int argc, char* argv[])
     return 1;
   }
 
-  if (ZeWrapper::rtas_builder == ZeWrapper::INTERNAL)
-    std::cout << "using internal RTAS builder" << std::endl;
-  else
-    std::cout << "using Level Zero RTAS builder" << std::endl;
-
 #if defined(ZE_RAYTRACING_RT_SIMULATION)
   RTCore::Init();
   RTCore::SetXeVersion((RTCore::XeVersion)ZE_RAYTRACING_DEVICE);
@@ -2173,6 +2168,39 @@ int main(int argc, char* argv[])
 
   sycl::platform platform = device.get_platform();
   ze_driver_handle_t hDriver = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(platform);
+
+  /* enable RTAS extension only when enabled */
+  if (rtas_build_mode == ZeWrapper::RTAS_BUILD_MODE::AUTO)
+  {
+    uint32_t count = 0;
+    std::vector<ze_driver_extension_properties_t> extensions;
+    ze_result_t result = ZeWrapper::zeDriverGetExtensionProperties(hDriver,&count,extensions.data());
+    if (result != ZE_RESULT_SUCCESS)
+      throw std::runtime_error("zeDriverGetExtensionProperties failed");
+    
+    extensions.resize(count);
+    result = ZeWrapper::zeDriverGetExtensionProperties(hDriver,&count,extensions.data());
+    if (result != ZE_RESULT_SUCCESS)
+      throw std::runtime_error("zeDriverGetExtensionProperties failed");
+    
+    bool ze_rtas_builder = false;
+    for (uint32_t i=0; i<extensions.size(); i++)
+    {
+      if (strncmp("ZE_experimental_rtas_builder",extensions[i].name,sizeof(extensions[i].name)) == 0)
+        ze_rtas_builder = true;
+    }
+    
+    if (ze_rtas_builder)
+      ZeWrapper::initRTASBuilder(ZeWrapper::LEVEL_ZERO);
+    else
+      ZeWrapper::initRTASBuilder(ZeWrapper::INTERNAL);
+  }
+
+  if (ZeWrapper::rtas_builder == ZeWrapper::INTERNAL)
+    std::cout << "using internal RTAS builder" << std::endl;
+  else
+    std::cout << "using Level Zero RTAS builder" << std::endl;
+
     
   /* create L0 builder object */
   ze_rtas_builder_exp_desc_t builderDesc = { ZE_STRUCTURE_TYPE_RTAS_BUILDER_EXP_DESC };
