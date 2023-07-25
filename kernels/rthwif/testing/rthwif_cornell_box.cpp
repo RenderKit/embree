@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <iostream>
+#include <fstream>
 
 void* dispatchGlobalsPtr = nullptr;
 
