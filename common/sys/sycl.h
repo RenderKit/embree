@@ -184,8 +184,8 @@ namespace embree
     return sycl::select(b,a,mask);
   }
   
-  __forceinline const SYCL_SUBGROUP::sub_group this_sub_group() {
-    return SYCL_EXPERIMENTAL::this_sub_group(); 
+  __forceinline const sycl::sub_group this_sub_group() {
+    return sycl::ext::oneapi::experimental::this_sub_group(); 
   }
   
   __forceinline const uint32_t get_sub_group_local_id() {
@@ -209,23 +209,23 @@ namespace embree
   }
 
   __forceinline bool sub_group_all_of(bool pred) {
-    return SYCL_ONEAPI::all_of_group(this_sub_group(),pred);
+    return sycl::all_of_group(this_sub_group(),pred);
   }
 
   __forceinline bool sub_group_any_of(bool pred) {
-    return SYCL_ONEAPI::any_of_group(this_sub_group(),pred);
+    return sycl::any_of_group(this_sub_group(),pred);
   }
   
   __forceinline bool sub_group_none_of(bool pred) {
-    return SYCL_ONEAPI::none_of_group(this_sub_group(),pred);
+    return sycl::none_of_group(this_sub_group(),pred);
   }
 
   template <typename T> __forceinline T sub_group_broadcast(T x, sycl::id<1> local_id) {
-    return SYCL_SUBGROUP::group_broadcast<SYCL_SUBGROUP::sub_group>(this_sub_group(),x,local_id);
+    return sycl::group_broadcast<sycl::sub_group>(this_sub_group(),x,local_id);
   }
   
   template <typename T> __forceinline T sub_group_make_uniform(T x) {
-    return sub_group_broadcast(x,SYCL_CTZ::ctz(intel_sub_group_ballot(true)));
+    return sub_group_broadcast(x,sycl::ctz(intel_sub_group_ballot(true)));
   }
 
   __forceinline void assume_uniform_array(void* ptr) {
@@ -235,47 +235,47 @@ namespace embree
   }
 
   template <typename T, class BinaryOperation> __forceinline T sub_group_reduce(T x, BinaryOperation binary_op) {
-    return SYCL_SUBGROUP::reduce_over_group<SYCL_SUBGROUP::sub_group>(this_sub_group(),x,binary_op);
+    return sycl::reduce_over_group<sycl::sub_group>(this_sub_group(),x,binary_op);
   }
 
   template <typename T, class BinaryOperation> __forceinline T sub_group_reduce(T x, T init, BinaryOperation binary_op) {
-    return SYCL_SUBGROUP::reduce_over_group<SYCL_SUBGROUP::sub_group>(this_sub_group(),x,init,binary_op);
+    return sycl::reduce_over_group<sycl::sub_group>(this_sub_group(),x,init,binary_op);
   }
   
   template <typename T> __forceinline T sub_group_reduce_min(T x, T init) {
-    return sub_group_reduce(x, init, SYCL_EXT_ONEAPI::minimum<T>());
+    return sub_group_reduce(x, init, sycl::ext::oneapi::minimum<T>());
   }
 
   template <typename T> __forceinline T sub_group_reduce_min(T x) {
-    return sub_group_reduce(x, SYCL_EXT_ONEAPI::minimum<T>());
+    return sub_group_reduce(x, sycl::ext::oneapi::minimum<T>());
   }
 
   template <typename T> __forceinline T sub_group_reduce_max(T x) {
-    return sub_group_reduce(x, SYCL_EXT_ONEAPI::maximum<T>());
+    return sub_group_reduce(x, sycl::ext::oneapi::maximum<T>());
   }
   
   template <typename T> __forceinline T sub_group_reduce_add(T x) {
-    return sub_group_reduce(x, SYCL_EXT_ONEAPI::plus<T>());
+    return sub_group_reduce(x, sycl::ext::oneapi::plus<T>());
   }
 
   template <typename T, class BinaryOperation> __forceinline T sub_group_exclusive_scan(T x, BinaryOperation binary_op) {
-    return SYCL_SUBGROUP::exclusive_scan_over_group(this_sub_group(),x,binary_op);
+    return sycl::exclusive_scan_over_group(this_sub_group(),x,binary_op);
   }
 
   template <typename T, class BinaryOperation> __forceinline T sub_group_exclusive_scan_min(T x) {
-    return sub_group_exclusive_scan(x,SYCL_EXT_ONEAPI::minimum<T>());
+    return sub_group_exclusive_scan(x,sycl::ext::oneapi::minimum<T>());
   }
 
   template <typename T, class BinaryOperation> __forceinline T sub_group_exclusive_scan(T x, T init, BinaryOperation binary_op) {
-    return SYCL_SUBGROUP::exclusive_scan_over_group(this_sub_group(),x,init,binary_op);
+    return sycl::exclusive_scan_over_group(this_sub_group(),x,init,binary_op);
   }
 
   template <typename T, class BinaryOperation> __forceinline T sub_group_inclusive_scan(T x, BinaryOperation binary_op) {
-    return SYCL_SUBGROUP::inclusive_scan_over_group(this_sub_group(),x,binary_op);
+    return sycl::inclusive_scan_over_group(this_sub_group(),x,binary_op);
   }
 
   template <typename T, class BinaryOperation> __forceinline T sub_group_inclusive_scan(T x, BinaryOperation binary_op, T init) {
-    return SYCL_SUBGROUP::inclusive_scan_over_group(this_sub_group(),x,binary_op,init);
+    return sycl::inclusive_scan_over_group(this_sub_group(),x,binary_op,init);
   }
 
   template <typename T> __forceinline T sub_group_shuffle(T x, sycl::id<1> local_id) {

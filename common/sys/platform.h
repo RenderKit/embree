@@ -34,13 +34,6 @@
 
 #pragma clang diagnostic pop
 
-#define SYCL_ONEAPI sycl
-#define SYCL_EXT_ONEAPI sycl::ext::oneapi
-#define SYCL_SUBGROUP sycl
-#define SYCL_EXPERIMENTAL sycl::ext::oneapi::experimental
-#define SYCL_INTEL sycl::ext::intel
-#define SYCL_CTZ sycl
-
 #include "sycl.h"
 
 #if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
@@ -367,38 +360,38 @@ __forceinline std::string toString(long long value) {
 
 #define sycl_printf0(format, ...) {               \
     static const CONSTANT char fmt[] = format;               \
-    if (get_sub_group_local_id() == SYCL_CTZ::ctz(intel_sub_group_ballot(true)))       \
-      SYCL_EXT_ONEAPI::experimental::printf(fmt, __VA_ARGS__ );  \
+    if (get_sub_group_local_id() == sycl::ctz(intel_sub_group_ballot(true)))       \
+      sycl::ext::oneapi::experimental::printf(fmt, __VA_ARGS__ );  \
   }
 
 #define sycl_printf0_(format) {               \
     static const CONSTANT char fmt[] = format;               \
-    if (get_sub_group_local_id() == SYCL_CTZ::ctz(intel_sub_group_ballot(true)))       \
-      SYCL_EXT_ONEAPI::experimental::printf(fmt);                \
+    if (get_sub_group_local_id() == sycl::ctz(intel_sub_group_ballot(true)))       \
+      sycl::ext::oneapi::experimental::printf(fmt);                \
   }
 
 #else
 
 #define sycl_printf0(format, ...) {                          \
     static const CONSTANT char fmt[] = format;               \
-    SYCL_EXT_ONEAPI::experimental::printf(fmt, __VA_ARGS__ );    \
+    sycl::ext::oneapi::experimental::printf(fmt, __VA_ARGS__ );    \
   }
 
 #define sycl_printf0_(format) {                              \
     static const CONSTANT char fmt[] = format;               \
-    SYCL_EXT_ONEAPI::experimental::printf(fmt);                  \
+    sycl::ext::oneapi::experimental::printf(fmt);                  \
   }
 
 #endif
 
 #define sycl_printf(format, ...) {               \
     static const CONSTANT char fmt[] = format;               \
-    SYCL_EXT_ONEAPI::experimental::printf(fmt, __VA_ARGS__ );    \
+    sycl::ext::oneapi::experimental::printf(fmt, __VA_ARGS__ );    \
   }
 
 #define sycl_printf_(format) {               \
     static const CONSTANT char fmt[] = format;               \
-    SYCL_EXT_ONEAPI::experimental::printf(fmt);                  \
+    sycl::ext::oneapi::experimental::printf(fmt);                  \
   }
 
 #if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
@@ -419,7 +412,7 @@ namespace embree
   inline sycl_ostream_ operator <<(sycl_ostream_ cout, int   i)
   {
     if (cout.uniform) {
-      if (get_sub_group_local_id() == SYCL_CTZ::ctz(intel_sub_group_ballot(true)))
+      if (get_sub_group_local_id() == sycl::ctz(intel_sub_group_ballot(true)))
         sycl_printf("%i",i);
     }
     else
@@ -431,7 +424,7 @@ namespace embree
   inline sycl_ostream_ operator <<(sycl_ostream_ cout, unsigned int i)
   {
     if (cout.uniform) {
-      if (get_sub_group_local_id() == SYCL_CTZ::ctz(intel_sub_group_ballot(true)))
+      if (get_sub_group_local_id() == sycl::ctz(intel_sub_group_ballot(true)))
         sycl_printf("%u",i);
     } else
       sycl_printf("%u ",i);
@@ -442,7 +435,7 @@ namespace embree
   inline sycl_ostream_ operator <<(sycl_ostream_ cout, float f)
   {
     if (cout.uniform) {
-      if (get_sub_group_local_id() == SYCL_CTZ::ctz(intel_sub_group_ballot(true)))
+      if (get_sub_group_local_id() == sycl::ctz(intel_sub_group_ballot(true)))
         sycl_printf("%f",f);
     } else
       sycl_printf("%f ",f);
@@ -453,7 +446,7 @@ namespace embree
   inline sycl_ostream_ operator <<(sycl_ostream_ cout, double d)
   {
     if (cout.uniform) {
-      if (get_sub_group_local_id() == SYCL_CTZ::ctz(intel_sub_group_ballot(true)))
+      if (get_sub_group_local_id() == sycl::ctz(intel_sub_group_ballot(true)))
         sycl_printf("%f",d);
     } else
       sycl_printf("%f ",d);
@@ -464,7 +457,7 @@ namespace embree
   inline sycl_ostream_ operator <<(sycl_ostream_ cout, uint64_t l)
   {
     if (cout.uniform) {
-      if (get_sub_group_local_id() == SYCL_CTZ::ctz(intel_sub_group_ballot(true)))
+      if (get_sub_group_local_id() == sycl::ctz(intel_sub_group_ballot(true)))
         sycl_printf("%lu",l);
     } else
       sycl_printf("%lu ",l);
@@ -475,7 +468,7 @@ namespace embree
   inline sycl_ostream_ operator <<(sycl_ostream_ cout, long l)
   {
     if (cout.uniform) {
-      if (get_sub_group_local_id() == SYCL_CTZ::ctz(intel_sub_group_ballot(true)))
+      if (get_sub_group_local_id() == sycl::ctz(intel_sub_group_ballot(true)))
         sycl_printf("%l",l);
     } else
       sycl_printf("%l ",l);
@@ -487,7 +480,7 @@ namespace embree
   inline sycl_ostream_ operator <<(sycl_ostream_ cout, void* p)
   {
     if (cout.uniform) {
-      if (get_sub_group_local_id() == SYCL_CTZ::ctz(intel_sub_group_ballot(true)))
+      if (get_sub_group_local_id() == sycl::ctz(intel_sub_group_ballot(true)))
         sycl_printf("%p",p);
     } else
       sycl_printf("%p ",p);
@@ -497,14 +490,14 @@ namespace embree
 
   inline sycl_ostream_ operator <<(sycl_ostream_ cout, const char* c)
   {
-     if (get_sub_group_local_id() == SYCL_CTZ::ctz(intel_sub_group_ballot(true)))
+     if (get_sub_group_local_id() == sycl::ctz(intel_sub_group_ballot(true)))
        sycl_printf("%s",c);
      return cout;
   }
 
   inline sycl_ostream_ operator <<(sycl_ostream_ cout, sycl_endl_)
   {
-    if (get_sub_group_local_id() == SYCL_CTZ::ctz(intel_sub_group_ballot(true)))
+    if (get_sub_group_local_id() == sycl::ctz(intel_sub_group_ballot(true)))
       sycl_printf_("\n");
     return cout;
   }
