@@ -184,7 +184,7 @@ namespace embree
     return sycl::select(b,a,mask);
   }
   
-  __forceinline const SYCL_EXT_ONEAPI::sub_group this_sub_group() {
+  __forceinline const SYCL_SUBGROUP::sub_group this_sub_group() {
     return SYCL_EXPERIMENTAL::this_sub_group(); 
   }
   
@@ -221,7 +221,7 @@ namespace embree
   }
 
   template <typename T> __forceinline T sub_group_broadcast(T x, sycl::id<1> local_id) {
-    return SYCL_SUBGROUP::group_broadcast<SYCL_EXT_ONEAPI::sub_group>(this_sub_group(),x,local_id);
+    return SYCL_SUBGROUP::group_broadcast<SYCL_SUBGROUP::sub_group>(this_sub_group(),x,local_id);
   }
   
   template <typename T> __forceinline T sub_group_make_uniform(T x) {
@@ -235,11 +235,11 @@ namespace embree
   }
 
   template <typename T, class BinaryOperation> __forceinline T sub_group_reduce(T x, BinaryOperation binary_op) {
-    return SYCL_SUBGROUP::reduce_over_group<SYCL_EXT_ONEAPI::sub_group>(this_sub_group(),x,binary_op);
+    return SYCL_SUBGROUP::reduce_over_group<SYCL_SUBGROUP::sub_group>(this_sub_group(),x,binary_op);
   }
 
   template <typename T, class BinaryOperation> __forceinline T sub_group_reduce(T x, T init, BinaryOperation binary_op) {
-    return SYCL_SUBGROUP::reduce_over_group<SYCL_EXT_ONEAPI::sub_group>(this_sub_group(),x,init,binary_op);
+    return SYCL_SUBGROUP::reduce_over_group<SYCL_SUBGROUP::sub_group>(this_sub_group(),x,init,binary_op);
   }
   
   template <typename T> __forceinline T sub_group_reduce_min(T x, T init) {
