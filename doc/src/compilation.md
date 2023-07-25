@@ -19,7 +19,7 @@ Linux
 
   - Intel® oneAPI DPC++/C++ Compiler 2023.1.0
   - Intel® oneAPI DPC++/C++ Compiler 2023.0.0
-  - oneAPI DPC++/C++ Compiler 2023-04-17
+  - oneAPI DPC++/C++ Compiler 2023-07-24
   - Clang 5.0.0
   - Clang 4.0.0
   - GCC 10.0.1 (Fedora 32) AVX512 support
@@ -144,13 +144,13 @@ The "oneAPI DPC++ Compiler" is more up-to-date than the "Intel(R) oneAPI
 DPC++/C++ Compiler" but less stable. The current tested version of the "oneAPI
 DPC++ compiler is
 
-  - [oneAPI DPC++ Compiler 2023-04-17](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20230417/dpcpp-compiler.tar.gz)
+  - [oneAPI DPC++ Compiler 2023-07-24](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20230724/dpcpp-compiler.tar.gz)
   
 The compiler can be downloaded and simply extracted. The oneAPI DPC++ compiler
 2022-12-14 can be set up executing the following command in a Linux (bash)
 shell:
 
-    wget https://github.com/intel/llvm/releases/download/sycl-nightly%2F20230417/dpcpp-compiler.tar.gz
+    wget https://github.com/intel/llvm/releases/download/sycl-nightly%2F20230724/dpcpp-compiler.tar.gz
     tar xzf dpcpp-compiler.tar.gz
     source ./dpcpp_compiler/startup.sh
 
@@ -232,7 +232,7 @@ Embree is tested using the following compilers under Windows:
 
   - Intel® oneAPI DPC++/C++ Compiler 2023.1.0
   - Intel® oneAPI DPC++/C++ Compiler 2023.0.0
-  - oneAPI DPC++/C++ Compiler 2023-04-17
+  - oneAPI DPC++/C++ Compiler 2023-07-24
   - Visual Studio 2019
   - Visual Studio 2017
   - Intel® Implicit SPMD Program Compiler 1.19.0
@@ -360,7 +360,7 @@ The "oneAPI DPC++ Compiler" is more up-to-date than the "Intel(R) oneAPI
 DPC++/C++ Compiler" but less stable. The current tested version of the oneAPI
 DPC++ compiler is
 
-  - [oneAPI DPC++ Compiler 2023-04-17](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20230417/dpcpp-compiler-win.tar.gz)
+  - [oneAPI DPC++ Compiler 2023-07-24](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20230724/dpcpp-compiler-win.tar.gz)
 
 Download and unpack the archive and open the "x64 Native Tools Command Prompt"
 of Visual Studio and execute the following lines to properly configure the

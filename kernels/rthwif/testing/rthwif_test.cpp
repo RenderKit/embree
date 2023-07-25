@@ -37,6 +37,7 @@
 #include <vector>
 #include <map>
 #include <iostream>
+#include <fstream>
 
 namespace embree {
   double getSeconds();
