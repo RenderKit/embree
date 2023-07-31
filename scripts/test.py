@@ -182,7 +182,7 @@ def runConfig(config):
       conf.append("-G Ninja -D CMAKE_CXX_COMPILER=icx -DCMAKE_C_COMPILER=icx")
     elif (compiler.startswith("dpcpp")):
       cmake_build_suffix=""
-      env.append("call " + os.environ["DPCPP_ROOT"] + "\\startup.bat")
+      env.append("call " + os.environ["DPCPP_SETUP_SCRIPT"])
       conf.append("-G Ninja -D CMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang")
     else:
       raise ValueError('unknown compiler: ' + compiler + '')
@@ -200,7 +200,7 @@ def runConfig(config):
     elif (compiler.startswith("CLANG")):
       conf.append("-D CMAKE_CXX_COMPILER="+NAS+"/clang/v"+compiler[5:]+"/bin/clang++ -D CMAKE_C_COMPILER="+NAS+"/clang/v"+compiler[5:]+"/bin/clang")
     elif (compiler.startswith("dpcpp")):
-      env.append("source " + os.environ["DPCPP_ROOT"] + "/startup.sh")
+      env.append("source " + os.environ["DPCPP_SETUP_SCRIPT"])
       conf.append("-G Ninja -D CMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang")
     else:
       raise ValueError('unknown compiler: ' + compiler + '')
