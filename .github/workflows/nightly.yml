@@ -21,7 +21,7 @@ jobs:
   ########################################
   continuous-linux-DG2-JIT-multilevel:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     with:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
@@ -36,7 +36,7 @@ jobs:
 
   continuous-linux-DG2-JIT-multilevel-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     needs: ["continuous-linux-DG2-JIT-multilevel"]
     with:
       image: embree/ubuntu:22.04
@@ -51,7 +51,7 @@ jobs:
 
   continuous-linux-PVC-JIT:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     with:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
@@ -66,7 +66,7 @@ jobs:
 
   continuous-linux-PVC-JIT-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     needs: ["continuous-linux-PVC-JIT"]
     with:
       image: embree/ubuntu:22.04
@@ -85,7 +85,7 @@ jobs:
 
   continuous-windows-DG2-JIT:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
