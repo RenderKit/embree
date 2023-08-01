@@ -96,7 +96,7 @@ jobs:
 
   linux-test-i9-12900k:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/perf.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/perf.yml@main
     needs: ["linux-build-x86-ICX-ISPC"]
     with:
       runs-on: '[ "Linux", "perf", "vis-perf-i9-12900k-1" ]'

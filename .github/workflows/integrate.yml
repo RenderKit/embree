@@ -583,7 +583,7 @@ jobs:
 ####################################################################
   linux-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     with:
       image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
@@ -602,7 +602,7 @@ jobs:
 
   linux-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-test-ICX:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     needs: [ "linux-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0" ]
     with:
       image: embree/ubuntu:22.04
@@ -624,7 +624,7 @@ jobs:
 
   linux-SYCL-dpcpp-ISPC1_19_0-TBB2021_9_0:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     with:
       image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
@@ -643,7 +643,7 @@ jobs:
 
   linux-SYCL-dpcpp-ISPC1_19_0-TBB2021_9_0-test-ICX:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     needs: [ "linux-SYCL-dpcpp-ISPC1_19_0-TBB2021_9_0" ]
     with:
       image: embree/ubuntu:22.04
@@ -674,7 +674,7 @@ jobs:
 ####################################################################
   macos-GCC-ISPC1_19_0-TBB2021_9_0:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
     with:
       runs-on: '[ "macOS", "build", "x86_64" ]'
       artifact-out: macos-GCC-ISPC1_19_0-TBB2021_9_0
@@ -688,7 +688,7 @@ jobs:
 
   macos-GCC-ISPC1_19_0-TBB2021_9_0-test-GCC:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
     needs: [ "macos-GCC-ISPC1_19_0-TBB2021_9_0" ]
     with:
       runs-on: '[ "macOS", "build", "x86_64" ]'
@@ -702,7 +702,7 @@ jobs:
 
   macos-GCC-ISPC1_19_0-TBB2021_9_0-test-CLANG:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
     needs: [ "macos-GCC-ISPC1_19_0-TBB2021_9_0" ]
     with:
       runs-on: '[ "macOS", "build", "x86_64" ]'
@@ -718,7 +718,7 @@ jobs:
 #  TODO: cant find tbb/tbb.h ???
 #  macos-CLANG-ISPC1_19_0-TBB2021_9_0:
 #    secrets: inherit
-#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@devel
+#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
 #    with:
 #      runs-on: '[ "macOS", "build", "x86_64" ]'
 #      artifact-out: macos-CLANG-ISPC1_19_0-TBB2021_9_0
@@ -732,7 +732,7 @@ jobs:
 #
 #  macos-CLANG-ISPC1_19_0-TBB2021_9_0-test-GCC:
 #    secrets: inherit
-#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@devel
+#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
 #    needs: [ "macos-CLANG-ISPC1_19_0-TBB2021_9_0" ]
 #    with:
 #      runs-on: '[ "macOS", "build", "x86_64" ]'
@@ -746,7 +746,7 @@ jobs:
 #
 #  macos-CLANG-ISPC1_19_0-TBB2021_9_0-test-CLANG:
 #    secrets: inherit
-#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@devel
+#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
 #    needs: [ "macos-CLANG-ISPC1_19_0-TBB2021_9_0" ]
 #    with:
 #      runs-on: '[ "macOS", "build", "x86_64" ]'

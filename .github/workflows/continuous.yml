@@ -11,7 +11,7 @@ jobs:
   ####################################################################
   setup_dpcpp:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
@@ -23,7 +23,7 @@ jobs:
 
   setup_gfx:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
@@ -67,7 +67,7 @@ jobs:
   ########################################
   linux-DG2-JIT-INTERNAL:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     needs: [setup_gfx, setup_dpcpp]
     with:
       image: embree/ubuntu:22.04
@@ -83,7 +83,7 @@ jobs:
 
   linux-DG2-JIT-INTERNAL-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     needs: ["linux-DG2-JIT-INTERNAL"]
     with:
       image: embree/ubuntu:22.04
@@ -98,7 +98,7 @@ jobs:
 
   linux-DG2-JIT-PUBLIC:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     needs: [setup_gfx, setup_dpcpp]
     with:
       image: embree/ubuntu:22.04
@@ -114,7 +114,7 @@ jobs:
 
   linux-DG2-JIT-PUBLIC-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     needs: ["linux-DG2-JIT-PUBLIC"]
     with:
       image: embree/ubuntu:22.04
@@ -129,7 +129,7 @@ jobs:
 
   linux-DG2-JIT-EMBARGO:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     needs: [setup_gfx, setup_dpcpp]
     with:
       image: embree/ubuntu:22.04
@@ -145,7 +145,7 @@ jobs:
 
   linux-DG2-JIT-EMBARGO-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     needs: ["linux-DG2-JIT-EMBARGO"]
     with:
       image: embree/ubuntu:22.04
@@ -160,7 +160,7 @@ jobs:
 
   linux-DG2-JIT-PUBLIC-ICX:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     needs: [setup_gfx, setup_dpcpp]
     with:
       image: embree/ubuntu:22.04
@@ -176,7 +176,7 @@ jobs:
 
   linux-DG2-JIT-PUBLIC-ICX-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     needs: ["linux-DG2-JIT-PUBLIC-ICX"]
     with:
       image: embree/ubuntu:22.04
@@ -195,7 +195,7 @@ jobs:
 
   linux-ATSM-JIT-PUBLIC-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     needs: ["linux-DG2-JIT-PUBLIC"]
     with:
       image: embree/ubuntu:22.04
@@ -215,7 +215,7 @@ jobs:
 
   linux-PVC-JIT-INTERNAL:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     needs: [setup_gfx, setup_dpcpp]
     with:
       image: embree/ubuntu:22.04
@@ -231,7 +231,7 @@ jobs:
 
   linux-PVC-1T-JIT-INTERNAL-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     needs: ["linux-PVC-JIT-INTERNAL"]
     with:
       image: embree/ubuntu:22.04
@@ -247,7 +247,7 @@ jobs:
 
   linux-PVC-2T-JIT-INTERNAL-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     needs: ["linux-PVC-JIT-INTERNAL"]
     with:
       image: embree/ubuntu:22.04
@@ -263,7 +263,7 @@ jobs:
 
 #  linux-PVC-JIT-PUBLIC:
 #    secrets: inherit
-#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@devel
+#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
 #    needs: [setup_gfx, setup_dpcpp]
 #    with:
 #      image: embree/ubuntu:22.04
@@ -277,7 +277,7 @@ jobs:
 #
 #  linux-PVC-JIT-PUBLIC-test:
 #    secrets: inherit
-#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@devel
+#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
 #    needs: ["linux-PVC-JIT-PUBLIC"]
 #    with:
 #      image: embree/ubuntu:22.04
@@ -295,7 +295,7 @@ jobs:
 
   windows-DG2-JIT-INTERNAL:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     needs: [setup_gfx, setup_dpcpp]
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
@@ -308,7 +308,7 @@ jobs:
 
   windows-DG2-JIT-PUBLIC:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     needs: [setup_gfx, setup_dpcpp]
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
@@ -321,7 +321,7 @@ jobs:
 
   windows-DG2-JIT-PUBLIC-ICX:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     needs: [setup_gfx, setup_dpcpp]
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
@@ -334,7 +334,7 @@ jobs:
 
   windows-DG2-JIT-INTERNAL-TBB2020_3:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     needs: [setup_gfx, setup_dpcpp]
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
@@ -357,7 +357,7 @@ jobs:
 
   linux-fedora29_ICX:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
       image: embree/fedora:29
       runs-on: '[ "Linux", "docker", "avx512" ]'
@@ -369,7 +369,7 @@ jobs:
 
   linux-fedora32-GCC:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
       image: embree/fedora:32
       runs-on: '[ "Linux", "docker", "avx512" ]'
@@ -380,7 +380,7 @@ jobs:
 
   linux-fedora32_ICX:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
       image: embree/fedora:32
       runs-on: '[ "Linux", "docker", "avx512" ]'
@@ -391,7 +391,7 @@ jobs:
 
   linux-fedora26_CLANG4:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
       image: embree/fedora:26
       runs-on: '[ "Linux", "docker", "avx512" ]'
@@ -402,7 +402,7 @@ jobs:
 
   linux-fedora26_CLANG5-INT-ADDRSANITIZER:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
       image: embree/fedora:26
       runs-on: '[ "Linux", "docker", "build" ]'
@@ -413,7 +413,7 @@ jobs:
 
   linux-ubuntu20_04-GCC-NAMESPACE:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
       image: embree/ubuntu:20.04
       runs-on: '[ "Linux", "docker", "build" ]'
@@ -424,7 +424,7 @@ jobs:
 
   linux-ubuntu20_04-ICX:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
       image: embree/ubuntu:20.04
       runs-on: '[ "Linux", "docker", "avx512" ]'
@@ -435,7 +435,7 @@ jobs:
 
   linux-centos7_4-GCC:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
       image: embree/centos:7.4
       runs-on: '[ "Linux", "docker", "build" ]'
@@ -450,7 +450,7 @@ jobs:
   ########################################
   windows-V142:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       runs-on: '[ "Windows", "NAS", "build" ]'
       cmd: |
@@ -460,7 +460,7 @@ jobs:
 
   windows-ICX:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
       cmd: |
@@ -481,7 +481,7 @@ jobs:
 
   macosx-ARM-NEON-AVX2:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
     with:
       runs-on: '[ "macOS", "build", "arm" ]'
       cmd: |
@@ -505,7 +505,7 @@ jobs:
 
   linux-GCC-KLOCWORK:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_static_analysis.yml@devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_static_analysis.yml@main
     with:
       image: embree/centos:7.4
       runs-on: '[ "Linux", "docker", "build" ]'
