@@ -20,14 +20,14 @@ jobs:
 ####################################################################
   windows-ICX-ISPC1_19_0-TBB2021_9_0:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     with:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
       artifact-out: windows-ICX-ISPC1_19_0-TBB2021_9_0
       artifact-path: ./build/embree-*.zip
+      dpcpp-version: oneAPI/compiler/2023.1.0
       shell: cmd
       cmd: |
-        call "C:\\Program Files (x86)\\Intel\\oneAPI\\compiler\\2023.1.0\\env\\vars.bat"
         cmake --preset package-windows-icx-ispc1_19_0-tbb2021_9_0
         cmake --build build --config Release --target package
         del build\embree-*-testing.zip
@@ -35,14 +35,14 @@ jobs:
 
   windows-ICX-ISPC1_19_0-TBB2021_9_0-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     needs: ["windows-ICX-ISPC1_19_0-TBB2021_9_0"]
     with:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
       artifact-in: windows-ICX-ISPC1_19_0-TBB2021_9_0
+      dpcpp-version: oneAPI/compiler/2023.1.0
       shell: cmd
       cmd: |
-        call "C:\\Program Files (x86)\\Intel\\oneAPI\\compiler\\2023.1.0\\env\\vars.bat"
         call tests\integration\test_embree_release\unpack-windows.bat
         cmake --preset windows-icx-tbb2021_9_0
         cmake --build build --config Release
@@ -82,14 +82,14 @@ jobs:
 
   windows-v142-ISPC1_19_0-TBB2021_9_0-test-ICX:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     needs: ["windows-v142-ISPC1_19_0-TBB2021_9_0"]
     with:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
       artifact-in: windows-v142-ISPC1_19_0-TBB2021_9_0
+      dpcpp-version: oneAPI/compiler/2023.1.0
       shell: cmd
       cmd: |
-        call "C:\\Program Files (x86)\\Intel\\oneAPI\\compiler\\2023.1.0\\env\\vars.bat"
         call tests\integration\test_embree_release\unpack-windows.bat
         cmake --preset windows-icx-tbb2021_9_0
         cmake --build build --config Release
@@ -104,14 +104,14 @@ jobs:
 ####################################################################
   windows-static-ICX-ISPC1_19_0-TBB2021_9_0:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     with:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
       artifact-out: windows-static-ICX-ISPC1_19_0-TBB2021_9_0
       artifact-path: ./build/embree-*.zip
+      dpcpp-version: oneAPI/compiler/2023.1.0
       shell: cmd
       cmd: |
-        call "C:\\Program Files (x86)\\Intel\\oneAPI\\compiler\\2023.1.0\\env\\vars.bat"
         cmake --preset package-static-windows-icx-ispc1_19_0-tbb2021_9_0
         cmake --build build --config Release --target package
         del build\embree-*-testing.zip
@@ -119,14 +119,14 @@ jobs:
 
   windows-static-ICX-ISPC1_19_0-TBB2021_9_0-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     needs: ["windows-static-ICX-ISPC1_19_0-TBB2021_9_0"]
     with:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
       artifact-in: windows-static-ICX-ISPC1_19_0-TBB2021_9_0
+      dpcpp-version: oneAPI/compiler/2023.1.0
       shell: cmd
       cmd: |
-        call "C:\\Program Files (x86)\\Intel\\oneAPI\\compiler\\2023.1.0\\env\\vars.bat"
         call tests\integration\test_embree_release\unpack-windows.bat
         cmake --preset windows-icx-tbb2021_9_0
         cmake --build build --config Release
@@ -166,19 +166,19 @@ jobs:
 
   windows-static-v142-ISPC1_19_0-TBB2021_9_0-test-ICX:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     needs: ["windows-static-v142-ISPC1_19_0-TBB2021_9_0"]
     with:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
       artifact-in: windows-static-v142-ISPC1_19_0-TBB2021_9_0
+      dpcpp-version: oneAPI/compiler/2023.1.0
       shell: cmd
       cmd: |
-        call "C:\\Program Files (x86)\\Intel\\oneAPI\\compiler\\2023.1.0\\env\\vars.bat"
         call tests\integration\test_embree_release\unpack-windows.bat
         cmake --preset windows-icx-tbb2021_9_0
         cmake --build build --config Release
         .\build\test.exe
-        
+
 
 
 

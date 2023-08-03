@@ -15,14 +15,14 @@ jobs:
 ####################################################################
   release-windows-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     with:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
       artifact-out: release-windows-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
       artifact-path: ./build/embree-*.zip
+      dpcpp-version: oneAPI/compiler/2023.1.0
       shell: cmd
       cmd: |
-        call "C:\\Program Files (x86)\\Intel\\oneAPI\\compiler\\2023.1.0\\env\\vars.bat"
         cmake --preset package-windows-icx-ispc1_19_0-tbb2021_9_0
         cmake --build build --config Release --target package
         cmake --build build --target post_package
@@ -45,15 +45,15 @@ jobs:
 
   release-linux-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
       artifact-out: release-linux-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
       artifact-path: ./build/*.tar.gz
+      dpcpp-version: intel/2023.1
       cmd: |
         source scripts/cmake-presets/linux-env.sh
-        source $NAS_LINUX/intel/oneAPI/compiler/2023.1.0/env/vars.sh
         $CMAKE_EXE --preset package-linux-icx-ispc1_19_0-tbb2021_9_0
         $CMAKE_EXE --build build --config Release --target package
         $CMAKE_EXE --build build --target post_package
@@ -70,11 +70,11 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-internal.env
+      dpcpp-version: oneAPI/compiler/2023.1.0
       artifact-out: release-windows-x64-Release-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
       artifact-path: ./build/*.zip
       shell: cmd
       cmd: |
-        call "C:\\Program Files (x86)\\Intel\\oneAPI\\compiler\\2023.1.0\\env\\vars.bat"
         cmake --preset package-windows-icx-sycl-ispc1_19_0-tbb2021_9_0
         cmake --build build --config Release --target package
         cmake --build build --target post_package
@@ -104,11 +104,11 @@ jobs:
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-release.env
+      dpcpp-version: intel/2023.1
       artifact-out: release-linux-x64-Release-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
       artifact-path: ./build/*.tar.gz
       cmd: |
         source scripts/cmake-presets/linux-env.sh
-        source ${NAS_LINUX}/intel/oneAPI/compiler/2023.0.0/env/vars.sh
         $CMAKE_EXE --preset package-linux-icx-sycl-ispc1_19_0-tbb2021_9_0
         $CMAKE_EXE --build build --config Release --target package
         $CMAKE_EXE --build build --target post_package

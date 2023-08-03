@@ -23,26 +23,26 @@ jobs:
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-release.env
+      dpcpp-version: intel/2023.0
       artifact-out: linux-SYCL-DPCPP
       artifact-path: ./build/*.tar.gz
       cmd: |
         source scripts/cmake-presets/linux-env.sh
-        source ${NAS_LINUX}/intel/oneAPI/compiler/2023.0.0/env/vars.sh
         $CMAKE_EXE --preset package-linux-icx-sycl-ispc1_19_0-tbb2021_9_0-perf
         $CMAKE_EXE --build build --config Release --target package
         $CMAKE_EXE --build build --target post_package
 
   linux-build-x86-ICX-ISPC:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
+      dpcpp-version: intel/2023.1
       artifact-out: linux-build-x86-ICX-ISPC
       artifact-path: ./build/*.tar.gz
       cmd: |
         source scripts/cmake-presets/linux-env.sh
-        source $NAS_LINUX/intel/oneAPI/compiler/2023.1.0/env/vars.sh
         $CMAKE_EXE --preset package-linux-icx-ispc1_19_0-tbb2021_9_0-perf
         $CMAKE_EXE --build build --config Release --target package
         $CMAKE_EXE --build build --target post_package
