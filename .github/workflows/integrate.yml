@@ -589,7 +589,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-release.env
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
       artifact-out: linux-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0
       artifact-path: ./build/*.tar.gz
       cmd: |
@@ -609,7 +609,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-release.env
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
       artifact-in: linux-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0
       cmd: |
         source scripts/cmake-presets/linux-env.sh
@@ -630,7 +630,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-release.env ./.github/workflows/gfx-ubuntu22-release.env
+      env-from-files: ./.github/workflows/dpcpp-sycl-release.env ./.github/workflows/gfx-ubuntu22-public.env
       artifact-out: linux-SYCL-dpcpp-ISPC1_19_0-TBB2021_9_0
       artifact-path: ./build/*.tar.gz
       cmd: |
@@ -650,7 +650,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-release.env ./.github/workflows/gfx-ubuntu22-release.env
+      env-from-files: ./.github/workflows/dpcpp-sycl-release.env ./.github/workflows/gfx-ubuntu22-public.env
       artifact-in: linux-SYCL-dpcpp-ISPC1_19_0-TBB2021_9_0
       cmd: |
         source scripts/cmake-presets/linux-env.sh
