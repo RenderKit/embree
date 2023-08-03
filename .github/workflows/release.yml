@@ -99,11 +99,11 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     with:
-      image: embree/ubuntu:22.04
+      image: embree/ubuntu:20.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-release.env
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu20-release.env
       dpcpp-version: intel/2023.1
       artifact-out: release-linux-x64-Release-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
       artifact-path: ./build/*.tar.gz
@@ -181,9 +181,10 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     needs: [release-linux-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP]
     with:
+      image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-release.env
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
       artifact-in: release-linux-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
       artifact-out: release-testing-PACKAGE-ZIP
       artifact-path: ./build/*.tar.gz
