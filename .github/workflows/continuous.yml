@@ -370,7 +370,7 @@ jobs:
 
   linux-ubuntu20_04-ICX:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@freibold/devel
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     with:
       image: embree/ubuntu:20.04
       runs-on: '[ "Linux", "docker", "avx512" ]'
