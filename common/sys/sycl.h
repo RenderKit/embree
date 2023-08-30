@@ -31,9 +31,6 @@ using sycl::ushort4;
 using sycl::ushort3;
 using sycl::ushort2;
 
-using sycl::fmax;
-using sycl::fmin;
-
 #ifdef __SYCL_DEVICE_ONLY__
 #define GLOBAL __attribute__((opencl_global))
 #define LOCAL  __attribute__((opencl_local))
