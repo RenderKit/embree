@@ -279,8 +279,8 @@ ze_result_t zeDeviceGetRTASPropertiesExp( const ze_device_handle_t hDevice, ze_r
   
   /* PVC */
   const bool pvc =
-    (0x0BD0 <= device_id && device_id <= 0x0BDB) ||
-    (device_id == 0x0BE5                       );
+    (0x0BD5 <= device_id && device_id <= 0x0BDB) ||
+    (device_id == 0x0B69                       );
   
   if (pvc) {
     pProperties->rtasFormat = (ze_rtas_format_exp_t) ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_1;
