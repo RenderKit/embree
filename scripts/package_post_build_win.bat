@@ -15,11 +15,6 @@ IF %ERRORLEVEL% NEQ 0 (
   exit /b 1
 )
 
-IF [%signfile%] NEQ [] (
-  %signfile% %package_name%.zip
-  %signfile% %package_name%-testing.zip
-)
-
 IF %ERRORLEVEL% NEQ 0 (
   exit /b 1
 )
