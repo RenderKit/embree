@@ -614,12 +614,13 @@ namespace embree
       throw_RTCError(RTC_ERROR_UNKNOWN, "zeDriverGetExtensionProperties failed");
     
     bool ze_rtas_builder = false;
+#if 0 // do not try to use rtas builder extension yet by default
     for (uint32_t i=0; i<extensions.size(); i++)
     {
       if (strncmp("ZE_experimental_rtas_builder",extensions[i].name,sizeof(extensions[i].name)) == 0)
         ze_rtas_builder = true;
     }
-
+#endif
     if (ze_rtas_builder)
     {
       ZeWrapper::initRTASBuilder(ZeWrapper::LEVEL_ZERO);
