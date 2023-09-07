@@ -2055,7 +2055,12 @@ int main(int argc, char* argv[])
   TestType test = TestType::TRIANGLES_COMMITTED_HIT;
   InstancingType inst = InstancingType::NONE;
   BuildMode buildMode = BuildMode::BUILD_EXPECTED_SIZE;
+
+#if defined(EMBREE_SYCL_L0_RTAS_BUILDER)
+  ZeWrapper::RTAS_BUILD_MODE rtas_build_mode = ZeWrapper::RTAS_BUILD_MODE::AUTO;
+#else
   ZeWrapper::RTAS_BUILD_MODE rtas_build_mode = ZeWrapper::RTAS_BUILD_MODE::INTERNAL;
+#endif
   
   bool jit_cache = false;
   uint32_t numThreads = tbb::this_task_arena::max_concurrency();

@@ -613,7 +613,7 @@ namespace embree
     if (result != ZE_RESULT_SUCCESS)
       throw_RTCError(RTC_ERROR_UNKNOWN, "zeDriverGetExtensionProperties failed");
 
-#if 0 // do not use rtas_build extension yet
+#if defined(EMBREE_SYCL_L0_RTAS_BUILDER)
     bool ze_rtas_builder = false;
     for (uint32_t i=0; i<extensions.size(); i++)
     {
