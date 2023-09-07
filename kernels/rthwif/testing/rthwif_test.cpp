@@ -2143,7 +2143,7 @@ int main(int argc, char* argv[])
   if (jit_cache)
     std::cout << "WARNING: JIT caching is not supported!" << std::endl;
 
-  if (ZeWrapper::init(rtas_build_mode) != ZE_RESULT_SUCCESS) {
+  if (ZeWrapper::init() != ZE_RESULT_SUCCESS) {
     std::cerr << "ZeWrapper not successfully initialized" << std::endl;
     return 1;
   }
@@ -2190,12 +2190,14 @@ int main(int argc, char* argv[])
       if (strncmp("ZE_experimental_rtas_builder",extensions[i].name,sizeof(extensions[i].name)) == 0)
         ze_rtas_builder = true;
     }
-    
+
     if (ze_rtas_builder)
-      ZeWrapper::initRTASBuilder(ZeWrapper::LEVEL_ZERO);
+      ZeWrapper::initRTASBuilder(hDriver,ZeWrapper::RTAS_BUILD_MODE::AUTO);
     else
-      ZeWrapper::initRTASBuilder(ZeWrapper::INTERNAL);
+      ZeWrapper::initRTASBuilder(hDriver,ZeWrapper::RTAS_BUILD_MODE::INTERNAL);
   }
+  else
+    ZeWrapper::initRTASBuilder(hDriver,rtas_build_mode);
 
   if (ZeWrapper::rtas_builder == ZeWrapper::INTERNAL)
     std::cout << "using internal RTAS builder" << std::endl;
