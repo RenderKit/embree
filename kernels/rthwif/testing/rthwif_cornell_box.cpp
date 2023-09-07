@@ -455,7 +455,7 @@ void render(unsigned int x, unsigned int y, void* bvh, unsigned int* pixels, uns
 int main(int argc, char* argv[])
 {
   /* use can specify reference image to compare against */
-  ZeWrapper::RTAS_BUILD_MODE rtas_build_mode = ZeWrapper::RTAS_BUILD_MODE::AUTO;
+  ZeWrapper::RTAS_BUILD_MODE rtas_build_mode = ZeWrapper::RTAS_BUILD_MODE::INTERNAL;
   char* reference_img = NULL;
   for (int i=1; i<argc; i++)
   {
