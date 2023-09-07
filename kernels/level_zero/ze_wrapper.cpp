@@ -88,13 +88,28 @@ ZeWrapper::~ZeWrapper() {
   unload_module(handle);
 }
 
-void selectLevelZeroRTASBuilder()
+ze_result_t selectLevelZeroRTASBuilder(ze_driver_handle_t hDriver)
 {
   if (ZeWrapper::rtas_builder == ZeWrapper::LEVEL_ZERO)
-    return;
+    return ZE_RESULT_SUCCESS;
   
-  zeRTASBuilderCreateExpInternal = find_symbol<decltype(zeRTASBuilderCreateExp)*>(handle,"zeRTASBuilderCreateExp");
-  zeRTASBuilderDestroyExpInternal = find_symbol<decltype(zeRTASBuilderDestroyExp)*>(handle,"zeRTASBuilderDestroyExp");
+  auto zeRTASBuilderCreateExpTemp = find_symbol<decltype(zeRTASBuilderCreateExp)*>(handle,"zeRTASBuilderCreateExp");
+  auto zeRTASBuilderDestroyExpTemp = find_symbol<decltype(zeRTASBuilderDestroyExp)*>(handle,"zeRTASBuilderDestroyExp");
+  
+  ze_rtas_builder_exp_desc_t builderDesc = { ZE_STRUCTURE_TYPE_RTAS_BUILDER_EXP_DESC };
+  ze_rtas_builder_exp_handle_t hBuilder = nullptr;
+  ze_result_t err = zeRTASBuilderCreateExpTemp(hDriver, &builderDesc, &hBuilder);
+
+  /* when ZE_RESULT_ERROR_DEPENDENCY_UNAVAILABLE is reported extension cannot get loaded */
+  if (err == ZE_RESULT_ERROR_DEPENDENCY_UNAVAILABLE)
+    return err;
+
+  if (err == ZE_RESULT_SUCCESS)
+    zeRTASBuilderDestroyExpTemp(hBuilder);
+
+  zeRTASBuilderCreateExpInternal = zeRTASBuilderCreateExpTemp;
+  zeRTASBuilderDestroyExpInternal = zeRTASBuilderDestroyExpTemp;
+  
   zeDriverRTASFormatCompatibilityCheckExpInternal = find_symbol<decltype(zeDriverRTASFormatCompatibilityCheckExp)*>(handle,"zeDriverRTASFormatCompatibilityCheckExp");
   zeRTASBuilderGetBuildPropertiesExpInternal = find_symbol<decltype(zeRTASBuilderGetBuildPropertiesExp)*>(handle,"zeRTASBuilderGetBuildPropertiesExp");
   zeRTASBuilderBuildExpInternal = find_symbol<decltype(zeRTASBuilderBuildExp)*>(handle,"zeRTASBuilderBuildExp");
@@ -105,6 +120,7 @@ void selectLevelZeroRTASBuilder()
   zeRTASParallelOperationJoinExpInternal = find_symbol<decltype(zeRTASParallelOperationJoinExp)*>(handle,"zeRTASParallelOperationJoinExp");
   
   ZeWrapper::rtas_builder = ZeWrapper::LEVEL_ZERO;
+  return ZE_RESULT_SUCCESS;
 }
 
 void selectInternalRTASBuilder()
@@ -130,7 +146,7 @@ void selectInternalRTASBuilder()
 #endif
 }
 
-ze_result_t ZeWrapper::init(ZeWrapper::RTAS_BUILD_MODE rtas_build_mode)
+ze_result_t ZeWrapper::init()
 {
   std::lock_guard<std::mutex> lock(zeWrapperMutex);
   if (handle)
@@ -144,8 +160,6 @@ ze_result_t ZeWrapper::init(ZeWrapper::RTAS_BUILD_MODE rtas_build_mode)
     zeDriverGetExtensionPropertiesInternal = find_symbol<decltype(zeDriverGetExtensionProperties)*>(handle, "zeDriverGetExtensionProperties");
     zeDeviceGetPropertiesInternal = find_symbol<decltype(zeDeviceGetProperties)*>(handle, "zeDeviceGetProperties");
     zeDeviceGetModulePropertiesInternal = find_symbol<decltype(zeDeviceGetModuleProperties)*>(handle, "zeDeviceGetModuleProperties");
-    
-    return initRTASBuilder(rtas_build_mode);
   }
   catch (std::exception& e) {
     return ZE_RESULT_ERROR_UNKNOWN;
@@ -153,16 +167,29 @@ ze_result_t ZeWrapper::init(ZeWrapper::RTAS_BUILD_MODE rtas_build_mode)
   return ZE_RESULT_SUCCESS;
 }
 
-ze_result_t ZeWrapper::initRTASBuilder(RTAS_BUILD_MODE rtas_build_mode)
+ze_result_t ZeWrapper::initRTASBuilder(ze_driver_handle_t hDriver, RTAS_BUILD_MODE rtas_build_mode)
 {
-  //std::lock_guard<std::mutex> lock(zeWrapperMutex);
+  std::lock_guard<std::mutex> lock(zeWrapperMutex);
+
+  /* only select rtas builder once! */
+  if (rtas_builder != RTAS_BUILD_MODE::AUTO)
+  {
+    if (rtas_build_mode == RTAS_BUILD_MODE::AUTO)
+      return ZE_RESULT_SUCCESS;
+
+    if (rtas_builder == rtas_build_mode)
+      return ZE_RESULT_SUCCESS;
+
+    return ZE_RESULT_ERROR_UNKNOWN;
+  }
 
   try {
     
     if (rtas_build_mode == RTAS_BUILD_MODE::AUTO)
     {
       try {
-        selectLevelZeroRTASBuilder();
+        if (selectLevelZeroRTASBuilder(hDriver) != ZE_RESULT_SUCCESS)
+          selectInternalRTASBuilder();
       } catch (std::exception& e) {
         selectInternalRTASBuilder();
       }
@@ -172,7 +199,7 @@ ze_result_t ZeWrapper::initRTASBuilder(RTAS_BUILD_MODE rtas_build_mode)
       selectInternalRTASBuilder();
     
     else if (rtas_build_mode == RTAS_BUILD_MODE::LEVEL_ZERO)
-      selectLevelZeroRTASBuilder();
+      return selectLevelZeroRTASBuilder(hDriver);
     
     else
       throw std::runtime_error("internal error");

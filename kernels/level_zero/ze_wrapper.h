@@ -35,8 +35,8 @@ struct ZeWrapper
 
   ~ZeWrapper();
 
-  static ze_result_t init(RTAS_BUILD_MODE rtas_build_mode = RTAS_BUILD_MODE::AUTO);
-  static ze_result_t initRTASBuilder(RTAS_BUILD_MODE rtas_build_mode = RTAS_BUILD_MODE::AUTO);
+  static ze_result_t init();
+  static ze_result_t initRTASBuilder(ze_driver_handle_t hDriver, RTAS_BUILD_MODE rtas_build_mode = RTAS_BUILD_MODE::AUTO);
   
   static ze_result_t zeMemFree(ze_context_handle_t, void*);
   static ze_result_t zeMemAllocShared(ze_context_handle_t, const ze_device_mem_alloc_desc_t*, const ze_host_mem_alloc_desc_t*, size_t, size_t, ze_device_handle_t, void**);

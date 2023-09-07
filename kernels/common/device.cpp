@@ -612,28 +612,28 @@ namespace embree
     result = ZeWrapper::zeDriverGetExtensionProperties(hDriver,&count,extensions.data());
     if (result != ZE_RESULT_SUCCESS)
       throw_RTCError(RTC_ERROR_UNKNOWN, "zeDriverGetExtensionProperties failed");
-    
+
+#if 0 // do not use rtas_build extension yet
     bool ze_rtas_builder = false;
-#if 0 // do not try to use rtas builder extension yet by default
     for (uint32_t i=0; i<extensions.size(); i++)
     {
       if (strncmp("ZE_experimental_rtas_builder",extensions[i].name,sizeof(extensions[i].name)) == 0)
         ze_rtas_builder = true;
     }
-#endif
     if (ze_rtas_builder)
-    {
-      ZeWrapper::initRTASBuilder(ZeWrapper::LEVEL_ZERO);
-      
-      if (State::verbosity(1))
-        std::cout << "  Level Zero RTAS Builder" << std::endl;
-    }
+      ZeWrapper::initRTASBuilder(hDriver,ZeWrapper::AUTO);
     else
-    {
-      ZeWrapper::initRTASBuilder(ZeWrapper::INTERNAL);
+      ZeWrapper::initRTASBuilder(hDriver,ZeWrapper::INTERNAL);
+#else
+    ZeWrapper::initRTASBuilder(hDriver,ZeWrapper::INTERNAL);
+#endif
 
-      if (State::verbosity(1))
+    if (State::verbosity(1))
+    {
+      if (ZeWrapper::rtas_builder == ZeWrapper::INTERNAL)
         std::cout << "  Internal RTAS Builder" << std::endl;
+      else
+        std::cout << "  Level Zero RTAS Builder" << std::endl;
     }
 
     /* check if extension library can get loaded */
