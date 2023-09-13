@@ -367,7 +367,7 @@ namespace embree
     if (!closed) {
       closed = group_instancing;
       hasLightOrCamera = false;
-      for (auto c : children) {
+      for (auto& c : children) {
         closed &= c->calculateClosed(group_instancing);
         hasLightOrCamera |= c->hasLightOrCamera;
       }
@@ -462,7 +462,7 @@ namespace embree
       if (n.size() && n.size() != N)
         THROW_RUNTIME_ERROR("incompatible vertex array sizes");
     if (texcoords.size() && texcoords.size() != N) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
-    for (auto tri : triangles) {
+    for (auto& tri : triangles) {
       if (size_t(tri.v0) >= N || size_t(tri.v1) >= N || size_t(tri.v2) >= N)
         THROW_RUNTIME_ERROR("invalid triangle");
     }
@@ -480,7 +480,7 @@ namespace embree
       if (n.size() && n.size() != N)
         THROW_RUNTIME_ERROR("incompatible vertex array sizes");
     if (texcoords.size() && texcoords.size() != N) THROW_RUNTIME_ERROR("incompatible vertex array sizes");
-    for (auto quad : quads) {
+    for (auto& quad : quads) {
       if (size_t(quad.v0) >= N || size_t(quad.v1) >= N || size_t(quad.v2) >= N || size_t(quad.v3) >= N)
         THROW_RUNTIME_ERROR("invalid quad");
     }
@@ -492,7 +492,7 @@ namespace embree
     for (const auto& p : positions) 
       if (p.size() != N) 
         THROW_RUNTIME_ERROR("incompatible vertex array sizes");
-    for (auto grid : grids) {
+    for (auto& grid : grids) {
       if (size_t(grid.startVtx) >= N || size_t(grid.lineStride) >= N || size_t(grid.resX) >= 0x7fff || size_t(grid.resY) >= 0x7fff)
         THROW_RUNTIME_ERROR("invalid grid");
     }
@@ -515,7 +515,7 @@ namespace embree
       if (size_t(i) >= texcoords.size()) THROW_RUNTIME_ERROR("invalid texcoord index array");
     for (auto i : holes) 
       if (size_t(i) >= verticesPerFace.size()) THROW_RUNTIME_ERROR("invalid hole index array");
-    for (auto crease : edge_creases) 
+    for (auto& crease : edge_creases) 
       if (max(size_t(crease.x),size_t(crease.y)) >= N) THROW_RUNTIME_ERROR("invalid edge crease array");
     if (edge_crease_weights.size() != edge_creases.size())
       THROW_RUNTIME_ERROR("invalid edge crease weight array");
@@ -589,13 +589,13 @@ namespace embree
         type == RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE ||
         type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE)
     {
-      for (auto hair : hairs)
+      for (auto& hair : hairs)
         if (size_t(hair.vertex+1) >= N)
           THROW_RUNTIME_ERROR("invalid hair");
     }
     else 
     {
-      for (auto hair : hairs)
+      for (auto& hair : hairs)
         if (size_t(hair.vertex+3) >= N)
           THROW_RUNTIME_ERROR("invalid hair");
     }
@@ -963,35 +963,35 @@ namespace embree
     else if (Ref<SceneGraph::TriangleMeshNode> mesh = node.dynamicCast<SceneGraph::TriangleMeshNode>()) 
     {
       avector<Vec3fa> positions1;
-      for (auto P : mesh->positions.back()) 
+      for (auto& P : mesh->positions.back()) 
         positions1.push_back(P+dP);
       mesh->positions.push_back(std::move(positions1));
     }
     else if (Ref<SceneGraph::QuadMeshNode> mesh = node.dynamicCast<SceneGraph::QuadMeshNode>()) 
     {
       avector<Vec3fa> positions1;
-      for (auto P : mesh->positions.back()) 
+      for (auto& P : mesh->positions.back()) 
         positions1.push_back(P+dP);
       mesh->positions.push_back(std::move(positions1));
     }
     else if (Ref<SceneGraph::GridMeshNode> mesh = node.dynamicCast<SceneGraph::GridMeshNode>()) 
     {
       avector<Vec3fa> positions1;
-      for (auto P : mesh->positions.back()) 
+      for (auto& P : mesh->positions.back()) 
         positions1.push_back(P+dP);
       mesh->positions.push_back(std::move(positions1));
     }
     else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
     {
       avector<Vec3ff> positions1;
-      for (auto P : mesh->positions.back()) 
+      for (auto& P : mesh->positions.back()) 
         positions1.push_back(P+Vec3ff(dP,0.0f));
       mesh->positions.push_back(std::move(positions1));
     }
     else if (Ref<SceneGraph::PointSetNode> mesh = node.dynamicCast<SceneGraph::PointSetNode>())
     {
       avector<Vec3ff> positions1;
-      for (auto P : mesh->positions.back())
+      for (auto& P : mesh->positions.back())
         positions1.push_back(P+Vec3ff(dP,0.0f));
       mesh->positions.push_back(std::move(positions1));
 
@@ -1001,7 +1001,7 @@ namespace embree
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>())
     {
       avector<Vec3fa> positions1;
-      for (auto P : mesh->positions.back())
+      for (auto& P : mesh->positions.back())
         positions1.push_back(P+dP);
       mesh->positions.push_back(std::move(positions1));
     }
@@ -1582,7 +1582,7 @@ namespace embree
       for (auto& p : hmesh->positions)
         lmesh->positions.push_back(p);
 
-      for (auto hair : hmesh->hairs) {
+      for (auto& hair : hmesh->hairs) {
         lmesh->hairs.push_back(SceneGraph::HairSetNode::Hair(hair.vertex+0,hair.id));
         lmesh->hairs.push_back(SceneGraph::HairSetNode::Hair(hair.vertex+1,hair.id));
         lmesh->hairs.push_back(SceneGraph::HairSetNode::Hair(hair.vertex+2,hair.id));

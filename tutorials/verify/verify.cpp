@@ -5671,7 +5671,7 @@ namespace embree
       groups.pop();
       
       push(new TestGroup("quad_hit",true,true));
-      for (auto sflags : sceneFlags) 
+      for (auto& sflags : sceneFlags) 
         for (auto imode : intersectModes) 
           for (auto ivariant : intersectVariants)
             if (has_variant(imode,ivariant))
@@ -5723,7 +5723,7 @@ namespace embree
       }
 
       push(new TestGroup("instancing",true,true));
-        for (auto sflags : sceneFlags) 
+        for (auto& sflags : sceneFlags) 
           for (auto imode : intersectModes) 
             for (auto ivariant : intersectVariants)
               if (has_variant(imode,ivariant)) 
@@ -5951,14 +5951,14 @@ namespace embree
       groups.top()->add(new SimpleBenchmark("simple",isa));
       
       for (auto gtype : benchmark_gtypes)
-        for (auto sflags : benchmark_sflags_quality) 
-          for (auto imode : benchmark_imodes_ivariants)
+        for (auto& sflags : benchmark_sflags_quality) 
+          for (auto& imode : benchmark_imodes_ivariants)
             groups.top()->add(new CoherentRaysBenchmark("coherent."+to_string(gtype)+"_1000k."+to_string(sflags.first,imode.first,imode.second),
                                                         isa,gtype,sflags.first,sflags.second,imode.first,imode.second,501));
 
       for (auto gtype : benchmark_gtypes)
-        for (auto sflags : benchmark_sflags_quality) 
-          for (auto imode : benchmark_imodes_ivariants)
+        for (auto& sflags : benchmark_sflags_quality) 
+          for (auto& imode : benchmark_imodes_ivariants)
             groups.top()->add(new IncoherentRaysBenchmark("incoherent."+to_string(gtype)+"_1000k."+to_string(sflags.first,imode.first,imode.second),
                                                           isa,gtype,sflags.first,sflags.second,imode.first,imode.second,501));
 
@@ -6005,7 +6005,7 @@ namespace embree
 
       for (auto gtype : benchmark_create_gtypes)
         for (auto sflags : benchmark_update_sflags_quality)
-          for (auto num_prims : num_primitives)
+          for (auto& num_prims : num_primitives)
             groups.top()->add(new CreateGeometryBenchmark("update."+to_string(gtype)+"_"+std::get<0>(num_prims)+"."+to_string(sflags.first,sflags.second),
                                                           isa,gtype,sflags.first,sflags.second,std::get<1>(num_prims),std::get<2>(num_prims),true,true));
 
@@ -6019,7 +6019,7 @@ namespace embree
 
       for (auto gtype : benchmark_create_gtypes)
         for (auto sflags : benchmark_create_sflags_quality)
-          for (auto num_prims : num_primitives)
+          for (auto& num_prims : num_primitives)
             groups.top()->add(new CreateGeometryBenchmark(to_string(gtype)+"_"+std::get<0>(num_prims)+"."+to_string(sflags.first,sflags.second),
                                                           isa,gtype,sflags.first,sflags.second,std::get<1>(num_prims),std::get<2>(num_prims),false,false));
 
@@ -6197,7 +6197,7 @@ namespace embree
     if (Ref<TestGroup> group = test.dynamicCast<TestGroup>()) 
     {
       bool any_enabled = false;
-      for (auto t : group->tests) any_enabled |= update_tests(t);
+      for (auto& t : group->tests) any_enabled |= update_tests(t);
       return test->enabled = any_enabled;
     } 
     else 
