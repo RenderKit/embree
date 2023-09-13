@@ -86,7 +86,7 @@ namespace embree
     {
       /* we convert into an OBJ material */
       Ref<OBJMaterial> objmaterial = new OBJMaterial;
-      for (auto child : xml->children)
+      for (auto& child : xml->children)
       {
         if (child->name == "diffuse") {
           objmaterial->Kd = load<Vec3fa>(child);
@@ -162,7 +162,7 @@ namespace embree
     }
 
     /* recurse into every unknown node to find some texture */
-    for (auto child : xml->children) {
+    for (auto& child : xml->children) {
       std::shared_ptr<Texture> texture = loadMap(child);
       if (texture) return texture;
     }
@@ -187,7 +187,7 @@ namespace embree
     if (xml->name != "mtlLib") 
       THROW_RUNTIME_ERROR(xml->loc.str()+": invalid material library");
     
-    for (auto child : xml->children)
+    for (auto& child : xml->children)
     {
       if (child->name == "materialDefinition") {
         loadMaterialDefinition(child);

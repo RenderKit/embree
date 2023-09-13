@@ -740,7 +740,7 @@ namespace embree
     }
     
     /* store all compressed transform nodes */
-    for (auto i : object_to_transform_map)
+    for (auto& i : object_to_transform_map)
       store(i.second);
 
     close("Group");

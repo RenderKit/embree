@@ -219,6 +219,18 @@
         "EMBREE_SYCL_AOT_DEVICES": "none",
         "EMBREE_MAX_ISA": "AVX512"
       }
+    },
+
+
+
+    {
+      "name": "linux-coverity",
+      "inherits": ["package-linux", "env", "gcc", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
     }
   ]
 }

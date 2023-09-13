@@ -722,21 +722,21 @@ namespace embree
       virtual BBox3fa bounds() const
       {
         BBox3fa b = empty;
-        for (auto c : children) b.extend(c->bounds());
+        for (auto& c : children) b.extend(c->bounds());
         return b;
       }
 
       virtual LBBox3fa lbounds() const
       {
         LBBox3fa b = empty;
-        for (auto c : children) b.extend(c->lbounds());
+        for (auto& c : children) b.extend(c->lbounds());
         return b;
       }
 
       virtual size_t numPrimitives() const 
       {
         size_t n = 0;
-        for (auto child : children) n += child->numPrimitives();
+        for (auto& child : children) n += child->numPrimitives();
         return n;
       }
 
@@ -970,7 +970,7 @@ namespace embree
       {
         BBox3fa b = empty;
         for (const auto& p : positions)
-          for (auto x : p)
+          for (auto& x : p)
             b.extend(x);
         return b;
       }
@@ -980,7 +980,7 @@ namespace embree
         avector<BBox3fa> bboxes(positions.size());
         for (size_t t=0; t<positions.size(); t++) {
           BBox3fa b = empty;
-          for (auto x : positions[t]) b.extend(x);
+          for (auto& x : positions[t]) b.extend(x);
           bboxes[t] = b;
         }
         return LBBox3fa(bboxes);
@@ -1057,7 +1057,7 @@ namespace embree
       {
         BBox3fa b = empty;
         for (const auto& p : positions)
-          for (auto x : p)
+          for (auto& x : p)
             b.extend(x);
         return b;
       }
@@ -1067,7 +1067,7 @@ namespace embree
         avector<BBox3fa> bboxes(positions.size());
         for (size_t t=0; t<positions.size(); t++) {
           BBox3fa b = empty;
-          for (auto x : positions[t]) b.extend(x);
+          for (auto& x : positions[t]) b.extend(x);
           bboxes[t] = b;
         }
         return LBBox3fa(bboxes);
@@ -1164,7 +1164,7 @@ namespace embree
       {
         BBox3fa b = empty;
         for (const auto& p : positions)
-          for (auto x : p)
+          for (auto& x : p)
             b.extend(x);
         return b;
       }
@@ -1174,7 +1174,7 @@ namespace embree
         avector<BBox3fa> bboxes(positions.size());
         for (size_t t=0; t<positions.size(); t++) {
           BBox3fa b = empty;
-          for (auto x : positions[t]) b.extend(x);
+          for (auto& x : positions[t]) b.extend(x);
           bboxes[t] = b;
         }
         return LBBox3fa(bboxes);
@@ -1281,7 +1281,7 @@ namespace embree
       {
         BBox3fa b = empty;
         for (const auto& p : positions)
-          for (auto x : p)
+          for (auto& x : p)
             b.extend(x);
         return b;
       }
@@ -1291,7 +1291,7 @@ namespace embree
         avector<BBox3fa> bboxes(positions.size());
         for (size_t t=0; t<positions.size(); t++) {
           BBox3fa b = empty;
-          for (auto x : positions[t]) b.extend(x);
+          for (auto& x : positions[t]) b.extend(x);
           bboxes[t] = b;
         }
         return LBBox3fa(bboxes);
@@ -1372,7 +1372,7 @@ namespace embree
       {
         BBox3fa b = empty;
         for (const auto& p : positions)
-          for (auto x : p)
+          for (auto& x : p)
             b.extend(x);
         return b;
       }
@@ -1382,7 +1382,7 @@ namespace embree
         avector<BBox3fa> bboxes(positions.size());
         for (size_t t=0; t<positions.size(); t++) {
           BBox3fa b = empty;
-          for (auto x : positions[t])
+          for (auto& x : positions[t])
             b.extend(x);
           bboxes[t] = b;
         }
@@ -1466,7 +1466,7 @@ namespace embree
       {
         BBox3fa b = empty;
         for (const auto& p : positions)
-          for (auto x : p)
+          for (auto& x : p)
             b.extend(x);
         return b;
       }
@@ -1476,7 +1476,7 @@ namespace embree
         avector<BBox3fa> bboxes(positions.size());
         for (size_t t=0; t<positions.size(); t++) {
           BBox3fa b = empty;
-          for (auto x : positions[t]) b.extend(x);
+          for (auto& x : positions[t]) b.extend(x);
           bboxes[t] = b;
         }
         return LBBox3fa(bboxes);
