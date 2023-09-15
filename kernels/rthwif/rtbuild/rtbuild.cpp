@@ -342,6 +342,9 @@ namespace embree
 
   ze_result_t validate(ze_rtas_format_exp_t rtasFormat)
   {
+    if (rtasFormat == ZE_RTAS_FORMAT_EXP_INVALID)
+      return ZE_RESULT_ERROR_INVALID_ENUMERATION;
+      
     if (uint32_t(rtasFormat) > uint32_t(ZE_RTAS_DEVICE_FORMAT_EXP_VERSION_MAX))
       return ZE_RESULT_ERROR_INVALID_ENUMERATION;
 
