@@ -5,6 +5,24 @@
 
 namespace embree
 {
+  class RestoreStreamState 
+  {
+  public:
+    RestoreStreamState(std::ostream& iostream)
+      : iostream(iostream), flags(iostream.flags()), precision(iostream.precision()) {
+    }
+
+    ~RestoreStreamState() {
+      iostream.flags(flags);
+      iostream.precision(precision);
+    }
+    
+  private:
+    std::ostream& iostream;
+    std::ios::fmtflags flags;
+    std::streamsize precision;
+  };
+  
   double ratio(double a, double b)
   {
     if (b == 0.0) return 0.0f;
@@ -24,6 +42,7 @@ namespace embree
   
   void BVHStatistics::NodeStat::print(std::ostream& cout, double totalSAH, size_t totalBytes, size_t numPrimitives) const
   {
+    RestoreStreamState iostate(cout);
     cout << std::setw(7) << numNodes << " ";
     cout << std::setw(7) << std::setprecision(3) << sah();
     cout << std::setw(7) << std::setprecision(2) << percent(sah(),totalSAH) << "% ";
@@ -40,6 +59,7 @@ namespace embree
   
   void BVHStatistics::LeafStat::print(std::ostream& cout, double totalSAH, size_t totalBytes, size_t numPrimitives, bool blocks) const
   {
+    RestoreStreamState iostate(cout);
     size_t N = blocks ? numBlocks : numLeaves;
     cout << std::setw(7) << N << " ";
     cout << std::setw(7) << std::setprecision(3) << sah();
@@ -57,7 +77,7 @@ namespace embree
   
   void BVHStatistics::print (std::ostream& cout) const
   {
-    //IOStreamStateRestorer iostate(cout);
+    RestoreStreamState iostate(cout);
     cout.setf(std::ios::fixed, std::ios::floatfield);
     cout.fill(' ');
     
@@ -101,6 +121,7 @@ namespace embree
   
   void BVHStatistics::print_raw(std::ostream& cout) const
   {
+    RestoreStreamState iostate(cout);
     size_t totalPrimitives = quadLeaf.numPrimsUsed + proceduralLeaf.numPrimsUsed + instanceLeaf.numPrimsUsed;
     cout << "bvh_spatial_split_factor = " << percent(totalPrimitives,numBuildPrimitives) << std::endl;
     

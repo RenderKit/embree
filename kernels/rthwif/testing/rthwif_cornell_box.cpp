@@ -14,6 +14,9 @@
 
 void* dispatchGlobalsPtr = nullptr;
 
+static uint32_t global_width = 512;
+static uint32_t global_height = 512;
+
 void exception_handler(sycl::exception_list exceptions)
 {
   for (std::exception_ptr const& e : exceptions) {
@@ -424,7 +427,7 @@ void render(unsigned int x, unsigned int y, void* bvh, unsigned int* pixels, uns
   /* compute primary ray */
   intel_ray_desc_t ray;
   ray.origin = p;
-  ray.direction = float(x)*vx/8.0f + float(y)*vy/8.0f + vz;;
+  ray.direction = float(x)*vx*64.0f/float(width) + float(y)*vy*64/float(height) + vz;
   ray.tmin = 0.0f;
   ray.tmax = INFINITY;
   ray.mask = 0xFF;
@@ -476,6 +479,16 @@ int main(int argc, char* argv[])
     }
     else if (strcmp(argv[i], "--default-rtas-builder") == 0) {
       rtas_build_mode = ZeWrapper::RTAS_BUILD_MODE::AUTO;
+    }
+    else if (strcmp(argv[i], "--size") == 0) {
+      if (++i >= argc) throw std::runtime_error("--size: width expected");
+      global_width = atoi(argv[i]);
+      if (++i >= argc) throw std::runtime_error("--size: height expected");
+      global_height = atoi(argv[i]);
+      if (global_width == 0) throw std::runtime_error("--size: width is zero");
+      if (global_height == 0) throw std::runtime_error("--size: height is zero");
+      if (global_width > 4096) throw std::runtime_error("--size: width too large");
+      if (global_height > 4096) throw std::runtime_error("--size: height too large");
     }
     else {
       throw std::runtime_error("unknown command line argument");
@@ -542,8 +555,8 @@ int main(int argc, char* argv[])
   void* bvh = build_rtas(device,context);
 
   /* creates framebuffer */
-  static const int width = 512;
-  static const int height = 512;
+  const uint32_t width = global_width;
+  const uint32_t height = global_height;
   unsigned int* pixels = (unsigned int*) sycl::aligned_alloc(64,width*height*sizeof(unsigned int),device,context,sycl::usm::alloc::shared);
   memset(pixels, 0, width*height*sizeof(uint32_t));
 
