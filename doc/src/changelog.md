@@ -2,7 +2,8 @@ Version History
 ---------------
 
 ### Embree 4.3.0
--   Added instance array primitive for reducing memony requirements in scenes with large amounts of similar instances.
+-   Added instance array primitive for reducing memony requirements in scenes
+    with large amounts of similar instances.
 -   Properly checks driver if L0 RTAS extension can get loaded.
 -   Added varying version of rtcGetGeometryTransform for ISPC.
 -   Fixed signature of RTCMemoryMonitorFunction for ISPC.
