@@ -23,6 +23,15 @@
     },
 
     {
+      "name": "release-linux",
+      "inherits": ["package-linux", "env", "dpcpp", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+    {
       "name": "package-linux-icx-ispc1_19_0-tbb2021_9_0",
       "inherits": ["package-linux", "env", "icx", "ispc1_19_0", "tbb2021_9_0"],
       "binaryDir": "${sourceDir}/build",
@@ -85,6 +94,18 @@
     },
 
     {
+      "name": "release-linux-sycl",
+      "inherits": ["package-linux", "env", "dpcpp", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+    {
       "name": "package-linux-icx-sycl-ispc1_19_0-tbb2021_9_0",
       "inherits": ["package-linux", "env", "icx", "ispc1_19_0", "tbb2021_9_0"],
       "binaryDir": "${sourceDir}/build",
@@ -125,6 +146,15 @@
     },
 
 
+    {
+      "name": "release-macos",
+      "inherits": ["package-macos", "env", "gcc", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
 
     {
       "name": "package-macos-gcc-ispc1_19_0-tbb2021_9_0",
@@ -151,6 +181,16 @@
     {
       "name": "package-windows-icx-ispc1_19_0-tbb2021_9_0",
       "inherits": ["package-windows", "env", "icx-windows", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+
+    {
+      "name": "release-windows",
+      "inherits": ["package-windows", "env", "dpcpp-windows", "ispc1_19_0", "tbb2021_9_0"],
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
@@ -205,6 +245,19 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "EMBREE_MAX_ISA": "SSE2"
+      }
+    },
+
+    {
+      "name": "release-windows-sycl",
+      "inherits": ["package-windows", "env", "dpcpp-windows", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "AVX512"
       }
     },
 

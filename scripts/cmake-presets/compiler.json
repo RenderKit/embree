@@ -59,6 +59,14 @@
       }
     },
     {
+      "name": "dpcpp-windows",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_C_COMPILER": "clang"
+      }
+    },
+    {
       "name": "v143",
       "generator": "Visual Studio 17 2022",
       "architecture": "x64",

@@ -181,6 +181,12 @@ jobs:
       dpcpp-version: intel-llvm/nightly-2023-09-20-rk
       artifact-out: linux-DG2-JIT-PUBLIC-sycl-nightly-RK
       artifact-path: ./build .ctest_conf
+      pre-cmd: |
+        yum -y install epel-release
+        dnf makecache --refresh
+        dnf config-manager --set-enabled powertools
+        dnf -y update
+        dnf -y install ninja-build
       cmd: |
         scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.18.1 isa:AVX512 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.7.0 intensity:4
         scripts/test.py build --debug
@@ -362,6 +368,12 @@ jobs:
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
       dpcpp-version: intel-llvm/nightly-2023-09-20-rk
+      pre-cmd: |
+        yum -y install epel-release
+        dnf makecache --refresh
+        dnf config-manager --set-enabled powertools
+        dnf -y update
+        dnf -y install ninja-build
       cmd: |
         python scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.18.1 isa:AVX512 tasking:TBB2021.7.0 build:Release EMBREE_SYCL_SUPPORT:ON sycl:none intensity:2
         python scripts/test.py build

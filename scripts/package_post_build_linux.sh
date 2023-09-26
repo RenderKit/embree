@@ -9,6 +9,6 @@ echo $EMBREE_VERSION
 
 mv ${PACKAGE_NAME}-embree.tar.gz ${PACKAGE_NAME}.tar.gz
 mv ${PACKAGE_NAME}-embree-testing.tar.gz ${PACKAGE_NAME}-testing.tar.gz
-rm ${PACKAGE_NAME}-Unspecified.tar.gz
+rm -f ${PACKAGE_NAME}-Unspecified.tar.gz
 
 ls -l *.tar.gz
