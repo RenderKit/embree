@@ -46,6 +46,8 @@ enum RTCFormat
   RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,
 
   RTC_FORMAT_GRID,
+
+  RTC_FORMAT_QUATERNION_DECOMPOSITION
 };
 \f[R]
 .fi
@@ -74,8 +76,13 @@ floating point matrix layed out either row major or column major.
 The \f[C]RTC_FORMAT_FLOAT4X4_ROW_MAJOR\f[R] and
 \f[C]RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR\f[R] formats, specify a 4x4
 floating point matrix layed out either row major or column major.
-These matrix formats are used in the [rtcSetGeometryTransform] function
-in order to set a transformation matrix for geometries.
+The \f[C]RTC_FORMAT_QUATERNION_DECOMPOSITION\f[R] format specifies a
+structure that represents a quaternion decomposition (see
+[RTCQuaternionDecomposition]) of an affine transformation.
+These formats are used in the [rtcSetGeometryTransform] function or in
+geometry buffers with type \f[C]RTC_BUFFER_TYPE_TRANSFORM\f[R] in order
+to set a transformation matrix for instance and instance array
+geometries.
 .PP
 The \f[C]RTC_FORMAT_GRID\f[R] is a special data format used to specify
 grid primitives of layout RTCGrid when creating grid geometries (see
@@ -85,3 +92,4 @@ grid primitives of layout RTCGrid when creating grid geometries (see
 .PP
 [rtcSetGeometryBuffer], [rtcSetSharedGeometryBuffer],
 [rtcSetNewGeometryBuffer], [rtcSetGeometryTransform]
+[RTCQuaternionDecomposition]
