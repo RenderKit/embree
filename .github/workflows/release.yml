@@ -13,48 +13,55 @@ jobs:
 #####################################################################
 # Release Builds
 ####################################################################
-  release-windows-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP:
+  release-windows:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     with:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-      artifact-out: release-windows-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
+      artifact-out: release-windows
       artifact-path: ./build/embree-*.zip
-      dpcpp-version: oneAPI/compiler/2023.1.0
+      dpcpp-version: intel-llvm/nightly-2023-09-20-rk
       shell: cmd
       cmd: |
-        cmake --preset package-windows-icx-ispc1_19_0-tbb2021_9_0
+        cmake --preset release-windows
         cmake --build build --config Release --target package
         cmake --build build --target post_package
         cmake --build build --target test_package
 
 
-  release-macosx-x64-Release-CLANG-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP:
+  release-macosx:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
     with:
       runs-on: '[ "macOS", "build", "x86_64" ]'
-      artifact-out: release-macosx-x64-Release-CLANG-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
+      artifact-out: release-macosx
       artifact-path: ./build/*.zip
       cmd: |
         source scripts/cmake-presets/macos-env.sh
-        $CMAKE_EXE --preset package-macos-gcc-ispc1_19_0-tbb2021_9_0
+        $CMAKE_EXE --preset release-macos
         $CMAKE_EXE --build build --config Release --target package
         $CMAKE_EXE --build build --target post_package
 
 
-  release-linux-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP:
+  release-linux:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     with:
-      image: embree/rockylinux:8.7
+      image: rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      artifact-out: release-linux-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
+      artifact-out: release-linux
       artifact-path: ./build/*.tar.gz
-      dpcpp-version: intel/2023.1
+      dpcpp-version: intel-llvm/nightly-2023-09-20-rk
+      pre-cmd: |
+        yum -y install epel-release
+        dnf makecache --refresh
+        dnf config-manager --set-enabled powertools
+        dnf -y update
+        dnf -y install ninja-build
       cmd: |
+        module load cmake/3.25.3
         source scripts/cmake-presets/linux-env.sh
-        $CMAKE_EXE --preset package-linux-icx-ispc1_19_0-tbb2021_9_0
+        $CMAKE_EXE --preset release-linux
         $CMAKE_EXE --build build --config Release --target package
         $CMAKE_EXE --build build --target post_package
         $CMAKE_EXE --build build --target test_package
@@ -63,112 +70,115 @@ jobs:
 #####################################################################
 # DPC++ Release Builds
 ####################################################################
-  release-windows-x64-Release-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP:
+  release-windows-sycl:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-internal.env
-      dpcpp-version: oneAPI/compiler/2023.1.0
-      artifact-out: release-windows-x64-Release-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
+      env-from-files: ./.github/workflows/gfx-windows-internal.env
+      dpcpp-version: intel-llvm/nightly-2023-09-20-rk
+      artifact-out: release-windows-sycl
       artifact-path: ./build/*.zip
       shell: cmd
       cmd: |
-        cmake --preset package-windows-icx-sycl-ispc1_19_0-tbb2021_9_0
+        cmake --preset release-windows-sycl
         cmake --build build --config Release --target package
         cmake --build build --target post_package
         cmake --build build --target test_package
 
-
-  # FIXME: remove this AOT release once JIT properly tested in CI
-  #release-windows-x64-Release-SYCL-ICX2023_0_0-AOT-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP:
-  #  secrets: inherit
-  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
-  #  with:
-  #    runs-on: '[ "Windows", "NAS", "dg2" ]'
-  #    artifact-out: release-windows-x64-Release-SYCL-ICX2023_0_0-AOT-ISPC1_18_1-TBB2021_7_0-PACKAGE-ZIP
-  #    artifact-path: ./build/*.zip
-  #    cmd: |
-  #      python scripts/test.py configure platform:x64 build:Release compiler:dpcpp EMBREE_SYCL_SUPPORT:ON sycl:dg2 gfx:RELEASE ispc:ispc1.18.1 isas:SSE2-SSE42-AVX-AVX2-AVX512 intensity:4 package:ZIP
-  #      python scripts/test.py build
-  #      python scripts/test.py test
-
-
-  release-linux-x64-Release-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP:
+  release-linux-sycl:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    with:
+      image: rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "build" ]'
+      project: embree
+      dpcpp-version: intel-llvm/nightly-2023-09-20-rk
+      artifact-out: release-linux-sycl
+      artifact-path: ./build/*.tar.gz
+      pre-cmd: |
+        yum -y install epel-release
+        dnf makecache --refresh
+        dnf config-manager --set-enabled powertools
+        dnf -y update
+        dnf -y install ninja-build
+      cmd: |
+        source scripts/cmake-presets/linux-env.sh
+        $CMAKE_EXE --preset release-linux-sycl
+        $CMAKE_EXE --build build --config Release --target package
+        $CMAKE_EXE --build build --target post_package
+
+  release-linux-sycl-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    needs: ["release-linux-sycl"]
     with:
       image: embree/ubuntu:20.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu20-release.env
-      dpcpp-version: intel/2023.1
-      artifact-out: release-linux-x64-Release-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
-      artifact-path: ./build/*.tar.gz
+      dpcpp-version: intel-llvm/nightly-2023-09-20-rk
+      artifact-in: release-linux-sycl
       cmd: |
-        source scripts/cmake-presets/linux-env.sh
-        $CMAKE_EXE --preset package-linux-icx-sycl-ispc1_19_0-tbb2021_9_0
-        $CMAKE_EXE --build build --config Release --target package
-        $CMAKE_EXE --build build --target post_package
-        $CMAKE_EXE --build build --target test_package
-
+        cd build
+        ../scripts/package_test_linux.sh embree-4.3.0.sycl.x86_64.linux
 
 #####################################################################
 # Release binaries scans
 #####################################################################
   binary-analysis:
     needs:
-      - release-windows-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
-      - release-macosx-x64-Release-CLANG-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
-      - release-linux-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
+      - release-windows
+      - release-macosx
+      - release-linux
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/binary_analysis.yml@main
     with:
       project: embree
-      artifact-in-windows: release-windows-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
-      artifact-in-macos: release-macosx-x64-Release-CLANG-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
-      artifact-in-linux: release-linux-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
+      artifact-in-windows: release-windows
+      artifact-in-macos: release-macosx
+      artifact-in-linux: release-linux
       path: "build/*.zip build/*.gz"
 
   antivirus-scan:
     needs:
-      - release-windows-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
-      - release-macosx-x64-Release-CLANG-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
-      - release-linux-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
+      - release-windows
+      - release-macosx
+      - release-linux
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/antivirus_scan.yml@main
     with:
       project: embree
-      artifact-in-windows: release-windows-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
-      artifact-in-macos: release-macosx-x64-Release-CLANG-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
-      artifact-in-linux: release-linux-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
+      artifact-in-windows: release-windows
+      artifact-in-macos: release-macosx
+      artifact-in-linux: release-linux
       path: "build/*.zip build/*.gz"
 
   binary-analysis-dpcpp:
     needs:
-      - release-windows-x64-Release-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
-      - release-linux-x64-Release-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
+      - release-windows-sycl
+      - release-linux-sycl-test
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/binary_analysis.yml@main
     with:
       project: embree
-      artifact-in-windows: release-windows-x64-Release-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
-      artifact-in-linux: release-linux-x64-Release-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
+      artifact-in-windows: release-windows-sycl
+      artifact-in-linux: release-linux-sycl
       path: "build/*.zip build/*.gz"
       artifact-out-name: "binary-analysis-dpcpp"
 
   antivirus-scan-dpcpp:
     needs:
-      - release-windows-x64-Release-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
-      - release-linux-x64-Release-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
+      - release-windows-sycl
+      - release-linux-sycl-test
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/antivirus_scan.yml@main
     with:
       project: embree
-      artifact-in-windows: release-windows-x64-Release-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
-      artifact-in-linux: release-linux-x64-Release-SYCL-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
+      artifact-in-windows: release-windows-sycl
+      artifact-in-linux: release-linux-sycl
       path: "build/*.zip build/*.gz"
       artifact-out-name: "antivirus-scan-dpcpp"
 
@@ -179,15 +189,15 @@ jobs:
   test-package:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    needs: [release-linux-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP]
+    needs: [release-linux]
     with:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      artifact-in: release-linux-x64-Release-ICX2023_1_0-ISPC1_19_0-TBB2021_9_0-PACKAGE-ZIP
+      artifact-in: release-linux
       artifact-out: release-testing-PACKAGE-ZIP
       artifact-path: ./build/*.tar.gz
       cmd: |
-        rm build/embree-4.2.0.x86_64.linux.tar.gz
-        mv build/embree-4.2.0.x86_64.linux-testing.tar.gz build/embree-4.2.0-testing.tar.gz
+        rm build/embree-4.3.0.x86_64.linux.tar.gz
+        mv build/embree-4.3.0.x86_64.linux-testing.tar.gz build/embree-4.3.0-testing.tar.gz

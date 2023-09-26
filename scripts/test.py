@@ -7,7 +7,6 @@
 import sys
 import subprocess
 import os
-import ctypes
 import pickle
 import re
 import shutil
@@ -43,12 +42,14 @@ def fix_cmake_paths():
 
 # detect platform
 if sys.platform.startswith("win"):
+  import ctypes
   SEM_FAILCRITICALERRORS = 0x0001
   SEM_NOGPFAULTERRORBOX  = 0x0002
   SEM_NOOPENFILEERRORBOX = 0x8000
   ctypes.windll.kernel32.SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
   OS = "windows"
 elif sys.platform.startswith("cygwin"):
+  import ctypes
   SEM_FAILCRITICALERRORS = 0x0001
   SEM_NOGPFAULTERRORBOX  = 0x0002
   SEM_NOOPENFILEERRORBOX = 0x8000
