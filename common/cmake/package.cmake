@@ -58,7 +58,8 @@ IF (EMBREE_SYCL_SUPPORT AND EMBREE_INSTALL_DEPENDENCIES)
       "${DPCPP_COMPILER_DIR}/../lib/libsycl.so"
       "${DPCPP_COMPILER_DIR}/../lib/libsycl.so.?"
       "${DPCPP_COMPILER_DIR}/../lib/libsycl.so.?.?"
-      "${DPCPP_COMPILER_DIR}/../lib/libsycl.so.?.?.?")
+      "${DPCPP_COMPILER_DIR}/../lib/libsycl.so.?.?.?"
+      "${DPCPP_COMPILER_DIR}/../lib/libsycl.so.?.?.?-?")
     INSTALL(FILES ${LIB_SYCL_FILES} DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
     
     INSTALL(FILES "${DPCPP_COMPILER_DIR}/../lib/libpi_level_zero.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
