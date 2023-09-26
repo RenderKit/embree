@@ -1,6 +1,14 @@
 Version History
 ---------------
 
+### Embree 4.3.0
+-   Added instance array primitive for reducing memony requirements in scenes
+    with large amounts of similar instances.
+-   Properly checks driver if L0 RTAS extension can get loaded.
+-   Added varying version of rtcGetGeometryTransform for ISPC.
+-   Fixed signature of RTCMemoryMonitorFunction for ISPC.
+-   Add support for ARM64 Windows platform in CMake.
+
 ### Embree 4.2.0
 -   SYCL version of Embree with GPU support is no longer in beta phase.
 -   Improved BVH build performance on many core machines for applications that oversubscribe threads.

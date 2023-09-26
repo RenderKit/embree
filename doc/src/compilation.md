@@ -151,21 +151,18 @@ DPC++ compiler is
   - [oneAPI DPC++ Compiler 2023-09-20](https://github.com/intel/llvm/releases/tag/nightly-2023-09-20)
   
 The compiler can be downloaded and simply extracted. The oneAPI DPC++ compiler
-can be set up executing the following command in a Linux (bash) shell:
+can be set up executing the following commands in a Linux (bash) shell:
 
-    mkdir sycl_compiler && cd sycl_compiler
-    wget https://github.com/intel/llvm/releases/download/nightly-2023-09-20/sycl_linux.tar.gz
-    tar xzf sycl_linux.tar.gz
-    echo 'export SYCL_BUNDLE_ROOT=$(realpath $(dirname "${BASH_SOURCE[0]}")) \
-    export PATH=$SYCL_BUNDLE_ROOT/bin:$PATH \
-    export CPATH=$SYCL_BUNDLE_ROOT/include:$CPATH \
-    export LIBRARY_PATH=$SYCL_BUNDLE_ROOT/lib:$LIBRARY_PATH \
-    export LD_LIBRARY_PATH=$SYCL_BUNDLE_ROOT/lib:$LD_LIBRARY_PATH \
-    export LD_LIBRARY_PATH=$SYCL_BUNDLE_ROOT/linux/lib/x64:$LD_LIBRARY_PATH' > startup.sh
-    source ./startup.sh
+    export SYCL_BUNDLE_ROOT=path_to_dpcpp_compiler
+    export PATH=$SYCL_BUNDLE_ROOT/bin:$PATH
+    export CPATH=$SYCL_BUNDLE_ROOT/include:$CPATH
+    export LIBRARY_PATH=$SYCL_BUNDLE_ROOT/lib:$LIBRARY_PATH
+    export LD_LIBRARY_PATH=$SYCL_BUNDLE_ROOT/lib:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=$SYCL_BUNDLE_ROOT/linux/lib/x64:$LD_LIBRARY_PATH
 
-The `startup.sh` script will put `clang++` and `clang` from the
-oneAPI DPC++ Compiler into your path.
+where the `path_to_dpcpp_compiler` should point to the unpacked oneAPI DPC++
+compiler. This will put `clang++` and `clang` from the oneAPI DPC++ Compiler
+into your path.
 
 Please also install all Linux packages described in the previous
 section.

@@ -42,7 +42,7 @@ the Embree and TBB installation on your system.
           -D CMAKE_CXX_COMPILER=clang++
           -D CMAKE_C_COMPILER=clang
           -D CMAKE_BUILD_TYPE=Release
-          -D embree_DIR=%cd%\..\..\..\lib\cmake\embree-4.2.0\
+          -D embree_DIR=%cd%\..\..\..\lib\cmake\embree-4.3.0\
           -D TBB_DIR=path_to_tbb\oneapi-tbb-2021.2.0\lib\cmake\tbb ..
 
 Now you can build the tutorial:
@@ -91,7 +91,7 @@ the Embree and TBB installation on your system.
     cmake -D CMAKE_BUILD_TYPE=Release \
           -D CMAKE_CXX_COMPILER=clang++ \
           -D CMAKE_C_COMPILER=clang \
-          -D embree_DIR=`pwd`/../../../lib/cmake/embree-4.2.0/ \
+          -D embree_DIR=`pwd`/../../../lib/cmake/embree-4.3.0/ \
           -D TBB_DIR=path_to_tbb/oneapi-tbb-2021.2.0/lib/cmake/tbb/ ..
 
 Now you can build the tutorial:

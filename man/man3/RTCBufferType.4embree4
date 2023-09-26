@@ -33,6 +33,8 @@ enum RTCBufferType
   RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX  = 20,
   RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT = 21,
   RTC_BUFFER_TYPE_HOLE                 = 22,
+  
+  RTC_BUFFER_TYPE_TRANSFORM            = 23,
 
   RTC_BUFFER_TYPE_FLAGS = 32
 };
@@ -67,6 +69,10 @@ The \f[C]RTC_BUFFER_TYPE_FACE\f[R], \f[C]RTC_BUFFER_TYPE_LEVEL\f[R],
 \f[C]RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT\f[R], and
 \f[C]RTC_BUFFER_TYPE_HOLE\f[R] are special buffers required to create
 subdivision meshes (see [RTC_GEOMETRY_TYPE_SUBDIVISION]).
+.PP
+The \f[C]RTC_BUFFER_TYPE_TRANSFORM\f[R] buffer is used to provide
+instance transformation information for instance array geometries (see
+[RTC_GEOMETRY_TYPE_INSTANCE_ARRAY]).
 .PP
 The \f[C]RTC_BUFFER_TYPE_FLAGS\f[R] can get used to add additional flag
 per primitive of a geometry, and is currently only used for linear
