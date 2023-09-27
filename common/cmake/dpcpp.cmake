@@ -143,19 +143,17 @@ IF (EMBREE_SYCL_SUPPORT)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-pessimizing-move") # disabled: warning: moving a temporary object prevents copy elision [-Wpessimizing-move]
 
   IF (SYCL_ONEAPI_ICX AND WIN32)
-    if (${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 2024.0)
+    IF (${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 2024.0)
       SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I\"${SYCL_COMPILER_DIR}/../opt/compiler/include/sycl\" -I\"${SYCL_COMPILER_DIR}/../opt/compiler/include/sycl/sycl\"")       # disable warning from SYCL header
-    else()
-      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I\"${SYCL_COMPILER_DIR}/../include/sycl\" -I\"${SYCL_COMPILER_DIR}/../include/\"")       # disable warning from SYCL header
-    endif()
+    ENDIF()
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I\"${SYCL_COMPILER_DIR}/../include/sycl\" -I\"${SYCL_COMPILER_DIR}/../include/\"")       # disable warning from SYCL header
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qstd=c++17")
   ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
-    if (SYCL_ONEAPI_ICX AND ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 2024.0)
+    IF (SYCL_ONEAPI_ICX AND ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 2024.0)
       SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem \"${SYCL_COMPILER_DIR}/../opt/compiler/include/sycl\" -isystem \"${SYCL_COMPILER_DIR}/../opt/compiler/include/sycl/sycl\"")       # disable warning from SYCL header
-    else()
-      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem \"${SYCL_COMPILER_DIR}/../include/sycl\" -isystem \"${SYCL_COMPILER_DIR}/../include/\"")       # disable warning from SYCL header
-    endif()
+    ENDIF()
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem \"${SYCL_COMPILER_DIR}/../include/sycl\" -isystem \"${SYCL_COMPILER_DIR}/../include/\"")       # disable warning from SYCL header
   ENDIF()
 
   # enable C++17 features
