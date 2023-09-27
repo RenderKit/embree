@@ -27,7 +27,7 @@ jobs:
       artifact-out: linux-DG2-JIT-INTERNAL
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.18.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON LEVEL_ZERO:ON sycl:none tasking:TBB2021.7.0 intensity:4
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.21.0 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON LEVEL_ZERO:ON sycl:none tasking:TBB2021.10.0 intensity:4
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -57,7 +57,7 @@ jobs:
       artifact-out: linux-DG2-JIT-PUBLIC
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.18.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.7.0 intensity:4
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.21.0 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.10.0 intensity:4
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -87,7 +87,7 @@ jobs:
       artifact-out: linux-DG2-JIT-EMBARGO
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.18.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.7.0 intensity:4
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.21.0 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.10.0 intensity:4
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -118,7 +118,7 @@ jobs:
       artifact-out: linux-DG2-JIT-PUBLIC-ICX
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:ICX ispc:ispc1.18.1 isa:AVX512 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.7.0 intensity:4
+        scripts/test.py configure platform:x64 compiler:ICX ispc:ispc1.21.0 isa:AVX512 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.10.0 intensity:4
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -146,11 +146,11 @@ jobs:
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: icx/compiler_ppkg-rel/20230919
+      dpcpp-version: icx/compiler_ppkg-rel/20230926
       artifact-out: linux-DG2-JIT-PUBLIC-ICX-RC
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:ICX ispc:ispc1.18.1 isa:AVX512 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.7.0 intensity:4
+        scripts/test.py configure platform:x64 compiler:ICX ispc:ispc1.21.0 isa:AVX512 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.10.0 intensity:4
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -164,7 +164,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: icx/compiler_ppkg-rel/20230919
+      dpcpp-version: icx/compiler_ppkg-rel/20230926
       artifact-in: linux-DG2-JIT-PUBLIC-ICX-RC
       cmd: |
         scripts/test.py test --debug
@@ -178,11 +178,11 @@ jobs:
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: intel-llvm/nightly-2023-09-20-rk
+      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
       artifact-out: linux-DG2-JIT-PUBLIC-sycl-nightly-RK
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.18.1 isa:AVX512 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.7.0 intensity:4
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.21.0 isa:AVX512 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.10.0 intensity:4
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -196,7 +196,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: intel-llvm/nightly-2023-09-20-rk
+      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
       artifact-in: linux-DG2-JIT-PUBLIC-sycl-nightly-RK
       cmd: |
         scripts/test.py test --debug
@@ -337,7 +337,7 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
       dpcpp-version: oneAPI/compiler/2023.1.0
       cmd: |
-        python scripts/test.py configure platform:x64 compiler:ICX ispc:ispc1.18.1 isa:AVX512 tasking:TBB2021.7.0 build:Release EMBREE_SYCL_SUPPORT:ON sycl:none intensity:2
+        python scripts/test.py configure platform:x64 compiler:ICX ispc:ispc1.21.0 isa:AVX512 tasking:TBB2021.10.0 build:Release EMBREE_SYCL_SUPPORT:ON sycl:none intensity:2
         python scripts/test.py build
         python scripts/test.py test
 
@@ -348,9 +348,9 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
-      dpcpp-version: icx/compiler_ppkg-rel/20230919
+      dpcpp-version: icx/compiler_ppkg-rel/20230926
       cmd: |
-        python scripts/test.py configure platform:x64 compiler:ICX ispc:ispc1.18.1 isa:AVX512 tasking:TBB2021.7.0 build:Release EMBREE_SYCL_SUPPORT:ON sycl:none intensity:2
+        python scripts/test.py configure platform:x64 compiler:ICX ispc:ispc1.21.0 isa:AVX512 tasking:TBB2021.10.0 build:Release EMBREE_SYCL_SUPPORT:ON sycl:none intensity:2
         python scripts/test.py build
         python scripts/test.py test
 
@@ -361,9 +361,9 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
-      dpcpp-version: intel-llvm/nightly-2023-09-20-rk
+      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
       cmd: |
-        python scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.18.1 isa:AVX512 tasking:TBB2021.7.0 build:Release EMBREE_SYCL_SUPPORT:ON sycl:none intensity:2
+        python scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.21.0 isa:AVX512 tasking:TBB2021.10.0 build:Release EMBREE_SYCL_SUPPORT:ON sycl:none intensity:2
         python scripts/test.py build
         python scripts/test.py test
 
@@ -421,7 +421,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       dpcpp-version: intel/2023.1
       cmd: |
-        python scripts/test.py configure platform:x64 build:Debug compiler:ICX ispc:ispc1.13.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.7.0 intensity:2 maxinstancelevelcount:4
+        python scripts/test.py configure platform:x64 build:Debug compiler:ICX ispc:ispc1.13.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.10.0 intensity:2 maxinstancelevelcount:4
         python scripts/test.py build
         python scripts/test.py test
 
@@ -476,7 +476,7 @@ jobs:
     with:
       image: embree/ubuntu:20.04
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: icx/compiler_ppkg-rel/20230919
+      dpcpp-version: icx/compiler_ppkg-rel/20230926
       cmd: |
         module load cmake/3.25.3
         scripts/test.py configure platform:x64 build:Release threads:4 compiler:ICX ispc:ispc1.17.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.5.0 intensity:2
@@ -505,7 +505,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "build" ]'
       dpcpp-version: none
       cmd: |
-        python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:V142 ispc:ispc1.18.1 isa:SSE2 tasking:TBB2021.7.0 intensity:2 maxinstancelevelcount:8
+        python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:V142 ispc:ispc1.21.0 isa:SSE2 tasking:TBB2021.10.0 intensity:2 maxinstancelevelcount:8
         python scripts/test.py build
         python scripts/test.py test
 
@@ -525,7 +525,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     with:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-      dpcpp-version: icx/compiler_ppkg-rel/20230919
+      dpcpp-version: icx/compiler_ppkg-rel/20230926
       cmd: |
         python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:ICX ispc:ispc1.17.0 isa:AVX512 tasking:TBB2021.5.0 threads:16 intensity:2
         python scripts/test.py build
@@ -558,7 +558,7 @@ jobs:
     with:
       runs-on: '[ "macOS", "build", "x86_64" ]'
       cmd: |
-        scripts/test.py configure platform:x64 build:Debug compiler:CLANG ispc:ispc1.18.1 isa:SSE2 tasking:TBB2021.1.1 intensity:2
+        scripts/test.py configure platform:x64 build:Debug compiler:CLANG ispc:ispc1.21.0 isa:SSE2 tasking:TBB2021.1.1 intensity:2
         scripts/test.py build
         scripts/test.py test
 

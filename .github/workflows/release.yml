@@ -20,7 +20,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
       artifact-out: release-windows
       artifact-path: ./build/embree-*.zip
-      dpcpp-version: intel-llvm/nightly-2023-09-20-rk
+      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
       shell: cmd
       cmd: |
         cmake --preset release-windows
@@ -51,7 +51,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       artifact-out: release-linux
       artifact-path: ./build/*.tar.gz
-      dpcpp-version: intel-llvm/nightly-2023-09-20-rk
+      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
       pre-cmd: |
         yum -y install epel-release
         dnf makecache --refresh
@@ -77,7 +77,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/gfx-windows-internal.env
-      dpcpp-version: intel-llvm/nightly-2023-09-20-rk
+      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
       artifact-out: release-windows-sycl
       artifact-path: ./build/*.zip
       shell: cmd
@@ -94,7 +94,7 @@ jobs:
       image: rockylinux:8.7
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
-      dpcpp-version: intel-llvm/nightly-2023-09-20-rk
+      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
       artifact-out: release-linux-sycl
       artifact-path: ./build/*.tar.gz
       pre-cmd: |
@@ -114,12 +114,12 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     needs: ["release-linux-sycl"]
     with:
-      image: embree/ubuntu:20.04
+      image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu20-release.env
-      dpcpp-version: intel-llvm/nightly-2023-09-20-rk
+      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
       artifact-in: release-linux-sycl
       cmd: |
         cd build

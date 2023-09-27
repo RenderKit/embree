@@ -24,7 +24,7 @@
 
     {
       "name": "release-linux",
-      "inherits": ["package-linux", "env", "dpcpp", "ispc1_19_0", "tbb2021_9_0"],
+      "inherits": ["package-linux", "env", "dpcpp", "ispc1_21_0", "tbb2021_10_0"],
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
@@ -95,7 +95,7 @@
 
     {
       "name": "release-linux-sycl",
-      "inherits": ["package-linux", "env", "dpcpp", "ispc1_19_0", "tbb2021_9_0"],
+      "inherits": ["package-linux", "env", "dpcpp", "ispc1_21_0", "tbb2021_10_0"],
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
@@ -148,7 +148,7 @@
 
     {
       "name": "release-macos",
-      "inherits": ["package-macos", "env", "gcc", "ispc1_19_0", "tbb2021_9_0"],
+      "inherits": ["package-macos", "env", "gcc", "ispc1_21_0", "tbb2021_10_0"],
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
@@ -190,7 +190,7 @@
 
     {
       "name": "release-windows",
-      "inherits": ["package-windows", "env", "dpcpp-windows", "ispc1_19_0", "tbb2021_9_0"],
+      "inherits": ["package-windows", "env", "dpcpp-windows", "ispc1_21_0", "tbb2021_10_0"],
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
@@ -250,7 +250,7 @@
 
     {
       "name": "release-windows-sycl",
-      "inherits": ["package-windows", "env", "dpcpp-windows", "ispc1_19_0", "tbb2021_9_0"],
+      "inherits": ["package-windows", "env", "dpcpp-windows", "ispc1_21_0", "tbb2021_10_0"],
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",

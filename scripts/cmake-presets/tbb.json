@@ -12,6 +12,13 @@
         "EMBREE_TASKING_SYSTEM": "TBB",
         "TBB_DIR": "$env{EMBREE_TBB_2021_9_0_DIR}"
       }
+    },
+    {
+      "name": "tbb2021_10_0",
+      "cacheVariables": {
+        "EMBREE_TASKING_SYSTEM": "TBB",
+        "TBB_DIR": "$env{EMBREE_TBB_2021_10_0_DIR}"
+      }
     }
   ]
 }
