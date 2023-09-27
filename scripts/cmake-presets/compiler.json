@@ -198,6 +198,13 @@
         "EMBREE_ISPC_SUPPORT": "ON",
         "EMBREE_ISPC_EXECUTABLE": "$env{EMBREE_ISPC_1_20_0_PATH}"
       }
+    },
+    {
+      "name": "ispc1_21_0",
+      "cacheVariables": {
+        "EMBREE_ISPC_SUPPORT": "ON",
+        "EMBREE_ISPC_EXECUTABLE": "$env{EMBREE_ISPC_1_21_0_PATH}"
+      }
     }
   ]
 }

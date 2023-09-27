@@ -18,8 +18,7 @@ C++11. Embree is tested with the following compilers:
 Linux
 
   - Intel® oneAPI DPC++/C++ Compiler 2023.1.0
-  - Intel® oneAPI DPC++/C++ Compiler 2023.0.0
-  - oneAPI DPC++/C++ Compiler 2023-09-20
+  - oneAPI DPC++/C++ Compiler 2023-09-22
   - Clang 5.0.0
   - Clang 4.0.0
   - GCC 10.0.1 (Fedora 32) AVX512 support
@@ -27,18 +26,11 @@ Linux
   - GCC  7.3.1 (Fedora 27) AVX2 support
   - GCC  7.3.1 (Fedora 26) AVX2 support
   - GCC  6.4.1 (Fedora 25) AVX2 support
-  - Intel® Implicit SPMD Program Compiler 1.19.0
-  - Intel® Implicit SPMD Program Compiler 1.18.1
-  - Intel® Implicit SPMD Program Compiler 1.17.0
-  - Intel® Implicit SPMD Program Compiler 1.16.1
-  - Intel® Implicit SPMD Program Compiler 1.15.0
-  - Intel® Implicit SPMD Program Compiler 1.14.1
-  - Intel® Implicit SPMD Program Compiler 1.13.0
-  
+  - Intel® Implicit SPMD Program Compiler 1.21.0
+
 macOS x86
 
   - Intel® C++ Classic Compiler 2023.1.0
-  - Intel® C++ Classic Compiler 2023.0.0
   - Apple Clang 12.0.5 (macOS 11.7.1)
 
 macOS M1
@@ -148,7 +140,7 @@ The "oneAPI DPC++ Compiler" is more up-to-date than the "Intel(R) oneAPI
 DPC++/C++ Compiler" but less stable. The current tested version of the "oneAPI
 DPC++ compiler is
 
-  - [oneAPI DPC++ Compiler 2023-09-20](https://github.com/intel/llvm/releases/tag/nightly-2023-09-20)
+  - [oneAPI DPC++ Compiler 2023-09-25](https://github.com/intel/llvm/releases/tag/nightly-2023-09-22)
   
 The compiler can be downloaded and simply extracted. The oneAPI DPC++ compiler
 can be set up executing the following commands in a Linux (bash) shell:
@@ -243,18 +235,11 @@ Windows
 Embree is tested using the following compilers under Windows:
 
   - Intel® oneAPI DPC++/C++ Compiler 2023.1.0
-  - Intel® oneAPI DPC++/C++ Compiler 2023.0.0
-  - oneAPI DPC++/C++ Compiler 2023-07-24
+  - oneAPI DPC++/C++ Compiler 2023-09-22
+  - Visual Studio 2022
   - Visual Studio 2019
   - Visual Studio 2017
-  - Intel® Implicit SPMD Program Compiler 1.19.0
-  - Intel® Implicit SPMD Program Compiler 1.18.1
-  - Intel® Implicit SPMD Program Compiler 1.17.0
-  - Intel® Implicit SPMD Program Compiler 1.16.1
-  - Intel® Implicit SPMD Program Compiler 1.15.0
-  - Intel® Implicit SPMD Program Compiler 1.14.1
-  - Intel® Implicit SPMD Program Compiler 1.13.0
-  - Intel® Implicit SPMD Program Compiler 1.12.0
+  - Intel® Implicit SPMD Program Compiler 1.21.0
 
 IMPORTANT: Unfortunatlly, latest version of the Intel® oneAPI DPC++/C++
 Compiler (2023.2.1), has a bug that doesn't allow Embree to run correctly with
@@ -376,7 +361,7 @@ The "oneAPI DPC++ Compiler" is more up-to-date than the "Intel(R) oneAPI
 DPC++/C++ Compiler" but less stable. The current tested version of the oneAPI
 DPC++ compiler is
 
-  - [oneAPI DPC++ Compiler 2023-09-20](https://github.com/intel/llvm/releases/tag/nightly-2023-09-20)
+  - [oneAPI DPC++ Compiler 2023-09-22](https://github.com/intel/llvm/releases/tag/nightly-2023-09-22)
 
 Download and unpack the archive and open the "x64 Native Tools Command Prompt"
 of Visual Studio and execute the following lines to properly configure the
