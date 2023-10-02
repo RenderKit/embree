@@ -15,7 +15,11 @@ IF (EMBREE_SYCL_SUPPORT)
 ENDIF()
 
 ADD_EXECUTABLE(embree_info embree_info.cpp)
-TARGET_LINK_LIBRARIES(embree_info embree)
+IF (EMBREE_SYCL_SUPPORT)
+  TARGET_LINK_LIBRARIES(embree_info embree ze_wrapper)
+ELSE()
+  TARGET_LINK_LIBRARIES(embree_info embree)
+ENDIF()
 
 SET_PROPERTY(TARGET embree_info PROPERTY FOLDER tutorials/single)
 INSTALL(TARGETS embree_info DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT examples)

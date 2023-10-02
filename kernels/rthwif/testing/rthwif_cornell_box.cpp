@@ -459,7 +459,7 @@ int main(int argc, char* argv[])
 {
   /* use can specify reference image to compare against */
 #if defined(EMBREE_SYCL_L0_RTAS_BUILDER)
-  ZeWrapper::RTAS_BUILD_MODE rtas_build_mode = ZeWrapper::RTAS_BUILD_MODE::AUTO;
+  ZeWrapper::RTAS_BUILD_MODE rtas_build_mode = ZeWrapper::RTAS_BUILD_MODE::LEVEL_ZERO;
 #else
   ZeWrapper::RTAS_BUILD_MODE rtas_build_mode = ZeWrapper::RTAS_BUILD_MODE::INTERNAL;
 #endif
@@ -505,6 +505,7 @@ int main(int argc, char* argv[])
     return 1;
   }
 
+  ze_result_t result = ZE_RESULT_SUCCESS;
   sycl::platform platform = device.get_platform();
   ze_driver_handle_t hDriver = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(platform);
 
@@ -513,7 +514,7 @@ int main(int argc, char* argv[])
   {
     uint32_t count = 0;
     std::vector<ze_driver_extension_properties_t> extensions;
-    ze_result_t result = ZeWrapper::zeDriverGetExtensionProperties(hDriver,&count,extensions.data());
+    result = ZeWrapper::zeDriverGetExtensionProperties(hDriver,&count,extensions.data());
     if (result != ZE_RESULT_SUCCESS)
       throw std::runtime_error("zeDriverGetExtensionProperties failed");
     
@@ -530,13 +531,19 @@ int main(int argc, char* argv[])
     }
 
     if (ze_rtas_builder)
-      ZeWrapper::initRTASBuilder(hDriver,ZeWrapper::RTAS_BUILD_MODE::AUTO);
+      result = ZeWrapper::initRTASBuilder(hDriver,ZeWrapper::RTAS_BUILD_MODE::AUTO);
     else
-      ZeWrapper::initRTASBuilder(hDriver,ZeWrapper::RTAS_BUILD_MODE::INTERNAL);
+      result = ZeWrapper::initRTASBuilder(hDriver,ZeWrapper::RTAS_BUILD_MODE::INTERNAL);
   }
   else
-    ZeWrapper::initRTASBuilder(hDriver,rtas_build_mode);
+    result = ZeWrapper::initRTASBuilder(hDriver,rtas_build_mode);
 
+  if (result == ZE_RESULT_ERROR_DEPENDENCY_UNAVAILABLE)
+    throw std::runtime_error("cannot load ZE_experimental_rtas_builder extension");
+  
+  if (result != ZE_RESULT_SUCCESS)
+    throw std::runtime_error("cannot initialize ZE_experimental_rtas_builder extension");
+  
   if (ZeWrapper::rtas_builder == ZeWrapper::INTERNAL)
     std::cout << "using internal RTAS builder" << std::endl;
   else

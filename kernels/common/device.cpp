@@ -620,10 +620,14 @@ namespace embree
       if (strncmp("ZE_experimental_rtas_builder",extensions[i].name,sizeof(extensions[i].name)) == 0)
         ze_rtas_builder = true;
     }
-    if (ze_rtas_builder)
-      ZeWrapper::initRTASBuilder(hDriver,ZeWrapper::AUTO);
-    else
-      ZeWrapper::initRTASBuilder(hDriver,ZeWrapper::INTERNAL);
+    if (!ze_rtas_builder)
+      throw_RTCError(RTC_ERROR_UNKNOWN, "ZE_experimental_rtas_builder extension not found");
+
+    result = ZeWrapper::initRTASBuilder(hDriver,ZeWrapper::LEVEL_ZERO);
+    if (result == ZE_RESULT_ERROR_DEPENDENCY_UNAVAILABLE)
+      throw_RTCError(RTC_ERROR_UNKNOWN, "cannot load ZE_experimental_rtas_builder extension");
+    if (result != ZE_RESULT_SUCCESS)
+      throw_RTCError(RTC_ERROR_UNKNOWN, "cannot initialize ZE_experimental_rtas_builder extension");
 #else
     ZeWrapper::initRTASBuilder(hDriver,ZeWrapper::INTERNAL);
 #endif

@@ -111,6 +111,11 @@ namespace embree
     if (!ze_extension_ray_tracing)
       return -1;
 
+#if defined(EMBREE_SYCL_L0_RTAS_BUILDER)
+    if (!ze_rtas_builder)
+      return -1;
+#endif
+
     /* check if ray queries are supported */
     ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(sycl_device);
     
@@ -131,10 +136,6 @@ namespace embree
     const bool rayQuerySupported = raytracing_properties.flags & ZE_DEVICE_RAYTRACING_EXT_FLAG_RAYQUERY;
     if (!rayQuerySupported)
       return -1;
-
-    (void)ze_rtas_builder;
-    //if (!ze_rtas_builder) // for now we do not need the rtas extension yet!
-    //  return -1;
 
     return sycl_device.get_info<sycl::info::device::max_compute_units>();
   }
