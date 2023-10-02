@@ -12,7 +12,7 @@ SET_PROPERTY(TARGET tutorial APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 
 IF (EMBREE_SYCL_SUPPORT)
   ADD_LIBRARY(tutorial_sycl STATIC tutorial.cpp application.cpp scene.cpp tutorial_device.cpp scene_device.cpp)
-  TARGET_LINK_LIBRARIES(tutorial_sycl sys math lexers scenegraph lights_sycl embree tasking ${GUI_LIBRARIES})
+  TARGET_LINK_LIBRARIES(tutorial_sycl sys math lexers scenegraph lights_sycl embree tasking ze_wrapper ${GUI_LIBRARIES})
   SET_PROPERTY(TARGET tutorial_sycl PROPERTY FOLDER tutorials/common)
   SET_PROPERTY(TARGET tutorial_sycl APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST} ${CMAKE_CXX_FLAGS_SYCL}")
   TARGET_COMPILE_DEFINITIONS(tutorial_sycl PUBLIC EMBREE_SYCL_TUTORIAL)
