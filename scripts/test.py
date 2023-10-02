@@ -102,6 +102,9 @@ def runConfig(config):
   if "klocwork" in config:
     conf.append("-D EMBREE_TESTING_KLOCWORK="+config["klocwork"])
 
+  if "L0RTAS" in config:
+    conf.append("-D EMBREE_SYCL_L0_RTAS_BUILDER="+config["L0RTAS"])
+
   if "package" in config:
     conf.append("-D EMBREE_STACK_PROTECTOR=ON")
 
