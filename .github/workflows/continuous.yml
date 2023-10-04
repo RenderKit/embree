@@ -316,57 +316,6 @@ jobs:
         python scripts/test.py build
         python scripts/test.py test
 
-  windows-DG2-JIT-PUBLIC:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
-    with:
-      runs-on: '[ "Windows", "NAS", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
-      cmd: |
-        python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_SYCL_SUPPORT:ON sycl:none intensity:3
-        python scripts/test.py build
-        python scripts/test.py test
-
-  windows-DG2-JIT-PUBLIC-ICX:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
-    with:
-      runs-on: '[ "Windows", "NAS", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
-      dpcpp-version: oneAPI/compiler/2023.1.0
-      cmd: |
-        python scripts/test.py configure platform:x64 compiler:ICX ispc:ispc1.21.0 isa:AVX512 tasking:TBB2021.10.0 build:Release EMBREE_SYCL_SUPPORT:ON sycl:none intensity:2
-        python scripts/test.py build
-        python scripts/test.py test
-
-  windows-DG2-JIT-PUBLIC-ICX-RC:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
-    with:
-      runs-on: '[ "Windows", "NAS", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
-      dpcpp-version: icx/compiler_ppkg-rel/20230926
-      cmd: |
-        python scripts/test.py configure platform:x64 compiler:ICX ispc:ispc1.21.0 isa:AVX512 tasking:TBB2021.10.0 build:Release EMBREE_SYCL_SUPPORT:ON sycl:none intensity:2
-        python scripts/test.py build
-        python scripts/test.py test
-
-  windows-DG2-JIT-PUBLIC-sycl-nightly-RK:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
-    with:
-      runs-on: '[ "Windows", "NAS", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
-      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
-      cmd: |
-        python scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.21.0 isa:AVX512 tasking:TBB2021.10.0 build:Release EMBREE_SYCL_SUPPORT:ON sycl:none intensity:2
-        python scripts/test.py build
-        python scripts/test.py test
-
   windows-DG2-JIT-INTERNAL-L0RTAS:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
@@ -591,11 +540,7 @@ jobs:
       - linux-PVC-1T-JIT-INTERNAL-test
       - linux-PVC-2T-JIT-INTERNAL-test
       - windows-DG2-JIT-INTERNAL
-      - windows-DG2-JIT-PUBLIC
-      - windows-DG2-JIT-PUBLIC-ICX
-      - windows-DG2-JIT-PUBLIC-ICX-RC
       - windows-DG2-JIT-INTERNAL-L0RTAS
-      - windows-DG2-JIT-PUBLIC-sycl-nightly-RK
       - linux-fedora29_ICX
       - linux-fedora32-GCC
       - linux-fedora32_ICX
