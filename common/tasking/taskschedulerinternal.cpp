@@ -150,7 +150,8 @@ namespace embree
   {
     Lock<MutexSys> lock(g_mutex);
     assert(newNumThreads);
-    newNumThreads = min(newNumThreads, (size_t) getNumberOfLogicalThreads());
+    if (newNumThreads == std::numeric_limits<size_t>::max())
+      newNumThreads = (size_t) getNumberOfLogicalThreads();
 
     numThreads = newNumThreads;
     if (!startThreads && !running) return;
@@ -230,7 +231,8 @@ namespace embree
   TaskScheduler::TaskScheduler()
     : threadCounter(0), anyTasksRunning(0), hasRootTask(false)
   {
-    threadLocal.resize(2*getNumberOfLogicalThreads()); // FIXME: this has to be 2x as in the compatibility join mode with rtcCommitScene the worker threads also join. When disallowing rtcCommitScene to join a build we can remove the 2x.
+    assert(threadPool);
+    threadLocal.resize(2 * TaskScheduler::threadCount()); // FIXME: this has to be 2x as in the compatibility join mode with rtcCommitScene the worker threads also join. When disallowing rtcCommitScene to join a build we can remove the 2x.
     for (size_t i=0; i<threadLocal.size(); i++)
       threadLocal[i].store(nullptr);
   }
