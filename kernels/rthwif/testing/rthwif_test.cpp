@@ -2158,8 +2158,13 @@ int main(int argc, char* argv[])
   RTCore::SetXeVersion((RTCore::XeVersion)ZE_RAYTRACING_DEVICE);
 #endif
 
+#if TBB_INTERFACE_VERSION >= 11005
   tbb::global_control tbb_threads(tbb::global_control::max_allowed_parallelism,numThreads);
-    
+#else
+  tbb::task_scheduler_init tbb_threads(tbb::task_scheduler_init::deferred);
+  tbb_threads.initialize(int(numThreads));
+#endif
+
   /* initialize SYCL device */
   device = sycl::device(sycl::gpu_selector_v);
   sycl::queue queue = sycl::queue(device,exception_handler);
