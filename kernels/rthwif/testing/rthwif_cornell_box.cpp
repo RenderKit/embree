@@ -417,12 +417,12 @@ void render(unsigned int x, unsigned int y, void* bvh, unsigned int* pixels, uns
     pixels[y*width+x] = 0;
     return;
   }
-  
+
   /* fixed camera */
-  sycl::float3 vx(-1, -0, -0);
-  sycl::float3 vy(-0, -1, -0);
-  sycl::float3 vz(32, 32, 95.6379f);
-  sycl::float3 p(278, 273, -800);
+  sycl::float3 vx(-1.f, -0.f, -0.f);
+  sycl::float3 vy(-0.f, -1.f, -0.f);
+  sycl::float3 vz(32.f, 32.f, 95.6379f);
+  sycl::float3 p(278.f, 273.f, -800.f);
 
   /* compute primary ray */
   intel_ray_desc_t ray;

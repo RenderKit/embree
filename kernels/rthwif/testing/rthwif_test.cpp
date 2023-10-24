@@ -425,7 +425,7 @@ const Bounds3f xfmBounds(const Transform& m, const Bounds3f& b)
 struct Triangle
 {
   Triangle()
-    : v0(0,0,0), v1(0,0,0), v2(0,0,0), index(0) {}
+    : v0(0.f,0.f,0.f), v1(0.f,0.f,0.f), v2(0.f,0.f,0.f), index(0) {}
   
   Triangle (sycl::float3 v0, sycl::float3 v1, sycl::float3 v2, uint32_t index)
     : v0(v0), v1(v1), v2(v2), index(index) {}
@@ -1400,8 +1400,8 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, intel_raytracing_a
   out.ray0_flags = intel_get_ray_flags(query,0);
   
   /* clear ray data of level N */
-  out.rayN_org = sycl::float3(0,0,0);
-  out.rayN_dir = sycl::float3(0,0,0);
+  out.rayN_org = sycl::float3(0.f,0.f,0.f);
+  out.rayN_dir = sycl::float3(0.f,0.f,0.f);
   out.rayN_tnear = 0.0f;
   out.rayN_mask = 0;
   out.rayN_flags = 0;
@@ -1503,8 +1503,8 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
   out.ray0_flags = intel_get_ray_flags(query,0);
   
   /* clear ray data of level N */
-  out.rayN_org = sycl::float3(0,0,0);
-  out.rayN_dir = sycl::float3(0,0,0);
+  out.rayN_org = sycl::float3(0.f,0.f,0.f);
+  out.rayN_dir = sycl::float3(0.f,0.f,0.f);
   out.rayN_tnear = 0.0f;
   out.rayN_mask = 0;
   out.rayN_flags = 0;
@@ -1669,9 +1669,9 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
     out.geomID = intel_get_hit_geometry_id( query, intel_hit_type_committed_hit );
     out.primID = intel_get_hit_primitive_id( query, intel_hit_type_committed_hit );
 
-    out.v0 = sycl::float3(0,0,0);
-    out.v1 = sycl::float3(0,0,0);
-    out.v2 = sycl::float3(0,0,0);
+    out.v0 = sycl::float3(0.f,0.f,0.f);
+    out.v1 = sycl::float3(0.f,0.f,0.f);
+    out.v2 = sycl::float3(0.f,0.f,0.f);
     if (intel_get_hit_candidate( query, intel_hit_type_committed_hit ) == intel_candidate_type_triangle)
     {
       intel_float3 vertex_out[3];
@@ -1728,8 +1728,8 @@ void buildTestExpectedInputAndOutput(std::shared_ptr<Scene> scene, size_t numTes
         const sycl::float3 p = tri.sample(0.1f,0.6f);
         const Transform world_to_local = rcp(hit.local_to_world);
         
-        in[tid].org = p + sycl::float3(0,0,-1);
-        in[tid].dir = sycl::float3(0,0,1);
+        in[tid].org = p + sycl::float3(0.f,0.f,-1.f);
+        in[tid].dir = sycl::float3(0.f,0.f,1.f);
         in[tid].tnear = 0.0f;
         in[tid].tfar = 10000.0f;
         in[tid].mask = 0xFF;
@@ -1790,9 +1790,9 @@ void buildTestExpectedInputAndOutput(std::shared_ptr<Scene> scene, size_t numTes
           }
            
           if (hit.procedural_triangle) {
-            out_expected[tid].v0 = sycl::float3(0,0,0);
-            out_expected[tid].v1 = sycl::float3(0,0,0);
-            out_expected[tid].v2 = sycl::float3(0,0,0);
+            out_expected[tid].v0 = sycl::float3(0.f,0.f,0.f);
+            out_expected[tid].v1 = sycl::float3(0.f,0.f,0.f);
+            out_expected[tid].v2 = sycl::float3(0.f,0.f,0.f);
           } else {
             out_expected[tid].v0 = hit.triangle.v0;
             out_expected[tid].v1 = hit.triangle.v1;
