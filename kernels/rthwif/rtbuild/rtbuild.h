@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "ze_api.h"
+#include "../../level_zero/ze_api.h"
 
 #if !defined(ZE_RTAS_BUILDER_EXP_NAME)
 #include "../../level_zero/ze_rtas.h"
