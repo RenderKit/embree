@@ -66,7 +66,7 @@ namespace embree
     
   void* zeRTASInitExp(sycl::device device, sycl::context context);
   
-  void rthwifCleanup(void* dispatchGlobalsPtr, sycl::context context);
+  void rthwifCleanup(Device* embree_device, void* dispatchGlobalsPtr, sycl::context context);
 
   int rthwifIsSYCLDeviceSupported(const sycl::device& sycl_device);
   

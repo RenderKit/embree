@@ -666,7 +666,7 @@ namespace embree
 
   DeviceGPU::~DeviceGPU()
   {
-    rthwifCleanup(dispatchGlobalsPtr,gpu_context);
+    rthwifCleanup(this,dispatchGlobalsPtr,gpu_context);
   }
 
   void DeviceGPU::enter() {

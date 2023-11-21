@@ -6,6 +6,11 @@
 #include "rtbuild.h"
 #include "qbvh6_builder_sah.h"
 
+// get definition of debug extension
+#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
+#include "../../level_zero/ze_wrapper.h"
+#endif
+
 namespace embree
 {
   using namespace embree::isa;
