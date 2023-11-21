@@ -146,6 +146,17 @@ jobs:
         python scripts/test.py build
         python scripts/test.py test
 
+  windows-DG2-JIT-INTERNAL-VALIDATION_API:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
+    with:
+      runs-on: '[ "Windows", "NAS", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
+      cmd: |
+        python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_SYCL_SUPPORT:ON sycl:none rt_validation_api:ON implicit_dispatch_globals:OFF intensity:3 tasking:TBB2020.3
+        python scripts/test.py build
+        python scripts/test.py test
 
   ################################################################################
   ################################################################################
