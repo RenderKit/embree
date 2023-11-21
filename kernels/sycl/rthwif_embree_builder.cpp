@@ -34,6 +34,15 @@ namespace embree
     unsigned _reserved_mbz : 12;
     uint32_t maxBVHLevels;               // the maximal number of supported instancing levels (0->8, 1->1, 2->2, ...)
     Flags flags;                         // per context control flags
+
+    static inline size_t GetDispatchGlobalsSize()
+    {
+      size_t maxBVHLevels = RTC_MAX_INSTANCE_LEVEL_COUNT+1;
+      size_t rtstack_bytes = (64+maxBVHLevels*(64+32)+63)&-64;
+      size_t num_rtstacks = 1<<17; // this is sufficiently large also for PVC
+      size_t dispatchGlobalSize = 128+num_rtstacks*rtstack_bytes;
+      return dispatchGlobalSize;
+    }
   };
 
   void* zeRTASInitExp(sycl::device device, sycl::context context)
@@ -43,12 +52,7 @@ namespace embree
 
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
 
-    size_t maxBVHLevels = RTC_MAX_INSTANCE_LEVEL_COUNT+1;
-
-    size_t rtstack_bytes = (64+maxBVHLevels*(64+32)+63)&-64;
-    size_t num_rtstacks = 1<<17; // this is sufficiently large also for PVC
-    size_t dispatchGlobalSize = 128+num_rtstacks*rtstack_bytes;
-
+    size_t dispatchGlobalSize = DispatchGlobals::GetDispatchGlobalsSize();
     void* dispatchGlobalsPtr = rthwifAllocAccelBuffer(nullptr,dispatchGlobalSize,device,context);
     memset(dispatchGlobalsPtr, 0, dispatchGlobalSize);
 
@@ -59,7 +63,7 @@ namespace embree
     dg->numDSSRTStacks = 0;
     dg->syncRayQueryCount = 0;
     dg->_reserved_mbz = 0;
-    dg->maxBVHLevels = maxBVHLevels;
+    dg->maxBVHLevels = RTC_MAX_INSTANCE_LEVEL_COUNT+1;
     dg->flags = DEPTH_TEST_LESS_EQUAL;
 
     return dispatchGlobalsPtr;
@@ -71,10 +75,11 @@ namespace embree
 #endif
   }
 
-  void rthwifCleanup(void* dispatchGlobalsPtr, sycl::context context)
+  void rthwifCleanup(Device* embree_device, void* dispatchGlobalsPtr, sycl::context context)
   {
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
-    rthwifFreeAccelBuffer(nullptr, dispatchGlobalsPtr, context);
+    size_t dispatchGlobalSize = DispatchGlobals::GetDispatchGlobalsSize();
+    rthwifFreeAccelBuffer(embree_device, dispatchGlobalsPtr, dispatchGlobalSize, context);
 #endif
   }
 
