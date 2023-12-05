@@ -59,6 +59,13 @@
       }
     },
     {
+      "name": "icx-macosx",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "/opt/intel/oneapi/compiler/2023.0.0/mac/bin/intel64/icpc",
+        "CMAKE_C_COMPILER": "/opt/intel/oneapi/compiler/2023.0.0/mac/bin/intel64/icc"
+      }
+    },
+    {
       "name": "dpcpp-windows",
       "generator": "Ninja",
       "cacheVariables": {
@@ -151,28 +158,32 @@
     },
 
     {
-      "name": "ispc1.13.0",
+      "name": "ispc1_13_0",
+      "hidden": true,
       "cacheVariables": {
         "EMBREE_ISPC_SUPPORT": "ON",
         "EMBREE_ISPC_EXECUTABLE": "$env{EMBREE_ISPC_1_13_0_PATH}"
       }
     },
     {
-      "name": "ispc1.14.1",
+      "name": "ispc1_14_1",
+      "hidden": true,
       "cacheVariables": {
         "EMBREE_ISPC_SUPPORT": "ON",
         "EMBREE_ISPC_EXECUTABLE": "$env{EMBREE_ISPC_1_14_1_PATH}"
       }
     },
     {
-      "name": "ispc1.16.0",
+      "name": "ispc1_16_1",
+      "hidden": true,
       "cacheVariables": {
         "EMBREE_ISPC_SUPPORT": "ON",
-        "EMBREE_ISPC_EXECUTABLE": "$env{EMBREE_ISPC_1_16_0_PATH}"
+        "EMBREE_ISPC_EXECUTABLE": "$env{EMBREE_ISPC_1_16_1_PATH}"
       }
     },
     {
-      "name": "ispc1.17.0",
+      "name": "ispc1_17_0",
+      "hidden": true,
       "cacheVariables": {
         "EMBREE_ISPC_SUPPORT": "ON",
         "EMBREE_ISPC_EXECUTABLE": "$env{EMBREE_ISPC_1_17_0_PATH}"
@@ -180,6 +191,7 @@
     },
     {
       "name": "ispc1_18_1",
+      "hidden": true,
       "cacheVariables": {
         "EMBREE_ISPC_SUPPORT": "ON",
         "EMBREE_ISPC_EXECUTABLE": "$env{EMBREE_ISPC_1_18_1_PATH}"
@@ -187,6 +199,7 @@
     },
     {
       "name": "ispc1_19_0",
+      "hidden": true,
       "cacheVariables": {
         "EMBREE_ISPC_SUPPORT": "ON",
         "EMBREE_ISPC_EXECUTABLE": "$env{EMBREE_ISPC_1_19_0_PATH}"
@@ -194,6 +207,7 @@
     },
     {
       "name": "ispc1_20_0",
+      "hidden": true,
       "cacheVariables": {
         "EMBREE_ISPC_SUPPORT": "ON",
         "EMBREE_ISPC_EXECUTABLE": "$env{EMBREE_ISPC_1_20_0_PATH}"
@@ -201,10 +215,16 @@
     },
     {
       "name": "ispc1_21_0",
+      "hidden": true,
       "cacheVariables": {
         "EMBREE_ISPC_SUPPORT": "ON",
         "EMBREE_ISPC_EXECUTABLE": "$env{EMBREE_ISPC_1_21_0_PATH}"
       }
+    },
+    {
+      "name": "ispc_NEWEST",
+      "hidden": true,
+      "inherits": "ispc1_21_0"
     }
   ]
 }

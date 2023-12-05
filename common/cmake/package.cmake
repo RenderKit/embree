@@ -301,11 +301,11 @@ IF(WIN32)
   ENDIF()
 
   add_custom_target(
-    post_package "${PROJECT_SOURCE_DIR}/scripts/package_post_build_win.bat" "${PACKAGE_BASE_NAME}" "${EMBREE_SIGN_FILE}"
+    post_package "${PROJECT_SOURCE_DIR}/scripts/package_post_build_win.bat" "${PACKAGE_BASE_NAME}"
   )
 
   add_custom_target(
-    test_package "${PROJECT_SOURCE_DIR}/scripts/package_test_win.bat" "${PACKAGE_BASE_NAME}"
+    test_package "${PROJECT_SOURCE_DIR}/scripts/package_test_win.bat" "${EMBREE_TESTING_INTENSITY}"
   )
 
 # MacOSX specific settings
@@ -327,7 +327,7 @@ ELSEIF(APPLE)
   )
 
   add_custom_target(
-    test_package "${PROJECT_SOURCE_DIR}/scripts/package_test_macosx.sh" ${PACKAGE_BASE_NAME}
+    test_package "${PROJECT_SOURCE_DIR}/scripts/package_test_macosx.sh" ${EMBREE_TESTING_INTENSITY}
   )
 
 # Linux specific settings
@@ -345,9 +345,7 @@ ELSE()
   )
 
   add_custom_target(
-    test_package "${PROJECT_SOURCE_DIR}/scripts/package_test_linux.sh" ${PACKAGE_BASE_NAME}
-  )
-
+    test_package "${PROJECT_SOURCE_DIR}/scripts/package_test_linux.sh" ${EMBREE_TESTING_INTENSITY})
 ENDIF()
 
 IF (EMBREE_TESTING_PACKAGE)

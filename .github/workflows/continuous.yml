@@ -6,47 +6,47 @@ name: continuous
 on: [push, workflow_dispatch]
 
 jobs:
+ ################################################################################
+ ################################################################################
+ # GPU tests
+ ################################################################################
+ ###############################################################################
 
-  ################################################################################
-  ################################################################################
-  # GPU tests
-  ################################################################################
-  ###############################################################################
-
-  ########################################
-  # Linux DG2
-  ########################################
-  linux-DG2-JIT-INTERNAL:
+ ########################################
+ # Linux DG2
+ ########################################
+  linux-DG2-JIT-INTERNAL-build:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     with:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
-      artifact-out: linux-DG2-JIT-INTERNAL
-      artifact-path: ./build .ctest_conf
+      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
+      artifact-out: linux-DG2-JIT-INTERNAL-build
+      artifact-path: ./build/*.tar.gz
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.21.0 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON LEVEL_ZERO:ON sycl:none tasking:TBB2021.10.0 intensity:4
-        scripts/test.py build --debug
-        scripts/test.py build
+        module load cmake/3.25.3
+        cmake --preset linux-DG2-JIT-INTERNAL
+        cmake --build build --config Release --target package -j8
+        cmake --build build --target post_package
 
   linux-DG2-JIT-INTERNAL-test:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    needs: ["linux-DG2-JIT-INTERNAL"]
+    needs: ["linux-DG2-JIT-INTERNAL-build"]
     with:
       image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
-      artifact-in: linux-DG2-JIT-INTERNAL
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu20-release.env
+      artifact-in: linux-DG2-JIT-INTERNAL-build
       cmd: |
-        scripts/test.py test --debug
-        scripts/test.py test
+        cd build
+        ../scripts/package_test_linux.sh 3
 
-  linux-DG2-JIT-PUBLIC:
+  linux-DG2-JIT-PUBLIC-build:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     with:
@@ -54,29 +54,30 @@ jobs:
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-public.env
-      artifact-out: linux-DG2-JIT-PUBLIC
-      artifact-path: ./build .ctest_conf
+      artifact-out: linux-DG2-JIT-PUBLIC-build
+      artifact-path: ./build/*.tar.gz
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.21.0 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.10.0 intensity:4
-        scripts/test.py build --debug
-        scripts/test.py build
+        module load cmake/3.25.3
+        cmake --preset linux-DG2-JIT-PUBLIC
+        cmake --build build --config Release --target package -j8
+        cmake --build build --target post_package
 
   linux-DG2-JIT-PUBLIC-test:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    needs: ["linux-DG2-JIT-PUBLIC"]
+    needs: ["linux-DG2-JIT-PUBLIC-build"]
     with:
       image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-public.env
-      artifact-in: linux-DG2-JIT-PUBLIC
+      artifact-in: linux-DG2-JIT-PUBLIC-build
       cmd: |
-        scripts/test.py test --debug
-        scripts/test.py test
+        cd build
+        ../scripts/package_test_linux.sh 3
 
-  linux-DG2-JIT-EMBARGO:
+  linux-DG2-JIT-EMBARGO-build:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     with:
@@ -84,93 +85,30 @@ jobs:
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-embargo.env
-      artifact-out: linux-DG2-JIT-EMBARGO
-      artifact-path: ./build .ctest_conf
+      artifact-out: linux-DG2-JIT-EMBARGO-build
+      artifact-path: ./build/*.tar.gz
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.21.0 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.10.0 intensity:4
-        scripts/test.py build --debug
-        scripts/test.py build
+        module load cmake/3.25.3
+        cmake --preset linux-DG2-JIT-EMBARGO
+        cmake --build build --config Release --target package -j8
+        cmake --build build --target post_package
 
   linux-DG2-JIT-EMBARGO-test:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    needs: ["linux-DG2-JIT-EMBARGO"]
+    needs: ["linux-DG2-JIT-EMBARGO-build"]
     with:
       image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-embargo.env
-      artifact-in: linux-DG2-JIT-EMBARGO
+      artifact-in: linux-DG2-JIT-EMBARGO-build
       cmd: |
-        scripts/test.py test --debug
-        scripts/test.py test
+        cd build
+        ../scripts/package_test_linux.sh 3
 
-  linux-DG2-JIT-PUBLIC-ICX:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    with:
-      image: embree/ubuntu:22.04
-      runs-on: '[ "Linux", "docker", "build" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: intel/2023.1
-      artifact-out: linux-DG2-JIT-PUBLIC-ICX
-      artifact-path: ./build .ctest_conf
-      cmd: |
-        scripts/test.py configure platform:x64 compiler:ICX ispc:ispc1.21.0 isa:AVX512 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.10.0 intensity:4
-        scripts/test.py build --debug
-        scripts/test.py build
-
-  linux-DG2-JIT-PUBLIC-ICX-test:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    needs: ["linux-DG2-JIT-PUBLIC-ICX"]
-    with:
-      image: embree/ubuntu:22.04
-      options: --device=/dev/dri:/dev/dri
-      runs-on: '[ "Linux", "docker", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: intel/2023.1
-      artifact-in: linux-DG2-JIT-PUBLIC-ICX
-      cmd: |
-        scripts/test.py test --debug
-        scripts/test.py test
-
-  linux-DG2-JIT-PUBLIC-ICX-RC:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    with:
-      image: embree/ubuntu:22.04
-      runs-on: '[ "Linux", "docker", "build" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: icx/compiler_ppkg-rel/20230926
-      artifact-out: linux-DG2-JIT-PUBLIC-ICX-RC
-      artifact-path: ./build .ctest_conf
-      cmd: |
-        scripts/test.py configure platform:x64 compiler:ICX ispc:ispc1.21.0 isa:AVX512 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.10.0 intensity:4
-        scripts/test.py build --debug
-        scripts/test.py build
-
-  linux-DG2-JIT-PUBLIC-ICX-RC-test:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    needs: ["linux-DG2-JIT-PUBLIC-ICX-RC"]
-    with:
-      image: embree/ubuntu:22.04
-      options: --device=/dev/dri:/dev/dri
-      runs-on: '[ "Linux", "docker", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: icx/compiler_ppkg-rel/20230926
-      artifact-in: linux-DG2-JIT-PUBLIC-ICX-RC
-      cmd: |
-        scripts/test.py test --debug
-        scripts/test.py test
-
-  linux-DG2-JIT-PUBLIC-sycl-nightly-RK:
+  linux-DG2-JIT-PUBLIC-sycl-nightly-RK-build:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     with:
@@ -179,17 +117,18 @@ jobs:
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
       dpcpp-version: intel-llvm/nightly-2023-09-22-rk
-      artifact-out: linux-DG2-JIT-PUBLIC-sycl-nightly-RK
-      artifact-path: ./build .ctest_conf
+      artifact-out: linux-DG2-JIT-PUBLIC-sycl-nightly-RK-build
+      artifact-path: ./build/*.tar.gz
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.21.0 isa:AVX512 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.10.0 intensity:4
-        scripts/test.py build --debug
-        scripts/test.py build
+        module load cmake/3.25.3
+        cmake --preset linux-DG2-JIT-PUBLIC-sycl-nightly-RK
+        cmake --build build --config Release --target package -j8
+        cmake --build build --target post_package
 
   linux-DG2-JIT-PUBLIC-sycl-nightly-RK-test:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    needs: ["linux-DG2-JIT-PUBLIC-sycl-nightly-RK"]
+    needs: ["linux-DG2-JIT-PUBLIC-sycl-nightly-RK-build"]
     with:
       image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
@@ -197,10 +136,77 @@ jobs:
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
       dpcpp-version: intel-llvm/nightly-2023-09-22-rk
-      artifact-in: linux-DG2-JIT-PUBLIC-sycl-nightly-RK
+      artifact-in: linux-DG2-JIT-PUBLIC-sycl-nightly-RK-build
       cmd: |
-        scripts/test.py test --debug
-        scripts/test.py test
+        cd build
+        ../scripts/package_test_linux.sh 3
+
+  linux-DG2-JIT-PUBLIC-ICX-build:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    with:
+      image: embree/ubuntu:22.04
+      runs-on: '[ "Linux", "docker", "build" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      dpcpp-version: intel/2023.1
+      artifact-out: linux-DG2-JIT-PUBLIC-ICX-build
+      artifact-path: ./build/*.tar.gz
+      cmd: |
+        module load cmake/3.25.3
+        cmake --preset linux-DG2-JIT-PUBLIC-ICX
+        cmake --build build --config Release --target package -j8
+        cmake --build build --target post_package
+
+  linux-DG2-JIT-PUBLIC-ICX-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    needs: ["linux-DG2-JIT-PUBLIC-ICX-build"]
+    with:
+      image: embree/ubuntu:22.04
+      options: --device=/dev/dri:/dev/dri
+      runs-on: '[ "Linux", "docker", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      dpcpp-version: intel/2023.1
+      artifact-in: linux-DG2-JIT-PUBLIC-ICX-build
+      cmd: |
+        cd build
+        ../scripts/package_test_linux.sh 3
+
+  linux-DG2-JIT-PUBLIC-ICX-RC-build:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    with:
+      image: embree/ubuntu:22.04
+      runs-on: '[ "Linux", "docker", "build" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      dpcpp-version: icx/compiler_ppkg-rel/20230926
+      artifact-out: linux-DG2-JIT-PUBLIC-ICX-RC-build
+      artifact-path: ./build/*.tar.gz
+      cmd: |
+        module load cmake/3.25.3
+        cmake --preset linux-DG2-JIT-PUBLIC-ICX-RC
+        cmake --build build --config Release --target package -j8
+        cmake --build build --target post_package
+
+  linux-DG2-JIT-PUBLIC-ICX-RC-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    needs: ["linux-DG2-JIT-PUBLIC-ICX-RC-build"]
+    with:
+      image: embree/ubuntu:22.04
+      options: --device=/dev/dri:/dev/dri
+      runs-on: '[ "Linux", "docker", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      dpcpp-version: icx/compiler_ppkg-rel/20230926
+      artifact-in: linux-DG2-JIT-PUBLIC-ICX-RC-build
+      cmd: |
+        cd build
+        ../scripts/package_test_linux.sh 3
+
 
   ########################################
   # Linux ATS-M
@@ -209,24 +215,24 @@ jobs:
   linux-ATSM-JIT-PUBLIC-test:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    needs: ["linux-DG2-JIT-PUBLIC"]
+    needs: ["linux-DG2-JIT-PUBLIC-build"]
     with:
       image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "atsm" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-public.env
-      artifact-in: linux-DG2-JIT-PUBLIC
+      artifact-in: linux-DG2-JIT-PUBLIC-build
       cmd: |
-        scripts/test.py test --debug
-        scripts/test.py test
+        cd build
+        ../scripts/package_test_linux.sh 3
 
 
   ########################################
   # Linux PVC
   ########################################
 
-  linux-PVC-JIT-INTERNAL:
+  linux-PVC-JIT-INTERNAL-build:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     with:
@@ -234,44 +240,49 @@ jobs:
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-embargo.env
-      artifact-out: linux-PVC-JIT-INTERNAL
-      artifact-path: ./build .ctest_conf
+      dpcpp-version: intel/2023.1
+      artifact-out: linux-PVC-JIT-INTERNAL-build
+      artifact-path: ./build/*.tar.gz
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4
-        scripts/test.py build --debug
-        scripts/test.py build
+        module load cmake/3.25.3
+        cmake --preset linux-PVC-JIT-INTERNAL
+        cmake --build build --config Release --target package -j8
+        cmake --build build --target post_package
 
-  linux-PVC-1T-JIT-INTERNAL-test:
+#  TODO: move to nightly
+#  linux-PVC-JIT-INTERNAL-test-1T:
+#    secrets: inherit
+#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+#    needs: ["linux-PVC-JIT-INTERNAL-build"]
+#    with:
+#      image: embree/ubuntu:22.04
+#      options: --device=/dev/dri:/dev/dri
+#      runs-on: '[ "Linux", "docker", "pvc" ]'
+#      project: embree
+#      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-embargo.env
+#      dpcpp-version: intel/2023.1
+#      artifact-in: linux-PVC-JIT-INTERNAL-build
+#      cmd: |
+#        export EnableImplicitScaling=0
+#        cd build
+#        ../scripts/package_test_linux.sh 3
+
+  linux-PVC-JIT-INTERNAL-test-2T:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    needs: ["linux-PVC-JIT-INTERNAL"]
+    needs: ["linux-PVC-JIT-INTERNAL-build"]
     with:
       image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "pvc" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-embargo.env
-      artifact-in: linux-PVC-JIT-INTERNAL
-      cmd: |
-        export EnableImplicitScaling=0
-        scripts/test.py test --debug
-        scripts/test.py test
-
-  linux-PVC-2T-JIT-INTERNAL-test:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    needs: ["linux-PVC-JIT-INTERNAL"]
-    with:
-      image: embree/ubuntu:22.04
-      options: --device=/dev/dri:/dev/dri
-      runs-on: '[ "Linux", "docker", "pvc" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-embargo.env
-      artifact-in: linux-PVC-JIT-INTERNAL
+      dpcpp-version: intel/2023.1
+      artifact-in: linux-PVC-JIT-INTERNAL-build
       cmd: |
         export EnableImplicitScaling=1
-        scripts/test.py test --debug
-        scripts/test.py test
+        cd build
+        ../scripts/package_test_linux.sh 3
 
 #  linux-PVC-JIT-PUBLIC:
 #    secrets: inherit
@@ -304,29 +315,61 @@ jobs:
   # Windows DG2
   ########################################
 
-  windows-DG2-JIT-INTERNAL:
+  windows-DG2-JIT-INTERNAL-build:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     with:
-      runs-on: '[ "Windows", "NAS", "dg2" ]'
+      runs-on: '[ "Windows", "NAS", "build" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
+      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
+      artifact-out: windows-DG2-JIT-INTERNAL-build
+      artifact-path: ./build/*.zip
       cmd: |
-        python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_SYCL_SUPPORT:ON sycl:none intensity:3
-        python scripts/test.py build
-        python scripts/test.py test
+        cmake --preset windows-DG2-JIT-INTERNAL
+        cmake --build build --config Release --target package -j8
+        cmake --build build --target post_package
 
-  windows-DG2-JIT-INTERNAL-L0RTAS:
+  windows-DG2-JIT-INTERNAL-test:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
+    needs: ["windows-DG2-JIT-INTERNAL-build"]
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
+      artifact-in: windows-DG2-JIT-INTERNAL-build
       cmd: |
-        python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_SYCL_SUPPORT:ON sycl:none L0RTAS:ON intensity:3 tasking:TBB2020.3
-        python scripts/test.py build
-        python scripts/test.py test
+        cd build
+        ../scripts/package_test_win.bat 3
+
+  windows-DG2-JIT-INTERNAL-L0RTAS-build:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
+    with:
+      runs-on: '[ "Windows", "NAS", "build" ]'
+      project: embree
+      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
+      artifact-out: windows-DG2-JIT-INTERNAL-L0RTAS-build
+      artifact-path: ./build/*.zip
+      cmd: |
+        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS
+        cmake --build build --config Release --target package -j8
+        cmake --build build --target post_package
+
+  
+  windows-DG2-JIT-INTERNAL-L0RTAS-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
+    needs: ["windows-DG2-JIT-INTERNAL-L0RTAS-build"]
+    with:
+      runs-on: '[ "Windows", "NAS", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
+      artifact-in: windows-DG2-JIT-INTERNAL-L0RTAS-build
+      cmd: |
+        cd build
+        ../scripts/package_test_win.bat 3
+
 
   ################################################################################
   ################################################################################
@@ -338,7 +381,33 @@ jobs:
   # Linux
   ########################################
 
-  linux-fedora29_ICX:
+  linux-fedora26-CLANG4:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    with:
+      image: embree/fedora:26
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      cmd: |
+        module load cmake/3.25.3
+        cmake --preset linux-fedora26-CLANG4 -D EMBREE_TESTING_INTENSITY=2
+        cmake --build build --target package -j8
+        cmake --build build --target post_package
+        cmake --build build --target test_package
+
+  linux-fedora26-CLANG5-INT-ADDRSANITIZER:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    with:
+      image: embree/fedora:26
+      runs-on: '[ "Linux", "docker", "build" ]'
+      cmd: |
+        module load cmake/3.25.3
+        cmake --preset linux-fedora26-CLANG5-INT-ADDRSANITIZER -D EMBREE_TESTING_INTENSITY=1
+        cmake --build build --target package -j8
+        cmake --build build --target post_package
+        cmake --build build --target test_package
+
+  linux-fedora29-ICX:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     with:
@@ -346,10 +415,25 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       dpcpp-version: intel/2023.1
       cmd: |
-        python scripts/test.py configure platform:x64 build:Debug compiler:ICX ispc:ispc1.13.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.2.0 intensity:2 maxinstancelevelcount:4
-        python scripts/test.py build
-        python scripts/test.py test
-  #     python scripts/test.py test sde:hsw
+        module load cmake/3.25.3
+        cmake --preset linux-fedora29-ICX -D EMBREE_TESTING_INTENSITY=2
+        cmake --build build --target package
+        cmake --build build --target post_package
+        cmake --build build --target test_package
+
+  linux-fedora32-ICX:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    with:
+      image: embree/fedora:32
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      dpcpp-version: intel/2023.1
+      cmd: |
+        module load cmake/3.25.3
+        cmake --preset linux-fedora32-ICX -D EMBREE_TESTING_INTENSITY=2
+        cmake --build build --target package
+        cmake --build build --target post_package
+        cmake --build build --target test_package
 
   linux-fedora32-GCC:
     secrets: inherit
@@ -358,43 +442,11 @@ jobs:
       image: embree/fedora:32
       runs-on: '[ "Linux", "docker", "avx512" ]'
       cmd: |
-        python scripts/test.py configure platform:x64 build:Debug compiler:GCC ispc:ispc1.13.0 isa:AVX512 tasking:TBB COMPACT_POLYS:ON MIN_WIDTH:ON intensity:2
-        python scripts/test.py build
-        python scripts/test.py test
-
-  linux-fedora32_ICX:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    with:
-      image: embree/fedora:32
-      runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2023.1
-      cmd: |
-        python scripts/test.py configure platform:x64 build:Debug compiler:ICX ispc:ispc1.13.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.10.0 intensity:2 maxinstancelevelcount:4
-        python scripts/test.py build
-        python scripts/test.py test
-
-  linux-fedora26_CLANG4:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    with:
-      image: embree/fedora:26
-      runs-on: '[ "Linux", "docker", "avx512" ]'
-      cmd: |
-        python scripts/test.py configure platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.17.0 isa:AVX512 frequency_level:simd128 tasking:TBB2021.2.0 GLFW:OFF intensity:2
-        python scripts/test.py build
-        python scripts/test.py test
-
-  linux-fedora26_CLANG5-INT-ADDRSANITIZER:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    with:
-      image: embree/fedora:26
-      runs-on: '[ "Linux", "docker", "build" ]'
-      cmd: |
-        python scripts/test.py configure platform:x64 build:Debug compiler:CLANG5.0.0 ispc:ispc1.17.0 isa:AVX tasking:INT intensity:1 addrsanitizer:ON
-        python scripts/test.py build
-        python scripts/test.py test
+        module load cmake/3.25.3
+        cmake --preset linux-fedora32-GCC -D EMBREE_TESTING_INTENSITY=2
+        cmake --build build --target package -j8
+        cmake --build build --target post_package
+        cmake --build build --target test_package
 
   linux-ubuntu20_04-GCC-NAMESPACE:
     secrets: inherit
@@ -403,9 +455,11 @@ jobs:
       image: embree/ubuntu:20.04
       runs-on: '[ "Linux", "docker", "build" ]'
       cmd: |
-        python scripts/test.py configure platform:x64 build:Debug compiler:GCC ispc:ispc1.13.0 isa:AVX2 frequency_level:simd256 tasking:TBB intensity:1 api_namespace:myembree
-        python scripts/test.py build
-        python scripts/test.py test
+        module load cmake/3.25.3
+        cmake --preset linux-ubuntu20_04-GCC-NAMESPACE -D EMBREE_TESTING_INTENSITY=1
+        cmake --build build --target package -j8
+        cmake --build build --target post_package
+        cmake --build build --target test_package
 
   linux-ubuntu20_04-ICX:
     secrets: inherit
@@ -415,9 +469,11 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       dpcpp-version: intel/2023.1
       cmd: |
-        python scripts/test.py configure platform:x64 build:Release threads:4 compiler:ICX ispc:ispc1.17.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.5.0 intensity:2
-        python scripts/test.py build
-        python scripts/test.py test
+        module load cmake/3.25.3
+        cmake --preset linux-ubuntu20_04-ICX -D EMBREE_TESTING_INTENSITY=2
+        cmake --build build --target package
+        cmake --build build --target post_package
+        cmake --build build --target test_package
 
   linux-ubuntu20_04-ICX-RC:
     secrets: inherit
@@ -428,9 +484,10 @@ jobs:
       dpcpp-version: icx/compiler_ppkg-rel/20230926
       cmd: |
         module load cmake/3.25.3
-        scripts/test.py configure platform:x64 build:Release threads:4 compiler:ICX ispc:ispc1.17.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.5.0 intensity:2
-        scripts/test.py build
-        scripts/test.py test
+        cmake --preset linux-ubuntu20_04-ICX-RC -D EMBREE_TESTING_INTENSITY=2
+        cmake --build build --target package
+        cmake --build build --target post_package
+        cmake --build build --target test_package
 
   linux-centos7_4-GCC:
     secrets: inherit
@@ -439,9 +496,11 @@ jobs:
       image: embree/centos:7.4
       runs-on: '[ "Linux", "docker", "build" ]'
       cmd: |
-        python scripts/test.py configure platform:x64 build:Debug compiler:GCC ispc:ispc1.17.0 isa:AVX2 frequency_level:simd128 tasking:TBB intensity:1
-        python scripts/test.py build
-        python scripts/test.py test
+        module load cmake/3.25.3
+        cmake --preset linux-centos7_4-GCC -D EMBREE_TESTING_INTENSITY=1
+        cmake --build build --target package -j8
+        cmake --build build --target post_package
+        cmake --build build --target test_package
 
 
   ########################################
@@ -454,9 +513,10 @@ jobs:
       runs-on: '[ "Windows", "NAS", "build" ]'
       dpcpp-version: none
       cmd: |
-        python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:V142 ispc:ispc1.21.0 isa:SSE2 tasking:TBB2021.10.0 intensity:2 maxinstancelevelcount:8
-        python scripts/test.py build
-        python scripts/test.py test
+        cmake --preset windows-V142 -D EMBREE_TESTING_INTENSITY=2
+        cmake --build build --target package
+        cmake --build build --target post_package
+        cmake --build build --target test_package
 
   windows-ICX:
     secrets: inherit
@@ -465,9 +525,10 @@ jobs:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
       dpcpp-version: oneAPI/compiler/2023.1.0
       cmd: |
-        python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:ICX ispc:ispc1.17.0 isa:AVX512 tasking:TBB2021.5.0 threads:16 intensity:2
-        python scripts/test.py build
-        python scripts/test.py test
+        cmake --preset windows-ICX -D EMBREE_TESTING_INTENSITY=2
+        cmake --build build --target package -j16
+        cmake --build build --target post_package
+        cmake --build build --target test_package
 
   windows-ICX-RC:
     secrets: inherit
@@ -476,30 +537,25 @@ jobs:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
       dpcpp-version: icx/compiler_ppkg-rel/20230926
       cmd: |
-        python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:ICX ispc:ispc1.17.0 isa:AVX512 tasking:TBB2021.5.0 threads:16 intensity:2
-        python scripts/test.py build
-        python scripts/test.py test
-
-  ################################################################################
-  ################################################################################
-  # CPU tests
-  ################################################################################
-  ################################################################################
-
+        cmake --preset windows-ICX-RC -D EMBREE_TESTING_INTENSITY=2
+        cmake --build build --target package -j16
+        cmake --build build --target post_package
+        cmake --build build --target test_package
 
   ########################################
   # MacOS
   ########################################
 
-  macosx-ARM-NEON-AVX2:
+  macosx-ARM-CLANG-NEON-AVX2:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
     with:
       runs-on: '[ "macOS", "build", "arm" ]'
       cmd: |
-        scripts/test.py configure platform:arm64 build:Debug compiler:CLANG ispc:ispc1.17.0 isa:NEON2X tasking:TBB_HOMEBREW intensity:2
-        scripts/test.py build
-        scripts/test.py test
+        cmake --preset macos-ARM-CLANG-NEON-AVX2 -D EMBREE_TESTING_INTENSITY=2
+        cmake --build build -j8
+        cd build
+        ctest -VV
 
   macosx-x64-CLANG:
     secrets: inherit
@@ -507,9 +563,10 @@ jobs:
     with:
       runs-on: '[ "macOS", "build", "x86_64" ]'
       cmd: |
-        scripts/test.py configure platform:x64 build:Debug compiler:CLANG ispc:ispc1.21.0 isa:SSE2 tasking:TBB2021.1.1 intensity:2
-        scripts/test.py build
-        scripts/test.py test
+        cmake --preset macos-x64-CLANG -D EMBREE_TESTING_INTENSITY=2
+        cmake --build build -j4
+        cd build
+        ctest -VV
 
   ########################################
   # Coverity
@@ -517,14 +574,15 @@ jobs:
 
   static-analysis:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/static_analysis.yml@tgt/coverity-env
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/static_analysis.yml@main
     with:
       project: Embree
       submodules: true
       coverity: true
       prebuild: >
-        source scripts/cmake-presets/linux-env.sh &&
-        $CMAKE_EXE --preset linux-coverity
+        module load cmake/3.25.3 &&
+        export NAS_LINUX=$STORAGE_PATH/packages/apps &&
+        cmake --preset linux-coverity
       build: sh scripts/coverity.sh
 
   success:
@@ -537,15 +595,15 @@ jobs:
       - linux-DG2-JIT-PUBLIC-ICX-test
       - linux-DG2-JIT-PUBLIC-ICX-RC-test
       - linux-DG2-JIT-PUBLIC-sycl-nightly-RK-test
-      - linux-PVC-1T-JIT-INTERNAL-test
-      - linux-PVC-2T-JIT-INTERNAL-test
-      - windows-DG2-JIT-INTERNAL
-      - windows-DG2-JIT-INTERNAL-L0RTAS
-      - linux-fedora29_ICX
+#      - linux-PVC-JIT-INTERNAL-test-1T
+      - linux-PVC-JIT-INTERNAL-test-2T
+      - windows-DG2-JIT-INTERNAL-test
+      - windows-DG2-JIT-INTERNAL-L0RTAS-test
+      - linux-fedora26-CLANG4
+      - linux-fedora26-CLANG5-INT-ADDRSANITIZER
+      - linux-fedora29-ICX
+      - linux-fedora32-ICX
       - linux-fedora32-GCC
-      - linux-fedora32_ICX
-      - linux-fedora26_CLANG4
-      - linux-fedora26_CLANG5-INT-ADDRSANITIZER
       - linux-ubuntu20_04-GCC-NAMESPACE
       - linux-ubuntu20_04-ICX
       - linux-ubuntu20_04-ICX-RC
@@ -553,7 +611,7 @@ jobs:
       - windows-V142
       - windows-ICX
       - windows-ICX-RC
-      - macosx-ARM-NEON-AVX2
+      - macosx-ARM-CLANG-NEON-AVX2
       - macosx-x64-CLANG
       - static-analysis
     if: failure() || cancelled()

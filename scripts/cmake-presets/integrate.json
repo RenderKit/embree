@@ -1,0 +1,160 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 11,
+    "patch": 0
+  },
+  "include": [
+    "os.json", 
+    "package.json",
+    "compiler.json",
+    "tbb.json"
+  ],
+  "configurePresets": [
+    {
+      "name": "integrate-windows-icx",
+      "inherits": ["package-windows", "env", "icx-windows", "ispc_NEWEST", "tbb_NEWEST"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+    {
+      "name": "integrate-windows-v142",
+      "inherits": ["package-windows", "env", "v142", "ispc_NEWEST", "tbb_NEWEST"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    },
+    
+    {
+      "name": "integrate-static-windows-icx",
+      "inherits": ["package-static-windows", "env", "icx-windows", "ispc_NEWEST", "tbb_NEWEST"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+    {
+      "name": "integrate-static-windows-v142",
+      "inherits": ["package-static-windows", "env", "v142", "ispc_NEWEST", "tbb_NEWEST"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    },
+
+
+
+    {
+      "name": "integrate-linux-gcc",
+      "inherits": ["package-linux", "env", "gcc", "ispc_NEWEST", "tbb_NEWEST"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+    {
+      "name": "integrate-linux-icx",
+      "inherits": ["package-linux", "env", "icx", "ispc_NEWEST", "tbb_NEWEST"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+    {
+      "name": "integrate-linux-clang",
+      "inherits": ["package-linux", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+
+    {
+      "name": "integrate-static-linux-gcc",
+      "inherits": ["package-linux", "env", "gcc", "ispc_NEWEST", "tbb_NEWEST"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+    {
+      "name": "integrate-static-linux-icx",
+      "inherits": ["package-linux", "env", "icx", "ispc_NEWEST", "tbb_NEWEST"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+    {
+      "name": "integrate-static-linux-clang",
+      "inherits": ["package-linux", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+
+    {
+      "name": "integrate-sycl-linux-icx",
+      "inherits": ["package-linux", "env", "icx", "ispc_NEWEST", "tbb_NEWEST"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_LEVEL_ZERO": "ON",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+    {
+      "name": "integrate-sycl-linux-dpcpp",
+      "inherits": ["package-linux", "env", "dpcpp", "ispc_NEWEST", "tbb_NEWEST"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_LEVEL_ZERO": "ON",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    },
+
+
+
+   {
+      "name": "integrate-macos-gcc",
+      "inherits": ["package-macos", "env", "gcc", "ispc_NEWEST", "tbb_NEWEST"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+    {
+      "name": "integrate-macos-clang",
+      "inherits": ["package-macos", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    }
+    ]
+}
+

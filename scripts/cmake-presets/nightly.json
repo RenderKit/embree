@@ -1,0 +1,594 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 11,
+    "patch": 0
+  },
+  "include": [
+    "os.json", 
+    "package.json",
+    "compiler.json",
+    "tbb.json"
+  ],
+  "configurePresets": [
+    {
+      "name": "nightly-linux-DG2-JIT-MULTILEVEL",
+      "inherits": ["package-linux", "env", "dpcpp", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_LEVEL_ZERO": "ON",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "SSE2",
+        "EMBREE_MAX_INSTANCE_LEVEL_COUNT": "2"
+      }
+    }, 
+    {
+      "name": "nightly-linux-DG2-INTERNAL-L0RTAS",
+      "inherits": ["package-linux", "env", "dpcpp", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_LEVEL_ZERO": "ON",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "ON",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    },
+    {
+      "name": "nightly-linux-PVC-JIT",
+      "inherits": ["package-linux", "env", "dpcpp", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_LEVEL_ZERO": "ON",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    },
+    {
+      "name": "nightly-windows-DG2-JIT",
+      "inherits": ["package-windows", "env", "dpcpp-windows", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    },
+    {
+      "name": "nightly-windows-DG2-JIT-ICX",
+      "inherits": ["package-windows", "env", "icx-windows", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+    {
+      "name": "nightly-windows-DG2-JIT-NIGHTLY",
+      "inherits": ["package-windows", "env", "dpcpp-windows", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+
+    {
+      "name": "nightly-linux-DEBUG-CLANG4-SSE2-NAMESPACE",
+      "inherits": ["package-linux", "env", "clang4", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "SSE2",
+        "EMBREE_TUTORIALS_GLFW": "OFF",
+        "EMBREE_MAX_INSTANCE_LEVEL_COUNT": "8",
+        "EMBREE_API_NAMESPACE": "myembree",
+        "EMBREE_LIBRARY_NAME": "myembree"
+      }
+    },
+    {
+      "name": "nightly-linux-DEBUG-CLANG5-ISPC1_14_1-AVX2-INT-ADDRSANITIZER",
+      "inherits": ["package-linux", "env", "clang5", "ispc1_14_1", "tasking_internal"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "AVX2",
+        "EMBREE_ADDRESS_SANITIZER": "ON",
+        "EMBREE_TUTORIALS_GLFW": "OFF"
+      }
+    },
+    {
+      "name": "nightly-linux-DEBUG-CLANG4-ISPC1_16_1-AVX2-TBB2021_9_0-STATIC",
+      "inherits": ["package-static-linux", "env", "clang4", "ispc1_16_1", "tbb2021_9_0"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_CONFIG": "frequency_level=simd128",
+        "EMBREE_MAX_ISA": "AVX2",
+        "EMBREE_TUTORIALS_GLFW": "OFF"
+      }
+    },
+    {
+      "name": "nightly-linux-DEBUG-CLANG4-ISPC1_16_1-AVX512VL-TBB2020_2",
+      "inherits": ["package-linux", "env", "clang4", "ispc1_16_1", "tbb2020_2_0"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_CONFIG": "frequency_level=simd256",
+        "EMBREE_MAX_ISA": "AVX512",
+        "EMBREE_TUTORIALS_GLFW": "OFF"
+      }
+    },
+    {
+      "name": "nightly-linux-DEBUG-GCC-ISPC1_16_1-SSE2-TBB2021_2",
+      "inherits": ["package-linux", "env", "gcc", "ispc1_16_1", "tbb2021_2_0"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "SSE2",
+        "EMBREE_TUTORIALS_GLFW": "OFF"
+      }
+    },
+    {
+      "name": "nightly-linux-DEBUG-GCC-ISPC1_16_1-AVX-TBB2019_9",
+      "inherits": ["package-linux", "env", "gcc", "ispc1_16_1", "tbb2019_9_0"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "AVX",
+        "EMBREE_TUTORIALS_GLFW": "OFF"
+      }
+    },
+    {
+      "name": "nightly-linux-DEBUG-GCC-ISPC1_17_0-AVX2-TBB2021_2_0",
+      "inherits": ["package-linux", "env", "gcc", "ispc1_17_0", "tbb2021_2_0"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "AVX2",
+        "EMBREE_TUTORIALS_GLFW": "OFF"
+      }
+    },
+    {
+      "name": "nightly-linux-DEBUG-ICX2023_0_0-ISPC1_16_1-AVX-TBB2019_2",
+      "inherits": ["package-linux", "env", "icx", "ispc1_16_1", "tbb2019_2_0"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "AVX",
+        "EMBREE_TUTORIALS_GLFW": "OFF"
+      }
+    },
+    {
+      "name": "nightly-linux-DEBUG-ICX2023_0_0-ISPC1_16_1-AVX512VL-TBB2019_2",
+      "inherits": ["package-linux", "env", "icx", "ispc1_16_1", "tbb2019_2_0"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "AVX512",
+        "EMBREE_CONFIG": "frequency_level=simd256",
+        "EMBREE_TUTORIALS_GLFW": "OFF"
+      }
+    },
+    {
+      "name": "nightly-linux-DEBUG-ICX2023_0_0-ISPC1_16_1-AVX512-TBB2019_9",
+      "inherits": ["package-linux", "env", "icx", "ispc1_16_1", "tbb2019_9_0"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "AVX512",
+        "EMBREE_CONFIG": "frequency_level=simd256",
+        "EMBREE_TUTORIALS_GLFW": "OFF"
+      }
+    },
+    {
+      "name": "nightly-linux-DEBUG-ICX2023_0_0-ISPC1_16_1-AVX2-TBB2021_2_0",
+      "inherits": ["package-linux", "env", "icx", "ispc1_16_1", "tbb2021_2_0"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "AVX2",
+        "EMBREE_TUTORIALS_GLFW": "OFF"
+      }
+    },
+    {
+      "name": "nightly-linux-DEBUG-ICX2023_0_0-ISPC1_17_0-AVX2-TBB2019_9",
+      "inherits": ["package-linux", "env", "icx", "ispc1_17_0", "tbb2019_9_0"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "AVX2",
+        "EMBREE_TUTORIALS_GLFW": "OFF"
+      }
+    },
+    {
+      "name": "nightly-linux-DEBUG-ICX2023_0_0-ISPC1_17_0-AVX512VL-TBB2021_5_0",
+      "inherits": ["package-linux", "env", "icx", "ispc1_17_0", "tbb2021_5_0"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "AVX512",
+        "EMBREE_CONFIG": "frequency_level=simd256",
+        "EMBREE_TUTORIALS_GLFW": "OFF"
+      }
+    },
+    {
+      "name": "nightly-distrotest",
+      "inherits": ["package-linux", "env", "gcc", "ispc_NEWEST", "tbb_SYSTEM"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "AVX2",
+        "EMBREE_TUTORIALS_GLFW": "OFF"
+      }
+    },
+    {
+      "name": "nightly-distrotest-ISPC1_14_1-TBB2021_2",
+      "inherits": ["package-linux", "env", "gcc", "ispc1_14_1", "tbb2021_2_0"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "AVX2",
+        "EMBREE_TUTORIALS_GLFW": "OFF"
+      }
+    },
+    {
+      "name": "nightly-distrotest-AVX512",
+      "inherits": ["package-linux", "env", "gcc", "ispc_NEWEST", "tbb_SYSTEM"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "AVX512",
+        "EMBREE_TUTORIALS_GLFW": "OFF"
+      }
+    },
+    {
+      "name": "nightly-singleprimitive",
+      "inherits": ["package-linux", "env", "clang4", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "AVX2",
+        "EMBREE_TUTORIALS_GLFW": "OFF",
+        "EMBREE_GEOMETRY_TRIANGLE": "OFF",
+        "EMBREE_GEOMETRY_QUAD": "OFF",
+        "EMBREE_GEOMETRY_GRID": "OFF",
+        "EMBREE_GEOMETRY_CURVE": "OFF",
+        "EMBREE_GEOMETRY_SUBDIVISION": "OFF",
+        "EMBREE_GEOMETRY_USER": "OFF",
+        "EMBREE_GEOMETRY_INSTANCE": "OFF",
+        "EMBREE_GEOMETRY_INSTANCE_ARRAY": "OFF"
+      }
+    },
+    {
+      "name": "nightly-singleprimitive-TRI",
+      "inherits": ["nightly-singleprimitive"],
+      "cacheVariables": {
+        "EMBREE_GEOMETRY_TRIANGLE": "ON"
+      }
+    },
+    {
+      "name": "nightly-singleprimitive-QUAD",
+      "inherits": ["nightly-singleprimitive"],
+      "cacheVariables": {
+        "EMBREE_GEOMETRY_QUAD": "ON"
+      }
+    },
+    {
+      "name": "nightly-singleprimitive-GRID",
+      "inherits": ["nightly-singleprimitive"],
+      "cacheVariables": {
+        "EMBREE_GEOMETRY_GRID": "ON"
+      }
+    },
+    {
+      "name": "nightly-singleprimitive-CURVE",
+      "inherits": ["nightly-singleprimitive"],
+      "cacheVariables": {
+        "EMBREE_GEOMETRY_CURVE": "ON"
+      }
+    },
+    {
+      "name": "nightly-singleprimitive-SUBDIV",
+      "inherits": ["nightly-singleprimitive"],
+      "cacheVariables": {
+        "EMBREE_GEOMETRY_SUBDIVISION": "ON"
+      }
+    },
+    {
+      "name": "nightly-singleprimitive-USERGEOM",
+      "inherits": ["nightly-singleprimitive"],
+      "cacheVariables": {
+        "EMBREE_GEOMETRY_USER": "ON"
+      }
+    },
+    {
+      "name": "nightly-singleprimitive-INSTANCE",
+      "inherits": ["nightly-singleprimitive"],
+      "cacheVariables": {
+        "EMBREE_GEOMETRY_INSTANCE": "ON"
+      }
+    },
+    {
+      "name": "nightly-singleprimitive-INSTANCE_ARRAY",
+      "inherits": ["nightly-singleprimitive"],
+      "cacheVariables": {
+        "EMBREE_GEOMETRY_INSTANCE_ARRAY": "ON"
+      }
+    },
+    {
+      "name": "nightly-singleprimitive-INSTANCE-INSTANCE_ARRAY",
+      "inherits": ["nightly-singleprimitive"],
+      "cacheVariables": {
+        "EMBREE_GEOMETRY_INSTANCE": "ON",
+        "EMBREE_GEOMETRY_INSTANCE_ARRAY": "ON"
+      }
+    },
+    {
+      "name": "nightly-linux-feature-NO_ISPC",
+      "inherits": ["package-linux", "env", "clang4", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "AVX2",
+        "EMBREE_TUTORIALS_GLFW": "OFF"
+      }
+    },
+    {
+      "name": "nightly-linux-feature-NO_TUTORIALS",
+      "inherits": ["package-linux", "env", "clang4", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "AVX2",
+        "EMBREE_TUTORIALS_GLFW": "OFF",
+        "EMBREE_TUTORIALS": "OFF"
+      }
+    },
+    {
+      "name": "nightly-linux-feature-BACKFACECULLING",
+      "inherits": ["package-linux", "env", "clang4", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "AVX2",
+        "EMBREE_TUTORIALS_GLFW": "OFF",
+        "EMBREE_BACKFACE_CULLING": "ON"
+      }
+    },
+    {
+      "name": "nightly-linux-feature-IGNORE-INVALID-RAYS",
+      "inherits": ["package-linux", "env", "clang4", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "AVX2",
+        "EMBREE_TUTORIALS_GLFW": "OFF",
+        "EMBREE_BACKFACE_CULLING": "IGNORE_INVALID_RAYS"
+      }
+    },
+    {
+      "name": "nightly-linux-feature-NO-FILTER-FUNCTION",
+      "inherits": ["package-linux", "env", "clang4", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "AVX2",
+        "EMBREE_TUTORIALS_GLFW": "OFF",
+        "EMBREE_FILTER_FUNCTION": "OFF"
+      }
+    },
+    {
+      "name": "nightly-linux-feature-RAYMASKS",
+      "inherits": ["package-linux", "env", "clang4", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "AVX2",
+        "EMBREE_TUTORIALS_GLFW": "OFF",
+        "EMBREE_RAY_MASK": "ON"
+      }
+    },
+    {
+      "name": "nightly-linux-feature-NO-PACKETS",
+      "inherits": ["package-linux", "env", "clang4", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "AVX2",
+        "EMBREE_TUTORIALS_GLFW": "OFF",
+        "EMBREE_RAY_PACKETS": "OFF"
+      }
+    },
+    {
+      "name": "nightly-linux-feature-STATCOUNTER",
+      "inherits": ["package-linux", "env", "clang4", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "AVX2",
+        "EMBREE_TUTORIALS_GLFW": "OFF",
+        "EMBREE_STAT_COUNTERS": "ON"
+      }
+    },
+    {
+      "name": "nightly-linux-individualisa",
+      "inherits": ["package-linux", "env", "clang4", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_TUTORIALS_GLFW": "OFF",
+        "EMBREE_ISA_SSE2": "OFF",
+        "EMBREE_ISA_SSE42": "OFF",
+        "EMBREE_AVX": "OFF",
+        "EMBREE_AVX2": "OFF",
+        "EMBREE_AVX512": "OFF"
+      }
+    },
+    {
+      "name": "nightly-linux-individualisa-SSE2",
+      "inherits": ["nightly-linux-individualisa"],
+      "cacheVariables": {
+        "EMBREE_ISA_SSE2": "ON"
+      }
+    },
+    {
+      "name": "nightly-linux-individualisa-SSE42",
+      "inherits": ["nightly-linux-individualisa"],
+      "cacheVariables": {
+        "EMBREE_ISA_SSE42": "ON"
+      }
+    },
+    {
+      "name": "nightly-linux-individualisa-AVX",
+      "inherits": ["nightly-linux-individualisa"],
+      "cacheVariables": {
+        "EMBREE_ISA_AVX": "ON"
+      }
+    },
+    {
+      "name": "nightly-linux-individualisa-AVX2",
+      "inherits": ["nightly-linux-individualisa"],
+      "cacheVariables": {
+        "EMBREE_ISA_AVX2": "ON"
+      }
+    },
+    {
+      "name": "nightly-linux-individualisa-AVX512",
+      "inherits": ["nightly-linux-individualisa"],
+      "cacheVariables": {
+        "EMBREE_ISA_AVX512": "ON"
+      }
+    },
+
+
+    {
+      "name": "nightly-windows-RELEASE-ICX2023_0_0-ISPC1_13_0-AVX2-TBB2021_5_0",
+      "inherits": ["package-windows", "env", "icx-windows", "ispc1_13_0", "tbb2021_5_0"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX2",
+        "EMBREE_CONFIG": "frequency_level=simd128",
+        "EMBREE_TUTORIALS_GLFW": "OFF"
+      }
+    },
+    {
+      "name": "nightly-windows-RELEASE-ICX2023_0_0-ISPC1_13_0-AVX512-TBB2019_9",
+      "inherits": ["package-windows", "env", "icx-windows", "ispc1_13_0", "tbb2019_9_0"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512",
+        "EMBREE_TUTORIALS_GLFW": "OFF"
+      }
+    },
+    {
+      "name": "nightly-windows-RELEASE-ICX2023_0_0-ISPC1_14_1-AVX2-TBB2021_2_0",
+      "inherits": ["package-windows", "env", "icx-windows", "ispc1_14_1", "tbb2021_2_0"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX2",
+        "EMBREE_TUTORIALS_GLFW": "OFF"
+      }
+    },
+
+    {
+      "name": "nightly-macosx-ARM-NEON",
+      "binaryDir": "${sourceDir}/build",
+      "inherits": ["macos", "env", "clang", "ispc_NEWEST", "tbb_HOMEBREW"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_TUTORIALS_GLFW": "OFF",
+        "EMBREE_MAX_ISA": "NEON"
+      }
+    },
+    {
+      "name": "nightly-macosx-x64-ICX",
+      "binaryDir": "${sourceDir}/build",
+      "inherits": ["macos", "env", "icx-macosx", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_TUTORIALS_GLFW": "OFF"
+      }
+    },
+    {
+      "name": "nightly-macosx-individualisa-CLANG-SSE2",
+      "binaryDir": "${sourceDir}/build",
+      "inherits": ["macos", "env", "clang", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_TUTORIALS_GLFW": "OFF",
+        "EMBREE_MAX_ISA": "NONE",
+        "EMBREE_ISA_SSE2": "ON",
+        "EMBREE_ISA_SSE42": "OFF",
+        "EMBREE_ISA_AVX": "OFF",
+        "EMBREE_ISA_AVX2": "OFF",
+        "EMBREE_ISA_AVX512": "OFF",
+        "EMBREE_API_NAMESPACE": "myembree",
+        "EMBREE_LIBRARY_NAME": "myembree",
+        "EMBREE_MAX_INSTANCE_LEVEL_COUNT": "4"
+      }
+    },
+    {
+      "name": "nightly-macosx-individualisa-CLANG-AVX",
+      "binaryDir": "${sourceDir}/build",
+      "inherits": ["macos", "env", "clang", "ispc_NEWEST", "tasking_internal"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_TUTORIALS_GLFW": "OFF",
+        "EMBREE_MAX_ISA": "NONE",
+        "EMBREE_ISA_SSE2": "OFF",
+        "EMBREE_ISA_SSE42": "OFF",
+        "EMBREE_ISA_AVX": "ON",
+        "EMBREE_ISA_AVX2": "OFF",
+        "EMBREE_ISA_AVX512": "OFF"
+      }
+    },
+    {
+      "name": "nightly-macosx-individualisa-CLANG-SSE2-STATIC",
+      "binaryDir": "${sourceDir}/build",
+      "inherits": ["macos", "env", "clang", "ispc_NEWEST", "tasking_internal"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_TUTORIALS_GLFW": "OFF",
+        "EMBREE_MAX_ISA": "NONE",
+        "EMBREE_ISA_SSE2": "ON",
+        "EMBREE_ISA_SSE42": "OFF",
+        "EMBREE_ISA_AVX": "OFF",
+        "EMBREE_ISA_AVX2": "OFF",
+        "EMBREE_ISA_AVX512": "OFF",
+        "EMBREE_STATIC_LIB": "ON"
+      }
+    },
+    {
+      "name": "nightly-macosx-ICX2023_0_0-AVX",
+      "binaryDir": "${sourceDir}/build",
+      "inherits": ["macos", "env", "icx-macosx", "ispc_NEWEST", "tasking_internal"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_TUTORIALS_GLFW": "OFF",
+        "EMBREE_MAX_ISA": "NONE",
+        "EMBREE_ISA_AVX": "ON"
+      }
+    },
+    {
+      "name": "nightly-macosx-ICX2023_0_0-AVX2-SIMD256",
+      "binaryDir": "${sourceDir}/build",
+      "inherits": ["macos", "env", "icx-macosx", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_TUTORIALS_GLFW": "OFF",
+        "EMBREE_MAX_ISA": "NONE",
+        "EMBREE_ISA_AVX2": "ON",
+        "EMBREE_CONFIG": "frequency_level=simd256"
+      }
+    },
+    {
+      "name": "nightly-macosx-ICX2023_0_0-AVX2",
+      "binaryDir": "${sourceDir}/build",
+      "inherits": ["macos", "env", "icx-macosx", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_TUTORIALS_GLFW": "OFF",
+        "EMBREE_MAX_ISA": "NONE",
+        "EMBREE_ISA_AVX2": "ON",
+        "EMBREE_CONFIG": "frequency_level=simd128"
+      }
+    },
+    {
+      "name": "nightly-linux-arm-emulation",
+      "binaryDir": "${sourceDir}/build",
+      "inherits": ["package-linux", "env", "gcc", "tasking_internal"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_TUTORIALS_GLFW": "OFF",
+        "EMBREE_MAX_ISA": "NONE"
+      }
+    }
+
+  ]
+}
+

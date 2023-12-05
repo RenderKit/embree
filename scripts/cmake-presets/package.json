@@ -10,6 +10,7 @@
     {
       "name": "package",
       "hidden": true,
+      "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "BUILD_TESTING": "ON",
         "EMBREE_TESTING_INSTALL_TESTS": "ON",
