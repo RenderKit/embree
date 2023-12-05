@@ -7,18 +7,76 @@
   },
   "configurePresets": [
     {
-      "name": "tbb2021_9_0",
+      "name": "tasking_internal",
+      "cacheVariables": {
+        "EMBREE_TASKING_SYSTEM": "INTERNAL"
+      }
+    },
+    {
+      "name": "tbb_SYSTEM",
+      "cacheVariables": {
+        "EMBREE_TASKING_SYSTEM": "TBB"
+      }
+    },
+    {
+      "name": "tbb_HOMEBREW",
       "cacheVariables": {
         "EMBREE_TASKING_SYSTEM": "TBB",
+        "EMBREE_TBB_ROOT": "/opt/homebrew"
+      }
+    },
+    {
+      "name": "tbb2019_2_0",
+      "inherits": "tbb_SYSTEM",
+      "cacheVariables": {
+        "TBB_DIR": "$env{EMBREE_TBB_2019_2_0_DIR}"
+      }
+    },
+    {
+      "name": "tbb2019_9_0",
+      "inherits": "tbb_SYSTEM",
+      "cacheVariables": {
+        "TBB_DIR": "$env{EMBREE_TBB_2019_9_0_DIR}"
+      }
+    },
+    {
+      "name": "tbb2020_2_0",
+      "inherits": "tbb_SYSTEM",
+      "cacheVariables": {
+        "TBB_DIR": "$env{EMBREE_TBB_2020_2_0_DIR}"
+      }
+    },
+    {
+      "name": "tbb2021_2_0",
+      "inherits": "tbb_SYSTEM",
+      "cacheVariables": {
+        "TBB_DIR": "$env{EMBREE_TBB_2021_2_0_DIR}"
+      }
+    },
+    {
+      "name": "tbb2021_5_0",
+      "inherits": "tbb_SYSTEM",
+      "cacheVariables": {
+        "TBB_DIR": "$env{EMBREE_TBB_2021_5_0_DIR}"
+      }
+    },
+    {
+      "name": "tbb2021_9_0",
+      "inherits": "tbb_SYSTEM",
+      "cacheVariables": {
         "TBB_DIR": "$env{EMBREE_TBB_2021_9_0_DIR}"
       }
     },
     {
       "name": "tbb2021_10_0",
+      "inherits": "tbb_SYSTEM",
       "cacheVariables": {
-        "EMBREE_TASKING_SYSTEM": "TBB",
         "TBB_DIR": "$env{EMBREE_TBB_2021_10_0_DIR}"
       }
+    },
+    {
+      "name": "tbb_NEWEST",
+      "inherits": "tbb2021_10_0"
     }
   ]
 }

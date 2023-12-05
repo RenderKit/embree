@@ -11,6 +11,7 @@ EMBREE_SIGN_FILE=$2
 
 mv ${PACKAGE}.x86_64.macosx-embree.zip ${PACKAGE}.x86_64.macosx.zip
 mv ${PACKAGE}.x86_64.macosx-embree-testing.zip ${PACKAGE}.x86_64.macosx-testing.zip
+rm ${PACKAGE}.x86_64.macosx-Unspecified.zip
 
 # sign PKG package
 if [ ${PACKAGE: -4} == ".pkg" ]; then

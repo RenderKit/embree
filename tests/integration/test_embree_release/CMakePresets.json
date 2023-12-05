@@ -13,8 +13,8 @@
   ],
   "configurePresets": [
     {
-      "name": "linux-gcc-tbb2021_9_0",
-      "inherits": ["linux", "env", "gcc", "tbb2021_9_0"],
+      "name": "test-linux-gcc",
+      "inherits": ["linux", "env", "gcc", "tbb_NEWEST"],
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
@@ -22,8 +22,8 @@
       }
     },
     {
-      "name": "linux-icx-tbb2021_9_0",
-      "inherits": ["linux", "env", "icx", "tbb2021_9_0"],
+      "name": "test-linux-icx",
+      "inherits": ["linux", "env", "icx", "tbb_NEWEST"],
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
@@ -31,27 +31,8 @@
       }
     },
     {
-      "name": "linux-clang-tbb2021_9_0",
-      "inherits": ["linux", "env", "clang", "tbb2021_9_0"],
-      "binaryDir": "${sourceDir}/build",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "embree_DIR": "$env{EMBREE_CONFIG_DIR}"
-      }
-    },
-
-    {
-      "name": "macos-gcc-tbb2021_9_0",
-      "inherits": ["macos", "env", "gcc", "tbb2021_9_0"],
-      "binaryDir": "${sourceDir}/build",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "embree_DIR": "$env{EMBREE_CONFIG_DIR}"
-      }
-    },
-    {
-      "name": "macos-clang-tbb2021_9_0",
-      "inherits": ["macos", "env", "clang", "tbb2021_9_0"],
+      "name": "test-linux-clang",
+      "inherits": ["linux", "env", "clang", "tbb_NEWEST"],
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
@@ -59,10 +40,9 @@
       }
     },
 
-
     {
-      "name": "windows-icx-tbb2021_9_0",
-      "inherits": ["windows", "env", "icx-windows", "tbb2021_9_0"],
+      "name": "test-macos-gcc",
+      "inherits": ["macos", "env", "gcc", "tbb_NEWEST"],
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
@@ -70,8 +50,28 @@
       }
     },
     {
-      "name": "windows-v142-tbb2021_9_0",
-      "inherits": ["windows", "env", "v142", "tbb2021_9_0"],
+      "name": "test-macos-clang",
+      "inherits": ["macos", "env", "clang", "tbb_NEWEST"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "embree_DIR": "$env{EMBREE_CONFIG_DIR}"
+      }
+    },
+
+
+    {
+      "name": "test-windows-icx",
+      "inherits": ["windows", "env", "icx-windows", "tbb_NEWEST"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "embree_DIR": "$env{EMBREE_CONFIG_DIR}"
+      }
+    },
+    {
+      "name": "test-windows-v142",
+      "inherits": ["windows", "env", "v142", "tbb_NEWEST"],
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",

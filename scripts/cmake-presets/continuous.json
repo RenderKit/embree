@@ -1,0 +1,213 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 11,
+    "patch": 0
+  },
+  "include": [
+    "os.json", 
+    "package.json",
+    "compiler.json",
+    "tbb.json"
+  ],
+  "configurePresets": [
+    {
+      "name": "linux-DG2-JIT-INTERNAL",
+      "inherits": ["package-linux", "env", "dpcpp", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_LEVEL_ZERO": "ON",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    },
+    {
+      "name": "linux-DG2-JIT-PUBLIC",
+      "inherits": "linux-DG2-JIT-INTERNAL"
+    },
+    {
+      "name": "linux-DG2-JIT-EMBARGO",
+      "inherits": "linux-DG2-JIT-INTERNAL"
+    },
+    {
+      "name": "linux-DG2-JIT-PUBLIC-sycl-nightly-RK",
+      "inherits": "linux-DG2-JIT-INTERNAL",
+      "cacheVariables": {
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+    {
+      "name": "linux-DG2-JIT-PUBLIC-ICX",
+      "inherits": ["package-linux", "env", "icx", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithAssert",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_LEVEL_ZERO": "ON",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+    {
+      "name": "linux-DG2-JIT-PUBLIC-ICX-RC",
+      "inherits": "linux-DG2-JIT-PUBLIC-ICX"
+    },
+    {
+      "name": "linux-PVC-JIT-INTERNAL",
+      "inherits": ["package-linux", "env", "icx", "ispc_NEWEST", "tbb_SYSTEM"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithAssert",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_LEVEL_ZERO": "ON",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    },
+    {
+      "name": "windows-DG2-JIT-INTERNAL",
+      "inherits": ["package-windows", "env", "dpcpp-windows", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    },
+    {
+      "name": "windows-DG2-JIT-INTERNAL-L0RTAS",
+      "inherits": ["package-windows", "env", "dpcpp-windows", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "ON",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    },
+    {
+      "name": "linux-fedora26-CLANG4",
+      "inherits": ["package-linux", "env", "clang4", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "EMBREE_CONFIG": "frequency_level=simd128",
+        "EMBREE_MAX_ISA": "AVX512",
+        "EMBREE_TUTORIALS_GLFW": "OFF"
+      }
+    },
+    {
+      "name": "linux-fedora26-CLANG5-INT-ADDRSANITIZER",
+      "inherits": ["package-linux", "env", "clang5", "ispc_NEWEST", "tasking_internal"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "EMBREE_MAX_ISA": "SSE2",
+        "EMBREE_ADDRESS_SANITIZER": "ON",
+        "EMBREE_TUTORIALS_GLFW": "OFF"
+      }
+    },
+    {
+      "name": "linux-fedora29-ICX",
+      "inherits": ["package-linux", "env", "dpcpp", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "EMBREE_BUILD_GLFW_FROM_SOURCE": "OFF",
+        "EMBREE_CONFIG": "frequency_level=simd256",
+        "EMBREE_MAX_ISA": "AVX512",
+        "EMBREE_MAX_INSTANCE_LEVEL_COUNT": "4"
+      }
+    },
+    {
+      "name": "linux-fedora32-ICX",
+      "inherits": "linux-fedora29-ICX"
+    },
+    {
+      "name": "linux-fedora32-GCC",
+      "inherits": ["package-linux", "env", "gcc", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "EMBREE_CONFIG": "frequency_level=simd256",
+        "EMBREE_MAX_ISA": "AVX512",
+        "EMBREE_COMPACT_POLYS": "ON",
+        "EMBREE_MIN_WIDTH": "ON"
+      }
+    },
+    {
+      "name": "linux-ubuntu20_04-GCC-NAMESPACE",
+      "inherits": ["package-linux", "env", "gcc", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "EMBREE_CONFIG": "frequency_level=simd256",
+        "EMBREE_MAX_ISA": "AVX2",
+        "EMBREE_API_NAMESPACE": "myembree",
+        "EMBREE_LIBRARY_NAME": "myembree"
+      }
+    },
+    {
+      "name": "linux-ubuntu20_04-ICX",
+      "inherits": ["package-linux", "env", "icx", "ispc_NEWEST", "tbb_SYSTEM"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "EMBREE_CONFIG": "frequency_level=simd256",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+    {
+      "name": "linux-ubuntu20_04-ICX-RC",
+      "inherits": "linux-ubuntu20_04-ICX"
+    },
+    {
+      "name": "linux-centos7_4-GCC",
+      "inherits": ["package-linux", "env", "gcc", "ispc_NEWEST", "tbb_SYSTEM"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "EMBREE_CONFIG": "frequency_level=simd128",
+        "EMBREE_MAX_ISA": "AVX2",
+        "EMBREE_COMPACT_POLYS": "ON",
+        "EMBREE_MIN_WIDTH": "ON"
+      }
+    },
+    {
+      "name": "windows-V142",
+      "inherits": ["package-windows", "env", "v142", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "EMBREE_MAX_ISA": "SSE2",
+        "EMBREE_MAX_INSTANCE_LEVEL_COUNT": "8"
+      }
+    },
+    {
+      "name": "windows-ICX",
+      "inherits": ["package-windows", "env", "icx-windows", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+    {
+        "name": "windows-ICX-RC",
+        "inherits": "windows-ICX"
+    },
+    {
+      "name": "macos-ARM-CLANG-NEON-AVX2",
+      "binaryDir": "${sourceDir}/build",
+      "inherits": ["macos", "env", "clang", "ispc_NEWEST", "tbb_HOMEBREW"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "NEON2X"
+      }
+    },
+    {
+      "name": "macos-x64-CLANG",
+      "binaryDir": "${sourceDir}/build",
+      "inherits": ["macos", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    }
+    ]
+}

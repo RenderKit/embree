@@ -1,4 +1,5 @@
 #!\bin\bash
 
-source scripts/cmake-presets/linux-env.sh 
-$CMAKE_EXE --build build --config Release --target package
+module load cmake/3.25.3 &&
+export NAS_LINUX=$STORAGE_PATH/packages/apps
+cmake --build build --config Release --target package -j8
