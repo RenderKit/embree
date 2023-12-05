@@ -48,6 +48,9 @@ namespace embree
   __forceinline int   toInt  (const float& a) { return int(a); }
   __forceinline float toFloat(const int&   a) { return float(a); }
 
+  __forceinline int   asInt  (const float& a) { return *((int*)&a); }
+  __forceinline float asFloat(const int&   a) { return *((float*)&a); }
+
 #if defined(__WIN32__)
   __forceinline bool finite ( const float x ) { return _finite(x) != 0; }
 #endif
