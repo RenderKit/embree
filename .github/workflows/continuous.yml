@@ -319,6 +319,7 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     with:
+      force-delete: true
       runs-on: '[ "Windows", "NAS", "build" ]'
       project: embree
       dpcpp-version: intel-llvm/nightly-2023-09-22-rk
@@ -346,6 +347,7 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     with:
+      force-delete: true
       runs-on: '[ "Windows", "NAS", "build" ]'
       project: embree
       dpcpp-version: intel-llvm/nightly-2023-09-22-rk
@@ -435,19 +437,6 @@ jobs:
         cmake --build build --target post_package
         cmake --build build --target test_package
 
-  linux-fedora32-GCC:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    with:
-      image: embree/fedora:32
-      runs-on: '[ "Linux", "docker", "avx512" ]'
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset linux-fedora32-GCC -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --target package -j8
-        cmake --build build --target post_package
-        cmake --build build --target test_package
-
   linux-ubuntu20_04-GCC-NAMESPACE:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
@@ -510,6 +499,7 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     with:
+      force-delete: true
       runs-on: '[ "Windows", "NAS", "build" ]'
       dpcpp-version: none
       cmd: |
@@ -522,6 +512,7 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     with:
+      force-delete: true
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
       dpcpp-version: oneAPI/compiler/2023.1.0
       cmd: |
@@ -534,6 +525,7 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     with:
+      force-delete: true
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
       dpcpp-version: icx/compiler_ppkg-rel/20230926
       cmd: |
