@@ -61,7 +61,7 @@ jobs:
       artifact-path: ./build/*.tar.gz
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-DG2-INTERNA-L0RTAS
+        cmake --preset nightly-linux-DG2-INTERNAL-L0RTAS
         cmake --build build --config Release --target package -j8
         cmake --build build --target post_package
 
@@ -986,7 +986,6 @@ jobs:
       image: embree/arm64v8-ubuntu:22.04
       runs-on: '[ "Linux", "docker-arm", "ARM64" ]'
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-arm-emulation -D EMBREE_TESTING_INTENSITY=2
         cmake --build build --target package -j8
         cd build
