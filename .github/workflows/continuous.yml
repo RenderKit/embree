@@ -514,7 +514,7 @@ jobs:
     with:
       force-delete: true
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-      dpcpp-version: oneAPI/compiler/2023.1.0
+      dpcpp-version: oneAPI/compiler/2023.2.1
       cmd: |
         cmake --preset windows-ICX -D EMBREE_TESTING_INTENSITY=2
         cmake --build build --target package -j16
