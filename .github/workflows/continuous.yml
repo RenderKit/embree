@@ -149,7 +149,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: intel/2023.1
+      dpcpp-version: intel/2024.0
       artifact-out: linux-DG2-JIT-PUBLIC-ICX-build
       artifact-path: ./build/*.tar.gz
       cmd: |
@@ -173,40 +173,6 @@ jobs:
       cmd: |
         cd build
         ../scripts/package_test_linux.sh 3
-
-  linux-DG2-JIT-PUBLIC-ICX-RC-build:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    with:
-      image: embree/ubuntu:22.04
-      runs-on: '[ "Linux", "docker", "build" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: icx/compiler_ppkg-rel/20230926
-      artifact-out: linux-DG2-JIT-PUBLIC-ICX-RC-build
-      artifact-path: ./build/*.tar.gz
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset linux-DG2-JIT-PUBLIC-ICX-RC
-        cmake --build build --config Release --target package -j8
-        cmake --build build --target post_package
-
-  linux-DG2-JIT-PUBLIC-ICX-RC-test:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    needs: ["linux-DG2-JIT-PUBLIC-ICX-RC-build"]
-    with:
-      image: embree/ubuntu:22.04
-      options: --device=/dev/dri:/dev/dri
-      runs-on: '[ "Linux", "docker", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: icx/compiler_ppkg-rel/20230926
-      artifact-in: linux-DG2-JIT-PUBLIC-ICX-RC-build
-      cmd: |
-        cd build
-        ../scripts/package_test_linux.sh 3
-
 
 #   ########################################
 #   # Linux ATS-M
@@ -415,7 +381,7 @@ jobs:
     with:
       image: embree/fedora:29
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2023.1
+      dpcpp-version: intel/2024.0
       cmd: |
         module load cmake/3.25.3
         cmake --preset linux-fedora29-ICX -D EMBREE_TESTING_INTENSITY=2
@@ -429,7 +395,7 @@ jobs:
     with:
       image: embree/fedora:32
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2023.1
+      dpcpp-version: intel/2024.0
       cmd: |
         module load cmake/3.25.3
         cmake --preset linux-fedora32-ICX -D EMBREE_TESTING_INTENSITY=2
@@ -456,24 +422,10 @@ jobs:
     with:
       image: embree/ubuntu:20.04
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2023.1
+      dpcpp-version: intel/2024.0
       cmd: |
         module load cmake/3.25.3
         cmake --preset linux-ubuntu20_04-ICX -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --target package
-        cmake --build build --target post_package
-        cmake --build build --target test_package
-
-  linux-ubuntu20_04-ICX-RC:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    with:
-      image: embree/ubuntu:20.04
-      runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: icx/compiler_ppkg-rel/20230926
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset linux-ubuntu20_04-ICX-RC -D EMBREE_TESTING_INTENSITY=2
         cmake --build build --target package
         cmake --build build --target post_package
         cmake --build build --target test_package
@@ -514,22 +466,9 @@ jobs:
     with:
       force-delete: true
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-      dpcpp-version: oneAPI/compiler/2023.2.1
+      dpcpp-version: oneAPI/compiler/2024.0
       cmd: |
         cmake --preset windows-ICX -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --target package -j16
-        cmake --build build --target post_package
-        cmake --build build --target test_package
-
-  windows-ICX-RC:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
-    with:
-      force-delete: true
-      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-      dpcpp-version: icx/compiler_ppkg-rel/20230926
-      cmd: |
-        cmake --preset windows-ICX-RC -D EMBREE_TESTING_INTENSITY=2
         cmake --build build --target package -j16
         cmake --build build --target post_package
         cmake --build build --target test_package
@@ -585,7 +524,6 @@ jobs:
       - linux-ATSM-JIT-PUBLIC-test
       - linux-DG2-JIT-EMBARGO-test
       - linux-DG2-JIT-PUBLIC-ICX-test
-      - linux-DG2-JIT-PUBLIC-ICX-RC-test
       - linux-DG2-JIT-PUBLIC-sycl-nightly-RK-test
       - linux-PVC-JIT-INTERNAL-test-2T
       - windows-DG2-JIT-INTERNAL-test
@@ -596,11 +534,9 @@ jobs:
       - linux-fedora32-ICX
       - linux-ubuntu20_04-GCC-NAMESPACE
       - linux-ubuntu20_04-ICX
-      - linux-ubuntu20_04-ICX-RC
       - linux-centos7_4-GCC
       - windows-V142
       - windows-ICX
-      - windows-ICX-RC
       - macosx-ARM-CLANG-NEON-AVX2
       - macosx-x64-CLANG
       - static-analysis
