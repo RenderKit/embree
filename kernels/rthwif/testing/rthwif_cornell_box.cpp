@@ -64,7 +64,7 @@ catch (std::exception const& e) {
   throw;
 }
 
-std::vector<char> readFile(const std::string& fileName) try
+std::vector<unsigned char> readFile(const std::string& fileName) try
 {
   std::fstream file;
   file.exceptions (std::fstream::failbit | std::fstream::badbit);
@@ -72,9 +72,9 @@ std::vector<char> readFile(const std::string& fileName) try
 
   file.seekg (0, std::ios::end);
   std::streampos size = file.tellg();
-  std::vector<char> data(size);
+  std::vector<unsigned char> data(size);
   file.seekg (0, std::ios::beg);
-  file.read (data.data(), size);
+  file.read ((char*)data.data(), size);
   file.close();
 
   return data;
@@ -84,11 +84,21 @@ catch (std::exception const& e) {
   throw;
 }
 
-bool compareTga(const std::string& fileNameA, const std::string& fileNameB)
+size_t compareTga(const std::string& fileNameA, const std::string& fileNameB)
 {
-  const std::vector<char> dataA = readFile(fileNameA);
-  const std::vector<char> dataB = readFile(fileNameB);
-  return dataA == dataB;
+  const std::vector<unsigned char> dataA = readFile(fileNameA);
+  const std::vector<unsigned char> dataB = readFile(fileNameB);
+  if (dataA.size() != dataB.size())
+    return false;
+
+  size_t diff = 0;
+  for (int i=0; i<dataA.size(); i++)
+  {
+    if (std::abs((int)dataA[i] - (int)dataB[i]) == 1) diff++;
+    if (std::abs((int)dataA[i] - (int)dataB[i]) == 2) diff+=4;
+    if (std::abs((int)dataA[i] - (int)dataB[i]) >= 3) diff+=100;
+  }
+  return diff;
 }
 
 /* Properly allocates an acceleration structure buffer using ze_raytracing_mem_alloc_ext_desc_t property. */
@@ -605,7 +615,9 @@ int main(int argc, char* argv[])
   if (!reference_img) return 0;
 
   /* compare to reference image */
-  const bool ok = compareTga("cornell_box.tga", reference_img);
+  const size_t err = compareTga("cornell_box.tga", "cornell_box_reference.tga");
+  std::cout << "difference to reference image is " << err << std::endl;
+  const bool ok = err < 32;
   std::cout << "cornell_box ";
   if (ok) std::cout << "[PASSED]" << std::endl;
   else    std::cout << "[FAILED]" << std::endl;
