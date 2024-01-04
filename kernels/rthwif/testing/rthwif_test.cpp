@@ -2050,7 +2050,7 @@ void* allocDispatchGlobals(sycl::device device, sycl::context context)
   return dispatchGlobalsPtr;
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char* argv[]) try
 {
   TestType test = TestType::TRIANGLES_COMMITTED_HIT;
   InstancingType inst = InstancingType::NONE;
@@ -2258,6 +2258,10 @@ int main(int argc, char* argv[])
 #endif
   
   return numErrors ? 1 : 0;
+}
+catch (std::runtime_error e) {
+  std::cerr << "std::runtime_error: " << e.what() << std::endl;
+  return 1;
 }
 
 #pragma clang diagnostic pop
