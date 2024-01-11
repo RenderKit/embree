@@ -56,7 +56,7 @@ jobs:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
-      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
+      dpcpp-version: intel-llvm/nightly-2023-12-18-rk
       artifact-out: nightly-linux-DG2-INTERNAL-L0RTAS-build
       artifact-path: ./build/*.tar.gz
       cmd: |
@@ -154,7 +154,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
-      dpcpp-version: icx/compiler_ppkg-rel/20230926
+      dpcpp-version: icx/compiler_ppkg-rel/20231218
       artifact-out: nightly-windows-DG2-JIT-ICX-RC-build
       artifact-path: ./build/*.zip
       cmd: |
