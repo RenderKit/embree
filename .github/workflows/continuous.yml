@@ -22,7 +22,7 @@ jobs:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
-      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
+      dpcpp-version: intel-llvm/nightly-2023-12-18-rk
       artifact-out: linux-DG2-JIT-INTERNAL-build
       artifact-path: ./build/*.tar.gz
       cmd: |
@@ -116,7 +116,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
+      dpcpp-version: intel-llvm/nightly-2023-12-18-rk
       artifact-out: linux-DG2-JIT-PUBLIC-sycl-nightly-RK-build
       artifact-path: ./build/*.tar.gz
       cmd: |
@@ -135,7 +135,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
+      dpcpp-version: intel-llvm/nightly-2023-12-18-rk
       artifact-in: linux-DG2-JIT-PUBLIC-sycl-nightly-RK-build
       cmd: |
         cd build
@@ -216,22 +216,23 @@ jobs:
         cmake --build build --target post_package
 
 #  TODO: move to nightly
-#  linux-PVC-JIT-INTERNAL-test-1T:
-#    secrets: inherit
-#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-#    needs: ["linux-PVC-JIT-INTERNAL-build"]
-#    with:
-#      image: embree/ubuntu:22.04
-#      options: --device=/dev/dri:/dev/dri
-#      runs-on: '[ "Linux", "docker", "pvc" ]'
-#      project: embree
-#      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-embargo.env
-#      dpcpp-version: intel/2023.1
-#      artifact-in: linux-PVC-JIT-INTERNAL-build
-#      cmd: |
-#        export EnableImplicitScaling=0
-#        cd build
-#        ../scripts/package_test_linux.sh 3
+  linux-PVC-JIT-INTERNAL-test-1T:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    needs: ["linux-PVC-JIT-INTERNAL-build"]
+    with:
+      image: embree/ubuntu:22.04
+      options: --device=/dev/dri:/dev/dri
+      runs-on: '[ "Linux", "docker", "pvc" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-embargo.env
+      dpcpp-version: intel/2023.1
+      artifact-in: linux-PVC-JIT-INTERNAL-build
+      cmd: |
+        export EnableImplicitScaling=0
+        export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
+        cd build
+        ../scripts/package_test_linux.sh 3
 
   linux-PVC-JIT-INTERNAL-test-2T:
     secrets: inherit
@@ -246,7 +247,7 @@ jobs:
       dpcpp-version: intel/2023.1
       artifact-in: linux-PVC-JIT-INTERNAL-build
       cmd: |
-        export EnableImplicitScaling=1
+        export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
         cd build
         ../scripts/package_test_linux.sh 3
 
@@ -288,7 +289,7 @@ jobs:
       force-delete: true
       runs-on: '[ "Windows", "NAS", "build" ]'
       project: embree
-      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
+      dpcpp-version: intel-llvm/nightly-2023-12-18-rk
       artifact-out: windows-DG2-JIT-INTERNAL-build
       artifact-path: ./build/*.zip
       cmd: |
@@ -316,7 +317,7 @@ jobs:
       force-delete: true
       runs-on: '[ "Windows", "NAS", "build" ]'
       project: embree
-      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
+      dpcpp-version: intel-llvm/nightly-2023-12-18-rk
       artifact-out: windows-DG2-JIT-INTERNAL-L0RTAS-build
       artifact-path: ./build/*.zip
       cmd: |
