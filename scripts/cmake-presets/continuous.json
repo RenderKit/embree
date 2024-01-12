@@ -172,7 +172,7 @@
     },
     {
       "name": "windows-V142",
-      "inherits": ["package-windows", "env", "v142", "ispc_NEWEST", "tbb_NEWEST"],
+      "inherits": ["package-windows", "env", "v142", "tbb_SYSTEM"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "EMBREE_MAX_ISA": "SSE2",

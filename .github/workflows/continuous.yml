@@ -308,7 +308,7 @@ jobs:
       artifact-in: windows-DG2-JIT-INTERNAL-build
       cmd: |
         cd build
-        ../scripts/package_test_win.bat 3
+        ../scripts/package_test_win.bat 3 Release
 
   windows-DG2-JIT-INTERNAL-L0RTAS-build:
     secrets: inherit
@@ -337,7 +337,7 @@ jobs:
       artifact-in: windows-DG2-JIT-INTERNAL-L0RTAS-build
       cmd: |
         cd build
-        ../scripts/package_test_win.bat 3
+        ../scripts/package_test_win.bat 3 Release
 
 
 #   ################################################################################
@@ -457,7 +457,7 @@ jobs:
       dpcpp-version: none
       cmd: |
         cmake --preset windows-V142 -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --target package
+        cmake --build build --config RelWithDebInfo --target package
         cmake --build build --target post_package
         cmake --build build --target test_package
 

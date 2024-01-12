@@ -311,7 +311,7 @@ IF(WIN32)
   )
 
   add_custom_target(
-    test_package "${PROJECT_SOURCE_DIR}/scripts/package_test_win.bat" "${EMBREE_TESTING_INTENSITY}"
+    test_package "${PROJECT_SOURCE_DIR}/scripts/package_test_win.bat" "${EMBREE_TESTING_INTENSITY}" "${CMAKE_BUILD_TYPE}"
   )
 
 # MacOSX specific settings
