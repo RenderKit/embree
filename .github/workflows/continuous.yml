@@ -282,7 +282,7 @@ jobs:
 #   # Windows DG2
 #   ########################################
 
-  windows-DG2-JIT-INTERNAL-build:
+  windows-DG2-JIT-build:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     with:
@@ -290,7 +290,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "build" ]'
       project: embree
       dpcpp-version: intel-llvm/nightly-2023-12-18-rk
-      artifact-out: windows-DG2-JIT-INTERNAL-build
+      artifact-out: windows-DG2-JIT-build
       artifact-path: ./build/*.zip
       cmd: |
         cmake --preset windows-DG2-JIT-INTERNAL
@@ -300,12 +300,38 @@ jobs:
   windows-DG2-JIT-INTERNAL-test:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
-    needs: ["windows-DG2-JIT-INTERNAL-build"]
+    needs: ["windows-DG2-JIT-build"]
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
-      artifact-in: windows-DG2-JIT-INTERNAL-build
+      artifact-in: windows-DG2-JIT-build
+      cmd: |
+        cd build
+        ../scripts/package_test_win.bat 3 Release
+
+  windows-DG2-JIT-PUBLIC-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
+    needs: ["windows-DG2-JIT-build"]
+    with:
+      runs-on: '[ "Windows", "NAS", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
+      artifact-in: windows-DG2-JIT-build
+      cmd: |
+        cd build
+        ../scripts/package_test_win.bat 3 Release
+
+  windows-DG2-JIT-RELEASE-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
+    needs: ["windows-DG2-JIT-build"]
+    with:
+      runs-on: '[ "Windows", "NAS", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-release.env
+      artifact-in: windows-DG2-JIT-build
       cmd: |
         cd build
         ../scripts/package_test_win.bat 3 Release
@@ -528,6 +554,8 @@ jobs:
       - linux-DG2-JIT-PUBLIC-sycl-nightly-RK-test
       - linux-PVC-JIT-INTERNAL-test-2T
       - windows-DG2-JIT-INTERNAL-test
+      - windows-DG2-JIT-PUBLIC-test
+      - windows-DG2-JIT-RELEASE-test
       - windows-DG2-JIT-INTERNAL-L0RTAS-test
       - linux-fedora26-CLANG4
       - linux-fedora26-CLANG5-INT-ADDRSANITIZER
