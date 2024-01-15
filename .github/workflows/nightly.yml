@@ -122,7 +122,7 @@ jobs:
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
-      dpcpp-version: oneAPI/compiler/2023.1.0
+      dpcpp-version: oneAPI/compiler/2024.0
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
       artifact-out: nightly-windows-DG2-JIT-ICX-build
       artifact-path: ./build/*.zip
@@ -382,26 +382,13 @@ jobs:
         cd build
         ctest -VV
 
-  nightly-linux-DEBUG-ICX2023_1-ISPC1_16_1-AVX-TBB2019_2:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    with:
-      image: embree/rockylinux:8.7
-      dpcpp-version: intel/2023.1.0
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX-TBB2019_2 -D EMBREE_TESTING_INTENSITY=4
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
-
-  nightly-linux-DEBUG-ICX2023_1-ISPC1_16_1-AVX512VL-TBB2019_2:
+  nightly-linux-DEBUG-ICX2024_0-ISPC1_16_1-AVX512VL-TBB2019_2:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2023.1.0
+      dpcpp-version: intel/2024.0
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX512VL-TBB2019_2 -D EMBREE_TESTING_INTENSITY=4
@@ -409,13 +396,13 @@ jobs:
         cd build
         ctest -VV
 
-  nightly-linux-DEBUG-ICX2023_1-ISPC1_16_1-AVX512-TBB2019_9:
+  nightly-linux-DEBUG-ICX2024_0-ISPC1_16_1-AVX512-TBB2019_9:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     with:
       image: embree/fedora:29
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2023.1.0
+      dpcpp-version: intel/2024.0
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX512-TBB2019_9 -D EMBREE_TESTING_INTENSITY=4
@@ -423,12 +410,12 @@ jobs:
         cd build
         ctest -VV
 
-  nightly-linux-DEBUG-ICX2023_1-ISPC1_16_1-AVX2-TBB2021_2_0:
+  nightly-linux-DEBUG-ICX2024_0-ISPC1_16_1-AVX2-TBB2021_2_0:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     with:
       image: embree/fedora:29
-      dpcpp-version: intel/2023.1.0
+      dpcpp-version: intel/2024.0
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX2-TBB2021_2_0 -D EMBREE_TESTING_INTENSITY=4
@@ -436,12 +423,12 @@ jobs:
         cd build
         ctest -VV
 
-  nightly-linux-DEBUG-ICX2023_1-ISPC1_17_0-AVX2-TBB2019_9:
+  nightly-linux-DEBUG-ICX2024_0-ISPC1_17_0-AVX2-TBB2019_9:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     with:
       image: embree/rockylinux:8.7
-      dpcpp-version: intel/2023.1.0
+      dpcpp-version: intel/2024.0
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_17_0-AVX2-TBB2019_9 -D EMBREE_TESTING_INTENSITY=4
@@ -449,13 +436,13 @@ jobs:
         cd build
         ctest -VV
 
-  nightly-linux-DEBUG-ICX2023_1-ISPC1_17_0-AVX512VL-TBB2021_5_0:
+  nightly-linux-DEBUG-ICX2024_0-ISPC1_17_0-AVX512VL-TBB2021_5_0:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     with:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2023.1.0
+      dpcpp-version: intel/2024.0
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_17_0-AVX512VL-TBB2021_5_0 -D EMBREE_TESTING_INTENSITY=2
@@ -862,34 +849,23 @@ jobs:
         cd build
         ctest -VV
 
-  nightly-windows-RELEASE-ICX2023_1-ISPC1_13_0-AVX2-TBB2021_5_0:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
-    with:
-      dpcpp-version: oneAPI/compiler/2023.1.0
-      cmd: |
-        cmake --preset nightly-windows-RELEASE-ICX-ISPC1_13_0-AVX2-TBB2021_5_0 -D EMBREE_TESTING_INTENSITY=4
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
-
-  nightly-windows-RELEASE-ICX2023_1-ISPC1_13_0-AVX512-TBB2019_9:
+  nightly-windows-RELEASE-ICX2024_0-ISPC1_13_0-AVX512-TBB2019_9:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     with:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-      dpcpp-version: oneAPI/compiler/2023.1.0
+      dpcpp-version: oneAPI/compiler/2024.0
       cmd: |
         cmake --preset nightly-windows-RELEASE-ICX-ISPC1_13_0-AVX512-TBB2019_9 -D EMBREE_TESTING_INTENSITY=4
         cmake --build build --target package -j8
         cd build
         ctest -VV
 
-  nightly-windows-RELEASE-ICX2023_1-ISPC1_14_1-AVX2-TBB2021_2_0:
+  nightly-windows-RELEASE-ICX2024_0-ISPC1_14_1-AVX2-TBB2021_2_0:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
     with:
-      dpcpp-version: oneAPI/compiler/2023.1.0
+      dpcpp-version: oneAPI/compiler/2024.0
       cmd: |
         cmake --preset nightly-windows-RELEASE-ICX-ISPC1_14_1-AVX2-TBB2021_2_0 -D EMBREE_TESTING_INTENSITY=4
         cmake --build build --target package -j8
