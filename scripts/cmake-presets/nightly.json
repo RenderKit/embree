@@ -153,7 +153,7 @@
       }
     },
     {
-      "name": "nightly-linux-DEBUG-ICX2023_0_0-ISPC1_16_1-AVX-TBB2019_2",
+      "name": "nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX-TBB2019_2",
       "inherits": ["package-linux", "env", "icx", "ispc1_16_1", "tbb2019_2_0"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
@@ -162,7 +162,7 @@
       }
     },
     {
-      "name": "nightly-linux-DEBUG-ICX2023_0_0-ISPC1_16_1-AVX512VL-TBB2019_2",
+      "name": "nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX512VL-TBB2019_2",
       "inherits": ["package-linux", "env", "icx", "ispc1_16_1", "tbb2019_2_0"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
@@ -172,7 +172,7 @@
       }
     },
     {
-      "name": "nightly-linux-DEBUG-ICX2023_0_0-ISPC1_16_1-AVX512-TBB2019_9",
+      "name": "nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX512-TBB2019_9",
       "inherits": ["package-linux", "env", "icx", "ispc1_16_1", "tbb2019_9_0"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
@@ -182,7 +182,7 @@
       }
     },
     {
-      "name": "nightly-linux-DEBUG-ICX2023_0_0-ISPC1_16_1-AVX2-TBB2021_2_0",
+      "name": "nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX2-TBB2021_2_0",
       "inherits": ["package-linux", "env", "icx", "ispc1_16_1", "tbb2021_2_0"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
@@ -191,7 +191,7 @@
       }
     },
     {
-      "name": "nightly-linux-DEBUG-ICX2023_0_0-ISPC1_17_0-AVX2-TBB2019_9",
+      "name": "nightly-linux-DEBUG-ICX-ISPC1_17_0-AVX2-TBB2019_9",
       "inherits": ["package-linux", "env", "icx", "ispc1_17_0", "tbb2019_9_0"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
@@ -200,7 +200,7 @@
       }
     },
     {
-      "name": "nightly-linux-DEBUG-ICX2023_0_0-ISPC1_17_0-AVX512VL-TBB2021_5_0",
+      "name": "nightly-linux-DEBUG-ICX-ISPC1_17_0-AVX512VL-TBB2021_5_0",
       "inherits": ["package-linux", "env", "icx", "ispc1_17_0", "tbb2021_5_0"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
@@ -447,7 +447,7 @@
 
 
     {
-      "name": "nightly-windows-RELEASE-ICX2023_0_0-ISPC1_13_0-AVX2-TBB2021_5_0",
+      "name": "nightly-windows-RELEASE-ICX-ISPC1_13_0-AVX2-TBB2021_5_0",
       "inherits": ["package-windows", "env", "icx-windows", "ispc1_13_0", "tbb2021_5_0"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
@@ -457,7 +457,7 @@
       }
     },
     {
-      "name": "nightly-windows-RELEASE-ICX2023_0_0-ISPC1_13_0-AVX512-TBB2019_9",
+      "name": "nightly-windows-RELEASE-ICX-ISPC1_13_0-AVX512-TBB2019_9",
       "inherits": ["package-windows", "env", "icx-windows", "ispc1_13_0", "tbb2019_9_0"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
@@ -466,7 +466,7 @@
       }
     },
     {
-      "name": "nightly-windows-RELEASE-ICX2023_0_0-ISPC1_14_1-AVX2-TBB2021_2_0",
+      "name": "nightly-windows-RELEASE-ICX-ISPC1_14_1-AVX2-TBB2021_2_0",
       "inherits": ["package-windows", "env", "icx-windows", "ispc1_14_1", "tbb2021_2_0"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
@@ -486,9 +486,9 @@
       }
     },
     {
-      "name": "nightly-macosx-x64-ICX",
+      "name": "nightly-macosx-x64",
       "binaryDir": "${sourceDir}/build",
-      "inherits": ["macos", "env", "icx-macosx", "ispc_NEWEST", "tbb_NEWEST"],
+      "inherits": ["macos", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_TUTORIALS_GLFW": "OFF"
@@ -544,9 +544,9 @@
       }
     },
     {
-      "name": "nightly-macosx-ICX2023_0_0-AVX",
+      "name": "nightly-macosx-AVX",
       "binaryDir": "${sourceDir}/build",
-      "inherits": ["macos", "env", "icx-macosx", "ispc_NEWEST", "tasking_internal"],
+      "inherits": ["macos", "env", "clang", "ispc_NEWEST", "tasking_internal"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_TUTORIALS_GLFW": "OFF",
@@ -555,9 +555,9 @@
       }
     },
     {
-      "name": "nightly-macosx-ICX2023_0_0-AVX2-SIMD256",
+      "name": "nightly-macosx-AVX2-SIMD256",
       "binaryDir": "${sourceDir}/build",
-      "inherits": ["macos", "env", "icx-macosx", "ispc_NEWEST", "tbb_NEWEST"],
+      "inherits": ["macos", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_TUTORIALS_GLFW": "OFF",
@@ -567,9 +567,9 @@
       }
     },
     {
-      "name": "nightly-macosx-ICX2023_0_0-AVX2",
+      "name": "nightly-macosx-AVX2",
       "binaryDir": "${sourceDir}/build",
-      "inherits": ["macos", "env", "icx-macosx", "ispc_NEWEST", "tbb_NEWEST"],
+      "inherits": ["macos", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_TUTORIALS_GLFW": "OFF",

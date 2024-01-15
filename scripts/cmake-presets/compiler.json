@@ -59,13 +59,6 @@
       }
     },
     {
-      "name": "icx-macosx",
-      "cacheVariables": {
-        "CMAKE_CXX_COMPILER": "/opt/intel/oneapi/compiler/2023.0.0/mac/bin/intel64/icpc",
-        "CMAKE_C_COMPILER": "/opt/intel/oneapi/compiler/2023.0.0/mac/bin/intel64/icc"
-      }
-    },
-    {
       "name": "dpcpp-windows",
       "generator": "Ninja",
       "cacheVariables": {
