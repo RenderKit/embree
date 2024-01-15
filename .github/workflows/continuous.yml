@@ -168,7 +168,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: intel/2023.1
+      dpcpp-version: intel/2024.0
       artifact-in: linux-DG2-JIT-PUBLIC-ICX-build
       cmd: |
         cd build
@@ -206,7 +206,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-embargo.env
-      dpcpp-version: intel/2023.1
+      dpcpp-version: intel/2024.0
       artifact-out: linux-PVC-JIT-INTERNAL-build
       artifact-path: ./build/*.tar.gz
       cmd: |
@@ -226,7 +226,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "pvc" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-embargo.env
-      dpcpp-version: intel/2023.1
+      dpcpp-version: intel/2024.0
       artifact-in: linux-PVC-JIT-INTERNAL-build
       cmd: |
         export EnableImplicitScaling=0
@@ -244,7 +244,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "pvc" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-embargo.env
-      dpcpp-version: intel/2023.1
+      dpcpp-version: intel/2024.0
       artifact-in: linux-PVC-JIT-INTERNAL-build
       cmd: |
         export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
