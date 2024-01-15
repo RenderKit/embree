@@ -23,7 +23,7 @@
     },
     {
       "name": "release-macos",
-      "inherits": ["package-macos", "env", "gcc", "ispc1_21_0", "tbb2021_10_0"],
+      "inherits": ["package-macos", "env", "clang", "ispc1_21_0", "tbb2021_10_0"],
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
