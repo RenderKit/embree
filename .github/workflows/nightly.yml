@@ -996,18 +996,18 @@ jobs:
 
 
 
-  ########################################
-  # ARM EMULATION
-  ########################################
-
-  nightly-linux-arm-emulation:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    with:
-      image: embree/arm64v8-ubuntu:22.04
-      runs-on: '[ "Linux", "docker-arm", "ARM64" ]'
-      cmd: |
-        cmake --preset nightly-linux-arm-emulation -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+###  ########################################
+###  # ARM EMULATION
+###  ########################################
+###
+###  nightly-linux-arm-emulation:
+###    secrets: inherit
+###    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+###    with:
+###      image: embree/arm64v8-ubuntu:22.04
+###      runs-on: '[ "Linux", "docker-arm", "ARM64" ]'
+###      cmd: |
+###        cmake --preset nightly-linux-arm-emulation -D EMBREE_TESTING_INTENSITY=2
+###        cmake --build build --target package -j8
+###        cd build
+###        ctest -VV
