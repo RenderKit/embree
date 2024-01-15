@@ -381,19 +381,19 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
   }
 
 #if defined(EMBREE_GEOMETRY_USER)
-  if (geom->getType() == Geometry::GTY_USER_GEOMETRY) {
+  if ((feature_mask & RTC_FEATURE_FLAG_USER_GEOMETRY) && (geom->getType() == Geometry::GTY_USER_GEOMETRY)) {
     return intersect_user_geometry(query,ray,(UserGeometry*)geom, scenes, context, geomID, primID);
   }
 #endif
 
 #if defined(EMBREE_GEOMETRY_INSTANCE)
-  if (geom->getTypeMask() & Geometry::MTY_INSTANCE) {
+  if ((feature_mask & RTC_FEATURE_FLAG_INSTANCE) && (geom->getTypeMask() & Geometry::MTY_INSTANCE)) {
     return intersect_instance(query,ray,(Instance*)geom, scenes, context, geomID, primID);
   }
 #endif
 
 #if defined(EMBREE_GEOMETRY_INSTANCE_ARRAY)
-  if (geom->getTypeMask() & Geometry::MTY_INSTANCE_ARRAY) {
+  if ((feature_mask & RTC_FEATURE_FLAG_INSTANCE_ARRAY) && (geom->getTypeMask() & Geometry::MTY_INSTANCE_ARRAY)) {
     return intersect_instance_array(query,ray,(InstanceArray*)geom, scenes, context, geomID, primID);
   }
 #endif
