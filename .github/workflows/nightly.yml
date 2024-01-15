@@ -108,12 +108,9 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-embargo.env
       artifact-in: nightly-linux-PVC-JIT-build
       cmd: |
+        export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
         cd build
         ../scripts/package_test_linux.sh 4
-        
-  
-
-
 
   ########################################
   # Windows
@@ -145,7 +142,7 @@ jobs:
       artifact-in: nightly-windows-DG2-JIT-ICX-build
       cmd: |
         cd build
-        ../scripts/package_test_win.bat 2
+        ../scripts/package_test_win.bat 2 Release
 
   nightly-windows-DG2-JIT-ICX-RC-build:
     secrets: inherit
@@ -154,7 +151,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
-      dpcpp-version: icx/compiler_ppkg-rel/20231218
+      dpcpp-version: icx/compiler_ppkg-rel/20240110
       artifact-out: nightly-windows-DG2-JIT-ICX-RC-build
       artifact-path: ./build/*.zip
       cmd: |
@@ -173,7 +170,7 @@ jobs:
       artifact-in: nightly-windows-DG2-JIT-ICX-RC-build
       cmd: |
         cd build
-        ../scripts/package_test_win.bat 2
+        ../scripts/package_test_win.bat 2 Release
 
   nightly-windows-DG2-JIT-NIGHTLY-RK-bulid:
     secrets: inherit
@@ -182,7 +179,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
-      dpcpp-version: nightly-windows-DG2-JIT-NIGHTLY-RK-bulid
+      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
       cmd: |
         cmake --preset nightly-windows-DG2-JIT-NIGHTLY
         cmake --build build --config Release --target package -j8
@@ -199,7 +196,7 @@ jobs:
       artifact-in: nightly-windows-DG2-JIT-NIGHTLY-RK-bulid
       cmd: |
         cd build
-        ../scripts/package_test_win.bat 2
+        ../scripts/package_test_win.bat 2 Release
 
   nightly-windows-DG2-JIT-INTERNAL-build:
     secrets: inherit
@@ -226,7 +223,7 @@ jobs:
       artifact-in: nightly-windows-DG2-JIT-INTERNAL-build
       cmd: |
         cd build
-        ../scripts/package_test_win.bat 4
+        ../scripts/package_test_win.bat 4 Release
 
   nightly-windows-DG2-JIT-PUBLIC-build:
     secrets: inherit
@@ -253,7 +250,7 @@ jobs:
       artifact-in: nightly-windows-DG2-JIT-PUBLIC-build
       cmd: |
         cd build
-        ../scripts/package_test_win.bat 4
+        ../scripts/package_test_win.bat 4 Release
         
 
 
