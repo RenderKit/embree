@@ -333,6 +333,10 @@ ELSEIF(APPLE)
   )
 
   add_custom_target(
+    post_package_notarize "${PROJECT_SOURCE_DIR}/scripts/package_post_build_notarize_macosx.sh" ${PACKAGE_BASE_NAME} ${EMBREE_SIGN_FILE}
+  )
+
+  add_custom_target(
     test_package "${PROJECT_SOURCE_DIR}/scripts/package_test_macosx.sh" ${EMBREE_TESTING_INTENSITY}
   )
 
