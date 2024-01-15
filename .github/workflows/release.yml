@@ -42,6 +42,19 @@ jobs:
         $CMAKE_EXE --build build --config Release --target package
         $CMAKE_EXE --build build --target post_package
 
+  release-macosx-notarize:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    needs: release-macosx
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
+    with:
+      runs-on: '[ "macOS", "build", "x86_64" ]'
+      artifact-in: release-macosx
+      artifact-out: release-macosx-notarized
+      artifact-path: ./build/*.zip
+      cmd: |
+        cmake --build build --target post_package_notarize
+
 
   release-linux:
     secrets: inherit
