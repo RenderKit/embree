@@ -708,6 +708,7 @@ jobs:
         cmake --preset integrate-macos-gcc
         cmake --build build --config Release --target package -j8
         cmake --build build --config Release --target post_package
+#        cmake --build build --config Release --target post_package_notarize     TODO: reactivate this when notarization problems are solved
 
   integrate-macos-GCC-test-GCC:
     secrets: inherit
@@ -757,6 +758,7 @@ jobs:
         cmake --preset integrate-macos-clang
         cmake --build build --config Release --target package -j8
         cmake --build build --config Release --target post_package
+#        cmake --build build --config Release --target post_package_notarize     TODO: reactivate this when notarization problems are solved
 
   integrate-macos-CLANG-test-GCC:
     secrets: inherit
