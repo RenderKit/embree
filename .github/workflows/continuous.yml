@@ -331,7 +331,7 @@ jobs:
       project: embree
       dpcpp-version: oneAPI/compiler/2024.0
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
-      artifact-out: nightly-windows-DG2-JIT-ICX-build
+      artifact-out: windows-DG2-JIT-ICX-build
       artifact-path: ./build/*.zip
       cmd: |
         cmake --preset nightly-windows-DG2-JIT-ICX
@@ -346,7 +346,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
-      artifact-in: nightly-windows-DG2-JIT-ICX-build
+      artifact-in: windows-DG2-JIT-ICX-build
       cmd: |
         cd build
         ../scripts/package_test_win.bat 2 Release
@@ -359,7 +359,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
-      artifact-in: nightly-windows-DG2-JIT-ICX-build
+      artifact-in: windows-DG2-JIT-ICX-build
       cmd: |
         cd build
         ../scripts/package_test_win.bat 2 Release
