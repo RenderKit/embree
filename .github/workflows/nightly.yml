@@ -116,34 +116,6 @@ jobs:
   # Windows
   ########################################
 
-  nightly-windows-DG2-JIT-ICX-build:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
-    with:
-      runs-on: '[ "Windows", "NAS", "dg2" ]'
-      project: embree
-      dpcpp-version: oneAPI/compiler/2024.0
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
-      artifact-out: nightly-windows-DG2-JIT-ICX-build
-      artifact-path: ./build/*.zip
-      cmd: |
-        cmake --preset nightly-windows-DG2-JIT-ICX
-        cmake --build build --config Release --target package -j8
-        cmake --build build --target post_package
-
-  nightly-windows-DG2-JIT-ICX-test:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
-    needs: ["nightly-windows-DG2-JIT-ICX-build"]
-    with:
-      runs-on: '[ "Windows", "NAS", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
-      artifact-in: nightly-windows-DG2-JIT-ICX-build
-      cmd: |
-        cd build
-        ../scripts/package_test_win.bat 2 Release
-
   nightly-windows-DG2-JIT-ICX-RC-build:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
