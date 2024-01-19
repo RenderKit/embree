@@ -19,5 +19,6 @@ tar -xzf testing.tar.gz
 cd testing
 echo "running embree tests with intensity $TESTING_INTENSITY"
 cmake -B build -DEMBREE_TESTING_INTENSITY=$TESTING_INTENSITY
-cd build 
-ctest -VV
+cd build
+ctest -VV --output-log ctest.output
+if grep "No tests were found" ctest.output; then exit 1; fi
