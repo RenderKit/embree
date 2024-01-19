@@ -1,7 +1,7 @@
 :: Copyright 2009-2021 Intel Corporation
 :: SPDX-License-Identifier: Apache-2.0
 
-::@echo off
+@echo off
 
 set TESTING_INTENSITY=%1
 set TESTING_CONFIG=%2
@@ -24,4 +24,5 @@ cd testing
 echo "running embree tests with intensity %TESTING_INTENSITY% and config %TESTING_CONFIG%"
 cmake -B build -DEMBREE_TESTING_INTENSITY=%TESTING_INTENSITY%
 cd build
-ctest -VV -C %TESTING_CONFIG%
+ctest -VV -C %TESTING_CONFIG% --output-log ctest.output
+findstr /C:"No tests were found" ctest.output && exit 1 || exit 0

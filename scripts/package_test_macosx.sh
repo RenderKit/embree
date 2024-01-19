@@ -19,21 +19,6 @@ tar -xf testing.zip
 cd testing
 echo "running embree tests with intensity $TESTING_INTENSITY"
 cmake -B build -DEMBREE_TESTING_INTENSITY=$TESTING_INTENSITY
-cd build 
-ctest -VV
-
-
-
-
-
-
-#PACKAGE=$1
-#
-#mkdir embree_install
-#tar -xf ${PACKAGE}.x86_64.macosx.tar.gz -C embree_install
-#tar -xf ${PACKAGE}.x86_64.macosx-testing.tar.gz -C embree_install
-#
-#cd embree_install/testing
-#cmake -B build -DEMBREE_TESTING_INTENSITY=4
-#cd build
-#ctest -VV
+cd build
+ctest -VV --output-log ctest.output
+if grep "No tests were found" ctest.output; then exit 1; fi
