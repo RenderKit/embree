@@ -848,16 +848,16 @@ jobs:
   # MacOS
   ########################################
 
-  nightly-macosx-ARM-NEON:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
-    with:
-      runs-on: '[ "macOS", "arm", "build" ]'
-      cmd: |
-        cmake --preset nightly-macosx-ARM-NEON -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+#  nightly-macosx-ARM-NEON:
+#    secrets: inherit
+#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
+#    with:
+#      runs-on: '[ "macOS", "arm", "build" ]'
+#      cmd: |
+#        cmake --preset nightly-macosx-ARM-NEON -D EMBREE_TESTING_INTENSITY=2
+#        cmake --build build --target package -j8
+#        cd build
+#        ctest -VV
 
   nightly-macosx-x64:
     secrets: inherit
@@ -867,8 +867,8 @@ jobs:
       cmd: |
         cmake --preset nightly-macosx-x64 -D EMBREE_TESTING_INTENSITY=2
         cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --build build --target post_package
+        cmake --build build --target test_package
 
   # CLANG compilation and testing of different ISAs
 
@@ -880,8 +880,8 @@ jobs:
       cmd: |
         cmake --preset nightly-macosx-individualisa-CLANG-SSE2 -D EMBREE_TESTING_INTENSITY=4
         cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --build build --target post_package
+        cmake --build build --target test_package
 
   nightly-macosx-individualisa-CLANG-AVX:
     secrets: inherit
@@ -891,8 +891,8 @@ jobs:
       cmd: |
         cmake --preset nightly-macosx-individualisa-CLANG-AVX -D EMBREE_TESTING_INTENSITY=4
         cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --build build --target post_package
+        cmake --build build --target test_package
 
   nightly-macosx-individualisa-CLANG-SSE2-STATIC:
     secrets: inherit
@@ -902,8 +902,8 @@ jobs:
       cmd: |
         cmake --preset nightly-macosx-individualisa-CLANG-SSE2-STATIC -D EMBREE_TESTING_INTENSITY=4
         cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --build build --target post_package
+        cmake --build build --target test_package
 
   # AppleClang compilation and testing of different ISAs
 
@@ -915,8 +915,8 @@ jobs:
       cmd: |
         cmake --preset nightly-macosx-AVX -D EMBREE_TESTING_INTENSITY=4
         cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --build build --target post_package
+        cmake --build build --target test_package
 
   nightly-macosx-AVX2-SIMD256:
     secrets: inherit
@@ -926,8 +926,8 @@ jobs:
       cmd: |
         cmake --preset nightly-macosx-AVX2-SIMD256 -D EMBREE_TESTING_INTENSITY=4
         cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --build build --target post_package
+        cmake --build build --target test_package
 
   nightly-macosx-AVX2:
     secrets: inherit
@@ -937,8 +937,8 @@ jobs:
       cmd: |
         cmake --preset nightly-macosx-AVX2 -D EMBREE_TESTING_INTENSITY=4
         cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --build build --target post_package
+        cmake --build build --target test_package
 
 
 

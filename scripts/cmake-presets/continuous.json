@@ -194,18 +194,18 @@
     {
       "name": "macos-ARM-CLANG-NEON-AVX2",
       "binaryDir": "${sourceDir}/build",
-      "inherits": ["macos", "env", "clang", "ispc_NEWEST", "tbb_HOMEBREW"],
+      "inherits": ["package-macos", "env", "clang", "ispc_NEWEST", "tbb_HOMEBREW"],
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_BUILD_TYPE": "Release",
         "EMBREE_MAX_ISA": "NEON2X"
       }
     },
     {
       "name": "macos-x64-CLANG",
       "binaryDir": "${sourceDir}/build",
-      "inherits": ["macos", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
+      "inherits": ["package-macos", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_BUILD_TYPE": "Release",
         "EMBREE_MAX_ISA": "SSE2"
       }
     }
