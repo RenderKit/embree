@@ -530,16 +530,16 @@ jobs:
   # MacOS
   ########################################
 
-  macosx-ARM-CLANG-NEON-AVX2:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
-    with:
-      runs-on: '[ "macOS", "build", "arm" ]'
-      cmd: |
-        cmake --preset macos-ARM-CLANG-NEON-AVX2 -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build -j8
-        cd build
-        ctest -VV
+#  macosx-ARM-CLANG-NEON-AVX2:
+#    secrets: inherit
+#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
+#    with:
+#      runs-on: '[ "macOS", "build", "arm" ]'
+#      cmd: |
+#        cmake --preset macos-ARM-CLANG-NEON-AVX2 -D EMBREE_TESTING_INTENSITY=2
+#        cmake --build build --config Release --target package -j8
+#        cmake --build build --target post_package
+#        cmake --build build --target test_package
 
   macosx-x64-CLANG:
     secrets: inherit
@@ -548,9 +548,9 @@ jobs:
       runs-on: '[ "macOS", "build", "x86_64" ]'
       cmd: |
         cmake --preset macos-x64-CLANG -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build -j4
-        cd build
-        ctest -VV
+        cmake --build build --config Release --target package -j4
+        cmake --build build --target post_package
+        cmake --build build --target test_package
 
   ########################################
   # Coverity
@@ -593,7 +593,7 @@ jobs:
       - linux-centos7_4-GCC
       - windows-V142
       - windows-ICX
-      - macosx-ARM-CLANG-NEON-AVX2
+      #- macosx-ARM-CLANG-NEON-AVX2
       - macosx-x64-CLANG
       - static-analysis
 

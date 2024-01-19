@@ -67,7 +67,11 @@ IF (EMBREE_TESTING_INSTALL_TESTS)
     "  endif()\n"
     "endif()\n"
     "\n"
-    "message(\"filter:     \${EMBREE_TESTING_FILTER_TESTNAMES}\")\n"
+    "message(\"filter:                            \\\"${EMBREE_TESTING_FILTER_TESTNAMES}\"\\\")\n"
+    "message(\"BUILD_TESTING:                     \\\"\${BUILD_TESTING}\"\\\")\n"
+    "message(\"EMBREE_TESTING_INSTALL_TESTS:      \\\"\${EMBREE_TESTING_INSTALL_TESTS}\"\\\")\n"
+    "message(\"EMBREE_SYCL_SUPPORT:               \\\"\${EMBREE_SYCL_SUPPORT}\"\\\")\n"
+    "message(\"EMBREE_TESTING_ONLY_SYCL_TESTS:    \\\"\${EMBREE_TESTING_ONLY_SYCL_TESTS}\"\\\")\n"
     "\n"
     "include(embree-addtests.cmake)\n"
   )

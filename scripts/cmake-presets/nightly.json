@@ -485,7 +485,7 @@
     {
       "name": "nightly-macosx-x64",
       "binaryDir": "${sourceDir}/build",
-      "inherits": ["macos", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
+      "inherits": ["package-macos", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_TUTORIALS_GLFW": "OFF"
@@ -494,7 +494,7 @@
     {
       "name": "nightly-macosx-individualisa-CLANG-SSE2",
       "binaryDir": "${sourceDir}/build",
-      "inherits": ["macos", "env", "clang", "tbb_NEWEST"],
+      "inherits": ["package-macos", "env", "clang", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_TUTORIALS_GLFW": "OFF",
@@ -512,7 +512,7 @@
     {
       "name": "nightly-macosx-individualisa-CLANG-AVX",
       "binaryDir": "${sourceDir}/build",
-      "inherits": ["macos", "env", "clang", "ispc_NEWEST", "tasking_internal"],
+      "inherits": ["package-macos", "env", "clang", "ispc_NEWEST", "tasking_internal"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_TUTORIALS_GLFW": "OFF",
@@ -527,7 +527,7 @@
     {
       "name": "nightly-macosx-individualisa-CLANG-SSE2-STATIC",
       "binaryDir": "${sourceDir}/build",
-      "inherits": ["macos", "env", "clang", "ispc_NEWEST", "tasking_internal"],
+      "inherits": ["package-macos", "env", "clang", "ispc_NEWEST", "tasking_internal"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_TUTORIALS_GLFW": "OFF",
@@ -543,7 +543,7 @@
     {
       "name": "nightly-macosx-AVX",
       "binaryDir": "${sourceDir}/build",
-      "inherits": ["macos", "env", "clang", "ispc_NEWEST", "tasking_internal"],
+      "inherits": ["package-macos", "env", "clang", "ispc_NEWEST", "tasking_internal"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_TUTORIALS_GLFW": "OFF",
@@ -554,7 +554,7 @@
     {
       "name": "nightly-macosx-AVX2-SIMD256",
       "binaryDir": "${sourceDir}/build",
-      "inherits": ["macos", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
+      "inherits": ["package-macos", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_TUTORIALS_GLFW": "OFF",
@@ -566,7 +566,7 @@
     {
       "name": "nightly-macosx-AVX2",
       "binaryDir": "${sourceDir}/build",
-      "inherits": ["macos", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
+      "inherits": ["package-macos", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_TUTORIALS_GLFW": "OFF",
