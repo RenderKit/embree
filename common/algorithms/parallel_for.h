@@ -9,7 +9,7 @@
 #include "../math/range.h"
 
 #if defined(TASKING_HPX)
-#include <hpx/local/algorithm.hpp>
+#include <hpx/algorithm.hpp>
 #include <hpx/modules/iterator_support.hpp>
 #endif
 
@@ -52,12 +52,21 @@ namespace embree
         func(i);
       });
 #elif defined(TASKING_HPX)
-    auto irange = hpx::util::counting_shape(N);
+    std::vector<hpx::future<void>> futures;
+    futures.reserve(N);
 
-    hpx::for_each(hpx::execution::par, hpx::util::begin(irange), hpx::util::end(irange), 
-    [&](Index i) {
-        func(i);
-    });
+    hpx::future<void> fut =
+        hpx::run_as_hpx_thread([N, &func, &futures]() -> hpx::future<void>
+        {
+            for(auto i = 0; i < N; ++i) {
+                futures.push_back( hpx::async([i, &func]() { func(i); }) );
+            }
+
+            hpx::wait_all(futures);
+            return hpx::make_ready_future<void>();
+        });
+
+    fut.wait();
 #else
 #  error "no tasking system enabled"
 #endif
@@ -99,10 +108,17 @@ namespace embree
 #elif defined(TASKING_HPX)
     auto irange = hpx::util::counting_shape(last-first);
 
-    hpx::experimental::for_loop_strided(hpx::execution::par, hpx::util::begin(irange), hpx::util::end(irange), minStepSize,
-    [&](auto i) {
-        func(range<Index>(*i, (*i)+1));
+    hpx::future<void> fut =
+        hpx::run_as_hpx_thread([minStepSize, &irange, &func]() -> hpx::future<void> {
+            hpx::experimental::for_loop_strided(hpx::execution::par, hpx::util::begin(irange), hpx::util::end(irange), minStepSize,
+            [&func](auto i) {
+                func(range<Index>(*i, (*i)+1));
+            });
+
+            return hpx::make_ready_future<void>();
     });
+
+    fut.wait();
 #else
 #  error "no tasking system enabled"
 #endif

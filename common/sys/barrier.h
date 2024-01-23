@@ -9,7 +9,7 @@
 
 #if defined(TASKING_HPX)
 #include <memory>
-#include <hpx/local/barrier.hpp>
+#include <hpx/barrier.hpp>
 #endif
 
 namespace embree

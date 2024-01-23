@@ -101,7 +101,7 @@ namespace embree
     __forceinline void wait()
     {
       mutex.lock();
-      count++;
+      count+=1;
       
       if (count == barrierSize) {
         count = 0;
@@ -142,8 +142,8 @@ namespace embree
   }
 
   void BarrierSys::init(size_t count) {
-#if !defined(TASKING_HPX)
-    b.reset(new hpx::barrier<>{count});
+#if defined(TASKING_HPX)
+    b.reset(new hpx::barrier<>(count));
 #else
     ((BarrierSysImplementation*) opaque)->init(count);
 #endif

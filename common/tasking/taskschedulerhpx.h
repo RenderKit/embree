@@ -5,17 +5,26 @@
 
 #ifndef __APPLE__
 #define __forceinline __attribute__((always_inline))
+#elif defined(__APPLE__) && (__arm__)
+#define __forceinline __attribute__((always_inline))
 #endif
 
-#include <hpx/local/thread.hpp>
+#include <hpx/thread.hpp>
 
 namespace embree
 {
   struct TaskScheduler
   {
+
+#ifdef __APPLE__
+__attribute__((visibility("default")))
+#endif
     /*! initializes the task scheduler */
     static void create(size_t numThreads, bool set_affinity, bool start_threads);
 
+#ifdef __APPLE__
+__attribute__((visibility("default")))
+#endif
     /*! destroys the task scheduler again */
     static void destroy();
 

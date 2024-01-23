@@ -6,6 +6,7 @@
 #include "parallel_for.h"
 
 #if defined(TASKING_HPX)
+#include <numeric>
 #include <hpx/parallel/algorithms/transform_reduce.hpp>
 #endif
 
@@ -112,10 +113,53 @@ namespace embree
     const Value v = concurrency::parallel_reduce(Iterator_Index(first), Iterator_Index(last), AlignedValue(identity), range_reduction, reduction);
     return v;
 #elif defined(TASKING_HPX)
-    const auto sz = last-first;
+/*    
+      binner = parallel_reduce(begin,end,blockSize,binner,
+                              [&](const range<size_t>& r) -> BinInfoT { BinInfoT binner(empty); binner.bin(prims + r.begin(), r.size(), mapping); return binner; },
+                              [&](const BinInfoT& b0, const BinInfoT& b1) -> BinInfoT { BinInfoT r = b0; r.merge(b1, mapping.size()); return r; });
+*/
+    struct AlignedValue
+    {
+      char storage[__alignof(Value)+sizeof(Value)];
+      static uintptr_t alignUp(uintptr_t p, size_t a) { return p + (~(p - 1) % a); };
+      Value* getValuePtr() { return reinterpret_cast<Value*>(alignUp(uintptr_t(storage), __alignof(Value))); }
+      const Value* getValuePtr() const { return reinterpret_cast<Value*>(alignUp(uintptr_t(storage), __alignof(Value))); }
+      AlignedValue(const Value& v) { new(getValuePtr()) Value(v); }
+      AlignedValue(const AlignedValue& v) { new(getValuePtr()) Value(*v.getValuePtr()); }
+      AlignedValue(const AlignedValue&& v) { new(getValuePtr()) Value(*v.getValuePtr()); };
+      AlignedValue& operator = (const AlignedValue& v) { *getValuePtr() = *v.getValuePtr(); return *this; };
+      AlignedValue& operator = (const AlignedValue&& v) { *getValuePtr() = *v.getValuePtr(); return *this; };
+      operator Value() const { return *getValuePtr(); }
+    };
+
+    std::function<AlignedValue(AlignedValue, AlignedValue)> red = [&](AlignedValue x, AlignedValue y) -> AlignedValue {
+        return AlignedValue(reduction(x, y));
+    };
+
+    std::function<AlignedValue(Index)> xfm = [&](Index i) -> AlignedValue {
+        return AlignedValue(func(range<Index>(i,i)));
+    };
+
+    const Index sz = last-first;
     auto irange = hpx::util::counting_shape(sz);
-    const Value v = hpx::transform_reduce(
-       hpx::execution::par, hpx::util::begin(irange), hpx::util::end(irange), identity, reduction, func);
+    auto beg = hpx::util::begin(irange);
+    auto end = hpx::util::end(irange);
+
+    Value v =
+        hpx::run_as_hpx_thread([&red, &xfm, &beg, &end, &identity]() -> Value
+        {
+
+            Value v = hpx::transform_reduce(
+                hpx::execution::par,
+                beg, end,
+                AlignedValue(identity),
+                red,
+                xfm
+            );
+
+            return v;
+        });
+
     return v;
 #else
 #  error "no tasking system enabled"

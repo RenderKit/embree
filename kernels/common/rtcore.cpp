@@ -7,6 +7,7 @@
 #include "device.h"
 #include "scene.h"
 #include "context.h"
+#include "../common/tasking/taskscheduler.h"
 #include "../geometry/filter.h"
 #include "../../include/embree4/rtcore_ray.h"
 using namespace embree;

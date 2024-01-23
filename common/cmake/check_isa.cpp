@@ -26,6 +26,10 @@ char const *info_isa = "ISA" ":" "AVX";
 char const *info_isa = "ISA" ":" "SSE42";
 #else // defined(__SSE2__)
 char const *info_isa = "ISA" ":" "SSE2";
+#else defined(__arm__)
+char const *info_isa = "ISA" ":" "ARM";
+#else defined(__aarch64__)
+char const *info_isa = "ISA" ":" "ARM";
 #endif
 
 int main(int argc, char **argv)
