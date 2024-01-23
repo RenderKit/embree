@@ -29,7 +29,7 @@ TEST_CASE("Test parallel_for_for", "[parallel_for_for]")
   }
 
   /* array to test global index */
-  std::vector<atomic<size_t>> verify_k(K);
+  std::vector<std::atomic<size_t>> verify_k(K);
   for (size_t i = 0; i < K; i++)
     verify_k[i].store(0);
 
