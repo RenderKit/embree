@@ -53,20 +53,18 @@ namespace embree
       });
 #elif defined(TASKING_HPX)
     std::vector<hpx::future<void>> futures;
-    futures.reserve(N);
+    futures.reserve(N-1);
 
-    hpx::future<void> fut =
-        hpx::run_as_hpx_thread([N, &func, &futures]() -> hpx::future<void>
-        {
-            for(auto i = 0; i < N; ++i) {
-                futures.push_back( hpx::async([i, &func]() { func(i); }) );
-            }
+    hpx::run_as_hpx_thread([N, &func, &futures]() -> hpx::future<void>
+    {
+        for(auto i = 1; i < N; ++i) {
+            futures.push_back( hpx::async([i, &func]() { func(i); }) );
+        }
 
-            hpx::wait_all(futures);
-            return hpx::make_ready_future<void>();
-        });
+        func(0);
+        hpx::wait_all(futures);
+    });
 
-    fut.wait();
 #else
 #  error "no tasking system enabled"
 #endif
