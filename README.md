@@ -305,7 +305,7 @@ macOS M1
 
   - Apple Clang 12.0.5 (macOS 11.7.1)
 
-IMPORTANT: Unfortunatlly, latest version of the Intel® oneAPI DPC++/C++
+IMPORTANT: Unfortunately, latest version of the Intel® oneAPI DPC++/C++
 Compiler (2023.2.1), has a bug that doesn't allow Embree to run correctly with
 ISAs >= AVX2. Please wait for 2024.0.0, which will be released soon after
 Embree 4.3.0.
@@ -324,6 +324,11 @@ CMake. Download and install the Intel® ISPC binaries from
 installation, put the path to `ispc` permanently into your `PATH` environment
 variable or you set the `EMBREE_ISPC_EXECUTABLE` variable to point at the ISPC
 executable during CMake configuration.
+
+Embree supports using the HPX runtime system as the tasking system. HPX can be
+enabled by setting `EMBREE_TASKING_SYSTEM=HPX`. If HPX is enabled the CMake
+variables `HPX_DIR` or `HPX_ROOT` are required to be set. The variables are
+file system paths where `HPXConfig.cmake` or `HPXConfigVersion.cmake` resides.
 
 You additionally have to install CMake 3.1.0 or higher and the developer
 version of [GLFW](https://www.glfw.org/) version 3.
@@ -818,8 +823,8 @@ parameters that can be configured in CMake:
 
 + `EMBREE_TASKING_SYSTEM`: Chooses between Intel® Threading TBB
   Building Blocks (TBB), Parallel Patterns Library (PPL) (Windows
-  only), or an internal tasking system (INTERNAL). By default, TBB is
-  used.
+  only), HPX (HPX), or an internal tasking system (INTERNAL). By default,
+  TBB is used.
 
 + `EMBREE_TBB_ROOT`: If Intel® Threading Building Blocks (TBB)
   is used as a tasking system, search the library in this directory
