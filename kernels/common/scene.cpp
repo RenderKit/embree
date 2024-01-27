@@ -912,7 +912,6 @@ namespace embree
 
 #endif
 
-
 #if defined(TASKING_HPX) 
 
   void Scene::commit (bool join) 
@@ -930,7 +929,7 @@ namespace embree
       return;
     }
 
-    hpx::run_as_hpx_thread([&]() { commit_task(); });
+    hpx::threads::run_as_hpx_thread([&]() { commit_task(); });
   }
 #endif
 

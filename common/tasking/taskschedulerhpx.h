@@ -4,9 +4,13 @@
 #pragma once
 
 #ifndef __APPLE__
+#if !defined(__forceinline)
 #define __forceinline __attribute__((always_inline))
+#endif
 #elif defined(__APPLE__) && (__arm__)
+#if !defined(__forceinline)
 #define __forceinline __attribute__((always_inline))
+#endif
 #endif
 
 #include <hpx/thread.hpp>

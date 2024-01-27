@@ -146,7 +146,7 @@ namespace embree
     auto end = hpx::util::end(irange);
 
     Value v =
-        hpx::run_as_hpx_thread([&red, &xfm, &beg, &end, &identity]() -> Value
+        hpx::threads::run_as_hpx_thread([&red, &xfm, &beg, &end, &identity]() -> Value
         {
 
             Value v = hpx::transform_reduce(

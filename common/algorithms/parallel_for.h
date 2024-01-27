@@ -55,7 +55,7 @@ namespace embree
     std::vector<hpx::future<void>> futures;
     futures.reserve(N-1);
 
-    hpx::run_as_hpx_thread([N, &func, &futures]() -> hpx::future<void>
+    hpx::threads::run_as_hpx_thread([N, &func, &futures]() 
     {
         for(auto i = 1; i < N; ++i) {
             futures.push_back( hpx::async([i, &func]() { func(i); }) );
@@ -107,7 +107,7 @@ namespace embree
     auto irange = hpx::util::counting_shape(last-first);
 
     hpx::future<void> fut =
-        hpx::run_as_hpx_thread([minStepSize, &irange, &func]() -> hpx::future<void> {
+        hpx::threads::run_as_hpx_thread([minStepSize, &irange, &func]() -> hpx::future<void> {
             hpx::experimental::for_loop_strided(hpx::execution::par, hpx::util::begin(irange), hpx::util::end(irange), minStepSize,
             [&func](auto i) {
                 func(range<Index>(*i, (*i)+1));
