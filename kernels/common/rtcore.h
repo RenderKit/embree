@@ -4,6 +4,7 @@
 #pragma once
 
 #include "../../include/embree4/rtcore.h"
+
 RTC_NAMESPACE_USE
 
 namespace embree

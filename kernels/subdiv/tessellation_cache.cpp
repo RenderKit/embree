@@ -4,6 +4,9 @@
 #include "tessellation_cache.h"
 
 #include "../../common/tasking/taskscheduler.h"
+#if defined(TASKING_HPX)
+#include "../../common/sys/barrier.h"
+#endif
 
 namespace embree
 {

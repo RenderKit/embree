@@ -8,6 +8,11 @@
 #include "../math/emath.h"
 #include "../math/range.h"
 
+#if defined(TASKING_HPX)
+#include <hpx/algorithm.hpp>
+#include <hpx/modules/iterator_support.hpp>
+#endif
+
 namespace embree
 {
   /* parallel_for without range */
@@ -46,6 +51,20 @@ namespace embree
     concurrency::parallel_for(Index(0),N,Index(1),[&](Index i) { 
         func(i);
       });
+#elif defined(TASKING_HPX)
+    std::vector<hpx::future<void>> futures;
+    futures.reserve(N-1);
+
+    hpx::threads::run_as_hpx_thread([N, &func, &futures]() 
+    {
+        for(auto i = 1; i < N; ++i) {
+            futures.push_back( hpx::async([i, &func]() { func(i); }) );
+        }
+
+        func(0);
+        hpx::wait_all(futures);
+    });
+
 #else
 #  error "no tasking system enabled"
 #endif
@@ -84,7 +103,20 @@ namespace embree
     concurrency::parallel_for(first, last, Index(1) /*minStepSize*/, [&](Index i) { 
         func(range<Index>(i,i+1)); 
       });
+#elif defined(TASKING_HPX)
+    auto irange = hpx::util::counting_shape(last-first);
 
+    hpx::future<void> fut =
+        hpx::threads::run_as_hpx_thread([minStepSize, &irange, &func]() -> hpx::future<void> {
+            hpx::experimental::for_loop_strided(hpx::execution::par, hpx::util::begin(irange), hpx::util::end(irange), minStepSize,
+            [&func](auto i) {
+                func(range<Index>(*i, (*i)+1));
+            });
+
+            return hpx::make_ready_future<void>();
+    });
+
+    fut.wait();
 #else
 #  error "no tasking system enabled"
 #endif

@@ -5,6 +5,7 @@
 
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
+#include "../common/sys/barrier.h"
 
 #ifdef USE_GOOGLE_BENCHMARK
 #include <benchmark/benchmark.h>
@@ -469,7 +470,9 @@ namespace embree {
     RTCScene scene;
 
     void perform_work(size_t threadID) {
+#if !defined(TASKING_HPX)
       setAffinity(threadID);
+#endif
       while (true) {
         barrier.wait();
         if (term)
@@ -495,13 +498,24 @@ namespace embree {
     Helper helper;
     helper.barrier.init(numThreads);
 
+#if !defined(TASKING_HPX)
     std::vector<std::thread> threads;
+#else
+    std::vector<hpx::future<void>> threads;
+#endif
     threads.reserve(numThreads);
     
     /* ramp up threads */
+#if !defined(TASKING_HPX)
     setAffinity(0); 
+#endif
+
     for (size_t i=1; i<numThreads; i++) 
+#if !defined(TASKING_HPX)
       threads.push_back(std::thread(&Helper::perform_work, &helper, i));
+#else
+      threads.push_back(hpx::async(&Helper::perform_work, &helper, i));
+#endif
     
     for (size_t i=0; i<benchmark_iterations+params.skipIterations; i++)
     {
@@ -533,8 +547,12 @@ namespace embree {
     /* terminate task loop */
     helper.term = true;
     helper.barrier.wait();
+#if !defined(TASKING_HPX)
     for (auto& thread: threads)
       thread.join();
+#else
+    hpx::wait_all(threads);
+#endif
 
     if (qflags == RTC_BUILD_QUALITY_HIGH)
       std::cout << "BENCHMARK_CREATE_HQ_STATIC_";
@@ -577,13 +595,21 @@ namespace embree {
     Helper helper;
     helper.barrier.init(numThreads);
 
+#if !defined(TASKING_HPX)
     std::vector<std::thread> threads;
+#else
+    std::vector<hpx::future<void>> threads;
+#endif
     threads.reserve(numThreads);
     
     /* ramp up threads */
     setAffinity(0); 
     for (size_t i=1; i<numThreads; i++) 
+#if !defiend(TASKING_HPX)
       threads.push_back(std::thread(&Helper::perform_work, &helper, i));
+#else
+      threads.push_back(hpx::async(&Helper::perform_work, &helper, i));
+#endif
     
     // warm-up
     for (int i = 0; i < params.minTimeOrIterations; ++i) {
@@ -617,8 +643,12 @@ namespace embree {
     /* terminate task loop */
     helper.term = true;
     helper.barrier.wait();
+#if !defined(TASKING_HPX)
     for (auto& thread: threads)
       thread.join();
+#else
+    hpx::wait_all(threads);
+#endif
 
     addCounter(state, primitives, objects);
 #else

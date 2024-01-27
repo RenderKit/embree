@@ -1819,3 +1819,5 @@ files. These additional third party program files are as follows:
 12.4. Intel(R) oneAPI DPC++/C++ Compiler
       third-party-programs-oneAPI-DPCPP.txt file.
 
+12.5 HPX
+      third-party-programs-hpx.txt file.

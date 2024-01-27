@@ -16,7 +16,9 @@ TEST_CASE("Test parallel_for_for_prefix_sum", "[parallel_for_for_prefix_sum]")
 
   /* create vector with random numbers */
   const size_t M = 10;
-  std::vector<atomic<size_t>> flattened;
+#if !defined(TASKING_HPX)
+  std::vector<std::atomic<size_t>> flattened;
+#endif
   typedef std::vector<std::vector<size_t> *> ArrayArray;
   ArrayArray array2(M);
   size_t K = 0;
@@ -30,7 +32,7 @@ TEST_CASE("Test parallel_for_for_prefix_sum", "[parallel_for_for_prefix_sum]")
   }
 
   /* array to test global index */
-  std::vector<atomic<size_t>> verify_k(K);
+  std::vector<std::atomic<size_t>> verify_k(K);
   for (size_t i = 0; i < K; i++)
     verify_k[i].store(0);
 
@@ -49,7 +51,11 @@ TEST_CASE("Test parallel_for_for_prefix_sum", "[parallel_for_for_prefix_sum]")
   }, [](size_t v0, size_t v1) { return v0 + v1; });
 
   /* create properly sized output array */
+#if !defined(TASKING_HPX)
   flattened.resize(S);
+#else
+  std::vector<std::atomic<size_t>> flattened(S);
+#endif
   for (auto &a : flattened)
     a.store(0);
 

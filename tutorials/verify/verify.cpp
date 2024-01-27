@@ -7,6 +7,7 @@
 #include "../common/scenegraph/scenegraph.h"
 #include "../common/scenegraph/geometry_creation.h"
 #include "../common/math/closest_point.h"
+#include "../common/sys/barrier.h"
 #include "../../common/algorithms/parallel_for.h"
 #include "../../common/simd/simd.h"
 #include "../../kernels/common/context.h"

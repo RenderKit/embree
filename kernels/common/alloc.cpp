@@ -3,9 +3,12 @@
 
 #include "alloc.h"
 #include "../../common/sys/thread.h"
-#if defined(APPLE) && defined(__aarch64__)
+#if defined(TASKING_HPX)
+#include "../../common/sys/barrier.h"
+#elif defined(APPLE) && defined(__aarch64__)
 #include "../../common/sys/barrier.h"
 #endif
+
 
 namespace embree
 {

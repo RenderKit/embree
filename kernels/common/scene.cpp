@@ -21,6 +21,7 @@ namespace embree
   struct TaskGroup {
     /*! global lock step task scheduler */
 #if defined(TASKING_INTERNAL)
+    using mutex_t = MutexSys;
     MutexSys schedulerMutex;
     Ref<TaskScheduler> scheduler;
 #elif defined(TASKING_TBB) && TASKING_TBB_USE_TASK_ISOLATION
@@ -29,6 +30,9 @@ namespace embree
     tbb::task_group group;
 #elif defined(TASKING_PPL)
     concurrency::task_group group;
+#elif defined(TASKING_HPX)
+    using mutex_t = hpx::mutex;
+    MutexSys schedulerMutex;
 #endif
   };
 
@@ -866,7 +870,7 @@ namespace embree
     return scene_flags;
   }
                    
-#if defined(TASKING_INTERNAL)
+#if defined(TASKING_INTERNAL) 
 
   void Scene::commit (bool join) 
   {
@@ -906,6 +910,27 @@ namespace embree
     }
   }
 
+#endif
+
+#if defined(TASKING_HPX) 
+
+  void Scene::commit (bool join) 
+  {
+#if defined(TASKING_HPX)
+    if (join)
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcJoinCommitScene not supported with HPX");
+#endif
+
+    /* try to obtain build lock */
+    std::lock_guard<MutexSys> lock(buildMutex);
+
+    checkIfModifiedAndSet ();
+    if (!isModified()) {
+      return;
+    }
+
+    hpx::threads::run_as_hpx_thread([&]() { commit_task(); });
+  }
 #endif
 
 #if defined(TASKING_TBB)

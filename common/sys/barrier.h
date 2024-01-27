@@ -7,6 +7,11 @@
 #include "sysinfo.h"
 #include "atomic.h"
 
+#if defined(TASKING_HPX)
+#include <memory>
+#include <hpx/barrier.hpp>
+#endif
+
 namespace embree
 {
   /*! system barrier using operating system */
@@ -31,7 +36,12 @@ namespace embree
     void wait();
 
   private:
+
+#if defined(TASKING_HPX)
+    std::shared_ptr< hpx::barrier<> > b;
+#else
     void* opaque;
+#endif
   };
 
   /*! fast active barrier using atomic counter */
