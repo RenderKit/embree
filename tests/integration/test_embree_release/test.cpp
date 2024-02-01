@@ -103,8 +103,6 @@ TEST_CASE("Minimal test", "[minimal]")
   rtcReleaseScene(scene);
   rtcReleaseDevice(device);
 
-  printf("AOEUAOEUAOEUAOEUAOEUAOEUAOEU");
-  
   REQUIRE(true);
 }
 
