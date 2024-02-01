@@ -31,26 +31,59 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
     with:
+      project: embree
       runs-on: '[ "macOS", "build", "x86_64" ]'
-      artifact-out: release-macosx
-      artifact-path: ./build/*.zip
       cmd: |
         source scripts/cmake-presets/macos-env.sh
-        $CMAKE_EXE --preset release-macos -DCMAKE_BUILD_TYPE=Release
-        $CMAKE_EXE --build build --config Release --target build
+        cmake --preset release-macos -DCMAKE_BUILD_TYPE=Release
+        cmake --build build --config Release --target build
+        rm build/embree-*-testing.zip
+      notarize-package: build/embree-*.zip
+      artifact-out: release-macosx
+      artifact-path: ./build/*.zip
 
-  release-macosx-notarize:
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+  verify-package-macosx:
     needs: release-macosx
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
     with:
+      project: embree
       runs-on: '[ "macOS", "build", "x86_64" ]'
       artifact-in: release-macosx
-      artifact-out: release-macosx-notarized
-      artifact-path: ./build/*.zip
       cmd: |
-        cmake --build build --target post_package_notarize
+        mkdir package
+        tar -xzvf build/embree-* -C ./package
+      sign-path-verify: ./package
+
+
+
+  release-macosx-arm:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
+    with:
+      project: embree
+      runs-on: '[ "macOS", "build", "arm" ]'
+      cmd: |
+        source scripts/cmake-presets/macos-env.sh
+        cmake --preset release-macos -DCMAKE_BUILD_TYPE=Release
+        cmake --build build --config Release --target build
+        rm build/embree-*-testing.zip
+      notarize-package: build/embree-*.zip
+      artifact-out: release-macosx-arm
+      artifact-path: ./build/*.zip
+
+  verify-package-macosx-arm:
+    needs: release-macosx-arm
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
+    with:
+      project: embree
+      runs-on: '[ "macOS", "build", "arm" ]'
+      artifact-in: release-macosx-arm
+      cmd: |
+        mkdir package
+        tar -xzvf build/embree-* -C ./package
+      sign-path-verify: ./package
 
 
   release-linux:

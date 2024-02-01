@@ -27,7 +27,8 @@
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "EMBREE_MAX_ISA": "AVX512"
+        "EMBREE_MAX_ISA": "AVX512",
+        "CPACK_PRE_BUILD_SCRIPTS": "$env{CPACK_PRE_BUILD_SIGNING_SCRIPT}"
       }
     },
     {
