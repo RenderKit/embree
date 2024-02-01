@@ -348,8 +348,8 @@ else()
 endif()
 
 add_custom_target(
-  test_integration ${CMAKE_COMMAND} -DWHAT="UNPACK" -DPACKAGE_BASENAME=${PACKAGE_BASE_NAME} -DPACKAGE_EXT=${PACKAGE_EXT} -P ${PROJECT_SOURCE_DIR}/scripts/package_test.cmake
+  test_integration ${CMAKE_COMMAND} -DWHAT="UNPACK" -DPACKAGE_BASENAME=${PACKAGE_BASE_NAME} -DPACKAGE_EXT=${PACKAGE_EXT} -P ${PROJECT_SOURCE_DIR}/scripts/package_test.cmake 
   COMMAND cd ${PROJECT_SOURCE_DIR}/tests/integration/test_embree_release && ${CMAKE_COMMAND} -B build --preset ${EMBREE_TESTING_INTEGRATION_PRESET} -Dembree_DIR="${CMAKE_CURRENT_BINARY_DIR}/embree_install/lib/cmake/embree-${EMBREE_VERSION}"
   COMMAND cd ${PROJECT_SOURCE_DIR}/tests/integration/test_embree_release && ${CMAKE_COMMAND} --build build --config Release
-  COMMAND cd ${PROJECT_SOURCE_DIR}/tests/integration/test_embree_release && ${INTEGRATE_BINARY}
+  COMMAND cd ${PROJECT_SOURCE_DIR}/tests/integration/test_embree_release && {INTEGRATE_BINARY}
 )
