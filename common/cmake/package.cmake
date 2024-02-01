@@ -288,7 +288,6 @@ SET(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/LICENSE.txt")
 
 # Windows specific settings
 IF(WIN32)
-
   IF (CMAKE_SIZEOF_VOID_P EQUAL 8)
     SET(ARCH x64)
     SET(CPACK_PACKAGE_NAME "${CPACK_PACKAGE_NAME} x64")
@@ -300,19 +299,7 @@ IF(WIN32)
   SET(CPACK_GENERATOR ZIP)
   SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.${ARCH}.windows")
   SET(PACKAGE_BASE_NAME "${CPACK_PACKAGE_FILE_NAME}")
-  #SET(CPACK_MONOLITHIC_INSTALL 1)
-  IF (EMBREE_TESTING_PACKAGE)
-    SET(PACKAGE_SCRIPT "${PROJECT_SOURCE_DIR}/scripts/package_win.bat")
-    ADD_TEST(NAME "BuildPackage" WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}" COMMAND ${PACKAGE_SCRIPT} ${CMAKE_BUILD_TYPE} "${PACKAGE_BASE_NAME}" "${ARCH}")
-  ENDIF()
-
-  add_custom_target(
-    post_package "${PROJECT_SOURCE_DIR}/scripts/package_post_build_win.bat" "${PACKAGE_BASE_NAME}"
-  )
-
-  add_custom_target(
-    test_package "${PROJECT_SOURCE_DIR}/scripts/package_test_win.bat" "${EMBREE_TESTING_INTENSITY}" "${CMAKE_BUILD_TYPE}"
-  )
+  SET(PACKAGE_EXT "zip")
 
 # MacOSX specific settings
 ELSEIF(APPLE)
@@ -321,43 +308,48 @@ ELSEIF(APPLE)
   SET(CPACK_RESOURCE_FILE_README "${PROJECT_BINARY_DIR}/README.txt")
 
   SET(CPACK_GENERATOR ZIP)
-  SET(PACKAGE_BASE_NAME "${CPACK_PACKAGE_FILE_NAME}")
   SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.x86_64.macosx")
-  #SET(CPACK_MONOLITHIC_INSTALL 1)
-  IF (EMBREE_TESTING_PACKAGE)
-    ADD_TEST(NAME "BuildPackage" WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}" COMMAND "${PROJECT_SOURCE_DIR}/scripts/package_macosx.sh" ${CMAKE_BUILD_TYPE} "${PACKAGE_BASE_NAME}" "${EMBREE_SIGN_FILE}")
-  ENDIF()
-
-  add_custom_target(
-    post_package "${PROJECT_SOURCE_DIR}/scripts/package_post_build_macosx.sh" ${PACKAGE_BASE_NAME} ${EMBREE_SIGN_FILE}
-  )
+  SET(PACKAGE_BASE_NAME "${CPACK_PACKAGE_FILE_NAME}")
+  SET(PACKAGE_EXT "zip")
 
   add_custom_target(
     post_package_notarize "${PROJECT_SOURCE_DIR}/scripts/package_post_build_notarize_macosx.sh" ${PACKAGE_BASE_NAME} ${EMBREE_SIGN_FILE}
   )
 
-  add_custom_target(
-    test_package "${PROJECT_SOURCE_DIR}/scripts/package_test_macosx.sh" ${EMBREE_TESTING_INTENSITY}
-  )
-
 # Linux specific settings
 ELSE()
-
   SET(CPACK_GENERATOR TGZ)
   SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.x86_64.linux")
   SET(PACKAGE_BASE_NAME "${CPACK_PACKAGE_FILE_NAME}")
+  SET(PACKAGE_EXT "tar.gz")
   IF (EMBREE_SYCL_SUPPORT)
     SET(EMBREE_VERSION_SYCL_SUFFIX ".sycl")
   ENDIF()
-
-  add_custom_target(
-    post_package "${PROJECT_SOURCE_DIR}/scripts/package_post_build_linux.sh" ${PACKAGE_BASE_NAME}
-  )
-
-  add_custom_target(
-    test_package "${PROJECT_SOURCE_DIR}/scripts/package_test_linux.sh" ${EMBREE_TESTING_INTENSITY})
 ENDIF()
 
-IF (EMBREE_TESTING_PACKAGE)
-  SET_TESTS_PROPERTIES(BuildPackage PROPERTIES TIMEOUT 1200)
-ENDIF()
+
+add_custom_target(
+  build ${CMAKE_COMMAND} --build . --config ${CMAKE_BUILD_TYPE} --target package -j8
+  COMMAND ${CMAKE_COMMAND} -DPACKAGE_BASENAME=${PACKAGE_BASE_NAME} -DPACKAGE_EXT=${PACKAGE_EXT} -P ${PROJECT_SOURCE_DIR}/scripts/package_build.cmake
+)
+
+add_custom_target(
+  test_package ${CMAKE_COMMAND} -DWHAT="UNPACK" -DPACKAGE_BASENAME=${PACKAGE_BASE_NAME} -DPACKAGE_EXT=${PACKAGE_EXT} -P ${PROJECT_SOURCE_DIR}/scripts/package_test.cmake
+  COMMAND cd embree_install/testing && ${CMAKE_COMMAND} -B build -DEMBREE_TESTING_INTENSITY=${EMBREE_TESTING_INTENSITY}
+  COMMAND ctest --test-dir ${CMAKE_CURRENT_BINARY_DIR}/embree_install/testing/build -VV -C ${CMAKE_BUILD_TYPE} --output-log ctest.output 
+  COMMAND ${CMAKE_COMMAND} -DWHAT="CHECK" -P ${PROJECT_SOURCE_DIR}/scripts/package_test.cmake
+)
+
+
+if(WIN32)
+  set(INTEGRATE_BINARY "./build/Release/test.exe")
+else()
+  set(INTEGRATE_BINARY "./build/test")
+endif()
+
+add_custom_target(
+  test_integration ${CMAKE_COMMAND} -DWHAT="UNPACK" -DPACKAGE_BASENAME=${PACKAGE_BASE_NAME} -DPACKAGE_EXT=${PACKAGE_EXT} -P ${PROJECT_SOURCE_DIR}/scripts/package_test.cmake
+  COMMAND cd ${PROJECT_SOURCE_DIR}/tests/integration/test_embree_release && ${CMAKE_COMMAND} -B build --preset ${EMBREE_TESTING_INTEGRATION_PRESET} -Dembree_DIR="${CMAKE_CURRENT_BINARY_DIR}/embree_install/lib/cmake/embree-${EMBREE_VERSION}"
+  COMMAND cd ${PROJECT_SOURCE_DIR}/tests/integration/test_embree_release && ${CMAKE_COMMAND} --build build --config Release
+  COMMAND cd ${PROJECT_SOURCE_DIR}/tests/integration/test_embree_release && ${INTEGRATE_BINARY}
+)

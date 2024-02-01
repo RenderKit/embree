@@ -1,0 +1,15 @@
+
+message("WHAT             = ${WHAT}")
+
+if(${WHAT} STREQUAL "UNPACK")
+    message("PACKAGE_BASENAME = ${PACKAGE_BASENAME}")
+    message("PACKAGE_EXT      = ${PACKAGE_EXT}")
+    file(ARCHIVE_EXTRACT INPUT "${PACKAGE_BASENAME}.${PACKAGE_EXT}" DESTINATION "embree_install")
+    file(ARCHIVE_EXTRACT INPUT "${PACKAGE_BASENAME}-testing.${PACKAGE_EXT}" DESTINATION "embree_install")
+elseif(${WHAT} STREQUAL "CHECK")
+    file(READ ctest.output output_content)
+    string(FIND ${output_content} "100% tests passed, 0 tests failed" pos)
+    if(pos EQUAL -1)
+        message(FATAL_ERROR "Some tests failed, or no tests have been executed")
+    endif()
+endif()

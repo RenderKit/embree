@@ -6,15 +6,15 @@ name: continuous
 on: [push, workflow_dispatch]
 
 jobs:
- ################################################################################
- ################################################################################
- # GPU tests
- ################################################################################
- ###############################################################################
-
- ########################################
- # Linux DG2
- ########################################
+  ################################################################################
+  ################################################################################
+  # GPU tests
+  ################################################################################
+  ###############################################################################
+  
+  ########################################
+  # Linux DG2
+  ########################################
   linux-DG2-JIT-INTERNAL-build:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
@@ -27,9 +27,8 @@ jobs:
       artifact-path: ./build/*.tar.gz
       cmd: |
         module load cmake/3.25.3
-        cmake --preset linux-DG2-JIT-INTERNAL
-        cmake --build build --config Release --target package -j8
-        cmake --build build --target post_package
+        cmake --preset linux-DG2-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target build
 
   linux-DG2-JIT-INTERNAL-test:
     secrets: inherit
@@ -43,8 +42,9 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu20-release.env
       artifact-in: linux-DG2-JIT-INTERNAL-build
       cmd: |
-        cd build
-        ../scripts/package_test_linux.sh 3
+        module load cmake/3.25.3
+        cmake --preset linux-DG2-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
 
   linux-DG2-JIT-PUBLIC-build:
     secrets: inherit
@@ -58,9 +58,8 @@ jobs:
       artifact-path: ./build/*.tar.gz
       cmd: |
         module load cmake/3.25.3
-        cmake --preset linux-DG2-JIT-PUBLIC
-        cmake --build build --config Release --target package -j8
-        cmake --build build --target post_package
+        cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target build
 
   linux-DG2-JIT-PUBLIC-test:
     secrets: inherit
@@ -74,8 +73,9 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-public.env
       artifact-in: linux-DG2-JIT-PUBLIC-build
       cmd: |
-        cd build
-        ../scripts/package_test_linux.sh 3
+        module load cmake/3.25.3
+        cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
 
   linux-DG2-JIT-EMBARGO-build:
     secrets: inherit
@@ -89,9 +89,8 @@ jobs:
       artifact-path: ./build/*.tar.gz
       cmd: |
         module load cmake/3.25.3
-        cmake --preset linux-DG2-JIT-EMBARGO
-        cmake --build build --config Release --target package -j8
-        cmake --build build --target post_package
+        cmake --preset linux-DG2-JIT-EMBARGO -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target build
 
   linux-DG2-JIT-EMBARGO-test:
     secrets: inherit
@@ -105,8 +104,9 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-embargo.env
       artifact-in: linux-DG2-JIT-EMBARGO-build
       cmd: |
-        cd build
-        ../scripts/package_test_linux.sh 3
+        module load cmake/3.25.3
+        cmake --preset linux-DG2-JIT-EMBARGO -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
 
   linux-DG2-JIT-PUBLIC-sycl-nightly-RK-build:
     secrets: inherit
@@ -121,9 +121,8 @@ jobs:
       artifact-path: ./build/*.tar.gz
       cmd: |
         module load cmake/3.25.3
-        cmake --preset linux-DG2-JIT-PUBLIC-sycl-nightly-RK
-        cmake --build build --config Release --target package -j8
-        cmake --build build --target post_package
+        cmake --preset linux-DG2-JIT-PUBLIC-sycl-nightly-RK -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target build
 
   linux-DG2-JIT-PUBLIC-sycl-nightly-RK-test:
     secrets: inherit
@@ -138,8 +137,9 @@ jobs:
       dpcpp-version: intel-llvm/nightly-2023-12-18-rk
       artifact-in: linux-DG2-JIT-PUBLIC-sycl-nightly-RK-build
       cmd: |
-        cd build
-        ../scripts/package_test_linux.sh 3
+        module load cmake/3.25.3
+        cmake --preset linux-DG2-JIT-PUBLIC-sycl-nightly-RK -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
 
   linux-DG2-JIT-PUBLIC-ICX-build:
     secrets: inherit
@@ -154,9 +154,8 @@ jobs:
       artifact-path: ./build/*.tar.gz
       cmd: |
         module load cmake/3.25.3
-        cmake --preset linux-DG2-JIT-PUBLIC-ICX
-        cmake --build build --config Release --target package -j8
-        cmake --build build --target post_package
+        cmake --preset linux-DG2-JIT-PUBLIC-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target build
 
   linux-DG2-JIT-PUBLIC-ICX-test:
     secrets: inherit
@@ -171,12 +170,13 @@ jobs:
       dpcpp-version: intel/2024.0
       artifact-in: linux-DG2-JIT-PUBLIC-ICX-build
       cmd: |
-        cd build
-        ../scripts/package_test_linux.sh 3
+        module load cmake/3.25.3
+        cmake --preset linux-DG2-JIT-PUBLIC-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
 
-#   ########################################
-#   # Linux ATS-M
-#   ########################################
+  ########################################
+  # Linux ATS-M
+  ########################################
 
   linux-ATSM-JIT-PUBLIC-test:
     secrets: inherit
@@ -190,13 +190,14 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-public.env
       artifact-in: linux-DG2-JIT-PUBLIC-build
       cmd: |
-        cd build
-        ../scripts/package_test_linux.sh 3
+        module load cmake/3.25.3
+        cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
 
 
-#   ########################################
-#   # Linux PVC
-#   ########################################
+  ########################################
+  # Linux PVC
+  ########################################
 
   linux-PVC-JIT-INTERNAL-build:
     secrets: inherit
@@ -211,11 +212,10 @@ jobs:
       artifact-path: ./build/*.tar.gz
       cmd: |
         module load cmake/3.25.3
-        cmake --preset linux-PVC-JIT-INTERNAL
-        cmake --build build --config Release --target package -j8
-        cmake --build build --target post_package
+        cmake --preset linux-PVC-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target build
 
-#  TODO: move to nightly
+  #  TODO: move to nightly
   linux-PVC-JIT-INTERNAL-test-1T:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
@@ -231,8 +231,9 @@ jobs:
       cmd: |
         export EnableImplicitScaling=0
         export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
-        cd build
-        ../scripts/package_test_linux.sh 3
+        module load cmake/3.25.3
+        cmake --preset linux-PVC-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
 
   linux-PVC-JIT-INTERNAL-test-2T:
     secrets: inherit
@@ -248,39 +249,40 @@ jobs:
       artifact-in: linux-PVC-JIT-INTERNAL-build
       cmd: |
         export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
-        cd build
-        ../scripts/package_test_linux.sh 3
+        module load cmake/3.25.3
+        cmake --preset linux-PVC-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
 
-# #  linux-PVC-JIT-PUBLIC:
-# #    secrets: inherit
-# #    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-# #    with:
-# #      image: embree/ubuntu:22.04
-# #      runs-on: '[ "Linux", "docker", "build" ]'
-# #      artifact-out: linux-PVC-JIT-PUBLIC
-# #      artifact-path: ./build .ctest_conf
-# #      cmd: |
-# #        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4
-# #        scripts/test.py build --debug
-# #        scripts/test.py build
-# #
-# #  linux-PVC-JIT-PUBLIC-test:
-# #    secrets: inherit
-# #    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-# #    needs: ["linux-PVC-JIT-PUBLIC"]
-# #    with:
-# #      image: embree/ubuntu:22.04
-# #      options: --device=/dev/dri:/dev/dri
-# #      runs-on: '[ "Linux", "docker", "pvc" ]'
-# #      artifact-in: linux-PVC-JIT-PUBLIC
-# #      cmd: |
-# #        scripts/test.py test --debug
-# #        scripts/test.py test
+  #  linux-PVC-JIT-PUBLIC:
+  #    secrets: inherit
+  #    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+  #    with:
+  #      image: embree/ubuntu:22.04
+  #      runs-on: '[ "Linux", "docker", "build" ]'
+  #      artifact-out: linux-PVC-JIT-PUBLIC
+  #      artifact-path: ./build .ctest_conf
+  #      cmd: |
+  #        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4
+  #        scripts/test.py build --debug
+  #        scripts/test.py build
+  #
+  #  linux-PVC-JIT-PUBLIC-test:
+  #    secrets: inherit
+  #    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+  #    needs: ["linux-PVC-JIT-PUBLIC"]
+  #    with:
+  #      image: embree/ubuntu:22.04
+  #      options: --device=/dev/dri:/dev/dri
+  #      runs-on: '[ "Linux", "docker", "pvc" ]'
+  #      artifact-in: linux-PVC-JIT-PUBLIC
+  #      cmd: |
+  #        scripts/test.py test --debug
+  #        scripts/test.py test
 
 
-#   ########################################
-#   # Windows DG2
-#   ########################################
+  ########################################
+  # Windows DG2
+  ########################################
 
   windows-DG2-JIT-build:
     secrets: inherit
@@ -293,9 +295,8 @@ jobs:
       artifact-out: windows-DG2-JIT-build
       artifact-path: ./build/*.zip
       cmd: |
-        cmake --preset windows-DG2-JIT-INTERNAL
-        cmake --build build --config Release --target package -j8
-        cmake --build build --target post_package
+        cmake --preset windows-DG2-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target build
 
   windows-DG2-JIT-INTERNAL-test:
     secrets: inherit
@@ -307,8 +308,8 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
       artifact-in: windows-DG2-JIT-build
       cmd: |
-        cd build
-        ../scripts/package_test_win.bat 3 Release
+        cmake --preset windows-DG2-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
 
   windows-DG2-JIT-PUBLIC-test:
     secrets: inherit
@@ -320,8 +321,8 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
       artifact-in: windows-DG2-JIT-build
       cmd: |
-        cd build
-        ../scripts/package_test_win.bat 3 Release
+        cmake --preset windows-DG2-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
 
   windows-DG2-JIT-ICX-build:
     secrets: inherit
@@ -334,9 +335,8 @@ jobs:
       artifact-out: windows-DG2-JIT-ICX-build
       artifact-path: ./build/*.zip
       cmd: |
-        cmake --preset nightly-windows-DG2-JIT-ICX
-        cmake --build build --config Release --target package -j8
-        cmake --build build --target post_package
+        cmake --preset nightly-windows-DG2-JIT-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target build
 
   windows-DG2-JIT-ICX-INTERNAL-test:
     secrets: inherit
@@ -345,11 +345,12 @@ jobs:
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
+      dpcpp-version: oneAPI/compiler/2024.0
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
       artifact-in: windows-DG2-JIT-ICX-build
       cmd: |
-        cd build
-        ../scripts/package_test_win.bat 2 Release
+        cmake --preset nightly-windows-DG2-JIT-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
 
   windows-DG2-JIT-ICX-PUBLIC-test:
     secrets: inherit
@@ -358,11 +359,12 @@ jobs:
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
+      dpcpp-version: oneAPI/compiler/2024.0
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
       artifact-in: windows-DG2-JIT-ICX-build
       cmd: |
-        cd build
-        ../scripts/package_test_win.bat 2 Release
+        cmake --preset nightly-windows-DG2-JIT-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
 
   windows-DG2-JIT-INTERNAL-L0RTAS-build:
     secrets: inherit
@@ -375,9 +377,8 @@ jobs:
       artifact-out: windows-DG2-JIT-INTERNAL-L0RTAS-build
       artifact-path: ./build/*.zip
       cmd: |
-        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS
-        cmake --build build --config Release --target package -j8
-        cmake --build build --target post_package
+        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target build
 
   windows-DG2-JIT-INTERNAL-L0RTAS-test:
     secrets: inherit
@@ -389,8 +390,8 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
       artifact-in: windows-DG2-JIT-INTERNAL-L0RTAS-build
       cmd: |
-        cd build
-        ../scripts/package_test_win.bat 3 Release
+        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
 
 #   ################################################################################
 #   ################################################################################
@@ -410,10 +411,9 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       cmd: |
         module load cmake/3.25.3
-        cmake --preset linux-fedora26-CLANG4 -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --target package -j8
-        cmake --build build --target post_package
-        cmake --build build --target test_package
+        cmake --preset linux-fedora26-CLANG4 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --config RelWithDebInfo --target build
+        cmake --build build --config RelWithDebInfo --target test_package
 
   linux-fedora26-CLANG5-INT-ADDRSANITIZER:
     secrets: inherit
@@ -423,10 +423,9 @@ jobs:
       runs-on: '[ "Linux", "docker", "build" ]'
       cmd: |
         module load cmake/3.25.3
-        cmake --preset linux-fedora26-CLANG5-INT-ADDRSANITIZER -D EMBREE_TESTING_INTENSITY=1
-        cmake --build build --target package -j8
-        cmake --build build --target post_package
-        cmake --build build --target test_package
+        cmake --preset linux-fedora26-CLANG5-INT-ADDRSANITIZER -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --config RelWithDebInfo --target build
+        cmake --build build --config RelWithDebInfo --target test_package
 
   linux-fedora29-ICX:
     secrets: inherit
@@ -437,10 +436,9 @@ jobs:
       dpcpp-version: intel/2024.0
       cmd: |
         module load cmake/3.25.3
-        cmake --preset linux-fedora29-ICX -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --target package
-        cmake --build build --target post_package
-        cmake --build build --target test_package
+        cmake --preset linux-fedora29-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --config RelWithDebInfo --target build
+        cmake --build build --config RelWithDebInfo --target test_package
 
   linux-fedora32-ICX:
     secrets: inherit
@@ -451,10 +449,9 @@ jobs:
       dpcpp-version: intel/2024.0
       cmd: |
         module load cmake/3.25.3
-        cmake --preset linux-fedora32-ICX -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --target package
-        cmake --build build --target post_package
-        cmake --build build --target test_package
+        cmake --preset linux-fedora32-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --config RelWithDebInfo --target build
+        cmake --build build --config RelWithDebInfo --target test_package
 
   linux-ubuntu20_04-GCC-NAMESPACE:
     secrets: inherit
@@ -464,10 +461,9 @@ jobs:
       runs-on: '[ "Linux", "docker", "build" ]'
       cmd: |
         module load cmake/3.25.3
-        cmake --preset linux-ubuntu20_04-GCC-NAMESPACE -D EMBREE_TESTING_INTENSITY=1
-        cmake --build build --target package -j8
-        cmake --build build --target post_package
-        cmake --build build --target test_package
+        cmake --preset linux-ubuntu20_04-GCC-NAMESPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --config RelWithDebInfo --target build
+        cmake --build build --config RelWithDebInfo --target test_package
 
   linux-ubuntu20_04-ICX:
     secrets: inherit
@@ -478,10 +474,9 @@ jobs:
       dpcpp-version: intel/2024.0
       cmd: |
         module load cmake/3.25.3
-        cmake --preset linux-ubuntu20_04-ICX -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --target package
-        cmake --build build --target post_package
-        cmake --build build --target test_package
+        cmake --preset linux-ubuntu20_04-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --config RelWithDebInfo --target build
+        cmake --build build --config RelWithDebInfo --target test_package
 
   linux-centos7_4-GCC:
     secrets: inherit
@@ -491,10 +486,9 @@ jobs:
       runs-on: '[ "Linux", "docker", "build" ]'
       cmd: |
         module load cmake/3.25.3
-        cmake --preset linux-centos7_4-GCC -D EMBREE_TESTING_INTENSITY=1
-        cmake --build build --target package -j8
-        cmake --build build --target post_package
-        cmake --build build --target test_package
+        cmake --preset linux-centos7_4-GCC -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --config RelWithDebInfo --target build
+        cmake --build build --config RelWithDebInfo --target test_package
 
 
   ########################################
@@ -508,9 +502,8 @@ jobs:
       runs-on: '[ "Windows", "NAS", "build" ]'
       dpcpp-version: none
       cmd: |
-        cmake --preset windows-V142 -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --config RelWithDebInfo --target package
-        cmake --build build --target post_package
+        cmake --preset windows-V142 -D CMAKE_BUILD_TYPE=RelWithDebInfo -D EMBREE_TESTING_INTENSITY=2
+        cmake --build build --config RelWithDebInfo --target build
         cmake --build build --target test_package
 
   windows-ICX:
@@ -521,25 +514,24 @@ jobs:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
       dpcpp-version: oneAPI/compiler/2024.0
       cmd: |
-        cmake --preset windows-ICX -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --target package -j16
-        cmake --build build --target post_package
-        cmake --build build --target test_package
+        cmake --preset windows-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --config RelWithDebInfo --target build
+        cmake --build build --config RelWithDebInfo --target test_package
 
   ########################################
   # MacOS
   ########################################
 
-#  macosx-ARM-CLANG-NEON-AVX2:
-#    secrets: inherit
-#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
-#    with:
-#      runs-on: '[ "macOS", "build", "arm" ]'
-#      cmd: |
-#        cmake --preset macos-ARM-CLANG-NEON-AVX2 -D EMBREE_TESTING_INTENSITY=2
-#        cmake --build build --config Release --target package -j8
-#        cmake --build build --target post_package
-#        cmake --build build --target test_package
+  #  macosx-ARM-CLANG-NEON-AVX2:
+  #    secrets: inherit
+  #    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
+  #    with:
+  #      runs-on: '[ "macOS", "build", "arm" ]'
+  #      cmd: |
+  #        cmake --preset macos-ARM-CLANG-NEON-AVX2 -D EMBREE_TESTING_INTENSITY=2
+  #        cmake --build build --config Release --target package -j8
+  #        cmake --build build --target post_package
+  #        cmake --build build --target test_package
 
   macosx-x64-CLANG:
     secrets: inherit
@@ -547,10 +539,9 @@ jobs:
     with:
       runs-on: '[ "macOS", "build", "x86_64" ]'
       cmd: |
-        cmake --preset macos-x64-CLANG -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --config Release --target package -j4
-        cmake --build build --target post_package
-        cmake --build build --target test_package
+        cmake --preset macos-x64-CLANG -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --config RelWithDebInfo --target build
+        cmake --build build --config RelWithDebInfo --target test_package
 
   ########################################
   # Coverity
