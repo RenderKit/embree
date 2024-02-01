@@ -30,9 +30,8 @@ jobs:
       artifact-path: ./build/*.tar.gz
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-DG2-JIT-MULTILEVEL
-        cmake --build build --config Release --target package -j8
-        cmake --build build --target post_package
+        cmake --preset nightly-linux-DG2-JIT-MULTILEVEL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target build
 
   nightly-linux-DG2-JIT-MULTILEVEL-test:
     secrets: inherit
@@ -46,8 +45,9 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-embargo.env
       artifact-in: nightly-linux-DG2-JIT-MULTILEVEL-build
       cmd: |
-        cd build
-        ../scripts/package_test_linux.sh 3
+        module load cmake/3.25.3
+        cmake --preset nightly-linux-DG2-JIT-MULTILEVEL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
 
   nightly-linux-DG2-INTERNAL-L0RTAS-build:
     secrets: inherit
@@ -61,9 +61,8 @@ jobs:
       artifact-path: ./build/*.tar.gz
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-DG2-INTERNAL-L0RTAS
-        cmake --build build --config Release --target package -j8
-        cmake --build build --target post_package
+        cmake --preset nightly-linux-DG2-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target build
 
   linux-DG2-JIT-INTERNAL-L0RTAS-test:
     secrets: inherit
@@ -77,8 +76,9 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu20-release.env
       artifact-in: nightly-linux-DG2-INTERNAL-L0RTAS-build
       cmd: |
-        cd build
-        ../scripts/package_test_linux.sh 3
+        module load cmake/3.25.3
+        cmake --preset nightly-linux-DG2-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
 
   nightly-linux-PVC-JIT-build:
     secrets: inherit
@@ -92,9 +92,8 @@ jobs:
       artifact-path: ./build/*.tar.gz
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-PVC-JIT
-        cmake --build build --config Release --target package -j8
-        cmake --build build --target post_package
+        cmake --preset nightly-linux-PVC-JIT -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --config Release --target build
 
   nightly-linux-PVC-JIT-test:
     secrets: inherit
@@ -109,8 +108,9 @@ jobs:
       artifact-in: nightly-linux-PVC-JIT-build
       cmd: |
         export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
-        cd build
-        ../scripts/package_test_linux.sh 4
+        module load cmake/3.25.3
+        cmake --preset nightly-linux-PVC-JIT -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --config Release --target test_package
 
   ########################################
   # Windows
@@ -127,9 +127,8 @@ jobs:
       artifact-out: nightly-windows-DG2-JIT-ICX-RC-build
       artifact-path: ./build/*.zip
       cmd: |
-        cmake --preset nightly-windows-DG2-JIT-ICX
-        cmake --build build --config Release --target package -j8
-        cmake --build build --target post_package
+        cmake --preset nightly-windows-DG2-JIT-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --config Release --target build
 
   nightly-windows-DG2-JIT-ICX-RC-test:
     secrets: inherit
@@ -139,10 +138,11 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
+      dpcpp-version: icx/compiler_ppkg-rel/20240110
       artifact-in: nightly-windows-DG2-JIT-ICX-RC-build
       cmd: |
-        cd build
-        ../scripts/package_test_win.bat 2 Release
+        cmake --preset nightly-windows-DG2-JIT-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --config Release --target test_package
 
   nightly-windows-DG2-JIT-NIGHTLY-RK-bulid:
     secrets: inherit
@@ -155,9 +155,8 @@ jobs:
       artifact-out: nightly-windows-DG2-JIT-NIGHTLY-RK-bulid
       artifact-path: ./build/*.zip
       cmd: |
-        cmake --preset nightly-windows-DG2-JIT-NIGHTLY
-        cmake --build build --config Release --target package -j8
-        cmake --build build --target post_package
+        cmake --preset nightly-windows-DG2-JIT-NIGHTLY -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --config Release --target build
 
   nightly-windows-DG2-JIT-NIGHTLY-RK-test:
     secrets: inherit
@@ -167,10 +166,11 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
+      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
       artifact-in: nightly-windows-DG2-JIT-NIGHTLY-RK-bulid
       cmd: |
-        cd build
-        ../scripts/package_test_win.bat 2 Release
+        cmake --preset nightly-windows-DG2-JIT-NIGHTLY -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --config Release --target test_package
 
   nightly-windows-DG2-JIT-INTERNAL-build:
     secrets: inherit
@@ -182,9 +182,8 @@ jobs:
       artifact-out: nightly-windows-DG2-JIT-INTERNAL-build
       artifact-path: ./build/*.zip
       cmd: |
-        cmake --preset nightly-windows-DG2-JIT
-        cmake --build build --config Release --target package -j8
-        cmake --build build --target post_package
+        cmake --preset nightly-windows-DG2-JIT -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --config Release --target build
 
   nightly-windows-DG2-JIT-INTERNAL-test:
     secrets: inherit
@@ -196,8 +195,8 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
       artifact-in: nightly-windows-DG2-JIT-INTERNAL-build
       cmd: |
-        cd build
-        ../scripts/package_test_win.bat 4 Release
+        cmake --preset nightly-windows-DG2-JIT -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --config Release --target test_package
 
   nightly-windows-DG2-JIT-PUBLIC-build:
     secrets: inherit
@@ -209,9 +208,8 @@ jobs:
       artifact-out: nightly-windows-DG2-JIT-PUBLIC-build
       artifact-path: ./build/*.zip
       cmd: |
-        cmake --preset nightly-windows-DG2-JIT
-        cmake --build build --config Release --target package -j8
-        cmake --build build --target post_package
+        cmake --preset nightly-windows-DG2-JIT -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --config Release --target build
         
   nightly-windows-DG2-JIT-PUBLIC-test:
     secrets: inherit
@@ -223,8 +221,8 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
       artifact-in: nightly-windows-DG2-JIT-PUBLIC-build
       cmd: |
-        cd build
-        ../scripts/package_test_win.bat 4 Release
+        cmake --preset nightly-windows-DG2-JIT -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --config Release --target test_package
         
 
 
@@ -260,10 +258,9 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-DEBUG-CLANG4-SSE2-NAMESPACE -D EMBREE_TESTING_INTENSITY=4
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-DEBUG-CLANG4-SSE2-NAMESPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-linux-DEBUG-CLANG5-ISPC1_14_1-AVX2-INT-ADDRSANITIZER:
     secrets: inherit
@@ -272,9 +269,8 @@ jobs:
       image: embree/fedora:26
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-DEBUG-CLANG5-ISPC1_14_1-AVX2-INT-ADDRSANITIZER -D EMBREE_TESTING_INTENSITY=4
-        cmake --build build --target package -j8
-        cmake --build build --target post_package
+        cmake --preset nightly-linux-DEBUG-CLANG5-ISPC1_14_1-AVX2-INT-ADDRSANITIZER -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --target build
         cmake --build build --target test_package
 
   nightly-linux-DEBUG-CLANG4-ISPC1_16_1-AVX2-TBB2021_9_0-STATIC:
@@ -284,10 +280,9 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-DEBUG-CLANG4-ISPC1_16_1-AVX2-TBB2021_9_0-STATIC -D EMBREE_TESTING_INTENSITY=4
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-DEBUG-CLANG4-ISPC1_16_1-AVX2-TBB2021_9_0-STATIC -DCMAKE_BUILD_TYPE=RelWithDebInfo  -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   # GCC
 
@@ -299,10 +294,9 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-DEBUG-CLANG4-ISPC1_16_1-AVX512VL-TBB2020_2 -D EMBREE_TESTING_INTENSITY=3
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-DEBUG-CLANG4-ISPC1_16_1-AVX512VL-TBB2020_2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-linux-DEBUG-GCC-ISPC1_16_1-SSE2-TBB2021_2:
     secrets: inherit
@@ -311,10 +305,9 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-DEBUG-GCC-ISPC1_16_1-SSE2-TBB2021_2 -D EMBREE_TESTING_INTENSITY=4
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-DEBUG-GCC-ISPC1_16_1-SSE2-TBB2021_2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-linux-DEBUG-GCC-ISPC1_16_1-AVX-TBB2019_9:
     secrets: inherit
@@ -323,10 +316,9 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-DEBUG-GCC-ISPC1_16_1-AVX-TBB2019_9 -D EMBREE_TESTING_INTENSITY=4
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-DEBUG-GCC-ISPC1_16_1-AVX-TBB2019_9 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-linux-DEBUG-GCC-ISPC1_17_0-AVX2-TBB2021_2_0:
     secrets: inherit
@@ -335,10 +327,9 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-DEBUG-GCC-ISPC1_17_0-AVX2-TBB2021_2_0 -D EMBREE_TESTING_INTENSITY=4
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-DEBUG-GCC-ISPC1_17_0-AVX2-TBB2021_2_0 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   # ICX
   nightly-linux-DEBUG-ICX2024_0-ISPC1_16_1-AVX-TBB2019_2:
@@ -349,10 +340,9 @@ jobs:
       dpcpp-version: intel/2024.0
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX-TBB2019_2 -D EMBREE_TESTING_INTENSITY=4
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX-TBB2019_2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-linux-DEBUG-ICX2024_0-ISPC1_16_1-AVX512VL-TBB2019_2:
     secrets: inherit
@@ -363,10 +353,9 @@ jobs:
       dpcpp-version: intel/2024.0
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX512VL-TBB2019_2 -D EMBREE_TESTING_INTENSITY=4
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX512VL-TBB2019_2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-linux-DEBUG-ICX2024_0-ISPC1_16_1-AVX512-TBB2019_9:
     secrets: inherit
@@ -377,10 +366,9 @@ jobs:
       dpcpp-version: intel/2024.0
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX512-TBB2019_9 -D EMBREE_TESTING_INTENSITY=4
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX512-TBB2019_9 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-linux-DEBUG-ICX2024_0-ISPC1_16_1-AVX2-TBB2021_2_0:
     secrets: inherit
@@ -390,10 +378,9 @@ jobs:
       dpcpp-version: intel/2024.0
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX2-TBB2021_2_0 -D EMBREE_TESTING_INTENSITY=4
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX2-TBB2021_2_0 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-linux-DEBUG-ICX2024_0-ISPC1_17_0-AVX2-TBB2019_9:
     secrets: inherit
@@ -403,10 +390,9 @@ jobs:
       dpcpp-version: intel/2024.0
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-DEBUG-ICX-ISPC1_17_0-AVX2-TBB2019_9 -D EMBREE_TESTING_INTENSITY=4
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-DEBUG-ICX-ISPC1_17_0-AVX2-TBB2019_9 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-linux-DEBUG-ICX2024_0-ISPC1_17_0-AVX512VL-TBB2021_5_0:
     secrets: inherit
@@ -417,10 +403,9 @@ jobs:
       dpcpp-version: intel/2024.0
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-DEBUG-ICX-ISPC1_17_0-AVX512VL-TBB2021_5_0 -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-DEBUG-ICX-ISPC1_17_0-AVX512VL-TBB2021_5_0 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   # Testing different distros
 
@@ -431,10 +416,9 @@ jobs:
       image: embree/ubuntu:20.04
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-distrotest -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-distrotest -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-ubuntu20_04-RELEASE-ISPC1_14_1-TBB2021_2_0:
     secrets: inherit
@@ -443,10 +427,9 @@ jobs:
       image: embree/ubuntu:20.04
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-distrotest-ISPC1_14_1-TBB2021_2 -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-distrotest-ISPC1_14_1-TBB2021_2 -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-ubuntu16_04-DEBUG:
     secrets: inherit
@@ -455,10 +438,9 @@ jobs:
       image: embree/ubuntu:16.04
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-distrotest -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-distrotest -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-centos7_4-DEBUG:
     secrets: inherit
@@ -467,10 +449,9 @@ jobs:
       image: embree/centos:7.4
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-distrotest -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-distrotest -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-fedora32-DEBUG-AVX512:
     secrets: inherit
@@ -480,10 +461,9 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-distrotest-AVX512 -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-distrotest-AVX512 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-fedora28-DEBUG-AVX512:
     secrets: inherit
@@ -493,10 +473,9 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-distrotest-AVX512 -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-distrotest-AVX512 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-fedora27-DEBUG:
     secrets: inherit
@@ -505,10 +484,9 @@ jobs:
       image: embree/fedora:27
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-distrotest -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-distrotest -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-fedora26-DEBUG:
     secrets: inherit
@@ -517,10 +495,9 @@ jobs:
       image: embree/fedora:26
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-distrotest -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-distrotest -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-fedora25-DEBUG:
     secrets: inherit
@@ -529,10 +506,9 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-distrotest -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-distrotest -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   # Testing single primiteve types
 
@@ -543,10 +519,9 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-singleprimitive-TRI -D EMBREE_TESTING_INTENSITY=0
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-singleprimitive-TRI -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-linux-DEBUG-CLANG4-QUAD:
     secrets: inherit
@@ -555,10 +530,9 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-singleprimitive-QUAD -D EMBREE_TESTING_INTENSITY=0
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-singleprimitive-QUAD -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-linux-DEBUG-CLANG4-GRID:
     secrets: inherit
@@ -567,10 +541,9 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-singleprimitive-GRID -D EMBREE_TESTING_INTENSITY=0
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-singleprimitive-GRID -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-linux-DEBUG-CLANG4-CURVE:
     secrets: inherit
@@ -579,10 +552,9 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-singleprimitive-CURVE -D EMBREE_TESTING_INTENSITY=0
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-singleprimitive-CURVE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-linux-DEBUG-CLANG4-SUBDIV:
     secrets: inherit
@@ -591,10 +563,9 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-singleprimitive-SUBDIV -D EMBREE_TESTING_INTENSITY=0
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-singleprimitive-SUBDIV -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-linux-DEBUG-CLANG4-USERGEOM:
     secrets: inherit
@@ -603,10 +574,9 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-singleprimitive-USERGEOM -D EMBREE_TESTING_INTENSITY=0
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-singleprimitive-USERGEOM -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-linux-DEBUG-CLANG4-INSTANCE:
     secrets: inherit
@@ -615,10 +585,9 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-singleprimitive-INSTANCE -D EMBREE_TESTING_INTENSITY=0
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-singleprimitive-INSTANCE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-linux-Debug-CLANG4-INSTANCE_ARRAY:
     secrets: inherit
@@ -627,10 +596,9 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-singleprimitive-INSTANCE_ARRAY -D EMBREE_TESTING_INTENSITY=0
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-singleprimitive-INSTANCE_ARRAY -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-linux-DEBUG-CLANG4-INSTANCE-INSTANCE_ARRAY:
     secrets: inherit
@@ -639,13 +607,12 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-singleprimitive-INSTANCE-INSTANCE_ARRAY -D EMBREE_TESTING_INTENSITY=0
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-singleprimitive-INSTANCE-INSTANCE_ARRAY -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   # Compilation test of disabled features
-
+  # just building - not running tests for this
   nightly-linux-feature-NO_ISPC:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
@@ -653,10 +620,9 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-feature-NO_ISPC -D EMBREE_TESTING_INTENSITY=0
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-feature-NO_ISPC -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-linux-feature-NO_TUTORIALS:
     secrets: inherit
@@ -665,10 +631,8 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-feature-NO_TUTORIALS -D EMBREE_TESTING_INTENSITY=0
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-feature-NO_TUTORIALS -DCMAKE_BUILD_TYPE=RelWithDebInfo
+        cmake --build build --target build
 
   nightly-linux-feature-BACKFACECULLING:
     secrets: inherit
@@ -677,10 +641,8 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-feature-BACKFACECULLING -D EMBREE_TESTING_INTENSITY=0
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-feature-BACKFACECULLING -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --target build
 
   nightly-linux-feature-IGNORE-INVALID-RAYS:
     secrets: inherit
@@ -689,10 +651,8 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-feature-IGNORE-INVALID-RAYS -D EMBREE_TESTING_INTENSITY=0
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-feature-IGNORE-INVALID-RAYS -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --target build
 
   nightly-linux-feature-NO-FILTER-FUNCTION:
     secrets: inherit
@@ -701,10 +661,8 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-feature-NO-FILTER-FUNCTION -D EMBREE_TESTING_INTENSITY=0
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-feature-NO-FILTER-FUNCTION -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --target build
 
   nightly-linux-feature-RAYMASKS:
     secrets: inherit
@@ -713,10 +671,9 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-feature-RAYMASKS -D EMBREE_TESTING_INTENSITY=0
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-feature-RAYMASKS -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-linux-feature-NO-PACKETS:
     secrets: inherit
@@ -725,10 +682,8 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-feature-NO-PACKETS -D EMBREE_TESTING_INTENSITY=0
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-feature-NO-PACKETS -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --target build
 
   nightly-linux-feature-STATCOUNTER:
     secrets: inherit
@@ -737,10 +692,9 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-feature-STATCOUNTER -D EMBREE_TESTING_INTENSITY=0
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-feature-STATCOUNTER -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   # Compilation test of individual ISAs
 
@@ -751,10 +705,9 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-individualisa-SSE2 -D EMBREE_TESTING_INTENSITY=0
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-individualisa-SSE2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-linux-individualisa-SSE42:
     secrets: inherit
@@ -763,10 +716,9 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-individualisa-SSE42 -D EMBREE_TESTING_INTENSITY=0
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-individualisa-SSE42 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-linux-individualisa-AVX:
     secrets: inherit
@@ -775,10 +727,9 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-individualisa-AVX -D EMBREE_TESTING_INTENSITY=0
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-individualisa-AVX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-linux-individualisa-AVX2:
     secrets: inherit
@@ -787,10 +738,9 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-individualisa-AVX2 -D EMBREE_TESTING_INTENSITY=0
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-individualisa-AVX2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --target build
+        cmake --build build --target test_package
 
   nightly-linux-individualisa-AVX512:
     secrets: inherit
@@ -799,10 +749,9 @@ jobs:
       image: embree/fedora:25
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-linux-individualisa-AVX512 -D EMBREE_TESTING_INTENSITY=0
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-linux-individualisa-AVX512 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --build build --target build
+        cmake --build build --target test_package
 
 
 
@@ -816,10 +765,9 @@ jobs:
     with:
       dpcpp-version: oneAPI/compiler/2024.0
       cmd: |
-        cmake --preset nightly-windows-RELEASE-ICX-ISPC1_13_0-AVX2-TBB2021_5_0 -D EMBREE_TESTING_INTENSITY=4
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-windows-RELEASE-ICX-ISPC1_13_0-AVX2-TBB2021_5_0 -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --config Release --target build
+        cmake --build build --config Release --target test_package
 
   nightly-windows-RELEASE-ICX2024_0-ISPC1_13_0-AVX512-TBB2019_9:
     secrets: inherit
@@ -828,10 +776,9 @@ jobs:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
       dpcpp-version: oneAPI/compiler/2024.0
       cmd: |
-        cmake --preset nightly-windows-RELEASE-ICX-ISPC1_13_0-AVX512-TBB2019_9 -D EMBREE_TESTING_INTENSITY=4
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-windows-RELEASE-ICX-ISPC1_13_0-AVX512-TBB2019_9 -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --config Release --target build
+        cmake --build build --config Release --target test_package
 
   nightly-windows-RELEASE-ICX2024_0-ISPC1_14_1-AVX2-TBB2021_2_0:
     secrets: inherit
@@ -839,10 +786,9 @@ jobs:
     with:
       dpcpp-version: oneAPI/compiler/2024.0
       cmd: |
-        cmake --preset nightly-windows-RELEASE-ICX-ISPC1_14_1-AVX2-TBB2021_2_0 -D EMBREE_TESTING_INTENSITY=4
-        cmake --build build --target package -j8
-        cd build
-        ctest -VV
+        cmake --preset nightly-windows-RELEASE-ICX-ISPC1_14_1-AVX2-TBB2021_2_0 -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --config Release --target build
+        cmake --build build --config Release --target test_package
 
   ########################################
   # MacOS
@@ -865,9 +811,8 @@ jobs:
     with:
       runs-on: '[ "macOS", "build", "x86_64" ]'
       cmd: |
-        cmake --preset nightly-macosx-x64 -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --target package -j8
-        cmake --build build --target post_package
+        cmake --preset nightly-macosx-x64 -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --target build
         cmake --build build --target test_package
 
   # CLANG compilation and testing of different ISAs
@@ -878,9 +823,8 @@ jobs:
     with:
       runs-on: '[ "macOS", "build", "x86_64" ]'
       cmd: |
-        cmake --preset nightly-macosx-individualisa-CLANG-SSE2 -D EMBREE_TESTING_INTENSITY=4
-        cmake --build build --target package -j8
-        cmake --build build --target post_package
+        cmake --preset nightly-macosx-individualisa-CLANG-SSE2 -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --target build
         cmake --build build --target test_package
 
   nightly-macosx-individualisa-CLANG-AVX:
@@ -889,9 +833,8 @@ jobs:
     with:
       runs-on: '[ "macOS", "build", "x86_64" ]'
       cmd: |
-        cmake --preset nightly-macosx-individualisa-CLANG-AVX -D EMBREE_TESTING_INTENSITY=4
-        cmake --build build --target package -j8
-        cmake --build build --target post_package
+        cmake --preset nightly-macosx-individualisa-CLANG-AVX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --target build
         cmake --build build --target test_package
 
   nightly-macosx-individualisa-CLANG-SSE2-STATIC:
@@ -900,9 +843,8 @@ jobs:
     with:
       runs-on: '[ "macOS", "build", "x86_64" ]'
       cmd: |
-        cmake --preset nightly-macosx-individualisa-CLANG-SSE2-STATIC -D EMBREE_TESTING_INTENSITY=4
-        cmake --build build --target package -j8
-        cmake --build build --target post_package
+        cmake --preset nightly-macosx-individualisa-CLANG-SSE2-STATIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --target build
         cmake --build build --target test_package
 
   # AppleClang compilation and testing of different ISAs
@@ -913,9 +855,8 @@ jobs:
     with:
       runs-on: '[ "macOS", "build", "x86_64" ]'
       cmd: |
-        cmake --preset nightly-macosx-AVX -D EMBREE_TESTING_INTENSITY=4
-        cmake --build build --target package -j8
-        cmake --build build --target post_package
+        cmake --preset nightly-macosx-AVX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --target build
         cmake --build build --target test_package
 
   nightly-macosx-AVX2-SIMD256:
@@ -924,9 +865,8 @@ jobs:
     with:
       runs-on: '[ "macOS", "avx2", "build", "x86_64" ]'
       cmd: |
-        cmake --preset nightly-macosx-AVX2-SIMD256 -D EMBREE_TESTING_INTENSITY=4
-        cmake --build build --target package -j8
-        cmake --build build --target post_package
+        cmake --preset nightly-macosx-AVX2-SIMD256 -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --target build
         cmake --build build --target test_package
 
   nightly-macosx-AVX2:
@@ -935,9 +875,8 @@ jobs:
     with:
       runs-on: '[ "macOS", "avx2", "build", "x86_64" ]'
       cmd: |
-        cmake --preset nightly-macosx-AVX2 -D EMBREE_TESTING_INTENSITY=4
-        cmake --build build --target package -j8
-        cmake --build build --target post_package
+        cmake --preset nightly-macosx-AVX2 -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
+        cmake --build build --target build
         cmake --build build --target test_package
 
 

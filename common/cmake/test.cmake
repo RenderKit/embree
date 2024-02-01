@@ -296,9 +296,6 @@ if (BUILD_TESTING OR EMBREE_TESTING_INSTALL_TESTS)
     #ADD_EMBREE_TEST_ECS(verify_memcheck verify NO_REFERENCE CONDITIONS "EMBREE_TESTING_MEMCHECK == ON")       # 8) same as 7) but with extra condition
 
   FUNCTION (ADD_EMBREE_TEST_ECS testname executable)
-
-    message("ADD EMBREE TEST ECS:       \"${testname}\"")
-
     if (EMBREE_TESTING_FILTER_TESTNAMES)
       list(FIND EMBREE_TESTING_FILTER_TESTNAMES "${testname}" i)
       if (${i} EQUAL -1)

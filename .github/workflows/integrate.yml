@@ -194,9 +194,8 @@ jobs:
       artifact-path: ./build/*.tar.gz
       cmd: |
         module load cmake/3.25.3
-        cmake --preset integrate-linux-gcc
-        cmake --build build --config Release --target package -j8
-        cmake --build build --config Release --target post_package
+        cmake --preset integrate-linux-gcc -DCMAKE_BUILD_TYPE=Release
+        cmake --build build --config Release --target build
 
   integrate-linux-GCC-test-GCC:
     secrets: inherit
@@ -208,12 +207,8 @@ jobs:
       artifact-in: integrate-linux-GCC
       cmd: |
         module load cmake/3.25.3
-        cd build
-        source ../tests/integration/test_embree_release/unpack-linux.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-linux-gcc
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-linux-gcc -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-gcc
+        cmake --build build --config Release --target test_integration
 
   integrate-linux-GCC-test-CLANG:
     secrets: inherit
@@ -225,12 +220,8 @@ jobs:
       artifact-in: integrate-linux-GCC
       cmd: |
         module load cmake/3.25.3
-        cd build
-        source ../tests/integration/test_embree_release/unpack-linux.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-linux-clang
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-linux-gcc -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-clang
+        cmake --build build --config Release --target test_integration
 
   integrate-linux-GCC-test-ICX:
     secrets: inherit
@@ -243,12 +234,8 @@ jobs:
       artifact-in: integrate-linux-GCC
       cmd: |
         module load cmake/3.25.3
-        cd build
-        source ../tests/integration/test_embree_release/unpack-linux.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-linux-icx
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-linux-gcc -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
+        cmake --build build --config Release --target test_integration
         
 
 
@@ -265,9 +252,8 @@ jobs:
       artifact-path: ./build/*.tar.gz
       cmd: |
         module load cmake/3.25.3
-        cmake --preset integrate-linux-icx
-        cmake --build build --config Release --target package -j8
-        cmake --build build --config Release --target post_package
+        cmake --preset integrate-linux-icx -DCMAKE_BUILD_TYPE=Release
+        cmake --build build --config Release --target build
 
   integrate-linux-ICX-test-GCC:
     secrets: inherit
@@ -279,29 +265,22 @@ jobs:
       artifact-in: integrate-linux-ICX
       cmd: |
         module load cmake/3.25.3
-        cd build
-        source ../tests/integration/test_embree_release/unpack-linux.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-linux-gcc
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-linux-gcc -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-gcc
+        cmake --build build --config Release --target test_integration
 
   integrate-linux-ICX-test-CLANG:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     needs: [ "integrate-linux-ICX" ]
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
+      dpcpp-version: intel/2024.0
       artifact-in: integrate-linux-ICX
       cmd: |
         module load cmake/3.25.3
-        cd build
-        source ../tests/integration/test_embree_release/unpack-linux.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-linux-clang
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-linux-icx -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-clang
+        cmake --build build --config Release --target test_integration
 
   integrate-linux-ICX-test-ICX:
     secrets: inherit
@@ -314,12 +293,8 @@ jobs:
       artifact-in: integrate-linux-ICX
       cmd: |
         module load cmake/3.25.3
-        cd build
-        source ../tests/integration/test_embree_release/unpack-linux.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-linux-icx
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-linux-icx -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
+        cmake --build build --config Release --target test_integration
         
 
 
@@ -335,9 +310,8 @@ jobs:
       artifact-path: ./build/*.tar.gz
       cmd: |
         module load cmake/3.25.3
-        cmake --preset integrate-static-linux-clang
-        cmake --build build --config Release --target package -j8
-        cmake --build build --config Release --target post_package
+        cmake --preset integrate-static-linux-clang -DCMAKE_BUILD_TYPE=Release
+        cmake --build build --config Release --target build
 
   integrate-static-linux-CLANG-test-GCC:
     secrets: inherit
@@ -349,12 +323,8 @@ jobs:
       artifact-in: integrate-static-linux-CLANG
       cmd: |
         module load cmake/3.25.3
-        cd build
-        source ../tests/integration/test_embree_release/unpack-linux.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-linux-gcc
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-static-linux-clang -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-gcc
+        cmake --build build --config Release --target test_integration
 
   integrate-static-linux-CLANG-test-CLANG:
     secrets: inherit
@@ -366,12 +336,8 @@ jobs:
       artifact-in: integrate-static-linux-CLANG
       cmd: |
         module load cmake/3.25.3
-        cd build
-        source ../tests/integration/test_embree_release/unpack-linux.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-linux-clang
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-static-linux-clang -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-clang
+        cmake --build build --config Release --target test_integration
 
   integrate-static-linux-CLANG-test-ICX:
     secrets: inherit
@@ -384,12 +350,8 @@ jobs:
       artifact-in: integrate-static-linux-CLANG
       cmd: |
         module load cmake/3.25.3
-        cd build
-        source ../tests/integration/test_embree_release/unpack-linux.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-linux-icx
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-static-linux-clang -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
+        cmake --build build --config Release --target test_integration
         
 
 
@@ -408,9 +370,8 @@ jobs:
       artifact-path: ./build/*.tar.gz
       cmd: |
         module load cmake/3.25.3
-        cmake --preset integrate-static-linux-gcc
-        cmake --build build --config Release --target package -j8
-        cmake --build build --config Release --target post_package
+        cmake --preset integrate-static-linux-gcc -DCMAKE_BUILD_TYPE=Release
+        cmake --build build --config Release --target build
 
   integrate-static-linux-GCC-test-GCC:
     secrets: inherit
@@ -422,12 +383,8 @@ jobs:
       artifact-in: integrate-static-linux-GCC
       cmd: |
         module load cmake/3.25.3
-        cd build
-        source ../tests/integration/test_embree_release/unpack-linux.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-linux-gcc
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-static-linux-gcc -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-gcc
+        cmake --build build --config Release --target test_integration
 
   integrate-static-linux-GCC-test-CLANG:
     secrets: inherit
@@ -439,12 +396,8 @@ jobs:
       artifact-in: integrate-static-linux-GCC
       cmd: |
         module load cmake/3.25.3
-        cd build
-        source ../tests/integration/test_embree_release/unpack-linux.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-linux-clang
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-static-linux-gcc -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-clang
+        cmake --build build --config Release --target test_integration
 
   integrate-static-linux-GCC-test-ICX:
     secrets: inherit
@@ -457,12 +410,8 @@ jobs:
       artifact-in: integrate-static-linux-GCC
       cmd: |
         module load cmake/3.25.3
-        cd build
-        source ../tests/integration/test_embree_release/unpack-linux.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-linux-icx
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-static-linux-gcc -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
+        cmake --build build --config Release --target test_integration
 
 
 
@@ -479,43 +428,36 @@ jobs:
       artifact-path: ./build/*.tar.gz
       cmd: |
         module load cmake/3.25.3
-        cmake --preset integrate-static-linux-icx
-        cmake --build build --config Release --target package -j8
-        cmake --build build --config Release --target post_package
+        cmake --preset integrate-static-linux-icx -DCMAKE_BUILD_TYPE=Release
+        cmake --build build --config Release --target build
 
   integrate-static-linux-ICX-test-GCC:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     needs: [ "integrate-static-linux-ICX" ]
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
+      dpcpp-version: intel/2024.0
       artifact-in: integrate-static-linux-ICX
       cmd: |
         module load cmake/3.25.3
-        cd build
-        source ../tests/integration/test_embree_release/unpack-linux.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-linux-gcc
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-static-linux-icx -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-gcc
+        cmake --build build --config Release --target test_integration
 
   integrate-static-linux-ICX-test-CLANG:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     needs: [ "integrate-static-linux-ICX" ]
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
+      dpcpp-version: intel/2024.0
       artifact-in: integrate-static-linux-ICX
       cmd: |
         module load cmake/3.25.3
-        cd build
-        source ../tests/integration/test_embree_release/unpack-linux.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-linux-clang
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-static-linux-icx -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-clang
+        cmake --build build --config Release --target test_integration
 
   integrate-static-linux-ICX-test-ICX:
     secrets: inherit
@@ -528,12 +470,8 @@ jobs:
       artifact-in: integrate-static-linux-ICX
       cmd: |
         module load cmake/3.25.3
-        cd build
-        source ../tests/integration/test_embree_release/unpack-linux.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-linux-icx
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-static-linux-icx -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
+        cmake --build build --config Release --target test_integration
         
 
 
@@ -549,9 +487,8 @@ jobs:
       artifact-path: ./build/*.tar.gz
       cmd: |
         module load cmake/3.25.3
-        cmake --preset integrate-linux-clang
-        cmake --build build --config Release --target package -j8
-        cmake --build build --config Release --target post_package
+        cmake --preset integrate-linux-clang -DCMAKE_BUILD_TYPE=Release
+        cmake --build build --config Release --target build
 
   integrate-linux-CLANG-test-GCC:
     secrets: inherit
@@ -563,12 +500,8 @@ jobs:
       artifact-in: integrate-linux-CLANG
       cmd: |
         module load cmake/3.25.3
-        cd build
-        source ../tests/integration/test_embree_release/unpack-linux.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-linux-gcc
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-linux-clang -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-gcc
+        cmake --build build --config Release --target test_integration
 
   integrate-linux-CLANG-test-CLANG:
     secrets: inherit
@@ -580,12 +513,8 @@ jobs:
       artifact-in: integrate-linux-CLANG
       cmd: |
         module load cmake/3.25.3
-        cd build
-        source ../tests/integration/test_embree_release/unpack-linux.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-linux-clang
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-linux-clang -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-clang
+        cmake --build build --config Release --target test_integration
 
   integrate-linux-CLANG-test-ICX:
     secrets: inherit
@@ -598,12 +527,8 @@ jobs:
       artifact-in: integrate-linux-CLANG
       cmd: |
         module load cmake/3.25.3
-        cd build
-        source ../tests/integration/test_embree_release/unpack-linux.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-linux-icx
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-linux-clang -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
+        cmake --build build --config Release --target test_integration
 
 
 
@@ -624,9 +549,8 @@ jobs:
       artifact-path: ./build/*.tar.gz
       cmd: |
         module load cmake/3.25.3
-        cmake --preset integrate-sycl-linux-icx
-        cmake --build build --config Release --target package -j8
-        cmake --build build --config Release --target post_package
+        cmake --preset integrate-sycl-linux-icx -DCMAKE_BUILD_TYPE=Release
+        cmake --build build --config Release --target build
 
   integrate-sycl-linux-ICX-test:
     secrets: inherit
@@ -642,12 +566,8 @@ jobs:
       artifact-in: integrate-sycl-linux-ICX
       cmd: |
         module load cmake/3.25.3
-        cd build
-        source ../tests/integration/test_embree_release/unpack-linux.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-linux-icx
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-sycl-linux-icx -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
+        cmake --build build --config Release --target test_integration
         
 
 
@@ -665,9 +585,8 @@ jobs:
       artifact-path: ./build/*.tar.gz
       cmd: |
         module load cmake/3.25.3
-        cmake --preset integrate-sycl-linux-dpcpp
-        cmake --build build --config Release --target package -j8
-        cmake --build build --config Release --target post_package
+        cmake --preset integrate-sycl-linux-dpcpp -DCMAKE_BUILD_TYPE=Release
+        cmake --build build --config Release --target build
 
   istegrate-sycl-linux-DPCPP-test:
     secrets: inherit
@@ -683,12 +602,8 @@ jobs:
       artifact-in: integrate-sycl-linux-DPCPP
       cmd: |
         module load cmake/3.25.3
-        cd build
-        source ../tests/integration/test_embree_release/unpack-linux.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-linux-icx
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-sycl-linux-dpcpp -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
+        cmake --build build --config Release --target test_integration
         
 
 
@@ -705,9 +620,8 @@ jobs:
       artifact-out: integrate-macos-GCC
       artifact-path: ./build/*.zip
       cmd: |
-        cmake --preset integrate-macos-gcc
-        cmake --build build --config Release --target package -j8
-        cmake --build build --config Release --target post_package
+        cmake --preset integrate-macos-gcc -DCMAKE_BUILD_TYPE=Release
+        cmake --build build --config Release --target build
 #        cmake --build build --config Release --target post_package_notarize     TODO: reactivate this when notarization problems are solved
 
   integrate-macos-GCC-test-GCC:
@@ -718,13 +632,8 @@ jobs:
       runs-on: '[ "macOS", "build", "x86_64" ]'
       artifact-in: integrate-macos-GCC
       cmd: |
-        cd build
-        ls -l
-        source ../tests/integration/test_embree_release/unpack-macos.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-macos-gcc
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-macos-gcc -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-macos-gcc
+        cmake --build build --config Release --target test_integration
 
   integrate-macos-GCC-test-CLANG:
     secrets: inherit
@@ -734,13 +643,8 @@ jobs:
       runs-on: '[ "macOS", "build", "x86_64" ]'
       artifact-in: integrate-macos-GCC
       cmd: |
-        cd build
-        ls -l
-        source ../tests/integration/test_embree_release/unpack-macos.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-macos-clang
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-macos-gcc -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-macos-clang
+        cmake --build build --config Release --target test_integration
       
 
 
@@ -755,9 +659,8 @@ jobs:
       artifact-out: integrate-macos-CLANG
       artifact-path: ./build/*.zip
       cmd: |
-        cmake --preset integrate-macos-clang
-        cmake --build build --config Release --target package -j8
-        cmake --build build --config Release --target post_package
+        cmake --preset integrate-macos-clang -DCMAKE_BUILD_TYPE=Release
+        cmake --build build --config Release --target build
 #        cmake --build build --config Release --target post_package_notarize     TODO: reactivate this when notarization problems are solved
 
   integrate-macos-CLANG-test-GCC:
@@ -768,13 +671,8 @@ jobs:
       runs-on: '[ "macOS", "build", "x86_64" ]'
       artifact-in: integrate-macos-CLANG
       cmd: |
-        cd build
-        ls -l
-        source ../tests/integration/test_embree_release/unpack-macos.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-macos-gcc
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-macos-clang -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-macos-gcc
+        cmake --build build --config Release --target test_integration
 
   integrate-macos-CLANG-test-CLANG:
     secrets: inherit
@@ -784,9 +682,5 @@ jobs:
       runs-on: '[ "macOS", "build", "x86_64" ]'
       artifact-in: integrate-macos-CLANG
       cmd: |
-        cd build
-        source ../tests/integration/test_embree_release/unpack-macos.sh
-        cd ../tests/integration/test_embree_release
-        cmake --preset test-macos-clang
-        cmake --build build --config Release
-        ./build/test
+        cmake --preset integrate-macos-clang -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-macos-clang
+        cmake --build build --config Release --target test_integration

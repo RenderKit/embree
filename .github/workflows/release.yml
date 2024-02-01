@@ -23,11 +23,9 @@ jobs:
       dpcpp-version: intel-llvm/nightly-2023-09-22-rk
       shell: cmd
       cmd: |
-        cmake --preset release-windows
-        cmake --build build --config Release --target package
-        cmake --build build --target post_package
+        cmake --preset release-windows -DCMAKE_BUILD_TYPE=Release
+        cmake --build build --config Release --target build
         cmake --build build --target test_package
-
 
   release-macosx:
     secrets: inherit
@@ -38,9 +36,8 @@ jobs:
       artifact-path: ./build/*.zip
       cmd: |
         source scripts/cmake-presets/macos-env.sh
-        $CMAKE_EXE --preset release-macos
-        $CMAKE_EXE --build build --config Release --target package
-        $CMAKE_EXE --build build --target post_package
+        $CMAKE_EXE --preset release-macos -DCMAKE_BUILD_TYPE=Release
+        $CMAKE_EXE --build build --config Release --target build
 
   release-macosx-notarize:
     if: ${{ github.event_name == 'workflow_dispatch' }}
@@ -73,11 +70,8 @@ jobs:
         dnf -y install ninja-build
       cmd: |
         module load cmake/3.25.3
-        source scripts/cmake-presets/linux-env.sh
-        $CMAKE_EXE --preset release-linux
-        $CMAKE_EXE --build build --config Release --target package
-        $CMAKE_EXE --build build --target post_package
-        $CMAKE_EXE --build build --target test_package
+        cmake --preset release-linux -DCMAKE_BUILD_TYPE=Relesae
+        cmake --build build --config Release --target build
 
 
 #####################################################################
@@ -95,9 +89,8 @@ jobs:
       artifact-path: ./build/*.zip
       shell: cmd
       cmd: |
-        cmake --preset release-windows-sycl
-        cmake --build build --config Release --target package
-        cmake --build build --target post_package
+        cmake --preset release-windows-sycl -DCMAKE_BUILD_TYPE=Release
+        cmake --build build --config Release --target build
         cmake --build build --target test_package
 
   release-linux-sycl:
@@ -117,10 +110,9 @@ jobs:
         dnf -y update
         dnf -y install ninja-build
       cmd: |
-        source scripts/cmake-presets/linux-env.sh
-        $CMAKE_EXE --preset release-linux-sycl
-        $CMAKE_EXE --build build --config Release --target package
-        $CMAKE_EXE --build build --target post_package
+        module load cmake/3.25.3
+        cmake --preset release-linux-sycl -DCMAKE_BUILD_TYPE=Relesae
+        cmake --build build --config Release --target build
 
   release-linux-sycl-test:
     secrets: inherit
@@ -135,8 +127,8 @@ jobs:
       dpcpp-version: intel-llvm/nightly-2023-09-22-rk
       artifact-in: release-linux-sycl
       cmd: |
-        cd build
-        ../scripts/package_test_linux.sh 4
+        module load cmake/3.25.3
+        cmake --build build --target test_package
 
 #####################################################################
 # Release binaries scans

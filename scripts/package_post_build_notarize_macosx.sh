@@ -20,7 +20,7 @@ primary_bundle_id="com.intel.embree4"
 user=$MACOS_NOTARIZATION_USER
 password=$MACOS_NOTARIZATION_PASSWORD
 
-xcrun altool --notarize-app --asc-provider 'IntelCorporationApps' --primary-bundle-id "$primary_bundle_id" --username "$user" --password "$password" --file ${PACKAGE}.x86_64.macosx.zip 2>&1 | tee notarization_request.log
+xcrun altool --notarize-app --asc-provider 'IntelCorporationApps' --primary-bundle-id "$primary_bundle_id" --username "$user" --password "$password" --file ${PACKAGE}.zip 2>&1 | tee notarization_request.log
 
 # get UUID of notarization request
 uuid=`cat notarization_request.log | sed -n 's/^[ ]*RequestUUID = //p'`

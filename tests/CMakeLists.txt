@@ -72,6 +72,15 @@ IF (EMBREE_TESTING_INSTALL_TESTS)
     "message(\"EMBREE_TESTING_INSTALL_TESTS:      \\\"\${EMBREE_TESTING_INSTALL_TESTS}\"\\\")\n"
     "message(\"EMBREE_SYCL_SUPPORT:               \\\"\${EMBREE_SYCL_SUPPORT}\"\\\")\n"
     "message(\"EMBREE_TESTING_ONLY_SYCL_TESTS:    \\\"\${EMBREE_TESTING_ONLY_SYCL_TESTS}\"\\\")\n"
+
+    "message(\"EMBREE_GEOMETRY_TRIANGLE:          \\\"\${EMBREE_GEOMETRY_TRIANGLE}\"\\\")\n"
+    "message(\"EMBREE_GEOMETRY_QUAD:              \\\"\${EMBREE_GEOMETRY_QUAD}\"\\\")\n"
+    "message(\"EMBREE_GEOMETRY_GRID:              \\\"\${EMBREE_GEOMETRY_GRID}\"\\\")\n"
+    "message(\"EMBREE_GEOMETRY_CURVE:             \\\"\${EMBREE_GEOMETRY_CURVE}\"\\\")\n"
+    "message(\"EMBREE_GEOMETRY_SUBDIVISION:       \\\"\${EMBREE_GEOMETRY_SUBDIVISION}\"\\\")\n"
+    "message(\"EMBREE_GEOMETRY_USER:              \\\"\${EMBREE_GEOMETRY_USER}\"\\\")\n"
+    "message(\"EMBREE_GEOMETRY_INSTANCE:          \\\"\${EMBREE_GEOMETRY_INSTANCE}\"\\\")\n"
+    "message(\"EMBREE_GEOMETRY_INSTANCE_ARRAY:    \\\"\${EMBREE_GEOMETRY_INSTANCE_ARRAY}\"\\\")\n"
     "\n"
     "include(embree-addtests.cmake)\n"
   )
