@@ -1,9 +1,9 @@
 Downloading Embree
 ------------------
 
-For Windows we provide Embree as ZIP files linked against the Visual Studio 2015/2017 (VC14) runtime:
+For Windows we provide Embree as a ZIP file:
 
-[embree-<EMBREE_VERSION>.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x64.vc14.windows.zip)  
+[embree-<EMBREE_VERSION>.x64.windows.zip](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x64.windows.zip)
 
 For Linux we provide Embree as a `tar.gz` file:
 

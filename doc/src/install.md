@@ -5,8 +5,8 @@ Installation of Embree
 Windows Installation
 --------------------
 
-Embree linked against Visual Studio 2015 are provided as a ZIP file
-[embree-<EMBREE_VERSION>.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x64.vc14.windows.zip). After
+A pre-built version of Embree for Windows is provided as a ZIP archive
+[embree-<EMBREE_VERSION>.x64.windows.zip](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x64.windows.zip). After
 unpacking this ZIP file, you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree.
@@ -15,7 +15,7 @@ Embree.
 Linux Installation
 ------------------
 
-The Linux version of Embree is also delivered as a `tar.gz` file:
+A pre-built version of Embree for Linux is provided as a `tar.gz` archive:
 [embree-<EMBREE_VERSION>.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
