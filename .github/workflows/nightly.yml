@@ -123,7 +123,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
-      dpcpp-version: icx/compiler_ppkg-rel/20240110
+      dpcpp-version: icx/compiler_ppkg-rel/20240129
       artifact-out: nightly-windows-DG2-JIT-ICX-RC-build
       artifact-path: ./build/*.zip
       cmd: |
