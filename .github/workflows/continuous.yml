@@ -22,7 +22,7 @@ jobs:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
-      dpcpp-version: intel-llvm/nightly-2023-12-18-rk
+      dpcpp-version: intel-llvm/nightly-2023-10-26-rk
       artifact-out: linux-DG2-JIT-INTERNAL-build
       artifact-path: ./build/*.tar.gz
       cmd: |
@@ -116,7 +116,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: intel-llvm/nightly-2023-12-18-rk
+      dpcpp-version: intel-llvm/nightly-2023-10-26-rk
       artifact-out: linux-DG2-JIT-PUBLIC-sycl-nightly-RK-build
       artifact-path: ./build/*.tar.gz
       cmd: |
@@ -134,7 +134,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: intel-llvm/nightly-2023-12-18-rk
+      dpcpp-version: intel-llvm/nightly-2023-10-26-rk
       artifact-in: linux-DG2-JIT-PUBLIC-sycl-nightly-RK-build
       cmd: |
         module load cmake/3.25.3
@@ -174,9 +174,42 @@ jobs:
         cmake --preset linux-DG2-JIT-PUBLIC-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
-  ########################################
-  # Linux ATS-M
-  ########################################
+  linux-DG2-JIT-PUBLIC-ICX-RC-build:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    with:
+      image: embree/ubuntu:22.04
+      runs-on: '[ "Linux", "docker", "build" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      dpcpp-version: icx/compiler_ppkg-rel/20240129
+      artifact-out: linux-DG2-JIT-PUBLIC-ICX-RC-build
+      artifact-path: ./build/*.tar.gz
+      cmd: |
+        module load cmake/3.25.3
+        cmake --preset linux-DG2-JIT-PUBLIC-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target build
+
+  linux-DG2-JIT-PUBLIC-ICX-RC-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    needs: ["linux-DG2-JIT-PUBLIC-ICX-RC-build"]
+    with:
+      image: embree/ubuntu:22.04
+      options: --device=/dev/dri:/dev/dri
+      runs-on: '[ "Linux", "docker", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      dpcpp-version: icx/compiler_ppkg-rel/20240129
+      artifact-in: linux-DG2-JIT-PUBLIC-ICX-RC-build
+      cmd: |
+        module load cmake/3.25.3
+        cmake --preset linux-DG2-JIT-PUBLIC-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
+
+#   ########################################
+#   # Linux ATS-M
+#   ########################################
 
   linux-ATSM-JIT-PUBLIC-test:
     secrets: inherit
@@ -291,7 +324,7 @@ jobs:
       force-delete: true
       runs-on: '[ "Windows", "NAS", "build" ]'
       project: embree
-      dpcpp-version: intel-llvm/nightly-2023-12-18-rk
+      dpcpp-version: intel-llvm/nightly-2023-10-26-rk
       artifact-out: windows-DG2-JIT-build
       artifact-path: ./build/*.zip
       cmd: |
@@ -373,7 +406,7 @@ jobs:
       force-delete: true
       runs-on: '[ "Windows", "NAS", "build" ]'
       project: embree
-      dpcpp-version: intel-llvm/nightly-2023-12-18-rk
+      dpcpp-version: intel-llvm/nightly-2023-10-26-rk
       artifact-out: windows-DG2-JIT-INTERNAL-L0RTAS-build
       artifact-path: ./build/*.zip
       cmd: |
@@ -391,6 +424,34 @@ jobs:
       artifact-in: windows-DG2-JIT-INTERNAL-L0RTAS-build
       cmd: |
         cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
+
+  windows-DG2-JIT-ICX-RC-build:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
+    with:
+      runs-on: '[ "Windows", "NAS", "dg2" ]'
+      project: embree
+      dpcpp-version: icx/compiler_ppkg-rel/20240129
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
+      artifact-out: windows-DG2-JIT-ICX-RC-build
+      artifact-path: ./build/*.zip
+      cmd: |
+        cmake --preset nightly-windows-DG2-JIT-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target build
+
+  windows-DG2-JIT-ICX-RC-PUBLIC-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
+    needs: ["windows-DG2-JIT-ICX-RC-build"]
+    with:
+      runs-on: '[ "Windows", "NAS", "dg2" ]'
+      project: embree
+      dpcpp-version: icx/compiler_ppkg-rel/20240129
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
+      artifact-in: windows-DG2-JIT-ICX-RC-build
+      cmd: |
+        cmake --preset nightly-windows-DG2-JIT-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
 #   ################################################################################
@@ -568,12 +629,14 @@ jobs:
       - linux-ATSM-JIT-PUBLIC-test
       - linux-DG2-JIT-EMBARGO-test
       - linux-DG2-JIT-PUBLIC-ICX-test
+      - linux-DG2-JIT-PUBLIC-ICX-RC-test
       - linux-DG2-JIT-PUBLIC-sycl-nightly-RK-test
       - linux-PVC-JIT-INTERNAL-test-2T
       - windows-DG2-JIT-INTERNAL-test
       - windows-DG2-JIT-PUBLIC-test
       - windows-DG2-JIT-ICX-INTERNAL-test
       - windows-DG2-JIT-ICX-PUBLIC-test
+      - windows-DG2-JIT-ICX-RC-PUBLIC-test
       - windows-DG2-JIT-INTERNAL-L0RTAS-test
       - linux-fedora26-CLANG4
       - linux-fedora26-CLANG5-INT-ADDRSANITIZER
