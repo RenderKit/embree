@@ -37,6 +37,7 @@ jobs:
         source scripts/cmake-presets/macos-env.sh
         cmake --preset release-macos -DCMAKE_BUILD_TYPE=Release
         cmake --build build --config Release --target build
+        cmake --build build --target test_package
         rm build/embree-*-testing.zip
       notarize-package: build/embree-*.zip
       artifact-out: release-macosx
@@ -65,6 +66,7 @@ jobs:
         source scripts/cmake-presets/macos-env.sh
         cmake --preset release-macos-arm -DCMAKE_BUILD_TYPE=Release
         cmake --build build --config Release --target build
+        cmake --build build --target test_package
         rm build/embree-*-testing.zip
       notarize-package: build/embree-*.zip
       artifact-out: release-macosx-arm
@@ -82,7 +84,6 @@ jobs:
         mkdir package
         tar -xzvf build/embree-* -C ./package
       sign-path-verify: ./package
-
 
   release-linux:
     secrets: inherit
@@ -103,6 +104,7 @@ jobs:
         module load cmake/3.25.3
         cmake --preset release-linux -DCMAKE_BUILD_TYPE=Release
         cmake --build build --config Release --target build
+        cmake --build build --target test_package
 
 
 #####################################################################
