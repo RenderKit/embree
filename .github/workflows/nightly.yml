@@ -416,7 +416,7 @@ jobs:
       image: embree/ubuntu:20.04
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-distrotest -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
+        cmake --preset nightly-distrotest-ISPC1_14_1-TBB2021_2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
         cmake --build build --target build
         cmake --build build --target test_package
 
@@ -449,7 +449,7 @@ jobs:
       image: embree/centos:7.4
       cmd: |
         module load cmake/3.25.3
-        cmake --preset nightly-distrotest -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
+        cmake --preset nightly-distrotest-ISPC1_14_1-TBB2021_2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
         cmake --build build --target build
         cmake --build build --target test_package
 
