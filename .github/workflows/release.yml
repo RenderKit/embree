@@ -55,17 +55,15 @@ jobs:
         tar -xzvf build/embree-* -C ./package
       sign-path-verify: ./package
 
-
-
   release-macosx-arm:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
     with:
       project: embree
-      runs-on: '[ "macOS", "build", "arm" ]'
+      runs-on: '[ "macOS13", "test", "arm" ]'
       cmd: |
         source scripts/cmake-presets/macos-env.sh
-        cmake --preset release-macos -DCMAKE_BUILD_TYPE=Release
+        cmake --preset release-macos-arm -DCMAKE_BUILD_TYPE=Release
         cmake --build build --config Release --target build
         rm build/embree-*-testing.zip
       notarize-package: build/embree-*.zip
@@ -78,7 +76,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
     with:
       project: embree
-      runs-on: '[ "macOS", "build", "arm" ]'
+      runs-on: '[ "macOS13", "test", "arm" ]'
       artifact-in: release-macosx-arm
       cmd: |
         mkdir package
@@ -103,7 +101,7 @@ jobs:
         dnf -y install ninja-build
       cmd: |
         module load cmake/3.25.3
-        cmake --preset release-linux -DCMAKE_BUILD_TYPE=Relesae
+        cmake --preset release-linux -DCMAKE_BUILD_TYPE=Release
         cmake --build build --config Release --target build
 
 
@@ -144,7 +142,7 @@ jobs:
         dnf -y install ninja-build
       cmd: |
         module load cmake/3.25.3
-        cmake --preset release-linux-sycl -DCMAKE_BUILD_TYPE=Relesae
+        cmake --preset release-linux-sycl -DCMAKE_BUILD_TYPE=Release
         cmake --build build --config Release --target build
 
   release-linux-sycl-test:
@@ -161,6 +159,7 @@ jobs:
       artifact-in: release-linux-sycl
       cmd: |
         module load cmake/3.25.3
+        cmake --preset integrate-sycl-linux-dpcpp -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
         cmake --build build --target test_package
 
 #####################################################################
