@@ -76,6 +76,7 @@
         "EMBREE_ISPC_1_19_0_PATH": "$env{APPS_PATH}/ispc/1.19.0-$env{EMBREE_ISPC_VERSION_SUFFIX}/bin/ispc$env{BINARY_EXTENSION}",
         "EMBREE_ISPC_1_20_0_PATH": "$env{APPS_PATH}/ispc/1.20.0-$env{EMBREE_ISPC_VERSION_SUFFIX}/bin/ispc$env{BINARY_EXTENSION}",
         "EMBREE_ISPC_1_21_0_PATH": "$env{APPS_PATH}/ispc/1.21.0-$env{EMBREE_ISPC_VERSION_SUFFIX}/bin/ispc$env{BINARY_EXTENSION}",
+        "EMBREE_ISPC_1_22_0_PATH": "$env{APPS_PATH}/ispc/1.22.0-$env{EMBREE_ISPC_VERSION_SUFFIX}/bin/ispc$env{BINARY_EXTENSION}",
         "EMBREE_ISPC_PATH": "",
 
 
@@ -89,6 +90,7 @@
         "EMBREE_TBB_2021_7_0_DIR": "$env{APPS_PATH}/tbb/tbb-2021.7.0-$env{EMBREE_TBB_VERSION_SUFFIX}/lib/cmake/tbb",
         "EMBREE_TBB_2021_9_0_DIR": "$env{APPS_PATH}/tbb/tbb-2021.9.0-$env{EMBREE_TBB_VERSION_SUFFIX}/lib/cmake/tbb",
         "EMBREE_TBB_2021_10_0_DIR": "$env{APPS_PATH}/tbb/tbb-2021.10.0-$env{EMBREE_TBB_VERSION_SUFFIX}/lib/cmake/tbb",
+        "EMBREE_TBB_2021_11_0_DIR": "$env{APPS_PATH}/tbb/tbb-2021.11.0-$env{EMBREE_TBB_VERSION_SUFFIX}/lib/cmake/tbb",
         "EMBREE_TBB_DIR": ""
       }
     }
