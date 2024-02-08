@@ -221,6 +221,27 @@ jobs:
       path: "build/*.zip build/*.gz"
       artifact-out-name: "antivirus-scan-dpcpp"
 
+  binary-analysis-arm:
+    needs:
+      - release-macosx-arm
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/binary_analysis.yml@main
+    with:
+      project: embree
+      artifact-in-macos: release-macosx-arm
+      path: "build/*.zip build/*.gz"
+      artifact-out-name: "binary-analysis-arm"
+
+  antivirus-scan-arm:
+    needs:
+      - release-macosx-arm
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/antivirus_scan.yml@main
+    with:
+      project: embree
+      artifact-in-macos: release-macosx-arm
+      path: "build/*.zip build/*.gz"
+      artifact-out-name: "antivirus-scan-arm"
 
 #####################################################################
 # Testing package
