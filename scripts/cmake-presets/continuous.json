@@ -201,6 +201,15 @@
       }
     },
     {
+      "name": "macos-ARM-CLANG-NEON",
+      "binaryDir": "${sourceDir}/build",
+      "inherits": ["package-macos", "env", "clang", "ispc_NEWEST", "tbb_HOMEBREW"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "NEON"
+      }
+    },
+    {
       "name": "macos-x64-CLANG",
       "binaryDir": "${sourceDir}/build",
       "inherits": ["package-macos", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],

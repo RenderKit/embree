@@ -32,6 +32,16 @@
       }
     },
     {
+      "name": "release-macos-arm",
+      "inherits": ["package-macos", "env", "clang", "ispc1_21_0", "tbb2021_10_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "NEON2X",
+        "CPACK_PRE_BUILD_SCRIPTS": "$env{CPACK_PRE_BUILD_SIGNING_SCRIPT}"
+      }
+    },
+    {
       "name": "release-linux",
       "inherits": ["package-linux", "env", "dpcpp", "ispc1_21_0", "tbb2021_10_0"],
       "binaryDir": "${sourceDir}/build",
