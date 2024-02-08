@@ -75,8 +75,15 @@
       }
     },
     {
+      "name": "tbb2021_11_0",
+      "inherits": "tbb_SYSTEM",
+      "cacheVariables": {
+        "TBB_DIR": "$env{EMBREE_TBB_2021_11_0_DIR}"
+      }
+    },
+    {
       "name": "tbb_NEWEST",
-      "inherits": "tbb2021_10_0"
+      "inherits": "tbb2021_11_0"
     }
   ]
 }
