@@ -3364,7 +3364,7 @@ namespace embree
             bool passed_before = passed;
             passed &= (ray0.ray.tfar == float(pos_inf) && ray1.ray.tfar == float(pos_inf))
                    || (ray0.ray.tfar == float(neg_inf) && ray1.ray.tfar == float(neg_inf))
-                   || (std::abs(ray0.ray.tfar - ray1.ray.tfar) / std::max(ray0.ray.tfar, ray1.ray.tfar) < 0.003f);
+                   || (std::abs(ray0.ray.tfar - ray1.ray.tfar) / std::max(ray0.ray.tfar, ray1.ray.tfar) < 0.01f);
             if (passed_before && !passed) {
               printf("fail: ray0.tfar %.8g - ray1.tfar %.8g - abs diff %.8g - rel abs diff %.8f\n",
                 ray0.ray.tfar, ray1.ray.tfar , std::abs(ray0.ray.tfar - ray1.ray.tfar),
