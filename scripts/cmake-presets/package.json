@@ -20,6 +20,7 @@
         "EMBREE_ZIP_MODE": "ON",
         "EMBREE_INSTALL_DEPENDENCIES": "ON",
         "EMBREE_BUILD_GLFW_FROM_SOURCE": "ON",
+        "EMBREE_PATCH_GLFW_SOURCE": "ON",
         "CMAKE_INSTALL_INCLUDEDIR": "include",
         "CMAKE_INSTALL_LIBDIR": "lib",
         "CMAKE_INSTALL_DOCDIR": "doc",
