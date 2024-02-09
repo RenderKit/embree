@@ -206,17 +206,6 @@ your Intel Xe HPG/HPC GPUs from here
 the driver installation instructions for your graphics card and
 operating system.
 
-We tested Embree with the latest GPGPU driver Devel Release from
-20220809. The Intel(R) Graphics Compute Runtime for oneAPI Level Zero
-and OpenCL(TM) Driver from that release is too old for Embree to work
-properly. Thus if no newer version of the GPGPU driver is available,
-you need to additionally install the latest compute runtime from here
-[23.09.25812.14](https://github.com/intel/compute-runtime/releases/tag/23.09.25812.14).
-
-Unfortunately, these compute runtime packages are only available for
-Ubuntu 22.04. You can also install a newer version of the compute
-runtime if available.
-
 
 Windows
 -------

@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 4.3.0
+% Embree: High Performance Ray Tracing Kernels 4.3.1
 % Intel Corporation
 
 Intel® Embree Overview
@@ -99,8 +99,8 @@ Installation of Embree
 Windows Installation
 --------------------
 
-Embree linked against Visual Studio 2015 are provided as a ZIP file
-[embree-4.3.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v4.3.0/embree-4.3.0.x64.vc14.windows.zip). After
+A pre-built version of Embree for Windows is provided as a ZIP archive
+[embree-4.3.1.x64.windows.zip](https://github.com/embree/embree/releases/download/v4.3.1/embree-4.3.1.x64.windows.zip). After
 unpacking this ZIP file, you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree.
@@ -109,14 +109,14 @@ Embree.
 Linux Installation
 ------------------
 
-The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-4.3.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v4.3.0/embree-4.3.0.x86_64.linux.tar.gz). Unpack
+A pre-built version of Embree for Linux is provided as a `tar.gz` archive:
+[embree-4.3.1.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v4.3.1/embree-4.3.1.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    tar xzf embree-4.3.0.x86_64.linux.tar.gz
-    source embree-4.3.0.x86_64.linux/embree-vars.sh
+    tar xzf embree-4.3.1.x86_64.linux.tar.gz
+    source embree-4.3.1.x86_64.linux/embree-vars.sh
 
 We recommend adding a relative `RPATH` to your application that points
 to the location where Embree (and TBB) can be found, e.g. `$ORIGIN/../lib`.
@@ -126,12 +126,12 @@ macOS Installation
 ------------------
 
 The macOS version of Embree is also delivered as a ZIP file:
-[embree-4.3.0.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v4.3.0/embree-4.3.0.x86_64.macosx.zip). Unpack
+[embree-4.3.1.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v4.3.1/embree-4.3.1.x86_64.macosx.zip). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    unzip embree-4.3.0.x64.macosx.zip    source embree-4.3.0.x64.macosx/embree-vars.sh
+    unzip embree-4.3.1.x64.macosx.zip    source embree-4.3.1.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided ZIP file. The library name of that Embree
@@ -156,7 +156,7 @@ set the `TBB_DIR` variable to the path containing `TBB-config.cmake` of a local
 TBB install, in case you do not have TBB installed globally on your system,
 e.g:
 
-    cmake -D embree_DIR=path_to_embree_package/lib/cmake/embree-4.3.0/ \
+    cmake -D embree_DIR=path_to_embree_package/lib/cmake/embree-4.3.1/ \
           -D TBB_DIR=path_to_tbb_package/lib/cmake/tbb/ \
           ..
 
@@ -257,7 +257,7 @@ Embree is released with a bundle of tests in an optional testing package.
 To run these tests extract the testing package in the same folder as your embree installation.
 e.g.:
     
-    tar -xzf embree-4.3.0-testing.zip -C /path/to/installed/embree
+    tar -xzf embree-4.3.1-testing.zip -C /path/to/installed/embree
 
 The tests are extracted into a new folder inside you embree installation and can be run with:
 
@@ -285,8 +285,8 @@ C++11. Embree is tested with the following compilers:
 
 Linux
 
-  - Intel® oneAPI DPC++/C++ Compiler 2023.1.0
-  - oneAPI DPC++/C++ Compiler 2023-09-22
+  - Intel® oneAPI DPC++/C++ Compiler 2024.0.2
+  - oneAPI DPC++/C++ Compiler 2023-10-26
   - Clang 5.0.0
   - Clang 4.0.0
   - GCC 10.0.1 (Fedora 32) AVX512 support
@@ -294,21 +294,15 @@ Linux
   - GCC  7.3.1 (Fedora 27) AVX2 support
   - GCC  7.3.1 (Fedora 26) AVX2 support
   - GCC  6.4.1 (Fedora 25) AVX2 support
-  - Intel® Implicit SPMD Program Compiler 1.21.0
+  - Intel® Implicit SPMD Program Compiler 1.22.0
 
-macOS x86
+macOS x86_64
 
-  - Intel® C++ Classic Compiler 2023.1.0
-  - Apple Clang 12.0.5 (macOS 11.7.1)
+  - Apple Clang 15
 
-macOS M1
+macOS Arm64
 
-  - Apple Clang 12.0.5 (macOS 11.7.1)
-
-IMPORTANT: Unfortunatlly, latest version of the Intel® oneAPI DPC++/C++
-Compiler (2023.2.1), has a bug that doesn't allow Embree to run correctly with
-ISAs >= AVX2. Please wait for 2024.0.0, which will be released soon after
-Embree 4.3.0.
+  - Apple Clang 14
 
 Embree supports using the Intel® Threading Building Blocks (TBB) as the
 tasking system. For performance and flexibility reasons we recommend
@@ -408,7 +402,7 @@ The "oneAPI DPC++ Compiler" is more up-to-date than the "Intel(R) oneAPI
 DPC++/C++ Compiler" but less stable. The current tested version of the "oneAPI
 DPC++ compiler is
 
-  - [oneAPI DPC++ Compiler 2023-09-25](https://github.com/intel/llvm/releases/tag/nightly-2023-09-22)
+  - [oneAPI DPC++ Compiler 2023-10-26](https://github.com/intel/llvm/releases/tag/nightly-2023-10-26)
   
 The compiler can be downloaded and simply extracted. The oneAPI DPC++ compiler
 can be set up executing the following commands in a Linux (bash) shell:
@@ -443,15 +437,10 @@ Alternatively, you can download and run the installer of the
 
  - [Intel(R) oneAPI DPC++/C++ Compiler](https://www.intel.com/content/www/us/en/developer/articles/tool/oneapi-standalone-components.html#dpcpp-cpp).
 
-IMPORTANT: Currently only the latest version of this compiler can be found
-(2023.2.1), which unfornunatelly has a bug that doesn't allow Embree to run
-correctly with ISAs >= AVX2. Please wait for 2024.0.0, which will be released
-soon after Embree 4.3.0.
-
 After installation, you can set up the compiler by sourcing the
 `vars.sh` script in the `env` directory of the compiler install directory, for example,
 
-    source /opt/intel/oneAPI/compiler/2023.0.0/env/vars.sh
+    source /opt/intel/oneAPI/compiler/latest/env/vars.sh
 
 This script will put the `icpx` and `icx` compiler executables from the
 Intel(R) oneAPI DPC++/C++ Compiler in your path.
@@ -485,34 +474,18 @@ your Intel Xe HPG/HPC GPUs from here
 the driver installation instructions for your graphics card and
 operating system.
 
-We tested Embree with the latest GPGPU driver Devel Release from
-20220809. The Intel(R) Graphics Compute Runtime for oneAPI Level Zero
-and OpenCL(TM) Driver from that release is too old for Embree to work
-properly. Thus if no newer version of the GPGPU driver is available,
-you need to additionally install the latest compute runtime from here
-[23.09.25812.14](https://github.com/intel/compute-runtime/releases/tag/23.09.25812.14).
-
-Unfortunately, these compute runtime packages are only available for
-Ubuntu 22.04. You can also install a newer version of the compute
-runtime if available.
-
 
 Windows
 -------
-        
+
 Embree is tested using the following compilers under Windows:
 
-  - Intel® oneAPI DPC++/C++ Compiler 2023.1.0
-  - oneAPI DPC++/C++ Compiler 2023-09-22
+  - Intel® oneAPI DPC++/C++ Compiler 2024.0.2
+  - oneAPI DPC++/C++ Compiler 2023-10-26
   - Visual Studio 2022
   - Visual Studio 2019
   - Visual Studio 2017
-  - Intel® Implicit SPMD Program Compiler 1.21.0
-
-IMPORTANT: Unfortunatlly, latest version of the Intel® oneAPI DPC++/C++
-Compiler (2023.2.1), has a bug that doesn't allow Embree to run correctly with
-ISAs >= AVX2. Please wait for 2024.0.0, which will be released soon after
-Embree 4.3.0.
+  - Intel® Implicit SPMD Program Compiler 1.22.0
 
 To compile Embree for AVX-512 you have to use the Intel® Compiler.
 
@@ -629,7 +602,7 @@ The "oneAPI DPC++ Compiler" is more up-to-date than the "Intel(R) oneAPI
 DPC++/C++ Compiler" but less stable. The current tested version of the oneAPI
 DPC++ compiler is
 
-  - [oneAPI DPC++ Compiler 2023-09-22](https://github.com/intel/llvm/releases/tag/nightly-2023-09-22)
+  - [oneAPI DPC++ Compiler 2023-10-26](https://github.com/intel/llvm/releases/tag/nightly-2023-10-26)
 
 Download and unpack the archive and open the "x64 Native Tools Command Prompt"
 of Visual Studio and execute the following lines to properly configure the
@@ -670,16 +643,11 @@ Alternatively, you can download and run the installer of the
 
  - [Intel(R) oneAPI DPC++/C++ Compiler](https://www.intel.com/content/www/us/en/developer/articles/tool/oneapi-standalone-components.html#dpcpp-cpp).
 
-IMPORTANT: Currently only the latest version of this compiler can be found
-(2023.2.1), which unfornunatelly has a bug that doesn't allow Embree to run
-correctly with ISAs >= AVX2. Please wait for 2024.0.0, which will be released
-soon after Embree 4.3.0.
-
 After installation, you can either open a regular `Command Prompt` and execute
 the `vars.bat` script in the `env` directory of the compiler install directory,
 for example
 
-    C:\Program Files (x86)\Intel\oneAPI\compiler\2023.0.0\env\vars.bat
+    C:\Program Files (x86)\Intel\oneAPI\compiler\latest\env\vars.bat
 
 or simply open the installed "Intel oneAPI command prompt for Intel 64 for Visual Studio".
 
