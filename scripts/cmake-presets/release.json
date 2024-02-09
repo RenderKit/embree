@@ -33,7 +33,7 @@
     },
     {
       "name": "release-macos-arm",
-      "inherits": ["package-macos", "env", "clang", "ispc1_22_0", "tbb2021_11_0_arm"],
+      "inherits": ["package-macos", "env", "clang", "ispc1_22_0", "tbb2021_11_0"],
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
