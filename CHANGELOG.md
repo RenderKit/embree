@@ -1,6 +1,15 @@
 Version History
 ---------------
 
+### Embree 4.3.1
+-   Add missing EMBREE_GEOMETRY types to embree-config.cmake
+-   User defined thread count now takes precedence for internal task scheduler
+-   Fixed static linking issue with ze_wrapper library
+-   Better error reporting for SYCL platform and driver problems in embree_info and tutorial apps.
+-   Patch to glfw source is not applied by default anymore.
+-   Known issue: Running Embree on Intel® Data Center GPU Max Series with 2 tiles (e.g. Intel® Data Center GPU Max 1550) requires setting the environment variable ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE.
+-   Known issue: Embree build using Apple Clang 15 and ARM support (via the SEE2NEON library) may cause "EXEC_BAD_INSTRUCTION" runtime exceptions. Please use Apple Clang <= 14 on macOS.
+
 ### Embree 4.3.0
 -   Added instance array primitive for reducing memony requirements in scenes
     with large amounts of similar instances.
