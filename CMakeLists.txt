@@ -95,7 +95,8 @@ IF (BUILD_DOC)
   ADD_SUBDIRECTORY(doc)
 ENDIF()
 
-OPTION(EMBREE_TUTORIALS    "Enable to build Embree tutorials" ON)
+OPTION(EMBREE_TUTORIALS "Enable to build Embree tutorials" ON)
+OPTION(EMBREE_TUTORIALS_INSTALL "Enable to include the built tutorials in the Embree package" ON)
 
 ##############################################################
 # Embree configuration
