@@ -229,7 +229,7 @@ jobs:
     with:
       project: embree
       artifact-in-macos: release-macosx-arm
-      path: "build/*.zip build/*.gz"
+      path: "build/*.zip"
       artifact-out-name: "binary-analysis-arm"
 
   antivirus-scan-arm:
@@ -240,7 +240,7 @@ jobs:
     with:
       project: embree
       artifact-in-macos: release-macosx-arm
-      path: "build/*.zip build/*.gz"
+      path: "build/*.zip"
       artifact-out-name: "antivirus-scan-arm"
 
 #####################################################################
