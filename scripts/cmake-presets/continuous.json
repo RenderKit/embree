@@ -215,7 +215,7 @@
       "inherits": ["package-macos", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "EMBREE_MAX_ISA": "SSE2"
+        "EMBREE_MAX_ISA": "AVX512"
       }
     }
     ]
