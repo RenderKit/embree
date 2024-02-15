@@ -1,8 +1,6 @@
 ## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
-IF (NOT EMBREE_ARM)
-
 PROJECT(embree_info)
 CMAKE_MINIMUM_REQUIRED(VERSION 3.2.0)
 
@@ -33,6 +31,4 @@ ENDIF()
 
 IF (COMMAND SIGN_TARGET)
   SIGN_TARGET(embree_info)
-ENDIF()
-
 ENDIF()
