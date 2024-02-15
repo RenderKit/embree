@@ -354,7 +354,6 @@ namespace embree
         // on macOS AVX512 will be enabled automatically by the kernel when the first AVX512 instruction is called
         // see https://github.com/apple/darwin-xnu/blob/0a798f6738bc1db01281fc08ae024145e84df927/osfmk/i386/fpu.c#L176
         // therefore we ignore the state of XCR0
-        printf("force enable zmm\n");
         cpu_features |= CPU_FEATURE_ZMM_ENABLED;
       }
 #endif
