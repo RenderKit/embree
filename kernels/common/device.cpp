@@ -229,6 +229,7 @@ namespace embree
 #endif
     std::cout << std::endl;
 
+#if defined(__X86_64__)
     /* check of FTZ and DAZ flags are set in CSR */
     if (!hasFTZ || !hasDAZ) 
     {
@@ -252,6 +253,7 @@ namespace embree
         std::cout << std::endl;
       }
     }
+#endif
     std::cout << std::endl;
   }
 
