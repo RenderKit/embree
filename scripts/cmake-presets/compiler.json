@@ -223,9 +223,17 @@
       }
     },
     {
+      "name": "ispc1_23_0",
+      "hidden": true,
+      "cacheVariables": {
+        "EMBREE_ISPC_SUPPORT": "ON",
+        "EMBREE_ISPC_EXECUTABLE": "$env{EMBREE_ISPC_1_23_0_PATH}"
+      }
+    },
+    {
       "name": "ispc_NEWEST",
       "hidden": true,
-      "inherits": "ispc1_22_0"
+      "inherits": "ispc1_23_0"
     }
   ]
 }
