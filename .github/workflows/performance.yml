@@ -9,12 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
-
-  ########################################
-  # Linux build
-  ########################################
-
-  linux-build-SYCL-DPCPP:
+  perf-linux-SYCL-DPCPP-build:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
     with:
@@ -24,132 +19,131 @@ jobs:
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
       dpcpp-version: intel/2023.0
-      artifact-out: linux-SYCL-DPCPP
+      artifact-out: perf-linux-SYCL-DPCPP
       artifact-path: ./build/*.tar.gz
       cmd: |
-        source scripts/cmake-presets/linux-env.sh
-        $CMAKE_EXE --preset package-linux-icx-sycl-ispc1_19_0-tbb2021_9_0-perf
-        $CMAKE_EXE --build build --config Release --target package
-        $CMAKE_EXE --build build --target post_package
+        module load cmake/3.25.3
+        cmake --preset perf-linux-icx-sycl -DCMAKE_BUILD_TYPE=Release
+        cmake --build build --config Release --target build
 
-  linux-build-x86-ICX-ISPC:
+  perf-linux-DG2-A770-test:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    with:
-      image: embree/rockylinux:8.7
-      runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.0
-      artifact-out: linux-build-x86-ICX-ISPC
-      artifact-path: ./build/*.tar.gz
-      cmd: |
-        source scripts/cmake-presets/linux-env.sh
-        $CMAKE_EXE --preset package-linux-icx-ispc1_19_0-tbb2021_9_0-perf
-        $CMAKE_EXE --build build --config Release --target package
-        $CMAKE_EXE --build build --target post_package
-
-  linux-test-DG2-A770-perf:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    needs: ["linux-build-SYCL-DPCPP"]
+    needs: ["perf-linux-SYCL-DPCPP-build"]
     with:
       image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2", "perf", "A770" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      artifact-in: linux-SYCL-DPCPP
+      artifact-in: perf-linux-SYCL-DPCPP
       setup-benny: true
       cmd: |
-        source <(scripts/test.py env --debug)
         cd build
-        tar -xf embree-?.?.?.sycl.x86_64.linux.tar.gz
+        ls *.tar.gz
+        tar -xzf embree-?.?.?.sycl.x86_64.linux.tar.gz
         cd bin
-        chmod +x ../embree-vars.sh
-        ../embree-vars.sh
+        source ../embree-vars.sh
         $GITHUB_WORKSPACE/scripts/run-perf.sh gpu
 
-
-  linux-test-PVC-perf:
+  perf-linux-PVC-test:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    needs: ["linux-build-SYCL-DPCPP"]
+    needs: ["perf-linux-SYCL-DPCPP-build"]
     with:
       image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "pvc", "perf" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      artifact-in: linux-SYCL-DPCPP
+      artifact-in: perf-linux-SYCL-DPCPP
       setup-benny: true
       cmd: |
-        export NEOReadDebugKeys=1
         # Run it on single tile (disable implicit scaling)
         export EnableImplicitScaling=0
-        source <(scripts/test.py env --debug)
+        export NEOReadDebugKeys=1
+        export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
         cd build
-        tar -xf embree-?.?.?.sycl.x86_64.linux.tar.gz
+        ls *.tar.gz
+        tar -xzf embree-?.?.?.sycl.x86_64.linux.tar.gz
         cd bin
-        chmod +x ../embree-vars.sh
-        ../embree-vars.sh
+        source ../embree-vars.sh
         $GITHUB_WORKSPACE/scripts/run-perf.sh gpu
 
 
-  linux-test-i9-12900k:
+
+
+
+
+  perf-linux-x86-ICX-ISPC-build:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    with:
+      image: embree/rockylinux:8.7
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      dpcpp-version: intel/2024.0
+      artifact-out: perf-linux-x86-ICX-ISPC-build
+      artifact-path: ./build/*.tar.gz
+      cmd: |
+        module load cmake/3.25.3
+        cmake --preset perf-linux-icx -DCMAKE_BUILD_TYPE=Release
+        cmake --build build --config Release --target build
+
+  perf-linux-i9-12900k-test:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/perf.yml@main
-    needs: ["linux-build-x86-ICX-ISPC"]
+    needs: ["perf-linux-x86-ICX-ISPC-build"]
     with:
       runs-on: '[ "Linux", "perf", "vis-perf-i9-12900k-1" ]'
-      artifact-in: linux-build-x86-ICX-ISPC
+      artifact-in: perf-linux-x86-ICX-ISPC-build
       setup-benny: true
       cmd: |
         cd build
-        tar -xf embree-?.?.?.x86_64.linux.tar.gz
+        tar -xzf embree-?.?.?.x86_64.linux.tar.gz
         cd bin
         $GITHUB_WORKSPACE/scripts/run-perf.sh cpu
 
 
-  linux-test-x8380-1:
+  perf-linux-x8380-1-test:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/perf.yml@main
-    needs: ["linux-build-x86-ICX-ISPC"]
+    needs: ["perf-linux-x86-ICX-ISPC-build"]
     with:
       runs-on: '[ "Linux", "perf", "vis-perf-x8380-1" ]'
-      artifact-in: linux-build-x86-ICX-ISPC
+      artifact-in: perf-linux-x86-ICX-ISPC-build
       setup-benny: true
       cmd: |
         cd build
-        tar -xf embree-?.?.?.x86_64.linux.tar.gz
+        tar -xzf embree-?.?.?.x86_64.linux.tar.gz
         cd bin
         $GITHUB_WORKSPACE/scripts/run-perf.sh cpu
 
 
-  linux-test-x8280-1:
+  perf-linux-x8280-1-test:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/perf.yml@main
-    needs: ["linux-build-x86-ICX-ISPC"]
+    needs: ["perf-linux-x86-ICX-ISPC-build"]
     with:
       runs-on: '[ "Linux", "perf", "vis-perf-x8280-1" ]'
-      artifact-in: linux-build-x86-ICX-ISPC
+      artifact-in: perf-linux-x86-ICX-ISPC-build
       setup-benny: true
       cmd: |
         cd build
-        tar -xf embree-?.?.?.x86_64.linux.tar.gz
+        tar -xzf embree-?.?.?.x86_64.linux.tar.gz
         cd bin
         $GITHUB_WORKSPACE/scripts/run-perf.sh cpu
 
 
-  linux-test-a3970x-1:
+  perf-linux-a3970x-1-test:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/perf.yml@main
-    needs: ["linux-build-x86-ICX-ISPC"]
+    needs: ["perf-linux-x86-ICX-ISPC-build"]
     with:
       runs-on: '[ "Linux", "perf", "vis-perf-a3970x-1" ]'
-      artifact-in: linux-build-x86-ICX-ISPC
+      artifact-in: perf-linux-x86-ICX-ISPC-build
       setup-benny: true
       cmd: |
         cd build
-        tar -xf embree-?.?.?.x86_64.linux.tar.gz
+        tar -xzf embree-?.?.?.x86_64.linux.tar.gz
         cd bin
         $GITHUB_WORKSPACE/scripts/run-perf.sh cpu
-

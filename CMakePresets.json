@@ -13,7 +13,8 @@
     "scripts/cmake-presets/continuous.json",
     "scripts/cmake-presets/nightly.json",
     "scripts/cmake-presets/release.json",
-    "scripts/cmake-presets/integrate.json"
+    "scripts/cmake-presets/integrate.json",
+    "scripts/cmake-presets/performance.json"
   ],
   "configurePresets": [
 

@@ -1,0 +1,39 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 11,
+    "patch": 0
+  },
+  "include": [
+    "os.json", 
+    "package.json",
+    "compiler.json",
+    "tbb.json"
+  ],
+  "configurePresets": [
+    {
+      "name": "perf-linux-icx",
+      "inherits": ["package-linux", "env", "icx", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX512",
+        "EMBREE_USE_GOOGLE_BENCHMARK": "ON",
+        "EMBREE_BUILD_GOOGLE_BENCHMARK_FROM_SOURCE": "ON"
+      }
+    },
+    {
+      "name": "perf-linux-icx-sycl",
+      "inherits": ["perf-linux-icx"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
+        "EMBREE_SYCL_AOT_DEVICES": "none"
+      }
+    }
+    ]
+}
+
+
