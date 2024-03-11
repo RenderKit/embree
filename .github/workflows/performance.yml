@@ -147,3 +147,31 @@ jobs:
         tar -xzf embree-?.?.?.x86_64.linux.tar.gz
         cd bin
         $GITHUB_WORKSPACE/scripts/run-perf.sh cpu
+
+  linux-DG2-A770-buildbench:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    needs: ["perf-linux-SYCL-DPCPP-build"]
+    with:
+      image: embree/ubuntu:22.04
+      options: --device=/dev/dri:/dev/dri
+      runs-on: '[ "Linux", "docker", "dg2", "perf", "A770" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      artifact-in: perf-linux-SYCL-DPCPP
+      setup-benny: true
+      cmd: |
+        cd build
+        ls *.tar.gz
+        tar -xzf embree-?.?.?.sycl.x86_64.linux.tar.gz
+        git clone https://github.com/intel-innersource/libraries.graphics.renderkit.embree.models.git embree-models
+        ls -al
+        source embree-vars.sh
+        echo "bin/embree_buildbench --legacy"
+        bin/embree_buildbench --legacy
+        echo "bin/embree_buildbench_sycl --legacy"
+        bin/embree_buildbench_sycl --legacy
+        echo "bin/embree_buildbench --legacy -c embree-models/crown/crown.ecs"
+        bin/embree_buildbench --legacy -c embree-models/crown/crown.ecs
+        echo "bin/embree_buildbench_sycl --legacy -c embree-models/crown/crown.ecs"
+        bin/embree_buildbench_sycl --legacy -c embree-models/crown/crown.ecs
