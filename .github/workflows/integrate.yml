@@ -3,6 +3,8 @@
 
 name: integrate
 
+permissions: read-all
+
 # same as nightly...
 on:
   schedule:

@@ -3,6 +3,8 @@
 
 name: performance
 
+permissions: read-all
+
 on: 
   schedule:
     - cron:  '00 01 * * *'

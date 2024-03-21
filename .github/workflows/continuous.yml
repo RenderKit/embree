@@ -3,6 +3,8 @@
 
 name: continuous
 
+permissions: read-all
+
 on: [push, workflow_dispatch]
 
 jobs:
