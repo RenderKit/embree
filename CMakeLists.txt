@@ -75,6 +75,9 @@ IF(COMMAND cmake_policy)
   if(POLICY CMP0135)
     cmake_policy(SET CMP0135 NEW)
   endif()
+  if(POLICY CMP0057)
+    cmake_policy(SET CMP0057 NEW)
+  endif()
 ENDIF()
 
 MARK_AS_ADVANCED(CMAKE_BACKWARDS_COMPATIBILITY)
@@ -232,7 +235,7 @@ OPTION(EMBREE_MIN_WIDTH "Enables min-width feature to enlarge curve and point th
 ##############################################################
 
 # detect ARM compilation
-IF (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "Darwin" AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR CMAKE_OSX_ARCHITECTURES MATCHES "arm64"))
+IF (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "Darwin" AND "arm64" IN_LIST CMAKE_OSX_ARCHITECTURES)
   MESSAGE(STATUS "Building for Apple silicon")
   SET(EMBREE_ARM ON)
 ELSEIF(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "ARM64")
