@@ -90,7 +90,7 @@
       }
     },
     {
-      "name": "linux-fedora26-CLANG4",
+      "name": "linux-fedora29-CLANG4",
       "inherits": ["package-linux", "env", "clang4", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
@@ -100,7 +100,7 @@
       }
     },
     {
-      "name": "linux-fedora26-CLANG5-INT-ADDRSANITIZER",
+      "name": "linux-fedora29-CLANG5-INT-ADDRSANITIZER",
       "inherits": ["package-linux", "env", "clang5", "ispc_NEWEST", "tasking_internal"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",

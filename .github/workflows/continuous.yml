@@ -466,27 +466,27 @@ jobs:
 #   # Linux
 #   ########################################
 
-  linux-fedora26-CLANG4:
+  linux-fedora29-CLANG4:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:26
+      image: embree/fedora:29
       runs-on: '[ "Linux", "docker", "avx512" ]'
       cmd: |
         module load cmake/3.25.3
-        cmake --preset linux-fedora26-CLANG4 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
+        cmake --preset linux-fedora29-CLANG4 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
         cmake --build build --config RelWithDebInfo --target build
         cmake --build build --config RelWithDebInfo --target test_package
 
-  linux-fedora26-CLANG5-INT-ADDRSANITIZER:
+  linux-fedora29-CLANG5-INT-ADDRSANITIZER:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:26
+      image: embree/fedora:29
       runs-on: '[ "Linux", "docker", "build" ]'
       cmd: |
         module load cmake/3.25.3
-        cmake --preset linux-fedora26-CLANG5-INT-ADDRSANITIZER -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --preset linux-fedora29-CLANG5-INT-ADDRSANITIZER -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --config RelWithDebInfo --target build
         cmake --build build --config RelWithDebInfo --target test_package
 
@@ -538,18 +538,6 @@ jobs:
       cmd: |
         module load cmake/3.25.3
         cmake --preset linux-ubuntu20_04-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
-        cmake --build build --config RelWithDebInfo --target build
-        cmake --build build --config RelWithDebInfo --target test_package
-
-  linux-centos7_4-GCC:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    with:
-      image: embree/centos:7.4
-      runs-on: '[ "Linux", "docker", "build" ]'
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset linux-centos7_4-GCC -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --config RelWithDebInfo --target build
         cmake --build build --config RelWithDebInfo --target test_package
 
@@ -649,13 +637,12 @@ jobs:
       - windows-DG2-JIT-ICX-PUBLIC-test
       - windows-DG2-JIT-ICX-RC-PUBLIC-test
       - windows-DG2-JIT-INTERNAL-L0RTAS-test
-      - linux-fedora26-CLANG4
-      - linux-fedora26-CLANG5-INT-ADDRSANITIZER
+      - linux-fedora29-CLANG4
+      - linux-fedora29-CLANG5-INT-ADDRSANITIZER
       - linux-fedora29-ICX
       - linux-fedora32-ICX
       - linux-ubuntu20_04-GCC-NAMESPACE
       - linux-ubuntu20_04-ICX
-      - linux-centos7_4-GCC
       - windows-V142
       - windows-ICX
       - macosx-ARM-CLANG-NEON-AVX2
