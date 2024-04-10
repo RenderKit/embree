@@ -58,7 +58,7 @@
 #endif
 
 /* detect 64 bit platform */
-#if defined(__X86_64__) || defined(__aarch64__)
+#if UINTPTR_MAX == UINT64_MAX
 #define __64BIT__
 #endif
 
