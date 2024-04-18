@@ -74,7 +74,7 @@ __forceinline Vec3f intel_get_hit_triangle_normal(intel_ray_query_t& query, inte
   return cross(v1-v0, v2-v0);
 }
 
-__forceinline bool intersect_user_geometry(intel_ray_query_t& query, RayHit& ray, UserGeometry* geom, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID)
+__forceinline bool intersect_user_geometry(intel_ray_query_t& query, RayHit& ray, UserGeometry* geom, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID)
 {
   /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
@@ -87,7 +87,11 @@ __forceinline bool intersect_user_geometry(intel_ray_query_t& query, RayHit& ray
   if (!forward_scene) return ishit;
 
   /* forward ray to instanced scene */
-  unsigned int bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit ) + 1;
+#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
+  unsigned int bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit );
+#else
+  constexpr unsigned int bvh_level = 0;
+#endif
   Scene* scene = (Scene*) forward_scene;
   scenes[bvh_level] = scene;
   
@@ -115,7 +119,7 @@ __forceinline bool intersect_user_geometry(intel_ray_query_t& query, RayHit& ray
   return false;
 }
 
-__forceinline bool intersect_user_geometry(intel_ray_query_t& query, Ray& ray, UserGeometry* geom, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID)
+__forceinline bool intersect_user_geometry(intel_ray_query_t& query, Ray& ray, UserGeometry* geom, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID)
 {
   /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
@@ -128,7 +132,11 @@ __forceinline bool intersect_user_geometry(intel_ray_query_t& query, Ray& ray, U
   if (!forward_scene) return ishit;
 
   /* forward ray to instanced scene */
-  unsigned int bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit ) + 1;
+#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
+  unsigned int bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit );
+#else
+  constexpr unsigned int bvh_level = 0;
+#endif
   Scene* scene = (Scene*) forward_scene;
   scenes[bvh_level] = scene;
   
@@ -157,10 +165,10 @@ __forceinline bool intersect_user_geometry(intel_ray_query_t& query, Ray& ray, U
 }
 
 template<typename Ray>
-__forceinline bool intersect_instance(intel_ray_query_t& query, Ray& ray, Instance* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID);
+__forceinline bool intersect_instance(intel_ray_query_t& query, Ray& ray, Instance* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID);
 
 template<>
-__forceinline bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Instance* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID)
+__forceinline bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Instance* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID)
 {
   /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
@@ -171,7 +179,11 @@ __forceinline bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Ins
   if (!instance_id_stack::push(context->user, geomID, 0))
     return false;
 
-  unsigned int bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit ) + 1;
+#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
+  unsigned int bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit );
+#else
+  constexpr unsigned int bvh_level = 0;
+#endif
 
   Scene* object = (Scene*) instance->object;
   const AffineSpace3fa world2local = instance->getWorld2Local(ray.time());
@@ -211,7 +223,7 @@ __forceinline bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Ins
 }
 
 template<>
-__forceinline bool intersect_instance(intel_ray_query_t& query, Ray& ray, Instance* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID)
+__forceinline bool intersect_instance(intel_ray_query_t& query, Ray& ray, Instance* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID)
 {
   /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
@@ -222,7 +234,11 @@ __forceinline bool intersect_instance(intel_ray_query_t& query, Ray& ray, Instan
   if (!instance_id_stack::push(context->user, geomID, 0))
     return false;
 
-  unsigned int bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit ) + 1;
+#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
+  unsigned int bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit );
+#else
+  constexpr unsigned int bvh_level = 0;
+#endif
 
   Scene* object = (Scene*) instance->object;
   const AffineSpace3fa world2local = instance->getWorld2Local(ray.time());
@@ -262,10 +278,10 @@ __forceinline bool intersect_instance(intel_ray_query_t& query, Ray& ray, Instan
 }
 
 template<typename Ray>
-__forceinline bool intersect_instance_array(intel_ray_query_t& query, Ray& ray, InstanceArray* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID);
+__forceinline bool intersect_instance_array(intel_ray_query_t& query, Ray& ray, InstanceArray* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID);
 
 template<>
-__forceinline bool intersect_instance_array(intel_ray_query_t& query, RayHit& ray, InstanceArray* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID)
+__forceinline bool intersect_instance_array(intel_ray_query_t& query, RayHit& ray, InstanceArray* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID)
 {
   Scene* object = (Scene*) instance->getObject(primID);
   if (!object) return false;
@@ -279,7 +295,11 @@ __forceinline bool intersect_instance_array(intel_ray_query_t& query, RayHit& ra
   if (!instance_id_stack::push(context->user, geomID, primID))
     return false;
 
-  unsigned int bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit ) + 1;
+#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
+  unsigned int bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit );
+#else
+  constexpr unsigned int bvh_level = 0;
+#endif
 
   const AffineSpace3fa world2local = instance->getWorld2Local(primID, ray.time());
   const Vec3fa ray_org = xfmPoint (world2local, (Vec3f) ray.org);
@@ -318,7 +338,7 @@ __forceinline bool intersect_instance_array(intel_ray_query_t& query, RayHit& ra
 }
 
 template<>
-__forceinline bool intersect_instance_array(intel_ray_query_t& query, Ray& ray, InstanceArray* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID)
+__forceinline bool intersect_instance_array(intel_ray_query_t& query, Ray& ray, InstanceArray* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID)
 {
   Scene* object = (Scene*) instance->getObject(primID);
   if (!object) return false;
@@ -332,7 +352,11 @@ __forceinline bool intersect_instance_array(intel_ray_query_t& query, Ray& ray, 
   if (!instance_id_stack::push(context->user, geomID, primID))
     return false;
 
-  unsigned int bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit ) + 1;
+#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
+  unsigned int bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit );
+#else
+  constexpr unsigned int bvh_level = 0;
+#endif
 
   const AffineSpace3fa world2local = instance->getWorld2Local(primID, ray.time());
   const Vec3fa ray_org = xfmPoint (world2local, (Vec3f) ray.org);
@@ -371,7 +395,7 @@ __forceinline bool intersect_instance_array(intel_ray_query_t& query, Ray& ray, 
 }
 
 template<typename Ray>
-__forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], Geometry* geom, sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID, const RTCFeatureFlags feature_mask)
+__forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT], Geometry* geom, sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID, const RTCFeatureFlags feature_mask)
 {
 #if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
   bool filter = feature_mask & (RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS | RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_GEOMETRY);
@@ -619,7 +643,7 @@ __forceinline bool commit_potential_hit(intel_ray_query_t& query, Ray& ray) {
 }
 
 template<typename Ray>
-__forceinline void trav_loop(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<RayQueryContext> context, const RTCFeatureFlags feature_mask)
+__forceinline void trav_loop(intel_ray_query_t& query, Ray& ray, Scene* scene0, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT], sycl::private_ptr<RayQueryContext> context, const RTCFeatureFlags feature_mask)
 {
   while (!intel_is_traversal_done(query))
   {
@@ -639,16 +663,16 @@ __forceinline void trav_loop(intel_ray_query_t& query, Ray& ray, Scene* scenes[R
    
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
     context->user->instStackSize = bvh_level;
-    Scene* scene = scenes[bvh_level];
+    Scene* scene = bvh_level ? scenes[bvh_level - 1] : scene0;
 #else
     const unsigned int instID = intel_get_hit_instance_id(query, intel_hit_type_potential_hit);
     
     /* assume software instancing mode by default (required for rtcForwardRay) */
-    Scene* scene = scenes[bvh_level]; 
+    Scene* scene = bvh_level ? scenes[0] : scene0; 
 
     /* if we are in hardware instancing mode and we need to read the scene from the instance */
     if (bvh_level > 0 && instID != RTC_INVALID_GEOMETRY_ID) {
-      Instance* inst = scenes[0]->get<Instance>(instID);
+      Instance* inst = scene0->get<Instance>(instID);
       scene = (Scene*) inst->object;
       context->user->instID[0] = instID;
     }
@@ -691,8 +715,7 @@ SYCL_EXTERNAL __attribute__((always_inline)) void rtcIntersectRTHW(sycl::global_
   Scene* scene = (Scene*) hscene.get();
   intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) scene->hwaccel.data();
 
-  Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1];
-  scenes[0] = scene;
+  Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT];
 
   RayQueryContext context(scene, ucontext, args);
 
@@ -750,7 +773,7 @@ SYCL_EXTERNAL __attribute__((always_inline)) void rtcIntersectRTHW(sycl::global_
   intel_ray_query_sync(query);
   
   if (args->feature_mask & TRAV_LOOP_FEATURES) {
-    trav_loop(query,ray,scenes,&context,args->feature_mask);
+    trav_loop(query,ray,scene,scenes,&context,args->feature_mask);
   }
 
   bool valid = intel_has_committed_hit(query);
@@ -812,8 +835,7 @@ SYCL_EXTERNAL __attribute__((always_inline)) void rtcOccludedRTHW(sycl::global_p
   Scene* scene = (Scene*) hscene.get();
   intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) scene->hwaccel.data();
 
-  Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1];
-  scenes[0] = scene;
+  Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT];
   
   RayQueryContext context(scene, ucontext, args);
   
@@ -854,7 +876,7 @@ SYCL_EXTERNAL __attribute__((always_inline)) void rtcOccludedRTHW(sycl::global_p
   intel_ray_query_sync(query);
 
   if (args->feature_mask & TRAV_LOOP_FEATURES) {
-    trav_loop(query,ray,scenes,&context,args->feature_mask);
+    trav_loop(query,ray,scene,scenes,&context,args->feature_mask);
   }
   
   if (intel_has_committed_hit(query))
