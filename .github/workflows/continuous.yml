@@ -330,7 +330,7 @@ jobs:
       artifact-out: windows-DG2-JIT-build
       artifact-path: ./build/*.zip
       cmd: |
-        cmake --preset windows-DG2-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target build
 
   windows-DG2-JIT-INTERNAL-test:
@@ -343,7 +343,7 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
       artifact-in: windows-DG2-JIT-build
       cmd: |
-        cmake --preset windows-DG2-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
   windows-DG2-JIT-PUBLIC-test:
@@ -356,7 +356,7 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
       artifact-in: windows-DG2-JIT-build
       cmd: |
-        cmake --preset windows-DG2-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
   windows-DG2-JIT-ICX-build:
@@ -630,6 +630,7 @@ jobs:
       - linux-DG2-JIT-PUBLIC-ICX-test
       - linux-DG2-JIT-PUBLIC-ICX-RC-test
       - linux-DG2-JIT-PUBLIC-sycl-nightly-RK-test
+      - linux-PVC-JIT-INTERNAL-test-1T
       - linux-PVC-JIT-INTERNAL-test-2T
       - windows-DG2-JIT-INTERNAL-test
       - windows-DG2-JIT-PUBLIC-test
