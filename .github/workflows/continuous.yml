@@ -577,7 +577,7 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
     with:
-      runs-on: '[ "macOS13", "test", "arm" ]'
+      runs-on: '[ "macOS", "build", "arm" ]'
       cmd: |
         cmake --preset macos-ARM-CLANG-NEON-AVX2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
         cmake --build build --config RelWithDebInfo --target build
@@ -587,7 +587,7 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
     with:
-      runs-on: '[ "macOS13", "test", "arm" ]'
+      runs-on: '[ "macOS", "build", "arm" ]'
       cmd: |
         cmake --preset macos-ARM-CLANG-NEON -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
         cmake --build build --config RelWithDebInfo --target build
@@ -600,6 +600,16 @@ jobs:
       runs-on: '[ "macOS", "build", "x86_64" ]'
       cmd: |
         cmake --preset macos-x64-CLANG -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --config RelWithDebInfo --target build
+        cmake --build build --config RelWithDebInfo --target test_package
+  
+  macosx-ARM-CLANG-NEON-AVX2-universal-binaries:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
+    with:
+      runs-on: '[ "macOS", "build", "arm" ]'
+      cmd: |
+        cmake --preset macos-ARM-CLANG-NEON-AVX2-UB -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2 -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DEMBREE_BUILD_GLFW_FROM_SOURCE=ON -DEMBREE_ISPC_SUPPORT=OFF
         cmake --build build --config RelWithDebInfo --target build
         cmake --build build --config RelWithDebInfo --target test_package
 
@@ -649,6 +659,7 @@ jobs:
       - macosx-ARM-CLANG-NEON-AVX2
       - macosx-ARM-CLANG-NEON
       - macosx-x64-CLANG
+      - macosx-ARM-CLANG-NEON-AVX2-universal-binaries
       - static-analysis
 
 

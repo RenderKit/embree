@@ -209,6 +209,15 @@
       }
     },
     {
+      "name": "macos-ARM-CLANG-NEON-AVX2-UB",
+      "binaryDir": "${sourceDir}/build",
+      "inherits": ["package-macos", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "NEON2X"
+      }
+    },
+    {
       "name": "macos-ARM-CLANG-NEON",
       "binaryDir": "${sourceDir}/build",
       "inherits": ["package-macos", "env", "clang", "ispc_NEWEST", "tbb_HOMEBREW"],
