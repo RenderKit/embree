@@ -40,24 +40,6 @@ namespace embree
   {
     std::string ext = toLowerCase(fileName.ext());
 
-#ifdef EMBREE_TUTORIALS_LIBPNG
-    if (ext == "png" ) return loadPNG(fileName);
-#endif
-
-#ifdef EMBREE_TUTORIALS_LIBJPEG
-    if (ext == "jpg" ) return loadJPEG(fileName);
-#endif
-
-#ifdef USE_OPENIMAGEIO
-    if (ext == "bmp" ) return loadOIIO(fileName);
-    if (ext == "gif" ) return loadOIIO(fileName);
-    if (ext == "tga" ) return loadOIIO(fileName);
-    if (ext == "tif" ) return loadOIIO(fileName);
-    if (ext == "tiff") return loadOIIO(fileName);
-    if (ext == "png" ) return loadOIIO(fileName);
-    if (ext == "jpg" ) return loadOIIO(fileName);
-#endif
-
     if (ext == "bmp" ) return loadSTB(fileName);
     if (ext == "png" ) return loadSTB(fileName);
     if (ext == "jpg" ) return loadSTB(fileName);
@@ -88,20 +70,6 @@ namespace embree
   void storeImage(const Ref<Image>& img, const FileName& fileName)
   {
     std::string ext = toLowerCase(fileName.ext());
-
-#ifdef EMBREE_TUTORIALS_LIBJPEG
-    if (ext == "jpg" ) { storeJPEG(img, fileName);  return; }
-#endif
-
-#ifdef USE_OPENIMAGEIO
-    if (ext == "bmp" ) { storeOIIO(img, fileName);  return; }
-    if (ext == "gif" ) { storeOIIO(img, fileName);  return; }
-    if (ext == "tga" ) { storeOIIO(img, fileName);  return; }
-    if (ext == "tif" ) { storeOIIO(img, fileName);  return; }
-    if (ext == "tiff") { storeOIIO(img, fileName);  return; }
-    if (ext == "png" ) { storeOIIO(img, fileName);  return; }
-    if (ext == "jpg" ) { storeOIIO(img, fileName);  return; }
-#endif
 
     if (ext == "bmp" ) { storeSTB(img, fileName);  return; }
     if (ext == "png" ) { storeSTB(img, fileName);  return; }
