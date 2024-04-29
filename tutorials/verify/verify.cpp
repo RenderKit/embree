@@ -3717,6 +3717,11 @@ namespace embree
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       errorHandler(nullptr,rtcGetDeviceError(device));
 
+      static_assert(alignof(RTCRayNt<1>) == alignof(RTCRay), "Alignment of RTCRayNt<1> and RTCRay differs.");
+      static_assert(alignof(RTCRayNt<4>) == alignof(RTCRay4), "Alignment of RTCRayNt<4> and RTCRay4 differs.");
+      static_assert(alignof(RTCRayNt<8>) == alignof(RTCRay8), "Alignment of RTCRayNt<8> and RTCRay8 differs.");
+      static_assert(alignof(RTCRayNt<16>) == alignof(RTCRay16), "Alignment of RTCRayNt<16> and RTCRay16 differs.");
+
       VerifyScene scene(device,sflags);
       if      (model == "sphere.triangles") scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createTriangleSphere(zero,2.0f,50));
       else if (model == "sphere.quads"    ) scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createQuadSphere    (zero,2.0f,50));
