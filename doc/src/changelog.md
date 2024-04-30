@@ -1,6 +1,11 @@
 Version History
 ---------------
 
+### Embree 4.3.2
+-   MacOS universal binary compilation now works.
+-   Some bugfixes for AVX512 on MacOS x86 machines.
+-   Embree now uses level zero raytracing extension to build BVH which enables forward-compatibility.
+
 ### Embree 4.3.1
 -   Add missing EMBREE_GEOMETRY types to embree-config.cmake
 -   User defined thread count now takes precedence for internal task scheduler
