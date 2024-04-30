@@ -37,7 +37,7 @@
 #===============================================================================
 
 # We use INTERFACE libraries, which are only supported in 3.x
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
 
 # These two are used to automatically find the root and include directories.
 set(_TBB_INCLUDE_SUBDIR "include")
