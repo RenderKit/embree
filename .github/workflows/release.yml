@@ -22,7 +22,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
       artifact-out: release-windows
       artifact-path: ./build/embree-*.zip
-      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
+      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
       shell: cmd
       cmd: |
         cmake --preset release-windows -DCMAKE_BUILD_TYPE=Release
@@ -95,7 +95,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       artifact-out: release-linux
       artifact-path: ./build/*.tar.gz
-      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
+      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
       pre-cmd: |
         yum -y install epel-release
         dnf makecache --refresh
@@ -119,7 +119,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/gfx-windows-internal.env
-      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
+      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
       artifact-out: release-windows-sycl
       artifact-path: ./build/*.zip
       shell: cmd
@@ -135,7 +135,7 @@ jobs:
       image: rockylinux:8.7
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
-      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
+      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
       artifact-out: release-linux-sycl
       artifact-path: ./build/*.tar.gz
       pre-cmd: |
@@ -159,7 +159,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu20-release.env
-      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
+      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
       artifact-in: release-linux-sycl
       cmd: |
         module load cmake/3.25.3
