@@ -23,7 +23,10 @@ namespace embree {
     bool ze_rtas_builder = false;
     
     sycl::platform platform = device.get_platform();
-    ze_driver_handle_t hDriver = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(platform);
+    ze_driver_handle_t hDriver;
+    try {
+      hDriver = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(platform);
+    } catch (...) { return; }
     
     uint32_t count = 0;
     std::vector<ze_driver_extension_properties_t> extensions;
@@ -83,7 +86,8 @@ namespace embree {
       std::cout << "Embree compatible SYCL " << (compatible_devices.size() > 1 ? "devices:" : "device") << std::endl;
       for (auto & device : compatible_devices)
         printDeviceInfo(device);
-      std::cout << std::endl;
+      if (compatible_devices.empty())
+        std::cout << std::endl;
     }
     if (!incompatible_devices.empty()  ) {
       std::cout << "Embree incompatible SYCL " << (incompatible_devices.size() > 1 ? "devices:" : "device") << std::endl;
