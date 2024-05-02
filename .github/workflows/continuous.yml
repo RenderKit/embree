@@ -24,7 +24,7 @@ jobs:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
-      dpcpp-version: intel-llvm/nightly-2023-10-26-rk
+      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
       artifact-out: linux-DG2-JIT-INTERNAL-build
       artifact-path: ./build/*.tar.gz
       cmd: |
@@ -118,7 +118,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: intel-llvm/nightly-2023-10-26-rk
+      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
       artifact-out: linux-DG2-JIT-PUBLIC-sycl-nightly-RK-build
       artifact-path: ./build/*.tar.gz
       cmd: |
@@ -136,7 +136,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: intel-llvm/nightly-2023-10-26-rk
+      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
       artifact-in: linux-DG2-JIT-PUBLIC-sycl-nightly-RK-build
       cmd: |
         module load cmake/3.25.3
@@ -262,6 +262,36 @@ jobs:
         cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
+  linux-ATSM-JIT-PUBLIC-SYCL-RC-build:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    with:
+      image: embree/ubuntu:22.04
+      runs-on: '[ "Linux", "docker", "build" ]'
+      project: embree
+      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
+      artifact-out: linux-ATSM-JIT-PUBLIC-SYCL-RC-build
+      artifact-path: ./build/*.tar.gz
+      cmd: |
+        module load cmake/3.25.3
+        cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target build
+
+  linux-ATSM-JIT-PUBLIC-SYCL-RC-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    needs: ["linux-ATSM-JIT-PUBLIC-SYCL-RC-build"]
+    with:
+      image: embree/ubuntu:22.04
+      options: --device=/dev/dri:/dev/dri
+      runs-on: '[ "Linux", "docker", "atsm" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-public.env
+      artifact-in: linux-ATSM-JIT-PUBLIC-SYCL-RC-build
+      cmd: |
+        module load cmake/3.25.3
+        cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
 
   ########################################
   # Linux PVC
@@ -319,6 +349,60 @@ jobs:
         export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
         module load cmake/3.25.3
         cmake --preset linux-PVC-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
+
+  linux-PVC-JIT-INTERNAL-SYCL-RC-build:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    with:
+      image: embree/ubuntu:22.04
+      runs-on: '[ "Linux", "docker", "build" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
+      artifact-out: linux-PVC-JIT-INTERNAL-SYCL-RC-build
+      artifact-path: ./build/*.tar.gz
+      cmd: |
+        module load cmake/3.25.3
+        cmake --preset linux-PVC-JIT-INTERNAL-SYCL-RC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target build
+
+  #  TODO: move to nightly
+  linux-PVC-JIT-INTERNAL-SYCL-RC-test-1T:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    needs: ["linux-PVC-JIT-INTERNAL-SYCL-RC-build"]
+    with:
+      image: embree/ubuntu:22.04
+      options: --device=/dev/dri:/dev/dri
+      runs-on: '[ "Linux", "docker", "pvc" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
+      artifact-in: linux-PVC-JIT-INTERNAL-SYCL-RC-build
+      cmd: |
+        export EnableImplicitScaling=0
+        export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
+        module load cmake/3.25.3
+        cmake --preset linux-PVC-JIT-INTERNAL-SYCL-RC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
+
+  linux-PVC-JIT-INTERNAL-SYCL-RC-test-2T:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    needs: ["linux-PVC-JIT-INTERNAL-SYCL-RC-build"]
+    with:
+      image: embree/ubuntu:22.04
+      options: --device=/dev/dri:/dev/dri
+      runs-on: '[ "Linux", "docker", "pvc" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
+      artifact-in: linux-PVC-JIT-INTERNAL-SYCL-RC-build
+      cmd: |
+        export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
+        module load cmake/3.25.3
+        cmake --preset linux-PVC-JIT-INTERNAL-SYCL-RC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
   #  linux-PVC-JIT-PUBLIC:
@@ -697,6 +781,7 @@ jobs:
       - linux-DG2-JIT-INTERNAL-test
       - linux-DG2-JIT-PUBLIC-test
       - linux-ATSM-JIT-PUBLIC-test
+      - linux-ATSM-JIT-PUBLIC-SYCL-RC-test
       - linux-DG2-JIT-EMBARGO-test
       - linux-DG2-JIT-PUBLIC-ICX-test
       - linux-DG2-JIT-PUBLIC-ICX-RC-test
@@ -704,6 +789,8 @@ jobs:
       - linux-DG2-JIT-PUBLIC-sycl-RC-test
       - linux-PVC-JIT-INTERNAL-test-1T
       - linux-PVC-JIT-INTERNAL-test-2T
+      - linux-PVC-JIT-INTERNAL-SYCL-RC-test-1T
+      - linux-PVC-JIT-INTERNAL-SYCL-RC-test-2T
       - windows-DG2-JIT-INTERNAL-test
       - windows-DG2-JIT-PUBLIC-test
       - windows-DG2-JIT-ICX-INTERNAL-test

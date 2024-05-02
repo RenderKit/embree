@@ -76,6 +76,18 @@
       }
     },
     {
+      "name": "linux-PVC-JIT-INTERNAL-SYCL-RC",
+      "inherits": ["package-linux", "env", "dpcpp", "ispc_NEWEST", "tbb_SYSTEM"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithAssert",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_LEVEL_ZERO": "ON",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    },
+    {
       "name": "windows-DG2-JIT-INTERNAL",
       "inherits": ["package-windows", "env", "dpcpp-windows", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
