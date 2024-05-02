@@ -359,7 +359,7 @@ jobs:
       force-delete: true
       runs-on: '[ "Windows", "NAS", "build" ]'
       project: embree
-      dpcpp-version: intel-llvm/nightly-2023-10-26-rk
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
       artifact-out: windows-DG2-JIT-build
       artifact-path: ./build/*.zip
       cmd: |
