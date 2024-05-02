@@ -381,8 +381,8 @@ jobs:
       dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
       artifact-in: linux-PVC-JIT-INTERNAL-SYCL-RC-build
       cmd: |
-        export EnableImplicitScaling=0
         export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
+        export EnableImplicitScaling=0
         module load cmake/3.25.3
         cmake --preset linux-PVC-JIT-INTERNAL-SYCL-RC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
@@ -400,7 +400,24 @@ jobs:
       dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
       artifact-in: linux-PVC-JIT-INTERNAL-SYCL-RC-build
       cmd: |
+        module load cmake/3.25.3
         export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
+        cmake --preset linux-PVC-JIT-INTERNAL-SYCL-RC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
+
+  linux-PVC-JIT-INTERNAL-SYCL-RC-test-flat:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    needs: ["linux-PVC-JIT-INTERNAL-SYCL-RC-build"]
+    with:
+      image: embree/ubuntu:22.04
+      options: --device=/dev/dri:/dev/dri
+      runs-on: '[ "Linux", "docker", "pvc" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
+      artifact-in: linux-PVC-JIT-INTERNAL-SYCL-RC-build
+      cmd: |
         module load cmake/3.25.3
         cmake --preset linux-PVC-JIT-INTERNAL-SYCL-RC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
@@ -791,6 +808,7 @@ jobs:
       - linux-PVC-JIT-INTERNAL-test-2T
       - linux-PVC-JIT-INTERNAL-SYCL-RC-test-1T
       - linux-PVC-JIT-INTERNAL-SYCL-RC-test-2T
+      - linux-PVC-JIT-INTERNAL-SYCL-RC-test-flat
       - windows-DG2-JIT-INTERNAL-test
       - windows-DG2-JIT-PUBLIC-test
       - windows-DG2-JIT-ICX-INTERNAL-test
