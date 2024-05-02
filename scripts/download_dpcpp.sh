@@ -49,9 +49,9 @@ if [ ! -z "${error}" ]; then
   exit 1
 fi
 
-ARCHIVE_NAME="dpcpp-compiler.tar.gz"
+ARCHIVE_NAME="sycl_linux.tar.gz"
 if [ "$PLATFORM" = "WIN" ]; then
-  ARCHIVE_NAME="dpcpp-compiler-win.tar.gz"
+  ARCHIVE_NAME="sycl_windows.tar.gz"
 fi
 
 # get id of compiler archive
@@ -63,11 +63,11 @@ echo "Downloading dpcpp compiler archive ${ARCHIVE_NAME} to ${DST_DIR}" >&2
 curl -LJO# ${AUTH} -H 'Accept: application/octet-stream' "$GH_REPO/releases/assets/$id"
 
 echo "Unpacking archive"
+mkdir -p ${DPCPP_VERSION}
+mv ${ARCHIVE_NAME} ${DPCPP_VERSION}
+cd ${DPCPP_VERSION}
 tar -xzf ${ARCHIVE_NAME}
 rm -rf ${ARCHIVE_NAME}
-mkdir -p ${DPCPP_VERSION}
-cp -r dpcpp_compiler/* ${DPCPP_VERSION}
-rm -rf dpcpp_compiler
 
 # add startup script to Windows version of the compiler
 if [ "$PLATFORM" = "WIN" ]; then
