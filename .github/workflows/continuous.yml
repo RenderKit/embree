@@ -41,7 +41,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu20-release.env
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
       artifact-in: linux-DG2-JIT-INTERNAL-build
       cmd: |
         module load cmake/3.25.3
@@ -77,37 +77,6 @@ jobs:
       cmd: |
         module load cmake/3.25.3
         cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target test_package
-
-  linux-DG2-JIT-EMBARGO-build:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    with:
-      image: embree/ubuntu:22.04
-      runs-on: '[ "Linux", "docker", "build" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-embargo.env
-      artifact-out: linux-DG2-JIT-EMBARGO-build
-      artifact-path: ./build/*.tar.gz
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset linux-DG2-JIT-EMBARGO -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target build
-
-  linux-DG2-JIT-EMBARGO-test:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    needs: ["linux-DG2-JIT-EMBARGO-build"]
-    with:
-      image: embree/ubuntu:22.04
-      options: --device=/dev/dri:/dev/dri
-      runs-on: '[ "Linux", "docker", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-embargo.env
-      artifact-in: linux-DG2-JIT-EMBARGO-build
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset linux-DG2-JIT-EMBARGO -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
   linux-DG2-JIT-PUBLIC-sycl-nightly-RK-build:
@@ -799,7 +768,6 @@ jobs:
       - linux-DG2-JIT-PUBLIC-test
       - linux-ATSM-JIT-PUBLIC-test
       - linux-ATSM-JIT-PUBLIC-SYCL-RC-test
-      - linux-DG2-JIT-EMBARGO-test
       - linux-DG2-JIT-PUBLIC-ICX-test
       - linux-DG2-JIT-PUBLIC-ICX-RC-test
       - linux-DG2-JIT-PUBLIC-sycl-nightly-RK-test
