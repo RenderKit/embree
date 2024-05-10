@@ -41,7 +41,8 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      env-from-files: ./.github/workflows/gfx-ubuntu22-internal.env
+      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
       artifact-in: linux-DG2-JIT-INTERNAL-build
       cmd: |
         module load cmake/3.25.3
@@ -55,7 +56,7 @@ jobs:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-public.env
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
       artifact-out: linux-DG2-JIT-PUBLIC-build
       artifact-path: ./build/*.tar.gz
       cmd: |
@@ -119,7 +120,7 @@ jobs:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      env-from-files: ./.github/workflows/dpcpp-none.env
       dpcpp-version: intel/2024.0
       artifact-out: linux-DG2-JIT-PUBLIC-ICX-build
       artifact-path: ./build/*.tar.gz
@@ -137,7 +138,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      env-from-files: ./.github/workflows/gfx-ubuntu22-public.env
       dpcpp-version: intel/2024.0
       artifact-in: linux-DG2-JIT-PUBLIC-ICX-build
       cmd: |
@@ -175,6 +176,8 @@ jobs:
       artifact-in: linux-DG2-JIT-PUBLIC-ICX-RC-build
       cmd: |
         module load cmake/3.25.3
+        unset no_proxy
+        apt install -y intel-level-zero-gpu-raytracing
         cmake --preset linux-DG2-JIT-PUBLIC-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
@@ -273,7 +276,7 @@ jobs:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-public.env
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
       dpcpp-version: intel/2024.0
       artifact-out: linux-PVC-JIT-INTERNAL-build
       artifact-path: ./build/*.tar.gz
@@ -292,7 +295,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "pvc" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-public.env
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
       dpcpp-version: intel/2024.0
       artifact-in: linux-PVC-JIT-INTERNAL-build
       cmd: |
@@ -311,7 +314,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "pvc" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-public.env
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
       dpcpp-version: intel/2024.0
       artifact-in: linux-PVC-JIT-INTERNAL-build
       cmd: |
@@ -327,7 +330,7 @@ jobs:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      env-from-files: ./.github/workflows/dpcpp-none.env
       dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
       artifact-out: linux-PVC-JIT-INTERNAL-SYCL-RC-build
       artifact-path: ./build/*.tar.gz
@@ -346,7 +349,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "pvc" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-internal.env
       dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
       artifact-in: linux-PVC-JIT-INTERNAL-SYCL-RC-build
       cmd: |
@@ -365,7 +368,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "pvc" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-internal.env
       dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
       artifact-in: linux-PVC-JIT-INTERNAL-SYCL-RC-build
       cmd: |
@@ -383,7 +386,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "pvc" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-internal.env
       dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
       artifact-in: linux-PVC-JIT-INTERNAL-SYCL-RC-build
       cmd: |
