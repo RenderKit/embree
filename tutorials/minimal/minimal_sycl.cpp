@@ -297,6 +297,13 @@ int main()
 {
   enablePersistentJITCache();
 
+  try {
+    embree::check_raytracing_support();
+  } catch (std::exception& e) {
+    std::cerr << e.what() << std::endl;
+    return 1;
+  }
+
   /* This will select the first GPU supported by Embree */
   sycl::device sycl_device;
   try {

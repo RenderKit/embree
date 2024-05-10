@@ -1117,6 +1117,8 @@ namespace embree
         }
       };
 
+      check_raytracing_support();
+
       /* select device supported by Embree */
       try {
         device = new sycl::device(rtcSYCLDeviceSelector);
