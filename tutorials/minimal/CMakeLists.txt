@@ -22,6 +22,8 @@ IF (COMMAND SIGN_TARGET)
   SIGN_TARGET(embree_minimal)
 ENDIF()
 
+ADD_EMBREE_GENERIC_CPP_TEST(minimal embree_minimal)
+
 IF (EMBREE_SYCL_SUPPORT)
   
   ADD_EXECUTABLE(embree_minimal_sycl minimal_sycl.cpp)
@@ -35,4 +37,5 @@ IF (EMBREE_SYCL_SUPPORT)
     SIGN_TARGET(embree_minimal_sycl)
   ENDIF()
   
+  ADD_EMBREE_GENERIC_SYCL_TEST(minimal embree_minimal)
 ENDIF()

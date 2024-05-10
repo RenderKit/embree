@@ -81,6 +81,8 @@ ENDIF()
 ADD_SUBDIRECTORY(common)
 
 ADD_SUBDIRECTORY(embree_info)
+ADD_SUBDIRECTORY(minimal)
+
 ADD_SUBDIRECTORY(verify)
 ADD_SUBDIRECTORY(triangle_geometry)
 ADD_SUBDIRECTORY(dynamic_scene)
@@ -114,6 +116,5 @@ ADD_SUBDIRECTORY(forest)
 
 ADD_SUBDIRECTORY(embree_tests)
 
-ADD_SUBDIRECTORY(minimal)
 
 ENDIF()

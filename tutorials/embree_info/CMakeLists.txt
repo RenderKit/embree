@@ -32,3 +32,5 @@ ENDIF()
 IF (COMMAND SIGN_TARGET)
   SIGN_TARGET(embree_info)
 ENDIF()
+
+ADD_EMBREE_GENERIC_TEST(embree_info embree_info)
