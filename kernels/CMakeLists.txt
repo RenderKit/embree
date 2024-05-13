@@ -91,9 +91,13 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh_intersector1_bvh4.cpp
   )
 
+
 IF (EMBREE_SYCL_SUPPORT)
   SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
-  sycl/rthwif_embree_builder.cpp)
+  sycl/rthwif_embree_builder.cpp
+  sycl/scene_sycl.cpp)
+
+  set_source_files_properties(sycl/scene_sycl.cpp PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_SYCL})
 ENDIF()
 
 IF (EMBREE_GEOMETRY_SUBDIVISION)
@@ -245,6 +249,10 @@ DISABLE_STACK_PROTECTOR_FOR_INTERSECTORS(${EMBREE_LIBRARY_FILES})
 ADD_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES})
 
 IF (EMBREE_SYCL_SUPPORT)
+  # add link flag '-fsycl' here to include the kernel for USM prefetch from
+  # scene_sycl.cpp in embree4.dll/embree4.so
+  TARGET_LINK_OPTIONS(embree PRIVATE "-fsycl")
+
   ADD_LIBRARY(embree_sycl STATIC
     sycl/rtcore_sycl.cpp
     sycl/rthwif_embree.cpp)

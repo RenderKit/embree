@@ -100,6 +100,7 @@ extern "C" void device_init (char* cfg)
   /* create scene */
   TutorialData_Constructor(&data);
   g_scene = data.g_scene = rtcNewScene(g_device);
+  rtcSetSceneFlags(data.g_scene, RTC_SCENE_FLAG_PREFETCH_USM_SHARED_ON_GPU);
 
   /* add cube */
   addCube(data.g_scene);
