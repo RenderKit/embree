@@ -121,7 +121,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-none.env
-      dpcpp-version: intel/2024.0
+      dpcpp-version: intel/2024.1.0
       artifact-out: linux-DG2-JIT-PUBLIC-ICX-build
       artifact-path: ./build/*.tar.gz
       cmd: |
@@ -139,7 +139,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: intel/2024.0
+      dpcpp-version: intel/2024.1.0
       artifact-in: linux-DG2-JIT-PUBLIC-ICX-build
       cmd: |
         module load cmake/3.25.3
@@ -277,12 +277,11 @@ jobs:
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
-      dpcpp-version: intel/2024.0
       artifact-out: linux-PVC-JIT-INTERNAL-build
       artifact-path: ./build/*.tar.gz
       cmd: |
         module load cmake/3.25.3
-        cmake --preset linux-PVC-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --preset linux-PVC-JIT-INTERNAL-SYCL-RC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target build
 
   #  TODO: move to nightly
@@ -296,13 +295,12 @@ jobs:
       runs-on: '[ "Linux", "docker", "pvc" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
-      dpcpp-version: intel/2024.0
       artifact-in: linux-PVC-JIT-INTERNAL-build
       cmd: |
         export EnableImplicitScaling=0
         export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
         module load cmake/3.25.3
-        cmake --preset linux-PVC-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --preset linux-PVC-JIT-INTERNAL-SYCL-RC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
   linux-PVC-JIT-INTERNAL-test-2T:
@@ -315,12 +313,11 @@ jobs:
       runs-on: '[ "Linux", "docker", "pvc" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
-      dpcpp-version: intel/2024.0
       artifact-in: linux-PVC-JIT-INTERNAL-build
       cmd: |
         export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
         module load cmake/3.25.3
-        cmake --preset linux-PVC-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --preset linux-PVC-JIT-INTERNAL-SYCL-RC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
   linux-PVC-JIT-INTERNAL-SYCL-RC-build:
@@ -471,7 +468,7 @@ jobs:
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
-      dpcpp-version: oneAPI/compiler/2024.0
+      dpcpp-version: oneAPI/compiler/2024.1
       env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
       artifact-out: windows-DG2-JIT-ICX-build
       artifact-path: ./build/*.zip
@@ -486,7 +483,7 @@ jobs:
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
-      dpcpp-version: oneAPI/compiler/2024.0
+      dpcpp-version: oneAPI/compiler/2024.1
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
       artifact-in: windows-DG2-JIT-ICX-build
       cmd: |
@@ -500,7 +497,7 @@ jobs:
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
-      dpcpp-version: oneAPI/compiler/2024.0
+      dpcpp-version: oneAPI/compiler/2024.1
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
       artifact-in: windows-DG2-JIT-ICX-build
       cmd: |
@@ -630,7 +627,7 @@ jobs:
     with:
       image: embree/fedora:29
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.0
+      dpcpp-version: intel/2024.1.0
       cmd: |
         module load cmake/3.25.3
         cmake --preset linux-fedora29-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
@@ -643,7 +640,7 @@ jobs:
     with:
       image: embree/fedora:32
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.0
+      dpcpp-version: intel/2024.1.0
       cmd: |
         module load cmake/3.25.3
         cmake --preset linux-fedora32-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
@@ -668,7 +665,7 @@ jobs:
     with:
       image: embree/ubuntu:20.04
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.0
+      dpcpp-version: intel/2024.1.0
       cmd: |
         module load cmake/3.25.3
         cmake --preset linux-ubuntu20_04-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
@@ -697,7 +694,7 @@ jobs:
     with:
       force-delete: true
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-      dpcpp-version: oneAPI/compiler/2024.0
+      dpcpp-version: oneAPI/compiler/2024.1
       cmd: |
         cmake --preset windows-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
         cmake --build build --config RelWithDebInfo --target build

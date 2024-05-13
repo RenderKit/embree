@@ -27,7 +27,7 @@ jobs:
 #      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
 #      artifact-out: integrate-windows-ICX
 #      artifact-path: ./build/embree-*.zip
-#      dpcpp-version: oneAPI/compiler/2024.0
+#      dpcpp-version: oneAPI/compiler/2024.1
 #      cmd: |
 #        cmake --preset integrate-windows-icx
 #        cmake --build build --config Release --target package -j8
@@ -40,7 +40,7 @@ jobs:
 #    with:
 #      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
 #      artifact-in: integrate-windows-ICX
-#      dpcpp-version: oneAPI/compiler/2024.0
+#      dpcpp-version: oneAPI/compiler/2024.1
 #      cmd: |
 #        cd build
 #        . ..\tests\integration\test_embree_release\unpack-windows.ps1
@@ -87,7 +87,7 @@ jobs:
 #    with:
 #      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
 #      artifact-in: integrate-windows-v142
-#      dpcpp-version: oneAPI/compiler/2024.0
+#      dpcpp-version: oneAPI/compiler/2024.1
 #      cmd: |
 #        cd build
 #        . ..\tests\integration\test_embree_release\unpack-windows.ps1
@@ -110,7 +110,7 @@ jobs:
 #      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
 #      artifact-out: integrate-static-windows-ICX
 #      artifact-path: ./build/embree-*.zip
-#      dpcpp-version: oneAPI/compiler/2024.0
+#      dpcpp-version: oneAPI/compiler/2024.1
 #      cmd: |
 #        cmake --preset integrate-static-windows-icx
 #        cmake --build build --config Release --target package -j8
@@ -123,7 +123,7 @@ jobs:
 #    with:
 #      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
 #      artifact-in: integrate-static-windows-ICX
-#      dpcpp-version: oneAPI/compiler/2024.0
+#      dpcpp-version: oneAPI/compiler/2024.1
 #      cmd: |
 #        cd build
 #        . ..\tests\integration\test_embree_release\unpack-windows.ps1
@@ -170,7 +170,7 @@ jobs:
 #    with:
 #      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
 #      artifact-in: integrate-static-windows-v142
-#      dpcpp-version: oneAPI/compiler/2024.0
+#      dpcpp-version: oneAPI/compiler/2024.1
 #      cmd: |
 #        cd build
 #        . ..\tests\integration\test_embree_release\unpack-windows.ps1
@@ -232,7 +232,7 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.0
+      dpcpp-version: intel/2024.1.0
       artifact-in: integrate-linux-GCC
       cmd: |
         module load cmake/3.25.3
@@ -249,7 +249,7 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.0
+      dpcpp-version: intel/2024.1.0
       artifact-out: integrate-linux-ICX
       artifact-path: ./build/*.tar.gz
       cmd: |
@@ -277,7 +277,7 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.0
+      dpcpp-version: intel/2024.1.0
       artifact-in: integrate-linux-ICX
       cmd: |
         module load cmake/3.25.3
@@ -291,7 +291,7 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.0
+      dpcpp-version: intel/2024.1.0
       artifact-in: integrate-linux-ICX
       cmd: |
         module load cmake/3.25.3
@@ -348,7 +348,7 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.0
+      dpcpp-version: intel/2024.1.0
       artifact-in: integrate-static-linux-CLANG
       cmd: |
         module load cmake/3.25.3
@@ -408,7 +408,7 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.0
+      dpcpp-version: intel/2024.1.0
       artifact-in: integrate-static-linux-GCC
       cmd: |
         module load cmake/3.25.3
@@ -425,7 +425,7 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.0
+      dpcpp-version: intel/2024.1.0
       artifact-out: integrate-static-linux-ICX
       artifact-path: ./build/*.tar.gz
       cmd: |
@@ -440,7 +440,7 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.0
+      dpcpp-version: intel/2024.1.0
       artifact-in: integrate-static-linux-ICX
       cmd: |
         module load cmake/3.25.3
@@ -454,7 +454,7 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.0
+      dpcpp-version: intel/2024.1.0
       artifact-in: integrate-static-linux-ICX
       cmd: |
         module load cmake/3.25.3
@@ -468,7 +468,7 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.0
+      dpcpp-version: intel/2024.1.0
       artifact-in: integrate-static-linux-ICX
       cmd: |
         module load cmake/3.25.3
@@ -525,7 +525,7 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.0
+      dpcpp-version: intel/2024.1.0
       artifact-in: integrate-linux-CLANG
       cmd: |
         module load cmake/3.25.3
