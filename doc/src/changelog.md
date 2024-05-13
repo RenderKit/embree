@@ -2,9 +2,9 @@ Version History
 ---------------
 
 ### Embree 4.3.2
+-   Embree now uses level zero raytracing extension to build BVH which enables forward-compatibility. On Linux, the package intel-level-zero-gpu-raytracing has to be installed in addition to the other packages listed here [https://dgpu-docs.intel.com/](https://dgpu-docs.intel.com/).
 -   MacOS universal binary compilation now works.
 -   Some bugfixes for AVX512 on MacOS x86 machines.
--   Embree now uses level zero raytracing extension to build BVH which enables forward-compatibility.
 
 ### Embree 4.3.1
 -   Add missing EMBREE_GEOMETRY types to embree-config.cmake

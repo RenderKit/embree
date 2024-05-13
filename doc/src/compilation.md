@@ -203,6 +203,11 @@ your Intel Xe HPG/HPC GPUs from here
 the driver installation instructions for your graphics card and
 operating system.
 
+After installing the drivers you have to install an additional package
+manually using
+
+    sudo apt install intel-level-zero-gpu-raytracing
+
 
 Windows
 -------
