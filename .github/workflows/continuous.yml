@@ -297,6 +297,8 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
       artifact-in: linux-PVC-JIT-INTERNAL-build
       cmd: |
+        export NEOReadDebugKeys=1
+        export UseKmdMigration=0
         export EnableImplicitScaling=0
         export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
         module load cmake/3.25.3
@@ -315,6 +317,8 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
       artifact-in: linux-PVC-JIT-INTERNAL-build
       cmd: |
+        export NEOReadDebugKeys=1
+        export UseKmdMigration=0
         export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
         module load cmake/3.25.3
         cmake --preset linux-PVC-JIT-INTERNAL-SYCL-RC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
@@ -350,6 +354,8 @@ jobs:
       dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
       artifact-in: linux-PVC-JIT-INTERNAL-SYCL-RC-build
       cmd: |
+        export NEOReadDebugKeys=1
+        export UseKmdMigration=0
         export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
         export EnableImplicitScaling=0
         module load cmake/3.25.3
@@ -370,6 +376,8 @@ jobs:
       artifact-in: linux-PVC-JIT-INTERNAL-SYCL-RC-build
       cmd: |
         module load cmake/3.25.3
+        export NEOReadDebugKeys=1
+        export UseKmdMigration=0
         export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
         cmake --preset linux-PVC-JIT-INTERNAL-SYCL-RC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package

@@ -109,6 +109,8 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-public.env
       artifact-in: nightly-linux-PVC-JIT-build
       cmd: |
+        export NEOReadDebugKeys=1
+        export UseKmdMigration=0
         export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
         module load cmake/3.25.3
         cmake --preset nightly-linux-PVC-JIT -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
