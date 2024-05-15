@@ -6,6 +6,7 @@ Version History
 -   MacOS universal binary compilation now works.
 -   Some bugfixes for AVX512 on MacOS x86 machines.
 -   Known issue: It is recommended to run Embree on Intel® Data Center GPU Max Series (e.g. Intel® Data Center GPU Max 1550) with the following environment settings: NEOReadDebugKeys=1 UseKmdMigration=0
+-   Known issue: ISPC version of tutorials will not successfully build with MacOS universal binary compilation.
 
 ### Embree 4.3.1
 -   Add missing EMBREE_GEOMETRY types to embree-config.cmake
