@@ -146,41 +146,6 @@ jobs:
         cmake --preset linux-DG2-JIT-PUBLIC-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
-  linux-DG2-JIT-PUBLIC-ICX-RC-build:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    with:
-      image: embree/ubuntu:22.04
-      runs-on: '[ "Linux", "docker", "build" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: icx/compiler_ppkg-rel/20240129
-      artifact-out: linux-DG2-JIT-PUBLIC-ICX-RC-build
-      artifact-path: ./build/*.tar.gz
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset linux-DG2-JIT-PUBLIC-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target build
-
-  linux-DG2-JIT-PUBLIC-ICX-RC-test:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
-    needs: ["linux-DG2-JIT-PUBLIC-ICX-RC-build"]
-    with:
-      image: embree/ubuntu:22.04
-      options: --device=/dev/dri:/dev/dri
-      runs-on: '[ "Linux", "docker", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: icx/compiler_ppkg-rel/20240129
-      artifact-in: linux-DG2-JIT-PUBLIC-ICX-RC-build
-      cmd: |
-        module load cmake/3.25.3
-        unset no_proxy
-        apt install -y intel-level-zero-gpu-raytracing
-        cmake --preset linux-DG2-JIT-PUBLIC-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target test_package
-
   linux-DG2-JIT-PUBLIC-sycl-RC-build:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
@@ -539,33 +504,6 @@ jobs:
         cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
-  windows-DG2-JIT-ICX-RC-build:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
-    with:
-      runs-on: '[ "Windows", "NAS", "dg2" ]'
-      project: embree
-      dpcpp-version: icx/compiler_ppkg-rel/20240129
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
-      artifact-out: windows-DG2-JIT-ICX-RC-build
-      artifact-path: ./build/*.zip
-      cmd: |
-        cmake --preset nightly-windows-DG2-JIT-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target build
-
-  windows-DG2-JIT-ICX-RC-PUBLIC-test:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
-    needs: ["windows-DG2-JIT-ICX-RC-build"]
-    with:
-      runs-on: '[ "Windows", "NAS", "dg2" ]'
-      project: embree
-      dpcpp-version: icx/compiler_ppkg-rel/20240129
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
-      artifact-in: windows-DG2-JIT-ICX-RC-build
-      cmd: |
-        cmake --preset nightly-windows-DG2-JIT-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target test_package
   
   windows-DG2-JIT-sycl-RC-build:
     secrets: inherit
@@ -777,7 +715,6 @@ jobs:
       - linux-ATSM-JIT-PUBLIC-test
       - linux-ATSM-JIT-PUBLIC-SYCL-RC-test
       - linux-DG2-JIT-PUBLIC-ICX-test
-      - linux-DG2-JIT-PUBLIC-ICX-RC-test
       - linux-DG2-JIT-PUBLIC-sycl-nightly-RK-test
       - linux-DG2-JIT-PUBLIC-sycl-RC-test
       - linux-PVC-JIT-INTERNAL-test-1T
@@ -789,7 +726,6 @@ jobs:
       - windows-DG2-JIT-PUBLIC-test
       - windows-DG2-JIT-ICX-INTERNAL-test
       - windows-DG2-JIT-ICX-PUBLIC-test
-      - windows-DG2-JIT-ICX-RC-PUBLIC-test
       - windows-DG2-JIT-sycl-RC-PUBLIC-test
       - windows-DG2-JIT-INTERNAL-L0RTAS-test
       - linux-fedora29-CLANG4
