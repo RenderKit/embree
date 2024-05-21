@@ -180,6 +180,7 @@ jobs:
       artifact-in: release-linux-sycl
       cmd: |
         module load cmake/3.25.3
+        export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
         cmake --preset integrate-sycl-linux-dpcpp -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
         cmake --build build --target test_package
 
