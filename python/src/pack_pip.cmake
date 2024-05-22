@@ -1,0 +1,9 @@
+FILE(GLOB PYEMBREE_LIB_FILES LIST_DIRECTORIES FALSE
+  "${embree_BINARY_DIR}/${CMAKE_BUILD_TYPE}/embree?.dll"
+  "${embree_BINARY_DIR}/${CMAKE_BUILD_TYPE}/tbb*.dll"
+  "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}/pyembree*.pyd"
+  "${DPCPP_COMPILER_DIR}/../lib/sycl.lib"
+  "${DPCPP_COMPILER_DIR}/../lib/sycl.lib"
+  "${DPCPP_COMPILER_DIR}/../lib/sycl?.lib")
+
+file(COPY ${PYEMBREE_LIB_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/pip)

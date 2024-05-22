@@ -1,0 +1,42 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 11,
+    "patch": 0
+  },
+  "include": [
+    "scripts/cmake-presets/os.json", 
+    "scripts/cmake-presets/package.json",
+    "scripts/cmake-presets/compiler.json",
+    "scripts/cmake-presets/tbb.json",
+    "scripts/cmake-presets/continuous.json",
+    "scripts/cmake-presets/nightly.json",
+    "scripts/cmake-presets/release.json",
+    "scripts/cmake-presets/integrate.json"
+  ],
+  "configurePresets": [
+    {
+      "name": "user",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "BUILD_TESTING": "ON",
+        "EMBREE_TESTING_INSTALL_TESTS": "ON",
+        "EMBREE_TUTORIALS_OPENIMAGEIO": "OFF",
+        "EMBREE_TUTORIALS_LIBJPEG": "OFF",
+        "EMBREE_TUTORIALS_LIBPNG": "OFF",
+        "EMBREE_ZIP_MODE": "ON",
+        "EMBREE_INSTALL_DEPENDENCIES": "ON",
+        "EMBREE_BUILD_GLFW_FROM_SOURCE": "ON",
+        "CMAKE_INSTALL_INCLUDEDIR": "include",
+        "CMAKE_INSTALL_LIBDIR": "lib",
+        "CMAKE_INSTALL_DOCDIR": "doc",
+        "CMAKE_INSTALL_BINDIR": "bin",
+        "CMAKE_INSTALL_TESTDIR": "testing",
+        "BINARY_EXTENSION": ".exe",
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    }
+  ]
+}
