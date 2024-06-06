@@ -1776,6 +1776,64 @@ namespace embree
     }
   };
 
+  struct TriangleSplitRegression : public VerifyApplication::Test
+  {
+    TriangleSplitRegression (int isa)
+      : VerifyApplication::Test("TriangleSplitRegression", isa, VerifyApplication::TEST_SHOULD_PASS) {}
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa) + ",max_spatial_split_replications=1.5,max_triagles_per_leaf=1";
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(nullptr,rtcGetDeviceError(device));
+      SceneFlags sflags = { RTC_SCENE_FLAG_NONE, RTC_BUILD_QUALITY_HIGH };
+      VerifyScene scene(device,sflags);
+      AssertNoError(device);
+
+      RTCBuildArguments arguments = rtcDefaultBuildArguments();
+
+      Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(nullptr, BBox1f(0, 1));
+      mesh->triangles = {
+        { 0,1,2 },
+        { 3,4,5 },
+        { 6,7,8 },
+        { 6,7,8 },
+      };
+
+      mesh->positions.push_back({});
+      auto& pos = mesh->positions.front();
+
+      const float
+        a = -6.4000024f, // Lower limit, matters for determining binning space
+        b = 25.6f,       // Needs to be very close to one of the binning positions so the classifiers disagree
+        c = 34.f,        // Just needs to be between b and d
+        d = 57.6000022f; // Upper limit, matters for determining binning space
+
+      pos.push_back(Vec3fa(b, 0, 0));
+      pos.push_back(Vec3fa(d, 0, 0));
+      pos.push_back(Vec3fa(d, 1, 0));
+
+      pos.push_back(Vec3fa(b, 0, 0));
+      pos.push_back(Vec3fa(c, 0, 0));
+      pos.push_back(Vec3fa(c, 1, 0));
+
+      pos.push_back(Vec3fa(a, 0, 0));
+      pos.push_back(Vec3fa(d, 0, 0));
+      pos.push_back(Vec3fa(d, 1, 0));
+
+      auto geom = scene.addGeometry(RTC_BUILD_QUALITY_HIGH, mesh.dynamicCast<SceneGraph::Node>());
+
+      RTCGeometry hgeom = rtcGetGeometry(scene, geom);
+      AssertNoError(device);
+
+      rtcEnableGeometry(hgeom);
+      rtcCommitScene (scene);
+      AssertNoError(device);
+
+      return VerifyApplication::PASSED;
+    }
+  };
+
   struct UpdateTest : public VerifyApplication::IntersectTest
   {
     SceneFlags sflags;
@@ -6208,6 +6266,10 @@ namespace embree
       push(new TestGroup("disable_detach_geometry",true,true));
       for (auto sflags : sceneFlagsDynamic)
         groups.top()->add(new DisableAndDetachGeometryTest(to_string(sflags),isa,sflags));
+      groups.pop();
+
+      push(new TestGroup("triangle_split_epsilon",true,true));
+      groups.top()->add(new TriangleSplitRegression(isa));
       groups.pop();
 
       push(new TestGroup("update",true,true));
