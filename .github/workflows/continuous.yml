@@ -548,7 +548,7 @@ jobs:
         $env:PYTHONPATH = "$pwd/python/build/install/bin"
         $env:PATH += ";$pwd/python/build/install/bin"
         pip install pyrootutils, pillow, numpy
-        py ./tutorials/minimal.py
+        py ./python/tutorials/minimal.py
 
 
 
