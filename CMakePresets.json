@@ -98,6 +98,23 @@
         "CMAKE_BUILD_TYPE": "Release",
         "EMBREE_MAX_ISA": "SSE2"
       }
+    },
+
+
+
+
+    {
+      "name": "windows-pyembree-x",
+      "binaryDir": "${sourceDir}/build",
+      "inherits": ["package-windows", "env", "dpcpp-windows", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_INSTALL_PREFIX": "./build/install",
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "ON",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
     }
   ]
 }

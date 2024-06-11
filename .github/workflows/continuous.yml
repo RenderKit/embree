@@ -501,7 +501,67 @@ jobs:
   ## PyEmbree
   #########################################
 
-  windows-pyembree-build:
+  #windows-pyembree-build:
+  #  secrets: inherit
+  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+  #  with:
+  #    force-delete: true
+  #    runs-on: '[ "Windows", "NAS", "build" ]'
+  #    project: embree
+  #    env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
+  #    artifact-out: windows-pyembree
+  #    artifact-path: ./python/build/install
+  #    cmd: |
+  #      cd python
+  #      cmake -B build -DCMAKE_BUILD_TYPE=Release -DEMBREE_MAX_ISA=SSE2 -DCMAKE_INSTALL_PREFIX="./build/install"
+  #      cmake --build build --config Release --target install
+
+  #windows-pyembree-test:
+  #  secrets: inherit
+  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+  #  needs: ["windows-pyembree-build"]
+  #  with:
+  #    force-delete: true
+  #    runs-on: '[ "Windows", "NAS", "build" ]'
+  #    project: embree
+  #    env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
+  #    artifact-in: windows-pyembree
+  #    cmd: |
+  #      $env:PYTHONPATH = "$pwd/python/build/install/bin"
+  #      $env:PATH += ";$pwd/python/build/install/bin"
+  #      py ./python/tutorials/test.py
+
+  #windows-pyembree-tutorial:
+  #  secrets: inherit
+  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+  #  needs: ["windows-pyembree-build"]
+  #  with:
+  #    force-delete: true
+  #    runs-on: '[ "Windows", "NAS", "build" ]'
+  #    project: embree
+  #    env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
+  #    artifact-in: windows-pyembree
+  #    cmd: |
+  #      $env:PYTHONPATH = "$pwd/python/build/install/bin"
+  #      $env:PATH += ";$pwd/python/build/install/bin"
+  #      pip install pyrootutils, pillow, numpy
+  #      py ./python/tutorials/minimal.py
+
+
+
+  #windows-pyembree-XYZ:
+  #  secrets: inherit
+  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+  #  with:
+  #    force-delete: true
+  #    runs-on: '[ "Windows", "NAS", "build" ]'
+  #    project: embree
+  #    env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
+  #    cmd: |
+  #      cmake --preset windows-pyembree-x
+  #      cmake --build build --config Release --target install -- -v
+
+  windows-pyembree-X:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
@@ -513,43 +573,26 @@ jobs:
       artifact-path: ./python/build/install
       cmd: |
         cd python
-        cmake -B build -DCMAKE_BUILD_TYPE=Release -DEMBREE_MAX_ISA=SSE2 -DCMAKE_INSTALL_PREFIX="./build/install"
-        cmake --build build --config Release --target install
-        $env:PYTHONPATH = "$pwd/build/install/bin"
-        $env:PATH += ";$pwd/build/install/bin"
-        py ./tutorials/test.py
+        cmake --preset windows-pyembree-x
+        cmake --build build --config Release --target install -- -v
 
-  windows-pyembree-test:
+  windows-pyembree-XX:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-    needs: ["windows-pyembree-build"]
+    needs: ["windows-pyembree-X"]
     with:
-      force-delete: true
-      runs-on: '[ "Windows", "NAS", "build" ]'
+      runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
-      artifact-in: windows-pyembree
-      cmd: |
-        $env:PYTHONPATH = "$pwd/python/build/install/bin"
-        $env:PATH += ";$pwd/python/build/install/bin"
-        py ./python/tutorials/test.py
-
-  windows-pyembree-tutorial:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-    needs: ["windows-pyembree-build"]
-    with:
-      force-delete: true
-      runs-on: '[ "Windows", "NAS", "build" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
-      artifact-in: windows-pyembree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
+      artifact-in: windows-pyembree-X
       cmd: |
         $env:PYTHONPATH = "$pwd/python/build/install/bin"
         $env:PATH += ";$pwd/python/build/install/bin"
         pip install pyrootutils, pillow, numpy
+        echo "minimal"
         py ./python/tutorials/minimal.py
-
+        echo "minimal2"
+        py ./python/tutorials/minimal2.py
 
 
   success:
@@ -579,8 +622,9 @@ jobs:
       #- macosx-x64-CLANG
       #- macosx-ARM-CLANG-NEON-AVX2-universal-binaries
       #- static-analysis
-      - windows-pyembree-test
-      - windows-pyembree-tutorial
+      #- windows-pyembree-test
+      #- windows-pyembree-tutorial
+      - windows-pyembree-XX
 
 
     if: failure() || cancelled()

@@ -146,6 +146,12 @@ void bind_rtcore_geometry(py::module &m) {
         return EmbreeVoidPtr(rtcSetNewGeometryBuffer(geometry.g, type, slot, format, byteStride, itemCount));
     });
 
+    /* Creates and sets a new geometry buffer. */
+    m.def("rtcSetNewSharedGeometryBuffer", [](RTCGeometryWrapper geometry, enum RTCBufferType type, unsigned int slot, enum RTCFormat format, size_t byteStride, size_t itemCount){
+        // TODO
+        return EmbreeVoidPtr(rtcSetNewGeometryBuffer(geometry.g, type, slot, format, byteStride, itemCount));
+    });
+
     /* Returns the pointer to the data of a buffer. */
     m.def("rtcGetGeometryBufferData", [](RTCGeometryWrapper geometry, enum RTCBufferType type, unsigned int slot){
         return EmbreeVoidPtr(rtcGetGeometryBufferData(geometry.g, type, slot));

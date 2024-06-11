@@ -1,0 +1,34 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 11,
+    "patch": 0
+  },
+  "include": [
+    "../scripts/cmake-presets/os.json", 
+    "../scripts/cmake-presets/package.json",
+    "../scripts/cmake-presets/compiler.json",
+    "../scripts/cmake-presets/tbb.json",
+    "../scripts/cmake-presets/continuous.json",
+    "../scripts/cmake-presets/nightly.json",
+    "../scripts/cmake-presets/release.json",
+    "../scripts/cmake-presets/integrate.json",
+    "../scripts/cmake-presets/performance.json"
+  ],
+  "configurePresets": [
+    {
+      "name": "windows-pyembree-x",
+      "binaryDir": "${sourceDir}/build",
+      "inherits": ["package-windows", "env", "dpcpp-windows", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_INSTALL_PREFIX": "./build/install",
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "ON",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    }
+  ]
+}

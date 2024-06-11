@@ -1,6 +1,6 @@
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
-
+include(ExternalProject)
 
 # Make sure we have embree
 if (NOT embree_DIR)
@@ -10,6 +10,8 @@ if (NOT embree_DIR)
     set(embree_BINARY_DIR ${CMAKE_BINARY_DIR}/_deps/embree-build)
     message("bin dir    ${embree_BINARY_DIR}")
     add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../.. ${embree_BINARY_DIR})
+
+    message("EMBREE LIBS:   ${EMBREE_LIBRARIES}")
 else()
     message("-- using embree from ${embree_DIR}")
     set(embree_BINARY_DIR "${embree_DIR}/../../../bin")
@@ -43,6 +45,15 @@ pybind11_add_module(pyembree
 
 target_include_directories(pyembree PRIVATE ${CMAKE_INSTALL_PREFIX}/include)
 target_link_libraries(pyembree PRIVATE embree)
+
+if(EMBREE_SYCL_SUPPORT)
+    add_compile_definitions(EMBREE_SYCL_SUPPORT=1)
+    message("${CMAKE_MODULE_PATH}")
+    message("${CMAKE_CURRENT_SOURCE_DIR}/../../common/cmake")
+    set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../common/cmake" ${CMAKE_MODULE_PATH})
+    message("${CMAKE_MODULE_PATH}")
+    include(dpcpp)
+endif()
 
 install(TARGETS pyembree
         COMPONENT python

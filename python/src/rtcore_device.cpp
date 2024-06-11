@@ -47,26 +47,33 @@ void bind_rtcore_device(pybind11::module &m) {
     /* Creates a new Embree device. */
     m.def("rtcNewDevice", [](const char* config){return RTCDeviceWrapper{rtcNewDevice(config)};});
 
-    m.def("rtcCreateDevice", [](const char* config, bool enable_sycl) {
+    m.def("rtcCreateDevice", [](const char* config, bool enable_sycl, bool jit_cache) {
         #if defined(EMBREE_SYCL_SUPPORT)
 
             /* create SYCL device */
             if (enable_sycl)
             {
-                if (jit_cache)
-                {
-                    /* enable SYCL JIT caching */
-                    FileName exe = getExecutableFileName();
-                    FileName cache_dir = exe.path() + FileName("cache");
+                printf("SYCLSYCLSYCLSYCLSYCLSYCLSYCLSYCL");
+                printf("SYCLSYCLSYCLSYCLSYCLSYCLSYCLSYCL");
+                printf("SYCLSYCLSYCLSYCLSYCLSYCLSYCLSYCL");
+                printf("SYCLSYCLSYCLSYCLSYCLSYCLSYCLSYCL");
+                printf("SYCLSYCLSYCLSYCLSYCLSYCLSYCLSYCL");
+                printf("SYCLSYCLSYCLSYCLSYCLSYCLSYCLSYCL");
+                printf("SYCLSYCLSYCLSYCLSYCLSYCLSYCLSYCL");
+                //if (jit_cache)
+                //{
+                //    /* enable SYCL JIT caching */
+                //    std::string exe = getExecutableFileName();
+                //    std::string cache_dir = exe.path() + FileName("cache");
 
-                #if defined(__WIN32__)
-                    _putenv_s("SYCL_CACHE_PERSISTENT","1");
-                    _putenv_s("SYCL_CACHE_DIR",cache_dir.c_str());
-                #else
-                    setenv("SYCL_CACHE_PERSISTENT","1",1);
-                    setenv("SYCL_CACHE_DIR",cache_dir.c_str(),1);
-                #endif
-                }
+                //#if defined(__WIN32__)
+                //    _putenv_s("SYCL_CACHE_PERSISTENT","1");
+                //    _putenv_s("SYCL_CACHE_DIR",cache_dir.c_str());
+                //#else
+                //    setenv("SYCL_CACHE_PERSISTENT","1",1);
+                //    setenv("SYCL_CACHE_DIR",cache_dir.c_str(),1);
+                //#endif
+                //}
 
                 auto exception_handler = [](sycl::exception_list exceptions)
                 {
@@ -81,7 +88,7 @@ void bind_rtcore_device(pybind11::module &m) {
                     }
                 };
 
-                check_raytracing_support();
+                //check_raytracing_support();
 
                 RTCDeviceWrapper w;
                 /* select device supported by Embree */
@@ -89,17 +96,17 @@ void bind_rtcore_device(pybind11::module &m) {
                     w.sycl_device = new sycl::device(rtcSYCLDeviceSelector);
                 } catch(std::exception& e) {
                     std::cerr << "Caught exception creating sycl::device: " << e.what() << std::endl;
-                    printAllSYCLDevices();
+                    //printAllSYCLDevices();
                     throw;
                 }
-                sycl::platform platform = device->get_platform();
+                sycl::platform platform = w.sycl_device->get_platform();
                 std::cout << "Selected SYCL Platform: " + platform.get_info<sycl::info::platform::name>() << std::endl;
-                std::cout << "Selected SYCL Device: " + device->get_info<sycl::info::device::name>() << std::endl;
+                std::cout << "Selected SYCL Device: " + w.sycl_device->get_info<sycl::info::device::name>() << std::endl;
 
-                w.sycl_queue = new sycl::queue(w.sycl_device, exception_handler, { sycl::property::queue::in_order(), sycl::property::queue::enable_profiling() });
-                w.sycl_context = new sycl::context(w.sycl_device);
-                w.d = rtcNewSYCLDevice(w.sycl_context,config);
-                error_handler(nullptr,rtcGetDeviceError(w.sycl_device));
+                w.sycl_queue = new sycl::queue(*w.sycl_device, exception_handler, { sycl::property::queue::in_order(), sycl::property::queue::enable_profiling() });
+                w.sycl_context = new sycl::context(*w.sycl_device);
+                w.d = rtcNewSYCLDevice(*w.sycl_context, config);
+                error_handler(nullptr, rtcGetDeviceError(w.d));
 
                 if (verbosity >= 1) {
                   printAllSYCLDevices();

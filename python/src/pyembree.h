@@ -5,12 +5,12 @@
 #include <pybind11/functional.h>
 #include <pybind11/numpy.h>
 
-#include <embree4/rtcore.h>
-#include <cstdint>
-
 #if defined(EMBREE_SYCL_SUPPORT)
 #include "sycl/sycl.hpp"
 #endif
+#include <embree4/rtcore.h>
+#include <cstdint>
+
 
 struct RTCDeviceWrapper { 
     RTCDevice d; 
