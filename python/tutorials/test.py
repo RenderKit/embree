@@ -1,0 +1,2 @@
+import pyembree
+print(pyembree.RTC_INVALID_GEOMETRY_ID)

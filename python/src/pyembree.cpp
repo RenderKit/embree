@@ -2,8 +2,14 @@
 
 namespace py = pybind11;
 
+    int add(int a, int b) {
+        return a + b;
+    }
 
 PYBIND11_MODULE(pyembree, m) {
+
+    m.def("add", &add, "AOEUAOEU");
+    m.def("add2", [](int a, int b){return add(a,b);});
 
     py::class_<EmbreeVoidPtr>(m, "pvoid")
         .def("get_raw",  &EmbreeVoidPtr::get_raw)

@@ -496,6 +496,46 @@ jobs:
         cmake --preset linux-coverity
       build: sh scripts/coverity.sh
 
+
+  ########################################
+  # PyEmbree
+  ########################################
+
+  windows-pyembree-build:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
+    with:
+      force-delete: true
+      runs-on: '[ "Windows", "NAS", "build" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
+      cmd: |
+        cd python
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DEMBREE_MAX_ISA=SSE2 -DCMAKE_INSTALL_PREFIX="./build/install"
+        cmake --build build --config Release --target install
+        $env:PYTHONPATH = "$pwd/build/install/bin"
+        $env:PATH += ";$pwd/build/install/bin"
+        py ./tutorials/test.py
+
+  windows-pyembree-tutorial:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
+    with:
+      force-delete: true
+      runs-on: '[ "Windows", "NAS", "build" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
+      cmd: |
+        cd python
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DEMBREE_MAX_ISA=SSE2 -DCMAKE_INSTALL_PREFIX="./build/install"
+        cmake --build build --config Release --target install
+        $env:PYTHONPATH = "$pwd/build/install/bin"
+        $env:PATH += ";$pwd/build/install/bin"
+        pip install pyrootutils, pillow, numpy
+        py ./tutorials/minimal.py
+
+
+
   success:
     runs-on: ubuntu-latest
     needs:
@@ -523,6 +563,7 @@ jobs:
       - macosx-x64-CLANG
       - macosx-ARM-CLANG-NEON-AVX2-universal-binaries
       - static-analysis
+      - windows-pyembree-build
 
 
     if: failure() || cancelled()

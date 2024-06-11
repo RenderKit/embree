@@ -8,7 +8,18 @@
 #include <embree4/rtcore.h>
 #include <cstdint>
 
-struct RTCDeviceWrapper { RTCDevice d; };
+#if defined(EMBREE_SYCL_SUPPORT)
+#include "sycl/sycl.hpp"
+#endif
+
+struct RTCDeviceWrapper { 
+    RTCDevice d; 
+#if defined(EMBREE_SYCL_SUPPORT)
+    sycl::device* sycl_device = nullptr;
+    sycl::queue* sycl_queue = nullptr;
+    sycl::context* sycl_context = nullptr;
+#endif
+};
 struct RTCSceneWrapper { RTCScene s; };
 struct RTCGeometryWrapper { RTCGeometry g; };
 

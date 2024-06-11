@@ -3,7 +3,7 @@
 namespace py = pybind11;
 
 
-void bind_rtcore_device(pybind11::module &m) {
+void bind_rtcore_device(py::module &m) {
 
     py::class_<RTCDeviceWrapper>(m, "RTCDeviceWrapper");
 
