@@ -3,12 +3,128 @@
 namespace py = pybind11;
 
 
-void bind_rtcore_device(py::module &m) {
+/* error reporting function */
+void error_handler(void* userPtr, const RTCError code, const char* str = nullptr)
+{
+    if (code == RTC_ERROR_NONE)
+        return;
+  
+    printf("Embree: ");
+    switch (code) {
+    case RTC_ERROR_UNKNOWN          : printf("RTC_ERROR_UNKNOWN"); break;
+    case RTC_ERROR_INVALID_ARGUMENT : printf("RTC_ERROR_INVALID_ARGUMENT"); break;
+    case RTC_ERROR_INVALID_OPERATION: printf("RTC_ERROR_INVALID_OPERATION"); break;
+    case RTC_ERROR_OUT_OF_MEMORY    : printf("RTC_ERROR_OUT_OF_MEMORY"); break;
+    case RTC_ERROR_UNSUPPORTED_CPU  : printf("RTC_ERROR_UNSUPPORTED_CPU"); break;
+    case RTC_ERROR_CANCELLED        : printf("RTC_ERROR_CANCELLED"); break;
+    default                         : printf("invalid error code"); break;
+    }
+    if (str) {
+        printf(" (");
+        while (*str) putchar(*str++);
+        printf(")\n");
+    }
+    exit(1);
+}
+
+#if defined(EMBREE_SYCL_SUPPORT)
+void exception_handler(sycl::exception_list exceptions)
+{
+  for (std::exception_ptr const& e : exceptions) {
+    try {
+      std::rethrow_exception(e);
+    } catch(sycl::exception const& e) {
+      std::cout << "Caught asynchronous SYCL exception: " << e.what() << std::endl;
+    }
+  }
+};
+#endif
+
+void bind_rtcore_device(pybind11::module &m) {
 
     py::class_<RTCDeviceWrapper>(m, "RTCDeviceWrapper");
 
     /* Creates a new Embree device. */
     m.def("rtcNewDevice", [](const char* config){return RTCDeviceWrapper{rtcNewDevice(config)};});
+
+    m.def("rtcCreateDevice", [](const char* config, bool enable_sycl) {
+        #if defined(EMBREE_SYCL_SUPPORT)
+
+            /* create SYCL device */
+            if (enable_sycl)
+            {
+                if (jit_cache)
+                {
+                    /* enable SYCL JIT caching */
+                    FileName exe = getExecutableFileName();
+                    FileName cache_dir = exe.path() + FileName("cache");
+
+                #if defined(__WIN32__)
+                    _putenv_s("SYCL_CACHE_PERSISTENT","1");
+                    _putenv_s("SYCL_CACHE_DIR",cache_dir.c_str());
+                #else
+                    setenv("SYCL_CACHE_PERSISTENT","1",1);
+                    setenv("SYCL_CACHE_DIR",cache_dir.c_str(),1);
+                #endif
+                }
+
+                auto exception_handler = [](sycl::exception_list exceptions)
+                {
+                    for (std::exception_ptr const &e : exceptions) {
+                        try {
+                            std::rethrow_exception(e);
+                        } catch (sycl::exception const &e) {
+                            std::cout << "ERROR: Caught asynchronous SYCL exception:\n"
+                                      << e.what() << std::endl;
+                            exit(1);
+                        }
+                    }
+                };
+
+                check_raytracing_support();
+
+                RTCDeviceWrapper w;
+                /* select device supported by Embree */
+                try {
+                    w.sycl_device = new sycl::device(rtcSYCLDeviceSelector);
+                } catch(std::exception& e) {
+                    std::cerr << "Caught exception creating sycl::device: " << e.what() << std::endl;
+                    printAllSYCLDevices();
+                    throw;
+                }
+                sycl::platform platform = device->get_platform();
+                std::cout << "Selected SYCL Platform: " + platform.get_info<sycl::info::platform::name>() << std::endl;
+                std::cout << "Selected SYCL Device: " + device->get_info<sycl::info::device::name>() << std::endl;
+
+                w.sycl_queue = new sycl::queue(w.sycl_device, exception_handler, { sycl::property::queue::in_order(), sycl::property::queue::enable_profiling() });
+                w.sycl_context = new sycl::context(w.sycl_device);
+                w.d = rtcNewSYCLDevice(w.sycl_context,config);
+                error_handler(nullptr,rtcGetDeviceError(w.sycl_device));
+
+                if (verbosity >= 1) {
+                  printAllSYCLDevices();
+                }
+
+                enableUSMAllocTutorial(w.sycl_context, w.sycl_device);
+            }
+
+            /* create standard device */
+            else
+        #endif
+
+            RTCDeviceWrapper w;
+            {
+                w.d = rtcNewDevice(config);
+                error_handler(nullptr,rtcGetDeviceError(w.d));
+            }
+
+        /* set error handler */
+        rtcSetDeviceErrorFunction(w.d,error_handler,nullptr);
+
+        return w;
+
+        // #endif ..else
+    });
 
 
 #if defined(EMBREE_SYCL_SUPPORT) && defined(SYCL_LANGUAGE_VERSION)
