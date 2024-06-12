@@ -1783,7 +1783,7 @@ namespace embree
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
     {
-      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa) + ",max_spatial_split_replications=1.5,max_triagles_per_leaf=1";
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa) + ",max_spatial_split_replications=1.5,max_triangles_per_leaf=1";
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       errorHandler(nullptr,rtcGetDeviceError(device));
       SceneFlags sflags = { RTC_SCENE_FLAG_NONE, RTC_BUILD_QUALITY_HIGH };

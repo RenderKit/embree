@@ -430,7 +430,7 @@ namespace embree
       else if (tok == Token::Id("max_spatial_split_replications") && cin->trySymbol("="))
         max_spatial_split_replications = cin->get().Float();
 
-      else if (tok == Token::Id("max_triagles_per_leaf") && cin->trySymbol("="))
+      else if (tok == Token::Id("max_triangles_per_leaf") && cin->trySymbol("="))
         max_triangles_per_leaf = cin->get().Float();
 
       else if (tok == Token::Id("presplits") && cin->trySymbol("="))
