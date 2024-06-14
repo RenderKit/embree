@@ -1,0 +1,25 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 23,
+    "patch": 0
+  },
+  "include": [
+    "package.json",
+    "compiler.json",
+    "tbb.json"
+  ],
+  "configurePresets": [
+    {
+      "name": "public-gcc-tbb-sse2",
+      "inherits": ["package", "gcc", "tbb_SYSTEM"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    }
+  ]
+}
+
+
