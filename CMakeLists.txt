@@ -140,6 +140,9 @@ MARK_AS_ADVANCED(EMBREE_ZIP_MODE)
 OPTION(EMBREE_INSTALL_DEPENDENCIES "Install Embree dependencies in binary packages and install" OFF)
 MARK_AS_ADVANCED(EMBREE_INSTALL_DEPENDENCIES)
 
+OPTION(EMBREE_INSTALL "Global Embree Install guard" ON)
+MARK_AS_ADVANCED(EMBREE_INSTALL)
+
 OPTION(EMBREE_STAT_COUNTERS "Enables statistic counters.")
 OPTION(EMBREE_STACK_PROTECTOR "When enabled Embree compiles with stack protection against return address overrides." OFF)
 
