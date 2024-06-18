@@ -7,7 +7,7 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wignored-attributes"
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 #include "tbb/tbb.h"
 
 #if defined(ZE_RAYTRACING)
