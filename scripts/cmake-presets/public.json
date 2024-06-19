@@ -18,6 +18,46 @@
       "cacheVariables": {
         "EMBREE_MAX_ISA": "SSE2"
       }
+    },
+    {
+      "name": "public-gcc-tbb-avx2",
+      "inherits": ["package", "gcc", "tbb_SYSTEM"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "EMBREE_MAX_ISA": "AVX2"
+      }
+    },
+    {
+      "name": "public-gcc-tbb-avx512",
+      "inherits": ["package", "gcc", "tbb_SYSTEM"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+    {
+      "name": "public-clang-tbb-sse2",
+      "inherits": ["package", "clang", "tbb_SYSTEM"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    },
+    {
+      "name": "public-clang-tbb-avx2",
+      "inherits": ["package", "clang", "tbb_SYSTEM"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "EMBREE_MAX_ISA": "AVX2"
+      }
+    },
+    {
+      "name": "public-clang-tbb-avx521",
+      "inherits": ["package", "clang", "tbb_SYSTEM"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "EMBREE_MAX_ISA": "AVX521"
+      }
     }
   ]
 }
