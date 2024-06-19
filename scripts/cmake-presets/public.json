@@ -28,14 +28,6 @@
       }
     },
     {
-      "name": "public-gcc-tbb-avx512",
-      "inherits": ["package", "gcc", "tbb_SYSTEM"],
-      "binaryDir": "${sourceDir}/build",
-      "cacheVariables": {
-        "EMBREE_MAX_ISA": "AVX512"
-      }
-    },
-    {
       "name": "public-clang-tbb-sse2",
       "inherits": ["package", "clang", "tbb_SYSTEM"],
       "binaryDir": "${sourceDir}/build",
@@ -51,13 +43,24 @@
         "EMBREE_MAX_ISA": "AVX2"
       }
     },
+
+
     {
-      "name": "public-clang-tbb-avx521",
-      "inherits": ["package", "clang", "tbb_SYSTEM"],
+      "name": "public-clang-tbbhomebrew-sse2",
+      "inherits": ["package", "clang", "tbb_HOMEBREW"],
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
-        "EMBREE_MAX_ISA": "AVX521"
+        "EMBREE_MAX_ISA": "SSE2"
       }
+    },
+
+
+    {
+      "name": "public-v143-int-sse2",
+      "inherits": ["package", "tasking_internal"],
+      "binaryDir": "${sourceDir}/build",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64"
     }
   ]
 }

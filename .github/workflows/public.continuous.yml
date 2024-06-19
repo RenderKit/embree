@@ -18,134 +18,101 @@ permissions: read-all
 #        dnf install epel-release sudo gcc-c++ clang vim wget tar git-lfs nc make tbb-devel ImageMagick freeglut-devel glfw-devel libXmu-devel libXi-devel python3 cmake libXcursor-devel libXi-devel libXinerama-devel libXrandr-devel ncurses-compat-libs environment-modules ncurses-compat-libs environment-modules ninja build
 #        dnf group install "Development Tools" -y
 jobs:
+
   rocky-8-gcc-tbb-sse2:
-    runs-on: ubuntu-latest
-    container:
+    uses: ./.github/workflows/public.docker.yml
+    with:
       image: rockylinux:8
-
-    steps:
-    - name: Install packages
-      run: |
-        yum -y install epel-release
-        yum -y install gcc-c++ tar git-lfs make tbb-devel freeglut-devel glfw-devel libXmu-devel libXi-devel python3
-        yum -y install cmake
-        yum -y install libXcursor-devel libXi-devel libXinerama-devel libXrandr-devel
-        yum -y install ncurses-compat-libs 
-        yum -y install environment-modules
-
-        dnf makecache --refresh
-        dnf config-manager --set-enabled powertools
-        dnf -y update
-        dnf -y install ninja-build
-
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-      with:
-        submodules: true
-
-    - name: Build and Test embree
-      run: |
+      cmd: |
         cmake --preset public-gcc-tbb-sse2 -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --target build
         cmake --build build --target test_package
-
-    - name: Dump test image
-      if: always()
-      run: |
+      postcmd: |
         mkdir dump
         ./build/embree_install/bin/embree_viewer "-i ./build/embree_install/testing/tests/primitives/curves_bezier_normal_oriented_mblur.xml" "-o ./dump/curves_bezier_normal_mblur.png" "--compare ./build/embree_install/testing/tests/primitives/curves_bezier_normal_oriented_mblur.xml.embree_viewer_primID.exr" "--shader" "primID" "--time" "0.5" "--compare-threshold" "55"
-
-    - name: Upload Artifact
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: rocky-8-gcc-tbb-sse2
-        path: dump
+      artifact: dump
 
 
   rocky-8-gcc-tbb-avx2:
-    runs-on: ubuntu-latest
-    container:
+    uses: ./.github/workflows/public.docker.yml
+    with:
       image: rockylinux:8
-
-    steps:
-    - name: Install packages
-      run: |
-        yum -y install epel-release
-        yum -y install gcc-c++ tar git-lfs make tbb-devel freeglut-devel glfw-devel libXmu-devel libXi-devel python3
-        yum -y install cmake
-        yum -y install libXcursor-devel libXi-devel libXinerama-devel libXrandr-devel
-        yum -y install ncurses-compat-libs 
-        yum -y install environment-modules
-
-        dnf makecache --refresh
-        dnf config-manager --set-enabled powertools
-        dnf -y update
-        dnf -y install ninja-build
-
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-      with:
-        submodules: true
-
-    - name: Build and Test embree
-      run: |
+      cmd: |
         cmake --preset public-gcc-tbb-avx2 -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --target build
         cmake --build build --target test_package
 
 
-  rocky-8-gcc-tbb-avx512:
-    runs-on: ubuntu-latest
-    container:
+  rocky-8-clang-tbb-sse2:
+    uses: ./.github/workflows/public.docker.yml
+    with:
       image: rockylinux:8
-
-    steps:
-    - name: Install packages
-      run: |
-        yum -y install epel-release
-        yum -y install gcc-c++ tar git-lfs make tbb-devel freeglut-devel glfw-devel libXmu-devel libXi-devel python3
-        yum -y install cmake
-        yum -y install libXcursor-devel libXi-devel libXinerama-devel libXrandr-devel
-        yum -y install ncurses-compat-libs 
-        yum -y install environment-modules
-
-        dnf makecache --refresh
-        dnf config-manager --set-enabled powertools
-        dnf -y update
-        dnf -y install ninja-build
-
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-      with:
-        submodules: true
-
-    - name: Build and Test embree
-      run: |
-        cmake --preset public-gcc-tbb-avx512 -DEMBREE_TESTING_INTENSITY=3
+      cmd: |
+        cmake --preset public-clang-tbb-sse2 -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --target build
         cmake --build build --target test_package
 
 
-#  rocky-8-clang-tbb-sse2:
-#    runs-on: ubuntu-latest
-#    container:
-#      image: rockylinux:8
+  rocky-8-clang-tbb-avx2:
+    uses: ./.github/workflows/public.docker.yml
+    with:
+      image: rockylinux:8
+      cmd: |
+        cmake --preset public-clang-tbb-avx2 -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --target build
+        cmake --build build --target test_package
+
+
+
+
+  ubuntu-2204-gcc-tbb-sse2:
+    uses: ./.github/workflows/public.docker.yml
+    with:
+      image: ubuntu:22.04
+      cmd: |
+        cmake --preset public-gcc-tbb-sse2 -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --target build
+        cmake --build build --target test_package
+
+
+  ubuntu-2204-gcc-tbb-avx2:
+    uses: ./.github/workflows/public.docker.yml
+    with:
+      image: ubuntu:22.04
+      cmd: |
+        cmake --preset public-gcc-tbb-avx2 -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --target build
+        cmake --build build --target test_package
+
+
+  ubuntu-2204-clang-tbb-sse2:
+    uses: ./.github/workflows/public.docker.yml
+    with:
+      image: ubuntu:22.04
+      cmd: |
+        cmake --preset public-clang-tbb-sse2 -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --target build
+        cmake --build build --target test_package
+
+
+  ubuntu-2204-clang-tbb-avx2:
+    uses: ./.github/workflows/public.docker.yml
+    with:
+      image: ubuntu:22.04
+      cmd: |
+        cmake --preset public-clang-tbb-avx2 -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --target build
+        cmake --build build --target test_package
+
+# TODO: macos linker error for arm
 #
+#
+#  macos-14-clang:
+#    runs-on: macos-14-large
 #    steps:
-#    - name: Install packages
+#    - name: Install Packages
 #      run: |
-#        yum -y install epel-release
-#        yum -y install gcc-c++ clang wget tar git-lfs nc make tbb-devel ImageMagick freeglut-devel glfw-devel libXmu-devel libXi-devel python3
-#        yum -y install cmake
-#        yum -y install libXcursor-devel libXi-devel libXinerama-devel libXrandr-devel
-#        yum -y install ncurses-compat-libs 
-#        yum -y install environment-modules
-#
-#        dnf makecache --refresh
-#        dnf config-manager --set-enabled powertools
-#        dnf -y update
-#        dnf -y install ninja-build
+#        brew install tbb
 #
 #    - name: Checkout Repository
 #      uses: actions/checkout@v4
@@ -154,19 +121,63 @@ jobs:
 #
 #    - name: Build and Test embree
 #      run: |
-#        cmake --preset public-gcc-tbb-sse2 -DEMBREE_TESTING_INTENSITY=3
+#        cmake --preset public-clang-tbbhomebrew-sse2 -DEMBREE_TESTING_INTENSITY=3
 #        cmake --build build --target build
 #        cmake --build build --target test_package
 #
-#    - name: Dump test image
-#      if: always()
-#      run: |
-#        mkdir dump
-#        ./build/embree_install/bin/embree_viewer "-i ./build/embree_install/testing/tests/primitives/curves_bezier_normal_oriented_mblur.xml" "-o ./dump/curves_bezier_normal_mblur.png" "--compare ./build/embree_install/testing/tests/primitives/curves_bezier_normal_oriented_mblur.xml.embree_viewer_primID.exr" "--shader" "primID" "--time" "0.5" "--compare-threshold" "55"
 #
-#    - name: Upload Artifact
-#      if: always()
-#      uses: actions/upload-artifact@v4
+#
+#  macos-14-arm-clang:
+#    runs-on: macos-14
+#    steps:
+#    - name: Install Packages
+#      run: |
+#        brew install tbb
+#
+#    - name: Checkout Repository
+#      uses: actions/checkout@v4
 #      with:
-#        name: rocky-8-gcc-tbb-sse2
-#        path: dump
+#        submodules: true
+#
+#    - name: Build and Test embree
+#      run: |
+#        cmake --preset public-clang-tbbhomebrew-sse2 -DEMBREE_TESTING_INTENSITY=3
+#        cmake --build build --target build
+#        cmake --build build --target test_package
+#
+#
+#
+# TODO: windows cmake compile error
+#
+#  windows-v143-tbb-sse2:
+#    runs-on: windows-latest
+#
+#    steps:
+#    ## Install Visual Studio Build Tools with a specific version
+#    #- name: Install Visual Studio Build Tools
+#    #  run: |
+#    #    choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --includeOptional --passive"
+#    #  continue-on-error: true # To avoid failure if already installed
+#
+#    ## Ensure the environment is properly configured
+#    #- name: Configure MSBuild Environment
+#    #  run: |
+#    #    set VCToolsVersion=14.32.31332
+#    #    set "PATH=%PATH%;C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin"
+#
+#    # Install or upgrade CMake to the latest version
+#    - name: Install CMake
+#      run: |
+#        choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --yes
+#        choco upgrade cmake --installargs 'ADD_CMAKE_TO_PATH=System' --yes
+#
+#    - name: Checkout Repository
+#      uses: actions/checkout@v4
+#      with:
+#        submodules: true
+#
+#    - name: Build and Test embree
+#      run: |
+#        cmake --preset public-v143-int-sse2 -DEMBREE_TESTING_INTENSITY=3
+#        cmake --build build --config Release --target build
+#        cmake --build build --config Release --target test_package

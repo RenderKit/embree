@@ -1,0 +1,93 @@
+on:
+  workflow_call:
+    inputs:
+      image:
+        description: Docker image relative to amr-registry.caas.intel.com/renderkit/
+        required: true
+        default: rockylinux:8
+        type: string
+      cmd:
+        description: Shell command to run inside docker image
+        required: true
+        type: string
+      postcmd:
+        description: Shell command to run inside docker image
+        required: false
+        type: string
+      artifact:
+        description: Shell command to run inside docker image
+        required: false
+        type: string
+
+jobs:
+  exec:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.image }}
+    steps:
+      - name: Print
+        run: |
+          echo "${{ inputs.image }}"
+
+      - name: Install packages (rocky 8)
+        if: ${{ inputs.image == 'rockylinux:8' }}
+        run: |
+          yum -y install epel-release
+          yum -y install gcc-c++ clang tar git-lfs make tbb-devel freeglut-devel glfw-devel libXmu-devel libXi-devel python3
+          yum -y install cmake
+          yum -y install libXcursor-devel libXi-devel libXinerama-devel libXrandr-devel
+          yum -y install ncurses-compat-libs 
+          yum -y install environment-modules
+
+          dnf makecache --refresh
+          dnf config-manager --set-enabled powertools
+          dnf -y update
+          dnf -y install ninja-build
+
+      - name: Install packages (ubuntu 22.04)
+        if: ${{ inputs.image == 'ubuntu:22.04' }}
+        run: |
+          apt-get update
+          apt-get -y upgrade
+          apt-get -y install g++ python3 clang git-lfs libtbb-dev freeglut3-dev libglfw3-dev libxmu-dev libxi-dev unzip xorg-dev pip
+          apt-get -y install libtinfo5
+          apt-get -y install libopenimageio-dev
+          apt-get -y install ninja-build
+
+          pip install --upgrade cmake
+          cmake --version
+
+#          apt-get -y libtool autoconf wget
+#          mkdir ~/temp
+#          cd ~/temp
+#          wget https://cmake.org/files/v3.28/cmake-3.28.1.tar.gz
+#          tar -xzvf cmake-3.28.1.tar.gz
+#          cd cmake-3.28.1/
+#
+#          ./bootstrap
+#          make -j$(nproc)
+#          sudo make install
+#
+#          cmake --version
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Run Commands
+        run: |
+          cmake --version
+          ${{ inputs.cmd }}
+
+      - name: Post Commands
+        if: ${{ inputs.postcmd && (success() || (inputs.postcmd && failure()))}}
+        run: |
+          ${{ inputs.postcmd }}
+
+      - name: Upload Artifact
+        if: ${{ inputs.postcmd && (success() || (inputs.postcmd && failure()))}}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.job }}
+          path: ${{ inputs.artifact }}
