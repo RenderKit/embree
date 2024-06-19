@@ -1790,8 +1790,6 @@ namespace embree
       VerifyScene scene(device,sflags);
       AssertNoError(device);
 
-      RTCBuildArguments arguments = rtcDefaultBuildArguments();
-
       Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(nullptr, BBox1f(0, 1));
       mesh->triangles = {
         { 0,1,2 },
