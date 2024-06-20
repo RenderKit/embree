@@ -90,6 +90,13 @@ namespace embree
 
     /* check if ray tracing extension is available */
     sycl::platform platform = sycl_device.get_platform();
+
+    // check if backend is level zero before attempting the cast below. otherwise
+    // the sycl::get_native call will throw an exception which will pollute
+    // Embree's error handling (it will be stored as thread error).
+    if (platform.get_backend() != sycl::backend::ext_oneapi_level_zero)
+      return -1;
+
     ze_driver_handle_t hDriver = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(platform);
     
     uint32_t count = 0;

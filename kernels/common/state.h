@@ -9,6 +9,14 @@ namespace embree
 {
   /* mutex to make printing to cout thread safe */
   extern MutexSys g_printMutex;
+  struct RTCErrorMessage
+  {
+    RTCErrorMessage(RTCError error, std::string const& msg)
+      : error(error), msg(msg) {}
+
+    RTCError error;
+    std::string msg;
+  };
 
   struct State : public RefCount
   {
@@ -164,11 +172,11 @@ namespace embree
     public:
       ErrorHandler();
       ~ErrorHandler();
-      RTCError* error();
+      RTCErrorMessage* error();
 
     public:
       tls_t thread_error;
-      std::vector<RTCError*> thread_errors;
+      std::vector<RTCErrorMessage*> thread_errors;
       MutexSys errors_mutex;
     };
     ErrorHandler errorHandler;

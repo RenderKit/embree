@@ -79,21 +79,14 @@ namespace embree
   {
     if (code == RTC_ERROR_NONE)
       return;
-    
-    printf("Embree: ");
-    switch (code) {
-    case RTC_ERROR_UNKNOWN          : printf("RTC_ERROR_UNKNOWN"); break;
-    case RTC_ERROR_INVALID_ARGUMENT : printf("RTC_ERROR_INVALID_ARGUMENT"); break;
-    case RTC_ERROR_INVALID_OPERATION: printf("RTC_ERROR_INVALID_OPERATION"); break;
-    case RTC_ERROR_OUT_OF_MEMORY    : printf("RTC_ERROR_OUT_OF_MEMORY"); break;
-    case RTC_ERROR_UNSUPPORTED_CPU  : printf("RTC_ERROR_UNSUPPORTED_CPU"); break;
-    case RTC_ERROR_CANCELLED        : printf("RTC_ERROR_CANCELLED"); break;
-    default                         : printf("invalid error code"); break;
-    }
+
+    printf("Embree: %s", rtcGetErrorString(code));
     if (str) {
       printf(" (");
       while (*str) putchar(*str++);
       printf(")\n");
+    } else {
+      printf("\n");
     }
     exit(1);
   }
@@ -1117,8 +1110,6 @@ namespace embree
         }
       };
 
-      check_raytracing_support();
-
       /* select device supported by Embree */
       try {
         device = new sycl::device(rtcSYCLDeviceSelector);
@@ -1134,7 +1125,7 @@ namespace embree
       context = new sycl::context(*device);
       queue = new sycl::queue(*context, *device, exception_handler, { sycl::property::queue::in_order(), sycl::property::queue::enable_profiling() });
       g_device = rtcNewSYCLDevice(*context,rtcore.c_str());
-      error_handler(nullptr,rtcGetDeviceError(g_device));
+      error_handler(nullptr,rtcGetDeviceError(g_device),rtcGetDeviceLastErrorMessage(g_device));
       global_gpu_device = device;
       global_gpu_context = context;
       global_gpu_queue = queue;

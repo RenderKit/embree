@@ -89,7 +89,7 @@ void alignedSYCLFree(const sycl::queue& queue, void* ptr)
  */
 void errorFunction(void* userPtr, enum RTCError error, const char* str)
 {
-  printf("error %d: %s\n", error, str);
+  printf("error %s: %s\n", rtcGetErrorString(error), str);
 }
 
 /*
@@ -108,8 +108,10 @@ RTCDevice initializeDevice(sycl::context& sycl_context, sycl::device& sycl_devic
   RTCDevice device = rtcNewSYCLDevice(sycl_context, "");
   rtcSetDeviceSYCLDevice(device,sycl_device);
 
-  if (!device)
-    printf("error %d: cannot create device\n", rtcGetDeviceError(NULL));
+  if (!device) {
+    printf("error %s: cannot create device. (reason: %s)\n", rtcGetErrorString(rtcGetDeviceError(NULL)), rtcGetDeviceLastErrorMessage(NULL));
+    exit(1);
+  }
 
   rtcSetDeviceErrorFunction(device, errorFunction, NULL);
   return device;
@@ -296,13 +298,6 @@ void enablePersistentJITCache()
 int main()
 {
   enablePersistentJITCache();
-
-  try {
-    embree::check_raytracing_support();
-  } catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
-    return 1;
-  }
 
   /* This will select the first GPU supported by Embree */
   sycl::device sycl_device;
