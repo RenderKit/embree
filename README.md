@@ -471,6 +471,11 @@ your Intel Xe HPG/HPC GPUs from here
 the driver installation instructions for your graphics card and
 operating system.
 
+After installing the drivers you have to install an additional package
+manually using
+
+    sudo apt install intel-level-zero-gpu-raytracing
+
 
 Windows
 -------
@@ -1936,11 +1941,27 @@ Possible error codes returned by `rtcGetDeviceError` are:
 -   `RTC_ERROR_CANCELLED`: The operation got canceled by a memory
     monitor callback or progress monitor callback function.
 
+-   `RTC_ERROR_LEVEL_ZERO_RAYTRACING_SUPPORT_MISSING`: This error can
+    occur when creating an Embree device with SYCL support using
+    `rtcNewSYCLDevice` fails. This error probably means that the GPU
+    driver is to old or not installed properly. Install a new GPU
+    driver and on Linux make sure that the package
+    `intel-level-zero-gpu-raytracing` is installed. For general driver
+    installation information for Linux refer to
+    <https://dgpu-docs.intel.com>.
+
 When the device construction fails, `rtcNewDevice` returns `NULL` as
 device. To detect the error code of a such a failed device
 construction, pass `NULL` as device to the `rtcGetDeviceError`
 function. For all other invocations of `rtcGetDeviceError`, a proper
 device pointer must be specified.
+
+The API function `rtcGetDeviceLastErrorMessage` can be used to get more
+details about the last `RTCError` a `RTCDevice` encountered.
+
+For convenient reporting of a `RTCError`, the API function
+`rtcGetErrorString` can be used, which returns a string representation
+of a given `RTCError`.
 
 #### EXIT STATUS {#exit-status}
 
@@ -1948,7 +1969,85 @@ Returns the error code for the device.
 
 #### SEE ALSO {#see-also}
 
-[rtcSetDeviceErrorFunction]
+[rtcSetDeviceErrorFunction], [rtcGetDeviceLastErrorMessage],
+[rtcGetErrorString]
+
+```{=tex}
+
+```
+rtcGetDeviceLastErrorMessage
+----------------------------
+
+#### NAME {#name}
+
+    rtcGetDeviceLastErrorMessage - returns a message corresponding
+      to the last error code
+
+#### SYNOPSIS {#synopsis}
+
+    #include <embree4/rtcore.h>
+
+    const char* rtcGetDeviceLastErrorMessage(RTCDevice device);
+
+#### DESCRIPTION {#description}
+
+This function can be used to get a message corresponding to the last
+error code (returned by `rtcGetDeviceError`) which often provides
+details about the error that happened. The message is the same as the
+message that will written to console when verbosity is \> 0 or which is
+passed as the `str` argument of the `RTCErrorFunction` (see
+[rtcSetDeviceErrorFunction]). However, when device construction fails
+this is the only way to get additional information about the error. In
+this case, `rtcNewDevice` returns `NULL` as device. To query the error
+message for such a failed device construction, pass `NULL` as device to
+the `rtcGetDeviceLastErrorMessage` function. For all other invocations
+of `rtcGetDeviceLastErrorMessage`, a proper device pointer must be
+specified.
+
+#### EXIT STATUS {#exit-status}
+
+Returns a message corresponding to the last error code.
+
+#### SEE ALSO {#see-also}
+
+[rtcGetDeviceError], [rtcSetDeviceErrorFunction]
+
+```{=tex}
+
+```
+rtcGetErrorString
+-----------------
+
+#### NAME {#name}
+
+    rtcGetErrorString - returns a string representation
+      of a given RTCError
+
+#### SYNOPSIS {#synopsis}
+
+    #include <embree4/rtcore.h>
+
+    const char* rtcGetErrorString(RTCError code);
+
+#### DESCRIPTION {#description}
+
+Returns a string representation for a `RTCError` error code. For
+example, for the `RTCError` RTC\_ERROR\_UNKNOWN this function will
+return the string "Unknown Error". This is purely a convenience
+function for printing error information on the user side.
+
+The returned strings should not be used for comparing different
+`RTCError` error codes or make other decisions based on the type of
+error that occurred. For such things only the `RTCError` enum values
+should be used.
+
+#### EXIT STATUS {#exit-status}
+
+Returns a string representation of a given `RTCError` error code.
+
+#### SEE ALSO {#see-also}
+
+[rtcGetDeviceError]
 
 ```{=tex}
 

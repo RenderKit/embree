@@ -43,6 +43,16 @@
 ```
 \pagebreak
 
+## rtcGetDeviceLastErrorMessage
+``` {include=src/api/rtcGetDeviceLastErrorMessage.md}
+```
+\pagebreak
+
+## rtcGetErrorString
+``` {include=src/api/rtcGetErrorString.md}
+```
+\pagebreak
+
 ## rtcSetDeviceErrorFunction
 ``` {include=src/api/rtcSetDeviceErrorFunction.md}
 ```

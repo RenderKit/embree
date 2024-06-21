@@ -47,6 +47,16 @@ not support the lowest ISA Embree is compiled for.
 .IP \[bu] 2
 \f[C]RTC_ERROR_CANCELLED\f[R]: The operation got canceled by a memory
 monitor callback or progress monitor callback function.
+.IP \[bu] 2
+\f[C]RTC_ERROR_LEVEL_ZERO_RAYTRACING_SUPPORT_MISSING\f[R]: This error
+can occur when creating an Embree device with SYCL support using
+\f[C]rtcNewSYCLDevice\f[R] fails.
+This error probably means that the GPU driver is to old or not installed
+properly.
+Install a new GPU driver and on Linux make sure that the package
+\f[C]intel-level-zero-gpu-raytracing\f[R] is installed.
+For general driver installation information for Linux refer to
+<https://dgpu-docs.intel.com>.
 .PP
 When the device construction fails, \f[C]rtcNewDevice\f[R] returns
 \f[C]NULL\f[R] as device.
@@ -54,9 +64,18 @@ To detect the error code of a such a failed device construction, pass
 \f[C]NULL\f[R] as device to the \f[C]rtcGetDeviceError\f[R] function.
 For all other invocations of \f[C]rtcGetDeviceError\f[R], a proper
 device pointer must be specified.
+.PP
+The API function \f[C]rtcGetDeviceLastErrorMessage\f[R] can be used to
+get more details about the last \f[C]RTCError\f[R] a \f[C]RTCDevice\f[R]
+encountered.
+.PP
+For convenient reporting of a \f[C]RTCError\f[R], the API function
+\f[C]rtcGetErrorString\f[R] can be used, which returns a string
+representation of a given \f[C]RTCError\f[R].
 .SS EXIT STATUS
 .PP
 Returns the error code for the device.
 .SS SEE ALSO
 .PP
-[rtcSetDeviceErrorFunction]
+[rtcSetDeviceErrorFunction], [rtcGetDeviceLastErrorMessage],
+[rtcGetErrorString]

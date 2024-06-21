@@ -1,6 +1,11 @@
 Version History
 ---------------
 
+### Embree 4.x.y
+-   Added RTCError RTC_ERROR_LEVEL_ZERO_RAYTRACING_SUPPORT_MISSING which can indicate a GPU driver that is too old or not installed properly.
+-   Added the API function rtcGetDeviceLastErrorMessage to query additional information about the last RTCError returned by rtcGetDeviceError. This can be used in case device creation failed and a rtcErrorFunction could not be set up for this purpose.
+-   Added the API function rtcGetErrorString which returns a string representation of a given RTCError error code. This is purely meant for convenient error information reporting on the user application side.
+
 ### Embree 4.3.2
 -   Embree now uses level zero raytracing extension to build BVH which enables forward-compatibility. On Linux, the package intel-level-zero-gpu-raytracing has to be installed in addition to the other packages listed here [https://dgpu-docs.intel.com/](https://dgpu-docs.intel.com/).
 -   MacOS universal binary compilation now works.
