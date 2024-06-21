@@ -364,8 +364,7 @@ namespace embree
     out->pTransform = (float*) &out->xfmdata;
     out->pBounds = (ze_rtas_aabb_exp_t*) &dynamic_cast<Scene*>(geom->object)->hwaccel_bounds;
     out->xfmdata = *(ze_rtas_transform_float3x4_aligned_column_major_exp_t*) &local2world;
-    EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
-    out->pAccelerationStructure = hwaccel->AccelTable[0];
+    out->pAccelerationStructure = dynamic_cast<Scene*>(geom->object)->getHWAccel(0);
   }
 
   void createGeometryDesc(ze_rtas_builder_instance_geometry_info_exp_t* out, Scene* scene, Instance* geom)
@@ -379,8 +378,7 @@ namespace embree
     out->transformFormat = ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FLOAT3X4_ALIGNED_COLUMN_MAJOR;
     out->pTransform = (float*) &geom->local2world[0];
     out->pBounds = (ze_rtas_aabb_exp_t*) &dynamic_cast<Scene*>(geom->object)->hwaccel_bounds;
-    EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
-    out->pAccelerationStructure = hwaccel->AccelTable[0];
+    out->pAccelerationStructure = dynamic_cast<Scene*>(geom->object)->getHWAccel(0);
   }
 
   void createGeometryDesc(char* out, Scene* scene, Geometry* geom, GEOMETRY_TYPE type)
@@ -419,7 +417,7 @@ namespace embree
     return result;
   }  
 
-  BBox3f rthwifBuild(Scene* scene, AccelBuffer& accel)
+  std::tuple<BBox3f, size_t> rthwifBuild(Scene* scene, AccelBuffer& accel)
   {
     DeviceGPU* gpuDevice = dynamic_cast<DeviceGPU*>(scene->device);
     if (gpuDevice == nullptr) throw std::runtime_error("internal error");
@@ -483,8 +481,8 @@ namespace embree
       case Geometry::GTY_INSTANCE_CHEAP    :
       case Geometry::GTY_INSTANCE_EXPENSIVE: {
         Instance* instance = scene->get<Instance>(geomID);
-        EmbreeHWAccel* object = (EmbreeHWAccel*)((Scene*)instance->object)->hwaccel.data();
-        if (object->numTimeSegments > 1) return ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_PROCEDURAL; // we need to handle instances in procedural mode if instanced scene has motion blur
+        Scene* instanced_scene = (Scene*)instance->object;
+        if (instanced_scene->hasMotionBlur()) return ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_PROCEDURAL; // we need to handle instances in procedural mode if instanced scene has motion blur
         if (instance->mask & 0xFFFFFF80) return ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_PROCEDURAL; // we need to handle instances in procedural mode if high mask bits are set
         else if (instance->gsubtype == AccelSet::GTY_SUBTYPE_INSTANCE_QUATERNION)
           return GEOMETRY_TYPE(ZE_RTAS_BUILDER_GEOMETRY_TYPE_EXP_INSTANCE,sizeof(GEOMETRY_INSTANCE_DESC)-sizeof(ze_rtas_builder_instance_geometry_info_exp_t));
@@ -499,14 +497,12 @@ namespace embree
       }
     };
 
-    /* calculate maximal number of motion blur time segments in scene */
-    uint32_t maxTimeSegments = 1;
-    for (size_t geomID=0; geomID<scene->size(); geomID++)
-    {
-      Geometry* geom = scene->get(geomID);
-      if (geom == nullptr) continue;
-      maxTimeSegments = std::max(maxTimeSegments, geom->numTimeSegments());
+    uint32_t maxTimeSegments = scene->getMaxTimeSegments();
+    if (maxTimeSegments < 1) {
+      // TODO: remove
+      std::cerr << "maxTimeSegments not yet computed. this is unexpected." << std::endl;
     }
+    assert(maxTimeSegments > 1);
 
     /* calculate size of geometry descriptor buffer */
     size_t totalBytes = 0;
@@ -578,9 +574,6 @@ namespace embree
     /* allocate scratch buffer */
     mvector<char> scratchBuffer(scene->device,sizeTotal.scratchBufferSizeBytes);
 
-    size_t headerBytes = sizeof(EmbreeHWAccel) + std::max(1u,maxTimeSegments)*8;
-    align(headerBytes,128);
-
     /* build BVH */
     BBox3f fullBounds = empty;
     while (true)
@@ -589,7 +582,7 @@ namespace embree
       ze_rtas_builder_exp_properties_t size = { ZE_STRUCTURE_TYPE_RTAS_BUILDER_EXP_PROPERTIES };
       size.rtasBufferSizeBytesExpected  = maxTimeSegments*sizeTotal.rtasBufferSizeBytesExpected;
       size.rtasBufferSizeBytesMaxRequired = maxTimeSegments*sizeTotal.rtasBufferSizeBytesMaxRequired;
-      size_t bytes = headerBytes+size.rtasBufferSizeBytesExpected;
+      size_t bytes = size.rtasBufferSizeBytesExpected;
 
       /* allocate BVH data */
       if (accel.size() < bytes) accel.resize(bytes);
@@ -602,7 +595,7 @@ namespace embree
         const float t1 = float(i+1)/float(maxTimeSegments);
         time_range = BBox1f(t0,t1);
         
-        void* accelBuffer = accel.data() + headerBytes + i*sizeTotal.rtasBufferSizeBytesExpected;
+        void* accelBuffer = accel.data() + i*sizeTotal.rtasBufferSizeBytesExpected;
         size_t accelBufferBytes = sizeTotal.rtasBufferSizeBytesExpected;
         bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };
         
@@ -651,13 +644,7 @@ namespace embree
     err = ZeWrapper::zeRTASBuilderDestroyExp(hBuilder);
     if (err != ZE_RESULT_SUCCESS)
       throw_RTCError(RTC_ERROR_UNKNOWN, "ze_rtas_builder destruction failed");
-    
-    EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) accel.data();
-    hwaccel->numTimeSegments = maxTimeSegments;
 
-    for (size_t i=0; i<maxTimeSegments; i++)
-      hwaccel->AccelTable[i] = (char*)hwaccel + headerBytes + i*sizeTotal.rtasBufferSizeBytesExpected;
-
-    return fullBounds;
+    return std::tie(fullBounds, sizeTotal.rtasBufferSizeBytesExpected);
   }
 }

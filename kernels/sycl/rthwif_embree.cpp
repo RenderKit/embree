@@ -110,11 +110,8 @@ __forceinline bool intersect_user_geometry(intel_ray_query_t& query, RayHit& ray
   raydesc.flags |= intel_ray_flags_cull_back_facing_triangles;
 #endif
 
-  intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) scene->hwaccel.data();
+  intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) scene->getHWAccel(0);
 
-  EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) hwaccel_ptr;
-  hwaccel_ptr = (intel_raytracing_acceleration_structure_t) hwaccel->AccelTable[0];
-    
   intel_ray_query_forward_ray(query, raydesc, hwaccel_ptr);
   return false;
 }
@@ -155,10 +152,7 @@ __forceinline bool intersect_user_geometry(intel_ray_query_t& query, Ray& ray, U
   raydesc.flags |= intel_ray_flags_cull_back_facing_triangles;
 #endif
 
-  intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) scene->hwaccel.data();
-
-  EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) hwaccel_ptr;
-  hwaccel_ptr = (intel_raytracing_acceleration_structure_t) hwaccel->AccelTable[0];
+  intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) scene->getHWAccel(0);
 
   intel_ray_query_forward_ray(query, raydesc, hwaccel_ptr);
   return false;
@@ -206,16 +200,15 @@ __forceinline bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Ins
   raydesc.flags |= intel_ray_flags_cull_back_facing_triangles;
 #endif
 
-  intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) object->hwaccel.data();
   
   uint32_t bvh_id = 0;
-  EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) hwaccel_ptr;
   if (context->args->feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR) {
     float time = clamp(ray.time(),0.0f,1.0f);
-    bvh_id = (uint32_t) clamp(uint32_t(hwaccel->numTimeSegments*time), 0u, hwaccel->numTimeSegments-1);
+    uint32_t numTimeSegments = object->getMaxTimeSegments();
+    bvh_id = (uint32_t) clamp(uint32_t(numTimeSegments*time), 0u, numTimeSegments-1);
   }
 
-  hwaccel_ptr = (intel_raytracing_acceleration_structure_t) hwaccel->AccelTable[bvh_id];
+  intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) object->getHWAccel(bvh_id);
   
   intel_ray_query_forward_ray(query, raydesc, hwaccel_ptr);
 
@@ -261,16 +254,14 @@ __forceinline bool intersect_instance(intel_ray_query_t& query, Ray& ray, Instan
   raydesc.flags |= intel_ray_flags_cull_back_facing_triangles;
 #endif
 
-  intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) object->hwaccel.data();
-  
   uint32_t bvh_id = 0;
-  EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) hwaccel_ptr;
   if (context->args->feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR) {
     float time = clamp(ray.time(),0.0f,1.0f);
-    bvh_id = (uint32_t) clamp(uint32_t(hwaccel->numTimeSegments*time), 0u, hwaccel->numTimeSegments-1);
+    uint32_t numTimeSegments = object->getMaxTimeSegments();
+    bvh_id = (uint32_t) clamp(uint32_t(numTimeSegments*time), 0u, numTimeSegments-1);
   }
 
-  hwaccel_ptr = (intel_raytracing_acceleration_structure_t) hwaccel->AccelTable[bvh_id];
+  intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) object->getHWAccel(bvh_id);
 
   intel_ray_query_forward_ray(query, raydesc, hwaccel_ptr);
 
@@ -321,16 +312,14 @@ __forceinline bool intersect_instance_array(intel_ray_query_t& query, RayHit& ra
   raydesc.flags |= intel_ray_flags_cull_back_facing_triangles;
 #endif
 
-  intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) object->hwaccel.data();
-  
   uint32_t bvh_id = 0;
-  EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) hwaccel_ptr;
   if (context->args->feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR) {
     float time = clamp(ray.time(),0.0f,1.0f);
-    bvh_id = (uint32_t) clamp(uint32_t(hwaccel->numTimeSegments*time), 0u, hwaccel->numTimeSegments-1);
+    uint32_t numTimeSegments = object->getMaxTimeSegments();
+    bvh_id = (uint32_t) clamp(uint32_t(numTimeSegments*time), 0u, numTimeSegments-1);
   }
 
-  hwaccel_ptr = (intel_raytracing_acceleration_structure_t) hwaccel->AccelTable[bvh_id];
+  intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) object->getHWAccel(bvh_id);
   
   intel_ray_query_forward_ray(query, raydesc, hwaccel_ptr);
 
@@ -378,16 +367,14 @@ __forceinline bool intersect_instance_array(intel_ray_query_t& query, Ray& ray, 
   raydesc.flags |= intel_ray_flags_cull_back_facing_triangles;
 #endif
 
-  intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) object->hwaccel.data();
-  
   uint32_t bvh_id = 0;
-  EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) hwaccel_ptr;
   if (context->args->feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR) {
     float time = clamp(ray.time(),0.0f,1.0f);
-    bvh_id = (uint32_t) clamp(uint32_t(hwaccel->numTimeSegments*time), 0u, hwaccel->numTimeSegments-1);
+    uint32_t numTimeSegments = object->getMaxTimeSegments();
+    bvh_id = (uint32_t) clamp(uint32_t(numTimeSegments*time), 0u, numTimeSegments-1);
   }
 
-  hwaccel_ptr = (intel_raytracing_acceleration_structure_t) hwaccel->AccelTable[bvh_id];
+  intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) object->getHWAccel(bvh_id);
 
   intel_ray_query_forward_ray(query, raydesc, hwaccel_ptr);
 
@@ -713,7 +700,6 @@ __forceinline void trav_loop(intel_ray_query_t& query, Ray& ray, Scene* scene0, 
 SYCL_EXTERNAL __attribute__((always_inline)) void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::private_ptr<RTCRayQueryContext> ucontext, sycl::private_ptr<RTCRayHit> rayhit_i, sycl::private_ptr<RTCIntersectArguments> args)
 {
   Scene* scene = (Scene*) hscene.get();
-  intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) scene->hwaccel.data();
 
   Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT];
 
@@ -760,13 +746,13 @@ SYCL_EXTERNAL __attribute__((always_inline)) void rtcIntersectRTHW(sycl::global_
      raydesc.flags |= intel_ray_flags_force_non_opaque;
 
   uint32_t bvh_id = 0;
-  EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) hwaccel_ptr;
   if (args->feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR) {
     float time = clamp(ray.time(),0.0f,1.0f);
-    bvh_id = (uint32_t) clamp(uint32_t(hwaccel->numTimeSegments*time), 0u, hwaccel->numTimeSegments-1);
+    uint32_t numTimeSegments = scene->getMaxTimeSegments();
+    bvh_id = (uint32_t) clamp(uint32_t(numTimeSegments*time), 0u, numTimeSegments-1);
   }
 
-  hwaccel_ptr = (intel_raytracing_acceleration_structure_t) hwaccel->AccelTable[bvh_id];
+  intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) scene->getHWAccel(bvh_id);
   
   intel_ray_query_t query = intel_ray_query_init(raydesc, hwaccel_ptr);
   intel_ray_query_start_traversal(query);
@@ -833,7 +819,6 @@ SYCL_EXTERNAL __attribute__((always_inline)) void rtcIntersectRTHW(sycl::global_
 SYCL_EXTERNAL __attribute__((always_inline)) void rtcOccludedRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::private_ptr<RTCRayQueryContext> ucontext, sycl::private_ptr<RTCRay> ray_i, sycl::private_ptr<RTCOccludedArguments> args)
 {
   Scene* scene = (Scene*) hscene.get();
-  intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) scene->hwaccel.data();
 
   Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT];
   
@@ -863,14 +848,14 @@ SYCL_EXTERNAL __attribute__((always_inline)) void rtcOccludedRTHW(sycl::global_p
      raydesc.flags |= intel_ray_flags_force_non_opaque;
 
   uint32_t bvh_id = 0;
-  EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) hwaccel_ptr;
   if (args->feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR) {
     float time = clamp(ray.time(),0.0f,1.0f);
-    bvh_id = (uint32_t) clamp(uint32_t(hwaccel->numTimeSegments*time), 0u, hwaccel->numTimeSegments-1);
+    uint32_t numTimeSegments = scene->getMaxTimeSegments();
+    bvh_id = (uint32_t) clamp(uint32_t(numTimeSegments*time), 0u, numTimeSegments-1);
   }
 
-  hwaccel_ptr = (intel_raytracing_acceleration_structure_t) hwaccel->AccelTable[bvh_id];
-  
+  intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) scene->getHWAccel(bvh_id);
+
   intel_ray_query_t query = intel_ray_query_init(raydesc, hwaccel_ptr);
   intel_ray_query_start_traversal(query);
   intel_ray_query_sync(query);

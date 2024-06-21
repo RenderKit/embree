@@ -25,12 +25,6 @@ namespace embree
     return 1;
 #endif
   }
-
-  struct EmbreeHWAccel
-  {
-    uint32_t numTimeSegments;
-    void* AccelTable[1];
-  };
 }
 
 SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::private_ptr<RTCRayQueryContext> context, sycl::private_ptr<RTCRayHit> rayhit, sycl::private_ptr<RTCIntersectArguments> args);

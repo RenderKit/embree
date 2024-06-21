@@ -70,5 +70,5 @@ namespace embree
 
   int rthwifIsSYCLDeviceSupported(const sycl::device& sycl_device);
   
-  BBox3f rthwifBuild(Scene* scene, AccelBuffer& buffer_o);
+  std::tuple<BBox3f, size_t> rthwifBuild(Scene* scene, AccelBuffer& buffer_o);
 }
