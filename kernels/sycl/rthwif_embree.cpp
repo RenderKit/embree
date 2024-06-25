@@ -668,7 +668,7 @@ __forceinline void trav_loop(intel_ray_query_t& query, Ray& ray, Scene* scene0, 
     const unsigned int instID = intel_get_hit_instance_id(query, intel_hit_type_potential_hit);
     
     /* assume software instancing mode by default (required for rtcForwardRay) */
-    Scene* scene = bvh_level ? scenes[0] : scene0; 
+    Scene* scene = bvh_level ? scenes[0] : scene0;
 
     /* if we are in hardware instancing mode and we need to read the scene from the instance */
     if (bvh_level > 0 && instID != RTC_INVALID_GEOMETRY_ID) {
