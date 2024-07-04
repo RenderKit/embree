@@ -1131,8 +1131,8 @@ namespace embree
       log(1, "Selected SYCL Platform: " + platform.get_info<sycl::info::platform::name>());
       log(1, "Selected SYCL Device: " + device->get_info<sycl::info::device::name>());
 
-      queue = new sycl::queue(*device, exception_handler, { sycl::property::queue::in_order(), sycl::property::queue::enable_profiling() });
       context = new sycl::context(*device);
+      queue = new sycl::queue(*context, *device, exception_handler, { sycl::property::queue::in_order(), sycl::property::queue::enable_profiling() });
       g_device = rtcNewSYCLDevice(*context,rtcore.c_str());
       error_handler(nullptr,rtcGetDeviceError(g_device));
       global_gpu_device = device;
