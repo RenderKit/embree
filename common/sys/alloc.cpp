@@ -48,9 +48,8 @@ namespace embree
 
   void disableUSMAllocTutorial()
   {
-    if (tls_context_tutorial  == nullptr) throw std::runtime_error("USM allocation not enabled");
-    if (tls_device_tutorial  == nullptr) throw std::runtime_error("USM allocation not enabled");
-    
+    //if (tls_context_tutorial  == nullptr) throw std::runtime_error("USM allocation not enabled");
+    //if (tls_device_tutorial  == nullptr) throw std::runtime_error("USM allocation not enabled");
     tls_context_tutorial = nullptr;
     tls_device_tutorial = nullptr;
   }

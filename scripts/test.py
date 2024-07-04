@@ -374,9 +374,6 @@ def runConfig(config):
     conf.append("-D BUILD_TESTING=ON")
     conf.append("-D EMBREE_TESTING_INSTALL_TESTS=ON")
     conf.append("-D EMBREE_TESTING_PACKAGE=ON")
-    conf.append("-D EMBREE_TUTORIALS_OPENIMAGEIO=OFF")
-    conf.append("-D EMBREE_TUTORIALS_LIBJPEG=OFF")
-    conf.append("-D EMBREE_TUTORIALS_LIBPNG=OFF")
     if OS == "linux" and config["package"] == "ZIP":
       conf.append("-D EMBREE_INSTALL_DEPENDENCIES=ON")
       conf.append("-D EMBREE_BUILD_GLFW_FROM_SOURCE=ON")

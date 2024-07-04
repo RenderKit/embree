@@ -16,6 +16,13 @@ int main() {
 
 #if defined(EMBREE_SYCL_SUPPORT)
   try {
+    embree::check_raytracing_support();
+  } catch (std::exception& e) {
+    std::cerr << e.what() << std::endl;
+    return 1;
+  }
+
+  try {
     sycl::device sycl_device(rtcSYCLDeviceSelector);
     sycl::context sycl_context(sycl_device);
     RTCDevice device = rtcNewSYCLDevice(sycl_context, "verbose=1");

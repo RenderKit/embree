@@ -144,7 +144,8 @@ namespace embree
 #if defined(EMBREE_SYCL_SUPPORT)
     
     /* build quadID_to_primID_xy mapping when hardware ray tracing is supported */
-    if (DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device))
+    DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device);
+    if (gpu_device)
     {
       const size_t numQuads = getNumTotalQuads();
       quadID_to_primID_xy.resize(numQuads);

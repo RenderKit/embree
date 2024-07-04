@@ -18,8 +18,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "EMBREE_SYCL_SUPPORT": "ON",
-        "EMBREE_LEVEL_ZERO": "ON",
-        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "ON",
         "EMBREE_SYCL_AOT_DEVICES": "none",
         "EMBREE_MAX_ISA": "SSE2"
       }
@@ -30,7 +29,14 @@
     },
     {
       "name": "linux-DG2-JIT-EMBARGO",
-      "inherits": "linux-DG2-JIT-INTERNAL"
+      "inherits": ["package-linux", "env", "dpcpp", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
     },
     {
       "name": "linux-DG2-JIT-PUBLIC-sycl-nightly-RK",
@@ -45,8 +51,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithAssert",
         "EMBREE_SYCL_SUPPORT": "ON",
-        "EMBREE_LEVEL_ZERO": "ON",
-        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "ON",
         "EMBREE_SYCL_AOT_DEVICES": "none",
         "EMBREE_MAX_ISA": "AVX512"
       }
@@ -61,7 +66,17 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithAssert",
         "EMBREE_SYCL_SUPPORT": "ON",
-        "EMBREE_LEVEL_ZERO": "ON",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    },
+    {
+      "name": "linux-PVC-JIT-INTERNAL-SYCL-RC",
+      "inherits": ["package-linux", "env", "dpcpp", "ispc_NEWEST", "tbb_SYSTEM"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithAssert",
+        "EMBREE_SYCL_SUPPORT": "ON",
         "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
         "EMBREE_SYCL_AOT_DEVICES": "none",
         "EMBREE_MAX_ISA": "SSE2"
@@ -73,7 +88,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "EMBREE_SYCL_SUPPORT": "ON",
-        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "ON",
         "EMBREE_SYCL_AOT_DEVICES": "none",
         "EMBREE_MAX_ISA": "SSE2"
       }
@@ -90,7 +105,7 @@
       }
     },
     {
-      "name": "linux-fedora26-CLANG4",
+      "name": "linux-fedora29-CLANG4",
       "inherits": ["package-linux", "env", "clang4", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
@@ -100,7 +115,7 @@
       }
     },
     {
-      "name": "linux-fedora26-CLANG5-INT-ADDRSANITIZER",
+      "name": "linux-fedora29-CLANG5-INT-ADDRSANITIZER",
       "inherits": ["package-linux", "env", "clang5", "ispc_NEWEST", "tasking_internal"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
@@ -195,6 +210,15 @@
       "name": "macos-ARM-CLANG-NEON-AVX2",
       "binaryDir": "${sourceDir}/build",
       "inherits": ["package-macos", "env", "clang", "ispc_NEWEST", "tbb_HOMEBREW"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "NEON2X"
+      }
+    },
+    {
+      "name": "macos-ARM-CLANG-NEON-AVX2-UB",
+      "binaryDir": "${sourceDir}/build",
+      "inherits": ["package-macos", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "EMBREE_MAX_ISA": "NEON2X"

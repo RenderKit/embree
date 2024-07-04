@@ -2,7 +2,7 @@
 ## SPDX-License-Identifier: Apache-2.0
 
 PROJECT(minimal)
-CMAKE_MINIMUM_REQUIRED(VERSION 3.2.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.5)
 
 IF (NOT EMBREE_PROJECT_COMPILATION)
   FIND_PACKAGE(embree REQUIRED)
@@ -24,6 +24,8 @@ IF (COMMAND SIGN_TARGET)
   SIGN_TARGET(embree_minimal)
 ENDIF()
 
+ADD_EMBREE_GENERIC_CPP_TEST(minimal embree_minimal)
+
 IF (EMBREE_SYCL_SUPPORT)
   
   ADD_EXECUTABLE(embree_minimal_sycl minimal_sycl.cpp)
@@ -39,4 +41,5 @@ IF (EMBREE_SYCL_SUPPORT)
     SIGN_TARGET(embree_minimal_sycl)
   ENDIF()
   
+  ADD_EMBREE_GENERIC_SYCL_TEST(minimal embree_minimal)
 ENDIF()

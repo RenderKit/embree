@@ -22,10 +22,7 @@ Linux
   - Clang 5.0.0
   - Clang 4.0.0
   - GCC 10.0.1 (Fedora 32) AVX512 support
-  - GCC  8.3.1 (Fedora 28) AVX512 support
-  - GCC  7.3.1 (Fedora 27) AVX2 support
-  - GCC  7.3.1 (Fedora 26) AVX2 support
-  - GCC  6.4.1 (Fedora 25) AVX2 support
+  - GCC  8.3.1 (Fedora 29) AVX512 support
   - Intel® Implicit SPMD Program Compiler 1.22.0
 
 macOS x86_64
@@ -57,7 +54,7 @@ version of [GLFW](https://www.glfw.org/) version 3.
 Under macOS, all these dependencies can be installed
 using [MacPorts](http://www.macports.org/):
 
-    sudo port install cmake tbb-devel glfw-devel
+    sudo port install cmake tbb glfw-devel
 
 Depending on your Linux distribution you can install these dependencies
 using `yum` or `apt-get`.  Some of these packages might already be
@@ -205,6 +202,11 @@ your Intel Xe HPG/HPC GPUs from here
 [https://dgpu-docs.intel.com/](https://dgpu-docs.intel.com/). Follow
 the driver installation instructions for your graphics card and
 operating system.
+
+After installing the drivers you have to install an additional package
+manually using
+
+    sudo apt install intel-level-zero-gpu-raytracing
 
 
 Windows
