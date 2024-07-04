@@ -7,7 +7,7 @@ INCLUDE(GNUInstallDirs)
 # Install Documentation
 ##############################################################
 
-IF(EMBREE_INSTALL)
+IF(EMBREE_INSTALL MATCHES ON)
   INSTALL(FILES "${PROJECT_SOURCE_DIR}/../../LICENSE.txt" DESTINATION doc COMPONENT lib)
   INSTALL(FILES "${PROJECT_SOURCE_DIR}/../../CHANGELOG.md" DESTINATION doc COMPONENT lib)
   INSTALL(FILES "${PROJECT_SOURCE_DIR}/../../third-party-programs.txt" DESTINATION doc COMPONENT lib)

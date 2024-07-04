@@ -8,7 +8,7 @@ TARGET_LINK_LIBRARIES(embree_bvh_access embree math sys tasking tutorial)
 
 SET_PROPERTY(TARGET embree_bvh_access PROPERTY FOLDER tutorials/single)
 SET_PROPERTY(TARGET embree_bvh_access APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
-IF(EMBREE_INSTALL)
+IF(EMBREE_INSTALL MATCHES ON)
     INSTALL(TARGETS embree_bvh_access DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT examples)
 ENDIF()
 SIGN_TARGET(embree_bvh_access)

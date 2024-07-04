@@ -24,7 +24,7 @@ ENDIF()
 ##############################################################
 
 # SYCL library
-IF (EMBREE_SYCL_SUPPORT AND EMBREE_INSTALL_DEPENDENCIES)
+IF (EMBREE_SYCL_SUPPORT AND EMBREE_INSTALL_DEPENDENCIES MATCHES ON)
   GET_FILENAME_COMPONENT(DPCPP_COMPILER_DIR ${CMAKE_CXX_COMPILER} PATH)
   
   IF (WIN32)
@@ -91,7 +91,7 @@ ENDIF()
 ##############################################################
 
 IF (WIN32)
-  IF(SYCL_ONEAPI_ICX AND EMBREE_INSTALL_DEPENDENCIES)
+  IF(SYCL_ONEAPI_ICX AND EMBREE_INSTALL_DEPENDENCIES MATCHES ON)
     GET_FILENAME_COMPONENT(DPCPP_COMPILER_DIR ${CMAKE_CXX_COMPILER} PATH)
     IF (EXISTS "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/libmmd.dll")
       INSTALL(FILES "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/libmmd.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
@@ -144,7 +144,7 @@ ENDIF()
 # Install Headers
 ##############################################################
 
-if(EMBREE_INSTALL)
+if(EMBREE_INSTALL MATCHES ON)
   INSTALL(DIRECTORY include/embree4 DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}" COMPONENT devel)
   IF (NOT WIN32)
     INSTALL(DIRECTORY man/man3 DESTINATION "${CMAKE_INSTALL_MANDIR}" COMPONENT devel)
@@ -155,7 +155,7 @@ ENDIF()
 # Install Models
 ##############################################################
 
-IF (EMBREE_TUTORIALS AND EMBREE_INSTALL)
+IF (EMBREE_TUTORIALS MATCHES ON AND EMBREE_INSTALL MATCHES ON)
   INSTALL(DIRECTORY tutorials/models DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT examples)
 ENDIF()
 
@@ -163,7 +163,7 @@ ENDIF()
 # Install Documentation
 ##############################################################
 
-if(EMBREE_INSTALL)
+if(EMBREE_INSTALL MATCHES ON)
   INSTALL(FILES "${PROJECT_SOURCE_DIR}/LICENSE.txt" DESTINATION "${CMAKE_INSTALL_DOCDIR}" COMPONENT lib)
   INSTALL(FILES "${PROJECT_SOURCE_DIR}/CHANGELOG.md" DESTINATION "${CMAKE_INSTALL_DOCDIR}" COMPONENT lib)
   INSTALL(FILES "${PROJECT_SOURCE_DIR}/README.md" DESTINATION "${CMAKE_INSTALL_DOCDIR}" COMPONENT lib)
@@ -205,7 +205,7 @@ ELSE()
 ENDIF()
 
 # why does this have to be so complicated...
-IF (EMBREE_STATIC_LIB)
+IF (EMBREE_STATIC_LIB MATCHES ON)
   SET(EMBREE_LIBRARY_FULLNAME ${CMAKE_STATIC_LIBRARY_PREFIX}${EMBREE_LIBRARY_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX})
 ELSE()
   IF (WIN32)
@@ -239,7 +239,7 @@ CONFIGURE_FILE(common/cmake/embree-config-version.cmake embree-config-version.cm
 # create a config file for the build directory
 CONFIGURE_FILE(common/cmake/embree-config-builddir.cmake embree-config.cmake @ONLY)
 
-if(EMBREE_INSTALL)
+if(EMBREE_INSTALL MATCHES ON)
   INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config-install.cmake" DESTINATION "${EMBREE_CMAKECONFIG_DIR}" RENAME "embree-config.cmake" COMPONENT devel)
   INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config-version.cmake" DESTINATION "${EMBREE_CMAKECONFIG_DIR}" COMPONENT devel)
 ENDIF()
