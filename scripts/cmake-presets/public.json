@@ -1,0 +1,41 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 23,
+    "patch": 0
+  },
+  "include": [
+    "package.json",
+    "compiler.json",
+    "tbb.json"
+  ],
+  "configurePresets": [
+    {
+      "name": "public-gcc-tbb",
+      "inherits": ["package", "gcc", "tbb_SYSTEM"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "EMBREE_MAX_ISA": "AVX2"
+      }
+    },
+
+    {
+      "name": "public-clang-tbbhomebrew-sse2",
+      "inherits": ["package", "clang", "tbb_HOMEBREW"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    },
+
+
+    {
+      "name": "public-v143-int-sse2",
+      "inherits": ["package", "tasking_internal"],
+      "binaryDir": "${sourceDir}/build",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64"
+    }
+  ]
+}
