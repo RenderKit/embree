@@ -1,0 +1,71 @@
+## Copyright 2024 Intel Corporation
+## SPDX-License-Identifier: Apache-2.0
+
+name: Continuous
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: read-all
+
+jobs:
+  rocky-8:
+    runs-on: ubuntu-latest
+    container:
+      image: rockylinux:8
+    steps:
+      - name: Install packages (rocky 8)
+        run: |
+          yum -y install epel-release
+          yum -y install gcc-c++ clang tar git-lfs make tbb-devel freeglut-devel glfw-devel libXmu-devel libXi-devel python3
+          yum -y install cmake
+          yum -y install libXcursor-devel libXi-devel libXinerama-devel libXrandr-devel
+          yum -y install ncurses-compat-libs 
+          yum -y install environment-modules
+          dnf makecache --refresh
+          dnf config-manager --set-enabled powertools
+          dnf -y update
+          dnf -y install ninja-build
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Build and Run
+        run: |
+          cmake --preset public-gcc-tbb -DEMBREE_TESTING_INTENSITY=3
+          cmake --build build --target build
+          cmake --build build --target test_package
+
+
+  ubuntu-22_04:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:22.04
+    steps:
+      - name: Install packages (ubuntu 22.04)
+        run: |
+          apt-get update
+          apt-get -y upgrade
+          apt-get -y install g++ python3 clang git-lfs libtbb-dev freeglut3-dev libglfw3-dev libxmu-dev libxi-dev unzip xorg-dev pip
+          apt-get -y install libtinfo5
+          apt-get -y install libopenimageio-dev
+          apt-get -y install ninja-build
+          pip install --upgrade cmake
+          cmake --version
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Build and Run
+        run: |
+          cmake --preset public-gcc-tbb -DEMBREE_TESTING_INTENSITY=3
+          cmake --build build --target build
+          cmake --build build --target test_package

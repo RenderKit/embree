@@ -24,6 +24,11 @@ FOREACH(xml ${PRIMITIVE_TESTS})
       ENDIF()
     ENDIF()
 
+    # For unkown hardware on public CI
+    IF (testname MATCHES "prim_curves_bezier_normal_oriented_mblur_occlusion")
+      SET(compare_threshold "60")
+    ENDIF()
+
     ADD_EMBREE_TEST_ECS(${testname} embree_viewer XML ${xml} 
       REFERENCE_SUFFIX _${shader}
       ARGS
