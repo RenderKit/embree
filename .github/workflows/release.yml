@@ -1,7 +1,7 @@
 ## Copyright 2022 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
-name: INTERNAL release
+name: release
 
 permissions: read-all
 
