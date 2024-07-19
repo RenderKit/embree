@@ -17,7 +17,7 @@ jobs:
 ####################################################################
   release-windows:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
       artifact-out: release-windows
@@ -89,7 +89,7 @@ jobs:
 
   release-linux:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
@@ -114,7 +114,7 @@ jobs:
 ####################################################################
   release-windows-sycl:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
@@ -130,7 +130,7 @@ jobs:
 
   release-linux-sycl:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: rockylinux:8.7
       runs-on: '[ "Linux", "docker", "build" ]'
@@ -151,7 +151,7 @@ jobs:
 
   release-linux-sycl-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     needs: ["release-linux-sycl"]
     with:
       image: embree/ubuntu:22.04
@@ -168,7 +168,7 @@ jobs:
 
   release-linux-sycl-pvc-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     needs: ["release-linux-sycl"]
     with:
       image: embree/ubuntu:22.04
@@ -268,7 +268,7 @@ jobs:
 #####################################################################
   test-package:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     needs: [release-linux]
     with:
       image: embree/ubuntu:22.04

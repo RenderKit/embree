@@ -19,7 +19,7 @@ jobs:
   ########################################
   linux-DG2-JIT-INTERNAL-build:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
@@ -34,7 +34,7 @@ jobs:
 
   linux-DG2-JIT-INTERNAL-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     needs: ["linux-DG2-JIT-INTERNAL-build"]
     with:
       image: embree/ubuntu:22.04
@@ -51,7 +51,7 @@ jobs:
 
   linux-DG2-JIT-PUBLIC-build:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
@@ -66,7 +66,7 @@ jobs:
 
   linux-DG2-JIT-PUBLIC-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     needs: ["linux-DG2-JIT-PUBLIC-build"]
     with:
       image: embree/ubuntu:22.04
@@ -82,7 +82,7 @@ jobs:
 
   linux-DG2-JIT-PUBLIC-ICX-build:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
@@ -98,7 +98,7 @@ jobs:
 
   linux-DG2-JIT-PUBLIC-ICX-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     needs: ["linux-DG2-JIT-PUBLIC-ICX-build"]
     with:
       image: embree/ubuntu:22.04
@@ -119,7 +119,7 @@ jobs:
 
   linux-ATSM-JIT-PUBLIC-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     needs: ["linux-DG2-JIT-PUBLIC-build"]
     with:
       image: embree/ubuntu:22.04
@@ -139,7 +139,7 @@ jobs:
 
   linux-PVC-JIT-INTERNAL-build:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
@@ -155,7 +155,7 @@ jobs:
   #  TODO: move to nightly
   linux-PVC-JIT-INTERNAL-test-1T:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     needs: ["linux-PVC-JIT-INTERNAL-build"]
     with:
       image: embree/ubuntu:22.04
@@ -175,7 +175,7 @@ jobs:
 
   linux-PVC-JIT-INTERNAL-test-2T:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     needs: ["linux-PVC-JIT-INTERNAL-build"]
     with:
       image: embree/ubuntu:22.04
@@ -194,7 +194,7 @@ jobs:
 
   linux-PVC-JIT-INTERNAL-test-flat:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     needs: ["linux-PVC-JIT-INTERNAL-build"]
     with:
       image: embree/ubuntu:22.04
@@ -242,7 +242,7 @@ jobs:
 
   windows-DG2-JIT-build:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       force-delete: true
       runs-on: '[ "Windows", "NAS", "build" ]'
@@ -256,7 +256,7 @@ jobs:
 
   windows-DG2-JIT-INTERNAL-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     needs: ["windows-DG2-JIT-build"]
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
@@ -269,7 +269,7 @@ jobs:
 
   windows-DG2-JIT-PUBLIC-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     needs: ["windows-DG2-JIT-build"]
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
@@ -282,7 +282,7 @@ jobs:
 
   windows-DG2-JIT-ICX-build:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
@@ -296,7 +296,7 @@ jobs:
 
   windows-DG2-JIT-ICX-INTERNAL-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     needs: ["windows-DG2-JIT-ICX-build"]
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
@@ -310,7 +310,7 @@ jobs:
 
   windows-DG2-JIT-ICX-PUBLIC-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     needs: ["windows-DG2-JIT-ICX-build"]
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
@@ -358,7 +358,7 @@ jobs:
 
   linux-fedora29-ICX:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: embree/fedora:29
       runs-on: '[ "Linux", "docker", "avx512" ]'
@@ -371,7 +371,7 @@ jobs:
 
   linux-fedora32-ICX:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: embree/fedora:32
       runs-on: '[ "Linux", "docker", "avx512" ]'
@@ -396,7 +396,7 @@ jobs:
 
   linux-ubuntu20_04-ICX:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: embree/ubuntu:20.04
       runs-on: '[ "Linux", "docker", "avx512" ]'
@@ -413,7 +413,7 @@ jobs:
   ########################################
   windows-V142:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       force-delete: true
       runs-on: '[ "Windows", "NAS", "build" ]'
@@ -425,7 +425,7 @@ jobs:
 
   windows-ICX:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       force-delete: true
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'

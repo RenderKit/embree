@@ -13,7 +13,7 @@ on:
 jobs:
   perf-linux-SYCL-DPCPP-build:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
@@ -30,7 +30,7 @@ jobs:
 
   perf-linux-DG2-A770-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     needs: ["perf-linux-SYCL-DPCPP-build"]
     with:
       image: embree/ubuntu:22.04
@@ -50,7 +50,7 @@ jobs:
 
   perf-linux-PVC-test:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     needs: ["perf-linux-SYCL-DPCPP-build"]
     with:
       image: embree/ubuntu:22.04
@@ -79,7 +79,7 @@ jobs:
 
   perf-linux-x86-ICX-ISPC-build:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
@@ -152,7 +152,7 @@ jobs:
 
   linux-DG2-A770-buildbench:
     secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker_gpu.yml@main
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     needs: ["perf-linux-SYCL-DPCPP-build"]
     with:
       image: embree/ubuntu:22.04
