@@ -5,7 +5,7 @@ name: continuous
 
 permissions: read-all
 
-on: [push, workflow_dispatch]
+on: [workflow_dispatch]
 
 jobs:
   #################################################################################

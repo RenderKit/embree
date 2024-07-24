@@ -10,4 +10,5 @@ kernels/hash.h
 include/embree4/rtcore_config.h
 build
 out
-python/src/pybind11
+python/pybind11
+python/pyembree.egg-info
