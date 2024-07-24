@@ -114,7 +114,7 @@ endmacro()
 macro(rk_tbb_check_components)
   set(_TBB_MISSING_COMPONENTS "")
   set(_TBB_AVAILABLE_COMPONENTS "")
-
+  
   foreach (C IN LISTS _REQUIRED_COMPONENTS)
     if (TARGET TBB::${C})
       list(APPEND _TBB_AVAILABLE_COMPONENTS ${C})
@@ -392,6 +392,7 @@ function(rk_tbb_find_and_link_component COMPONENT_NAME)
   rk_tbb_find_library("${COMPONENT_NAME}" RELEASE)
   rk_tbb_find_library("${COMPONENT_NAME}" DEBUG)
 
+  message(FATAL_ERROR "COMPONENT_TARGET: ${COMPONENT_TARGET}")
   if (${COMPONENT_NAME}_LIBRARY_RELEASE OR ${COMPONENT_NAME}_LIBRARY_DEBUG)
     # Note: We *must* use SHARED here rather than UNKNOWN as our
     #       IMPORTED_NO_SONAME trick a few lines down does not work with

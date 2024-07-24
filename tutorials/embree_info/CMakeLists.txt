@@ -20,8 +20,10 @@ ELSE()
 ENDIF()
 
 SET_PROPERTY(TARGET embree_info PROPERTY FOLDER tutorials/single)
-INSTALL(TARGETS embree_info DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT examples)
-#INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" DESTINATION "src" COMPONENT examples)
+IF(EMBREE_INSTALL MATCHES ON)
+  INSTALL(TARGETS embree_info DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT examples)
+  #INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" DESTINATION "src" COMPONENT examples)
+ENDIF()
 
 IF (EMBREE_SYCL_SUPPORT)
   SET_PROPERTY(TARGET embree_info APPEND PROPERTY COMPILE_FLAGS "-fsycl -Xclang -fsycl-allow-func-ptr -fsycl-targets=spir64")
@@ -32,5 +34,8 @@ ENDIF()
 IF (COMMAND SIGN_TARGET)
   SIGN_TARGET(embree_info)
 ENDIF()
+<<<<<<< Updated upstream
 
 ADD_EMBREE_GENERIC_TEST(embree_info embree_info)
+=======
+>>>>>>> Stashed changes
