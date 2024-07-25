@@ -12,6 +12,10 @@
 #if defined(__ARM_NEON)
 #include "../simd/arm/emulation.h"
 #else
+#if defined(_M_ARM64)
+// Windows MSVC allows for immintrin.h on Arm64 but only with USE_SOFT_INTRINSICS.
+#define USE_SOFT_INTRINSICS
+#endif
 #include <immintrin.h>
 #if defined(__EMSCRIPTEN__)
 #include "../simd/wasm/emulation.h"
@@ -89,15 +93,13 @@ namespace embree
 #endif
   }
   
-#if defined(__X86_64__) || defined (__aarch64__)
-  __forceinline size_t bsf(size_t v) {
+  __forceinline uint64_t bsf(uint64_t v) {
 #if defined(__AVX2__) 
     return _tzcnt_u64(v);
 #else
     unsigned long r = 0; _BitScanForward64(&r,v); return r;
 #endif
   }
-#endif
   
   __forceinline int bscf(int& v) 
   {
@@ -113,14 +115,12 @@ namespace embree
     return i;
   }
   
-#if defined(__X86_64__) || defined (__aarch64__)
-  __forceinline size_t bscf(size_t& v) 
+  __forceinline uint64_t bscf(uint64_t& v) 
   {
-    size_t i = bsf(v);
+    uint64_t i = bsf(v);
     v &= v-1;
     return i;
   }
-#endif
   
   __forceinline int bsr(int v) {
 #if defined(__AVX2__)  && !defined(__aarch64__)
@@ -138,15 +138,13 @@ namespace embree
 #endif
   }
   
-#if defined(__X86_64__) || defined (__aarch64__)
-  __forceinline size_t bsr(size_t v) {
+  __forceinline uint64_t bsr(uint64_t v) {
 #if defined(__AVX2__) 
     return 63 -_lzcnt_u64(v);
 #else
     unsigned long r = 0; _BitScanReverse64(&r, v); return r;
 #endif
   }
-#endif
   
   __forceinline int lzcnt(const int x)
   {
