@@ -13,15 +13,34 @@ FetchContent_MakeAvailable(pybind11)
 
 # Declare our python embree module
 pybind11_add_module(pyembree
-    src/bindings.cpp
-    #pyembree.cpp
-    #intersect_callback_guard.cpp
-    #rtcore_common.cpp
-    #rtcore_device.cpp
-    #rtcore_buffer.cpp
-    #rtcore_ray.cpp
-    #rtcore_geometry.cpp
-    #rtcore_scene.cpp
-    #rtcore_builder.cpp
-    #rtcore_quaternion.cpp
+    #src/bindings.cpp
+    src/pyembree.cpp
+    src/intersect_callback_guard.cpp
+    src/rtcore_common.cpp
+    src/rtcore_device.cpp
+    src/rtcore_buffer.cpp
+    src/rtcore_ray.cpp
+    src/rtcore_geometry.cpp
+    src/rtcore_scene.cpp
+    src/rtcore_builder.cpp
+    src/rtcore_quaternion.cpp
 )
+
+
+# Make sure we have embree
+if (NOT embree_DIR)
+    message("-- building embree from source")
+    option(EMBREE_INSTALL_DEPENDENCIES "always on for pyembree" ON)
+    option(EMBREE_TUTORIALS "alway off for pyembree" OFF)
+    set(embree_BINARY_DIR ${CMAKE_BINARY_DIR}/_deps/embree-build)
+    message("bin dir    ${embree_BINARY_DIR}")
+    add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/.. ${embree_BINARY_DIR})
+
+    message("EMBREE LIBS:   ${EMBREE_LIBRARIES}")
+else()
+    message("-- using embree from ${embree_DIR}")
+    set(embree_BINARY_DIR "${embree_DIR}/../../../bin")
+endif()
+
+target_include_directories(pyembree PRIVATE ${CMAKE_INSTALL_PREFIX}/include)
+target_link_libraries(pyembree PRIVATE embree)
