@@ -14,6 +14,8 @@
 
 #if defined(__ARM_NEON)
 #include "../simd/arm/emulation.h"
+#elif defined(__riscv_v)
+#include "../simd/riscv/emulation.h"
 #else
 #include <emmintrin.h>
 #include <xmmintrin.h>

@@ -149,4 +149,4 @@ __forceinline __m128 _mm_fnmsub_ps(__m128 a, __m128 b, __m128 c) {
 // #define _MM_FLUSH_ZERO_ON 0x8000
 #define _MM_MASK_DENORM 0x100
 #define _MM_SET_EXCEPTION_MASK(x)
-// #define _MM_SET_FLUSH_ZERO_MODE(x)
+#define _MM_SET_FLUSH_ZERO_MODE(x)
