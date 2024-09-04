@@ -23,12 +23,11 @@ ENDIF()
 # Install SYCL specific files
 ##############################################################
 
-# SYCL library
 IF (EMBREE_SYCL_SUPPORT AND EMBREE_INSTALL_DEPENDENCIES)
   GET_FILENAME_COMPONENT(DPCPP_COMPILER_DIR ${CMAKE_CXX_COMPILER} PATH)
-  
+
   IF (WIN32)
-    
+
     FILE(GLOB LIB_SYCL_LIB_FILES LIST_DIRECTORIES FALSE
       "${DPCPP_COMPILER_DIR}/../lib/sycl.lib"
       "${DPCPP_COMPILER_DIR}/../lib/sycl?.lib")
@@ -38,25 +37,46 @@ IF (EMBREE_SYCL_SUPPORT AND EMBREE_INSTALL_DEPENDENCIES)
       "${DPCPP_COMPILER_DIR}/../bin/sycl.dll"
       "${DPCPP_COMPILER_DIR}/../bin/sycl?.dll")
     INSTALL(FILES ${LIB_SYCL_DLL_FILES} DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
-    
-    INSTALL(FILES "${DPCPP_COMPILER_DIR}/pi_level_zero.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
-    INSTALL(FILES "${DPCPP_COMPILER_DIR}/win_proxy_loader.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib OPTIONAL)
 
-    IF (EXISTS "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/svml_dispmd.dll")
-      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/svml_dispmd.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
+    # copy level zero dll
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/pi_level_zero.dll")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/pi_level_zero.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
     ENDIF()
-    IF (EXISTS "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/libmmd.dll")
-      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/libmmd.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
-    ENDIF()
-    IF (EXISTS "${DPCPP_COMPILER_DIR}/libmmd.dll")
-      INSTALL(FILES "${DPCPP_COMPILER_DIR}/libmmd.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/ur_adapter_level_zero.dll")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/ur_adapter_level_zero.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
     ENDIF()
 
+    # copy unified runtime loader dll
+    IF(EXISTS "${DPCPP_COMPILER_DIR}/ur_loader.dll")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/ur_loader.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib OPTIONAL)
+    ENDIF()
+
+    # copy proxy loader dll
+    IF(EXISTS "${DPCPP_COMPILER_DIR}/win_proxy_loader.dll")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/win_proxy_loader.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib OPTIONAL)
+    ENDIF()
     IF (EXISTS "${DPCPP_COMPILER_DIR}/pi_win_proxy_loader.dll")
       INSTALL(FILES "${DPCPP_COMPILER_DIR}/pi_win_proxy_loader.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
     ENDIF()
+    IF(EXISTS "${DPCPP_COMPILER_DIR}/ur_win_proxy_loader.dll")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/ur_win_proxy_loader.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib OPTIONAL)
+    ENDIF()
+
+    # copy additional oneAPI dlls
+    IF(SYCL_ONEAPI_ICX)
+      IF (EXISTS "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/libmmd.dll")
+        INSTALL(FILES "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/libmmd.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
+      ENDIF()
+      IF (EXISTS "${DPCPP_COMPILER_DIR}/libmmd.dll")
+        INSTALL(FILES "${DPCPP_COMPILER_DIR}/libmmd.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
+      ENDIF()
+      IF (EXISTS "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/svml_dispmd.dll")
+        INSTALL(FILES "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/svml_dispmd.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
+      ENDIF()
+    ENDIF()
+
   ELSE()
-    
+
     FILE(GLOB LIB_SYCL_FILES LIST_DIRECTORIES FALSE
       "${DPCPP_COMPILER_DIR}/../lib/libsycl.so"
       "${DPCPP_COMPILER_DIR}/../lib/libsycl.so.?"
@@ -64,26 +84,41 @@ IF (EMBREE_SYCL_SUPPORT AND EMBREE_INSTALL_DEPENDENCIES)
       "${DPCPP_COMPILER_DIR}/../lib/libsycl.so.?.?.?"
       "${DPCPP_COMPILER_DIR}/../lib/libsycl.so.?.?.?-?")
     INSTALL(FILES ${LIB_SYCL_FILES} DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
-    
-    INSTALL(FILES "${DPCPP_COMPILER_DIR}/../lib/libpi_level_zero.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
 
-    IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libsvml.so")
-      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libsvml.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/../lib/libpi_level_zero.so")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../lib/libpi_level_zero.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
     ENDIF()
-    IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libirng.so")
-      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libirng.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/../lib/libur_adapter_level_zero.so")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../lib/libur_adapter_level_zero.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
     ENDIF()
-    IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libimf.so")
-      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libimf.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/../lib/libur_loader.so")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../lib/libur_loader.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
     ENDIF()
-    IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libintlc.so")
-      FILE(GLOB LIB_SYCL_FILES LIST_DIRECTORIES FALSE
-        "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libintlc.so"
-        "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libintlc.so.?")
-      INSTALL(FILES ${LIB_SYCL_FILES} DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+
+    # copy additional oneAPI runtime libraries
+    IF(SYCL_ONEAPI_ICX)
+      IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libsvml.so")
+        INSTALL(FILES "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libsvml.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+      ENDIF()
+
+      IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libirng.so")
+        INSTALL(FILES "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libirng.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+      ENDIF()
+
+      IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libimf.so")
+        INSTALL(FILES "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libimf.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+      ENDIF()
+
+      IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libintlc.so")
+        FILE(GLOB LIB_SYCL_FILES LIST_DIRECTORIES FALSE
+          "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libintlc.so"
+          "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libintlc.so.?")
+        INSTALL(FILES ${LIB_SYCL_FILES} DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+      ENDIF()
     ENDIF()
-   
+
   ENDIF()
+
 ENDIF()
 
 ##############################################################
@@ -91,50 +126,12 @@ ENDIF()
 ##############################################################
 
 IF (WIN32)
-  IF(SYCL_ONEAPI_ICX AND EMBREE_INSTALL_DEPENDENCIES)
-    GET_FILENAME_COMPONENT(DPCPP_COMPILER_DIR ${CMAKE_CXX_COMPILER} PATH)
-    IF (EXISTS "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/libmmd.dll")
-      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/libmmd.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
-    ENDIF()
-    IF (EXISTS "${DPCPP_COMPILER_DIR}//libmmd.dll")
-      INSTALL(FILES "${DPCPP_COMPILER_DIR}/libmmd.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
-    ENDIF()
-    IF (EXISTS "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/svml_dispmd.dll")
-      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/svml_dispmd.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
-    ENDIF()
-  ENDIF()
 
   SET(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
   SET(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_NO_WARNINGS TRUE)
   INCLUDE(InstallRequiredSystemLibraries)
   LIST(FILTER CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS INCLUDE REGEX ".*msvcp[0-9]+\.dll|.*vcruntime[0-9]+\.dll|.*vcruntime[0-9]+_[0-9]+\.dll")
   INSTALL(FILES ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
-
-ELSE()
-
-  IF(SYCL_ONEAPI_ICX AND EMBREE_INSTALL_DEPENDENCIES)
-
-    GET_FILENAME_COMPONENT(DPCPP_COMPILER_DIR ${CMAKE_CXX_COMPILER} PATH)
-    IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libsvml.so")
-      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libsvml.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
-    ENDIF()
-
-    IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libirng.so")
-      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libirng.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
-    ENDIF()
-
-    IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libimf.so")
-      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libimf.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
-    ENDIF()
-
-    IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libintlc.so")
-      FILE(GLOB LIB_SYCL_FILES LIST_DIRECTORIES FALSE
-        "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libintlc.so"
-        "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libintlc.so.?")
-      INSTALL(FILES ${LIB_SYCL_FILES} DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
-    ENDIF()
-
-  ENDIF()
 
 ENDIF()
 
