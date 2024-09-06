@@ -315,7 +315,7 @@ RTC_NAMESPACE_BEGIN;
     scene->commit(false);
 
 #if defined(EMBREE_SYCL_SUPPORT)
-    prefetchUSMSharedOnGPU(hscene);
+    //prefetchUSMSharedOnGPU(hscene);
 #endif
 
     RTC_CATCH_END2(scene);
