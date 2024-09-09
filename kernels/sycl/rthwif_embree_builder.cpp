@@ -502,7 +502,7 @@ namespace embree
       // TODO: remove
       std::cerr << "maxTimeSegments not yet computed. this is unexpected." << std::endl;
     }
-    assert(maxTimeSegments > 1);
+    assert(maxTimeSegments > 0);
 
     /* calculate size of geometry descriptor buffer */
     size_t totalBytes = 0;
