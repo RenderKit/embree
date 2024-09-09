@@ -8,5 +8,5 @@ x64
 kernels/config.h
 kernels/hash.h
 include/embree4/rtcore_config.h
-build
+build*
 out

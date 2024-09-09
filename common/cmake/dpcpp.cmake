@@ -48,13 +48,13 @@ IF (EMBREE_SYCL_SUPPORT)
   SET(CMAKE_CXX_FLAGS_SYCL "-fsycl -fsycl-unnamed-lambda -Xclang -fsycl-allow-func-ptr")
   SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -Wno-mismatched-tags -Wno-pessimizing-move -Wno-reorder -Wno-unneeded-internal-declaration -Wno-delete-non-abstract-non-virtual-dtor -Wno-dangling-field -Wno-unknown-pragmas -Wno-logical-op-parentheses")
   
-  IF (SYCL_ONEAPI_ICX AND WIN32)
-    SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} /debug:none")    # FIXME: debug information generation takes forever in SYCL
-    SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} /DNDEBUG")    # FIXME: debug information generation takes forever in SYCL
-  ELSE()
-    SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -g0")            # FIXME: debug information generation takes forever in SYCL
+  #IF (SYCL_ONEAPI_ICX AND WIN32)
+  #  SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} /debug:none")    # FIXME: debug information generation takes forever in SYCL
+  #  SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} /DNDEBUG")    # FIXME: debug information generation takes forever in SYCL
+  #ELSE()
+  #  SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -g0")            # FIXME: debug information generation takes forever in SYCL
     SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -UDEBUG -DNDEBUG") # FIXME: assertion still not working in SYCL
-  ENDIF()
+  #ENDIF()
   
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-bitwise-instead-of-logical") # disables "use of bitwise '&' with boolean operands" warning
   SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -Wno-bitwise-instead-of-logical") # disables "use of bitwise '&' with boolean operands" warning
@@ -103,10 +103,10 @@ IF (EMBREE_SYCL_SUPPORT)
   #LIST(APPEND CMAKE_IGC_OPTIONS "AssumeInt64Support=0")               # Architecture with partial int64 still promote uniform arrays to registers
   LIST(APPEND CMAKE_IGC_OPTIONS "VISAOptions=-scratchAllocForStackInKB 128 ")  # this works around some IGC bug in spill compression
   
-  IF (CMAKE_BUILD_TYPE STREQUAL "Debug") # to allow printf inside indirectly callable function
-    LIST(APPEND CMAKE_IGC_OPTIONS "ForceInlineStackCallWithImplArg=0")
-    LIST(APPEND CMAKE_IGC_OPTIONS "EnableGlobalStateBuffer=1")   
-  ENDIF()
+  #IF (CMAKE_BUILD_TYPE STREQUAL "Debug") # to allow printf inside indirectly callable function
+  #  LIST(APPEND CMAKE_IGC_OPTIONS "ForceInlineStackCallWithImplArg=0")
+  #  LIST(APPEND CMAKE_IGC_OPTIONS "EnableGlobalStateBuffer=1")   
+  #ENDIF()
   
   STRING(REPLACE ";" "," CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS}")
 
