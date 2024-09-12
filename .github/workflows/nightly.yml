@@ -547,7 +547,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: embree/rockylinux:8.7
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2024.2.1
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX-TBB2019_2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
@@ -560,7 +560,7 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2024.2.1
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX512VL-TBB2019_2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
@@ -573,7 +573,7 @@ jobs:
     with:
       image: embree/fedora:29
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2024.2.1
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX512-TBB2019_9 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
@@ -585,7 +585,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: embree/fedora:29
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2024.2.1
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX2-TBB2021_2_0 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
@@ -597,7 +597,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: embree/rockylinux:8.7
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2024.2.1
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_17_0-AVX2-TBB2019_9 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
@@ -610,7 +610,7 @@ jobs:
     with:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2024.2.1
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_17_0-AVX512VL-TBB2021_5_0 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
@@ -904,32 +904,32 @@ jobs:
 ########################################
 # Windows
 ########################################
-  nightly-windows-RELEASE-ICX2024_0-ISPC1_13_0-AVX2-TBB2021_5_0:
+  nightly-windows-RELEASE-ICX2024_2-ISPC1_13_0-AVX2-TBB2021_5_0:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
-      dpcpp-version: oneAPI/compiler/2024.1
+      dpcpp-version: oneAPI/compiler/2024.2
       cmd: |
         cmake --preset nightly-windows-RELEASE-ICX-ISPC1_13_0-AVX2-TBB2021_5_0 -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
         cmake --build build --config Release --target build
         cmake --build build --config Release --target test_package
 
-  nightly-windows-RELEASE-ICX2024_0-ISPC1_13_0-AVX512-TBB2019_9:
+  nightly-windows-RELEASE-ICX2024_2-ISPC1_13_0-AVX512-TBB2019_9:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-      dpcpp-version: oneAPI/compiler/2024.1
+      dpcpp-version: oneAPI/compiler/2024.2
       cmd: |
         cmake --preset nightly-windows-RELEASE-ICX-ISPC1_13_0-AVX512-TBB2019_9 -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
         cmake --build build --config Release --target build
         cmake --build build --config Release --target test_package
 
-  nightly-windows-RELEASE-ICX2024_0-ISPC1_14_1-AVX2-TBB2021_2_0:
+  nightly-windows-RELEASE-ICX2024_2-ISPC1_14_1-AVX2-TBB2021_2_0:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
-      dpcpp-version: oneAPI/compiler/2024.1
+      dpcpp-version: oneAPI/compiler/2024.2
       cmd: |
         cmake --preset nightly-windows-RELEASE-ICX-ISPC1_14_1-AVX2-TBB2021_2_0 -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
         cmake --build build --config Release --target build
