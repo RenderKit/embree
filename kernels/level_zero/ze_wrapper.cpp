@@ -30,6 +30,8 @@ static std::mutex zeWrapperMutex;
 static void* handle = nullptr;
 
 static decltype(zeMemFree)* zeMemFreeInternal = nullptr;
+static decltype(zeMemAllocHost)* zeMemAllocHostInternal = nullptr;
+static decltype(zeMemAllocDevice)* zeMemAllocDeviceInternal = nullptr;
 static decltype(zeMemAllocShared)* zeMemAllocSharedInternal = nullptr;
 static decltype(zeDriverGetExtensionProperties)* zeDriverGetExtensionPropertiesInternal = nullptr;
 static decltype(zeDeviceGetProperties)* zeDeviceGetPropertiesInternal = nullptr;
@@ -156,6 +158,8 @@ ze_result_t ZeWrapper::init()
     handle = load_module();
     
     zeMemFreeInternal = find_symbol<decltype(zeMemFree)*>(handle, "zeMemFree");
+    zeMemAllocHostInternal = find_symbol<decltype(zeMemAllocHost)*>(handle, "zeMemAllocHost");
+    zeMemAllocDeviceInternal = find_symbol<decltype(zeMemAllocDevice)*>(handle, "zeMemAllocDevice");
     zeMemAllocSharedInternal = find_symbol<decltype(zeMemAllocShared)*>(handle, "zeMemAllocShared");
     zeDriverGetExtensionPropertiesInternal = find_symbol<decltype(zeDriverGetExtensionProperties)*>(handle, "zeDriverGetExtensionProperties");
     zeDeviceGetPropertiesInternal = find_symbol<decltype(zeDeviceGetProperties)*>(handle, "zeDeviceGetProperties");
@@ -216,6 +220,22 @@ ze_result_t ZeWrapper::zeMemFree(ze_context_handle_t context, void* ptr)
     throw std::runtime_error("ZeWrapper not initialized, call ZeWrapper::init() first.");
   
   return zeMemFreeInternal(context, ptr);
+}
+
+ze_result_t ZeWrapper::zeMemAllocHost(ze_context_handle_t context, const ze_host_mem_alloc_desc_t* desch, size_t s0, size_t s1, void** ptr)
+{
+  if (!handle || !zeMemAllocHostInternal)
+    throw std::runtime_error("ZeWrapper not initialized, call ZeWrapper::init() first.");
+  
+  return zeMemAllocHostInternal(context, desch, s0, s1, ptr);
+}
+
+ze_result_t ZeWrapper::zeMemAllocDevice(ze_context_handle_t context, const ze_device_mem_alloc_desc_t* descd, size_t s0, size_t s1, ze_device_handle_t ze_handle, void** ptr)
+{
+  if (!handle || !zeMemAllocDeviceInternal)
+    throw std::runtime_error("ZeWrapper not initialized, call ZeWrapper::init() first.");
+  
+  return zeMemAllocDeviceInternal(context, descd, s0, s1, ze_handle, ptr);
 }
 
 ze_result_t ZeWrapper::zeMemAllocShared(ze_context_handle_t context, const ze_device_mem_alloc_desc_t* descd, const ze_host_mem_alloc_desc_t* desch, size_t s0, size_t s1, ze_device_handle_t ze_handle, void** ptr)
