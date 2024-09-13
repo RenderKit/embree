@@ -135,6 +135,7 @@ void renderPixelStandard(const TutorialData& data,
   Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
   {
+#if 1
     Vec3fa diffuse = data.face_colors[ray.primID];
     color = color + diffuse*0.5f;
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
@@ -152,6 +153,36 @@ void renderPixelStandard(const TutorialData& data,
     /* add light contribution */
     if (shadow.tfar >= 0.0f)
       color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f);
+    #else
+
+#if 0
+    if (ray.geomID == 0)
+      color = Vec3fa(0.f, 0.f, 1.f);
+    else if (ray.geomID == 1)
+      color = Vec3fa(0.f, 1.f, 0.f);
+    else if (ray.geomID == 2)
+      color = Vec3fa(1.f, 0.f, 0.f);
+    else
+      color = Vec3fa(1.f);
+#endif
+
+#if 0
+    if (ray.primID == 0)
+      color = Vec3fa(0.f, 0.f, 1.f);
+    else if (ray.primID == 1)
+      color = Vec3fa(0.f, 1.f, 0.f);
+    else if (ray.primID == 2)
+      color = Vec3fa(1.f, 0.f, 0.f);
+    else
+      color = Vec3fa(1.f);
+#endif
+
+#if 0
+    color = Vec3fa(ray.u, ray.v, 0.f);
+#endif
+
+#endif
+
   }
 
   /* write color to framebuffer */

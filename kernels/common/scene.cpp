@@ -56,8 +56,8 @@ namespace embree
 
     /* use proper device and context for SYCL allocations */
 #if defined(EMBREE_SYCL_SUPPORT)
-    if (DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device))
-      hwaccel = AccelBuffer(AccelAllocator<char>(device,gpu_device->getGPUDevice(),gpu_device->getGPUContext()),0);
+    if (dynamic_cast<DeviceGPU*>(device))
+      accelBuffer = AccelBuffer(device);
 #endif
        
     /* one can overwrite flags through device for debugging */
@@ -789,10 +789,8 @@ namespace embree
   void Scene::build_gpu_accels()
   {
 #if defined(EMBREE_SYCL_SUPPORT)
-    auto [aabb, stride] = rthwifBuild(this,hwaccel);
-    hwaccel_stride = stride;
-    bounds = LBBox<embree::Vec3fa>(aabb);
-    hwaccel_bounds = aabb;
+    accelBuffer.build(this);
+    bounds = LBBox<embree::Vec3fa>(accelBuffer.getBounds());
 #endif
   }
 
@@ -917,6 +915,10 @@ namespace embree
       taskGroup->scheduler = nullptr;
       throw;
     }
+    
+#if defined(EMBREE_SYCL_SUPPORT)
+    accelBuffer.commit();
+#endif
   }
 
 #endif
@@ -982,6 +984,10 @@ namespace embree
       accels_clear();
       throw;
     }
+
+#if defined(EMBREE_SYCL_SUPPORT)
+    accelBuffer.commit();
+#endif
   }
 #endif
 
@@ -1024,6 +1030,11 @@ namespace embree
       accels_clear();
       throw;
     }
+
+#if defined(EMBREE_SYCL_SUPPORT)
+    accelBuffer.commit();
+#endif
+
   }
 #endif
 

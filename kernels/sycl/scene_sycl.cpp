@@ -46,6 +46,9 @@ RTC_API_EXTERN_C bool prefetchUSMSharedOnGPU(RTCScene hscene)
   // we accumulate some nonsene data to prevent compiler
   // optimizing away the memory fetches in the GPU kernel
   size_t* result = sycl::malloc_shared<size_t>(num_workers, queue);
+  
+  size_t accelSize = scene->accelBuffer.getHWAccelSize();
+  char* accelPtr = scene->accelBuffer.getHWAccel(0);
 
   // Use num_workers GPU work items to iterate over all USM shared
   // allocations to trigger USM migration from CPU to GPU
@@ -89,13 +92,13 @@ RTC_API_EXTERN_C bool prefetchUSMSharedOnGPU(RTCScene hscene)
     {
       // iterate over BVH memory buffer in steps of 4KB
       // (page size on Intel Data Center Max GPUs)
-      const size_t accel_size = scene->hwaccel.size() / (1 << 12);
+      const size_t accel_size = accelSize / (1 << 12);
       const size_t num_iterations = (accel_size + num_workers - 1) / num_workers;
       for (size_t j = 0; j < num_iterations; ++j) {
         const size_t offset = (idx * num_iterations + j) * (1 << 12);
         if (offset >= accel_size)
           continue;
-        result[idx] += ((size_t)scene->hwaccel[offset] % 32);
+        result[idx] += ((size_t)accelPtr[offset]) % 32;
       }
     }
   });
