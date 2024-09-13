@@ -296,14 +296,7 @@ namespace embree
 
 #if defined(EMBREE_SYCL_SUPPORT)
   public:
-    BBox3f hwaccel_bounds = empty;
-    AccelBuffer hwaccel;   // the buffer containing the HW acceleration structures corresponding to the scene. One for each time segment, stored in a contiguous chunk of memory.
-    size_t hwaccel_stride; // the stride between two HW acceleration structures for different time segments stored in hwaccel.
-
-    __forceinline char* getHWAccel(uint32_t time_segment) const {
-      char* ptr = (char*)hwaccel.data() + time_segment * hwaccel_stride;
-      return ptr;
-    }
+    AccelBuffer accelBuffer;
 #endif
     
   private:

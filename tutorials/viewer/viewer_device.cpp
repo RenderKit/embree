@@ -232,12 +232,16 @@ void renderPixelStandard(const TutorialData& data,
 
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
-    pixels[y*width+x] = 0;
+    pixels[y*width+x] = (2 << 24) - 1;
     return;
   }
 
   /* shade all rays that hit something */
   Vec3fa color = Vec3fa(0.5f);
+
+  //Vec3fa color = Vec3fa(ray.u, ray.v, 0.f);
+
+#if 0
 
   /* compute differential geometry */
   DifferentialGeometry dg;
@@ -273,11 +277,14 @@ void renderPixelStandard(const TutorialData& data,
 
   color = color*dot(neg(ray.dir),dg.Ns);
 
+#endif
+
   /* write color to framebuffer */
   unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
   unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
   unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-  pixels[y*width+x] = (b << 16) + (g << 8) + r;
+  //pixels[y*width+x] = (b << 16) + (g << 8) + r;
+  pixels[y*width+x] = ray.primID % (2 << 24);
 }
 
 /* task that renders a single screen tile */
