@@ -9,12 +9,12 @@ RTC_NAMESPACE_BEGIN
 
 /* Opaque device type */
 typedef struct RTCDeviceTy* RTCDevice;
+typedef struct RTCSceneTy* RTCScene;
 
 /* Creates a new Embree device. */
 RTC_API RTCDevice rtcNewDevice(const char* config);
 
 #if defined(EMBREE_SYCL_SUPPORT) && defined(SYCL_LANGUAGE_VERSION)
-
 
 /* Creates a new Embree SYCL device. */
 RTC_API_EXTERN_C RTCDevice rtcNewSYCLDevice(sycl::context context, const char* config);
@@ -27,6 +27,8 @@ RTC_API int rtcSYCLDeviceSelector(const sycl::device sycl_device);
 
 /* Set the SYCL device to be used to allocate data */
 RTC_API void rtcSetDeviceSYCLDevice(RTCDevice device, const sycl::device sycl_device);
+
+RTC_API void rtcCommitSceneWithQueue(RTCScene scene, sycl::queue queue);
 
 #endif
 

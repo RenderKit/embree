@@ -36,6 +36,8 @@ namespace embree
     bool verify();
     void setMaxRadiusScale(float s);
     void addElementsToCount (GeometryCounts & counts) const;
+    size_t getGeometryDataDeviceByteSize() const;
+    void convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const;
 
    public:
     /*! returns the number of vertices */

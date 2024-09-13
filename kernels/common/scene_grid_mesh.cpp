@@ -203,7 +203,48 @@ namespace embree
   void GridMesh::interpolate(const RTCInterpolateArguments* const args) {
     interpolate_impl<4>(args);
   }
-  
+
+  size_t GridMesh::getGeometryDataDeviceByteSize() const {
+    size_t byte_size = sizeof(GridMesh);
+    byte_size += numTimeSteps * sizeof(BufferView<Vec3fa>);
+    //if (vertexAttribs.size() > 0)
+    //  byte_size += numTimeSteps * sizeof(RawBufferView);
+    byte_size += quadID_to_primID_xy.size() * sizeof(PrimID_XY);
+    return 16 * ((byte_size + 15) / 16);
+  }
+
+#if defined(EMBREE_SYCL_SUPPORT)
+
+  void GridMesh::convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const {
+    GridMesh* mesh = (GridMesh*)(data_host + offset);
+    std::memcpy(data_host + offset, (void*)this, sizeof(GridMesh));
+    offset += sizeof(GridMesh);
+
+    // store offset for overriding vertices pointer with device pointer after copying
+    const size_t offsetVertices = offset;
+    // copy vertices BufferViews for each time step
+    for (size_t t = 0; t < numTimeSteps; ++t) {
+      std::memcpy(data_host + offset, &(vertices[t]), sizeof(BufferView<Vec3fa>));
+      offset += sizeof(BufferView<Vec3fa>);
+    }
+    // override vertices pointer with device ptr
+    mesh->vertices.setDataPtr((BufferView<Vec3fa>*)(data_device + offsetVertices));
+
+    //if (vertexAttribs.size() > 0) {
+    //  const size_t offsetVertexAttribs = offset;
+    //  for (size_t t = 0; t < numTimeSteps; ++t) {
+    //    std::memcpy(data_host + offset, &(vertexAttribs[t]), sizeof(RawBufferView));
+    //    offset += sizeof(RawBufferView);
+    //  }
+    //  mesh->vertexAttribs.setDataPtr((RawBufferView*)(data_device + offsetVertexAttribs));
+    //}
+
+    std::memcpy(data_host + offset, quadID_to_primID_xy.data(), quadID_to_primID_xy.size() * sizeof(PrimID_XY));
+    mesh->quadID_to_primID_xy.setDataPtr((PrimID_XY*)(data_device + offset));
+  }
+
+#endif
+
 #endif
 
   namespace isa

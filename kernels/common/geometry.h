@@ -128,7 +128,7 @@ namespace embree
   /*! Base class all geometries are derived from */
   class Geometry : public RefCount
   {
-    ALIGNED_CLASS_USM_(16);
+    ALIGNED_CLASS_(16);
     
     friend class Scene;
   public:
@@ -468,6 +468,11 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
+    /*! Sets specified buffer. */
+    virtual void setBuffer(RTCBufferType bufferType, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, const Ref<Buffer>& dbuffer, size_t offset, size_t stride, unsigned int num) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
     /*! Gets specified buffer. */
     virtual void* getBuffer(RTCBufferType type, unsigned int slot) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry");
@@ -541,6 +546,17 @@ namespace embree
     /*! returns number of time segments */
     __forceinline unsigned numTimeSegments () const {
       return numTimeSteps-1;
+    }
+
+  public:
+
+    /*! methods for converting host geometry data to device geometry data */
+    virtual size_t getGeometryDataDeviceByteSize() const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"getGeometryDataDeviceByteSize not implemented for this geometry");
+    }
+
+    virtual void convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"convertToDeviceRepresentation not implemented for this geometry");
     }
 
   public:
