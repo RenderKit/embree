@@ -25,6 +25,11 @@
 #include "../sycl/rthwif_embree_builder.h"
 #endif
 
+#if !defined(EMBREE_SYCL_SUPPORT)
+namespace sycl {
+  struct queue;
+}
+#endif
 namespace embree
 {
   struct TaskGroup;
@@ -59,10 +64,6 @@ namespace embree
         return at(i);
       }
 
-      __forceinline size_t size() const {
-        return scene->size();
-      }
-      
       __forceinline size_t numPrimitives() const {
         return scene->getNumPrimitives(Ty::geom_type,mblur);
       }
@@ -99,6 +100,11 @@ namespace embree
         }
         return ret;
       }
+
+      __forceinline size_t size() const {
+        return scene->size();
+      }
+      
       
     private:
       Scene* scene;
@@ -188,12 +194,17 @@ namespace embree
 
     void build_cpu_accels();
     void build_gpu_accels();
-    void commit (bool join);
+    void commit_internal (bool join);
+    void commit (bool join, sycl::queue* queue);
     void commit_task ();
     void build () {}
 
     /* return number of geometries */
+#if defined(__SYCL_DEVICE_ONLY__)
+    __forceinline size_t size() const { return num_geometries_device; }
+#else
     __forceinline size_t size() const { return geometries.size(); }
+#endif
     
     /* bind geometry to the scene */
     unsigned int bind (unsigned geomID, Ref<Geometry> geometry);
@@ -210,12 +221,14 @@ namespace embree
 
     __forceinline uint32_t getMaxTimeSegments() const { return maxTimeSegments; };
 
+    #if !defined(__SYCL_DEVICE_ONLY__)
     __forceinline bool isGeometryModified(size_t geomID)
     {
       Ref<Geometry>& g = geometries[geomID];
       if (!g) return false;
       return g->getModCounter() > geometryModCounters_[geomID];
     }
+    #endif
 
   protected:
 
@@ -223,6 +236,27 @@ namespace embree
 
   public:
 
+#if defined(__SYCL_DEVICE_ONLY__)
+    /* get mesh by ID */
+    __forceinline       Geometry* get(size_t i)       { return geometries_device[i]; }
+    __forceinline const Geometry* get(size_t i) const { return geometries_device[i]; }
+
+    template<typename Mesh>
+      __forceinline       Mesh* get(size_t i)       { 
+      return (Mesh*)geometries_device[i]; 
+    }
+    template<typename Mesh>
+      __forceinline const Mesh* get(size_t i) const { 
+      return (Mesh*)geometries_device[i]; 
+    }
+
+    template<typename Mesh>
+    __forceinline Mesh* getSafe(size_t i) {
+      if (geometries_device[i] == nullptr) return nullptr;
+      if (!(geometries_device[i]->getTypeMask() & Mesh::geom_type)) return nullptr;
+      else return (Mesh*) geometries_device[i];
+    }
+#else
     /* get mesh by ID */
     __forceinline       Geometry* get(size_t i)       { assert(i < geometries.size()); return geometries[i].ptr; }
     __forceinline const Geometry* get(size_t i) const { assert(i < geometries.size()); return geometries[i].ptr; }
@@ -247,12 +281,16 @@ namespace embree
       if (!(geometries[i]->getTypeMask() & Mesh::geom_type)) return nullptr;
       else return (Mesh*) geometries[i].ptr;
     }
+#endif
 
+
+    #if !defined(__SYCL_DEVICE_ONLY__)
     __forceinline Ref<Geometry> get_locked(size_t i)  {
       Lock<MutexSys> lock(geometriesMutex);
       assert(i < geometries.size()); 
       return geometries[i]; 
     }
+    #endif
 
     /* flag decoding */
     __forceinline bool isFastAccel() const { return !isCompactAccel() && !isRobustAccel(); }
@@ -274,6 +312,13 @@ namespace embree
     }
     
     void* createQBVH6Accel();
+    
+  private:
+    
+#if defined(EMBREE_SYCL_SUPPORT)
+    void syncWithDevice(sycl::queue* queue);
+#endif
+    
 
   public:
     Device* device;
@@ -296,19 +341,16 @@ namespace embree
 
 #if defined(EMBREE_SYCL_SUPPORT)
   public:
-    BBox3f hwaccel_bounds = empty;
-    AccelBuffer hwaccel;   // the buffer containing the HW acceleration structures corresponding to the scene. One for each time segment, stored in a contiguous chunk of memory.
-    size_t hwaccel_stride; // the stride between two HW acceleration structures for different time segments stored in hwaccel.
-
-    __forceinline char* getHWAccel(uint32_t time_segment) const {
-      char* ptr = (char*)hwaccel.data() + time_segment * hwaccel_stride;
-      return ptr;
-    }
+    AccelBuffer accelBuffer;
 #endif
     
   private:
     bool modified;            //!< true if scene got modified
     uint32_t maxTimeSegments; //!< maximal number of motion blur time segments in scene
+
+    Geometry** geometries_device; //!< list of all geometries on device
+    char* geometries_data_device; //!< data buffer of all geometries on device
+    size_t num_geometries_device;
 
   public:
 

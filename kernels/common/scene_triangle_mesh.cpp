@@ -79,6 +79,53 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
   }
 
+  void TriangleMesh::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, const Ref<Buffer>& dbuffer, size_t offset, size_t stride, unsigned int num)
+  {
+    /* verify that all accesses are 4 bytes aligned */
+    if (((size_t(buffer->getPtr()) + offset) & 0x3) || (stride & 0x3)) 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION, "data must be 4 bytes aligned");
+
+    if (type == RTC_BUFFER_TYPE_VERTEX)
+    {
+      if (format != RTC_FORMAT_FLOAT3)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex buffer format");
+
+      /* if buffer is larger than 16GB the premultiplied index optimization does not work */
+      if (stride*num > 16ll*1024ll*1024ll*1024ll)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "vertex buffer can be at most 16GB large");
+
+      if (slot >= vertices.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid vertex buffer slot");
+
+      vertices[slot].set(buffer, dbuffer, offset, stride, num, format);
+      vertices[slot].checkPadding16();
+      vertices0 = vertices[0];
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
+    {
+      if (format < RTC_FORMAT_FLOAT || format > RTC_FORMAT_FLOAT16)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex attribute buffer format");
+
+      if (slot >= vertexAttribs.size())
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex attribute buffer slot");
+      
+      vertexAttribs[slot].set(buffer, dbuffer, offset, stride, num, format);
+      vertexAttribs[slot].checkPadding16();
+    }
+    else if (type == RTC_BUFFER_TYPE_INDEX)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      if (format != RTC_FORMAT_UINT3)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid index buffer format");
+
+      triangles.set(buffer, dbuffer, offset, stride, num, format);
+      setNumPrimitives(num);
+    }
+    else 
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
+  }
+
   void* TriangleMesh::getBuffer(RTCBufferType type, unsigned int slot)
   {
     if (type == RTC_BUFFER_TYPE_INDEX)
@@ -142,6 +189,8 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
 
     Geometry::commit();
+    
+    
   }
 
   void TriangleMesh::addElementsToCount (GeometryCounts & counts) const 
@@ -182,7 +231,41 @@ namespace embree
   void TriangleMesh::interpolate(const RTCInterpolateArguments* const args) {
     interpolate_impl<4>(args);
   }
- 
+
+  size_t TriangleMesh::getGeometryDataDeviceByteSize() const {
+    size_t byte_size = sizeof(TriangleMesh);
+    byte_size += numTimeSteps * sizeof(BufferView<Vec3fa>);
+    //if (vertexAttribs.size() > 0)
+    //  byte_size += numTimeSteps * sizeof(RawBufferView);
+    return 16 * ((byte_size + 15) / 16);
+  }
+
+  void TriangleMesh::convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const {
+    TriangleMesh* mesh = (TriangleMesh*)(data_host + offset);
+    std::memcpy(data_host + offset, (void*)this, sizeof(TriangleMesh));
+    offset += sizeof(TriangleMesh);
+
+    // store offset for overriding vertices pointer with device pointer after copying
+    const size_t offsetVertices = offset;
+    // copy vertices BufferViews for each time step
+    for (size_t t = 0; t < numTimeSteps; ++t) {
+      std::memcpy(data_host + offset, &(vertices[t]), sizeof(BufferView<Vec3fa>));
+      offset += sizeof(BufferView<Vec3fa>);
+    }
+    // override vertices pointer with device ptr
+    mesh->vertices.setDataPtr((BufferView<Vec3fa>*)(data_device + offsetVertices));
+
+    //if (vertexAttribs.size() > 0) {
+    //  const size_t offsetVertexAttribs = offset;
+    //  for (size_t t = 0; t < numTimeSteps; ++t) {
+    //    std::memcpy(data_host + offset, &(vertexAttribs[t]), sizeof(RawBufferView));
+    //    offset += sizeof(RawBufferView);
+    //  }
+    //  mesh->vertexAttribs.setDataPtr((RawBufferView*)(data_device + offsetVertexAttribs));
+    //}
+
+  }
+
 #endif
 
   namespace isa
