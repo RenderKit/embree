@@ -83,6 +83,19 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END(nullptr);
   }
 
+  RTC_API void rtcCommitSceneWithQueue (RTCScene hscene, sycl::queue queue)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcCommitScene);
+    RTC_VERIFY_HANDLE(hscene);
+    RTC_ENTER_DEVICE(hscene);
+    scene->commit(false, &queue);
+
+    RTC_CATCH_END2(scene);
+  }
+
+
 #endif
 
   RTC_API void rtcRetainDevice(RTCDevice hdevice) 
@@ -312,10 +325,11 @@ RTC_NAMESPACE_BEGIN;
     RTC_TRACE(rtcCommitScene);
     RTC_VERIFY_HANDLE(hscene);
     RTC_ENTER_DEVICE(hscene);
-    scene->commit(false);
+    
+    scene->commit(false, nullptr);
 
 #if defined(EMBREE_SYCL_SUPPORT)
-    prefetchUSMSharedOnGPU(hscene);
+    //prefetchUSMSharedOnGPU(hscene);
 #endif
 
     RTC_CATCH_END2(scene);
@@ -328,7 +342,8 @@ RTC_NAMESPACE_BEGIN;
     RTC_TRACE(rtcJoinCommitScene);
     RTC_VERIFY_HANDLE(hscene);
     RTC_ENTER_DEVICE(hscene);
-    scene->commit(true);
+    
+    scene->commit(true, nullptr);
     RTC_CATCH_END2(scene);
   }
 
@@ -1678,6 +1693,28 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     RTC_CATCH_END2(geometry);
   }
 
+  RTC_API void rtcSetSharedGeometryBufferXPU(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot, RTCFormat format, const void* ptr, const void* dptr, size_t byteOffset, size_t byteStride, size_t itemCount)
+  {
+    Geometry* geometry = (Geometry*) hgeometry;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcSetSharedGeometryBuffer);
+    RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
+    
+    if (itemCount > 0xFFFFFFFFu)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"buffer too large");
+
+    Ref<Buffer> buffer = new Buffer(geometry->device, itemCount*byteStride, (char*)ptr + byteOffset);
+
+    if (dptr) {
+      Ref<Buffer> dbuffer = new Buffer(geometry->device, itemCount*byteStride, (char*)dptr + byteOffset);
+      geometry->setBuffer(type, slot, format, buffer, dbuffer, 0, byteStride, (unsigned int)itemCount);
+    } else {
+      geometry->setBuffer(type, slot, format, buffer, buffer, 0, byteStride, (unsigned int)itemCount);
+    }
+    RTC_CATCH_END2(geometry);
+  }
+
   RTC_API void* rtcSetNewGeometryBuffer(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot, RTCFormat format, size_t byteStride, size_t itemCount)
   {
     Geometry* geometry = (Geometry*) hgeometry;
@@ -1697,6 +1734,37 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     Ref<Buffer> buffer = new Buffer(geometry->device, bytes);
     geometry->setBuffer(type, slot, format, buffer, 0, byteStride, (unsigned int)itemCount);
     return buffer->data();
+    RTC_CATCH_END2(geometry);
+    return nullptr;
+  }
+
+  RTC_API void* rtcSetNewGeometryBufferXPU(RTCGeometry hgeometry, RTCBufferType bufferType, unsigned int slot, RTCFormat format, size_t byteStride, size_t itemCount, void** dptr)
+  {
+    Geometry* geometry = (Geometry*) hgeometry;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcSetNewGeometryBuffer);
+    RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
+
+    if (itemCount > 0xFFFFFFFFu)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"buffer too large");
+
+    /* vertex buffers need to get overallocated slightly as elements are accessed using SSE loads */
+    size_t bytes = itemCount*byteStride;
+    if (bufferType == RTC_BUFFER_TYPE_VERTEX || bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
+      bytes += (16 - (byteStride%16))%16;
+
+    Ref<Buffer> buffer = new Buffer(geometry->device, EmbreeMemoryType::HOST, bytes);
+
+    if (dptr) {
+      Ref<Buffer> dbuffer = new Buffer(geometry->device, EmbreeMemoryType::DEVICE, bytes);
+      geometry->setBuffer(bufferType, slot, format, buffer, dbuffer, 0, byteStride, (unsigned int)itemCount);
+      *dptr = dbuffer->data();
+    } else {
+      geometry->setBuffer(bufferType, slot, format, buffer, buffer, 0, byteStride, (unsigned int)itemCount);
+    }
+    return buffer->data();
+
     RTC_CATCH_END2(geometry);
     return nullptr;
   }

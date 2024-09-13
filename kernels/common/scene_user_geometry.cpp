@@ -34,7 +34,16 @@ namespace embree
   void UserGeometry::setOccludedFunctionN (RTCOccludedFunctionN occluded) {
     intersectorN.occluded = occluded;
   }
-  
+
+  size_t UserGeometry::getGeometryDataDeviceByteSize() const {
+    return 16 * ((sizeof(UserGeometry) + 15) / 16);
+  }
+
+  void UserGeometry::convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const {
+    std::memcpy(data_host + offset, (void*)this, sizeof(UserGeometry));
+    offset += sizeof(Instance);
+  }
+
 #endif
 
   namespace isa

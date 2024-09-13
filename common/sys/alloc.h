@@ -48,6 +48,13 @@ namespace embree
     EMBREE_USM_SHARED_DEVICE_READ_WRITE = 0,
     EMBREE_USM_SHARED_DEVICE_READ_ONLY = 1
   };
+
+  enum EmbreeMemoryType {
+    HOST = 0,
+    DEVICE = 1,
+    SHARED = 2,
+    UNKNOWN = 3
+  };
   
   /*! aligned allocation */
   void* alignedMalloc(size_t size, size_t align);
@@ -61,6 +68,7 @@ namespace embree
   
   /*! aligned allocation using SYCL USM */
   void* alignedSYCLMalloc(sycl::context* context, sycl::device* device, size_t size, size_t align, EmbreeUSMMode mode);
+  void* alignedSYCLMalloc(sycl::context* context, sycl::device* device, size_t size, size_t align, EmbreeUSMMode mode, EmbreeMemoryType type);
   void alignedSYCLFree(sycl::context* context, void* ptr);
 
   // deleter functor to use as deleter in std unique or shared pointers that

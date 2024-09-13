@@ -47,6 +47,8 @@ namespace embree
       quality_flags(RTC_BUILD_QUALITY_MEDIUM),
       modified(true),
       maxTimeSegments(0),
+      geometries_device(nullptr),
+      geometries_data_device(nullptr),
       taskGroup(new TaskGroup()),
       progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0)
   {
@@ -56,8 +58,8 @@ namespace embree
 
     /* use proper device and context for SYCL allocations */
 #if defined(EMBREE_SYCL_SUPPORT)
-    if (DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device))
-      hwaccel = AccelBuffer(AccelAllocator<char>(device,gpu_device->getGPUDevice(),gpu_device->getGPUContext()),0);
+    if (dynamic_cast<DeviceGPU*>(device))
+      accelBuffer = AccelBuffer(device);
 #endif
        
     /* one can overwrite flags through device for debugging */
@@ -789,10 +791,8 @@ namespace embree
   void Scene::build_gpu_accels()
   {
 #if defined(EMBREE_SYCL_SUPPORT)
-    auto [aabb, stride] = rthwifBuild(this,hwaccel);
-    hwaccel_stride = stride;
-    bounds = LBBox<embree::Vec3fa>(aabb);
-    hwaccel_bounds = aabb;
+    accelBuffer.build(this);
+    bounds = LBBox<embree::Vec3fa>(accelBuffer.getBounds());
 #endif
   }
 
@@ -878,10 +878,19 @@ namespace embree
   RTCSceneFlags Scene::getSceneFlags() const {
     return scene_flags;
   }
-                   
+
+  void Scene::commit (bool join, sycl::queue* queue)
+  {
+    commit_internal(join);
+
+#if defined(EMBREE_SYCL_SUPPORT)
+    syncWithDevice(queue);
+#endif
+  }
+
 #if defined(TASKING_INTERNAL)
 
-  void Scene::commit (bool join) 
+  void Scene::commit_internal (bool join)
   {
     Lock<MutexSys> buildLock(buildMutex,false);
 
@@ -913,7 +922,7 @@ namespace embree
     }
     catch (...) {
       accels_clear();
-      Lock<MutexSys> lock(taskGroup->schedulerMutex);
+      Lock<MutexSys> lock(taskGroup->schedulerMutex);, *global_gpu_queue
       taskGroup->scheduler = nullptr;
       throw;
     }
@@ -923,7 +932,7 @@ namespace embree
 
 #if defined(TASKING_TBB)
 
-  void Scene::commit (bool join) 
+  void Scene::commit_internal (bool join) 
   {    
 #if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR < 8)
     if (join)
@@ -987,7 +996,7 @@ namespace embree
 
 #if defined(TASKING_PPL)
 
-  void Scene::commit (bool join) 
+  void Scene::commit_internal (bool join)
   {
 #if defined(TASKING_PPL)
     if (join)
@@ -1024,6 +1033,7 @@ namespace embree
       accels_clear();
       throw;
     }
+
   }
 #endif
 
@@ -1042,4 +1052,5 @@ namespace embree
       }
     }
   }
+  
 }
