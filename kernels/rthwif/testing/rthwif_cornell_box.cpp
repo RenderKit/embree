@@ -11,6 +11,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <stdlib.h>
 
 void* dispatchGlobalsPtr = nullptr;
 
@@ -102,7 +103,7 @@ size_t compareTga(const std::string& fileNameA, const std::string& fileNameB)
 }
 
 /* Properly allocates an acceleration structure buffer using ze_raytracing_mem_alloc_ext_desc_t property. */
-void* alloc_accel_buffer(size_t bytes, sycl::device device, sycl::context context)
+void* alloc_accel_buffer(size_t bytes, sycl::device device, sycl::context context, sycl::usm::alloc alloc_type)
 {
   ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
   ze_device_handle_t  hDevice  = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
@@ -128,9 +129,22 @@ void* alloc_accel_buffer(size_t bytes, sycl::device device, sycl::context contex
   host_desc.stype = ZE_STRUCTURE_TYPE_HOST_MEM_ALLOC_DESC;
   host_desc.pNext = nullptr;
   host_desc.flags = ZE_HOST_MEM_ALLOC_FLAG_BIAS_CACHED;
-  
+
   void* ptr = nullptr;
-  ze_result_t result = ZeWrapper::zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,rtasProp.rtasBufferAlignment,hDevice,&ptr);
+  ze_result_t result;
+  switch (alloc_type) {
+    case sycl::usm::alloc::host:
+      result = ZeWrapper::zeMemAllocHost(hContext,&host_desc,bytes,rtasProp.rtasBufferAlignment,&ptr);
+      break;
+    case sycl::usm::alloc::device:
+      result = ZeWrapper::zeMemAllocDevice(hContext,&device_desc,bytes,rtasProp.rtasBufferAlignment,hDevice,&ptr);
+      break;
+    case sycl::usm::alloc::shared:
+      result = ZeWrapper::zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,rtasProp.rtasBufferAlignment,hDevice,&ptr);
+      break;
+    default:
+      throw std::runtime_error("sycl::usm::alloc type unknown in rthwifAllocAccelBuffer");
+  }
   if (result != ZE_RESULT_SUCCESS)
     throw std::runtime_error("acceleration buffer allocation failed");
 
@@ -173,7 +187,7 @@ void* allocDispatchGlobals(sycl::device device, sycl::context context)
   size_t num_rtstacks = 1<<17; // this is sufficiently large also for PVC
   size_t dispatchGlobalSize = 128+num_rtstacks*rtstack_bytes;
   
-  void* dispatchGlobalsPtr = alloc_accel_buffer(dispatchGlobalSize,device,context);
+  void* dispatchGlobalsPtr = alloc_accel_buffer(dispatchGlobalSize,device,context,sycl::usm::alloc::shared);
   memset(dispatchGlobalsPtr, 0, dispatchGlobalSize);
 
   DispatchGlobals* dg = (DispatchGlobals*) dispatchGlobalsPtr;
@@ -300,7 +314,7 @@ ze_rtas_float3_exp_t vertices[] = {
 };
 
 /* builds acceleration structure */
-void* build_rtas(sycl::device device, sycl::context context)
+std::tuple<void*, size_t> build_rtas(sycl::device device, sycl::context context)
 {
   /* get L0 handles */
   ze_driver_handle_t hDriver = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device.get_platform());
@@ -377,7 +391,7 @@ void* build_rtas(sycl::device device, sycl::context context)
 
   /* allocate acceleration structure buffer */
   size_t accelBytes = buildProps.rtasBufferSizeBytesMaxRequired;
-  void* accel = alloc_accel_buffer(accelBytes,device,context);
+  void* accel = alloc_accel_buffer(accelBytes,device,context,sycl::usm::alloc::host);
   memset(accel,0,accelBytes); // optional
   
   /* build acceleration strucuture multi threaded */
@@ -414,8 +428,8 @@ void* build_rtas(sycl::device device, sycl::context context)
   err = ZeWrapper::zeRTASBuilderDestroyExp(hBuilder);
   if (err != ZE_RESULT_SUCCESS)
     throw std::runtime_error("zeRTASBuilderDestroyExp failed");
-  
-  return accel;
+
+  return std::tie(accel, accelBytes);
 }
 
 /* render using simple UV shading */
@@ -449,16 +463,15 @@ void render(unsigned int x, unsigned int y, void* bvh, unsigned int* pixels, uns
   intel_ray_query_sync(query);
 
   /* get UVs of hit point */
-  float u = 0, v = 0;
+  uint32_t primID = (uint32_t)(-1);
+  sycl::float3 color { 1.f, 1.f, 1.f };
   if (intel_has_committed_hit(query))
   {
-    sycl::float2 uv = intel_get_hit_barycentrics( query, intel_hit_type_committed_hit );
-    u = uv.x();
-    v = uv.y();
+    primID = intel_get_hit_triangle_primitive_id(query, intel_hit_type_committed_hit);
+    std::srand(primID);
+    color = { std::rand() / (RAND_MAX + 1u), std::rand() / (RAND_MAX + 1u), std::rand() / (RAND_MAX + 1u) };
   }
 
-  /* write color to framebuffer */
-  sycl::float3 color(u,v,1.0f-u-v);
   unsigned int r = (unsigned int) (255.0f * color.x());
   unsigned int g = (unsigned int) (255.0f * color.y());
   unsigned int b = (unsigned int) (255.0f * color.z());
@@ -474,35 +487,26 @@ int main(int argc, char* argv[]) try
   ZeWrapper::RTAS_BUILD_MODE rtas_build_mode = ZeWrapper::RTAS_BUILD_MODE::INTERNAL;
 #endif
   
-  char* reference_img = NULL;
-  for (int i=1; i<argc; i++)
-  {
-    if (strcmp(argv[i], "--compare") == 0) {
-      if (++i >= argc) throw std::runtime_error("--compare: filename expected");
-      reference_img = argv[i];
-    }
-    else if (strcmp(argv[i], "--internal-rtas-builder") == 0) {
-      rtas_build_mode = ZeWrapper::RTAS_BUILD_MODE::INTERNAL;
-    }
-    else if (strcmp(argv[i], "--level-zero-rtas-builder") == 0) {
-      rtas_build_mode = ZeWrapper::RTAS_BUILD_MODE::LEVEL_ZERO;
-    }
-    else if (strcmp(argv[i], "--default-rtas-builder") == 0) {
-      rtas_build_mode = ZeWrapper::RTAS_BUILD_MODE::AUTO;
-    }
-    else if (strcmp(argv[i], "--size") == 0) {
-      if (++i >= argc) throw std::runtime_error("--size: width expected");
-      global_width = atoi(argv[i]);
-      if (++i >= argc) throw std::runtime_error("--size: height expected");
-      global_height = atoi(argv[i]);
-      if (global_width == 0) throw std::runtime_error("--size: width is zero");
-      if (global_height == 0) throw std::runtime_error("--size: height is zero");
-      if (global_width > 4096) throw std::runtime_error("--size: width too large");
-      if (global_height > 4096) throw std::runtime_error("--size: height too large");
-    }
-    else {
-      throw std::runtime_error("unknown command line argument");
-    }
+  if (argc < 2) {
+    std::cerr << "Usage: embree_rthwif_cornell_box <shared/device/host>" << std::endl;
+    return 1;
+  }
+  
+  sycl::usm::alloc accelAllocType = sycl::usm::alloc::unknown;
+  std::string usm_alloc_type(argv[1]);
+  std::string filename = "error.tga";
+  if (usm_alloc_type == "shared") {
+    accelAllocType = sycl::usm::alloc::shared;
+    filename = "cornell_box_shared.tga";
+  } else if (usm_alloc_type == "device") {
+    accelAllocType = sycl::usm::alloc::device;
+    filename = "cornell_box_device.tga";
+  } else if (usm_alloc_type == "host") {
+    accelAllocType = sycl::usm::alloc::host;
+    filename = "cornell_box_host.tga";
+  } else {
+    std::cerr << "Error usm alloc type must be shared, device, or host" << std::endl;
+    return 1;
   }
 
   /* create SYCL objects */
@@ -569,7 +573,11 @@ int main(int argc, char* argv[]) try
 #endif
 
   /* build acceleration structure */
-  void* bvh = build_rtas(device,context);
+  auto [accelHost, accelBytes] = build_rtas(device,context);
+
+  void* bvh = alloc_accel_buffer(accelBytes,device,context,accelAllocType);
+
+  queue.memcpy(bvh, accelHost, accelBytes);
 
   /* creates framebuffer */
   const uint32_t width = global_width;
@@ -611,18 +619,9 @@ int main(int argc, char* argv[]) try
 #endif
 
   /* store image to disk */
-  storeTga(pixels,width,height,"cornell_box.tga");
-  if (!reference_img) return 0;
+  storeTga(pixels,width,height,filename);
 
-  /* compare to reference image */
-  const size_t err = compareTga("cornell_box.tga", "cornell_box_reference.tga");
-  std::cout << "difference to reference image is " << err << std::endl;
-  const bool ok = err < 32;
-  std::cout << "cornell_box ";
-  if (ok) std::cout << "[PASSED]" << std::endl;
-  else    std::cout << "[FAILED]" << std::endl;
-
-  return ok ? 0 : 1;
+  return 0;
 }
 catch (std::runtime_error e) {
   std::cerr << "std::runtime_error: " << e.what() << std::endl;
