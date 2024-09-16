@@ -578,6 +578,7 @@ int main(int argc, char* argv[]) try
   void* bvh = alloc_accel_buffer(accelBytes,device,context,accelAllocType);
 
   queue.memcpy(bvh, accelHost, accelBytes);
+  queue.wait_and_throw();
 
   /* creates framebuffer */
   const uint32_t width = global_width;
