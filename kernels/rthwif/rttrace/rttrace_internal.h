@@ -159,12 +159,12 @@ public:
   };
     
   struct { // FIXME: removing these anonymous structs triggers IGC bug
-    uint64_t primLeafPtr     : 42; // pointer to BVH leaf node (multiple of 64 bytes)
+    int64_t primLeafPtr     : 42; // pointer to BVH leaf node (multiple of 64 bytes)
     uint64_t hitGroupRecPtr0 : 22; // LSB of hit group record of the hit triangle (multiple of 16 bytes)
   };
 
   struct {
-    uint64_t instLeafPtr     : 42; // pointer to BVH instance leaf node (in multiple of 64 bytes)
+    int64_t instLeafPtr     : 42; // pointer to BVH instance leaf node (in multiple of 64 bytes)
     uint64_t hitGroupRecPtr1 : 22; // MSB of hit group record of the hit triangle (multiple of 16 bytes)
   };
 
