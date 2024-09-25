@@ -1,5 +1,8 @@
 #pragma once
 
+#define SSE2RVV_PRECISE_DIV  1
+#define SSE2RVV_PRECISE_SQRT 1
+
 #include "sse2rvv.h"
 
 #define _MM_SHUFFLE(fp3, fp2, fp1, fp0) \

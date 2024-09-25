@@ -26,6 +26,15 @@
  * SOFTWARE.
  */
 
+/* _mm_rcp_ps */
+#ifndef SSE2RVV_PRECISE_DIV
+#define SSE2RVV_PRECISE_DIV (0)
+#endif
+/* _mm_sqrt_ps and _mm_rsqrt_ps */
+#ifndef SSE2RVV_PRECISE_SQRT
+#define SSE2RVV_PRECISE_SQRT (0)
+#endif
+
 /* compiler specific definitions */
 #if defined(__GNUC__) || defined(__clang__)
 #pragma push_macro("FORCE_INLINE")
@@ -2533,16 +2542,21 @@ FORCE_INLINE __m64 _m_pshufw(__m64 a, int imm8) {
 }
 
 FORCE_INLINE __m128 _mm_rcp_ps(__m128 a) {
-  // TODO add high precision mode
   vfloat32m1_t _a = vreinterpretq_m128_f32(a);
-  return vreinterpretq_f32_m128(__riscv_vfrec7_v_f32m1(_a, 4));
+  vfloat32m1_t recip = __riscv_vfrec7_v_f32m1(_a, 4);
+#if SSE2RVV_PRECISE_DIV
+  vfloat32m1_t two = __riscv_vfmv_v_f_f32m1(2.0f, 4);
+  // Additional Netwon-Raphson iteration for accuracy
+  recip = __riscv_vfmul_vv_f32m1(recip,
+      __riscv_vfsub_vv_f32m1(two, __riscv_vfmul_vv_f32m1(_a, recip, 4), 4), 4);
+#endif
+  return vreinterpretq_f32_m128(recip);
 }
 
 FORCE_INLINE __m128 _mm_rcp_ss(__m128 a) {
-  // TODO add high precision mode
-  vfloat32m1_t _a = vreinterpretq_m128_f32(a);
-  vfloat32m1_t recip = __riscv_vfrec7_v_f32m1(_a, 4);
-  return vreinterpretq_f32_m128(__riscv_vslideup_vx_f32m1(_a, recip, 0, 1));
+  return vreinterpretq_f32_m128(
+      __riscv_vslideup_vx_f32m1(vreinterpretq_m128_f32(a),
+                                vreinterpretq_m128_f32(_mm_rcp_ps(a)), 0, 1));
 }
 
 // FORCE_INLINE __m128d _mm_round_pd (__m128d a, int rounding) {}
@@ -2554,16 +2568,22 @@ FORCE_INLINE __m128 _mm_rcp_ss(__m128 a) {
 // FORCE_INLINE __m128 _mm_round_ss (__m128 a, __m128 b, int rounding) {}
 
 FORCE_INLINE __m128 _mm_rsqrt_ps(__m128 a) {
-  // TODO add high precision mode
   vfloat32m1_t _a = vreinterpretq_m128_f32(a);
-  return vreinterpretq_f32_m128(__riscv_vfrsqrt7_v_f32m1(_a, 4));
+  vfloat32m1_t recip = __riscv_vfrsqrt7_v_f32m1(_a, 4);
+#if SSE2RVV_PRECISE_SQRT
+  // Additional Netwon-Raphson iteration for accuracy
+  recip = __riscv_vfadd_vv_f32m1(
+      __riscv_vfmul_vf_f32m1(recip, 1.5f, 4),
+      __riscv_vfmul_vv_f32m1(__riscv_vfmul_vv_f32m1(__riscv_vfmul_vf_f32m1(_a, -0.5f, 4), recip, 4),
+                             __riscv_vfmul_vv_f32m1(recip, recip, 4), 4), 4);
+#endif
+  return vreinterpretq_f32_m128(recip);
 }
 
 FORCE_INLINE __m128 _mm_rsqrt_ss(__m128 a) {
-  // TODO add high precision mode
-  vfloat32m1_t _a = vreinterpretq_m128_f32(a);
-  vfloat32m1_t sqrt = __riscv_vfrsqrt7_v_f32m1(_a, 4);
-  return vreinterpretq_f32_m128(__riscv_vslideup_vx_f32m1(_a, sqrt, 0, 1));
+  return vreinterpretq_f32_m128(
+      __riscv_vslideup_vx_f32m1(vreinterpretq_m128_f32(a),
+                                vreinterpretq_m128_f32(_mm_rsqrt_ps(a)), 0, 1));
 }
 
 FORCE_INLINE __m128i _mm_sad_epu8(__m128i a, __m128i b) {
@@ -2966,8 +2986,12 @@ FORCE_INLINE __m128d _mm_sqrt_pd(__m128d a) {
 
 FORCE_INLINE __m128 _mm_sqrt_ps(__m128 a) {
   vfloat32m1_t _a = vreinterpretq_m128_f32(a);
-  return vreinterpretq_f32_m128(
-      __riscv_vfrec7_v_f32m1(__riscv_vfrsqrt7_v_f32m1(_a, 4), 4));
+#if SSE2RVV_PRECISE_SQRT
+  return vreinterpretq_f32_m128(__riscv_vfsqrt_v_f32m1(_a, 4));
+#else
+  vfloat32m1_t recip = __riscv_vfrsqrt7_v_f32m1(_a, 4);
+  return vreinterpretq_f32_m128(__riscv_vfrec7_v_f32m1(recip, 4), 4);
+#endif
 }
 
 FORCE_INLINE __m128d _mm_sqrt_sd(__m128d a, __m128d b) {
@@ -2979,9 +3003,9 @@ FORCE_INLINE __m128d _mm_sqrt_sd(__m128d a, __m128d b) {
 }
 
 FORCE_INLINE __m128 _mm_sqrt_ss(__m128 a) {
-  vfloat32m1_t _a = vreinterpretq_m128_f32(a);
-  vfloat32m1_t rnd = __riscv_vfrec7_v_f32m1(__riscv_vfrsqrt7_v_f32m1(_a, 4), 4);
-  return vreinterpretq_f32_m128(__riscv_vslideup_vx_f32m1_tu(_a, rnd, 0, 1));
+  return vreinterpretq_f32_m128(
+      __riscv_vslideup_vx_f32m1_tu(vreinterpretq_m128_f32(a),
+                                   vreinterpretq_m128_f32(_mm_sqrt_ps(a)), 0, 1));
 }
 
 FORCE_INLINE __m128i _mm_sra_epi16(__m128i a, __m128i count) {
