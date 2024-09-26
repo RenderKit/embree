@@ -917,7 +917,7 @@ namespace embree
     }
     
 #if defined(EMBREE_SYCL_SUPPORT)
-    accelBuffer.commit();
+    syncWithDevice();
 #endif
   }
 
@@ -986,7 +986,7 @@ namespace embree
     }
 
 #if defined(EMBREE_SYCL_SUPPORT)
-    accelBuffer.commit();
+    syncWithDevice();
 #endif
   }
 #endif
@@ -1032,7 +1032,7 @@ namespace embree
     }
 
 #if defined(EMBREE_SYCL_SUPPORT)
-    accelBuffer.commit();
+    syncWithDevice();
 #endif
 
   }
@@ -1051,6 +1051,25 @@ namespace embree
       if (!progress_monitor_function(progress_monitor_ptr, n / (double(numPrimitives())))) {
         throw_RTCError(RTC_ERROR_CANCELLED,"progress monitor forced termination");
       }
+    }
+  }
+  
+  void Scene::syncWithDevice()
+  {
+    accelBuffer.commit();
+
+    geometries_device = (Geometry**)device->malloc(geometries.size() * sizeof(Geometry*), 16, EmbreeMemoryType::DEVICE);
+
+    std::vector<Geometry*> geometries_host(geometries.size());
+    for (size_t i = 0; i < geometries.size(); ++i) {
+      geometries_host[i] = geometries[i]->twin;
+    }
+    DeviceGPU *gpu_device = dynamic_cast<DeviceGPU *>(device);
+    if (gpu_device)
+    {
+      sycl::queue queue(gpu_device->getGPUDevice());
+      queue.memcpy(geometries_device, geometries_host.data(), geometries.size() * sizeof(Geometry*));
+      queue.wait_and_throw();
     }
   }
 }

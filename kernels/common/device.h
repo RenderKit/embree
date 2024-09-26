@@ -38,7 +38,7 @@ namespace embree
       
       __forceinline pointer allocate( size_type n ) {
         assert(device);
-        return (pointer) device->malloc(n*sizeof(T),alignment);
+        return (pointer) device->malloc(n*sizeof(T),alignment,EmbreeMemoryType::UNKNOWN);
       }
       
       __forceinline void deallocate( pointer p, size_type n ) {
@@ -117,8 +117,11 @@ namespace embree
     /*! leave device by setting up some global state */
     virtual void leave() {}
 
-    /*! buffer allocation */
+    /*! buffer allocation - using USM shared */
     virtual void* malloc(size_t size, size_t align);
+
+    /*! buffer allocation */
+    virtual void* malloc(size_t size, size_t align, EmbreeMemoryType type);
 
     /*! buffer deallocation */
     virtual void free(void* ptr);
@@ -171,6 +174,7 @@ namespace embree
     virtual void enter() override;
     virtual void leave() override;
     virtual void* malloc(size_t size, size_t align) override;
+    virtual void* malloc(size_t size, size_t align, EmbreeMemoryType type) override;
     virtual void free(void* ptr) override;
 
     /* set SYCL device */

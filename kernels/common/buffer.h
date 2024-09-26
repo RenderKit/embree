@@ -33,6 +33,23 @@ namespace embree
         alloc();
       }
     }
+
+    Buffer(Device* device, EmbreeMemoryType type, size_t numBytes_in, void* ptr_in = nullptr)
+      : device(device), numBytes(numBytes_in)
+    {
+      device->refInc();
+      
+      if (ptr_in)
+      {
+        shared = true;
+        ptr = (char*)ptr_in;
+      }
+      else
+      {
+        shared = false;
+        alloc(type);
+      }
+    }
     
     /*! Buffer destruction */
     ~Buffer() {
@@ -75,11 +92,11 @@ namespace embree
     }
     
     /*! allocated buffer */
-    void alloc()
+    void alloc(EmbreeMemoryType type = EmbreeMemoryType::SHARED)
     {
       device->memoryMonitor(this->bytes(), false);
       size_t b = (this->bytes()+15) & ssize_t(-16);
-      ptr = (char*)device->malloc(b,16);
+      ptr = (char*)device->malloc(b,16,type);
     }
     
     /*! frees the buffer */
@@ -148,16 +165,40 @@ namespace embree
       buffer = buffer_in;
     }
 
+    void set(const Ref<Buffer>& buffer_in, const Ref<Buffer>& dbuffer_in, size_t offset_in, size_t stride_in, size_t num_in, RTCFormat format_in)
+    {
+      if ((offset_in + stride_in * num_in) > (stride_in * buffer_in->numBytes))
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "buffer range out of bounds");
+
+      ptr_ofs = buffer_in->ptr + offset_in;
+      dptr_ofs = dbuffer_in->ptr + offset_in;
+      stride = stride_in;
+      num = num_in;
+      format = format_in;
+      modCounter++;
+      modified = true;
+      buffer = buffer_in;
+      dbuffer = dbuffer_in;
+    }
+
     /*! returns pointer to the first element */
     __forceinline char* getPtr() const {
-      return ptr_ofs;
+      #if defined(__SYCL_DEVICE_ONLY__)
+        return dptr_ofs;
+      #else
+        return ptr_ofs;
+      #endif
     }
 
     /*! returns pointer to the i'th element */
     __forceinline char* getPtr(size_t i) const
     {
-      assert(i<num);
-      return ptr_ofs + i*stride;
+      #if defined(__SYCL_DEVICE_ONLY__)
+        assert(i<num);
+        return dptr_ofs + i*stride;
+      #else
+        return ptr_ofs + i*stride;
+      #endif
     }
 
     /*! returns the number of elements of the buffer */
@@ -217,6 +258,7 @@ namespace embree
 
   public:
     char* ptr_ofs;      //!< base pointer plus offset
+    char* dptr_ofs;     //!< base pointer plus offset in device memory
     size_t stride;      //!< stride of the buffer in bytes
     size_t num;         //!< number of elements in the buffer
     RTCFormat format;   //!< format of the buffer
@@ -224,6 +266,7 @@ namespace embree
     bool modified;      //!< local modified data
     int userData;       //!< special data
     Ref<Buffer> buffer; //!< reference to the parent buffer
+    Ref<Buffer> dbuffer; //!< reference to the parent device buffer
   };
 
   /*! A typed contiguous range of a buffer. This class does not own the buffer content. */
@@ -233,9 +276,15 @@ namespace embree
   public:
     typedef T value_type;
 
+#if defined(__SYCL_DEVICE_ONLY__)
+    /*! access to the ith element of the buffer */
+    __forceinline       T& operator [](size_t i)       { assert(i<num); return *(T*)(dptr_ofs + i*stride); }
+    __forceinline const T& operator [](size_t i) const { assert(i<num); return *(T*)(dptr_ofs + i*stride); }
+#else
     /*! access to the ith element of the buffer */
     __forceinline       T& operator [](size_t i)       { assert(i<num); return *(T*)(ptr_ofs + i*stride); }
     __forceinline const T& operator [](size_t i) const { assert(i<num); return *(T*)(ptr_ofs + i*stride); }
+#endif
   };
 
   template<>
@@ -250,14 +299,14 @@ namespace embree
     __forceinline const Vec3fa operator [](size_t i) const
     {
       assert(i<num);
-      return Vec3fa::loadu(ptr_ofs + i*stride);
+      return Vec3fa::loadu(dptr_ofs + i*stride);
     }
     
     /*! writes the i'th element */
     __forceinline void store(size_t i, const Vec3fa& v)
     {
       assert(i<num);
-      Vec3fa::storeu(ptr_ofs + i*stride, v);
+      Vec3fa::storeu(dptr_ofs + i*stride, v);
     }
     
 #else

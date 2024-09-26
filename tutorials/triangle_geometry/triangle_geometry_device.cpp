@@ -3,11 +3,14 @@
 
 #include "triangle_geometry_device.h"
 
+#include <stdlib.h>
+
 namespace embree {
 
 /* all features required by this tutorial */
 #define FEATURE_MASK \
-  RTC_FEATURE_FLAG_TRIANGLE
+  RTC_FEATURE_FLAG_TRIANGLE | \
+  RTC_FEATURE_FLAG_MOTION_BLUR
 
 RTCScene g_scene = nullptr;
 TutorialData data;
@@ -17,25 +20,60 @@ unsigned int addCube (RTCScene scene_i)
 {
   /* create a triangulated cube with 12 triangles and 8 vertices */
   RTCGeometry mesh = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
+  
+  rtcSetGeometryTimeStepCount(mesh, 2);
 
   /* create face and vertex color arrays */
   data.face_colors = (Vec3fa*) alignedUSMMalloc((12)*sizeof(Vec3fa),16);
   data.vertex_colors = (Vec3fa*) alignedUSMMalloc((8)*sizeof(Vec3fa),16);
 
   /* set vertices and vertex colors */
-  Vertex* vertices = (Vertex*) rtcSetNewGeometryBuffer(mesh,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),8);
-  data.vertex_colors[0] = Vec3fa(0,0,0); vertices[0].x = -1; vertices[0].y = -1; vertices[0].z = -1;
-  data.vertex_colors[1] = Vec3fa(0,0,1); vertices[1].x = -1; vertices[1].y = -1; vertices[1].z = +1;
-  data.vertex_colors[2] = Vec3fa(0,1,0); vertices[2].x = -1; vertices[2].y = +1; vertices[2].z = -1;
-  data.vertex_colors[3] = Vec3fa(0,1,1); vertices[3].x = -1; vertices[3].y = +1; vertices[3].z = +1;
-  data.vertex_colors[4] = Vec3fa(1,0,0); vertices[4].x = +1; vertices[4].y = -1; vertices[4].z = -1;
-  data.vertex_colors[5] = Vec3fa(1,0,1); vertices[5].x = +1; vertices[5].y = -1; vertices[5].z = +1;
-  data.vertex_colors[6] = Vec3fa(1,1,0); vertices[6].x = +1; vertices[6].y = +1; vertices[6].z = -1;
-  data.vertex_colors[7] = Vec3fa(1,1,1); vertices[7].x = +1; vertices[7].y = +1; vertices[7].z = +1;
+  Vertex* vertices_device;
+  Vertex* vertices1_device;
+  Vertex* vertices = (Vertex*) rtcSetNewGeometryBufferXPU(mesh,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),8,(void**)&vertices_device);
+  Vertex* vertices1 = (Vertex*) rtcSetNewGeometryBufferXPU(mesh,RTC_BUFFER_TYPE_VERTEX,1,RTC_FORMAT_FLOAT3,sizeof(Vertex),8,(void**)&vertices1_device);
+  
+#if defined(EMBREE_SYCL_TUTORIAL)
+  sycl::usm::alloc allocType;
+  allocType = sycl::get_pointer_type(vertices, global_gpu_queue->get_context());
+  if (allocType != sycl::usm::alloc::host)
+    std::cout << "cube vertices have wrong alloc type!" <<std::endl;
+  allocType = sycl::get_pointer_type(vertices_device, global_gpu_queue->get_context());
+  if (allocType != sycl::usm::alloc::device)
+    std::cout << "cube vertices have wrong alloc type!" <<std::endl;
+#endif
+
+  data.vertex_colors[0] = Vec3fa(0,0,0);
+  data.vertex_colors[1] = Vec3fa(0,0,1);
+  data.vertex_colors[2] = Vec3fa(0,1,0);
+  data.vertex_colors[3] = Vec3fa(0,1,1);
+  data.vertex_colors[4] = Vec3fa(1,0,0);
+  data.vertex_colors[5] = Vec3fa(1,0,1);
+  data.vertex_colors[6] = Vec3fa(1,1,0);
+  data.vertex_colors[7] = Vec3fa(1,1,1);
+
+  vertices[0].x = -1; vertices[0].y = -1; vertices[0].z = -1;
+  vertices[1].x = -1; vertices[1].y = -1; vertices[1].z = +1;
+  vertices[2].x = -1; vertices[2].y = +1; vertices[2].z = -1;
+  vertices[3].x = -1; vertices[3].y = +1; vertices[3].z = +1;
+  vertices[4].x = +1; vertices[4].y = -1; vertices[4].z = -1;
+  vertices[5].x = +1; vertices[5].y = -1; vertices[5].z = +1;
+  vertices[6].x = +1; vertices[6].y = +1; vertices[6].z = -1;
+  vertices[7].x = +1; vertices[7].y = +1; vertices[7].z = +1;
+
+  vertices1[0].x = -1; vertices1[0].y = -1; vertices1[0].z = -1;
+  vertices1[1].x = -1; vertices1[1].y = -1; vertices1[1].z = +1;
+  vertices1[2].x = -1; vertices1[2].y = +1; vertices1[2].z = -1;
+  vertices1[3].x = -1; vertices1[3].y = +1; vertices1[3].z = +1;
+  vertices1[4].x = +1; vertices1[4].y = -1; vertices1[4].z = -1;
+  vertices1[5].x = +1; vertices1[5].y = -1; vertices1[5].z = +1;
+  vertices1[6].x = +1; vertices1[6].y = +1; vertices1[6].z = -1;
+  vertices1[7].x = +1; vertices1[7].y = +1; vertices1[7].z = +1;
 
   /* set triangles and face colors */
   int tri = 0;
-  Triangle* triangles = (Triangle*) rtcSetNewGeometryBuffer(mesh,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sizeof(Triangle),12);
+  Triangle* triangles_device;
+  Triangle* triangles = (Triangle*) rtcSetNewGeometryBufferXPU(mesh,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sizeof(Triangle),12,(void**)&triangles_device);
 
   // left side
   data.face_colors[tri] = Vec3fa(1,0,0); triangles[tri].v0 = 0; triangles[tri].v1 = 1; triangles[tri].v2 = 2; tri++;
@@ -63,7 +101,111 @@ unsigned int addCube (RTCScene scene_i)
 
   rtcSetGeometryVertexAttributeCount(mesh,1);
   rtcSetSharedGeometryBuffer(mesh,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,0,RTC_FORMAT_FLOAT3,data.vertex_colors,0,sizeof(Vec3fa),8);
+
+#if defined(EMBREE_SYCL_TUTORIAL)
+  global_gpu_queue->memcpy(vertices_device, vertices, 8 * sizeof(Vertex));
+  global_gpu_queue->memcpy(vertices1_device, vertices1, 8 * sizeof(Vertex));
+  global_gpu_queue->memcpy(triangles_device, triangles, 12 * sizeof(Triangle));
+#endif
+
+  rtcCommitGeometry(mesh);
+  unsigned int geomID = rtcAttachGeometry(scene_i,mesh);
+  rtcReleaseGeometry(mesh);
+  return geomID;
+}
+
+unsigned int addCubeShared (RTCScene scene_i)
+{
+  /* create a triangulated cube with 12 triangles and 8 vertices */
+  RTCGeometry mesh = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
   
+  rtcSetGeometryTimeStepCount(mesh, 2);
+
+  /* create face and vertex color arrays */
+  data.face_colors = (Vec3fa*) alignedUSMMalloc((12)*sizeof(Vec3fa),16);
+  data.vertex_colors = (Vec3fa*) alignedUSMMalloc((8)*sizeof(Vec3fa),16);
+
+  Vertex* vertices = (Vertex*) alignedMalloc(8*sizeof(Vertex), 16);
+  Vertex* vertices1 = (Vertex*) alignedMalloc(8*sizeof(Vertex), 16);
+  Triangle* triangles = (Triangle*) alignedMalloc(12*sizeof(Triangle), 16);
+
+#if defined(EMBREE_SYCL_TUTORIAL)
+  Vertex* vertices_device = sycl::aligned_alloc_device<Vertex>(16, 8, *global_gpu_queue);
+  Vertex* vertices1_device = sycl::aligned_alloc_device<Vertex>(16, 8, *global_gpu_queue);
+  Triangle* triangles_device = sycl::aligned_alloc_device<Triangle>(16, 12, *global_gpu_queue);
+#else
+  Vertex* vertices_device = nullptr;
+  Vertex* vertices1_device = nullptr;
+  Triangle* triangles_device = nullptr;
+#endif
+
+  rtcSetSharedGeometryBufferXPU(mesh,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,vertices,vertices_device, 0, sizeof(Vertex),8);
+  rtcSetSharedGeometryBufferXPU(mesh,RTC_BUFFER_TYPE_VERTEX,1,RTC_FORMAT_FLOAT3,vertices1,vertices1_device, 0, sizeof(Vertex),8);
+
+  data.vertex_colors[0] = Vec3fa(0,0,0);
+  data.vertex_colors[1] = Vec3fa(0,0,1);
+  data.vertex_colors[2] = Vec3fa(0,1,0);
+  data.vertex_colors[3] = Vec3fa(0,1,1);
+  data.vertex_colors[4] = Vec3fa(1,0,0);
+  data.vertex_colors[5] = Vec3fa(1,0,1);
+  data.vertex_colors[6] = Vec3fa(1,1,0);
+  data.vertex_colors[7] = Vec3fa(1,1,1);
+
+  vertices[0].x = -1; vertices[0].y = -1; vertices[0].z = -1;
+  vertices[1].x = -1; vertices[1].y = -1; vertices[1].z = +1;
+  vertices[2].x = -1; vertices[2].y = +1; vertices[2].z = -1;
+  vertices[3].x = -1; vertices[3].y = +1; vertices[3].z = +1;
+  vertices[4].x = +1; vertices[4].y = -1; vertices[4].z = -1;
+  vertices[5].x = +1; vertices[5].y = -1; vertices[5].z = +1;
+  vertices[6].x = +1; vertices[6].y = +1; vertices[6].z = -1;
+  vertices[7].x = +1; vertices[7].y = +1; vertices[7].z = +1;
+
+  vertices1[0].x = -1; vertices1[0].y = -1; vertices1[0].z = -1;
+  vertices1[1].x = -1; vertices1[1].y = -1; vertices1[1].z = +1;
+  vertices1[2].x = -1; vertices1[2].y = +1; vertices1[2].z = -1;
+  vertices1[3].x = -1; vertices1[3].y = +1; vertices1[3].z = +1;
+  vertices1[4].x = +1; vertices1[4].y = -1; vertices1[4].z = -1;
+  vertices1[5].x = +1; vertices1[5].y = -1; vertices1[5].z = +1;
+  vertices1[6].x = +1; vertices1[6].y = +1; vertices1[6].z = -1;
+  vertices1[7].x = +1; vertices1[7].y = +1; vertices1[7].z = +1;
+
+  /* set triangles and face colors */
+  int tri = 0;
+  rtcSetSharedGeometryBufferXPU(mesh,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,triangles,triangles_device,0,sizeof(Triangle),12);
+
+  // left side
+  data.face_colors[tri] = Vec3fa(1,0,0); triangles[tri].v0 = 0; triangles[tri].v1 = 1; triangles[tri].v2 = 2; tri++;
+  data.face_colors[tri] = Vec3fa(1,0,0); triangles[tri].v0 = 1; triangles[tri].v1 = 3; triangles[tri].v2 = 2; tri++;
+
+  // right side
+  data.face_colors[tri] = Vec3fa(0,1,0); triangles[tri].v0 = 4; triangles[tri].v1 = 6; triangles[tri].v2 = 5; tri++;
+  data.face_colors[tri] = Vec3fa(0,1,0); triangles[tri].v0 = 5; triangles[tri].v1 = 6; triangles[tri].v2 = 7; tri++;
+
+  // bottom side
+  data.face_colors[tri] = Vec3fa(0.5f);  triangles[tri].v0 = 0; triangles[tri].v1 = 4; triangles[tri].v2 = 1; tri++;
+  data.face_colors[tri] = Vec3fa(0.5f);  triangles[tri].v0 = 1; triangles[tri].v1 = 4; triangles[tri].v2 = 5; tri++;
+
+  // top side
+  data.face_colors[tri] = Vec3fa(1.0f);  triangles[tri].v0 = 2; triangles[tri].v1 = 3; triangles[tri].v2 = 6; tri++;
+  data.face_colors[tri] = Vec3fa(1.0f);  triangles[tri].v0 = 3; triangles[tri].v1 = 7; triangles[tri].v2 = 6; tri++;
+
+  // front side
+  data.face_colors[tri] = Vec3fa(0,0,1); triangles[tri].v0 = 0; triangles[tri].v1 = 2; triangles[tri].v2 = 4; tri++;
+  data.face_colors[tri] = Vec3fa(0,0,1); triangles[tri].v0 = 2; triangles[tri].v1 = 6; triangles[tri].v2 = 4; tri++;
+
+  // back side
+  data.face_colors[tri] = Vec3fa(1,1,0); triangles[tri].v0 = 1; triangles[tri].v1 = 5; triangles[tri].v2 = 3; tri++;
+  data.face_colors[tri] = Vec3fa(1,1,0); triangles[tri].v0 = 3; triangles[tri].v1 = 5; triangles[tri].v2 = 7; tri++;
+
+  rtcSetGeometryVertexAttributeCount(mesh,1);
+  rtcSetSharedGeometryBuffer(mesh,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,0,RTC_FORMAT_FLOAT3,data.vertex_colors,0,sizeof(Vec3fa),8);
+
+#if defined(EMBREE_SYCL_TUTORIAL)
+  global_gpu_queue->memcpy(vertices_device, vertices, 8 * sizeof(Vertex));
+  global_gpu_queue->memcpy(vertices1_device, vertices1, 8 * sizeof(Vertex));
+  global_gpu_queue->memcpy(triangles_device, triangles, 12 * sizeof(Triangle));
+#endif
+
   rtcCommitGeometry(mesh);
   unsigned int geomID = rtcAttachGeometry(scene_i,mesh);
   rtcReleaseGeometry(mesh);
@@ -87,7 +229,7 @@ unsigned int addGroundPlane (RTCScene scene_i)
   Triangle* triangles = (Triangle*) rtcSetNewGeometryBuffer(mesh,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sizeof(Triangle),2);
   triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
   triangles[1].v0 = 1; triangles[1].v1 = 3; triangles[1].v2 = 2;
-  
+
   rtcCommitGeometry(mesh);
   unsigned int geomID = rtcAttachGeometry(scene_i,mesh);
   rtcReleaseGeometry(mesh);
@@ -103,7 +245,7 @@ extern "C" void device_init (char* cfg)
   rtcSetSceneFlags(data.g_scene, RTC_SCENE_FLAG_PREFETCH_USM_SHARED_ON_GPU);
 
   /* add cube */
-  addCube(data.g_scene);
+  addCubeShared(data.g_scene);
 
   /* add ground plane */
   addGroundPlane(data.g_scene);
