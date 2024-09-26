@@ -12,6 +12,10 @@ namespace embree
     : Geometry(device,GTY_TRIANGLE_MESH,0,1)
   {
     vertices.resize(numTimeSteps);
+
+#if defined(EMBREE_SYCL_SUPPORT)
+    twin = (Geometry*)device->malloc(sizeof(TriangleMesh), 16, EmbreeMemoryType::DEVICE);
+#endif
   }
 
   void TriangleMesh::setMask (unsigned mask) 
@@ -73,6 +77,53 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid index buffer format");
 
       triangles.set(buffer, offset, stride, num, format);
+      setNumPrimitives(num);
+    }
+    else 
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
+  }
+
+  void TriangleMesh::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, const Ref<Buffer>& dbuffer, size_t offset, size_t stride, unsigned int num)
+  {
+    /* verify that all accesses are 4 bytes aligned */
+    if (((size_t(buffer->getPtr()) + offset) & 0x3) || (stride & 0x3)) 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION, "data must be 4 bytes aligned");
+
+    if (type == RTC_BUFFER_TYPE_VERTEX)
+    {
+      if (format != RTC_FORMAT_FLOAT3)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex buffer format");
+
+      /* if buffer is larger than 16GB the premultiplied index optimization does not work */
+      if (stride*num > 16ll*1024ll*1024ll*1024ll)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "vertex buffer can be at most 16GB large");
+
+      if (slot >= vertices.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid vertex buffer slot");
+
+      vertices[slot].set(buffer, dbuffer, offset, stride, num, format);
+      vertices[slot].checkPadding16();
+      vertices0 = vertices[0];
+    }
+    else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
+    {
+      if (format < RTC_FORMAT_FLOAT || format > RTC_FORMAT_FLOAT16)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex attribute buffer format");
+
+      if (slot >= vertexAttribs.size())
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid vertex attribute buffer slot");
+      
+      vertexAttribs[slot].set(buffer, dbuffer, offset, stride, num, format);
+      vertexAttribs[slot].checkPadding16();
+    }
+    else if (type == RTC_BUFFER_TYPE_INDEX)
+    {
+      if (slot != 0)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      if (format != RTC_FORMAT_UINT3)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid index buffer format");
+
+      triangles.set(buffer, dbuffer, offset, stride, num, format);
       setNumPrimitives(num);
     }
     else 
@@ -142,6 +193,22 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
 
     Geometry::commit();
+    
+    
+#if defined(EMBREE_SYCL_SUPPORT)
+    DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device);
+    if (gpu_device)
+    {
+      sycl::queue queue(gpu_device->getGPUDevice());
+
+      vertices_device = sycl::aligned_alloc_device<BufferView<Vec3fa>>(16, vertices.size(), queue);
+      vertexAttribs_device = sycl::aligned_alloc_device<RawBufferView>(16, vertexAttribs.size(), queue);
+      queue.memcpy(twin, this, sizeof(TriangleMesh));
+      queue.memcpy(vertices_device, vertices.data(), sizeof(BufferView<Vec3fa>) * vertices.size());
+      queue.memcpy(vertexAttribs_device, vertexAttribs.data(), sizeof(RawBufferView) * vertexAttribs.size());
+      queue.wait_and_throw();
+    }
+#endif
   }
 
   void TriangleMesh::addElementsToCount (GeometryCounts & counts) const 
