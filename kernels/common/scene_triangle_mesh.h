@@ -36,6 +36,7 @@ namespace embree
     void setNumTimeSteps (unsigned int numTimeSteps);
     void setVertexAttributeCount (unsigned int N);
     void setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num);
+    void setBuffer(RTCBufferType bufferType, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, const Ref<Buffer>& dbuffer, size_t offset, size_t stride, unsigned int num);
     void* getBuffer(RTCBufferType type, unsigned int slot);
     void updateBuffer(RTCBufferType type, unsigned int slot);
     void commit();
@@ -100,9 +101,11 @@ namespace embree
   public:
     
     /*! returns number of vertices */
+#if !defined(__SYCL_DEVICE_ONLY__)
     __forceinline size_t numVertices() const {
       return vertices[0].size();
     }
+#endif
     
     /*! returns i'th triangle*/
     __forceinline const Triangle& triangle(size_t i) const {
@@ -121,12 +124,20 @@ namespace embree
 
     /*! returns i'th vertex of itime'th timestep */
     __forceinline const Vec3fa vertex(size_t i, size_t itime) const {
+#if defined(__SYCL_DEVICE_ONLY__)
+      return vertices_device[itime][i];
+#else
       return vertices[itime][i];
+#endif
     }
 
     /*! returns i'th vertex of itime'th timestep */
     __forceinline const char* vertexPtr(size_t i, size_t itime) const {
+#if defined(__SYCL_DEVICE_ONLY__)
+      return vertices_device[itime].getPtr(i);
+#else
       return vertices[itime].getPtr(i);
+#endif
     }
 
     /*! returns i'th vertex of for specified time */
@@ -141,6 +152,7 @@ namespace embree
       return madd(Vec3fa(t0),v0,t1*v1);
     }
 
+#if !defined(__SYCL_DEVICE_ONLY__)
     /*! calculates the bounds of the i'th triangle */
     __forceinline BBox3fa bounds(size_t i) const 
     {
@@ -259,6 +271,7 @@ namespace embree
     bool topologyChanged(unsigned int otherVersion) const {
       return triangles.isModified(otherVersion); // || numPrimitivesChanged;
     }
+#endif // !defined(__SYCL_DEVICE_ONLY__)
 
     /* returns the projected area */
     __forceinline float projectedPrimitiveArea(const size_t i) const {
@@ -274,6 +287,9 @@ namespace embree
     BufferView<Vec3fa> vertices0;        //!< fast access to first vertex buffer
     Device::vector<BufferView<Vec3fa>> vertices = device; //!< vertex array for each timestep
     Device::vector<RawBufferView> vertexAttribs = device; //!< vertex attributes
+    
+    BufferView<Vec3fa>* vertices_device;
+    RawBufferView* vertexAttribs_device;
   };
 
   namespace isa
@@ -283,6 +299,7 @@ namespace embree
       TriangleMeshISA (Device* device)
         : TriangleMesh(device) {}
 
+#if !defined(__SYCL_DEVICE_ONLY__)
       LBBox3fa vlinearBounds(size_t primID, const BBox1f& time_range) const {
         return linearBounds(primID,time_range);
       }
@@ -344,6 +361,7 @@ namespace embree
         }
         return pinfo;
       }
+#endif
     };
   }
 

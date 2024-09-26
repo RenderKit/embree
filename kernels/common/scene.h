@@ -223,6 +223,27 @@ namespace embree
 
   public:
 
+#if defined(__SYCL_DEVICE_ONLY__)
+    /* get mesh by ID */
+    __forceinline       Geometry* get(size_t i)       { return geometries_device[i]; }
+    __forceinline const Geometry* get(size_t i) const { return geometries_device[i]; }
+
+    template<typename Mesh>
+      __forceinline       Mesh* get(size_t i)       { 
+      return (Mesh*)geometries_device[i]; 
+    }
+    template<typename Mesh>
+      __forceinline const Mesh* get(size_t i) const { 
+      return (Mesh*)geometries_device[i]; 
+    }
+
+    template<typename Mesh>
+    __forceinline Mesh* getSafe(size_t i) {
+      if (geometries_device[i] == null) return nullptr;
+      if (!(geometries_device[i]->getTypeMask() & Mesh::geom_type)) return nullptr;
+      else return (Mesh*) geometries_device[i];
+    }
+#else
     /* get mesh by ID */
     __forceinline       Geometry* get(size_t i)       { assert(i < geometries.size()); return geometries[i].ptr; }
     __forceinline const Geometry* get(size_t i) const { assert(i < geometries.size()); return geometries[i].ptr; }
@@ -247,6 +268,8 @@ namespace embree
       if (!(geometries[i]->getTypeMask() & Mesh::geom_type)) return nullptr;
       else return (Mesh*) geometries[i].ptr;
     }
+#endif
+
 
     __forceinline Ref<Geometry> get_locked(size_t i)  {
       Lock<MutexSys> lock(geometriesMutex);
@@ -274,6 +297,9 @@ namespace embree
     }
     
     void* createQBVH6Accel();
+    
+  private:
+    void syncWithDevice();
 
   public:
     Device* device;
@@ -281,6 +307,7 @@ namespace embree
   public:
     IDPool<unsigned,0xFFFFFFFE> id_pool;
     Device::vector<Ref<Geometry>> geometries = device; //!< list of all user geometries
+    Geometry** geometries_device; //!< list of all user geometries
     avector<unsigned int> geometryModCounters_;
     Device::vector<float*> vertices = device;
     

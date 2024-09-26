@@ -128,7 +128,7 @@ namespace embree
   /*! Base class all geometries are derived from */
   class Geometry : public RefCount
   {
-    ALIGNED_CLASS_USM_(16);
+    ALIGNED_CLASS_(16);
     
     friend class Scene;
   public:
@@ -468,6 +468,11 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
+    /*! Sets specified buffer. */
+    virtual void setBuffer(RTCBufferType bufferType, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, const Ref<Buffer>& dbuffer, size_t offset, size_t stride, unsigned int num) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
     /*! Gets specified buffer. */
     virtual void* getBuffer(RTCBufferType type, unsigned int slot) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry");
@@ -636,6 +641,8 @@ namespace embree
 
   public:
     Device* device;             //!< device this geometry belongs to
+
+    Geometry* twin;         //!< representation of this geometry on the device
 
     void* userPtr;              //!< user pointer
     unsigned int numPrimitives; //!< number of primitives of this geometry

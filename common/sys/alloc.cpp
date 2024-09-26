@@ -98,6 +98,38 @@ namespace embree
 
     return ptr;
   }
+
+  void* alignedSYCLMalloc(sycl::context* context, sycl::device* device, size_t size, size_t align, EmbreeUSMMode mode, EmbreeMemoryType type)
+  {
+    assert(context);
+    assert(device);
+    
+    if (size == 0)
+      return nullptr;
+
+    assert((align & (align-1)) == 0);
+    total_allocations++;    
+
+    void* ptr = nullptr;
+    if (type == EmbreeMemoryType::SHARED) {
+      if (mode == EMBREE_USM_SHARED_DEVICE_READ_ONLY)
+        ptr = sycl::aligned_alloc_shared(align,size,*device,*context,sycl::ext::oneapi::property::usm::device_read_only());
+      else
+        ptr = sycl::aligned_alloc_shared(align,size,*device,*context);
+    }
+    else if (type == EmbreeMemoryType::HOST) {
+      ptr = sycl::aligned_alloc_host(align,size,*context);
+    } else if (type == EmbreeMemoryType::DEVICE) {
+      ptr = sycl::aligned_alloc_device(align,size,*device,*context);
+    } else {
+      ptr = alignedMalloc(size,align);
+    }
+
+    if (size != 0 && ptr == nullptr)
+      throw std::bad_alloc();
+
+    return ptr;
+  }
   
   static MutexSys g_alloc_mutex;
   
@@ -108,11 +140,23 @@ namespace embree
     return nullptr;
   }
 
+  void* alignedSYCLMalloc(size_t size, size_t align, EmbreeUSMMode mode, EmbreeMemoryType type)
+  {
+    if (tls_context_tutorial) return alignedSYCLMalloc(tls_context_tutorial, tls_device_tutorial, size, align, mode, type);
+    if (tls_context_embree  ) return alignedSYCLMalloc(tls_context_embree,   tls_device_embree,   size, align, mode, type);
+    return nullptr;
+  }
+
   void alignedSYCLFree(sycl::context* context, void* ptr)
   {
     assert(context);
     if (ptr) {
-      sycl::free(ptr,*context);
+      sycl::usm::alloc type = sycl::get_pointer_type(ptr, *context);
+      if (type == sycl::usm::alloc::host || type == sycl::usm::alloc::device || type == sycl::usm::alloc::shared)
+        sycl::free(ptr,*context);
+      else {
+        alignedFree(ptr);
+      }
     }
   }
 
