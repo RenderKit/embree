@@ -550,6 +550,17 @@ namespace embree
 
   public:
 
+    /*! methods for converting host geometry data to device geometry data */
+    virtual size_t getGeometryDataDeviceByteSize() const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"getGeometryDataDeviceByteSize not implemented for this geometry");
+    }
+
+    virtual void convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"convertToDeviceRepresentation not implemented for this geometry");
+    }
+
+  public:
+
     virtual PrimInfo createPrimRefArray(PrimRef* prims, const range<size_t>& r, size_t k, unsigned int geomID) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"createPrimRefArray not implemented for this geometry"); 
     }
@@ -641,8 +652,6 @@ namespace embree
 
   public:
     Device* device;             //!< device this geometry belongs to
-
-    Geometry* twin;         //!< representation of this geometry on the device
 
     void* userPtr;              //!< user pointer
     unsigned int numPrimitives; //!< number of primitives of this geometry

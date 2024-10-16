@@ -108,7 +108,7 @@ namespace embree
       return nullptr;
 
     assert((align & (align-1)) == 0);
-    total_allocations++;    
+    total_allocations++;
 
     void* ptr = nullptr;
     if (type == EmbreeMemoryType::SHARED) {
@@ -119,9 +119,11 @@ namespace embree
     }
     else if (type == EmbreeMemoryType::HOST) {
       ptr = sycl::aligned_alloc_host(align,size,*context);
-    } else if (type == EmbreeMemoryType::DEVICE) {
+    }
+    else if (type == EmbreeMemoryType::DEVICE) {
       ptr = sycl::aligned_alloc_device(align,size,*device,*context);
-    } else {
+    }
+    else {
       ptr = alignedMalloc(size,align);
     }
 

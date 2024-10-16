@@ -12,10 +12,6 @@ namespace embree
     : Geometry(device,GTY_TRIANGLE_MESH,0,1)
   {
     vertices.resize(numTimeSteps);
-
-#if defined(EMBREE_SYCL_SUPPORT)
-    twin = (Geometry*)device->malloc(sizeof(TriangleMesh), 16, EmbreeMemoryType::DEVICE);
-#endif
   }
 
   void TriangleMesh::setMask (unsigned mask) 
@@ -195,20 +191,6 @@ namespace embree
     Geometry::commit();
     
     
-#if defined(EMBREE_SYCL_SUPPORT)
-    DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device);
-    if (gpu_device)
-    {
-      sycl::queue queue(gpu_device->getGPUDevice());
-
-      vertices_device = sycl::aligned_alloc_device<BufferView<Vec3fa>>(16, vertices.size(), queue);
-      vertexAttribs_device = sycl::aligned_alloc_device<RawBufferView>(16, vertexAttribs.size(), queue);
-      queue.memcpy(twin, this, sizeof(TriangleMesh));
-      queue.memcpy(vertices_device, vertices.data(), sizeof(BufferView<Vec3fa>) * vertices.size());
-      queue.memcpy(vertexAttribs_device, vertexAttribs.data(), sizeof(RawBufferView) * vertexAttribs.size());
-      queue.wait_and_throw();
-    }
-#endif
   }
 
   void TriangleMesh::addElementsToCount (GeometryCounts & counts) const 
@@ -249,7 +231,41 @@ namespace embree
   void TriangleMesh::interpolate(const RTCInterpolateArguments* const args) {
     interpolate_impl<4>(args);
   }
- 
+
+  size_t TriangleMesh::getGeometryDataDeviceByteSize() const {
+    size_t byte_size = sizeof(TriangleMesh);
+    byte_size += numTimeSteps * sizeof(BufferView<Vec3fa>);
+    //if (vertexAttribs.size() > 0)
+    //  byte_size += numTimeSteps * sizeof(RawBufferView);
+    return 16 * ((byte_size + 15) / 16);
+  }
+
+  void TriangleMesh::convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const {
+    TriangleMesh* mesh = (TriangleMesh*)(data_host + offset);
+    std::memcpy(data_host + offset, (void*)this, sizeof(TriangleMesh));
+    offset += sizeof(TriangleMesh);
+
+    // store offset for overriding vertices pointer with device pointer after copying
+    const size_t offsetVertices = offset;
+    // copy vertices BufferViews for each time step
+    for (size_t t = 0; t < numTimeSteps; ++t) {
+      std::memcpy(data_host + offset, &(vertices[t]), sizeof(BufferView<Vec3fa>));
+      offset += sizeof(BufferView<Vec3fa>);
+    }
+    // override vertices pointer with device ptr
+    mesh->vertices.setDataPtr((BufferView<Vec3fa>*)(data_device + offsetVertices));
+
+    //if (vertexAttribs.size() > 0) {
+    //  const size_t offsetVertexAttribs = offset;
+    //  for (size_t t = 0; t < numTimeSteps; ++t) {
+    //    std::memcpy(data_host + offset, &(vertexAttribs[t]), sizeof(RawBufferView));
+    //    offset += sizeof(RawBufferView);
+    //  }
+    //  mesh->vertexAttribs.setDataPtr((RawBufferView*)(data_device + offsetVertexAttribs));
+    //}
+
+  }
+
 #endif
 
   namespace isa
