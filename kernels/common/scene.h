@@ -25,6 +25,11 @@
 #include "../sycl/rthwif_embree_builder.h"
 #endif
 
+#if !defined(EMBREE_SYCL_SUPPORT)
+namespace sycl {
+  struct queue;
+}
+#endif
 namespace embree
 {
   struct TaskGroup;
@@ -35,6 +40,7 @@ namespace embree
     ALIGNED_CLASS_USM_(std::alignment_of<Scene>::value);
 
   public:
+#if !defined(__SYCL_DEVICE_ONLY__)
     template<typename Ty, bool mblur = false>
       class Iterator
       {
@@ -59,10 +65,6 @@ namespace embree
         return at(i);
       }
 
-      __forceinline size_t size() const {
-        return scene->size();
-      }
-      
       __forceinline size_t numPrimitives() const {
         return scene->getNumPrimitives(Ty::geom_type,mblur);
       }
@@ -99,6 +101,11 @@ namespace embree
         }
         return ret;
       }
+
+      __forceinline size_t size() const {
+        return scene->size();
+      }
+      
       
     private:
       Scene* scene;
@@ -136,6 +143,7 @@ namespace embree
       Geometry::GTypeMask typemask;
       bool mblur;
     };
+#endif
 
   public:
     
@@ -188,12 +196,17 @@ namespace embree
 
     void build_cpu_accels();
     void build_gpu_accels();
-    void commit (bool join);
+    void commit_internal (bool join);
+    void commit (bool join, sycl::queue* queue);
     void commit_task ();
     void build () {}
 
     /* return number of geometries */
+#if defined(__SYCL_DEVICE_ONLY__)
+    __forceinline size_t size() const { return num_geometries_device; }
+#else
     __forceinline size_t size() const { return geometries.size(); }
+#endif
     
     /* bind geometry to the scene */
     unsigned int bind (unsigned geomID, Ref<Geometry> geometry);
@@ -210,12 +223,14 @@ namespace embree
 
     __forceinline uint32_t getMaxTimeSegments() const { return maxTimeSegments; };
 
+    #if !defined(__SYCL_DEVICE_ONLY__)
     __forceinline bool isGeometryModified(size_t geomID)
     {
       Ref<Geometry>& g = geometries[geomID];
       if (!g) return false;
       return g->getModCounter() > geometryModCounters_[geomID];
     }
+    #endif
 
   protected:
 
@@ -271,11 +286,13 @@ namespace embree
 #endif
 
 
+    #if !defined(__SYCL_DEVICE_ONLY__)
     __forceinline Ref<Geometry> get_locked(size_t i)  {
       Lock<MutexSys> lock(geometriesMutex);
       assert(i < geometries.size()); 
       return geometries[i]; 
     }
+    #endif
 
     /* flag decoding */
     __forceinline bool isFastAccel() const { return !isCompactAccel() && !isRobustAccel(); }
@@ -299,7 +316,11 @@ namespace embree
     void* createQBVH6Accel();
     
   private:
-    void syncWithDevice();
+    
+#if defined(EMBREE_SYCL_SUPPORT)
+    void syncWithDevice(sycl::queue* queue);
+#endif
+    
 
   public:
     Device* device;
@@ -307,7 +328,6 @@ namespace embree
   public:
     IDPool<unsigned,0xFFFFFFFE> id_pool;
     Device::vector<Ref<Geometry>> geometries = device; //!< list of all user geometries
-    Geometry** geometries_device; //!< list of all user geometries
     avector<unsigned int> geometryModCounters_;
     Device::vector<float*> vertices = device;
     
@@ -329,6 +349,10 @@ namespace embree
   private:
     bool modified;            //!< true if scene got modified
     uint32_t maxTimeSegments; //!< maximal number of motion blur time segments in scene
+
+    Geometry** geometries_device; //!< list of all geometries on device
+    char* geometries_data_device; //!< data buffer of all geometries on device
+    size_t num_geometries_device;
 
   public:
 

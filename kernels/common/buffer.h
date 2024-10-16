@@ -157,6 +157,7 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "buffer range out of bounds");
 
       ptr_ofs = buffer_in->ptr + offset_in;
+      dptr_ofs = buffer_in->ptr + offset_in;
       stride = stride_in;
       num = num_in;
       format = format_in;

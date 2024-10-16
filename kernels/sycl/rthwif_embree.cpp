@@ -258,14 +258,10 @@ __forceinline bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Geo
   raydesc.mask = mask32_to_mask8(ray.mask);
   raydesc.flags = intel_ray_flags_force_non_opaque;
 
-  //if (context.enforceArgumentFilterFunction())
-  //  raydesc.flags |= intel_ray_flags_force_non_opaque;
-  
 #if defined(EMBREE_BACKFACE_CULLING)
   raydesc.flags |= intel_ray_flags_cull_back_facing_triangles;
 #endif
 
-  
   uint32_t bvh_id = 0;
   if (context->args->feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR) {
     float time = clamp(ray.time(),0.0f,1.0f);
@@ -319,8 +315,8 @@ __forceinline bool intersect_instance(intel_ray_query_t& query, Ray& ray, Geomet
   raydesc.mask = mask32_to_mask8(ray.mask);
   raydesc.flags = intel_ray_flags_accept_first_hit_and_end_search;
 
-  if (context->enforceArgumentFilterFunction())
-    raydesc.flags |= intel_ray_flags_force_non_opaque;
+  //if (context->enforceArgumentFilterFunction())
+  //  raydesc.flags |= intel_ray_flags_force_non_opaque;
   
 #if defined(EMBREE_BACKFACE_CULLING)
   raydesc.flags |= intel_ray_flags_cull_back_facing_triangles;
@@ -372,7 +368,7 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
   if (gtype == Geometry::GTY_TRIANGLE_MESH && (feature_mask & RTC_FEATURE_FLAG_TRIANGLE) && (feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR))
   {
-    const TriangleMesh* geom = context->scene->get<TriangleMesh>(geomID);
+    const TriangleMesh* geom = (const TriangleMesh*)context->scene->get(geomID);
     const TriangleMesh::Triangle triangle = geom->triangle(primID);
     Vec3fa v0 = geom->vertex(triangle.v[0], ray.time());
     Vec3fa v1 = geom->vertex(triangle.v[1], ray.time());

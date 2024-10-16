@@ -32,17 +32,19 @@ namespace embree
 
     /* geometry interface */
   public:
-    void setMask(unsigned mask);
-    void setNumTimeSteps (unsigned int numTimeSteps);
-    void setVertexAttributeCount (unsigned int N);
-    void setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num);
-    void setBuffer(RTCBufferType bufferType, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, const Ref<Buffer>& dbuffer, size_t offset, size_t stride, unsigned int num);
-    void* getBuffer(RTCBufferType type, unsigned int slot);
-    void updateBuffer(RTCBufferType type, unsigned int slot);
-    void commit();
-    bool verify();
-    void interpolate(const RTCInterpolateArguments* const args);
-    void addElementsToCount (GeometryCounts & counts) const;
+    virtual void setMask(unsigned mask) override;
+    virtual void setNumTimeSteps (unsigned int numTimeSteps) override;
+    virtual void setVertexAttributeCount (unsigned int N) override;
+    virtual void setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num) override;
+    virtual void setBuffer(RTCBufferType bufferType, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, const Ref<Buffer>& dbuffer, size_t offset, size_t stride, unsigned int num) override;
+    virtual void* getBuffer(RTCBufferType type, unsigned int slot) override;
+    virtual void updateBuffer(RTCBufferType type, unsigned int slot) override;
+    virtual void commit() override;
+    virtual bool verify() override;
+    virtual void interpolate(const RTCInterpolateArguments* const args) override;
+    virtual void addElementsToCount (GeometryCounts & counts) const override;
+    virtual size_t getGeometryDataDeviceByteSize() const override;
+    virtual void convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const override;
 
     template<int N>
     void interpolate_impl(const RTCInterpolateArguments* const args)
@@ -99,14 +101,12 @@ namespace embree
     }
     
   public:
-    
+
     /*! returns number of vertices */
-#if !defined(__SYCL_DEVICE_ONLY__)
     __forceinline size_t numVertices() const {
       return vertices[0].size();
     }
-#endif
-    
+
     /*! returns i'th triangle*/
     __forceinline const Triangle& triangle(size_t i) const {
       return triangles[i];
@@ -124,20 +124,12 @@ namespace embree
 
     /*! returns i'th vertex of itime'th timestep */
     __forceinline const Vec3fa vertex(size_t i, size_t itime) const {
-#if defined(__SYCL_DEVICE_ONLY__)
-      return vertices_device[itime][i];
-#else
       return vertices[itime][i];
-#endif
     }
 
     /*! returns i'th vertex of itime'th timestep */
     __forceinline const char* vertexPtr(size_t i, size_t itime) const {
-#if defined(__SYCL_DEVICE_ONLY__)
-      return vertices_device[itime].getPtr(i);
-#else
       return vertices[itime].getPtr(i);
-#endif
     }
 
     /*! returns i'th vertex of for specified time */
@@ -258,7 +250,7 @@ namespace embree
     }
 
     /*! get fast access to first vertex buffer */
-    __forceinline float * getCompactVertexArray () const {
+    __forceinline float * getCompactVertexArray () const override {
       return (float*) vertices0.getPtr();
     }
 
@@ -287,9 +279,6 @@ namespace embree
     BufferView<Vec3fa> vertices0;        //!< fast access to first vertex buffer
     Device::vector<BufferView<Vec3fa>> vertices = device; //!< vertex array for each timestep
     Device::vector<RawBufferView> vertexAttribs = device; //!< vertex attributes
-    
-    BufferView<Vec3fa>* vertices_device;
-    RawBufferView* vertexAttribs_device;
   };
 
   namespace isa
