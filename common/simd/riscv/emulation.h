@@ -1,7 +1,8 @@
 #pragma once
 
-#define SSE2RVV_PRECISE_DIV  1
-#define SSE2RVV_PRECISE_SQRT 1
+#define SSE2RVV_PRECISE_DIV    1
+#define SSE2RVV_PRECISE_SQRT   1
+#define SSE2RVV_PRECISE_MINMAX 1
 
 #include "sse2rvv.h"
 

@@ -34,6 +34,10 @@
 #ifndef SSE2RVV_PRECISE_SQRT
 #define SSE2RVV_PRECISE_SQRT (0)
 #endif
+/* _mm_min_ps and _mm_max_ps */
+#ifndef SSE2RVV_PRECISE_MINMAX
+#define SSE2RVV_PRECISE_MINMAX (0)
+#endif
 
 /* compiler specific definitions */
 #if defined(__GNUC__) || defined(__clang__)
@@ -2125,7 +2129,14 @@ FORCE_INLINE __m64 _mm_max_pi16(__m64 a, __m64 b) {
 FORCE_INLINE __m128 _mm_max_ps(__m128 a, __m128 b) {
   vfloat32m1_t _a = vreinterpretq_m128_f32(a);
   vfloat32m1_t _b = vreinterpretq_m128_f32(b);
+#if SSE2RVV_PRECISE_MINMAX
+  // Return NaN when the second operand is NaN.
+  vbool32_t isnan = __riscv_vmfne_vv_f32m1_b32(b, b, 4);
+  vfloat32m1_t max = __riscv_vfmax_vv_f32m1(_a, _b, 4);
+  return vreinterpretq_f32_m128(__riscv_vmerge_vvm_f32m1(max, _b, isnan, 4));
+#else
   return vreinterpretq_f32_m128(__riscv_vfmax_vv_f32m1(_a, _b, 4));
+#endif
 }
 
 FORCE_INLINE __m64 _mm_max_pu8(__m64 a, __m64 b) {
@@ -2201,7 +2212,13 @@ FORCE_INLINE __m64 _mm_min_pi16(__m64 a, __m64 b) {
 FORCE_INLINE __m128 _mm_min_ps(__m128 a, __m128 b) {
   vfloat32m1_t _a = vreinterpretq_m128_f32(a);
   vfloat32m1_t _b = vreinterpretq_m128_f32(b);
+#if SSE2RVV_PRECISE_MINMAX
+  vbool32_t isnan = __riscv_vmfne_vv_f32m1_b32(b, b, 4);
+  vfloat32m1_t min = __riscv_vfmin_vv_f32m1(_a, _b, 4);
+  return vreinterpretq_f32_m128(__riscv_vmerge_vvm_f32m1(min, _b, isnan, 4));
+#else
   return vreinterpretq_f32_m128(__riscv_vfmin_vv_f32m1(_a, _b, 4));
+#endif
 }
 
 FORCE_INLINE __m64 _mm_min_pu8(__m64 a, __m64 b) {
