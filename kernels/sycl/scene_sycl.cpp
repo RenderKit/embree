@@ -10,6 +10,11 @@
 #include "../common/context.h"
 #include "../geometry/filter.h"
 #include "rthwif_embree.h"
+
+#if defined(EMBREE_SYCL_SUPPORT)
+#  include "../sycl/rthwif_embree_builder.h"
+#endif
+
 using namespace embree;
 
 #define DBG(x)
@@ -115,6 +120,68 @@ RTC_API_EXTERN_C bool prefetchUSMSharedOnGPU(RTCScene hscene)
   return sum > 0;
 
   //RTC_CATCH_END2(scene);
+}
+
+void Scene::syncWithDevice(sycl::queue* queue_in)
+{
+#if defined(EMBREE_SYCL_SUPPORT)
+
+  DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device);
+  if(!queue_in && !gpu_device) {
+    return;
+  }
+
+  sycl::queue queue = queue_in ? *queue_in : sycl::queue(gpu_device->getGPUDevice());
+
+  // TODO: why is this compiled for __SYCL_DEVICE_ONLY__ ???
+#if !defined(__SYCL_DEVICE_ONLY__)
+  accelBuffer.commit();
+#endif
+
+  //for (uint32_t run = 0; run < 1; run++)
+  {
+    num_geometries_device = geometries.size();
+
+    size_t* offsets = (size_t*)device->malloc(geometries.size() * sizeof(size_t), 16, EmbreeMemoryType::UNKNOWN);
+    size_t geometry_data_byte_size = 0;
+    for (size_t i = 0; i < geometries.size(); ++i) {
+      Geometry* geom = geometries[i].ptr;
+      const size_t byte_size = geom->getGeometryDataDeviceByteSize();
+      offsets[i] = geometry_data_byte_size;
+      geometry_data_byte_size += byte_size;
+    }
+
+    if (geometries_data_device) {
+      device->free(geometries_data_device);
+    }
+    if (geometries_device) {
+      device->free(geometries_device);
+    }
+    geometries_device = (Geometry**)device->malloc(sizeof(Geometry*) * geometries.size(), 16, EmbreeMemoryType::DEVICE);
+    geometries_data_device = (char*)device->malloc(geometry_data_byte_size, 16, EmbreeMemoryType::DEVICE);
+
+    Geometry** geometries_host = (Geometry**)device->malloc(sizeof(Geometry*)*geometries.size(), 16, EmbreeMemoryType::UNKNOWN);
+    char* geometries_data_host = (char*)device->malloc(geometry_data_byte_size, 16, EmbreeMemoryType::UNKNOWN);
+
+    for (size_t i = 0; i < geometries.size(); ++i) {
+      geometries[i]->convertToDeviceRepresentation(offsets[i], geometries_data_host, geometries_data_device);
+      geometries_host[i] = (Geometry*)(geometries_data_device + offsets[i]);
+    }
+
+    queue.memcpy(geometries_data_device, geometries_data_host, geometry_data_byte_size);
+    queue.memcpy(geometries_device, geometries_host, sizeof(Geometry*) * geometries.size());
+    queue.wait_and_throw();
+
+    device->free(geometries_data_host);
+    device->free(geometries_host);
+    device->free(offsets);
+
+  } // run
+
+  if (!queue_in)
+    queue.wait_and_throw();
+
+#endif // EMBREE_SYCL_SUPPORT
 }
 
 #endif

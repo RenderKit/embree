@@ -55,6 +55,8 @@ namespace embree
     virtual void build() {}
     virtual void addElementsToCount (GeometryCounts & counts) const override;
     virtual void commit() override;
+    virtual size_t getGeometryDataDeviceByteSize() const override;
+    virtual void convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const override;
 
   public:
 

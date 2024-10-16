@@ -83,6 +83,19 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END(nullptr);
   }
 
+  RTC_API void rtcCommitSceneWithQueue (RTCScene hscene, sycl::queue queue)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcCommitScene);
+    RTC_VERIFY_HANDLE(hscene);
+    RTC_ENTER_DEVICE(hscene);
+    scene->commit(false, &queue);
+
+    RTC_CATCH_END2(scene);
+  }
+
+
 #endif
 
   RTC_API void rtcRetainDevice(RTCDevice hdevice) 
@@ -312,7 +325,8 @@ RTC_NAMESPACE_BEGIN;
     RTC_TRACE(rtcCommitScene);
     RTC_VERIFY_HANDLE(hscene);
     RTC_ENTER_DEVICE(hscene);
-    scene->commit(false);
+    
+    scene->commit(false, nullptr);
 
 #if defined(EMBREE_SYCL_SUPPORT)
     //prefetchUSMSharedOnGPU(hscene);
@@ -328,7 +342,8 @@ RTC_NAMESPACE_BEGIN;
     RTC_TRACE(rtcJoinCommitScene);
     RTC_VERIFY_HANDLE(hscene);
     RTC_ENTER_DEVICE(hscene);
-    scene->commit(true);
+    
+    scene->commit(true, nullptr);
     RTC_CATCH_END2(scene);
   }
 

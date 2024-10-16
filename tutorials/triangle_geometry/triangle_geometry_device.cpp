@@ -7,12 +7,17 @@
 
 namespace embree {
 
+AffineSpace3fa axfm0;
+AffineSpace3fa axfm1;
+
 /* all features required by this tutorial */
 #define FEATURE_MASK \
   RTC_FEATURE_FLAG_TRIANGLE | \
+  RTC_FEATURE_FLAG_INSTANCE | \
   RTC_FEATURE_FLAG_MOTION_BLUR
 
 RTCScene g_scene = nullptr;
+RTCScene g_scene1 = nullptr;
 TutorialData data;
 
 /* adds a cube to the scene */
@@ -61,14 +66,14 @@ unsigned int addCube (RTCScene scene_i)
   vertices[6].x = +1; vertices[6].y = +1; vertices[6].z = -1;
   vertices[7].x = +1; vertices[7].y = +1; vertices[7].z = +1;
 
-  vertices1[0].x = -1; vertices1[0].y = -1; vertices1[0].z = -1;
-  vertices1[1].x = -1; vertices1[1].y = -1; vertices1[1].z = +1;
-  vertices1[2].x = -1; vertices1[2].y = +1; vertices1[2].z = -1;
-  vertices1[3].x = -1; vertices1[3].y = +1; vertices1[3].z = +1;
-  vertices1[4].x = +1; vertices1[4].y = -1; vertices1[4].z = -1;
-  vertices1[5].x = +1; vertices1[5].y = -1; vertices1[5].z = +1;
-  vertices1[6].x = +1; vertices1[6].y = +1; vertices1[6].z = -1;
-  vertices1[7].x = +1; vertices1[7].y = +1; vertices1[7].z = +1;
+  vertices1[0].x = -1; vertices1[0].y = -1; vertices1[0].z = -1 + 3.f;
+  vertices1[1].x = -1; vertices1[1].y = -1; vertices1[1].z = +1 + 3.f;
+  vertices1[2].x = -1; vertices1[2].y = +1; vertices1[2].z = -1 + 3.f;
+  vertices1[3].x = -1; vertices1[3].y = +1; vertices1[3].z = +1 + 3.f;
+  vertices1[4].x = +1; vertices1[4].y = -1; vertices1[4].z = -1 + 3.f;
+  vertices1[5].x = +1; vertices1[5].y = -1; vertices1[5].z = +1 + 3.f;
+  vertices1[6].x = +1; vertices1[6].y = +1; vertices1[6].z = -1 + 3.f;
+  vertices1[7].x = +1; vertices1[7].y = +1; vertices1[7].z = +1 + 3.f;
 
   /* set triangles and face colors */
   int tri = 0;
@@ -106,6 +111,7 @@ unsigned int addCube (RTCScene scene_i)
   global_gpu_queue->memcpy(vertices_device, vertices, 8 * sizeof(Vertex));
   global_gpu_queue->memcpy(vertices1_device, vertices1, 8 * sizeof(Vertex));
   global_gpu_queue->memcpy(triangles_device, triangles, 12 * sizeof(Triangle));
+  global_gpu_queue->wait_and_throw();
 #endif
 
   rtcCommitGeometry(mesh);
@@ -160,14 +166,14 @@ unsigned int addCubeShared (RTCScene scene_i)
   vertices[6].x = +1; vertices[6].y = +1; vertices[6].z = -1;
   vertices[7].x = +1; vertices[7].y = +1; vertices[7].z = +1;
 
-  vertices1[0].x = -1; vertices1[0].y = -1; vertices1[0].z = -1;
-  vertices1[1].x = -1; vertices1[1].y = -1; vertices1[1].z = +1;
-  vertices1[2].x = -1; vertices1[2].y = +1; vertices1[2].z = -1;
-  vertices1[3].x = -1; vertices1[3].y = +1; vertices1[3].z = +1;
-  vertices1[4].x = +1; vertices1[4].y = -1; vertices1[4].z = -1;
-  vertices1[5].x = +1; vertices1[5].y = -1; vertices1[5].z = +1;
-  vertices1[6].x = +1; vertices1[6].y = +1; vertices1[6].z = -1;
-  vertices1[7].x = +1; vertices1[7].y = +1; vertices1[7].z = +1;
+  vertices1[0].x = -1 + 0.5f; vertices1[0].y = -1 + 0.5f; vertices1[0].z = -1 + 0.5f;
+  vertices1[1].x = -1 + 0.5f; vertices1[1].y = -1 + 0.5f; vertices1[1].z = +1 + 0.5f;
+  vertices1[2].x = -1 + 0.5f; vertices1[2].y = +1 + 0.5f; vertices1[2].z = -1 + 0.5f;
+  vertices1[3].x = -1 + 0.5f; vertices1[3].y = +1 + 0.5f; vertices1[3].z = +1 + 0.5f;
+  vertices1[4].x = +1 + 0.5f; vertices1[4].y = -1 + 0.5f; vertices1[4].z = -1 + 0.5f;
+  vertices1[5].x = +1 + 0.5f; vertices1[5].y = -1 + 0.5f; vertices1[5].z = +1 + 0.5f;
+  vertices1[6].x = +1 + 0.5f; vertices1[6].y = +1 + 0.5f; vertices1[6].z = -1 + 0.5f;
+  vertices1[7].x = +1 + 0.5f; vertices1[7].y = +1 + 0.5f; vertices1[7].z = +1 + 0.5f;
 
   /* set triangles and face colors */
   int tri = 0;
@@ -242,16 +248,51 @@ extern "C" void device_init (char* cfg)
   /* create scene */
   TutorialData_Constructor(&data);
   g_scene = data.g_scene = rtcNewScene(g_device);
+  g_scene1 = rtcNewScene(g_device);
   rtcSetSceneFlags(data.g_scene, RTC_SCENE_FLAG_PREFETCH_USM_SHARED_ON_GPU);
 
   /* add cube */
-  addCubeShared(data.g_scene);
+  addCube(g_scene1);
+
+  RTCGeometry inst = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE);
+
+  rtcSetGeometryTimeStepCount(inst, 2);
+  rtcSetGeometryInstancedScene(inst, g_scene1);
+
+  LinearSpace3fa xfm = one;
+  axfm0 = AffineSpace3fa(xfm,Vec3fa(0.f, 0.f, 0.f));
+  axfm1 = AffineSpace3fa(xfm,Vec3fa(3.f, 0.f, 0.f));
+  rtcSetGeometryTransform(inst,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&(axfm0.l.vx.x));
+  rtcSetGeometryTransform(inst,1,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&(axfm1.l.vx.x));
+  
+  rtcAttachGeometry(data.g_scene,inst);
+  rtcReleaseGeometry(inst);
+  rtcCommitGeometry(inst);
 
   /* add ground plane */
   addGroundPlane(data.g_scene);
 
   /* commit changes to scene */
+#if defined(EMBREE_SYCL_SUPPORT) && defined(SYCL_LANGUAGE_VERSION)
+  rtcCommitSceneWithQueue (g_scene1, *global_gpu_queue);
+  rtcCommitSceneWithQueue (data.g_scene, *global_gpu_queue);
+#else
+  rtcCommitScene (g_scene1);
   rtcCommitScene (data.g_scene);
+#endif
+}
+
+static inline uint32_t doodle(uint32_t x)
+{
+  x ^= x << 13;
+  x ^= x >> 17;
+  x ^= x << 5;
+  return x;
+}
+
+static inline float doodlef(uint32_t x)
+{
+  return ((float)doodle(x)) / (float)(uint32_t(-1));
 }
 
 /* task that renders a single screen tile */
@@ -264,7 +305,10 @@ void renderPixelStandard(const TutorialData& data,
                          const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize ray */
-  Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
+  uint32_t state = doodle(x + y * width);
+  state = doodle(state);
+  float t = doodlef(state);
+  Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, t);
 
   /* intersect ray with scene */
   RTCIntersectArguments iargs;
@@ -275,7 +319,7 @@ void renderPixelStandard(const TutorialData& data,
 
   /* shade pixels */
   Vec3fa color = Vec3fa(0.0f);
-  if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
+  if (ray.geomID != RTC_INVALID_GEOMETRY_ID || ray.instID[0] != RTC_INVALID_GEOMETRY_ID)
   {
 #if 1
     Vec3fa diffuse = data.face_colors[ray.primID];
@@ -283,7 +327,7 @@ void renderPixelStandard(const TutorialData& data,
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
 
     /* initialize shadow ray */
-    Ray shadow(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf, 0.0f);
+    Ray shadow(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf, 1.f - t);
 
     /* trace shadow ray */
     RTCOccludedArguments sargs;
@@ -295,7 +339,7 @@ void renderPixelStandard(const TutorialData& data,
     /* add light contribution */
     if (shadow.tfar >= 0.0f)
       color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f);
-    #else
+#else
 
 #if 0
     if (ray.geomID == 0)
@@ -322,6 +366,8 @@ void renderPixelStandard(const TutorialData& data,
 #if 0
     color = Vec3fa(ray.u, ray.v, 0.f);
 #endif
+
+    color = Vec3fa(0.f, 1.f, 0.f);
 
 #endif
 

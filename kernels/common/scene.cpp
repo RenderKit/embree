@@ -47,6 +47,8 @@ namespace embree
       quality_flags(RTC_BUILD_QUALITY_MEDIUM),
       modified(true),
       maxTimeSegments(0),
+      geometries_device(nullptr),
+      geometries_data_device(nullptr),
       taskGroup(new TaskGroup()),
       progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0)
   {
@@ -876,10 +878,19 @@ namespace embree
   RTCSceneFlags Scene::getSceneFlags() const {
     return scene_flags;
   }
-                   
+
+  void Scene::commit (bool join, sycl::queue* queue)
+  {
+    commit_internal(join);
+
+#if defined(EMBREE_SYCL_SUPPORT)
+    syncWithDevice(queue);
+#endif
+  }
+
 #if defined(TASKING_INTERNAL)
 
-  void Scene::commit (bool join) 
+  void Scene::commit_internal (bool join)
   {
     Lock<MutexSys> buildLock(buildMutex,false);
 
@@ -911,21 +922,17 @@ namespace embree
     }
     catch (...) {
       accels_clear();
-      Lock<MutexSys> lock(taskGroup->schedulerMutex);
+      Lock<MutexSys> lock(taskGroup->schedulerMutex);, *global_gpu_queue
       taskGroup->scheduler = nullptr;
       throw;
     }
-    
-#if defined(EMBREE_SYCL_SUPPORT)
-    syncWithDevice();
-#endif
   }
 
 #endif
 
 #if defined(TASKING_TBB)
 
-  void Scene::commit (bool join) 
+  void Scene::commit_internal (bool join) 
   {    
 #if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR < 8)
     if (join)
@@ -984,16 +991,12 @@ namespace embree
       accels_clear();
       throw;
     }
-
-#if defined(EMBREE_SYCL_SUPPORT)
-    syncWithDevice();
-#endif
   }
 #endif
 
 #if defined(TASKING_PPL)
 
-  void Scene::commit (bool join) 
+  void Scene::commit_internal (bool join)
   {
 #if defined(TASKING_PPL)
     if (join)
@@ -1031,10 +1034,6 @@ namespace embree
       throw;
     }
 
-#if defined(EMBREE_SYCL_SUPPORT)
-    syncWithDevice();
-#endif
-
   }
 #endif
 
@@ -1054,22 +1053,4 @@ namespace embree
     }
   }
   
-  void Scene::syncWithDevice()
-  {
-    accelBuffer.commit();
-
-    geometries_device = (Geometry**)device->malloc(geometries.size() * sizeof(Geometry*), 16, EmbreeMemoryType::DEVICE);
-
-    std::vector<Geometry*> geometries_host(geometries.size());
-    for (size_t i = 0; i < geometries.size(); ++i) {
-      geometries_host[i] = geometries[i]->twin;
-    }
-    DeviceGPU *gpu_device = dynamic_cast<DeviceGPU *>(device);
-    if (gpu_device)
-    {
-      sycl::queue queue(gpu_device->getGPUDevice());
-      queue.memcpy(geometries_device, geometries_host.data(), geometries.size() * sizeof(Geometry*));
-      queue.wait_and_throw();
-    }
-  }
 }

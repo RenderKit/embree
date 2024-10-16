@@ -270,6 +270,47 @@ namespace embree
   void LineSegments::interpolate(const RTCInterpolateArguments* const args) {
     interpolate_impl<4>(args);
   }
+
+  size_t LineSegments::getGeometryDataDeviceByteSize() const {
+    size_t byte_size = sizeof(LineSegments);
+    if (vertices.size() > 0)
+      byte_size += numTimeSteps * sizeof(BufferView<Vec3ff>);
+    if (normals.size() > 0)
+      byte_size += numTimeSteps * sizeof(BufferView<Vec3fa>);
+    //if (vertexAttribs.size() > 0)
+    //  byte_size += numTimeSteps * sizeof(BufferView<char>);
+    return 16 * ((byte_size + 15) / 16);
+  }
+
+  void LineSegments::convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const {
+    LineSegments* geom = (LineSegments*)(data_host + offset);
+    std::memcpy(data_host + offset, (void*)this, sizeof(LineSegments));
+    offset += sizeof(LineSegments);
+    if (vertices.size() > 0) {
+      const size_t offsetVertices = offset;
+      for (size_t t = 0; t < numTimeSteps; ++t) {
+        std::memcpy(data_host + offset, &(vertices[t]), sizeof(BufferView<Vec3ff>));
+        offset += sizeof(BufferView<Vec3ff>);
+      }
+      geom->vertices.setDataPtr((BufferView<Vec3ff>*)(data_device + offsetVertices));
+    }
+    if (normals.size() > 0) {
+      const size_t offsetNormals = offset;
+      for (size_t t = 0; t < numTimeSteps; ++t) {
+        std::memcpy(data_host + offset, &(normals[t]), sizeof(BufferView<Vec3fa>));
+        offset += sizeof(BufferView<Vec3fa>);
+      }
+      geom->normals.setDataPtr((BufferView<Vec3fa>*)(data_device + offsetNormals));
+    }
+    //if (vertexAttribs.size() > 0) {
+    //  const size_t offsetVertexAttribs = offset;
+    //  for (size_t t = 0; t < numTimeSteps; ++t) {
+    //    std::memcpy(data_host + offset, &(vertexAttribs[t]), sizeof(BufferView<char>));
+    //    offset += sizeof(BufferView<char>);
+    //  }
+    //  points->vertexAttribs.setDataPtr((BufferView<char>*)(data_device + offsetVertexAttribs));
+    //}
+  }
 #endif
 
   namespace isa

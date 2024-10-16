@@ -778,7 +778,7 @@ Vec3fa renderPixelStandard(const TutorialData& data,
       Ns = xfmVector(data.g_instance[ray.instID[0]]->normal2world,Vec3fa(Ns));
     }
     Ns = face_forward(ray.dir,normalize(Ns));
-
+    
     /* calculate diffuse color of geometries */
     Vec3fa diffuse = Vec3fa(0.0f);
     if      (ray.instID[0] ==  0) diffuse = data.colors[4*ray.instID[0]+ray.primID];

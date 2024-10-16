@@ -193,14 +193,10 @@ __forceinline bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Ins
   raydesc.mask = mask32_to_mask8(ray.mask);
   raydesc.flags = intel_ray_flags_force_non_opaque;
 
-  //if (context.enforceArgumentFilterFunction())
-  //  raydesc.flags |= intel_ray_flags_force_non_opaque;
-  
 #if defined(EMBREE_BACKFACE_CULLING)
   raydesc.flags |= intel_ray_flags_cull_back_facing_triangles;
 #endif
 
-  
   uint32_t bvh_id = 0;
   if (context->args->feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR) {
     float time = clamp(ray.time(),0.0f,1.0f);
@@ -247,8 +243,8 @@ __forceinline bool intersect_instance(intel_ray_query_t& query, Ray& ray, Instan
   raydesc.mask = mask32_to_mask8(ray.mask);
   raydesc.flags = intel_ray_flags_accept_first_hit_and_end_search;
 
-  if (context->enforceArgumentFilterFunction())
-    raydesc.flags |= intel_ray_flags_force_non_opaque;
+  //if (context->enforceArgumentFilterFunction())
+  //  raydesc.flags |= intel_ray_flags_force_non_opaque;
   
 #if defined(EMBREE_BACKFACE_CULLING)
   raydesc.flags |= intel_ray_flags_cull_back_facing_triangles;
@@ -418,7 +414,7 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
   if (gtype == Geometry::GTY_TRIANGLE_MESH && (feature_mask & RTC_FEATURE_FLAG_TRIANGLE) && (feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR))
   {
-    const TriangleMesh* geom = context->scene->get<TriangleMesh>(geomID);
+    const TriangleMesh* geom = (const TriangleMesh*)context->scene->get(geomID);
     const TriangleMesh::Triangle triangle = geom->triangle(primID);
     Vec3fa v0 = geom->vertex(triangle.v[0], ray.time());
     Vec3fa v1 = geom->vertex(triangle.v[1], ray.time());
@@ -717,7 +713,20 @@ SYCL_EXTERNAL __attribute__((always_inline)) void rtcIntersectRTHW(sycl::global_
   ray.v = 0;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  
+
+  //TriangleMesh* mesh = scene->get<TriangleMesh>(0);
+  //TriangleMesh::Triangle triangle = mesh->triangle(0);
+  //Vec3fa v0 = mesh->vertex(triangle.v[0], 5.f);
+  //Vec3fa v1 = mesh->vertex(triangle.v[1], 5.f);
+  //Vec3fa v2 = mesh->vertex(triangle.v[2], 5.f);
+
+  //bool isect = TriangleIntersector().intersect(ray,v0,v1,v2,Intersect1Epilog1_HWIF<Ray>(ray, &context, 0, 0, false));
+  //if (isect)
+  //  rayhit_i->hit.geomID = 0;
+  //else
+  //  rayhit_i->hit.geomID = -1;
+  //return;
+
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   for (uint32_t l=0; l<RTC_MAX_INSTANCE_LEVEL_COUNT; l++) {
     ray.instID[l] = RTC_INVALID_GEOMETRY_ID;

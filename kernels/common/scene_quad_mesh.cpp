@@ -178,7 +178,40 @@ namespace embree
   void QuadMesh::interpolate(const RTCInterpolateArguments* const args) {
     interpolate_impl<4>(args);
   }
-  
+
+  size_t QuadMesh::getGeometryDataDeviceByteSize() const {
+    size_t byte_size = sizeof(QuadMesh);
+    byte_size += numTimeSteps * sizeof(BufferView<Vec3fa>);
+    //if (vertexAttribs.size() > 0)
+    //  byte_size += numTimeSteps * sizeof(RawBufferView);
+    return 16 * ((byte_size + 15) / 16);
+  }
+
+  void QuadMesh::convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const {
+    QuadMesh* mesh = (QuadMesh*)(data_host + offset);
+    std::memcpy(data_host + offset, (void*)this, sizeof(QuadMesh));
+    offset += sizeof(QuadMesh);
+
+    // store offset for overriding vertices pointer with device pointer after copying
+    const size_t offsetVertices = offset;
+    // copy vertices BufferViews for each time step
+    for (size_t t = 0; t < numTimeSteps; ++t) {
+      std::memcpy(data_host + offset, &(vertices[t]), sizeof(BufferView<Vec3fa>));
+      offset += sizeof(BufferView<Vec3fa>);
+    }
+    // override vertices pointer with device ptr
+    mesh->vertices.setDataPtr((BufferView<Vec3fa>*)(data_device + offsetVertices));
+
+    //if (vertexAttribs.size() > 0) {
+    //  const size_t offsetVertexAttribs = offset;
+    //  for (size_t t = 0; t < numTimeSteps; ++t) {
+    //    std::memcpy(data_host + offset, &(vertexAttribs[t]), sizeof(RawBufferView));
+    //    offset += sizeof(RawBufferView);
+    //  }
+    //  mesh->vertexAttribs.setDataPtr((RawBufferView*)(data_device + offsetVertexAttribs));
+    //}
+  }
+
 #endif
 
   namespace isa

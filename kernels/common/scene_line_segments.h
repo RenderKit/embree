@@ -33,6 +33,8 @@ namespace embree
     void setTessellationRate(float N);
     void setMaxRadiusScale(float s);
     void addElementsToCount (GeometryCounts & counts) const;
+    size_t getGeometryDataDeviceByteSize() const;
+    void convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const;
 
     template<int N>
     void interpolate_impl(const RTCInterpolateArguments* const args)

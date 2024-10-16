@@ -673,7 +673,7 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "AccelBuffer constructor called with non-GPU device");
     }
 
-    unifiedMemory = false; //gpu_device->has_unified_memory();
+    unifiedMemory = true; //gpu_device->has_unified_memory();
 
     if (unifiedMemory)
     {

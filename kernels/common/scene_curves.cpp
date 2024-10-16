@@ -370,6 +370,67 @@ namespace embree
     Geometry::commit();
   }
 
+  size_t CurveGeometry::getGeometryDataDeviceByteSize() const {
+    size_t byte_size = sizeof(CurveGeometry);
+    if (vertices.size() > 0)
+      byte_size += numTimeSteps * sizeof(BufferView<Vec3ff>);
+    if (normals.size() > 0)
+      byte_size += numTimeSteps * sizeof(BufferView<Vec3fa>);
+    if (tangents.size() > 0)
+      byte_size += numTimeSteps * sizeof(BufferView<Vec3ff>);
+    if (dnormals.size() > 0)
+      byte_size += numTimeSteps * sizeof(BufferView<Vec3fa>);
+    //if (vertexAttribs.size() > 0)
+    //  byte_size += numTimeSteps * sizeof(BufferView<char>);
+    return 16 * ((byte_size + 15) / 16);
+  }
+
+  void CurveGeometry::convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const {
+    CurveGeometry* curve = (CurveGeometry*)(data_host + offset);
+    std::memcpy(data_host + offset, (void*)this, sizeof(CurveGeometry));
+    offset += sizeof(CurveGeometry);
+    if (vertices.size() > 0) {
+      const size_t offsetVertices = offset;
+      for (size_t t = 0; t < numTimeSteps; ++t) {
+        std::memcpy(data_host + offset, &(vertices[t]), sizeof(BufferView<Vec3ff>));
+        offset += sizeof(BufferView<Vec3ff>);
+      }
+      curve->vertices.setDataPtr((BufferView<Vec3ff>*)(data_device + offsetVertices));
+    }
+    if (normals.size() > 0) {
+      const size_t offsetNormals = offset;
+      for (size_t t = 0; t < numTimeSteps; ++t) {
+        std::memcpy(data_host + offset, &(normals[t]), sizeof(BufferView<Vec3fa>));
+        offset += sizeof(BufferView<Vec3fa>);
+      }
+      curve->normals.setDataPtr((BufferView<Vec3fa>*)(data_device + offsetNormals));
+    }
+    if (tangents.size() > 0) {
+      const size_t offsetTangents = offset;
+      for (size_t t = 0; t < numTimeSteps; ++t) {
+        std::memcpy(data_host + offset, &(tangents[t]), sizeof(BufferView<Vec3ff>));
+        offset += sizeof(BufferView<Vec3ff>);
+      }
+      curve->tangents.setDataPtr((BufferView<Vec3ff>*)(data_device + offsetTangents));
+    }
+    if (dnormals.size() > 0) {
+      const size_t offsetDNormals = offset;
+      for (size_t t = 0; t < numTimeSteps; ++t) {
+        std::memcpy(data_host + offset, &(dnormals[t]), sizeof(BufferView<Vec3fa>));
+        offset += sizeof(BufferView<Vec3fa>);
+      }
+      curve->dnormals.setDataPtr((BufferView<Vec3fa>*)(data_device + offsetDNormals));
+    }
+    //if (vertexAttribs.size() > 0) {
+    //  const size_t offsetVertexAttribs = offset;
+    //  for (size_t t = 0; t < numTimeSteps; ++t) {
+    //    std::memcpy(data_host + offset, &(vertexAttribs[t]), sizeof(BufferView<char>));
+    //    offset += sizeof(BufferView<char>);
+    //  }
+    //  points->vertexAttribs.setDataPtr((BufferView<char>*)(data_device + offsetVertexAttribs));
+    //}
+  }
+
 #endif
 
   namespace isa

@@ -59,7 +59,7 @@ namespace embree
 
     numObjects = numScenes;
     device->memoryMonitor(numObjects*sizeof(Accel*), false);
-    objects = (Accel**) device->malloc(numScenes*sizeof(Accel*),16);
+    objects = (Accel**) device->malloc(numScenes*sizeof(Accel*),16,EmbreeMemoryType::UNKNOWN);
     for (size_t i = 0; i < numObjects; ++i) {
       Ref<Scene> scene = (Scene*) scenes[i];
       objects[i] = scene.ptr;
@@ -188,6 +188,33 @@ namespace embree
     }
 
     Geometry::commit();
+  }
+  
+  size_t InstanceArray::getGeometryDataDeviceByteSize() const {
+    size_t byte_size = sizeof(InstanceArray);
+    byte_size += numObjects * sizeof(Accel*);
+    byte_size += numTimeSteps * sizeof(RawBufferView);
+    return 16 * ((byte_size + 15) / 16);
+  }
+
+  void InstanceArray::convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const {
+    InstanceArray* iarray = (InstanceArray*)(data_host + offset);
+    std::memcpy(data_host + offset, (void*)this, sizeof(InstanceArray));
+    offset += sizeof(InstanceArray);
+
+    const size_t offsetObjects = offset;
+    std::memcpy(data_host + offset, objects, numObjects * sizeof(Accel*));
+    offset += numObjects * sizeof(Accel*);
+    iarray->objects = (Accel**)(data_device + offsetObjects);
+
+    if (l2w_buf.size() > 0) {
+      const size_t offsetBuffer = offset;
+      for (size_t t = 0; t < numTimeSteps; ++t) {
+        std::memcpy(data_host + offset, &(l2w_buf[t]), sizeof(RawBufferView));
+        offset += sizeof(RawBufferView);
+      }
+      iarray->l2w_buf.setDataPtr((RawBufferView*)(data_device + offsetBuffer));
+    }
   }
 
   // TODO InstanceArray: merge this with scene_array.cpp
