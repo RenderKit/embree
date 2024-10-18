@@ -118,16 +118,14 @@ __forceinline bool intersect_user_geometry(intel_ray_query_t& query, RayHit& ray
 
 __forceinline bool intersect_user_geometry(intel_ray_query_t& query, Ray& ray, UserGeometry* geom, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID)
 {
-  /* perform ray mask test */
-#if defined(EMBREE_RAY_MASK)
-  if ((ray.mask & geom->mask) == 0) 
-    return false;
-#endif
 
-  RTCScene forward_scene = nullptr;
-  const bool ishit = geom->occluded(ray,geomID,primID,context,forward_scene);
-  if (!forward_scene) return ishit;
+  //RTCScene forward_scene = nullptr;
+  //const bool ishit = geom->occluded(ray,geomID,primID,context,forward_scene);
+  const bool ishit = true;
+  //if (!forward_scene) return ishit;
+  return ishit;
 
+  #if 0
   /* forward ray to instanced scene */
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   unsigned int bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit );
@@ -156,6 +154,7 @@ __forceinline bool intersect_user_geometry(intel_ray_query_t& query, Ray& ray, U
 
   intel_ray_query_forward_ray(query, raydesc, hwaccel_ptr);
   return false;
+  #endif
 }
 
 template<typename Ray>

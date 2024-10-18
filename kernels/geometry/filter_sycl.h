@@ -16,17 +16,17 @@ namespace embree
     const RTCFeatureFlags feature_mask MAYBE_UNUSED = context->args->feature_mask;
     
 #if EMBREE_SYCL_GEOMETRY_CALLBACK
-    if (feature_mask & RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_GEOMETRY)
-    {
-      RTCFilterFunctionSYCL gfilter = (RTCFilterFunctionSYCL) geometry->intersectionFilterN;
-      if (gfilter)
-      {
-        gfilter(args);
-        
-        if (mask == 0)
-          return false;
-      }
-    }
+    //if (feature_mask & RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_GEOMETRY)
+    //{
+    //  RTCFilterFunctionSYCL gfilter = (RTCFilterFunctionSYCL) geometry->intersectionFilterN;
+    //  if (gfilter)
+    //  {
+    //    gfilter(args);
+    //    
+    //    if (mask == 0)
+    //      return false;
+    //  }
+    //}
 #endif
 
     if (feature_mask & RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS)
@@ -51,17 +51,17 @@ namespace embree
     const RTCFeatureFlags feature_mask MAYBE_UNUSED = context->args->feature_mask;
     
 #if EMBREE_SYCL_GEOMETRY_CALLBACK
-    if (feature_mask & RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_GEOMETRY)
-    {
-      RTCFilterFunctionSYCL gfilter = (RTCFilterFunctionSYCL) geometry->occlusionFilterN;
-      if (gfilter)
-      {
-        gfilter(args);
-        
-        if (mask == 0)
-          return false;
-      }
-    }
+    //if (feature_mask & RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_GEOMETRY)
+    //{
+    //  RTCFilterFunctionSYCL gfilter = (RTCFilterFunctionSYCL) geometry->occlusionFilterN;
+    //  if (gfilter)
+    //  {
+    //    gfilter(args);
+    //    
+    //    if (mask == 0)
+    //      return false;
+    //  }
+    //}
 #endif
 
     if (feature_mask & RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS)
@@ -85,7 +85,7 @@ namespace embree
     RTCFilterFunctionNArguments args;
     int mask = -1;
     args.valid = &mask;
-    args.geometryUserPtr = geometry->userPtr;
+    args.geometryUserPtr = nullptr; //geometry->userPtr;
     args.context = context->user;
     args.ray = (RTCRayN*) &ray;
     args.hit = (RTCHitN*) &hit;
@@ -99,7 +99,7 @@ namespace embree
     RTCFilterFunctionNArguments args;
     int mask = -1;
     args.valid = &mask;
-    args.geometryUserPtr = geometry->userPtr;
+    args.geometryUserPtr = nullptr; //geometry->userPtr;
     args.context = context->user;
     args.ray = (RTCRayN*) &ray;
     args.hit = (RTCHitN*) &hit;

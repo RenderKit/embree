@@ -5,21 +5,23 @@
 
 namespace embree {
 
-#if EMBREE_SYCL_TUTORIAL
+//#if EMBREE_SYCL_TUTORIAL
 #define USE_ARGUMENT_CALLBACKS 1
-#else
-#define USE_ARGUMENT_CALLBACKS 0
-#endif
+//#else
+//#define USE_ARGUMENT_CALLBACKS 0
+//#endif
 
 /* all features required by this tutorial */
 #if USE_ARGUMENT_CALLBACKS
 #define FEATURE_MASK \
   RTC_FEATURE_FLAG_TRIANGLE | \
+  RTC_FEATURE_FLAG_QUAD | \
   RTC_FEATURE_FLAG_USER_GEOMETRY_CALLBACK_IN_ARGUMENTS | \
   RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS
 #else
 #define FEATURE_MASK     \
   RTC_FEATURE_FLAG_TRIANGLE | \
+  RTC_FEATURE_FLAG_QUAD | \
   RTC_FEATURE_FLAG_USER_GEOMETRY_CALLBACK_IN_GEOMETRY | \
   RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_GEOMETRY
 #endif
@@ -482,16 +484,26 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereOccludedFunc(const RTCOccludedFunctionNA
 
 RTC_SYCL_INDIRECTLY_CALLABLE void contextIntersectFunc(const RTCIntersectFunctionNArguments* args)
 {
+  if (!args)
+    return;
+  if (!args->geometryUserPtr)
+    return;
+
   UserGeometryType* type = (UserGeometryType*) args->geometryUserPtr;
   if (*type == USER_GEOMETRY_INSTANCE) instanceIntersectFunc(args);
-  else                                 sphereIntersectFunc(args);
+  else if(*type == USER_GEOMETRY_SPHERE) sphereIntersectFunc(args);
 }
 
 RTC_SYCL_INDIRECTLY_CALLABLE void contextOccludedFunc(const RTCOccludedFunctionNArguments* args)
 {
+  if (!args)
+    return;
+  if (!args->geometryUserPtr)
+    return;
+
   UserGeometryType* type = (UserGeometryType*) args->geometryUserPtr;
   if (*type == USER_GEOMETRY_INSTANCE) instanceOccludedFunc(args);
-  else                                 sphereOccludedFunc(args);
+  else if (*type == USER_GEOMETRY_SPHERE) sphereOccludedFunc(args);
 }
 
 /* intersection filter function */
@@ -569,8 +581,6 @@ Sphere* createAnalyticalSpheres (RTCScene scene, unsigned int N)
 #if !USE_ARGUMENT_CALLBACKS
   rtcSetGeometryIntersectFunction(geom,sphereIntersectFuncPtr);
   rtcSetGeometryOccludedFunction (geom,sphereOccludedFuncPtr);
-#endif
-#if !USE_ARGUMENT_CALLBACKS
   rtcSetGeometryIntersectFilterFunction(geom,sphereFilterFuncPtr);
   rtcSetGeometryOccludedFilterFunction(geom,sphereFilterFuncPtr);
 #endif
@@ -666,75 +676,75 @@ unsigned int createGroundPlane (RTCScene scene)
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-  instanceIntersectFuncPtr = GET_FUNCTION_POINTER(instanceIntersectFunc);
-  instanceOccludedFuncPtr  = GET_FUNCTION_POINTER(instanceOccludedFunc );
-  sphereIntersectFuncPtr = GET_FUNCTION_POINTER(sphereIntersectFunc);
-  sphereOccludedFuncPtr  = GET_FUNCTION_POINTER(sphereOccludedFunc );
-  sphereFilterFuncPtr    = GET_FUNCTION_POINTER(sphereFilterFunction);
+  //instanceIntersectFuncPtr = GET_FUNCTION_POINTER(instanceIntersectFunc);
+  //instanceOccludedFuncPtr  = GET_FUNCTION_POINTER(instanceOccludedFunc );
+  //sphereIntersectFuncPtr = GET_FUNCTION_POINTER(sphereIntersectFunc);
+  //sphereOccludedFuncPtr  = GET_FUNCTION_POINTER(sphereOccludedFunc );
+  //sphereFilterFuncPtr    = GET_FUNCTION_POINTER(sphereFilterFunction);
   
   /* create scene */
   TutorialData_Constructor(&data);
   g_scene = data.g_scene = rtcNewScene(g_device);
 
-  /* create scene with 4 analytical spheres */
-  data.g_scene0 = rtcNewScene(g_device);
-  rtcSetSceneBuildQuality(data.g_scene0,RTC_BUILD_QUALITY_LOW);
-  data.g_spheres = createAnalyticalSpheres(data.g_scene0,4);
-  data.g_spheres[0].p = Vec3fa( 0, 0,+1); data.g_spheres[0].r = 0.5f;
-  data.g_spheres[1].p = Vec3fa(+1, 0, 0); data.g_spheres[1].r = 0.5f;
-  data.g_spheres[2].p = Vec3fa( 0, 0,-1); data.g_spheres[2].r = 0.5f;
-  data.g_spheres[3].p = Vec3fa(-1, 0, 0); data.g_spheres[3].r = 0.5f;
-  rtcCommitScene(data.g_scene0);
+  ///* create scene with 4 analytical spheres */
+  //data.g_scene0 = rtcNewScene(g_device);
+  //rtcSetSceneBuildQuality(data.g_scene0,RTC_BUILD_QUALITY_LOW);
+  //data.g_spheres = createAnalyticalSpheres(data.g_scene0,4);
+  //data.g_spheres[0].p = Vec3fa( 0, 0,+1); data.g_spheres[0].r = 0.5f;
+  //data.g_spheres[1].p = Vec3fa(+1, 0, 0); data.g_spheres[1].r = 0.5f;
+  //data.g_spheres[2].p = Vec3fa( 0, 0,-1); data.g_spheres[2].r = 0.5f;
+  //data.g_spheres[3].p = Vec3fa(-1, 0, 0); data.g_spheres[3].r = 0.5f;
+  //rtcCommitScene(data.g_scene0);
 
-  /* create scene with 4 triangulated spheres */
-  data.g_scene1 = rtcNewScene(g_device);
-  createTriangulatedSphere(data.g_scene1,Vec3fa( 0, 0,+1),0.5f);
-  createTriangulatedSphere(data.g_scene1,Vec3fa(+1, 0, 0),0.5f);
-  createTriangulatedSphere(data.g_scene1,Vec3fa( 0, 0,-1),0.5f);
-  createTriangulatedSphere(data.g_scene1,Vec3fa(-1, 0, 0),0.5f);
-  rtcCommitScene(data.g_scene1);
+  ///* create scene with 4 triangulated spheres */
+  //data.g_scene1 = rtcNewScene(g_device);
+  //createTriangulatedSphere(data.g_scene1,Vec3fa( 0, 0,+1),0.5f);
+  //createTriangulatedSphere(data.g_scene1,Vec3fa(+1, 0, 0),0.5f);
+  //createTriangulatedSphere(data.g_scene1,Vec3fa( 0, 0,-1),0.5f);
+  //createTriangulatedSphere(data.g_scene1,Vec3fa(-1, 0, 0),0.5f);
+  //rtcCommitScene(data.g_scene1);
 
-  /* create scene with 2 triangulated and 2 analytical spheres */
-  data.g_scene2 = rtcNewScene(g_device);
-  createTriangulatedSphere(data.g_scene2,Vec3fa( 0, 0,+1),0.5f);
-  data.g_sphere0 = createAnalyticalSphere  (data.g_scene2,Vec3fa(+1, 0, 0),0.5f);
-  createTriangulatedSphere(data.g_scene2,Vec3fa( 0, 0,-1),0.5f);
-  data.g_sphere1 = createAnalyticalSphere  (data.g_scene2,Vec3fa(-1, 0, 0),0.5f);
-  rtcCommitScene(data.g_scene2);
+  ///* create scene with 2 triangulated and 2 analytical spheres */
+  //data.g_scene2 = rtcNewScene(g_device);
+  //createTriangulatedSphere(data.g_scene2,Vec3fa( 0, 0,+1),0.5f);
+  //data.g_sphere0 = createAnalyticalSphere  (data.g_scene2,Vec3fa(+1, 0, 0),0.5f);
+  //createTriangulatedSphere(data.g_scene2,Vec3fa( 0, 0,-1),0.5f);
+  //data.g_sphere1 = createAnalyticalSphere  (data.g_scene2,Vec3fa(-1, 0, 0),0.5f);
+  //rtcCommitScene(data.g_scene2);
 
   /* instantiate geometry */
-  data.g_instance[0] = createInstance(data.g_scene,data.g_scene0,0,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
-  data.g_instance[1] = createInstance(data.g_scene,data.g_scene1,1,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
-  data.g_instance[2] = createInstance(data.g_scene,data.g_scene2,2,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
-  data.g_instance[3] = createInstance(data.g_scene,data.g_scene2,3,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
+  //data.g_instance[0] = createInstance(data.g_scene,data.g_scene0,0,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
+  //data.g_instance[1] = createInstance(data.g_scene,data.g_scene1,1,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
+  //data.g_instance[2] = createInstance(data.g_scene,data.g_scene2,2,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
+  //data.g_instance[3] = createInstance(data.g_scene,data.g_scene2,3,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
   createGroundPlane(data.g_scene);
   rtcCommitScene(data.g_scene);
 
-  /* set all colors */
-  data.colors[4*0+0] = Vec3fa(0.25f, 0.00f, 0.00f);
-  data.colors[4*0+1] = Vec3fa(0.50f, 0.00f, 0.00f);
-  data.colors[4*0+2] = Vec3fa(0.75f, 0.00f, 0.00f);
-  data.colors[4*0+3] = Vec3fa(1.00f, 0.00f, 0.00f);
+  ///* set all colors */
+  //data.colors[4*0+0] = Vec3fa(0.25f, 0.00f, 0.00f);
+  //data.colors[4*0+1] = Vec3fa(0.50f, 0.00f, 0.00f);
+  //data.colors[4*0+2] = Vec3fa(0.75f, 0.00f, 0.00f);
+  //data.colors[4*0+3] = Vec3fa(1.00f, 0.00f, 0.00f);
 
-  data.colors[4*1+0] = Vec3fa(0.00f, 0.25f, 0.00f);
-  data.colors[4*1+1] = Vec3fa(0.00f, 0.50f, 0.00f);
-  data.colors[4*1+2] = Vec3fa(0.00f, 0.75f, 0.00f);
-  data.colors[4*1+3] = Vec3fa(0.00f, 1.00f, 0.00f);
+  //data.colors[4*1+0] = Vec3fa(0.00f, 0.25f, 0.00f);
+  //data.colors[4*1+1] = Vec3fa(0.00f, 0.50f, 0.00f);
+  //data.colors[4*1+2] = Vec3fa(0.00f, 0.75f, 0.00f);
+  //data.colors[4*1+3] = Vec3fa(0.00f, 1.00f, 0.00f);
 
-  data.colors[4*2+0] = Vec3fa(0.00f, 0.00f, 0.25f);
-  data.colors[4*2+1] = Vec3fa(0.00f, 0.00f, 0.50f);
-  data.colors[4*2+2] = Vec3fa(0.00f, 0.00f, 0.75f);
-  data.colors[4*2+3] = Vec3fa(0.00f, 0.00f, 1.00f);
+  //data.colors[4*2+0] = Vec3fa(0.00f, 0.00f, 0.25f);
+  //data.colors[4*2+1] = Vec3fa(0.00f, 0.00f, 0.50f);
+  //data.colors[4*2+2] = Vec3fa(0.00f, 0.00f, 0.75f);
+  //data.colors[4*2+3] = Vec3fa(0.00f, 0.00f, 1.00f);
 
-  data.colors[4*3+0] = Vec3fa(0.25f, 0.25f, 0.00f);
-  data.colors[4*3+1] = Vec3fa(0.50f, 0.50f, 0.00f);
-  data.colors[4*3+2] = Vec3fa(0.75f, 0.75f, 0.00f);
-  data.colors[4*3+3] = Vec3fa(1.00f, 1.00f, 0.00f);
+  //data.colors[4*3+0] = Vec3fa(0.25f, 0.25f, 0.00f);
+  //data.colors[4*3+1] = Vec3fa(0.50f, 0.50f, 0.00f);
+  //data.colors[4*3+2] = Vec3fa(0.75f, 0.75f, 0.00f);
+  //data.colors[4*3+3] = Vec3fa(1.00f, 1.00f, 0.00f);
 
-  data.colors[4*4+0] = Vec3fa(1.0f, 1.0f, 1.0f);
-  data.colors[4*4+1] = Vec3fa(1.0f, 1.0f, 1.0f);
-  data.colors[4*4+2] = Vec3fa(1.0f, 1.0f, 1.0f);
-  data.colors[4*4+3] = Vec3fa(1.0f, 1.0f, 1.0f);
+  //data.colors[4*4+0] = Vec3fa(1.0f, 1.0f, 1.0f);
+  //data.colors[4*4+1] = Vec3fa(1.0f, 1.0f, 1.0f);
+  //data.colors[4*4+2] = Vec3fa(1.0f, 1.0f, 1.0f);
+  //data.colors[4*4+3] = Vec3fa(1.0f, 1.0f, 1.0f);
 }
 
 inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
@@ -756,12 +766,10 @@ Vec3fa renderPixelStandard(const TutorialData& data,
   /* intersect ray with scene */
   RTCIntersectArguments iargs;
   rtcInitIntersectArguments(&iargs);
-#if USE_ARGUMENT_CALLBACKS
-  iargs.filter = contextFilterFunction;
-#endif
-#if USE_ARGUMENT_CALLBACKS
-  iargs.intersect = contextIntersectFunc;
-#endif
+//#if USE_ARGUMENT_CALLBACKS
+//  iargs.filter = contextFilterFunction;
+//  iargs.intersect = contextIntersectFunc;
+//#endif
   iargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
   
   rtcIntersect1(data.g_scene,RTCRayHit_(ray),&iargs);
@@ -774,16 +782,18 @@ Vec3fa renderPixelStandard(const TutorialData& data,
     /* calculate shading normal in world space */
     Vec3fa Ns = ray.Ng;
 
-    if (ray.instID[0] != RTC_INVALID_GEOMETRY_ID) {
-      Ns = xfmVector(data.g_instance[ray.instID[0]]->normal2world,Vec3fa(Ns));
-    }
+    //if (ray.instID[0] != RTC_INVALID_GEOMETRY_ID) {
+    //  //Ns = xfmVector(data.g_instance[ray.instID[0]]->normal2world,Vec3fa(Ns));
+    //  Ns = xfmVector(data.g_instance[3]->normal2world,Vec3fa(Ns));
+    //}
     Ns = face_forward(ray.dir,normalize(Ns));
     
     /* calculate diffuse color of geometries */
-    Vec3fa diffuse = Vec3fa(0.0f);
-    if      (ray.instID[0] ==  0) diffuse = data.colors[4*ray.instID[0]+ray.primID];
-    else if (ray.instID[0] == -1) diffuse = data.colors[4*4+ray.primID];
-    else                          diffuse = data.colors[4*ray.instID[0]+ray.geomID];
+    Vec3fa diffuse = Vec3fa(1.0f);// + 0.5f * normalize(Ns);
+    //Vec3fa diffuse = Vec3fa(0.0f);
+    //if      (ray.instID[0] ==  0) diffuse = data.colors[4*ray.instID[0]+ray.primID];
+    //else if (ray.instID[0] == -1) diffuse = data.colors[4*4+ray.primID];
+    //else                          diffuse = data.colors[4*ray.instID[0]+ray.geomID];
     color = color + diffuse*0.5f;
 
     /* initialize shadow ray */
@@ -795,8 +805,6 @@ Vec3fa renderPixelStandard(const TutorialData& data,
     rtcInitOccludedArguments(&sargs);
 #if USE_ARGUMENT_CALLBACKS
     sargs.filter = contextFilterFunction;
-#endif
-#if USE_ARGUMENT_CALLBACKS
     sargs.occluded = contextOccludedFunc;
 #endif
     sargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
@@ -807,6 +815,9 @@ Vec3fa renderPixelStandard(const TutorialData& data,
     /* add light contribution */
     if (shadow.tfar >= 0.0f)
       color = color + diffuse*clamp(-dot(lightDir,Ns),0.0f,1.0f);
+  }
+  else {
+    color = Vec3f(1.f, 0.f, 0.f);
   }
   return color;
 }
@@ -918,16 +929,16 @@ extern "C" void device_render (int* pixels,
   xfm.vz = Vec3fa(-sin(t1),0,cos(t1));
 
   /* calculate transformations to move instances in circles */
-  data.g_instance[0]->local2world = AffineSpace3fa(xfm,2.2f*Vec3fa(+cos(t0),0.0f,+sin(t0)));
-  data.g_instance[1]->local2world = AffineSpace3fa(xfm,2.2f*Vec3fa(-cos(t0),0.0f,-sin(t0)));
-  data.g_instance[2]->local2world = AffineSpace3fa(xfm,2.2f*Vec3fa(-sin(t0),0.0f,+cos(t0)));
-  data.g_instance[3]->local2world = AffineSpace3fa(xfm,2.2f*Vec3fa(+sin(t0),0.0f,-cos(t0)));
+  //data.g_instance[0]->local2world = AffineSpace3fa(xfm,2.2f*Vec3fa(+cos(t0),0.0f,+sin(t0)));
+  //data.g_instance[1]->local2world = AffineSpace3fa(xfm,2.2f*Vec3fa(-cos(t0),0.0f,-sin(t0)));
+  //data.g_instance[2]->local2world = AffineSpace3fa(xfm,2.2f*Vec3fa(-sin(t0),0.0f,+cos(t0)));
+  //data.g_instance[3]->local2world = AffineSpace3fa(xfm,2.2f*Vec3fa(+sin(t0),0.0f,-cos(t0)));
 
   /* update scene */
-  updateInstance(data.g_scene,data.g_instance[0]);
-  updateInstance(data.g_scene,data.g_instance[1]);
-  updateInstance(data.g_scene,data.g_instance[2]);
-  updateInstance(data.g_scene,data.g_instance[3]);
+  //updateInstance(data.g_scene,data.g_instance[0]);
+  //updateInstance(data.g_scene,data.g_instance[1]);
+  //updateInstance(data.g_scene,data.g_instance[2]);
+  //updateInstance(data.g_scene,data.g_instance[3]);
   rtcCommitScene (data.g_scene);
 }
 

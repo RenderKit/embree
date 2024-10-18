@@ -161,12 +161,14 @@ void Scene::syncWithDevice(sycl::queue* queue_in)
     geometries_data_device = (char*)device->malloc(geometry_data_byte_size, 16, EmbreeMemoryType::DEVICE);
 
     Geometry** geometries_host = (Geometry**)device->malloc(sizeof(Geometry*)*geometries.size(), 16, EmbreeMemoryType::UNKNOWN);
+    std::memset(geometries_host, 0, sizeof(Geometry*) * geometries.size());
     char* geometries_data_host = (char*)device->malloc(geometry_data_byte_size, 16, EmbreeMemoryType::UNKNOWN);
+    std::memset(geometries_data_host, 0, geometry_data_byte_size);
 
-    for (size_t i = 0; i < geometries.size(); ++i) {
-      geometries[i]->convertToDeviceRepresentation(offsets[i], geometries_data_host, geometries_data_device);
-      geometries_host[i] = (Geometry*)(geometries_data_device + offsets[i]);
-    }
+    //for (size_t i = 0; i < geometries.size(); ++i) {
+    //  geometries[i]->convertToDeviceRepresentation(offsets[i], geometries_data_host, geometries_data_device);
+    //  geometries_host[i] = (Geometry*)(geometries_data_device + offsets[i]);
+    //}
 
     queue.memcpy(geometries_data_device, geometries_data_host, geometry_data_byte_size);
     queue.memcpy(geometries_device, geometries_host, sizeof(Geometry*) * geometries.size());
