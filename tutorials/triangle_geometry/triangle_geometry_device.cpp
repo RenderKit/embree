@@ -248,37 +248,37 @@ extern "C" void device_init (char* cfg)
   /* create scene */
   TutorialData_Constructor(&data);
   g_scene = data.g_scene = rtcNewScene(g_device);
-  g_scene1 = rtcNewScene(g_device);
-  rtcSetSceneFlags(data.g_scene, RTC_SCENE_FLAG_PREFETCH_USM_SHARED_ON_GPU);
+  //g_scene1 = rtcNewScene(g_device);
+  //rtcSetSceneFlags(data.g_scene, RTC_SCENE_FLAG_PREFETCH_USM_SHARED_ON_GPU);
 
   /* add cube */
-  addCube(g_scene1);
+  addCube(g_scene);
 
-  RTCGeometry inst = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE);
+  //RTCGeometry inst = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE);
 
-  rtcSetGeometryTimeStepCount(inst, 2);
-  rtcSetGeometryInstancedScene(inst, g_scene1);
+  //rtcSetGeometryTimeStepCount(inst, 2);
+  //rtcSetGeometryInstancedScene(inst, g_scene1);
 
-  LinearSpace3fa xfm = one;
-  axfm0 = AffineSpace3fa(xfm,Vec3fa(0.f, 0.f, 0.f));
-  axfm1 = AffineSpace3fa(xfm,Vec3fa(3.f, 0.f, 0.f));
-  rtcSetGeometryTransform(inst,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&(axfm0.l.vx.x));
-  rtcSetGeometryTransform(inst,1,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&(axfm1.l.vx.x));
-  
-  rtcAttachGeometry(data.g_scene,inst);
-  rtcReleaseGeometry(inst);
-  rtcCommitGeometry(inst);
+  //LinearSpace3fa xfm = one;
+  //axfm0 = AffineSpace3fa(xfm,Vec3fa(0.f, 0.f, 0.f));
+  //axfm1 = AffineSpace3fa(xfm,Vec3fa(3.f, 0.f, 0.f));
+  //rtcSetGeometryTransform(inst,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&(axfm0.l.vx.x));
+  //rtcSetGeometryTransform(inst,1,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&(axfm1.l.vx.x));
+  //
+  //rtcAttachGeometry(data.g_scene,inst);
+  //rtcReleaseGeometry(inst);
+  //rtcCommitGeometry(inst);
 
   /* add ground plane */
   addGroundPlane(data.g_scene);
 
   /* commit changes to scene */
 #if defined(EMBREE_SYCL_SUPPORT) && defined(SYCL_LANGUAGE_VERSION)
-  rtcCommitSceneWithQueue (g_scene1, *global_gpu_queue);
+  //rtcCommitSceneWithQueue (g_scene1, *global_gpu_queue);
   rtcCommitSceneWithQueue (data.g_scene, *global_gpu_queue);
 #else
-  rtcCommitScene (g_scene1);
   rtcCommitScene (data.g_scene);
+  //rtcCommitScene (g_scene1);
 #endif
 }
 
@@ -319,10 +319,11 @@ void renderPixelStandard(const TutorialData& data,
 
   /* shade pixels */
   Vec3fa color = Vec3fa(0.0f);
-  if (ray.geomID != RTC_INVALID_GEOMETRY_ID || ray.instID[0] != RTC_INVALID_GEOMETRY_ID)
+  if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
   {
 #if 1
-    Vec3fa diffuse = data.face_colors[ray.primID];
+    //Vec3fa diffuse = data.face_colors[ray.primID];
+    Vec3fa diffuse = Vec3fa(0.5f) + 0.5f * normalize(ray.Ng);
     color = color + diffuse*0.5f;
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
 
@@ -333,7 +334,7 @@ void renderPixelStandard(const TutorialData& data,
     RTCOccludedArguments sargs;
     rtcInitOccludedArguments(&sargs);
     sargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
-    rtcOccluded1(data.g_scene,RTCRay_(shadow),&sargs);
+    //rtcOccluded1(data.g_scene,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
