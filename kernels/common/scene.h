@@ -40,7 +40,6 @@ namespace embree
     ALIGNED_CLASS_USM_(std::alignment_of<Scene>::value);
 
   public:
-#if !defined(__SYCL_DEVICE_ONLY__)
     template<typename Ty, bool mblur = false>
       class Iterator
       {
@@ -143,7 +142,6 @@ namespace embree
       Geometry::GTypeMask typemask;
       bool mblur;
     };
-#endif
 
   public:
     
@@ -254,7 +252,7 @@ namespace embree
 
     template<typename Mesh>
     __forceinline Mesh* getSafe(size_t i) {
-      if (geometries_device[i] == null) return nullptr;
+      if (geometries_device[i] == nullptr) return nullptr;
       if (!(geometries_device[i]->getTypeMask() & Mesh::geom_type)) return nullptr;
       else return (Mesh*) geometries_device[i];
     }
