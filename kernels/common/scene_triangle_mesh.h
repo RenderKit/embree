@@ -144,7 +144,6 @@ namespace embree
       return madd(Vec3fa(t0),v0,t1*v1);
     }
 
-#if !defined(__SYCL_DEVICE_ONLY__)
     /*! calculates the bounds of the i'th triangle */
     __forceinline BBox3fa bounds(size_t i) const 
     {
@@ -263,7 +262,6 @@ namespace embree
     bool topologyChanged(unsigned int otherVersion) const {
       return triangles.isModified(otherVersion); // || numPrimitivesChanged;
     }
-#endif // !defined(__SYCL_DEVICE_ONLY__)
 
     /* returns the projected area */
     __forceinline float projectedPrimitiveArea(const size_t i) const {
