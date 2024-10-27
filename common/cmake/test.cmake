@@ -479,7 +479,7 @@ if (BUILD_TESTING OR EMBREE_TESTING_INSTALL_TESTS)
 
 
 
-    if (EMBREE_TESTING_INSTALL_TESTS)
+    if (EMBREE_TESTING_INSTALL_TESTS AND EMBREE_INSTALL)
       if (inputfile)
         get_filename_component(inputpath ${inputfile} DIRECTORY)
         STRING(REPLACE "${PROJECT_SOURCE_DIR}/" "" inputpath "${inputpath}")

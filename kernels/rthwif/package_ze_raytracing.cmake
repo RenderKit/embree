@@ -7,13 +7,15 @@ INCLUDE(GNUInstallDirs)
 # Install Documentation
 ##############################################################
 
-INSTALL(FILES "${PROJECT_SOURCE_DIR}/../../LICENSE.txt" DESTINATION doc COMPONENT lib)
-INSTALL(FILES "${PROJECT_SOURCE_DIR}/../../CHANGELOG.md" DESTINATION doc COMPONENT lib)
-INSTALL(FILES "${PROJECT_SOURCE_DIR}/../../third-party-programs.txt" DESTINATION doc COMPONENT lib)
-INSTALL(FILES "${PROJECT_SOURCE_DIR}/../../third-party-programs-TBB.txt" DESTINATION doc COMPONENT lib)
-INSTALL(FILES "${PROJECT_SOURCE_DIR}/../../third-party-programs-OIDN.txt" DESTINATION doc COMPONENT lib)
-INSTALL(FILES "${PROJECT_SOURCE_DIR}/../../third-party-programs-DPCPP.txt" DESTINATION doc COMPONENT lib)
-INSTALL(FILES "${PROJECT_SOURCE_DIR}/../../third-party-programs-oneAPI-DPCPP.txt" DESTINATION doc COMPONENT lib)
+IF(EMBREE_INSTALL)
+  INSTALL(FILES "${PROJECT_SOURCE_DIR}/../../LICENSE.txt" DESTINATION doc COMPONENT lib)
+  INSTALL(FILES "${PROJECT_SOURCE_DIR}/../../CHANGELOG.md" DESTINATION doc COMPONENT lib)
+  INSTALL(FILES "${PROJECT_SOURCE_DIR}/../../third-party-programs.txt" DESTINATION doc COMPONENT lib)
+  INSTALL(FILES "${PROJECT_SOURCE_DIR}/../../third-party-programs-TBB.txt" DESTINATION doc COMPONENT lib)
+  INSTALL(FILES "${PROJECT_SOURCE_DIR}/../../third-party-programs-OIDN.txt" DESTINATION doc COMPONENT lib)
+  INSTALL(FILES "${PROJECT_SOURCE_DIR}/../../third-party-programs-DPCPP.txt" DESTINATION doc COMPONENT lib)
+  INSTALL(FILES "${PROJECT_SOURCE_DIR}/../../third-party-programs-oneAPI-DPCPP.txt" DESTINATION doc COMPONENT lib)
+ENDIF()
 
 ##############################################################
 # CPack specific stuff

@@ -13,8 +13,10 @@ ADD_EXECUTABLE(embree_verify ../../kernels/embree.rc verify.cpp
 TARGET_LINK_LIBRARIES(embree_verify ${EMBREE_LIBRARIES} sys math scenegraph embree tasking)
 SET_PROPERTY(TARGET embree_verify PROPERTY FOLDER tutorials)
 SET_PROPERTY(TARGET embree_verify APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
-INSTALL(TARGETS embree_verify DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT examples)
-SIGN_TARGET(embree_verify)
+IF(EMBREE_INSTALL)
+  INSTALL(TARGETS embree_verify DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT examples)
+  SIGN_TARGET(embree_verify)
+ENDIF()
 
 ADD_EMBREE_TEST_ECS(embree_verify           embree_verify NO_REFERENCE NO_ISPC NO_SYCL              ARGS --no-colors)
 SET_EMBREE_TEST_PROPERTIES(embree_verify PROPERTIES TIMEOUT 7000)
