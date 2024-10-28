@@ -213,6 +213,8 @@ namespace embree
     return 16 * ((byte_size + 15) / 16);
   }
 
+#if defined(EMBREE_SYCL_SUPPORT)
+
   void GridMesh::convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const {
     GridMesh* mesh = (GridMesh*)(data_host + offset);
     std::memcpy(data_host + offset, (void*)this, sizeof(GridMesh));
@@ -240,6 +242,8 @@ namespace embree
     std::memcpy(data_host + offset, quadID_to_primID_xy.data(), quadID_to_primID_xy.size() * sizeof(PrimID_XY));
     mesh->quadID_to_primID_xy.setDataPtr((PrimID_XY*)(data_device + offset));
   }
+
+#endif
 
 #endif
 
