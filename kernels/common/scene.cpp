@@ -49,6 +49,7 @@ namespace embree
       maxTimeSegments(0),
       geometries_device(nullptr),
       geometries_data_device(nullptr),
+      num_geometries_device(0),
       taskGroup(new TaskGroup()),
       progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0)
   {
@@ -71,6 +72,15 @@ namespace embree
 
   Scene::~Scene() noexcept
   {
+#if defined(EMBREE_SYCL_SUPPORT)
+    if (geometries_data_device) {
+      device->free(geometries_data_device);
+    }
+    if (geometries_device) {
+      device->free(geometries_device);
+    }
+#endif
+
     device->refDec();
   }
   
@@ -922,7 +932,7 @@ namespace embree
     }
     catch (...) {
       accels_clear();
-      Lock<MutexSys> lock(taskGroup->schedulerMutex);, *global_gpu_queue
+      Lock<MutexSys> lock(taskGroup->schedulerMutex);
       taskGroup->scheduler = nullptr;
       throw;
     }
