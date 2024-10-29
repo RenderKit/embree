@@ -204,6 +204,8 @@ namespace embree
     interpolate_impl<4>(args);
   }
 
+#if defined(EMBREE_SYCL_SUPPORT)
+
   size_t GridMesh::getGeometryDataDeviceByteSize() const {
     size_t byte_size = sizeof(GridMesh);
     byte_size += numTimeSteps * sizeof(BufferView<Vec3fa>);
@@ -212,8 +214,6 @@ namespace embree
     byte_size += quadID_to_primID_xy.size() * sizeof(PrimID_XY);
     return 16 * ((byte_size + 15) / 16);
   }
-
-#if defined(EMBREE_SYCL_SUPPORT)
 
   void GridMesh::convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const {
     GridMesh* mesh = (GridMesh*)(data_host + offset);
