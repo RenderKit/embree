@@ -27,9 +27,7 @@ void addPoints (RTCScene scene, RTCGeometryType gtype, const Vec3fa& pos)
 #define NORMAL RandomSampler_get1D(rng) * 2.f - 1.f
 
   RTCGeometry geom = rtcNewGeometry (g_device, gtype);
-  rtcSetGeometryTimeStepCount(geom, 2);
   Vec4f* point_vertices = (Vec4f*)rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, sizeof(Vec4f), NUM_POINTS);
-  Vec4f* point_vertices_1 = (Vec4f*)rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX, 1, RTC_FORMAT_FLOAT4, sizeof(Vec4f), NUM_POINTS);
 
   for (int i = 0; i < NUM_POINTS; i++)
   {
@@ -38,7 +36,6 @@ void addPoints (RTCScene scene, RTCGeometryType gtype, const Vec3fa& pos)
     const float vz = COORD;
     const float vr = RADIUS;
     point_vertices[i] = Vec4f(pos.x,pos.y,pos.z,0.0f) + Vec4f(vx, vy, vz, vr);
-    point_vertices_1[i] = Vec4f(pos.x,pos.y,pos.z,0.0f) + Vec4f(vx, vy, vz, vr) - Vec4f(0.f, 1.f, 0.f, 0.f);
     const float cr = COLOR;
     const float cg = COLOR;
     const float cb = COLOR;
@@ -47,14 +44,12 @@ void addPoints (RTCScene scene, RTCGeometryType gtype, const Vec3fa& pos)
 
   if (gtype == RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT) {
     Vec3fa* point_normals = (Vec3fa*)rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_NORMAL, 0, RTC_FORMAT_FLOAT3, sizeof(Vec3fa), NUM_POINTS);
-    Vec3fa* point_normals_1 = (Vec3fa*)rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_NORMAL, 1, RTC_FORMAT_FLOAT3, sizeof(Vec3fa), NUM_POINTS);
     for (int i = 0; i < NUM_POINTS; i++) {
       const float nx = NORMAL;
       const float ny = NORMAL;
       const float nz = NORMAL;
       point_normals[i] = Vec3fa(nx,ny,nz);
       point_normals[i] = normalize(point_normals[i]);
-      point_normals_1[i] = point_normals[i];
     }
   }
 
@@ -106,19 +101,6 @@ extern "C" void device_init (char* cfg)
   rtcCommitScene (g_scene);
 }
 
-static inline uint32_t doodle(uint32_t x)
-{
-  x ^= x << 13;
-  x ^= x >> 17;
-  x ^= x << 5;
-  return x;
-}
-
-static inline float doodlef(uint32_t x)
-{
-  return ((float)doodle(x)) / (float)(uint32_t(-1));
-}
-
 /* task that renders a single screen tile */
 void renderPixelStandard(const TutorialData& data,
                           int x, int y, 
@@ -129,10 +111,7 @@ void renderPixelStandard(const TutorialData& data,
                           const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize ray */
-  uint32_t state = doodle(x + y * width);
-  state = doodle(state);
-  float t = doodlef(state);
-  Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, t);
+  Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
   RTCIntersectArguments iargs;

@@ -147,7 +147,7 @@ namespace embree
   public:
     /*! Buffer construction */
     RawBufferView()
-      : ptr_ofs(nullptr), stride(0), num(0), format(RTC_FORMAT_UNDEFINED), modCounter(1), modified(true), userData(0) {}
+      : ptr_ofs(nullptr), dptr_ofs(nullptr), stride(0), num(0), format(RTC_FORMAT_UNDEFINED), modCounter(1), modified(true), userData(0) {}
 
   public:
     /*! sets the buffer view */
