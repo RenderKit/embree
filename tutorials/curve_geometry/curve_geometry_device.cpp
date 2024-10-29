@@ -190,7 +190,7 @@ void renderPixelStandard(const TutorialData& data,
     RTCOccludedArguments sargs;
     rtcInitOccludedArguments(&sargs);
     sargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
-    //rtcOccluded1(data.g_scene,RTCRay_(shadow),&sargs);
+    rtcOccluded1(data.g_scene,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

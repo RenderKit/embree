@@ -1,0 +1,25 @@
+// Copyright 2009-2021 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+#include "../common/tutorial/tutorial_device.isph"
+
+struct TutorialData
+{
+  RTCScene g_scene;
+  uniform Vec3f* uniform face_colors;
+  uniform Vec3fa* uniform vertex_colors;
+};
+
+inline void TutorialData_Constructor(uniform TutorialData* uniform This)
+{
+  This->g_scene = NULL;
+  This->face_colors = NULL;
+  This->vertex_colors = NULL;
+}
+
+inline void TutorialData_Destructor(uniform TutorialData* uniform This)
+{
+  rtcReleaseScene (This->g_scene); This->g_scene = NULL;
+  delete[] This->face_colors; This->face_colors = NULL;
+  delete[] This->vertex_colors; This->vertex_colors = NULL;
+}
