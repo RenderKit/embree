@@ -113,6 +113,7 @@ ADD_SUBDIRECTORY(next_hit)
 ADD_SUBDIRECTORY(multiscene_geometry)
 ADD_SUBDIRECTORY(ray_mask)
 ADD_SUBDIRECTORY(forest)
+ADD_SUBDIRECTORY(debug_device_memory)
 
 ADD_SUBDIRECTORY(embree_tests)
 
