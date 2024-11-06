@@ -8,6 +8,7 @@ namespace embree {
 struct TutorialData
 {
   RTCScene g_scene;
+  RTCTraversable g_traversable;
   Triangle* tree_triangles[6];
   Vec3fa* tree_vertex_colors[6];
   Triangle* terrain_triangles;
@@ -21,6 +22,7 @@ struct TutorialData
 inline void TutorialData_Constructor(TutorialData* This)
 {
   This->g_scene = nullptr;
+  This->g_traversable = nullptr;
   This->tree_ids = nullptr;
   This->tree_transforms = nullptr;
   This->terrain_triangles = nullptr;

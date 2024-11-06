@@ -76,7 +76,7 @@ void renderPixelStandard(const TutorialData& data,
 #if USE_ARGUMENT_CALLBACKS
     iargs.filter = intersectionFilter;
 #endif
-    rtcIntersect1(data.g_scene,RTCRayHit_(primary),&iargs);
+    rtcTraversableIntersect1(data.g_traversable,RTCRayHit_(primary),&iargs);
     RayStats_addRay(stats);
 
     /* shade pixels */
@@ -103,7 +103,7 @@ void renderPixelStandard(const TutorialData& data,
 #if USE_ARGUMENT_CALLBACKS
     sargs.filter = occlusionFilter;
 #endif
-    rtcOccluded1(data.g_scene,RTCRay_(shadow),&sargs);
+    rtcTraversableOccluded1(data.g_traversable,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -380,6 +380,8 @@ extern "C" void device_init (char* cfg)
 
   /* commit changes to scene */
   rtcCommitScene (data.g_scene);
+  
+  data.g_traversable = rtcGetSceneTraversable(data.g_scene);
 }
 
 /* task that renders a single screen tile */

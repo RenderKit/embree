@@ -172,6 +172,7 @@ namespace embree
 
     // override local2world value with device ptr in geometries_data_host
     Instance* instance = (Instance*)(data_host + offsetInstance);
+    instance->object = ((Scene*)(instance->object))->getTraversable();
     instance->local2world = (AffineSpace3ff*)(data_device + offsetInstance + sizeof(Instance));
   }
 

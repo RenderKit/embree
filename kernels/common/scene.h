@@ -37,7 +37,7 @@ namespace embree
   /*! Base class all scenes are derived from */
   class Scene : public AccelN
   {
-    ALIGNED_CLASS_USM_(std::alignment_of<Scene>::value);
+    ALIGNED_CLASS_(std::alignment_of<Scene>::value);
 
   public:
     template<typename Ty, bool mblur = false>
@@ -199,6 +199,8 @@ namespace embree
     void commit_task ();
     void build () {}
 
+    Scene* getTraversable();
+
     /* return number of geometries */
 #if defined(__SYCL_DEVICE_ONLY__)
     __forceinline size_t size() const { return num_geometries_device; }
@@ -313,15 +315,14 @@ namespace embree
     
     void* createQBVH6Accel();
     
-  private:
-    
 #if defined(EMBREE_SYCL_SUPPORT)
+  private:
     void syncWithDevice(sycl::queue* queue);
 #endif
-    
 
   public:
     Device* device;
+    Scene* scene_device;
 
   public:
     IDPool<unsigned,0xFFFFFFFE> id_pool;
