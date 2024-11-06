@@ -27,6 +27,7 @@ extern "C" RTCFeatureFlags g_feature_mask;
 struct DebugShaderData
 {
   RTCScene scene;
+  RTCTraversable traversable;
   ISPCScene* ispc_scene;
 
   /* intensity scaling for traversal cost visualization */
@@ -40,6 +41,7 @@ struct DebugShaderData
 void DebugShaderData_Constructor(DebugShaderData* This)
 {
   This->scene = g_scene;
+  This->traversable = rtcGetSceneTraversable(g_scene);
   This->ispc_scene = g_ispc_scene;
   This->scale = scale;
   This->debug = g_debug;
@@ -229,14 +231,14 @@ Vec3fa renderPixelDebugShader(const DebugShaderData& data, float x, float y, con
     RTCOccludedArguments args;
     rtcInitOccludedArguments(&args);
     args.feature_mask = feature_mask;
-    rtcOccluded1(data.scene,RTCRay_(ray),&args);
+    rtcTraversableOccluded1(data.traversable,RTCRay_(ray),&args);
   }
   else
   {
     RTCIntersectArguments args;
     rtcInitIntersectArguments(&args);
     args.feature_mask = feature_mask;
-    rtcIntersect1(data.scene,RTCRayHit_(ray),&args);
+    rtcTraversableIntersect1(data.traversable,RTCRayHit_(ray),&args);
   }
   
   int64_t c1 = get_tsc();
@@ -333,7 +335,7 @@ Vec3fa renderPixelAOShader(const DebugShaderData& data, float x, float y, const 
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
   args.feature_mask = feature_mask;
-  rtcIntersect1(data.scene,RTCRayHit_(ray),&args);
+  rtcTraversableIntersect1(data.traversable,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -371,7 +373,7 @@ Vec3fa renderPixelAOShader(const DebugShaderData& data, float x, float y, const 
     RTCOccludedArguments args;
     rtcInitOccludedArguments(&args);
     args.feature_mask = feature_mask;
-    rtcOccluded1(data.scene,RTCRay_(shadow),&args);
+    rtcTraversableOccluded1(data.traversable,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

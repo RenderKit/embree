@@ -151,7 +151,7 @@ void update_trees(float time)
   RTCBounds bounds;
   rtcGetSceneBounds(scene_terrain, &bounds);
 
-  RTCScene scene = scene_terrain;
+  RTCTraversable traversable = rtcGetSceneTraversable(scene_terrain);
   TutorialData ldata = data;
   unsigned int lnum_trees_sqrt = num_trees_sqrt;
 
@@ -206,7 +206,7 @@ void update_trees(float time)
     RTCIntersectArguments iargs;
     rtcInitIntersectArguments(&iargs);
     iargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
-    rtcIntersect1(scene,RTCRayHit_(ray),&iargs);
+    rtcTraversableIntersect1(traversable,RTCRayHit_(ray),&iargs);
 
     Vec3fa treePos;
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID) {
@@ -335,7 +335,7 @@ void renderPixelStandard(const TutorialData& data,
     RTCIntersectArguments iargs;
     rtcInitIntersectArguments(&iargs);
     iargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
-    rtcIntersect1(data.g_scene,RTCRayHit_(ray),&iargs);
+    rtcTraversableIntersect1(data.g_traversable,RTCRayHit_(ray),&iargs);
     RayStats_addRay(stats);
 
     /* shade pixels */
@@ -379,7 +379,7 @@ void renderPixelStandard(const TutorialData& data,
       RTCOccludedArguments sargs;
       rtcInitOccludedArguments(&sargs);
       sargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
-      rtcOccluded1(data.g_scene,RTCRay_(shadow),&sargs);
+      rtcTraversableOccluded1(data.g_traversable,RTCRay_(shadow),&sargs);
       RayStats_addShadowRay(stats);
 
       /* add light contribution */
@@ -508,6 +508,7 @@ extern "C" void device_render (int* pixels,
       int64_t start_embree_bvh_build = get_clock();
       g_cycles_embree_objects = start_embree_bvh_build - start_embree_objects;
       rtcCommitScene(data.g_scene);
+      data.g_traversable = rtcGetSceneTraversable(data.g_scene);
       g_cycles_embree_bvh_build = get_clock() - start_embree_bvh_build;
       g_rebuild = false;
     }
@@ -525,6 +526,7 @@ extern "C" void device_render (int* pixels,
       int64_t start_embree_bvh_build = get_clock();
       g_cycles_embree_objects = start_embree_bvh_build - start_embree_objects;
       rtcCommitScene (data.g_scene);
+      data.g_traversable = rtcGetSceneTraversable(data.g_scene);
       g_cycles_embree_bvh_build = get_clock() - start_embree_bvh_build;
       g_trees_changed = false;
     } else if (g_animate) {
@@ -537,6 +539,7 @@ extern "C" void device_render (int* pixels,
       int64_t start_embree_bvh_build = get_clock();
       g_cycles_embree_objects = start_embree_bvh_build - start_embree_objects;
       rtcCommitScene (data.g_scene);
+      data.g_traversable = rtcGetSceneTraversable(data.g_scene);
       g_cycles_embree_bvh_build = get_clock() - start_embree_bvh_build;
     }
 
