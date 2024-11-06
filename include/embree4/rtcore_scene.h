@@ -92,6 +92,8 @@ RTC_API void rtcRetainScene(RTCScene scene);
 /* Releases the scene (decrements the reference count). */
 RTC_API void rtcReleaseScene(RTCScene scene);
 
+/* Returns the representation of the scene which is accessible on the device */
+RTC_API RTCScene rtcGetSceneDevicePointer(RTCScene scene);
 
 /* Attaches the geometry to a scene. */
 RTC_API unsigned int rtcAttachGeometry(RTCScene scene, RTCGeometry geometry);

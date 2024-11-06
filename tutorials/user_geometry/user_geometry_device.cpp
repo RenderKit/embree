@@ -208,7 +208,7 @@ Instance* createInstance (RTCScene scene, RTCScene object, int geomID, const Vec
 #if !ENABLE_NATIVE_INSTANCING
   Instance* instance = (Instance*) alignedUSMMalloc(sizeof(Instance),16);
   instance->type = USER_GEOMETRY_INSTANCE;
-  instance->object = object;
+  instance->object = rtcGetSceneDevicePointer(object);
   instance->lower = lower;
   instance->upper = upper;
   instance->local2world.l.vx = Vec3fa(1,0,0);
@@ -872,6 +872,7 @@ extern "C" void renderFrameStandard (int* pixels,
 {
 #if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION)
   TutorialData ldata = data;
+  ldata.g_scene = rtcGetSceneDevicePointer(data.g_scene);
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);
     cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {

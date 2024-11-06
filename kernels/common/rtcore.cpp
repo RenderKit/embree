@@ -266,6 +266,20 @@ RTC_NAMESPACE_BEGIN;
     return (RTCDevice)nullptr;
   }
 
+  RTC_API RTCScene rtcGetSceneDevicePointer(RTCScene hscene)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetSceneDevice);
+    RTC_VERIFY_HANDLE(hscene);
+    RTCScene traversable = (RTCScene)scene->getDevicePointer();
+    if (!traversable)
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"Scene device pointer is NULL. The scene has to be committed first.");
+    return traversable;
+    RTC_CATCH_END2(scene);
+    return (RTCScene)nullptr;
+  }
+
   RTC_API void rtcSetSceneProgressMonitorFunction(RTCScene hscene, RTCProgressMonitorFunction progress, void* ptr) 
   {
     Scene* scene = (Scene*) hscene;
