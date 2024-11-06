@@ -252,6 +252,7 @@ extern "C" void device_init (char* cfg)
   rtcCommitGeometry(g_instance_quaternion_1);
 
   rtcCommitScene (data.g_scene);
+  data.g_traversable = rtcGetSceneTraversable(data.g_scene);
 }
 
 inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
@@ -281,7 +282,7 @@ Vec3fa renderPixelFunction(const TutorialData& data,
                      RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
 
   /* intersect ray with scene */
-  rtcIntersect1(data.g_scene,RTCRayHit_(ray),&args);
+  rtcTraversableIntersect1(data.g_traversable,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -448,6 +449,7 @@ extern "C" void device_render (int* pixels,
   {
     updateTransformation();
     rtcCommitScene(data.g_scene);
+    data.g_traversable = rtcGetSceneTraversable(data.g_scene);
   }
 
 

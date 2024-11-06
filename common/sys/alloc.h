@@ -38,11 +38,6 @@ namespace embree
     ALIGNED_STRUCT_(align)                                             \
  private:
 
-#define ALIGNED_CLASS_USM_(align)                                          \
- public:                                                               \
-    ALIGNED_STRUCT_USM_(align)                                             \
- private:
-
   enum EmbreeUSMMode {
     EMBREE_USM_SHARED = 0,
     EMBREE_USM_SHARED_DEVICE_READ_WRITE = 0,

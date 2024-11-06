@@ -226,7 +226,7 @@ void renderPixelStandard(const TutorialData& data,
 #endif
   args.feature_mask = feature_mask;
   
-  rtcIntersect1(data.scene,RTCRayHit_(ray),&args);
+  rtcTraversableIntersect1(data.traversable,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
 
@@ -379,6 +379,7 @@ extern "C" void device_render (int* pixels,
     g_scene = data.scene = convertScene(g_ispc_scene);
     if (data.subdiv_mode) updateEdgeLevels(g_ispc_scene, camera.xfm.p);
     rtcCommitScene (data.scene);
+    data.traversable = rtcGetSceneTraversable(data.scene);
     old_p = camera.xfm.p;
   }
 
@@ -394,6 +395,7 @@ extern "C" void device_render (int* pixels,
     if (camera_changed && data.subdiv_mode) {
       updateEdgeLevels(g_ispc_scene,camera.xfm.p);
       rtcCommitScene (data.scene);
+      data.traversable = rtcGetSceneTraversable(data.scene);
     }
 
     if (g_animation_mode)

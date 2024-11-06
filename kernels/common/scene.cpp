@@ -42,6 +42,7 @@ namespace embree
 
   Scene::Scene (Device* device)
     : device(device),
+      scene_device(nullptr),
       flags_modified(true), enabled_geometry_types(0),
       scene_flags(RTC_SCENE_FLAG_NONE),
       quality_flags(RTC_BUILD_QUALITY_MEDIUM),
@@ -78,6 +79,9 @@ namespace embree
     }
     if (geometries_device) {
       device->free(geometries_device);
+    }
+    if (scene_device) {
+      device->free(scene_device);
     }
 #endif
 
@@ -896,6 +900,16 @@ namespace embree
 #if defined(EMBREE_SYCL_SUPPORT)
     syncWithDevice(queue);
 #endif
+  }
+
+  Scene* Scene::getTraversable() {
+#if defined(EMBREE_SYCL_SUPPORT)
+    DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device);
+    if(gpu_device) {
+      return scene_device;
+    }
+#endif
+    return this;
   }
 
 #if defined(TASKING_INTERNAL)

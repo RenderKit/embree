@@ -14,6 +14,7 @@ extern "C" Vec3fa g_ambient_intensity;
 struct TutorialData
 {
   RTCScene scene;
+  RTCTraversable traversable;
   ISPCScene* ispc_scene;
   Vec3fa dirlight_direction;
   Vec3fa dirlight_intensity;
@@ -49,6 +50,7 @@ namespace embree {
 void TutorialData_Constructor(TutorialData* This)
 {
   This->scene = nullptr;
+  This->traversable = nullptr;
   This->ispc_scene = g_ispc_scene;
   This->dirlight_direction = Vec3fa(g_dirlight_direction);
   This->dirlight_intensity = Vec3fa(g_dirlight_intensity);
