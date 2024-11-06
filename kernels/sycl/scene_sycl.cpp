@@ -124,8 +124,6 @@ RTC_API_EXTERN_C bool prefetchUSMSharedOnGPU(RTCScene hscene)
 
 void Scene::syncWithDevice(sycl::queue* queue_in)
 {
-#if defined(EMBREE_SYCL_SUPPORT)
-
   DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device);
   if(!queue_in && !gpu_device) {
     return;
@@ -180,11 +178,15 @@ void Scene::syncWithDevice(sycl::queue* queue_in)
     device->free(offsets);
 
   } // run
+  
+  if (scene_device) {
+    device->free(scene_device);
+  }
+  scene_device = (Scene*) device->malloc(sizeof(Scene), 16, EmbreeMemoryType::DEVICE);
+  queue.memcpy(scene_device, (void*)this, sizeof(Scene));
 
   if (!queue_in)
     queue.wait_and_throw();
-
-#endif // EMBREE_SYCL_SUPPORT
 }
 
 #endif

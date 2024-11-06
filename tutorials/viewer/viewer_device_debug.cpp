@@ -39,7 +39,7 @@ struct DebugShaderData
 
 void DebugShaderData_Constructor(DebugShaderData* This)
 {
-  This->scene = g_scene;
+  This->scene = rtcGetSceneDevicePointer(g_scene);
   This->ispc_scene = g_ispc_scene;
   This->scale = scale;
   This->debug = g_debug;

@@ -203,10 +203,12 @@ RTCScene initializeScene(RTCDevice device, const sycl::queue& queue)
  * (dx, dy, dz).
  */
 
-void castRay(sycl::queue& queue, const RTCScene scene, 
+void castRay(sycl::queue& queue, const RTCScene scene_in, 
              float ox, float oy, float oz,
              float dx, float dy, float dz, Result* result)
 {
+  RTCScene scene = rtcGetSceneDevicePointer(scene_in);
+
   queue.submit([=](sycl::handler& cgh)
   {
     cgh.set_specialization_constant<feature_mask>(required_features);

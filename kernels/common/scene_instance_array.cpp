@@ -203,7 +203,11 @@ namespace embree
     offset += sizeof(InstanceArray);
 
     const size_t offsetObjects = offset;
-    std::memcpy(data_host + offset, objects, numObjects * sizeof(Accel*));
+    Accel** objects_host = (Accel**)(data_host + offsetObjects);
+    for (size_t i = 0; i < numObjects; ++i) {
+      objects_host[i] = (Accel*)((Scene*)objects[i])->getDevicePointer();
+    }
+
     offset += numObjects * sizeof(Accel*);
     iarray->objects = (Accel**)(data_device + offsetObjects);
 
