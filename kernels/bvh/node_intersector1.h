@@ -13,6 +13,9 @@
 #define __FMA_X4__
 #endif
 
+#if defined(__riscv_v)
+#define __FMA_X4__
+#endif
 
 namespace embree
 {
@@ -40,7 +43,7 @@ namespace embree
         rdir = Vec3vf<N>(ray_rdir.x,ray_rdir.y,ray_rdir.z);
 #if defined(__FMA_X4__)
         const Vec3fa ray_org_rdir = ray_org*ray_rdir;
-#if !defined(__aarch64__)
+#if !defined(__aarch64__) && !defined(__riscv_v)
         org_rdir = Vec3vf<N>(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
 #else
           //for aarch64, we do not have msub equal instruction, so we negeate orig and use madd
@@ -65,7 +68,7 @@ namespace embree
         dir  = Vec3vf<N>(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
         rdir = Vec3vf<N>(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
 #if defined(__FMA_X4__)
-#if !defined(__aarch64__)
+#if !defined(__aarch64__) && !defined(__riscv_v)
         org_rdir = org*rdir;
 #else
         neg_org_rdir = -(org*rdir);
@@ -82,7 +85,7 @@ namespace embree
       Vec3fa org_xyz, dir_xyz;
       Vec3vf<N> org, dir, rdir;
 #if defined(__FMA_X4__)
-#if !defined(__aarch64__)
+#if !defined(__aarch64__) && !defined(__riscv_v)
       Vec3vf<N> org_rdir;
 #else
         //aarch64 version are keeping negation of the org_rdir and use madd
@@ -430,7 +433,7 @@ namespace embree
       __forceinline size_t intersectNode<4>(const typename BVH4::AABBNode* node, const TravRay<4,false>& ray, vfloat4& dist)
     {
 #if defined(__FMA_X4__)
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(__riscv_v)
       const vfloat4 tNearX = madd(vfloat4::load((float*)((const char*)&node->lower_x+ray.nearX)), ray.rdir.x, ray.neg_org_rdir.x);
       const vfloat4 tNearY = madd(vfloat4::load((float*)((const char*)&node->lower_x+ray.nearY)), ray.rdir.y, ray.neg_org_rdir.y);
       const vfloat4 tNearZ = madd(vfloat4::load((float*)((const char*)&node->lower_x+ray.nearZ)), ray.rdir.z, ray.neg_org_rdir.z);
@@ -454,7 +457,7 @@ namespace embree
       const vfloat4 tFarZ  = (vfloat4::load((float*)((const char*)&node->lower_x+ray.farZ )) - ray.org.z) * ray.rdir.z;
 #endif
 
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(__riscv_v)
       const vfloat4 tNear = maxi(tNearX, tNearY, tNearZ, ray.tnear);
       const vfloat4 tFar = mini(tFarX, tFarY, tFarZ, ray.tfar);
       const vbool4 vmask = asInt(tNear) <= asInt(tFar);
@@ -567,7 +570,7 @@ namespace embree
       const vfloat<N>* pFarY  = (const vfloat<N>*)((const char*)&node->lower_x+ray.farY);
       const vfloat<N>* pFarZ  = (const vfloat<N>*)((const char*)&node->lower_x+ray.farZ);
 #if defined(__FMA_X4__)
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(__riscv_v)
       const vfloat<N> tNearX = madd(madd(time,pNearX[6],vfloat<N>(pNearX[0])), ray.rdir.x, ray.neg_org_rdir.x);
       const vfloat<N> tNearY = madd(madd(time,pNearY[6],vfloat<N>(pNearY[0])), ray.rdir.y, ray.neg_org_rdir.y);
       const vfloat<N> tNearZ = madd(madd(time,pNearZ[6],vfloat<N>(pNearZ[0])), ray.rdir.z, ray.neg_org_rdir.z);
@@ -652,7 +655,7 @@ namespace embree
       const vfloat<N>* pFarY  = (const vfloat<N>*)((const char*)&node->lower_x+ray.farY);
       const vfloat<N>* pFarZ  = (const vfloat<N>*)((const char*)&node->lower_x+ray.farZ);
 #if defined (__FMA_X4__)
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(__riscv_v)
       const vfloat<N> tNearX = madd(madd(time,pNearX[6],vfloat<N>(pNearX[0])), ray.rdir.x, ray.neg_org_rdir.x);
       const vfloat<N> tNearY = madd(madd(time,pNearY[6],vfloat<N>(pNearY[0])), ray.rdir.y, ray.neg_org_rdir.y);
       const vfloat<N> tNearZ = madd(madd(time,pNearZ[6],vfloat<N>(pNearZ[0])), ray.rdir.z, ray.neg_org_rdir.z);
@@ -750,7 +753,7 @@ namespace embree
       const vfloat4 upper_z = madd(node->dequantize<4>(ray.farZ  >> 2),scale_z,start_z);
 
 #if defined(__FMA_X4__)
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(__riscv_v)
       const vfloat4 tNearX = madd(lower_x, ray.rdir.x, ray.neg_org_rdir.x);
       const vfloat4 tNearY = madd(lower_y, ray.rdir.y, ray.neg_org_rdir.y);
       const vfloat4 tNearZ = madd(lower_z, ray.rdir.z, ray.neg_org_rdir.z);
@@ -938,7 +941,7 @@ namespace embree
       const vfloat<N> lower_z   = node->dequantizeLowerZ(time);
       const vfloat<N> upper_z   = node->dequantizeUpperZ(time);     
 #if defined(__FMA_X4__)
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(__riscv_v)
       const vfloat<N> tNearX = madd(lower_x, ray.rdir.x, ray.neg_org_rdir.x);
       const vfloat<N> tNearY = madd(lower_y, ray.rdir.y, ray.neg_org_rdir.y);
       const vfloat<N> tNearZ = madd(lower_z, ray.rdir.z, ray.neg_org_rdir.z);
