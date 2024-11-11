@@ -199,7 +199,7 @@ namespace embree
     void commit_task ();
     void build () {}
 
-    Scene* getDevicePointer();
+    Scene* getTraversable();
 
     /* return number of geometries */
 #if defined(__SYCL_DEVICE_ONLY__)

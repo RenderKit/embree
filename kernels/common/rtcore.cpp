@@ -266,18 +266,18 @@ RTC_NAMESPACE_BEGIN;
     return (RTCDevice)nullptr;
   }
 
-  RTC_API RTCScene rtcGetSceneDevicePointer(RTCScene hscene)
+  RTC_API RTCTraversable rtcGetSceneTraversable(RTCScene hscene)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcGetSceneDevice);
     RTC_VERIFY_HANDLE(hscene);
-    RTCScene traversable = (RTCScene)scene->getDevicePointer();
+    RTCTraversable traversable = (RTCTraversable)scene->getTraversable();
     if (!traversable)
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"Scene device pointer is NULL. The scene has to be committed first.");
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"Traversable is NULL. The scene has to be committed first.");
     return traversable;
     RTC_CATCH_END2(scene);
-    return (RTCScene)nullptr;
+    return (RTCTraversable)nullptr;
   }
 
   RTC_API void rtcSetSceneProgressMonitorFunction(RTCScene hscene, RTCProgressMonitorFunction progress, void* ptr) 
@@ -1176,7 +1176,159 @@ RTC_NAMESPACE_BEGIN;
     rtcForwardOccludedN<RTCRay16,16>(valid, args, hscene, iray, instID, instPrimID);
     RTC_CATCH_END2(scene);
   }
-  
+
+  RTC_API bool rtcTraversablePointQuery(RTCTraversable htraversable, RTCPointQuery* query, RTCPointQueryContext* userContext, RTCPointQueryFunction queryFunc, void* userPtr)
+  {
+    return rtcPointQuery((RTCScene)htraversable, query, userContext, queryFunc, userPtr);
+  }
+
+  RTC_API bool rtcTraversablePointQuery4 (const int* valid, RTCTraversable htraversable, RTCPointQuery4* query, struct RTCPointQueryContext* userContext, RTCPointQueryFunction queryFunc, void** userPtrN)
+  {
+    return rtcPointQuery4(valid, (RTCScene)htraversable, query, userContext, queryFunc, userPtrN);
+  }
+
+  RTC_API bool rtcTraversablePointQuery8 (const int* valid, RTCTraversable htraversable, RTCPointQuery8* query, struct RTCPointQueryContext* userContext, RTCPointQueryFunction queryFunc, void** userPtrN)
+  {
+    return rtcPointQuery8(valid, (RTCScene)htraversable, query, userContext, queryFunc, userPtrN);
+  }
+
+  RTC_API bool rtcTraversablePointQuery16 (const int* valid, RTCTraversable htraversable, RTCPointQuery16* query, struct RTCPointQueryContext* userContext, RTCPointQueryFunction queryFunc, void** userPtrN)
+  {
+    return rtcPointQuery16(valid, (RTCScene)htraversable, query, userContext, queryFunc, userPtrN);
+  }
+
+  RTC_API void rtcTraversableIntersect1 (RTCTraversable htraversable, RTCRayHit* rayhit, RTCIntersectArguments* args)
+  {
+    rtcIntersect1((RTCScene)htraversable, rayhit, args);
+  }
+
+  RTC_API void rtcTraversableForwardIntersect1 (const RTCIntersectFunctionNArguments* args, RTCTraversable htraversable, RTCRay* iray_, unsigned int instID)
+  {
+    rtcForwardIntersect1(args, (RTCScene)htraversable, iray_, instID);
+  }
+
+  RTC_API void rtcTraversableForwardIntersect1Ex(const RTCIntersectFunctionNArguments* args, RTCTraversable htraversable, RTCRay* iray_, unsigned int instID, unsigned int instPrimID)
+  {
+    rtcForwardIntersect1Ex(args, (RTCScene)htraversable, iray_, instID, instPrimID);
+  }
+
+  RTC_API void rtcTraversableIntersect4 (const int* valid, RTCTraversable htraversable, RTCRayHit4* rayhit, RTCIntersectArguments* args)
+  {
+    rtcIntersect4(valid, (RTCScene)htraversable, rayhit, args);
+  }
+
+  template<typename RTCRay, typename RTCRayHit, int N>
+  __forceinline void rtcTraversableForwardIntersectN(const int* valid, const RTCIntersectFunctionNArguments* args, RTCTraversable htraversable, RTCRay* iray, unsigned int instID, unsigned int instPrimID)
+  {
+    rtcForwardIntersetN(valid, args, (RTCScene)htraversable, iray, instID, instPrimID);
+  }
+
+  RTC_API void rtcTraversableForwardIntersect4(const int* valid, const RTCIntersectFunctionNArguments* args, RTCTraversable htraversable, RTCRay4* iray, unsigned int instID)
+  {
+    rtcForwardIntersect4(valid, args, (RTCScene)htraversable, iray, instID);
+  }
+
+  RTC_API void rtcTraversableForwardIntersect4Ex(const int* valid, const RTCIntersectFunctionNArguments* args, RTCTraversable htraversable, RTCRay4* iray, unsigned int instID, unsigned int instPrimID)
+  {
+    rtcForwardIntersect4Ex(valid, args, (RTCScene)htraversable, iray, instID, instPrimID);
+  }
+
+  RTC_API void rtcTraversableIntersect8 (const int* valid, RTCTraversable htraversable, RTCRayHit8* rayhit, RTCIntersectArguments* args)
+  {
+    rtcIntersect8(valid, (RTCScene)htraversable, rayhit, args);
+  }
+
+  RTC_API void rtcTraversableForwardIntersect8(const int* valid, const RTCIntersectFunctionNArguments* args, RTCTraversable htraversable, RTCRay8* iray, unsigned int instID)
+  {
+    rtcForwardIntersect8(valid, args, (RTCScene)htraversable, iray, instID);
+  }
+
+  RTC_API void rtcTraversableForwardIntersect8Ex(const int* valid, const RTCIntersectFunctionNArguments* args, RTCTraversable htraversable, RTCRay8* iray, unsigned int instID, unsigned int instPrimID)
+  {
+    rtcForwardIntersect8Ex(valid, args, (RTCScene)htraversable, iray, instID, instPrimID);
+  }
+
+  RTC_API void rtcTraversableIntersect16 (const int* valid, RTCTraversable htraversable, RTCRayHit16* rayhit, RTCIntersectArguments* args)
+  {
+    rtcIntersect16(valid, (RTCScene)htraversable, rayhit, args);
+  }
+
+  RTC_API void rtcTraversableForwardIntersect16(const int* valid, const RTCIntersectFunctionNArguments* args, RTCTraversable htraversable, RTCRay16* iray, unsigned int instID)
+  {
+    rtcForwardIntersect16(valid, args, (RTCScene)htraversable, iray, instID);
+  }
+
+  RTC_API void rtcTraversableForwardIntersect16Ex(const int* valid, const RTCIntersectFunctionNArguments* args, RTCTraversable htraversable, RTCRay16* iray, unsigned int instID, unsigned int instPrimID)
+  {
+    rtcForwardIntersect16Ex(valid, args, (RTCScene)htraversable, iray, instID, instPrimID);
+  }
+
+  RTC_API void rtcTraversableOccluded1 (RTCTraversable htraversable, RTCRay* ray, RTCOccludedArguments* args)
+  {
+    rtcOccluded1((RTCScene)htraversable, ray, args);
+  }
+
+  RTC_API void rtcTraversableForwardOccluded1 (const RTCOccludedFunctionNArguments* args, RTCTraversable htraversable, RTCRay* iray_, unsigned int instID)
+  {
+    rtcForwardOccluded1(args, (RTCScene)htraversable, iray_, instID);
+  }
+
+  RTC_API void rtcTraversableForwardOccluded1Ex(const RTCOccludedFunctionNArguments* args, RTCTraversable htraversable, RTCRay* iray_, unsigned int instID, unsigned int instPrimID)
+  {
+    rtcForwardOccluded1Ex(args, (RTCScene)htraversable, iray_, instID, instPrimID);
+  }
+
+  RTC_API void rtcTraversableOccluded4 (const int* valid, RTCTraversable htraversable, RTCRay4* ray, RTCOccludedArguments* args)
+  {
+    rtcOccluded4(valid, (RTCScene)htraversable, ray, args);
+  }
+
+  template<typename RTCRay, int N>
+  __forceinline void rtcTraversableForwardOccludedN (const int* valid, const RTCOccludedFunctionNArguments* args, RTCTraversable htraversable, RTCRay* iray, unsigned int instID, unsigned int instPrimID)
+  {
+    rtcForwardOccludedN(valid, args, (RTCScene)htraversable, iray, instID, instPrimID);
+  }
+
+  RTC_API void rtcTraversableForwardOccluded4(const int* valid, const RTCOccludedFunctionNArguments* args, RTCTraversable htraversable, RTCRay4* iray, unsigned int instID)
+  {
+    rtcForwardOccluded4(valid, args, (RTCScene)htraversable, iray, instID);
+  }
+
+  RTC_API void rtcTraversableForwardOccluded4Ex(const int* valid, const RTCOccludedFunctionNArguments* args, RTCTraversable htraversable, RTCRay4* iray, unsigned int instID, unsigned int instPrimID)
+  {
+    rtcForwardOccluded4Ex(valid, args, (RTCScene)htraversable, iray, instID, instPrimID);
+  }
+
+  RTC_API void rtcTraversableOccluded8 (const int* valid, RTCTraversable htraversable, RTCRay8* ray, RTCOccludedArguments* args)
+  {
+    rtcOccluded8(valid, (RTCScene)htraversable, ray, args);
+  }
+
+  RTC_API void rtcTraversableForwardOccluded8(const int* valid, const RTCOccludedFunctionNArguments* args, RTCTraversable htraversable, RTCRay8* iray, unsigned int instID)
+  {
+    rtcForwardOccluded8(valid, args, (RTCScene)htraversable, iray, instID);
+  }
+
+  RTC_API void rtcTraversableForwardOccluded8Ex(const int* valid, const RTCOccludedFunctionNArguments* args, RTCTraversable htraversable, RTCRay8* iray, unsigned int instID, unsigned int instPrimID)
+  {
+    rtcForwardOccluded8Ex(valid, args, (RTCScene)htraversable, iray, instID, instPrimID);
+  }
+
+  RTC_API void rtcTraversableOccluded16 (const int* valid, RTCTraversable htraversable, RTCRay16* ray, RTCOccludedArguments* args)
+  {
+    rtcOccluded16(valid, (RTCScene)htraversable, ray, args);
+  }
+
+  RTC_API void rtcTraversableForwardOccluded16(const int* valid, const RTCOccludedFunctionNArguments* args, RTCTraversable htraversable, RTCRay16* iray, unsigned int instID)
+  {
+    rtcForwardOccluded16(valid, args, (RTCScene)htraversable, iray, instID);
+  }
+
+  RTC_API void rtcTraversableForwardOccluded16Ex(const int* valid, const RTCOccludedFunctionNArguments* args, RTCTraversable htraversable, RTCRay16* iray, unsigned int instID, unsigned int instPrimID)
+  {
+    rtcForwardOccluded16Ex(valid, args, (RTCScene)htraversable, iray, instID, instPrimID);
+  }
+
   RTC_API void rtcRetainScene (RTCScene hscene) 
   {
     Scene* scene = (Scene*) hscene;
@@ -1336,6 +1488,11 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     const AffineSpace3fa transform = scene->get(geomID)->getTransform(time);
     storeTransform(transform, format, (float*)xfm);
     RTC_CATCH_END2(scene);
+  }
+
+  RTC_API void rtcGetGeometryTransformFromTraversable(RTCTraversable htraversable, unsigned int geomID, float time, RTCFormat format, void* xfm)
+  {
+    rtcGetGeometryTransformFromScene((RTCScene)htraversable, geomID, time, format, xfm);
   }
 
   RTC_API void rtcInvokeIntersectFilterFromGeometry(const struct RTCIntersectFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
@@ -1875,6 +2032,11 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     return scene->get(geomID)->getUserData();
     RTC_CATCH_END2(scene);
     return nullptr;
+  }
+
+  RTC_API void* rtcGetGeometryUserDataFromTraversable (RTCTraversable htraversable, unsigned int geomID)
+  {
+    return rtcGetGeometryUserDataFromScene((RTCScene)htraversable, geomID);
   }
 
   RTC_API void rtcSetGeometryBoundsFunction (RTCGeometry hgeometry, RTCBoundsFunction bounds, void* userPtr)

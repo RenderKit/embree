@@ -70,6 +70,7 @@ char static_hair_flags_linear[NUM_CURVES] = {
 struct TutorialData
 {
   RTCScene g_scene;
+  RTCTraversable g_traversable;
   Vec4f* hair_vertices;
   Vec3fa* hair_normals;
   Vec3fa* hair_vertex_colors;
@@ -81,6 +82,7 @@ struct TutorialData
 inline void TutorialData_Constructor(TutorialData* This)
 {
   This->g_scene = nullptr;
+  This->g_traversable = nullptr;
   This->hair_vertices = (Vec4f*) alignedUSMMalloc((NUM_VERTICES)*sizeof(Vec4f),16);
   This->hair_normals = (Vec3fa*) alignedUSMMalloc((NUM_VERTICES)*sizeof(Vec3fa),16);
   This->hair_vertex_colors = (Vec3fa*) alignedUSMMalloc((NUM_VERTICES)*sizeof(Vec3fa),16);

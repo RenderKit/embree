@@ -205,7 +205,7 @@ namespace embree
     const size_t offsetObjects = offset;
     Accel** objects_host = (Accel**)(data_host + offsetObjects);
     for (size_t i = 0; i < numObjects; ++i) {
-      objects_host[i] = (Accel*)((Scene*)objects[i])->getDevicePointer();
+      objects_host[i] = (Accel*)((Scene*)objects[i])->getTraversable();
     }
 
     offset += numObjects * sizeof(Accel*);
