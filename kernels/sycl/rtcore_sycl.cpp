@@ -32,7 +32,7 @@ RTC_API_EXTERN_C RTCDevice rtcNewSYCLDevice(sycl::context context, const char* c
 
 #if defined(EMBREE_SYCL_SUPPORT) && (defined(__SYCL_DEVICE_ONLY__) || defined(EMBREE_SYCL_RT_SIMULATION))
 
-SYCL_EXTERNAL __attribute__((always_inline)) void rtcIntersect1(RTCScene hscene, struct RTCRayHit* rayhit, struct RTCIntersectArguments* args)
+SYCL_EXTERNAL __attribute__((always_inline)) void rtcTraversableIntersect1(RTCTraversable htraversable, struct RTCRayHit* rayhit, struct RTCIntersectArguments* args)
 {
   RTCIntersectArguments default_args;
   if (args == nullptr) {
@@ -47,15 +47,15 @@ SYCL_EXTERNAL __attribute__((always_inline)) void rtcIntersect1(RTCScene hscene,
     context = &defaultContext;
   }
     
-  rtcIntersectRTHW(hscene, context, rayhit, args); 
+  rtcIntersectRTHW(htraversable, context, rayhit, args); 
 }
 
-SYCL_EXTERNAL __attribute__((always_inline)) void rtcForwardIntersect1(const RTCIntersectFunctionNArguments* args_, RTCScene scene, struct RTCRay* iray, unsigned int instID)
+SYCL_EXTERNAL __attribute__((always_inline)) void rtcTraversableForwardIntersect1(const RTCIntersectFunctionNArguments* args_, RTCTraversable traversable, struct RTCRay* iray, unsigned int instID)
 {
-  return rtcForwardIntersect1Ex(args_, scene, iray, instID, 0);
+  return rtcTraversableForwardIntersect1Ex(args_, traversable, iray, instID, 0);
 }
 
-SYCL_EXTERNAL __attribute__((always_inline)) void rtcForwardIntersect1Ex(const RTCIntersectFunctionNArguments* args_, RTCScene scene, struct RTCRay* iray, unsigned int instID, unsigned int instPrimID)
+SYCL_EXTERNAL __attribute__((always_inline)) void rtcTraversableForwardIntersect1Ex(const RTCIntersectFunctionNArguments* args_, RTCTraversable traversable, struct RTCRay* iray, unsigned int instID, unsigned int instPrimID)
 {
   IntersectFunctionNArguments* args = (IntersectFunctionNArguments*) args_;
   assert(args->N == 1);
@@ -68,11 +68,11 @@ SYCL_EXTERNAL __attribute__((always_inline)) void rtcForwardIntersect1Ex(const R
   oray->dir.x = iray->dir_x;
   oray->dir.y = iray->dir_y;
   oray->dir.z = iray->dir_z;
-  args->forward_scene = scene;
+  args->forward_scene = (RTCScene)traversable;
   instance_id_stack::push(args->context, instID, instPrimID);
 }
 
-SYCL_EXTERNAL __attribute__((always_inline)) void rtcOccluded1(RTCScene hscene, struct RTCRay* ray, struct RTCOccludedArguments* args)
+SYCL_EXTERNAL __attribute__((always_inline)) void rtcTraversableOccluded1(RTCTraversable htraversable, struct RTCRay* ray, struct RTCOccludedArguments* args)
 {
   RTCOccludedArguments default_args;
   if (args == nullptr) {
@@ -87,14 +87,14 @@ SYCL_EXTERNAL __attribute__((always_inline)) void rtcOccluded1(RTCScene hscene, 
     context = &defaultContext;
   }
   
-  rtcOccludedRTHW(hscene, context, ray, args);
+  rtcOccludedRTHW(htraversable, context, ray, args);
 }
 
-SYCL_EXTERNAL __attribute__((always_inline)) void rtcForwardOccluded1(const RTCOccludedFunctionNArguments *args_, RTCScene scene, struct RTCRay *iray, unsigned int instID){
-  return rtcForwardOccluded1Ex(args_, scene, iray, instID, 0);
+SYCL_EXTERNAL __attribute__((always_inline)) void rtcTraversableForwardOccluded1(const RTCOccludedFunctionNArguments *args_, RTCTraversable traversable, struct RTCRay *iray, unsigned int instID){
+  return rtcTraversableForwardOccluded1Ex(args_, traversable, iray, instID, 0);
 }
 
-SYCL_EXTERNAL __attribute__((always_inline)) void rtcForwardOccluded1Ex(const RTCOccludedFunctionNArguments *args_, RTCScene scene, struct RTCRay *iray, unsigned int instID, unsigned int instPrimID)
+SYCL_EXTERNAL __attribute__((always_inline)) void rtcTraversableForwardOccluded1Ex(const RTCOccludedFunctionNArguments *args_, RTCTraversable traversable, struct RTCRay *iray, unsigned int instID, unsigned int instPrimID)
 {
   OccludedFunctionNArguments* args = (OccludedFunctionNArguments*) args_;
   assert(args->N == 1);
@@ -107,31 +107,19 @@ SYCL_EXTERNAL __attribute__((always_inline)) void rtcForwardOccluded1Ex(const RT
   oray->dir.x = iray->dir_x;
   oray->dir.y = iray->dir_y;
   oray->dir.z = iray->dir_z;
-  args->forward_scene = scene;
+  args->forward_scene = (RTCScene)traversable;
   instance_id_stack::push(args->context, instID, instPrimID);
 }
 
-SYCL_EXTERNAL __attribute__((always_inline)) void* rtcGetGeometryUserDataFromScene (RTCScene hscene, unsigned int geomID)
+SYCL_EXTERNAL __attribute__((always_inline)) void* rtcGetGeometryUserDataFromTraversable (RTCTraversable htraversable, unsigned int geomID)
 {
-  Scene* scene = (Scene*) hscene;
-  //RTC_CATCH_BEGIN;
-  //RTC_TRACE(rtcGetGeometryUserDataFromScene);
-#if defined(DEBUG)
-  //RTC_VERIFY_HANDLE(hscene);
-  //RTC_VERIFY_GEOMID(geomID);
-#endif
-  //RTC_ENTER_DEVICE(hscene); // do not enable for performance reasons
+  Scene* scene = (Scene*) htraversable;
   return scene->get(geomID)->getUserData();
-  //RTC_CATCH_END2(scene);
-  //return nullptr;
 }
 
-SYCL_EXTERNAL __attribute__((always_inline)) void rtcGetGeometryTransformFromScene(RTCScene hscene, unsigned int geomID, float time, enum RTCFormat format, void* xfm)
+SYCL_EXTERNAL __attribute__((always_inline)) void rtcGetGeometryTransformFromTraversable(RTCTraversable htraversable, unsigned int geomID, float time, enum RTCFormat format, void* xfm)
 {
-  Scene* scene = (Scene*) hscene;
-  //RTC_CATCH_BEGIN;
-  //RTC_TRACE(rtcGetGeometryTransformFromScene);
-  //RTC_ENTER_DEVICE(hscene);
+  Scene* scene = (Scene*) htraversable;
   AffineSpace3fa transform = one;
   Geometry* geom = scene->get(geomID);
   if (geom->getTypeMask() & Geometry::MTY_INSTANCE) {
@@ -142,7 +130,6 @@ SYCL_EXTERNAL __attribute__((always_inline)) void rtcGetGeometryTransformFromSce
       transform = instance->getLocal2World(time);
   }
   storeTransform(transform, format, (float*)xfm);
-  //RTC_CATCH_END2(geometry);
 }
 
 SYCL_EXTERNAL __attribute__((always_inline)) void rtcInvokeIntersectFilterFromGeometry(const RTCIntersectFunctionNArguments* args_i, const RTCFilterFunctionNArguments* filter_args)

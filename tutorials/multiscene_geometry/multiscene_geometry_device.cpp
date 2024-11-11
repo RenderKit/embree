@@ -199,7 +199,7 @@ namespace embree {
     rtcInitIntersectArguments(&iargs);
     iargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
   
-    rtcIntersect1(data.g_curr_scene, RTCRayHit_(ray),&iargs);
+    rtcTraversableIntersect1(data.g_traversable, RTCRayHit_(ray),&iargs);
     RayStats_addRay(stats);
     
     /* shade pixels */
@@ -218,7 +218,7 @@ namespace embree {
       rtcInitOccludedArguments(&sargs);
       sargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
       
-      rtcOccluded1(data.g_curr_scene, RTCRay_(shadow),&sargs);
+      rtcTraversableOccluded1(data.g_traversable, RTCRay_(shadow),&sargs);
       RayStats_addShadowRay(stats);
       
       /* add light contribution */
@@ -300,7 +300,6 @@ namespace embree {
   {
 #if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION)
   TutorialData ldata = data;
-  ldata.g_curr_scene = rtcGetSceneDevicePointer(data.g_curr_scene);
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);
     cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
@@ -363,6 +362,8 @@ namespace embree {
     rtcCommitScene(data.g_scene_0);
     rtcCommitScene(data.g_scene_1);
     rtcCommitScene(data.g_scene_2);
+
+    data.g_traversable = rtcGetSceneTraversable(data.g_curr_scene);
   }
   
   /* called by the C++ code for cleanup */

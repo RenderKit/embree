@@ -12,12 +12,14 @@ namespace embree {
 struct TutorialData
 {
   RTCScene g_scene;
+  RTCTraversable g_traversable;
   Vec3fa* point_colors;
 };
 
 inline void TutorialData_Constructor(TutorialData* This)
 {
   This->g_scene = nullptr;
+  This->g_traversable = nullptr;
   This->point_colors = (Vec3fa*) alignedUSMMalloc((NUM_POINTS)*sizeof(Vec3fa),16);
 }
 

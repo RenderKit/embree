@@ -234,7 +234,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilter(const RTCFilterFunctionNArgume
     valid_i[0] = 0;
 }
 
-Vec3fa occluded(RTCScene scene, RayQueryContext* context, Ray& ray)
+Vec3fa occluded(RTCTraversable traversable, RayQueryContext* context, Ray& ray)
 {
   Vec3fa transparency = Vec3fa(1.0f);
   context->userRayExt = &transparency;
@@ -249,7 +249,7 @@ Vec3fa occluded(RTCScene scene, RayQueryContext* context, Ray& ray)
   args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
   args.filter = occlusionFilter;
   
-  rtcOccluded1(scene,RTCRay_(ray),&args);
+  rtcTraversableOccluded1(traversable,RTCRay_(ray),&args);
   context->userRayExt = NULL;
 
   if (ray.tfar < 0) return Vec3fa(0.0f);
@@ -288,7 +288,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
       return color;
 
     /* intersect ray with scene and gather all hits */
-    rtcIntersect1(data.scene,RTCRayHit_(ray),&args);
+    rtcTraversableIntersect1(data.traversable,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
 
     /* exit if we hit environment */
@@ -328,7 +328,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
 
     /* sample directional light */
     Ray shadow(ray.org + ray.tfar*ray.dir, neg(Vec3fa(data.dirlight_direction)), eps, inf, time);
-    Vec3fa T = occluded(data.scene,&context,shadow);
+    Vec3fa T = occluded(data.traversable,&context,shadow);
     RayStats_addShadowRay(stats);
     Vec3fa c = AnisotropicBlinn__eval(&brdf,neg(ray.dir),neg(Vec3fa(data.dirlight_direction)));
     color = color + weight*c*T*Vec3fa(data.dirlight_intensity);
@@ -418,6 +418,7 @@ extern "C" void device_init (char* cfg)
   
   /* create scene */
   g_scene = data.scene = convertScene(data.ispc_scene);
+  data.traversable = rtcGetSceneTraversable(data.scene);
 }
 
 extern "C" void renderFrameStandard (int* pixels,
@@ -429,7 +430,6 @@ extern "C" void renderFrameStandard (int* pixels,
   /* render frame */
 #if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION)
   TutorialData ldata = data;
-  ldata.scene = rtcGetSceneDevicePointer(data.scene);
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);
     cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {

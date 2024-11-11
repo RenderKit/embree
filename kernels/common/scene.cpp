@@ -902,7 +902,7 @@ namespace embree
 #endif
   }
 
-  Scene* Scene::getDevicePointer() {
+  Scene* Scene::getTraversable() {
 #if defined(EMBREE_SYCL_SUPPORT)
     DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device);
     if(gpu_device) {

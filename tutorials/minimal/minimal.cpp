@@ -150,7 +150,7 @@ RTCScene initializeScene(RTCDevice device)
  * Cast a single ray with origin (ox, oy, oz) and direction
  * (dx, dy, dz).
  */
-void castRay(RTCScene scene, 
+void castRay(RTCScene scene,
              float ox, float oy, float oz,
              float dx, float dy, float dz)
 {

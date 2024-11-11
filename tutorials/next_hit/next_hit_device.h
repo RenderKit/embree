@@ -23,6 +23,7 @@ extern "C" float g_curve_opacity;
 struct TutorialData
 {
   RTCScene scene;
+  RTCTraversable traversable;
   ISPCScene* ispc_scene;
   
   int instancing_mode;
@@ -42,6 +43,7 @@ struct TutorialData
 void TutorialData_Constructor(TutorialData* This)
 {
   This->scene = nullptr;
+  This->traversable = nullptr;
   This->ispc_scene = g_ispc_scene;
   This->instancing_mode = g_instancing_mode;
   This->next_hit_mode = g_next_hit_mode;
