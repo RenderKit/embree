@@ -122,14 +122,52 @@ RTC_API_EXTERN_C bool prefetchUSMSharedOnGPU(RTCScene hscene)
   //RTC_CATCH_END2(scene);
 }
 
-void Scene::syncWithDevice(sycl::queue* queue_in)
+void Scene::syncWithHost()
 {
   DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device);
-  if(!queue_in && !gpu_device) {
+  if(!gpu_device) {
     return;
   }
 
-  sycl::queue queue = queue_in ? *queue_in : sycl::queue(gpu_device->getGPUDevice());
+  sycl::queue queue = sycl::queue(gpu_device->getGPUDevice());
+  syncWithHost(queue);
+  queue.wait_and_throw();
+}
+
+void Scene::syncWithHost(sycl::queue queue)
+{
+  DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device);
+  if(!gpu_device) {
+    return;
+  }
+
+  //TODO:
+  for(size_t i = 0; i < geometries.size(); ++i) {
+  //parallel_for(geometries.size(), [&] ( const size_t i ) {
+    if (geometries[i] && geometries[i]->isEnabled()) {
+      geometries[i]->syncHostDevice(queue, SYNC_DEVICE_TO_HOST);
+    }
+  }//);
+}
+
+void Scene::syncWithDevice()
+{
+  DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device);
+  if(!gpu_device) {
+    return;
+  }
+
+  sycl::queue queue = sycl::queue(gpu_device->getGPUDevice());
+  syncWithDevice(queue);
+  queue.wait_and_throw();
+}
+
+void Scene::syncWithDevice(sycl::queue queue)
+{
+  DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device);
+  if(!gpu_device) {
+    return;
+  }
 
   // TODO: why is this compiled for __SYCL_DEVICE_ONLY__ ???
 #if !defined(__SYCL_DEVICE_ONLY__)
@@ -164,10 +202,15 @@ void Scene::syncWithDevice(sycl::queue* queue_in)
     std::memset(geometries_host, 0, sizeof(Geometry*) * geometries.size());
     std::memset(geometries_data_host, 0, geometry_data_byte_size);
 
-    for (size_t i = 0; i < geometries.size(); ++i) {
-      geometries[i]->convertToDeviceRepresentation(offsets[i], geometries_data_host, geometries_data_device);
-      geometries_host[i] = (Geometry*)(geometries_data_device + offsets[i]);
-    }
+    //TODO:
+    for(size_t i = 0; i < geometries.size(); ++i) {
+    //parallel_for(geometries.size(), [&] ( const size_t i ) {
+      if (geometries[i] && geometries[i]->isEnabled()) {
+        geometries[i]->syncHostDevice(queue, SYNC_HOST_TO_DEVICE);
+        geometries[i]->convertToDeviceRepresentation(offsets[i], geometries_data_host, geometries_data_device);
+        geometries_host[i] = (Geometry*)(geometries_data_device + offsets[i]);
+      }
+    }//);
 
     queue.memcpy(geometries_data_device, geometries_data_host, geometry_data_byte_size);
     queue.memcpy(geometries_device, geometries_host, sizeof(Geometry*) * geometries.size());
@@ -184,9 +227,6 @@ void Scene::syncWithDevice(sycl::queue* queue_in)
   }
   scene_device = (Scene*) device->malloc(sizeof(Scene), 16, EmbreeMemoryType::DEVICE);
   queue.memcpy(scene_device, (void*)this, sizeof(Scene));
-
-  if (!queue_in)
-    queue.wait_and_throw();
 }
 
 #endif

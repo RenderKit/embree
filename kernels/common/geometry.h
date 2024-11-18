@@ -372,9 +372,15 @@ namespace embree
 
     /*! called before every build */
     virtual void preCommit();
-  
+
     /*! called after every build */
     virtual void postCommit();
+
+#if defined(EMBREE_SYCL_SUPPORT)
+    virtual void syncHostDevice(sycl::queue queue, BufferSyncType syncType) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry");
+    }
+#endif
 
     virtual void addElementsToCount (GeometryCounts & counts) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
@@ -465,11 +471,6 @@ namespace embree
     
     /*! Sets specified buffer. */
     virtual void setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num) {
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
-    }
-
-    /*! Sets specified buffer. */
-    virtual void setBuffer(RTCBufferType bufferType, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, const Ref<Buffer>& dbuffer, size_t offset, size_t stride, unsigned int num) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 

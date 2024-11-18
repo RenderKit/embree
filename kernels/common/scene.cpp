@@ -893,12 +893,24 @@ namespace embree
     return scene_flags;
   }
 
-  void Scene::commit (bool join, sycl::queue* queue)
+#if defined(EMBREE_SYCL_SUPPORT)
+  void Scene::commit (bool join, sycl::queue queue)
   {
+    syncWithHost(queue);
+    commit_internal(join);
+    syncWithDevice(queue);
+  }
+#endif
+
+  void Scene::commit (bool join)
+  {
+#if defined(EMBREE_SYCL_SUPPORT)
+    syncWithHost();
+#endif
     commit_internal(join);
 
 #if defined(EMBREE_SYCL_SUPPORT)
-    syncWithDevice(queue);
+    syncWithDevice();
 #endif
   }
 

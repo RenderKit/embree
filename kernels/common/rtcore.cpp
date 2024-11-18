@@ -90,7 +90,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_TRACE(rtcCommitScene);
     RTC_VERIFY_HANDLE(hscene);
     RTC_ENTER_DEVICE(hscene);
-    scene->commit(false, &queue);
+    scene->commit(false, queue);
 
     RTC_CATCH_END2(scene);
   }
@@ -340,7 +340,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_VERIFY_HANDLE(hscene);
     RTC_ENTER_DEVICE(hscene);
     
-    scene->commit(false, nullptr);
+    scene->commit(false);
 
 #if defined(EMBREE_SYCL_SUPPORT)
     //prefetchUSMSharedOnGPU(hscene);
@@ -357,7 +357,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_VERIFY_HANDLE(hscene);
     RTC_ENTER_DEVICE(hscene);
     
-    scene->commit(true, nullptr);
+    scene->commit(true);
     RTC_CATCH_END2(scene);
   }
 
@@ -1864,25 +1864,37 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetSharedGeometryBufferXPU(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot, RTCFormat format, const void* ptr, const void* dptr, size_t byteOffset, size_t byteStride, size_t itemCount)
+  RTC_API void rtcSetSharedGeometryBufferEx(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot, RTCFormat format, const void* ptr, const void* dptr, size_t byteOffset, size_t byteStride, size_t itemCount)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetSharedGeometryBuffer);
     RTC_VERIFY_HANDLE(hgeometry);
     RTC_ENTER_DEVICE(hgeometry);
-    
+
+#if defined(EMBREE_SYCL_SUPPORT)
     if (itemCount > 0xFFFFFFFFu)
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"buffer too large");
 
-    Ref<Buffer> buffer = new Buffer(geometry->device, itemCount*byteStride, (char*)ptr + byteOffset);
-
-    if (dptr) {
-      Ref<Buffer> dbuffer = new Buffer(geometry->device, itemCount*byteStride, (char*)dptr + byteOffset);
-      geometry->setBuffer(type, slot, format, buffer, dbuffer, 0, byteStride, (unsigned int)itemCount);
-    } else {
-      geometry->setBuffer(type, slot, format, buffer, buffer, 0, byteStride, (unsigned int)itemCount);
+    if (!ptr && !dptr) {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"either host or device pointer or both have to be valid (i.e., not NULL pointers)");
     }
+
+    BufferSyncType syncType;
+    if (ptr && !dptr) {
+      syncType = SYNC_HOST_TO_DEVICE;
+    } else if (!ptr && dptr) {
+      syncType = SYNC_DEVICE_TO_HOST;
+    } else {
+      syncType = NO_SYNC;
+    }
+
+    Ref<Buffer> buffer = new BufferXPU(geometry->device, itemCount*byteStride, ptr ? (char*)ptr + byteOffset : nullptr, dptr ? (char*)dptr + byteOffset : nullptr, syncType);
+    geometry->setBuffer(type, slot, format, buffer, 0, byteStride, (unsigned int)itemCount);
+#else
+    throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcSetSharedGeometryBufferEx called but this Embree version has no SYCL support enabled");
+#endif
+
     RTC_CATCH_END2(geometry);
   }
 
@@ -1909,14 +1921,15 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     return nullptr;
   }
 
-  RTC_API void* rtcSetNewGeometryBufferXPU(RTCGeometry hgeometry, RTCBufferType bufferType, unsigned int slot, RTCFormat format, size_t byteStride, size_t itemCount, void** dptr)
+  RTC_API void rtcSetNewGeometryBufferEx(RTCGeometry hgeometry, RTCBufferType bufferType, unsigned int slot, RTCFormat format, size_t byteStride, size_t itemCount, void** ptr, void** dptr)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
-    RTC_TRACE(rtcSetNewGeometryBuffer);
+    RTC_TRACE(rtcSetNewGeometryBufferEx);
     RTC_VERIFY_HANDLE(hgeometry);
     RTC_ENTER_DEVICE(hgeometry);
 
+#if defined(EMBREE_SYCL_SUPPORT)
     if (itemCount > 0xFFFFFFFFu)
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"buffer too large");
 
@@ -1925,19 +1938,34 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     if (bufferType == RTC_BUFFER_TYPE_VERTEX || bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
       bytes += (16 - (byteStride%16))%16;
 
-    Ref<Buffer> buffer = new Buffer(geometry->device, EmbreeMemoryType::HOST, bytes);
+    if (!ptr && !dptr) {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"either host or device pointer or both have to be valid (i.e., not NULL pointers)");
+    }
+
+    BufferSyncType syncType;
+    if (ptr && !dptr) {
+      syncType = SYNC_HOST_TO_DEVICE;
+    } else if (!ptr && dptr) {
+      syncType = SYNC_DEVICE_TO_HOST;
+    } else {
+      syncType = NO_SYNC;
+    }
+
+    Ref<Buffer> buffer = new BufferXPU(geometry->device, bytes, nullptr, nullptr, syncType);
+    geometry->setBuffer(bufferType, slot, format, buffer, 0, byteStride, (unsigned int)itemCount);
+
+    if (ptr) {
+      *ptr = buffer->getHostPtr();
+    }
 
     if (dptr) {
-      Ref<Buffer> dbuffer = new Buffer(geometry->device, EmbreeMemoryType::DEVICE, bytes);
-      geometry->setBuffer(bufferType, slot, format, buffer, dbuffer, 0, byteStride, (unsigned int)itemCount);
-      *dptr = dbuffer->data();
-    } else {
-      geometry->setBuffer(bufferType, slot, format, buffer, buffer, 0, byteStride, (unsigned int)itemCount);
+      *dptr = buffer->getDevicePtr();
     }
-    return buffer->data();
+#else
+    throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcSetNewGeometryBufferEx called but this Embree version has no SYCL support enabled");
+#endif
 
     RTC_CATCH_END2(geometry);
-    return nullptr;
   }
 
   RTC_API void* rtcGetGeometryBufferData(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot)

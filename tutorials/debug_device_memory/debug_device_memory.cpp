@@ -20,7 +20,7 @@ namespace embree
       : TutorialApplication(NAME,FEATURES)
     {
       /* set default camera */
-      camera.from = Vec3fa(1.5f,1.5f,-1.5f);
+      camera.from = Vec3fa(5.5f,5.5f,-5.5f);
       camera.to   = Vec3fa(0.0f,0.0f,0.0f);
     }
   };

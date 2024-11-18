@@ -36,7 +36,6 @@ namespace embree
     virtual void setNumTimeSteps (unsigned int numTimeSteps) override;
     virtual void setVertexAttributeCount (unsigned int N) override;
     virtual void setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num) override;
-    virtual void setBuffer(RTCBufferType bufferType, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, const Ref<Buffer>& dbuffer, size_t offset, size_t stride, unsigned int num) override;
     virtual void* getBuffer(RTCBufferType type, unsigned int slot) override;
     virtual void updateBuffer(RTCBufferType type, unsigned int slot) override;
     virtual void commit() override;
@@ -45,6 +44,10 @@ namespace embree
     virtual void addElementsToCount (GeometryCounts & counts) const override;
     virtual size_t getGeometryDataDeviceByteSize() const override;
     virtual void convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const override;
+
+#if defined(EMBREE_SYCL_SUPPORT)
+    virtual void syncHostDevice(sycl::queue queue, BufferSyncType syncType) override;
+#endif
 
     template<int N>
     void interpolate_impl(const RTCInterpolateArguments* const args)
