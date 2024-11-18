@@ -195,7 +195,10 @@ namespace embree
     void build_cpu_accels();
     void build_gpu_accels();
     void commit_internal (bool join);
-    void commit (bool join, sycl::queue* queue);
+#if defined(EMBREE_SYCL_SUPPORT)
+    void commit (bool join, sycl::queue queue);
+#endif
+    void commit (bool join);
     void commit_task ();
     void build () {}
 
@@ -317,7 +320,10 @@ namespace embree
     
 #if defined(EMBREE_SYCL_SUPPORT)
   private:
-    void syncWithDevice(sycl::queue* queue);
+    void syncWithHost();
+    void syncWithHost(sycl::queue queue);
+    void syncWithDevice();
+    void syncWithDevice(sycl::queue queue);
 #endif
 
   public:
