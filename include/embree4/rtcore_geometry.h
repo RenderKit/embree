@@ -171,19 +171,20 @@ RTC_API void rtcSetGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type,
 /* Sets a shared geometry buffer. */
 RTC_API void rtcSetSharedGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot, enum RTCFormat format, const void* ptr, size_t byteOffset, size_t byteStride, size_t itemCount);
 
-RTC_API void rtcSetSharedGeometryBufferXPU(RTCGeometry geometry, enum RTCBufferType bufferType, unsigned int slot, enum RTCFormat format, const void* ptr, const void* dptr, size_t byteOffset, size_t byteStride, size_t itemCount);
+/* Sets a shared host/device geometry buffer pair. */
+RTC_API void rtcSetSharedGeometryBufferEx(RTCGeometry geometry, enum RTCBufferType bufferType, unsigned int slot, enum RTCFormat format, const void* ptr, const void* dptr, size_t byteOffset, size_t byteStride, size_t itemCount);
 
 /* Creates and sets a new geometry buffer. */
 RTC_API void* rtcSetNewGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot, enum RTCFormat format, size_t byteStride, size_t itemCount);
 
-RTC_API void* rtcSetNewGeometryBufferXPU(RTCGeometry geometry, enum RTCBufferType bufferType, unsigned int slot, enum RTCFormat format, size_t byteStride, size_t itemCount, void** dptr);
+/* Creates and sets a new host/device geometry buffer pair. */
+RTC_API void rtcSetNewGeometryBufferEx(RTCGeometry geometry, enum RTCBufferType bufferType, unsigned int slot, enum RTCFormat format, size_t byteStride, size_t itemCount, void** ptr, void** dptr);
 
 /* Returns the pointer to the data of a buffer. */
 RTC_API void* rtcGetGeometryBufferData(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot);
 
 /* Updates a geometry buffer. */
 RTC_API void rtcUpdateGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot);
-
 
 /* Sets the intersection filter callback function of the geometry. */
 RTC_API void rtcSetGeometryIntersectFilterFunction(RTCGeometry geometry, RTCFilterFunctionN filter);
