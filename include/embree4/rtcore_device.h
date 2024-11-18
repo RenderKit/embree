@@ -16,7 +16,11 @@ RTC_API RTCDevice rtcNewDevice(const char* config);
 
 #if defined(EMBREE_SYCL_SUPPORT) && defined(SYCL_LANGUAGE_VERSION)
 
-/* Creates a new Embree SYCL device. */
+/*
+  Creates a new Embree SYCL device. It will internally select the first SYCL device of
+  the SYCL context as the default device for memory allocations. You can set a specific
+  SYCL device that's part of the SYCL context by calling rtcSetDeviceSYCLDevice.
+*/
 RTC_API_EXTERN_C RTCDevice rtcNewSYCLDevice(sycl::context context, const char* config);
 
 /* Checks if SYCL device is supported by Embree. */
@@ -28,6 +32,12 @@ RTC_API int rtcSYCLDeviceSelector(const sycl::device sycl_device);
 /* Set the SYCL device to be used to allocate data */
 RTC_API void rtcSetDeviceSYCLDevice(RTCDevice device, const sycl::device sycl_device);
 
+/* rtcCommitGeometryWithQueue is asynchronous, user has to call queue.wait()
+   for synchronization. rtcCommitGemometry is blocking. */
+RTC_API void rtcCommitGeometryWithQueue(RTCScene scene, sycl::queue queue);
+
+/* rtcCommitSceneWithQueue is asynchronous, user has to call queue.wait()
+   for synchronization. rtcCommitScene is blocking. */
 RTC_API void rtcCommitSceneWithQueue(RTCScene scene, sycl::queue queue);
 
 #endif
