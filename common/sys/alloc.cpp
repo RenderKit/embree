@@ -24,18 +24,12 @@ namespace embree
   
   void enableUSMAllocEmbree(sycl::context* context, sycl::device* device)
   {
-    if (tls_context_embree != nullptr) throw std::runtime_error("USM allocation already enabled");
-    if (tls_device_embree != nullptr) throw std::runtime_error("USM allocation already enabled");
     tls_context_embree = context;
     tls_device_embree = device;
   }
 
   void disableUSMAllocEmbree()
   {
-    if (tls_context_embree  == nullptr) throw std::runtime_error("USM allocation not enabled");
-    if (tls_device_embree  == nullptr) throw std::runtime_error("USM allocation not enabled");
-    tls_context_embree = nullptr;
-    tls_device_embree = nullptr;
   }
 
   void enableUSMAllocTutorial(sycl::context* context, sycl::device* device)
