@@ -320,8 +320,6 @@ namespace embree
     
 #if defined(EMBREE_SYCL_SUPPORT)
   private:
-    void syncWithHost();
-    void syncWithHost(sycl::queue queue);
     void syncWithDevice();
     void syncWithDevice(sycl::queue queue);
 #endif

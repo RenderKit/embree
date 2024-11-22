@@ -122,34 +122,6 @@ RTC_API_EXTERN_C bool prefetchUSMSharedOnGPU(RTCScene hscene)
   //RTC_CATCH_END2(scene);
 }
 
-void Scene::syncWithHost()
-{
-  DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device);
-  if(!gpu_device) {
-    return;
-  }
-
-  sycl::queue queue = sycl::queue(gpu_device->getGPUDevice());
-  syncWithHost(queue);
-  queue.wait_and_throw();
-}
-
-void Scene::syncWithHost(sycl::queue queue)
-{
-  DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device);
-  if(!gpu_device) {
-    return;
-  }
-
-  //TODO:
-  for(size_t i = 0; i < geometries.size(); ++i) {
-  //parallel_for(geometries.size(), [&] ( const size_t i ) {
-    if (geometries[i] && geometries[i]->isEnabled()) {
-      geometries[i]->syncHostDevice(queue, SYNC_DEVICE_TO_HOST);
-    }
-  }//);
-}
-
 void Scene::syncWithDevice()
 {
   DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device);
@@ -164,8 +136,7 @@ void Scene::syncWithDevice()
 
 void Scene::syncWithDevice(sycl::queue queue)
 {
-  DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device);
-  if(!gpu_device) {
+  if(!device->is_gpu()) {
     return;
   }
 
@@ -206,7 +177,6 @@ void Scene::syncWithDevice(sycl::queue queue)
     for(size_t i = 0; i < geometries.size(); ++i) {
     //parallel_for(geometries.size(), [&] ( const size_t i ) {
       if (geometries[i] && geometries[i]->isEnabled()) {
-        geometries[i]->syncHostDevice(queue, SYNC_HOST_TO_DEVICE);
         geometries[i]->convertToDeviceRepresentation(offsets[i], geometries_data_host, geometries_data_device);
         geometries_host[i] = (Geometry*)(geometries_data_device + offsets[i]);
       }

@@ -742,7 +742,16 @@ namespace embree
   void DeviceGPU::setSYCLDevice(const sycl::device sycl_device_in) {
     gpu_device = sycl_device_in;
   }
-  
+
+  // turn off deprecation warning for host_unified_memory property usage.
+  // there is currently no equivalent SYCL aspect that replaces this property.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  bool DeviceGPU::has_unified_memory() const {
+    return gpu_device.get_info<sycl::info::device::host_unified_memory>();
+  }
+#pragma GCC diagnostic pop
+
 #endif
 
   DeviceEnterLeave::DeviceEnterLeave (RTCDevice hdevice)
