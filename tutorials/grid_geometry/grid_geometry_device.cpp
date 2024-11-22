@@ -470,7 +470,6 @@ void createGridGeometry (GridMesh& gmesh)
   }
 
   /* create normal debug geometry */
-#if 0
   gmesh.geomNormals = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE);
   Vec3ff *nvertices = (Vec3ff *) rtcSetNewGeometryBuffer(gmesh.geomNormals,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT4,sizeof(Vec3ff),4*numVertices);
   int*    curves    = (int    *) rtcSetNewGeometryBuffer(gmesh.geomNormals,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT   ,sizeof(int)   ,numVertices);
@@ -498,7 +497,6 @@ void createGridGeometry (GridMesh& gmesh)
     }
     h+=sphere_faces[f];
   }
-#endif
   
   /* we do not need this temporary data anymore */
   rtcReleaseGeometry(geomSubdiv);

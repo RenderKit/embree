@@ -126,6 +126,12 @@ namespace embree
     /*! buffer deallocation */
     virtual void free(void* ptr);
 
+    /*! returns true if device is of type DeviceGPU */
+    virtual bool is_gpu() const { return false; }
+
+    /*! returns true if device and host have shared memory system (e.g., integrated GPU) */
+    virtual bool has_unified_memory() const { return true; }
+
   private:
 
     /*! initializes the tasking system */
@@ -179,6 +185,12 @@ namespace embree
 
     /* set SYCL device */
     void setSYCLDevice(const sycl::device sycl_device);
+
+    /*! returns true if device is of type DeviceGPU */
+    virtual bool is_gpu() const override { return true; }
+
+    /*! returns true if device and host have shared memory system (e.g., integrated GPU) */
+    virtual bool has_unified_memory() const override;
 
   private:
     sycl::context gpu_context;
