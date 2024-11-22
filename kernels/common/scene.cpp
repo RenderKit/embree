@@ -896,7 +896,6 @@ namespace embree
 #if defined(EMBREE_SYCL_SUPPORT)
   void Scene::commit (bool join, sycl::queue queue)
   {
-    syncWithHost(queue);
     commit_internal(join);
     syncWithDevice(queue);
   }
@@ -904,9 +903,6 @@ namespace embree
 
   void Scene::commit (bool join)
   {
-#if defined(EMBREE_SYCL_SUPPORT)
-    syncWithHost();
-#endif
     commit_internal(join);
 
 #if defined(EMBREE_SYCL_SUPPORT)
@@ -916,8 +912,7 @@ namespace embree
 
   Scene* Scene::getTraversable() {
 #if defined(EMBREE_SYCL_SUPPORT)
-    DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device);
-    if(gpu_device) {
+    if(device->is_gpu()) {
       return scene_device;
     }
 #endif

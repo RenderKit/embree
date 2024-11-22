@@ -45,10 +45,6 @@ namespace embree
     virtual size_t getGeometryDataDeviceByteSize() const override;
     virtual void convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const override;
 
-#if defined(EMBREE_SYCL_SUPPORT)
-    virtual void syncHostDevice(sycl::queue queue, BufferSyncType syncType) override;
-#endif
-
     template<int N>
     void interpolate_impl(const RTCInterpolateArguments* const args)
     {
