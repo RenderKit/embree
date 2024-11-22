@@ -71,7 +71,6 @@ namespace embree
   void alignedFree(void* ptr)
   {
     if (ptr) {
-      printf("call alignedFree %p\n", ptr);
       _mm_free(ptr);
     }
   }

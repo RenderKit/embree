@@ -209,7 +209,7 @@ namespace embree
     /* resize flags buffer if number of primitives changed */
     if (!flags.userData && (!flags.buffer || flags.size() != numPrimitives))
     {
-      Ref<Buffer> buffer = new Buffer(device, numPrimitives*sizeof(char));
+      Ref<Buffer> buffer = new Buffer(device, numPrimitives*sizeof(char), nullptr, nullptr);
       flags.set(buffer, 0, sizeof(char), numPrimitives, RTC_FORMAT_UCHAR);
       recompute_flags_buffer = true;
     }
@@ -224,6 +224,8 @@ namespace embree
         flags[i] |= hasRight * RTC_CURVE_FLAG_NEIGHBOR_RIGHT;
         hasLeft = hasRight;
       }
+      std::cout << "flags.buffer->commit()" << std::endl;
+      flags.buffer->commit();
     }
     segments.clearLocalModified();
 

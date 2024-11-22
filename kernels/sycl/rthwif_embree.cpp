@@ -650,6 +650,7 @@ __forceinline void trav_loop(intel_ray_query_t& query, Ray& ray, Scene* scene, s
 
 SYCL_EXTERNAL __attribute__((always_inline)) void rtcIntersectRTHW(sycl::global_ptr<RTCTraversableTy> htraversable, sycl::private_ptr<RTCRayQueryContext> ucontext, sycl::private_ptr<RTCRayHit> rayhit_i, sycl::private_ptr<RTCIntersectArguments> args)
 {
+#if 0
   Scene* scene = (Scene*) htraversable.get();
 
   RayQueryContext context(scene, ucontext, args);
@@ -762,10 +763,12 @@ SYCL_EXTERNAL __attribute__((always_inline)) void rtcIntersectRTHW(sycl::global_
   }
   
   intel_ray_query_abandon(query);
+#endif
 }
 
 SYCL_EXTERNAL __attribute__((always_inline)) void rtcOccludedRTHW(sycl::global_ptr<RTCTraversableTy> htraversable, sycl::private_ptr<RTCRayQueryContext> ucontext, sycl::private_ptr<RTCRay> ray_i, sycl::private_ptr<RTCOccludedArguments> args)
 {
+#if 0
   Scene* scene = (Scene*) htraversable.get();
   
   RayQueryContext context(scene, ucontext, args);
@@ -814,6 +817,7 @@ SYCL_EXTERNAL __attribute__((always_inline)) void rtcOccludedRTHW(sycl::global_p
     ray_i->tfar = -INFINITY;
 
   intel_ray_query_abandon(query);
+#endif
 }
 
 RTC_NAMESPACE_END;

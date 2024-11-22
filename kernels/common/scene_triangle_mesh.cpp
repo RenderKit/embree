@@ -113,21 +113,18 @@ namespace embree
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       triangles.setModified();
-      triangles.buffer->setNeedsSync();
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX)
     {
       if (slot >= vertices.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       vertices[slot].setModified();
-      vertices[slot].buffer->setNeedsSync();
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
       if (slot >= vertexAttribs.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       vertexAttribs[slot].setModified();
-      vertexAttribs[slot].buffer->setNeedsSync();
     }
     else
     {
@@ -146,18 +143,6 @@ namespace embree
 
     Geometry::commit();
   }
-
-#if defined(EMBREE_SYCL_SUPPORT)
-  void TriangleMesh::syncHostDevice(sycl::queue queue, BufferSyncType syncType) {
-    triangles.buffer->sync(queue, syncType);
-    for (size_t i = 0; i < vertices.size(); ++i) {
-      vertices[i].buffer->sync(queue, syncType);
-    }
-    //for (size_t i = 0; i < vertexAttribs.size(); ++i) {
-    //  vertexAttribs[i].buffer->sync(queue, syncType);
-    //}
-  }
-#endif
 
   void TriangleMesh::addElementsToCount (GeometryCounts & counts) const 
   {
