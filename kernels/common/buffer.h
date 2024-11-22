@@ -9,101 +9,101 @@
 namespace embree
 {
   /*! Implements an API data buffer object. This class may or may not own the data. */
-#if defined(EMBREE_SYCL_SUPPORT)
-  enum BufferSyncType {
-    NO_SYNC,
-    SYNC_HOST_TO_DEVICE,
-    SYNC_DEVICE_TO_HOST
-  };
-#endif
-
   class Buffer : public RefCount
   {
-  public:
-    Buffer() {}
-
-    /*! Buffer construction */
-    Buffer(Device* device, size_t numBytes_in, void* ptr_in = nullptr)
-      : device(device), numBytes(numBytes_in)
+  private:
+    char* alloc(void* ptr_in, bool &shared, EmbreeMemoryType memoryType)
     {
-      device->refInc();
-      
       if (ptr_in)
       {
         shared = true;
-        ptr = (char*)ptr_in;
+        return (char*)ptr_in;
       }
       else
       {
         shared = false;
-        alloc();
+        device->memoryMonitor(this->bytes(), false);
+        size_t b = (this->bytes()+15) & ssize_t(-16);
+        return (char*)device->malloc(b,16,memoryType);
       }
     }
-    
+
+  public:
+    Buffer(Device* device, size_t numBytes_in, void* ptr_in)
+      : device(device), numBytes(numBytes_in)
+    {
+      device->refInc();
+
+      ptr = alloc(ptr_in, shared, EmbreeMemoryType::SHARED);
+
+#if defined(EMBREE_SYCL_SUPPORT)
+      dshared = true;
+      dptr = ptr;
+#endif
+    }
+
+    Buffer(Device* device, size_t numBytes_in, void* ptr_in, void* dptr_in)
+      : device(device), numBytes(numBytes_in)
+    {
+      device->refInc();
+
+#if defined(EMBREE_SYCL_SUPPORT)
+      if (device->is_gpu())
+      {
+        ptr  = alloc( ptr_in,  shared, EmbreeMemoryType::UNKNOWN);
+        dptr = alloc(dptr_in, dshared, EmbreeMemoryType::DEVICE);
+      }
+      else
+#endif
+      {
+        ptr = alloc(ptr_in, shared, EmbreeMemoryType::SHARED);
+      }
+
+#if defined(EMBREE_SYCL_SUPPORT)
+      if (!dptr) {
+        dshared = true;
+        dptr = ptr;
+      }
+#endif
+    }
+
     /*! Buffer destruction */
     virtual ~Buffer() {
       free();
       device->refDec();
     }
-    
+
     /*! this class is not copyable */
   private:
     Buffer(const Buffer& other) DELETED; // do not implement
     Buffer& operator =(const Buffer& other) DELETED; // do not implement
-    
-  public:
-    /* inits and allocates the buffer */
-    void create(Device* device_in, size_t numBytes_in)
-    {
-      init(device_in, numBytes_in);
-      alloc();
-    }
-    
-    /* inits the buffer */
-    void init(Device* device_in, size_t numBytes_in)
-    {
-      free();
-      device = device_in;
-      ptr = nullptr;
-      numBytes = numBytes_in;
-      shared = false;
-    }
 
-    /*! sets shared buffer */
-    void set(Device* device_in, void* ptr_in, size_t numBytes_in)
-    {
-      free();
-      device = device_in;
-      ptr = (char*)ptr_in;
-      if (numBytes_in != (size_t)-1)
-        numBytes = numBytes_in;
-      shared = true;
-    }
-    
-    /*! allocated buffer */
-    void alloc()
-    {
-      device->memoryMonitor(this->bytes(), false);
-      size_t b = (this->bytes()+15) & ssize_t(-16);
-      ptr = (char*)device->malloc(b,16,EmbreeMemoryType::SHARED);
-    }
-    
+  public:
+
     /*! frees the buffer */
     virtual void free()
     {
-      if (shared) return;
-      device->free(ptr); 
-      device->memoryMonitor(-ssize_t(this->bytes()), true);
-      ptr = nullptr;
+      if (!shared && ptr) {
+        device->free(ptr);
+        device->memoryMonitor(-ssize_t(this->bytes()), true);
+        ptr = nullptr;
+      }
+#if defined(EMBREE_SYCL_SUPPORT)
+      if (!dshared && dptr) {
+        device->free(dptr);
+        device->memoryMonitor(-ssize_t(this->bytes()), true);
+        dptr = nullptr;
+      }
+#endif
     }
-    
+
     /*! gets buffer pointer */
     void* data()
     {
       /* report error if buffer is not existing */
       if (!device)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer specified");
-      
+
       /* return buffer */
       return ptr;
     }
@@ -120,141 +120,52 @@ namespace embree
 
     /*! returns pointer to first element */
     __forceinline virtual char* getDevicePtr() const {
+#if defined(EMBREE_SYCL_SUPPORT)
+      return dptr;
+#else
       return ptr;
+#endif
     }
 
     /*! returns the number of bytes of the buffer */
-    __forceinline size_t bytes() const { 
+    __forceinline size_t bytes() const {
       return numBytes;
     }
-    
+
     /*! returns true of the buffer is not empty */
-    __forceinline operator bool() const { 
-      return ptr; 
-    }
-
-    __forceinline virtual void setNeedsSync() { }
-
-#if defined(EMBREE_SYCL_SUPPORT)
-    __forceinline virtual void sync(sycl::queue, BufferSyncType) { }
-#endif
-
-  public:
-    Device* device;         //!< device to report memory usage to
-    char* ptr;              //!< pointer to buffer data
-    size_t numBytes;        //!< number of bytes in the buffer
-    bool shared;            //!< set if memory is shared with application
-  };
-
-
-#if defined(EMBREE_SYCL_SUPPORT)
-  class BufferXPU : public Buffer
-  {
-  public:
-    /*! Buffer construction */
-    BufferXPU(Device* device_in, size_t numBytes_in, void* hptr_in, void* dptr_in, BufferSyncType syncType_in)
-      : syncType(syncType_in)
-    {
-      device = device_in;
-      numBytes = numBytes_in;
-      device->refInc();
-
-      if (hptr_in)
-      {
-        shared = true;
-        ptr = (char*)hptr_in;
-      }
-      else {
-        shared = false;
-        device->memoryMonitor(bytes(), false);
-        size_t b = (bytes()+15) & ssize_t(-16);
-        ptr = (char*)device->malloc(b,16,EmbreeMemoryType::UNKNOWN);
-      }
-      if (dptr_in)
-      {
-        sharedDevicePtr = true;
-        devicePtr = (char*)dptr_in;
-      }
-      else {
-        sharedDevicePtr = false;
-        device->memoryMonitor(bytes(), false);
-        size_t b = (bytes()+15) & ssize_t(-16);
-        devicePtr = (char*)device->malloc(b,16,EmbreeMemoryType::DEVICE);
-      }
-
-      setNeedsSync();
-    }
-
-    /*! Buffer destruction */
-    ~BufferXPU() override {
-      free();
-      device->refDec();
-    }
-
-    /*! this class is not copyable */
-  private:
-    BufferXPU(const BufferXPU& other) DELETED; // do not implement
-    BufferXPU& operator =(const BufferXPU& other) DELETED; // do not implement
-
-  public:
-
-    /*! frees the buffer */
-    void free() override
-    {
-      if (!shared) {
-        device->free(ptr);
-        device->memoryMonitor(-ssize_t(this->bytes()), true);
-        ptr = nullptr;
-      }
-      if (!sharedDevicePtr) {
-        device->free(devicePtr);
-        device->memoryMonitor(-ssize_t(this->bytes()), true);
-        devicePtr = nullptr;
-      }
-    }
-
-    /*! returns pointer to first element */
-    __forceinline char* getHostPtr() const override {
+    __forceinline operator bool() const {
       return ptr;
     }
 
-    /*! returns pointer to first element */
-    __forceinline char* getDevicePtr() const override{
-      return devicePtr;
+    __forceinline void commit() {
+#if defined(EMBREE_SYCL_SUPPORT)
+      DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device);
+      if (gpu_device) {
+        sycl::queue queue(gpu_device->getGPUDevice());
+        commit(queue);
+        queue.wait_and_throw();
+      }
+#endif
     }
 
-    __forceinline void setNeedsSync() override {
-      if (syncType == SYNC_HOST_TO_DEVICE || syncType == SYNC_DEVICE_TO_HOST)
-      {
-        needsSync = true;
-      }
+#if defined(EMBREE_SYCL_SUPPORT)
+    __forceinline void commit(sycl::queue queue) {
+      if (dptr == ptr) return;
+      std::cout << "buffer memcpy host to device" << std::endl;
+      queue.memcpy(dptr, ptr, numBytes);
     }
-
-    __forceinline void sync(sycl::queue queue, BufferSyncType syncType_in) override {
-      if (!needsSync || syncType != syncType_in) {
-        return;
-      }
-
-      // prevent redundant copy operations
-      std::lock_guard<std::mutex> lock(syncMutex);
-
-      if (syncType == SYNC_HOST_TO_DEVICE) {
-        queue.memcpy(devicePtr, ptr, numBytes);
-      }
-      if (syncType == SYNC_DEVICE_TO_HOST) {
-        queue.memcpy(ptr, devicePtr, numBytes);
-      }
-      needsSync = false;
-    }
+#endif
 
   public:
-    char* devicePtr;             //!< pointer to buffer data on the device
-    bool sharedDevicePtr;        //!< set if device memory is shared with application
-    std::atomic<bool> needsSync; //!< set if there is a sync needed from host to device or vice versa
-    std::mutex syncMutex;
-    const BufferSyncType syncType;
-  };
+    Device* device;      //!< device to report memory usage to
+    size_t numBytes;        //!< number of bytes in the buffer
+    char* ptr;              //!< pointer to buffer data
+    bool shared;            //!< set if memory is shared with application
+#if defined(EMBREE_SYCL_SUPPORT)
+    char* dptr;
+    bool dshared;           //!< set if memory is shared with application
 #endif
+  };
 
   /*! An untyped contiguous range of a buffer. This class does not own the buffer content. */
   class RawBufferView
@@ -302,15 +213,15 @@ namespace embree
     }
 
     /*! returns the number of elements of the buffer */
-    __forceinline size_t size() const { 
-      return num; 
+    __forceinline size_t size() const {
+      return num;
     }
 
     /*! returns the number of bytes of the buffer */
-    __forceinline size_t bytes() const { 
-      return num*stride; 
+    __forceinline size_t bytes() const {
+      return num*stride;
     }
-    
+
     /*! returns the buffer stride */
     __forceinline unsigned getStride() const
     {
@@ -346,7 +257,7 @@ namespace embree
 
     /*! returns true of the buffer is not empty */
     __forceinline operator bool() const { 
-      return ptr_ofs; 
+      return ptr_ofs;
     }
 
     /*! checks padding to 16 byte check, fails hard */

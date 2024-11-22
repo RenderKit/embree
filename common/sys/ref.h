@@ -19,7 +19,7 @@ namespace embree
     virtual ~RefCount() {};
   
     virtual RefCount* refInc() { refCounter.fetch_add(1); return this; }
-    virtual void refDec() { if (refCounter.fetch_add(-1) == 1) { printf("delete ref counted object %p\n", this); delete this; } }
+    virtual void refDec() { if (refCounter.fetch_add(-1) == 1) delete this; }
   private:
     std::atomic<size_t> refCounter;
   };

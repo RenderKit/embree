@@ -293,7 +293,6 @@ extern "C" void device_render (int* pixels,
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
-  rtcReleaseScene (data.g_scene); data.g_scene = nullptr;
   TutorialData_Destructor(&data);
 }
 
