@@ -135,8 +135,6 @@ namespace embree
     for (size_t i=0; i<numLights; i++)
       Light_destroy(lights[i]);
     alignedUSMFree(lights);
-
-    rtcReleaseScene(scene);
   }
   
   Light* ISPCScene::convertLight(Ref<SceneGraph::LightNode> in)
