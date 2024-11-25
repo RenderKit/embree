@@ -71,8 +71,7 @@ void TutorialData_Constructor(TutorialData* This)
 
 void TutorialData_Destructor(TutorialData* This)
 {
-  // rtcReleaseScene is calld in ISPCScene destructor
-  //rtcReleaseScene (This->scene); This->scene = nullptr;
+  rtcReleaseScene (This->scene); This->scene = nullptr;
   alignedUSMFree(This->accu); This->accu = nullptr;
   This->accu_width = 0;
   This->accu_height = 0;
