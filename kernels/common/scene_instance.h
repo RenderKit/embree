@@ -13,7 +13,6 @@ namespace embree
   /*! Instanced acceleration structure */
   struct Instance : public Geometry
   {
-    //ALIGNED_STRUCT_(16);
     static const Geometry::GTypeMask geom_type = Geometry::MTY_INSTANCE;
 
   public:
