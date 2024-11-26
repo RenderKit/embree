@@ -35,7 +35,6 @@ namespace embree
       device->refInc();
 
       ptr = alloc(ptr_in, shared, EmbreeMemoryType::SHARED);
-
 #if defined(EMBREE_SYCL_SUPPORT)
       dshared = true;
       dptr = ptr;
@@ -57,14 +56,11 @@ namespace embree
 #endif
       {
         ptr = alloc(ptr_in, shared, EmbreeMemoryType::SHARED);
-      }
-
 #if defined(EMBREE_SYCL_SUPPORT)
-      if (!dptr) {
         dshared = true;
         dptr = ptr;
-      }
 #endif
+      }
     }
 
     /*! Buffer destruction */
