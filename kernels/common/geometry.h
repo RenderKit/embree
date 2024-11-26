@@ -126,10 +126,8 @@ namespace embree
   };
 
   /*! Base class all geometries are derived from */
-  class Geometry : public RefCount
+  class __aligned(16) Geometry : public RefCount
   {
-    ALIGNED_CLASS_(16);
-    
     friend class Scene;
   public:
 
