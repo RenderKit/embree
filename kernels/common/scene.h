@@ -35,10 +35,8 @@ namespace embree
   struct TaskGroup;
 
   /*! Base class all scenes are derived from */
-  class Scene : public AccelN
+  class __aligned(16) Scene : public AccelN
   {
-    ALIGNED_CLASS_(std::alignment_of<Scene>::value);
-
   public:
     template<typename Ty, bool mblur = false>
       class Iterator
