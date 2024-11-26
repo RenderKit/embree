@@ -705,15 +705,12 @@ namespace embree
       return;
     }
 
-    std::cout << "accelBufferHost.size(): " << accelBufferHost.size() << std::endl;
-    std::cout << "accelBufferDevice.size(): " << accelBufferDevice.size() << std::endl;
-
     accelBufferDevice.resize(accelBufferHost.size());
-    
+
     sycl::queue queue(deviceGPU->getGPUDevice());
     queue.memcpy(accelBufferDevice.data(), accelBufferHost.data(), accelBufferHost.size());
     queue.wait_and_throw();
-    
+
     std::vector<char> host_data(accelBufferHost.size());
     queue.memcpy(host_data.data(), accelBufferDevice.data(), accelBufferDevice.size());
     queue.wait_and_throw();
@@ -724,11 +721,7 @@ namespace embree
       }
     }
 
-    std::cout << "accelBufferHost.size(): " << accelBufferHost.size() << std::endl;
-    std::cout << "accelBufferDevice.size(): " << accelBufferDevice.size() << std::endl;
-
     hwaccel = (char*)accelBufferDevice.data();
-    printf("hwaccel %p\n", hwaccel);
   }
 
 }
