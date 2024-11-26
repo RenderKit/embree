@@ -224,7 +224,6 @@ namespace embree
         flags[i] |= hasRight * RTC_CURVE_FLAG_NEIGHBOR_RIGHT;
         hasLeft = hasRight;
       }
-      std::cout << "flags.buffer->commit()" << std::endl;
       flags.buffer->commit();
     }
     segments.clearLocalModified();
