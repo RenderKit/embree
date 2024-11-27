@@ -58,19 +58,19 @@ unsigned int addTree(RTCScene scene_i, unsigned int tree_idx)
   unsigned int num_triangles = tree_num_triangles[tree_idx];
 
   /* set vertices and vertex colors */
-  RTCBuffer vertex_buffer = rtcNewSharedBufferEx(g_device, (void *)vertices, 3*num_vertices*sizeof(float));
+  RTCBuffer vertex_buffer = rtcNewSharedBufferHostDevice(g_device, (void *)vertices, 3*num_vertices*sizeof(float));
   rtcSetGeometryBuffer(mesh, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, vertex_buffer, 0, 3*sizeof(float), num_vertices);
   rtcCommitBuffer(vertex_buffer);
   rtcReleaseBuffer(vertex_buffer);
 
-  RTCBuffer index_buffer = rtcNewSharedBufferEx(g_device, (void *)indices, 3*num_triangles*sizeof(unsigned int));
+  RTCBuffer index_buffer = rtcNewSharedBufferHostDevice(g_device, (void *)indices, 3*num_triangles*sizeof(unsigned int));
   rtcSetGeometryBuffer(mesh, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, index_buffer, 0, 3*sizeof(unsigned int), num_triangles);
   rtcCommitBuffer(index_buffer);
   rtcReleaseBuffer(index_buffer);
   data.tree_triangles[tree_idx] = (Triangle*)rtcGetBufferDataDevice(index_buffer);
 
   /* create vertex color array */
-  RTCBuffer color_buffer = rtcNewSharedBufferEx(g_device, (void*)colors, 3*num_colors*sizeof(float));
+  RTCBuffer color_buffer = rtcNewSharedBufferHostDevice(g_device, (void*)colors, 3*num_colors*sizeof(float));
   rtcSetGeometryVertexAttributeCount(mesh,1);
   rtcSetGeometryBuffer(mesh, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, RTC_FORMAT_FLOAT3, color_buffer, 0, 3*sizeof(float), num_colors);
   rtcCommitBuffer(color_buffer);
@@ -94,13 +94,13 @@ unsigned int addTerrain(RTCScene scene_i)
   RTCGeometry mesh = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
   /* set vertices */
-  RTCBuffer vertex_buffer = rtcNewSharedBufferEx(g_device, (void *)terrain_vertices, 3*terrain_num_vertices*sizeof(float));
+  RTCBuffer vertex_buffer = rtcNewSharedBufferHostDevice(g_device, (void *)terrain_vertices, 3*terrain_num_vertices*sizeof(float));
   rtcSetGeometryBuffer(mesh, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, vertex_buffer, 0, 3*sizeof(float), terrain_num_vertices);
   rtcCommitBuffer(vertex_buffer);
   rtcReleaseBuffer(vertex_buffer);
 
   /* set triangles */
-  RTCBuffer index_buffer = rtcNewSharedBufferEx(g_device, (void *)terrain_indices, 3*terrain_num_triangles*sizeof(unsigned int));
+  RTCBuffer index_buffer = rtcNewSharedBufferHostDevice(g_device, (void *)terrain_indices, 3*terrain_num_triangles*sizeof(unsigned int));
   rtcSetGeometryBuffer(mesh, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, index_buffer, 0, 3*sizeof(unsigned int), terrain_num_triangles);
   rtcCommitBuffer(index_buffer);
   rtcReleaseBuffer(index_buffer);
@@ -295,8 +295,8 @@ void rebuild_instances(size_t old_num_trees)
   {
     instance_array = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE_ARRAY);
     rtcSetGeometryInstancedScenes(instance_array,(RTCScene*)scene_trees_selected,6);
-    rtcSetSharedGeometryBufferEx(instance_array, RTC_BUFFER_TYPE_INDEX,     0, RTC_FORMAT_UINT,                  (void*)data.tree_ids_host, (void*)data.tree_ids_device, 0, sizeof(unsigned int),  num_trees);
-    rtcSetSharedGeometryBufferEx(instance_array, RTC_BUFFER_TYPE_TRANSFORM, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, (void*)data.tree_transforms_host, (void*)data.tree_transforms_device, 0, sizeof(AffineSpace3fa), num_trees);
+    rtcSetSharedGeometryBufferHostDevice(instance_array, RTC_BUFFER_TYPE_INDEX,     0, RTC_FORMAT_UINT,                  (void*)data.tree_ids_host, (void*)data.tree_ids_device, 0, sizeof(unsigned int),  num_trees);
+    rtcSetSharedGeometryBufferHostDevice(instance_array, RTC_BUFFER_TYPE_TRANSFORM, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, (void*)data.tree_transforms_host, (void*)data.tree_transforms_device, 0, sizeof(AffineSpace3fa), num_trees);
     rtcAttachGeometry(data.g_scene,instance_array);
     rtcReleaseGeometry(instance_array);
     rtcCommitGeometry(instance_array);
