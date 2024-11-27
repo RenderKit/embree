@@ -242,6 +242,18 @@ RTC_NAMESPACE_BEGIN;
     return nullptr;
   }
 
+  RTC_API void* rtcGetBufferDataDevice(RTCBuffer hbuffer)
+  {
+    Buffer* buffer = (Buffer*)hbuffer;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetBufferDataDevice);
+    RTC_VERIFY_HANDLE(hbuffer);
+    RTC_ENTER_DEVICE(hbuffer);
+    return buffer->dataDevice();
+    RTC_CATCH_END2(buffer);
+    return nullptr;
+  }
+
   RTC_API void* rtcGetBufferData(RTCBuffer hbuffer)
   {
     Buffer* buffer = (Buffer*)hbuffer;

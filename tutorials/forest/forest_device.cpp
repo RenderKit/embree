@@ -58,33 +58,28 @@ unsigned int addTree(RTCScene scene_i, unsigned int tree_idx)
   unsigned int num_triangles = tree_num_triangles[tree_idx];
 
   /* set vertices and vertex colors */
-  Vertex* vertex_buffer = (Vertex*) rtcSetNewGeometryBuffer(mesh,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),num_vertices);
-  for (unsigned int i = 0; i < num_vertices; ++i) {
-    vertex_buffer[i].x = vertices[3 * i + 0];
-    vertex_buffer[i].y = vertices[3 * i + 1];
-    vertex_buffer[i].z = vertices[3 * i + 2];
-    vertex_buffer[i].r = 0.f;
-  }
+  RTCBuffer vertex_buffer = rtcNewSharedBufferEx(g_device, (void *)vertices, 3*num_vertices*sizeof(float));
+  rtcSetGeometryBuffer(mesh, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, vertex_buffer, 0, 3*sizeof(float), num_vertices);
+  rtcCommitBuffer(vertex_buffer);
+  rtcReleaseBuffer(vertex_buffer);
 
-  /* set triangles and face colors */
-  Triangle* index_buffer = (Triangle*) rtcSetNewGeometryBuffer(mesh,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sizeof(Triangle),num_triangles);
-  data.tree_triangles[tree_idx] = index_buffer;
-  for (unsigned int i = 0; i < num_triangles; ++i) {
-    index_buffer[i].v0 = indices[3 * i + 0];
-    index_buffer[i].v1 = indices[3 * i + 1];
-    index_buffer[i].v2 = indices[3 * i + 2];
-  }
+  RTCBuffer index_buffer = rtcNewSharedBufferEx(g_device, (void *)indices, 3*num_triangles*sizeof(unsigned int));
+  rtcSetGeometryBuffer(mesh, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, index_buffer, 0, 3*sizeof(unsigned int), num_triangles);
+  rtcCommitBuffer(index_buffer);
+  rtcReleaseBuffer(index_buffer);
+  data.tree_triangles[tree_idx] = (Triangle*)rtcGetBufferDataDevice(index_buffer);
 
   /* create vertex color array */
-  Vec3fa* color_buffer = (Vec3fa*) alignedUSMMalloc((num_colors)*sizeof(Vec3fa),16);
-  g_memory_consumed += num_colors * sizeof(Vec3fa);
-  data.tree_vertex_colors[tree_idx] = color_buffer;
-  for (unsigned int i = 0; i < num_colors; ++i) {
-    color_buffer[i] = Vec3fa(colors[3 * i + 0], colors[3 * i + 1], colors[3 * i + 2]);
-  }
-
+  RTCBuffer color_buffer = rtcNewSharedBufferEx(g_device, (void*)colors, 3*num_colors*sizeof(float));
   rtcSetGeometryVertexAttributeCount(mesh,1);
-  rtcSetSharedGeometryBuffer(mesh,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,0,RTC_FORMAT_FLOAT3,color_buffer,0,sizeof(Vec3fa),num_colors);
+  rtcSetGeometryBuffer(mesh, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, RTC_FORMAT_FLOAT3, color_buffer, 0, 3*sizeof(float), num_colors);
+  rtcCommitBuffer(color_buffer);
+  rtcReleaseBuffer(color_buffer);
+  data.tree_vertex_colors[tree_idx] = (Vec3f*)rtcGetBufferDataDevice(color_buffer);
+
+  g_memory_consumed += num_vertices * 3 * sizeof(float);
+  g_memory_consumed += num_triangles * 3 * sizeof(unsigned int);
+  g_memory_consumed += num_colors * 3 * sizeof(float);
 
   rtcCommitGeometry(mesh);
   unsigned int geomID = rtcAttachGeometry(scene_i,mesh);
@@ -99,21 +94,20 @@ unsigned int addTerrain(RTCScene scene_i)
   RTCGeometry mesh = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
   /* set vertices */
-
-  Vertex* vertices = (Vertex*) rtcSetNewGeometryBuffer(mesh,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),terrain_num_vertices);
-  for (unsigned int i = 0; i < terrain_num_vertices; ++i) {
-    vertices[i].x = terrain_vertices[3 * i + 0];
-    vertices[i].y = terrain_vertices[3 * i + 1];
-    vertices[i].z = terrain_vertices[3 * i + 2];
-  }
+  RTCBuffer vertex_buffer = rtcNewSharedBufferEx(g_device, (void *)terrain_vertices, 3*terrain_num_vertices*sizeof(float));
+  rtcSetGeometryBuffer(mesh, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, vertex_buffer, 0, 3*sizeof(float), terrain_num_vertices);
+  rtcCommitBuffer(vertex_buffer);
+  rtcReleaseBuffer(vertex_buffer);
 
   /* set triangles */
-  data.terrain_triangles = (Triangle*) rtcSetNewGeometryBuffer(mesh,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sizeof(Triangle),terrain_num_triangles);
-  for (unsigned int i = 0; i < terrain_num_triangles; ++i) {
-    data.terrain_triangles[i].v0 = terrain_indices[3 * i + 0];
-    data.terrain_triangles[i].v1 = terrain_indices[3 * i + 1];
-    data.terrain_triangles[i].v2 = terrain_indices[3 * i + 2];
-  }
+  RTCBuffer index_buffer = rtcNewSharedBufferEx(g_device, (void *)terrain_indices, 3*terrain_num_triangles*sizeof(unsigned int));
+  rtcSetGeometryBuffer(mesh, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, index_buffer, 0, 3*sizeof(unsigned int), terrain_num_triangles);
+  rtcCommitBuffer(index_buffer);
+  rtcReleaseBuffer(index_buffer);
+  data.terrain_triangles = (Triangle*)rtcGetBufferDataDevice(index_buffer);
+
+  g_memory_consumed += terrain_num_vertices * 3 * sizeof(float);
+  g_memory_consumed += terrain_num_triangles * 3 * sizeof(unsigned int);
 
   rtcCommitGeometry(mesh);
   unsigned int geomID = rtcAttachGeometry(scene_i,mesh);
@@ -167,7 +161,7 @@ void update_trees(float time)
 #endif
     RandomSampler rng;
     RandomSampler_init(rng, t);
-    ldata.tree_ids[t] = min(5, (int)(6 * RandomSampler_getFloat(rng)));
+    ldata.tree_ids_device[t] = min(5, (int)(6 * RandomSampler_getFloat(rng)));
 
     unsigned int j = t / lnum_trees_sqrt;
     unsigned int i = t % lnum_trees_sqrt;
@@ -216,10 +210,12 @@ void update_trees(float time)
       treePos = Vec3fa(inf, inf, inf);
     }
 
-    ldata.tree_transforms[t] = AffineSpace3fa::translate(treePos);
+    ldata.tree_transforms_device[t] = AffineSpace3fa::translate(treePos);
 #if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION)
     });
   });
+  global_gpu_queue->memcpy(ldata.tree_ids_host, ldata.tree_ids_device, sizeof(uint32_t)*num_trees);
+  global_gpu_queue->memcpy(ldata.tree_transforms_host, ldata.tree_transforms_device, sizeof(AffineSpace3fa)*num_trees);
   global_gpu_queue->wait_and_throw();
 #else
   }});
@@ -228,18 +224,28 @@ void update_trees(float time)
 
 void rebuild_trees(size_t old_num_trees, float time)
 {
-  if (data.tree_ids) {
-    alignedUSMFree(data.tree_ids);
+  if (data.tree_ids_host) {
+    TutorialData_FreeTreeData((void*)data.tree_ids_host, (void*)data.tree_ids_device);
     g_memory_consumed -= old_num_trees * sizeof(uint32_t);
   }
-  data.tree_ids = (uint32_t*) alignedUSMMalloc((num_trees)*sizeof(uint32_t),16);
+  data.tree_ids_host = (uint32_t*) alignedMalloc((num_trees)*sizeof(uint32_t),16);
+#if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION)
+  data.tree_ids_device = sycl::aligned_alloc_device<uint32_t>(16, num_trees, *global_gpu_device, *global_gpu_context);
+#else
+  data.tree_ids_device = data.tree_ids_host;
+#endif
   g_memory_consumed += num_trees * sizeof(uint32_t);
 
-  if (data.tree_transforms) {
-    alignedUSMFree(data.tree_transforms);
+  if (data.tree_transforms_host) {
+    TutorialData_FreeTreeData((void*)data.tree_transforms_host, (void*)data.tree_transforms_device);
     g_memory_consumed -= old_num_trees * sizeof(AffineSpace3fa);
   }
-  data.tree_transforms = (AffineSpace3fa*) alignedUSMMalloc((num_trees)*sizeof(AffineSpace3fa),16);
+  data.tree_transforms_host = (AffineSpace3fa*) alignedMalloc((num_trees)*sizeof(AffineSpace3fa),16);
+#if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION)
+  data.tree_transforms_device = sycl::aligned_alloc_device<AffineSpace3fa>(16, num_trees, *global_gpu_device, *global_gpu_context);
+#else
+  data.tree_transforms_device = data.tree_transforms_host;
+#endif
   g_memory_consumed += num_trees * sizeof(AffineSpace3fa);
 
   update_trees(time);
@@ -255,7 +261,7 @@ void update_instance_scenes()
   else
   {
     for (unsigned int i = 0; i < num_trees; ++i) {
-      rtcSetGeometryInstancedScene(instances[i],scene_trees_selected[data.tree_ids[i]]);
+      rtcSetGeometryInstancedScene(instances[i],scene_trees_selected[data.tree_ids_host[i]]);
       rtcCommitGeometry(instances[i]);
     }
   }
@@ -271,7 +277,7 @@ void update_instance_transforms()
   else
   {
     for (unsigned int i = 0; i < num_trees; ++i) {
-      rtcSetGeometryTransform(instances[i],0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&data.tree_transforms[i]);
+      rtcSetGeometryTransform(instances[i],0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&data.tree_transforms_host[i]);
       rtcCommitGeometry(instances[i]);
     }
   }
@@ -280,7 +286,7 @@ void update_instance_transforms()
 void rebuild_instances(size_t old_num_trees)
 {
   if (instances) {
-    alignedUSMFree(instances);
+    alignedFree(instances);
     instances = nullptr;
     g_memory_consumed -= old_num_trees * sizeof(RTCGeometry);
   }
@@ -289,20 +295,20 @@ void rebuild_instances(size_t old_num_trees)
   {
     instance_array = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE_ARRAY);
     rtcSetGeometryInstancedScenes(instance_array,(RTCScene*)scene_trees_selected,6);
-    rtcSetSharedGeometryBuffer(instance_array, RTC_BUFFER_TYPE_INDEX,     0, RTC_FORMAT_UINT,                  (void*)data.tree_ids, 0, sizeof(unsigned int),  num_trees);
-    rtcSetSharedGeometryBuffer(instance_array, RTC_BUFFER_TYPE_TRANSFORM, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, (void*)data.tree_transforms, 0, sizeof(AffineSpace3fa), num_trees);
+    rtcSetSharedGeometryBufferEx(instance_array, RTC_BUFFER_TYPE_INDEX,     0, RTC_FORMAT_UINT,                  (void*)data.tree_ids_host, (void*)data.tree_ids_device, 0, sizeof(unsigned int),  num_trees);
+    rtcSetSharedGeometryBufferEx(instance_array, RTC_BUFFER_TYPE_TRANSFORM, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, (void*)data.tree_transforms_host, (void*)data.tree_transforms_device, 0, sizeof(AffineSpace3fa), num_trees);
     rtcAttachGeometry(data.g_scene,instance_array);
     rtcReleaseGeometry(instance_array);
     rtcCommitGeometry(instance_array);
   }
   else
   {
-    instances = (RTCGeometry*) alignedUSMMalloc((num_trees)*sizeof(RTCGeometry),16);
+    instances = (RTCGeometry*) alignedMalloc((num_trees)*sizeof(RTCGeometry),16);
     g_memory_consumed += num_trees * sizeof(RTCGeometry);
     for (unsigned int i = 0; i < num_trees; ++i) {
       instances[i] = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-      rtcSetGeometryInstancedScene(instances[i],scene_trees_selected[data.tree_ids[i]]);
-      rtcSetGeometryTransform(instances[i],0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&data.tree_transforms[i]);
+      rtcSetGeometryInstancedScene(instances[i],scene_trees_selected[data.tree_ids_host[i]]);
+      rtcSetGeometryTransform(instances[i],0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&data.tree_transforms_host[i]);
       rtcAttachGeometry(data.g_scene,instances[i]);
       rtcReleaseGeometry(instances[i]);
       rtcCommitGeometry(instances[i]);
@@ -351,16 +357,16 @@ void renderPixelStandard(const TutorialData& data,
           tree_idx = ray.instID[0] - 1;
         }
 
-        unsigned int tree_id = data.trees_selected[data.tree_ids[tree_idx]];
+        unsigned int tree_id = data.trees_selected[data.tree_ids_device[tree_idx]];
         Triangle* tree_triangles = data.tree_triangles[tree_id];
         Triangle triangle = tree_triangles[ray.primID];
 
-        Vec3fa* tree_colors = data.tree_vertex_colors[tree_id];
-        Vec3fa c0 = tree_colors[triangle.v0];
-        Vec3fa c1 = tree_colors[triangle.v1];
-        Vec3fa c2 = tree_colors[triangle.v2];
+        Vec3f* tree_colors = data.tree_vertex_colors[tree_id];
+        Vec3f c0 = tree_colors[triangle.v0];
+        Vec3f c1 = tree_colors[triangle.v1];
+        Vec3f c2 = tree_colors[triangle.v2];
         float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
-        Vec3fa c = w*c0 + u*c1 + v*c2;
+        Vec3f c = w*c0 + u*c1 + v*c2;
         diffuse = Vec3fa(c);
       }
       else if (ray.geomID == 0) {
