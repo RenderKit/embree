@@ -206,10 +206,10 @@ RTC_NAMESPACE_BEGIN;
     return nullptr;
   }
 
-  RTC_API RTCBuffer rtcNewBufferEx(RTCDevice hdevice, size_t byteSize)
+  RTC_API RTCBuffer rtcNewBufferHostDevice(RTCDevice hdevice, size_t byteSize)
   {
     RTC_CATCH_BEGIN;
-    RTC_TRACE(rtcNewBuffer);
+    RTC_TRACE(rtcNewBufferHostDevice);
     RTC_VERIFY_HANDLE(hdevice);
     RTC_ENTER_DEVICE(hdevice);
     Buffer* buffer = new Buffer((Device*)hdevice, byteSize, nullptr, nullptr);
@@ -230,10 +230,10 @@ RTC_NAMESPACE_BEGIN;
     return nullptr;
   }
 
-  RTC_API RTCBuffer rtcNewSharedBufferEx(RTCDevice hdevice, void* ptr, size_t byteSize)
+  RTC_API RTCBuffer rtcNewSharedBufferHostDevice(RTCDevice hdevice, void* ptr, size_t byteSize)
   {
     RTC_CATCH_BEGIN;
-    RTC_TRACE(rtcNewSharedBuffer);
+    RTC_TRACE(rtcNewSharedBufferHostDevice);
     RTC_VERIFY_HANDLE(hdevice);
     RTC_ENTER_DEVICE(hdevice);
     Buffer* buffer = new Buffer((Device*)hdevice, byteSize, ptr, nullptr);
@@ -1919,11 +1919,11 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetSharedGeometryBufferEx(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot, RTCFormat format, const void* ptr, const void* dptr, size_t byteOffset, size_t byteStride, size_t itemCount)
+  RTC_API void rtcSetSharedGeometryBufferHostDevice(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot, RTCFormat format, const void* ptr, const void* dptr, size_t byteOffset, size_t byteStride, size_t itemCount)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
-    RTC_TRACE(rtcSetSharedGeometryBufferEx);
+    RTC_TRACE(rtcSetSharedGeometryBufferHostDevice);
     RTC_VERIFY_HANDLE(hgeometry);
     RTC_ENTER_DEVICE(hgeometry);
 
@@ -1971,11 +1971,11 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     return nullptr;
   }
 
-  RTC_API void rtcSetNewGeometryBufferEx(RTCGeometry hgeometry, RTCBufferType bufferType, unsigned int slot, RTCFormat format, size_t byteStride, size_t itemCount, void** ptr, void** dptr)
+  RTC_API void rtcSetNewGeometryBufferHostDevice(RTCGeometry hgeometry, RTCBufferType bufferType, unsigned int slot, RTCFormat format, size_t byteStride, size_t itemCount, void** ptr, void** dptr)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
-    RTC_TRACE(rtcSetNewGeometryBufferEx);
+    RTC_TRACE(rtcSetNewGeometryBufferHostDevice);
     RTC_VERIFY_HANDLE(hgeometry);
     RTC_ENTER_DEVICE(hgeometry);
 
