@@ -104,6 +104,21 @@ namespace embree
       return ptr;
     }
 
+    /*! gets buffer pointer */
+    void* dataDevice()
+    {
+      /* report error if buffer is not existing */
+      if (!device)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer specified");
+
+      /* return buffer */
+#if defined(EMBREE_SYCL_SUPPORT)
+      return dptr;
+#else
+      return ptr;
+#endif
+    }
+
     /*! returns pointer to first element */
     __forceinline char* getPtr() const {
       return ptr;
@@ -147,7 +162,6 @@ namespace embree
 #if defined(EMBREE_SYCL_SUPPORT)
     __forceinline void commit(sycl::queue queue) {
       if (dptr == ptr) return;
-      std::cout << "buffer memcpy host to device" << std::endl;
       queue.memcpy(dptr, ptr, numBytes);
     }
 #endif
