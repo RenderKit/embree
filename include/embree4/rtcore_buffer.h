@@ -57,6 +57,11 @@ RTC_API void rtcCommitBufferWithQueue(RTCBuffer buffer, sycl::queue queue);
 /* Returns a pointer to the buffer data. */
 RTC_API void* rtcGetBufferData(RTCBuffer buffer);
 
+/* Returns a pointer to the buffer data on the device. Returns the same pointer as
+  rtcGetBufferData if the device is no SYCL device or if Embree is executed on a
+  system with unified memory (e.g., iGPUs). */
+RTC_API void* rtcGetBufferDataDevice(RTCBuffer buffer);
+
 /* Retains the buffer (increments the reference count). */
 RTC_API void rtcRetainBuffer(RTCBuffer buffer);
 
