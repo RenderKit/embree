@@ -38,13 +38,13 @@ typedef struct RTCBufferTy* RTCBuffer;
 /* Creates a new buffer. */
 RTC_API RTCBuffer rtcNewBuffer(RTCDevice device, size_t byteSize);
 
-RTC_API RTCBuffer rtcNewBufferEx(RTCDevice device, size_t byteSize);
+RTC_API RTCBuffer rtcNewBufferHostDevice(RTCDevice device, size_t byteSize);
 
 /* Creates a new shared buffer. */
 RTC_API RTCBuffer rtcNewSharedBuffer(RTCDevice device, void* ptr, size_t byteSize);
 
 /* Creates a new shared buffer. */
-RTC_API RTCBuffer rtcNewSharedBufferEx(RTCDevice device, void* ptr, size_t byteSize);
+RTC_API RTCBuffer rtcNewSharedBufferHostDevice(RTCDevice device, void* ptr, size_t byteSize);
 
 RTC_API void rtcCommitBuffer(RTCBuffer buffer);
 

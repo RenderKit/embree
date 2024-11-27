@@ -31,7 +31,7 @@ unsigned int addCubeHostDevice (RTCScene scene, Vec3fa d)
   /* set vertices and vertex colors */
   Vertex* hVertices0;
   Vertex* dVertices0;
-  rtcSetNewGeometryBufferEx(mesh, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(Vertex), 8, (void **)&hVertices0, (void **)&dVertices0);
+  rtcSetNewGeometryBufferHostDevice(mesh, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(Vertex), 8, (void **)&hVertices0, (void **)&dVertices0);
   hVertices0[0].x = -1 + d.x; hVertices0[0].y = -1 + d.y; hVertices0[0].z = -1 + d.z;
   hVertices0[1].x = -1 + d.x; hVertices0[1].y = -1 + d.y; hVertices0[1].z = +1 + d.z;
   hVertices0[2].x = -1 + d.x; hVertices0[2].y = +1 + d.y; hVertices0[2].z = -1 + d.z;
@@ -45,7 +45,7 @@ unsigned int addCubeHostDevice (RTCScene scene, Vec3fa d)
   rtcSetGeometryTimeStepCount(mesh, 2);
   Vertex* hVertices1;
   Vertex* dVertices1;
-  rtcSetNewGeometryBufferEx(mesh, RTC_BUFFER_TYPE_VERTEX, 1, RTC_FORMAT_FLOAT3, sizeof(Vertex), 8, (void **)&hVertices1, (void **)&dVertices1);
+  rtcSetNewGeometryBufferHostDevice(mesh, RTC_BUFFER_TYPE_VERTEX, 1, RTC_FORMAT_FLOAT3, sizeof(Vertex), 8, (void **)&hVertices1, (void **)&dVertices1);
   hVertices1[0].x = -1 + d.x; hVertices1[0].y = -1 + 1.f + d.y; hVertices1[0].z = -1 + d.z;
   hVertices1[1].x = -1 + d.x; hVertices1[1].y = -1 + 1.f + d.y; hVertices1[1].z = +1 + d.z;
   hVertices1[2].x = -1 + d.x; hVertices1[2].y = +1 + 1.f + d.y; hVertices1[2].z = -1 + d.z;
@@ -87,7 +87,7 @@ unsigned int addCubeHostDevice (RTCScene scene, Vec3fa d)
 
 #endif
 
-  rtcSetSharedGeometryBufferEx(mesh, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, hTriangles, dTriangles, 0, sizeof(Triangle), 12);
+  rtcSetSharedGeometryBufferHostDevice(mesh, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, hTriangles, dTriangles, 0, sizeof(Triangle), 12);
   rtcCommitGeometry(mesh);
 
   unsigned int geomID = rtcAttachGeometry(scene,mesh);
@@ -165,7 +165,7 @@ unsigned int addCubeBufferHostDevice (RTCScene scene, Vec3fa d)
   RTCGeometry mesh = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
   /* set vertices and vertex colors */
-  RTCBuffer vertexBuffer0 = rtcNewBufferEx(g_device, 8 * sizeof(Vertex));
+  RTCBuffer vertexBuffer0 = rtcNewBufferHostDevice(g_device, 8 * sizeof(Vertex));
   rtcSetGeometryBuffer(mesh, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, vertexBuffer0, 0, sizeof(Vertex), 8);
   Vertex* hVertices0 = (Vertex*)rtcGetBufferData(vertexBuffer0);
   hVertices0[0].x = -1 + d.x; hVertices0[0].y = -1 + d.y; hVertices0[0].z = -1 + d.z;
@@ -181,7 +181,7 @@ unsigned int addCubeBufferHostDevice (RTCScene scene, Vec3fa d)
 
 #if defined(GEOMETRY_MOTION_BLUR)
   rtcSetGeometryTimeStepCount(mesh, 2);
-  RTCBuffer vertexBuffer1 = rtcNewBufferEx(g_device, 8 * sizeof(Vertex));
+  RTCBuffer vertexBuffer1 = rtcNewBufferHostDevice(g_device, 8 * sizeof(Vertex));
   rtcSetGeometryBuffer(mesh, RTC_BUFFER_TYPE_VERTEX, 1, RTC_FORMAT_FLOAT3, vertexBuffer1, 0, sizeof(Vertex), 8);
   Vertex* hVertices1 = (Vertex*)rtcGetBufferData(vertexBuffer1);
   hVertices1[0].x = -1 + d.x; hVertices1[0].y = -1 + 1.f + d.y; hVertices1[0].z = -1 + d.z;
@@ -199,7 +199,7 @@ unsigned int addCubeBufferHostDevice (RTCScene scene, Vec3fa d)
   /* set triangles and face colors */
 
   Triangle* hTriangles = data.hTrianglesBufferHostDevice = (Triangle*) alignedMalloc(12*sizeof(Triangle), 16);
-  RTCBuffer triangleBuffer = rtcNewSharedBufferEx(g_device, hTriangles, 12*sizeof(Triangle));
+  RTCBuffer triangleBuffer = rtcNewSharedBufferHostDevice(g_device, hTriangles, 12*sizeof(Triangle));
   rtcSetGeometryBuffer(mesh, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, triangleBuffer, 0, sizeof(Triangle), 12);
   hTriangles[ 0].v0 = 0; hTriangles[ 0].v1 = 1; hTriangles[ 0].v2 = 2;
   hTriangles[ 1].v0 = 1; hTriangles[ 1].v1 = 3; hTriangles[ 1].v2 = 2;
