@@ -100,7 +100,6 @@ extern "C" void device_init (char* cfg)
   /* create scene */
   TutorialData_Constructor(&data);
   g_scene = data.g_scene = rtcNewScene(g_device);
-  rtcSetSceneFlags(data.g_scene, RTC_SCENE_FLAG_PREFETCH_USM_SHARED_ON_GPU);
 
   /* add cube */
   addCube(data.g_scene);
@@ -193,7 +192,7 @@ extern "C" void renderFrameStandard (int* pixels,
                           const float time,
                           const ISPCCamera& camera)
 {
-#if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION) && !defined(EMBREE_SYCL_RT_SIMULATION)
+#if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION)
   TutorialData ldata = data;
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);

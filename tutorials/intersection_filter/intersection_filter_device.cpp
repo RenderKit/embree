@@ -380,7 +380,6 @@ extern "C" void device_init (char* cfg)
 
   /* commit changes to scene */
   rtcCommitScene (data.g_scene);
-  
   data.g_traversable = rtcGetSceneTraversable(data.g_scene);
 }
 

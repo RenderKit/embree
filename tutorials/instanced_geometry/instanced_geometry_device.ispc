@@ -174,7 +174,7 @@ Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const unif
   rtcInitIntersectArguments(&iargs);
   iargs.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
   
-  rtcIntersectV(data.g_scene,RTCRayHit_(ray),&iargs);
+  rtcTraversableIntersectV(data.g_traversable,RTCRayHit_(ray),&iargs);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -186,7 +186,7 @@ Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const unif
     if (ray.instID[0] != RTC_INVALID_GEOMETRY_ID)
     {
       AffineSpace3f xfm;
-      rtcGetGeometryTransformFromScene(data.g_scene,ray.instID[0],0.0f,RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,&xfm);
+      rtcGetGeometryTransformFromTraversable(data.g_traversable,ray.instID[0],0.0f,RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,&xfm);
       Ns = xfmNormal(xfm,Ns);
       //Ns = xfmVector(data.normal_xfm[ray.instID[0]],Ns);
     }
@@ -207,7 +207,7 @@ Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const unif
     rtcInitOccludedArguments(&sargs);
     sargs.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
     
-    rtcOccludedV(data.g_scene,RTCRay_(shadow),&sargs);
+    rtcTraversableOccludedV(data.g_traversable,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -341,6 +341,7 @@ export void device_render (uniform int* uniform pixels,
   rtcCommitGeometry(g_instance2);
   rtcCommitGeometry(g_instance3);
   rtcCommitScene (data.g_scene);
+  data.g_traversable = rtcGetSceneTraversable(data.g_scene);
 }
 
 /* called by the C++ code for cleanup */

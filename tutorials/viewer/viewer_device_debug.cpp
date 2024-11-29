@@ -168,12 +168,12 @@ void DebugShaderData_Constructor(DebugShaderData* This)
   }
 
 #define RENDER_FRAME_FUNCTION_SYCL(Name)                                \
-extern "C" void renderFrame##Name (int* pixels,       \
-                                   const unsigned int width,    \
-                                   const unsigned int height,   \
-                                   const float time,            \
-                                   const ISPCCamera& camera)          \
-{                                                                       \
+  extern "C" void renderFrame##Name (int* pixels,       \
+                          const unsigned int width,             \
+                          const unsigned int height,            \
+                          const float time,                     \
+                          const ISPCCamera& camera)             \
+  {                                                                     \
     DebugShaderData data;                                               \
     DebugShaderData_Constructor(&data);                                 \
     sycl::event event;                                                  \
@@ -191,8 +191,8 @@ extern "C" void renderFrame##Name (int* pixels,       \
       unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f)); \
       unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f)); \
       pixels[y*width+x] = (b << 16) + (g << 8) + r;                   \
-   });                                     \
- });                                \
+    });                                     \
+  });                                \
   global_gpu_queue->wait_and_throw();\
   \
   const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();\
@@ -240,7 +240,7 @@ Vec3fa renderPixelDebugShader(const DebugShaderData& data, float x, float y, con
     args.feature_mask = feature_mask;
     rtcTraversableIntersect1(data.traversable,RTCRayHit_(ray),&args);
   }
-  
+
   int64_t c1 = get_tsc();
   RayStats_addRay(stats);
 
@@ -267,7 +267,7 @@ Vec3fa renderPixelDebugShader(const DebugShaderData& data, float x, float y, con
 
   case SHADER_TEXCOORDS:
   case SHADER_TEXCOORDS_GRID:
-    
+
 #if !defined(__SYCL_DEVICE_ONLY__)
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
       return Vec3fa(0.0f,0.0f,1.0f);

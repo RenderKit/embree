@@ -9,7 +9,7 @@ namespace embree {
 #define FEATURE_MASK \
   RTC_FEATURE_FLAG_TRIANGLE | \
   RTC_FEATURE_FLAG_INSTANCE
-  
+
 RTCScene g_scene = nullptr;
 TutorialData g_data;
 extern "C" bool g_changed;

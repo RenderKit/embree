@@ -142,6 +142,8 @@ AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime
   return (1.0f-ftime)*AffineSpace3fa(instance->spaces[itime+0]) + ftime*AffineSpace3fa(instance->spaces[itime+1]);
 }
 
+typedef ISPCInstance* ISPCInstancePtr;
+
 AffineSpace3fa calculate_interpolated_space (ISPCInstanceArray* instanceArray, unsigned int primID, float gtime)
 {
   if (instanceArray->numTimeSteps == 1)
@@ -155,7 +157,7 @@ AffineSpace3fa calculate_interpolated_space (ISPCInstanceArray* instanceArray, u
   return (1.0f-ftime)*AffineSpace3fa(instanceArray->spaces_array[itime+0][primID]) + ftime*AffineSpace3fa(instanceArray->spaces_array[itime+1][primID]);
 }
 
-typedef ISPCInstance* ISPCInstancePtr;
+typedef ISPCInstanceArray* ISPCInstanceArrayPtr;
 
 unsigned int postIntersect(const TutorialData& data, const Ray& ray, DifferentialGeometry& dg)
 {
@@ -170,18 +172,18 @@ unsigned int postIntersect(const TutorialData& data, const Ray& ray, Differentia
     if (geometries[instID]->type == INSTANCE) {
       ISPCInstance* instance = (ISPCInstancePtr) geometries[instID];
       local2world = local2world * calculate_interpolated_space(instance,ray.time());
+
       assert(instance->child->type == GROUP);
       geometries = ((ISPCGroup*)instance->child)->geometries;
     }
 #if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
     else if (geometries[instID]->type == INSTANCE_ARRAY) {
-      ISPCInstanceArray* instanceArray = (ISPCInstanceArray*) geometries[instID];
-      local2world = local2world * calculate_interpolated_space(instanceArray, ray.instPrimID[i],ray.time());
+      ISPCInstanceArray* instanceArray = (ISPCInstanceArrayPtr) geometries[instID];
+      local2world = local2world * calculate_interpolated_space(instanceArray,ray.instPrimID[i],ray.time());
       assert(instanceArray->child->type == GROUP);
       geometries = ((ISPCGroup*)instanceArray->child)->geometries;
     }
 #endif
-
   }
 
   ISPCGeometry* mesh = geometries[ray.geomID];
@@ -228,7 +230,6 @@ void renderPixelStandard(const TutorialData& data,
   
   rtcTraversableIntersect1(data.traversable,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
-
 
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
