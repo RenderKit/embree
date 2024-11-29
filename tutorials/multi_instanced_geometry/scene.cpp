@@ -194,12 +194,12 @@ extern "C" RTCScene initializeScene(TutorialData& data, RTCDevice device)
   cleanupScene(data);
 
   data.g_instanceLevels.numLevels = 2;
-  data.g_instanceLevels.numInstancesOnLevel = (unsigned int*)alignedUSMMalloc(2*sizeof(unsigned int), 16);
+  data.g_instanceLevels.numInstancesOnLevel = (unsigned int*)alignedMalloc(2*sizeof(unsigned int), 16);
   data.g_instanceLevels.numInstancesOnLevel[0] = Trees::instances.numInstances;
   data.g_instanceLevels.numInstancesOnLevel[1] = Twigs01::instances.numInstances;
-  data.g_normalTransforms = (LinearSpace3fa**)alignedUSMMalloc(2*sizeof(LinearSpace3fa*), 16);
-  data.g_normalTransforms[0] = (LinearSpace3fa*)alignedUSMMalloc(data.g_instanceLevels.numInstancesOnLevel[0]*sizeof(LinearSpace3fa), 16);
-  data.g_normalTransforms[1] = (LinearSpace3fa*)alignedUSMMalloc(data.g_instanceLevels.numInstancesOnLevel[1]*sizeof(LinearSpace3fa), 16);
+  data.g_normalTransforms = (LinearSpace3fa**)alignedMalloc(2*sizeof(LinearSpace3fa*), 16);
+  data.g_normalTransforms[0] = (LinearSpace3fa*)alignedMalloc(data.g_instanceLevels.numInstancesOnLevel[0]*sizeof(LinearSpace3fa), 16);
+  data.g_normalTransforms[1] = (LinearSpace3fa*)alignedMalloc(data.g_instanceLevels.numInstancesOnLevel[1]*sizeof(LinearSpace3fa), 16);
   data.g_instanceLevels.normalTransforms = data.g_normalTransforms;
 
   RandomSampler sampler;
