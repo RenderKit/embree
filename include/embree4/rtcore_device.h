@@ -32,10 +32,6 @@ RTC_API int rtcSYCLDeviceSelector(const sycl::device sycl_device);
 /* Set the SYCL device to be used to allocate data */
 RTC_API void rtcSetDeviceSYCLDevice(RTCDevice device, const sycl::device sycl_device);
 
-/* rtcCommitGeometryWithQueue is asynchronous, user has to call queue.wait()
-   for synchronization. rtcCommitGemometry is blocking. */
-RTC_API void rtcCommitGeometryWithQueue(RTCScene scene, sycl::queue queue);
-
 /* rtcCommitSceneWithQueue is asynchronous, user has to call queue.wait()
    for synchronization. rtcCommitScene is blocking. */
 RTC_API void rtcCommitSceneWithQueue(RTCScene scene, sycl::queue queue);

@@ -6,7 +6,7 @@
 #include "rtcore_device.h"
 
 RTC_NAMESPACE_BEGIN
-  
+
 /* Opaque traversable type */
 typedef struct RTCTraversableTy* RTCTraversable;
 
