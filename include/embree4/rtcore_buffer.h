@@ -38,14 +38,16 @@ typedef struct RTCBufferTy* RTCBuffer;
 /* Creates a new buffer. */
 RTC_API RTCBuffer rtcNewBuffer(RTCDevice device, size_t byteSize);
 
+/* Creates a new buffer using explicit host device memory. */
 RTC_API RTCBuffer rtcNewBufferHostDevice(RTCDevice device, size_t byteSize);
 
 /* Creates a new shared buffer. */
 RTC_API RTCBuffer rtcNewSharedBuffer(RTCDevice device, void* ptr, size_t byteSize);
 
-/* Creates a new shared buffer. */
+/* Creates a new shared buffer using explicit host device memory. */
 RTC_API RTCBuffer rtcNewSharedBufferHostDevice(RTCDevice device, void* ptr, size_t byteSize);
 
+/* Synchronize host and device memory by copying data from host to device. */
 RTC_API void rtcCommitBuffer(RTCBuffer buffer);
 
 #if defined(EMBREE_SYCL_SUPPORT) && defined(SYCL_LANGUAGE_VERSION)
