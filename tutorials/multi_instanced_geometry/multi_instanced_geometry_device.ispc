@@ -240,7 +240,7 @@ void renderPixelStandard(const uniform TutorialData& data, int x, int y,
     Vec3f emission;
     sampleLightDirection(RandomSampler_get3D(sampler), lightDir, emission);
     Ray shadowRay = makeShadowRay(primaryRay, lightDir, stats);
-    rtcOccludedV(data.g_scene, RTCRay_(shadowRay), &sargs);
+    rtcTraversableOccludedV(data.g_traversable, RTCRay_(shadowRay), &sargs);
     color = shade(data, primaryRay, shadowRay, lightDir, emission);
   }
   

@@ -250,7 +250,7 @@ Vec3fa occluded(RTCTraversable traversable, RayQueryContext* context, Ray& ray)
   args.filter = occlusionFilter;
   
   rtcTraversableOccluded1(traversable,RTCRay_(ray),&args);
-  context->userRayExt = NULL;
+  context->userRayExt = nullptr;
 
   if (ray.tfar < 0) return Vec3fa(0.0f);
   else              return transparency;

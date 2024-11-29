@@ -97,6 +97,7 @@ export void device_init (uniform int8* uniform cfg)
 
   /* commit changes to scene */
   rtcCommitScene (g_scene);
+  data.g_traversable = rtcGetSceneTraversable(data.g_scene);
 }
 
 /* task that renders a single screen tile */
@@ -116,7 +117,7 @@ void renderPixelStandard(const uniform TutorialData& data,
   rtcInitIntersectArguments(&iargs);
   iargs.feature_mask = (RTCFeatureFlags)(FEATURE_MASK);
   
-  rtcIntersectV(data.g_scene,RTCRayHit_(ray),&iargs);
+  rtcTraversableIntersectV(data.g_traversable,RTCRayHit_(ray),&iargs);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -139,7 +140,7 @@ void renderPixelStandard(const uniform TutorialData& data,
     rtcInitOccludedArguments(&sargs);
     sargs.feature_mask = (RTCFeatureFlags)(FEATURE_MASK);
   
-    rtcOccludedV(data.g_scene,RTCRay_(shadow),&sargs);
+    rtcTraversableOccludedV(data.g_traversable,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

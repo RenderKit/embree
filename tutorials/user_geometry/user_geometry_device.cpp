@@ -502,9 +502,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereFilterFunction(const RTCFilterFunctionNA
   const RayQueryContext* context = (const RayQueryContext*) args->context;
   struct Ray* ray    = (struct Ray*)args->ray;
   //struct RTCHit* hit = (struct RTCHit*)args->hit;
-  const unsigned int N = args->N;
-  assert(N == 1);
-  _unused(N);
+  assert(args->N == 1);
 
   /* avoid crashing when debug visualizations are used */
   if (context == nullptr)
@@ -778,7 +776,7 @@ Vec3fa renderPixelStandard(const TutorialData& data,
       Ns = xfmVector(data.g_instance[ray.instID[0]]->normal2world,Vec3fa(Ns));
     }
     Ns = face_forward(ray.dir,normalize(Ns));
-    
+
     /* calculate diffuse color of geometries */
     Vec3fa diffuse = Vec3fa(0.0f);
     if      (ray.instID[0] ==  0) diffuse = data.colors[4*ray.instID[0]+ray.primID];

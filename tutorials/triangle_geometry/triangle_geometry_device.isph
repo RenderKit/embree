@@ -6,6 +6,7 @@
 struct TutorialData
 {
   RTCScene g_scene;
+  RTCTraversable g_traversable;
   uniform Vec3f* uniform face_colors;
   uniform Vec3fa* uniform vertex_colors;
 };
@@ -13,6 +14,7 @@ struct TutorialData
 inline void TutorialData_Constructor(uniform TutorialData* uniform This)
 {
   This->g_scene = NULL;
+  This->g_traversable = NULL;
   This->face_colors = NULL;
   This->vertex_colors = NULL;
 }
