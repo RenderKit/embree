@@ -140,8 +140,14 @@ sed -i.backup  's/RTCRay1/RTCRay/g' $2
 sed -i.backup  's/rtcIntersectV/rtcIntersect1/g' $2
 sed -i.backup  's/rtcOccludedV/rtcOccluded1/g' $2
 
+sed -i.backup  's/rtcTraversableIntersectV/rtcTraversableIntersect1/g' $2
+sed -i.backup  's/rtcTraversableOccludedV/rtcTraversableOccluded1/g' $2
+
 sed -i.backup  's/rtcForwardIntersectV/rtcForwardIntersect1/g' $2
 sed -i.backup  's/rtcForwardOccludedV/rtcForwardOccluded1/g' $2
+
+sed -i.backup  's/rtcTraversableForwardIntersectV/rtcTraversableForwardIntersect1/g' $2
+sed -i.backup  's/rtcTraversableForwardOccludedV/rtcTraversableForwardOccluded1/g' $2
 
 sed -i.backup  's/rtcInterpolateV/rtcInterpolate/g' $2
 

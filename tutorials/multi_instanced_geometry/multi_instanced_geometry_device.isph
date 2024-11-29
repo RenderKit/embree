@@ -50,6 +50,7 @@ extern "C" void cleanupScene(uniform TutorialData& data);
 inline void TutorialData_Constructor(uniform TutorialData* uniform This)
 {
   This->g_scene = NULL;
+  This->g_traversable = NULL;
   This->g_accu = NULL;
   This->g_accu_width = 0;
   This->g_accu_height = 0;

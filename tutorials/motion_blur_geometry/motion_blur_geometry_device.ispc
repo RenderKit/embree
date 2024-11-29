@@ -606,6 +606,7 @@ export void device_init (uniform int8* uniform cfg)
 
   /* commit changes to scene */
   rtcCommitScene (g_scene);
+  data.g_traversable = rtcGetSceneTraversable(data.g_scene);
 }
 
 /* task that renders a single screen tile */
@@ -625,7 +626,7 @@ Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const unif
   iargs.intersect = sphereIntersectFuncN;
 #endif
   
-  rtcIntersectV(data.g_scene,RTCRayHit_(ray),&iargs);
+  rtcTraversableIntersectV(data.g_traversable,RTCRayHit_(ray),&iargs);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -662,7 +663,7 @@ Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const unif
 #if USE_ARGUMENT_CALLBACKS
     sargs.occluded = sphereOccludedFuncN;
 #endif
-    rtcOccludedV(data.g_scene,RTCRay_(shadow),&sargs);
+    rtcTraversableOccludedV(data.g_traversable,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
