@@ -51,8 +51,8 @@ extern "C" void cleanupScene(TutorialData& data);
 
 inline void TutorialData_Constructor(TutorialData* This)
 {
-  This->g_scene  = nullptr;
-  This->g_traversable  = nullptr;
+  This->g_scene = nullptr;
+  This->g_traversable = nullptr;
   This->g_accu = nullptr;
   This->g_accu_width = 0;
   This->g_accu_height = 0;
@@ -71,7 +71,7 @@ inline void TutorialData_Destructor(TutorialData* This)
 {
   rtcReleaseScene (This->g_scene); This->g_scene = nullptr;
   cleanupScene(*This);
-  alignedUSMFree(This->g_accu); This->g_accu = nullptr;
+  delete[] This->g_accu; This->g_accu = nullptr;
   This->g_accu_width = 0;
   This->g_accu_height = 0;
   This->g_accu_count = 0;

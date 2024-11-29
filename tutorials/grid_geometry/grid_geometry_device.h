@@ -27,8 +27,8 @@ struct TutorialData
 
 void TutorialData_Constructor(TutorialData* This)
 {
-  This->g_scene  = nullptr;
-  This->g_traversable  = nullptr;
+  This->g_scene = nullptr;
+  This->g_traversable = nullptr;
   This->gmesh.geom = nullptr;
   This->gmesh.geomNormals = nullptr;
   This->gmesh.egrids = nullptr;

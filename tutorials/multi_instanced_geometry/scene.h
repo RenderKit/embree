@@ -7,14 +7,18 @@
 #include "../common/math/linearspace.h"
 #include "../../include/embree4/rtcore.h"
 
+namespace embree {
+
 extern "C" struct InstanceLevels
 {
   unsigned int numLevels;
   const unsigned int* numInstancesOnLevel;
-  embree::LinearSpace3fa** normalTransforms;
+  LinearSpace3fa* * normalTransforms;
 };
 
 extern "C" RTCScene initializeScene(RTCDevice device,
-                                    struct InstanceLevels* levels);
+                                            struct InstanceLevels* levels);
 
 extern "C" void cleanupScene();
+
+} // namespace embree
