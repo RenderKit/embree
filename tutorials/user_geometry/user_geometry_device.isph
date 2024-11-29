@@ -24,7 +24,7 @@ struct Instance
   ALIGNED_STRUCT_(16)
   UserGeometryType type;
   RTCGeometry geometry;
-  RTCScene object;
+  RTCTraversable object;
   AffineSpace3f local2world;
   AffineSpace3f world2local;
   LinearSpace3f normal2world;
@@ -39,12 +39,15 @@ struct TutorialData
   RTCScene g_scene0;
   RTCScene g_scene1;
   RTCScene g_scene2;
+
+  RTCTraversable g_traversable;
+
   uniform Sphere* uniform g_spheres;
   uniform Sphere* uniform g_sphere0;
   uniform Sphere* uniform g_sphere1;
-  
+
   uniform Instance* uniform g_instance[4];
-  
+
   uniform Vec3f* uniform colors;
 };
 
@@ -63,6 +66,7 @@ inline void TutorialData_Constructor(uniform TutorialData* uniform This)
   This->g_scene0 = NULL;
   This->g_scene1 = NULL;
   This->g_scene2 = NULL;
+  This->g_traversable = NULL;
   This->g_spheres = NULL;
   This->g_sphere0 = NULL;
   This->g_sphere1 = NULL;

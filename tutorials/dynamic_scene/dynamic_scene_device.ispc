@@ -163,7 +163,7 @@ void renderPixelStandard(const uniform TutorialData& data,
   rtcInitIntersectArguments(&iargs);
   iargs.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
   
-  rtcIntersectV(data.g_scene,RTCRayHit_(ray),&iargs);
+  rtcTraversableIntersectV(data.g_traversable,RTCRayHit_(ray),&iargs);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -181,7 +181,7 @@ void renderPixelStandard(const uniform TutorialData& data,
     uniform RTCOccludedArguments sargs;
     rtcInitOccludedArguments(&sargs);
     sargs.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
-    rtcOccludedV(data.g_scene,RTCRay_(shadow),&sargs);
+    rtcTraversableOccludedV(data.g_traversable,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -309,6 +309,7 @@ export void device_render (uniform int* uniform pixels,
 
   /* commit changes to scene */
   rtcCommitScene (data.g_scene);
+  data.g_traversable = rtcGetSceneTraversable(data.g_scene);
 }
 
 /* called by the C++ code for cleanup */

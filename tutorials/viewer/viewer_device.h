@@ -43,8 +43,7 @@ void TutorialData_Constructor(TutorialData* This)
 
 void TutorialData_Destructor(TutorialData* This)
 {
-  // rtcReleaseScene is calld in ISPCScene destructor
-  // rtcReleaseScene (This->scene); This->scene = nullptr;
+  rtcReleaseScene (This->scene); This->scene = nullptr;
 }
 
 } // namespace embree

@@ -10,12 +10,14 @@
 struct TutorialData
 {
   RTCScene g_scene;
+  RTCTraversable g_traversable;
   uniform Vec3f* uniform point_colors;
 };
 
 inline void TutorialData_Constructor(uniform TutorialData* uniform This)
 {
   This->g_scene = NULL;
+  This->g_traversable = NULL;
   This->point_colors = uniform new uniform Vec3f[NUM_POINTS];
 }
 
