@@ -53,7 +53,7 @@ namespace embree
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
 
     size_t dispatchGlobalSize = DispatchGlobals::GetDispatchGlobalsSize();
-    void* dispatchGlobalsPtr = rthwifAllocAccelBuffer(nullptr,dispatchGlobalSize,device,context);
+    void* dispatchGlobalsPtr = rthwifAllocAccelBuffer(nullptr,dispatchGlobalSize,device,context,sycl::usm::alloc::shared);
     memset(dispatchGlobalsPtr, 0, dispatchGlobalSize);
 
     DispatchGlobals* dg = (DispatchGlobals*) dispatchGlobalsPtr;
