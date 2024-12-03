@@ -159,18 +159,18 @@ __forceinline bool intersect_user_geometry(intel_ray_query_t& query, Ray& ray, U
 }
 
 template<typename Ray>
-__forceinline bool intersect_instance(intel_ray_query_t& query, Ray& ray, Instance* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID);
+__forceinline bool intersect_instance(intel_ray_query_t& query, Ray& ray, Geometry* geom, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID, bool instance_array);
 
 template<>
-__forceinline bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Instance* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID)
+__forceinline bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Geometry* geom, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID, bool instance_array)
 {
   /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
-  if ((ray.mask & instance->mask) == 0) 
+  if ((ray.mask & geom->mask) == 0)
     return false;
 #endif
 
-  if (!instance_id_stack::push(context->user, geomID, 0))
+  if (!instance_id_stack::push(context->user, geomID, primID))
     return false;
 
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
@@ -179,8 +179,15 @@ __forceinline bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Ins
   constexpr unsigned int bvh_level = 0;
 #endif
 
-  Scene* object = (Scene*) instance->object;
-  const AffineSpace3fa world2local = instance->getWorld2Local(ray.time());
+  Scene* object = instance_array
+    ? (Scene*) ((InstanceArray*)geom)->getObject(primID)
+    : (Scene*) ((Instance*)geom)->object;
+  if (!object) return false;
+
+  const AffineSpace3fa world2local = instance_array
+    ? ((InstanceArray*)geom)->getWorld2Local(primID, ray.time())
+    : ((Instance*)geom)->getWorld2Local(ray.time());
+
   const Vec3fa ray_org = xfmPoint (world2local, (Vec3f) ray.org);
   const Vec3fa ray_dir = xfmVector(world2local, (Vec3f) ray.dir);
   scenes[bvh_level] = object;
@@ -216,70 +223,11 @@ __forceinline bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Ins
 }
 
 template<>
-__forceinline bool intersect_instance(intel_ray_query_t& query, Ray& ray, Instance* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID)
+__forceinline bool intersect_instance(intel_ray_query_t& query, Ray& ray, Geometry* geom, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID, bool instance_array)
 {
   /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
-  if ((ray.mask & instance->mask) == 0) 
-    return false;
-#endif
-
-  if (!instance_id_stack::push(context->user, geomID, 0))
-    return false;
-
-#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
-  unsigned int bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit );
-#else
-  constexpr unsigned int bvh_level = 0;
-#endif
-
-  Scene* object = (Scene*) instance->object;
-  const AffineSpace3fa world2local = instance->getWorld2Local(ray.time());
-  const Vec3fa ray_org = xfmPoint (world2local, (Vec3f) ray.org);
-  const Vec3fa ray_dir = xfmVector(world2local, (Vec3f) ray.dir);
-  scenes[bvh_level] = object;
-  
-  intel_ray_desc_t raydesc;
-  raydesc.origin = float3(ray_org.x, ray_org.y, ray_org.z);
-  raydesc.direction = float3(ray_dir.x, ray_dir.y, ray_dir.z);
-  raydesc.tmin = ray.tnear();
-  raydesc.tmax = inf; // unused
-  raydesc.mask = mask32_to_mask8(ray.mask);
-  raydesc.flags = intel_ray_flags_accept_first_hit_and_end_search;
-
-  if (context->enforceArgumentFilterFunction())
-    raydesc.flags |= intel_ray_flags_force_non_opaque;
-  
-#if defined(EMBREE_BACKFACE_CULLING)
-  raydesc.flags |= intel_ray_flags_cull_back_facing_triangles;
-#endif
-
-  uint32_t bvh_id = 0;
-  if (context->args->feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR) {
-    float time = clamp(ray.time(),0.0f,1.0f);
-    uint32_t numTimeSegments = object->getMaxTimeSegments();
-    bvh_id = (uint32_t) clamp(uint32_t(numTimeSegments*time), 0u, numTimeSegments-1);
-  }
-
-  intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) object->getHWAccel(bvh_id);
-
-  intel_ray_query_forward_ray(query, raydesc, hwaccel_ptr);
-
-  return false;
-}
-
-template<typename Ray>
-__forceinline bool intersect_instance_array(intel_ray_query_t& query, Ray& ray, InstanceArray* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID);
-
-template<>
-__forceinline bool intersect_instance_array(intel_ray_query_t& query, RayHit& ray, InstanceArray* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID)
-{
-  Scene* object = (Scene*) instance->getObject(primID);
-  if (!object) return false;
-
-  /* perform ray mask test */
-#if defined(EMBREE_RAY_MASK)
-  if ((ray.mask & instance->mask) == 0) 
+  if ((ray.mask & geom->mask) == 0) 
     return false;
 #endif
 
@@ -292,62 +240,15 @@ __forceinline bool intersect_instance_array(intel_ray_query_t& query, RayHit& ra
   constexpr unsigned int bvh_level = 0;
 #endif
 
-  const AffineSpace3fa world2local = instance->getWorld2Local(primID, ray.time());
-  const Vec3fa ray_org = xfmPoint (world2local, (Vec3f) ray.org);
-  const Vec3fa ray_dir = xfmVector(world2local, (Vec3f) ray.dir);
-  scenes[bvh_level] = object;
-  
-  intel_ray_desc_t raydesc;
-  raydesc.origin = float3(ray_org.x, ray_org.y, ray_org.z);
-  raydesc.direction = float3(ray_dir.x, ray_dir.y, ray_dir.z);
-  raydesc.tmin = ray.tnear();
-  raydesc.tmax = inf; // unused
-  raydesc.mask = mask32_to_mask8(ray.mask);
-  raydesc.flags = intel_ray_flags_force_non_opaque;
-
-  //if (context.enforceArgumentFilterFunction())
-  //  raydesc.flags |= intel_ray_flags_force_non_opaque;
-  
-#if defined(EMBREE_BACKFACE_CULLING)
-  raydesc.flags |= intel_ray_flags_cull_back_facing_triangles;
-#endif
-
-  uint32_t bvh_id = 0;
-  if (context->args->feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR) {
-    float time = clamp(ray.time(),0.0f,1.0f);
-    uint32_t numTimeSegments = object->getMaxTimeSegments();
-    bvh_id = (uint32_t) clamp(uint32_t(numTimeSegments*time), 0u, numTimeSegments-1);
-  }
-
-  intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) object->getHWAccel(bvh_id);
-  
-  intel_ray_query_forward_ray(query, raydesc, hwaccel_ptr);
-
-  return false;
-}
-
-template<>
-__forceinline bool intersect_instance_array(intel_ray_query_t& query, Ray& ray, InstanceArray* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID)
-{
-  Scene* object = (Scene*) instance->getObject(primID);
+  Scene* object = instance_array
+    ? (Scene*) ((InstanceArray*)geom)->getObject(primID)
+    : (Scene*) ((Instance*)geom)->object;
   if (!object) return false;
 
-  /* perform ray mask test */
-#if defined(EMBREE_RAY_MASK)
-  if ((ray.mask & instance->mask) == 0)
-    return false;
-#endif
+  const AffineSpace3fa world2local = instance_array
+    ? ((InstanceArray*)geom)->getWorld2Local(primID, ray.time())
+    : ((Instance*)geom)->getWorld2Local(ray.time());
 
-  if (!instance_id_stack::push(context->user, geomID, primID))
-    return false;
-
-#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
-  unsigned int bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit );
-#else
-  constexpr unsigned int bvh_level = 0;
-#endif
-
-  const AffineSpace3fa world2local = instance->getWorld2Local(primID, ray.time());
   const Vec3fa ray_org = xfmPoint (world2local, (Vec3f) ray.org);
   const Vec3fa ray_dir = xfmVector(world2local, (Vec3f) ray.dir);
   scenes[bvh_level] = object;
@@ -397,15 +298,10 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
   }
 #endif
 
-#if defined(EMBREE_GEOMETRY_INSTANCE)
-  if ((feature_mask & RTC_FEATURE_FLAG_INSTANCE) && (geom->getTypeMask() & Geometry::MTY_INSTANCE)) {
-    return intersect_instance(query,ray,(Instance*)geom, scenes, context, geomID, primID);
-  }
-#endif
-
-#if defined(EMBREE_GEOMETRY_INSTANCE_ARRAY)
-  if ((feature_mask & RTC_FEATURE_FLAG_INSTANCE_ARRAY) && (geom->getTypeMask() & Geometry::MTY_INSTANCE_ARRAY)) {
-    return intersect_instance_array(query,ray,(InstanceArray*)geom, scenes, context, geomID, primID);
+#if defined(EMBREE_GEOMETRY_INSTANCE) || defined(EMBREE_GEOMETRY_INSTANCE_ARRAY)
+  if ((feature_mask & RTC_FEATURE_FLAG_INSTANCE) && (geom->getTypeMask() & Geometry::MTY_INSTANCE) ||
+      (feature_mask & RTC_FEATURE_FLAG_INSTANCE_ARRAY) && (geom->getTypeMask() & Geometry::MTY_INSTANCE_ARRAY)) {
+    return intersect_instance(query,ray,(Instance*)geom, scenes, context, geomID, primID, geom->getTypeMask() & Geometry::MTY_INSTANCE_ARRAY);
   }
 #endif
 
