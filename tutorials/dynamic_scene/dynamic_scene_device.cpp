@@ -20,8 +20,15 @@ unsigned int createSphere (RTCBuildQuality quality, const Vec3fa& pos, const flo
   rtcSetGeometryBuildQuality(geom, quality);
 
   /* map triangle and vertex buffer */
-  Vertex*   vertices  = (Vertex*  ) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),data.numTheta*(data.numPhi+1));
-  Triangle* triangles = (Triangle*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sizeof(Triangle),2*data.numTheta*(data.numPhi-1));
+  RTCBuffer vertexBuffer = rtcNewBufferHostDevice(g_device, sizeof(Vertex) * data.numTheta*(data.numPhi+1));
+  Vertex* vertices = (Vertex*)rtcGetBufferData(vertexBuffer);
+  rtcSetGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,vertexBuffer,0,sizeof(Vertex),data.numTheta*(data.numPhi+1));
+  rtcReleaseBuffer(vertexBuffer);
+
+  RTCBuffer indexBuffer = rtcNewBufferHostDevice(g_device, sizeof(Triangle) * 2*data.numTheta*(data.numPhi-1));
+  Triangle* triangles = (Triangle*)rtcGetBufferData(indexBuffer);
+  rtcSetGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,indexBuffer,0,sizeof(Triangle),2*data.numTheta*(data.numPhi-1));
+  rtcReleaseBuffer(indexBuffer);
 
   /* create sphere geometry */
   int tri = 0;
@@ -62,6 +69,9 @@ unsigned int createSphere (RTCBuildQuality quality, const Vec3fa& pos, const flo
       }
     }
   }
+  
+  rtcCommitBuffer(vertexBuffer);
+  rtcCommitBuffer(indexBuffer);
 
   rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(data.g_scene,geom);
@@ -76,16 +86,24 @@ unsigned int addGroundPlane (RTCScene scene_i)
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
   /* set vertices */
-  Vertex* vertices = (Vertex*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),4);
+  RTCBuffer vertexBuffer = rtcNewBufferHostDevice(g_device, sizeof(Vertex)*4);
+  Vertex* vertices = (Vertex*) rtcGetBufferData(vertexBuffer);
+  rtcSetGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,vertexBuffer,0,sizeof(Vertex),4);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
   vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
   vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
   vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
+  rtcReleaseBuffer(vertexBuffer);
+  rtcCommitBuffer(vertexBuffer);
 
   /* set triangles */
-  Triangle* triangles = (Triangle*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sizeof(Triangle),2);
+  RTCBuffer indexBuffer = rtcNewBufferHostDevice(g_device, sizeof(Triangle)*2);
+  Triangle* triangles = (Triangle*) rtcGetBufferData(indexBuffer);
+  rtcSetGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,indexBuffer,0,sizeof(Triangle),2);
   triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
   triangles[1].v0 = 1; triangles[1].v1 = 3; triangles[1].v2 = 2;
+  rtcReleaseBuffer(indexBuffer);
+  rtcCommitBuffer(indexBuffer);
 
   rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene_i,geom);
@@ -247,23 +265,23 @@ void animateSphere (int id, float time)
   const float f = 2.0f*(1.0f+0.5f*sin(time));
 
   /* loop over all vertices */
-#if !defined(EMBREE_SYCL_TUTORIAL) // enables parallel execution
+//#if !defined(EMBREE_SYCL_TUTORIAL) // enables parallel execution
   parallel_for(size_t(0),size_t(data.numPhi+1),[&](const range<size_t>& range) {
     const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
       animateSphere((int)i,threadIndex,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);
   }); 
-#else
-  for (unsigned int phi=0; phi<data.numPhi+1; phi++) for (int theta=0; theta<data.numTheta; theta++)
-  {
-    Vertex* v = &vertices[phi*data.numTheta+theta];
-    const float phif   = phi*float(pi)*rcpNumPhi;
-    const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
-    v->x = pos.x+r*sin(f*phif)*sin(thetaf);
-    v->y = pos.y+r*cos(phif);
-    v->z = pos.z+r*sin(f*phif)*cos(thetaf);
-  }
-#endif
+//#else
+//  for (unsigned int phi=0; phi<data.numPhi+1; phi++) for (int theta=0; theta<data.numTheta; theta++)
+//  {
+//    Vertex* v = &vertices[phi*data.numTheta+theta];
+//    const float phif   = phi*float(pi)*rcpNumPhi;
+//    const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
+//    v->x = pos.x+r*sin(f*phif)*sin(thetaf);
+//    v->y = pos.y+r*cos(phif);
+//    v->z = pos.z+r*sin(f*phif)*cos(thetaf);
+//  }
+//#endif
 
   /* commit mesh */
   rtcUpdateGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0);
@@ -313,12 +331,26 @@ extern "C" void device_render (int* pixels,
                            const float time,
                            const ISPCCamera& camera)
 {
+  auto start_animate = std::chrono::high_resolution_clock::now();
   /* animate sphere */
   for (int i=0; i<data.numSpheres; i++)
     animateSphere(i,time+i);
+  auto end_animate = std::chrono::high_resolution_clock::now();
 
   /* commit changes to scene */
+  auto start_commit = std::chrono::high_resolution_clock::now();
+#if defined(EMBREE_SYCL_TUTORIAL)
+  rtcCommitSceneWithQueue (data.g_scene, *global_gpu_queue);
+#else
   rtcCommitScene (data.g_scene);
+#endif
+  auto end_commit = std::chrono::high_resolution_clock::now();
+
+  auto duration_animate = std::chrono::duration_cast<std::chrono::milliseconds>(end_animate - start_animate);
+  auto duration_commit = std::chrono::duration_cast<std::chrono::milliseconds>(end_commit - start_commit);
+
+  std::cout << "animate took " << duration_animate.count() << " milliseconds to execute." << std::endl;
+  std::cout << "commit took " << duration_commit.count() << " milliseconds to execute." << std::endl;
   data.g_traversable = rtcGetSceneTraversable(data.g_scene);
 }
 
