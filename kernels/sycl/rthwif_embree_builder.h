@@ -114,7 +114,7 @@ namespace embree
       inline BBox3f const& getBounds() { return hwaccel_bounds; }
 
       void build(Scene* scene);
-      void commit();
+      void commit(sycl::queue queue);
 #endif
 
   private:
