@@ -673,7 +673,7 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "AccelBuffer constructor called with non-GPU device");
     }
 
-    unifiedMemory = true; //gpu_device->has_unified_memory();
+    unifiedMemory = gpu_device->has_unified_memory();
 
     if (unifiedMemory)
     {
@@ -693,7 +693,7 @@ namespace embree
     hwaccel_bounds = aabb;
   }
 
-  void AccelBuffer::commit()
+  void AccelBuffer::commit(sycl::queue queue)
   {
     if (unifiedMemory) {
       hwaccel = (char*)accelBufferShared.data();
@@ -705,21 +705,10 @@ namespace embree
       return;
     }
 
-    accelBufferDevice.resize(accelBufferHost.size());
+    if (accelBufferDevice.size() != accelBufferHost.size())
+      accelBufferDevice.resize(accelBufferHost.size());
 
-    sycl::queue queue(deviceGPU->getGPUDevice());
     queue.memcpy(accelBufferDevice.data(), accelBufferHost.data(), accelBufferHost.size());
-    queue.wait_and_throw();
-
-    std::vector<char> host_data(accelBufferHost.size());
-    queue.memcpy(host_data.data(), accelBufferDevice.data(), accelBufferDevice.size());
-    queue.wait_and_throw();
-
-    for (size_t i = 0; i < accelBufferHost.size(); ++i) {
-      if (accelBufferHost[i] != host_data[i]) {
-        std::cout << (int)accelBufferHost[i] << " - " << (int)host_data[i] << std::endl;
-      }
-    }
 
     hwaccel = (char*)accelBufferDevice.data();
   }
