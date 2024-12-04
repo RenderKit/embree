@@ -136,13 +136,17 @@ void Scene::syncWithDevice()
 
 void Scene::syncWithDevice(sycl::queue queue)
 {
+  auto startSyncWithDevice = std::chrono::high_resolution_clock::now();
   if(!device->is_gpu()) {
     return;
   }
 
   // TODO: why is this compiled for __SYCL_DEVICE_ONLY__ ???
 #if !defined(__SYCL_DEVICE_ONLY__)
-  accelBuffer.commit();
+  auto startAccelBufferCommit = std::chrono::high_resolution_clock::now();
+  accelBuffer.commit(queue);
+  auto durationAccelBufferCommit = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startAccelBufferCommit);
+  std::cout << "accelBufferCommit took " << durationAccelBufferCommit.count() << " milliseconds to execute." << std::endl;
 #endif
 
   //for (uint32_t run = 0; run < 1; run++)
@@ -197,6 +201,10 @@ void Scene::syncWithDevice(sycl::queue queue)
   }
   scene_device = (Scene*) device->malloc(sizeof(Scene), 16, EmbreeMemoryType::DEVICE);
   queue.memcpy(scene_device, (void*)this, sizeof(Scene));
+  auto endSyncWithDevice = std::chrono::high_resolution_clock::now();
+  auto durationSyncWithDevice = std::chrono::duration_cast<std::chrono::milliseconds>(endSyncWithDevice - startSyncWithDevice);
+
+  std::cout << "Scene sync with device took " << durationSyncWithDevice.count() << " milliseconds to execute." << std::endl;
 }
 
 #endif
