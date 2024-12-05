@@ -204,7 +204,7 @@ namespace embree
 
     /* return number of geometries */
 #if defined(__SYCL_DEVICE_ONLY__)
-    __forceinline size_t size() const { return num_geometries_device; }
+    __forceinline size_t size() const { return num_geometries; }
 #else
     __forceinline size_t size() const { return geometries.size(); }
 #endif
@@ -351,14 +351,19 @@ namespace embree
     bool modified;            //!< true if scene got modified
     uint32_t maxTimeSegments; //!< maximal number of motion blur time segments in scene
 
+#if defined(EMBREE_SYCL_SUPPORT)
     Geometry** geometries_device; //!< list of all geometries on device
-    char* geometries_data_device; //!< data buffer of all geometries on device
-    size_t num_geometries_device;
+    char* geometry_data_device; //!< data buffer of all geometries on device
+    size_t num_geometries;
+    size_t geometry_data_byte_size;
 
-    size_t geometry_data_device_byte_size;
-    size_t* offsets;
-    Geometry** geometries_host;
-    char* geometries_data_host;
+    // host buffers used for creating representation of scene/geometry for device
+    // will be freed after scene commit if the scene is static, otherwise the
+    // buffers will stay for quicker rebuild.
+    size_t *offsets;
+    Geometry **geometries_host;
+    char *geometry_data_host;
+#endif
 
   public:
 
