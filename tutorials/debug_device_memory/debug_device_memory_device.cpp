@@ -412,8 +412,8 @@ extern "C" void device_init (char* cfg)
 
   /* commit changes to scene */
 #if defined(EMBREE_SYCL_SUPPORT) && defined(EMBREE_SYCL_TUTORIAL)
-  //rtcCommitSceneWithQueue (g_scene1, *global_gpu_queue);
-  rtcCommitSceneWithQueue (data.g_scene, *global_gpu_queue);
+  //rtcCommitSceneWithQueue (g_scene1, *global_gpu_queue, nullptr);
+  rtcCommitSceneWithQueue (data.g_scene, *global_gpu_queue, nullptr);
 #else
   //rtcCommitScene (g_scene1);
   rtcCommitScene (data.g_scene);
