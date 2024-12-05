@@ -48,13 +48,15 @@ namespace embree
       quality_flags(RTC_BUILD_QUALITY_MEDIUM),
       modified(true),
       maxTimeSegments(0),
+#if defined(EMBREE_SYCL_SUPPORT)
       geometries_device(nullptr),
-      geometries_data_device(nullptr),
-      num_geometries_device(0),
-      geometry_data_device_byte_size(0),
+      geometry_data_device(nullptr),
+      num_geometries(0),
+      geometry_data_byte_size(0),
       offsets(nullptr),
       geometries_host(nullptr),
-      geometries_data_host(nullptr),
+      geometry_data_host(nullptr),
+#endif
       taskGroup(new TaskGroup()),
       progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0)
   {
@@ -78,8 +80,8 @@ namespace embree
   Scene::~Scene() noexcept
   {
 #if defined(EMBREE_SYCL_SUPPORT)
-    if (geometries_data_device) {
-      device->free(geometries_data_device);
+    if (geometry_data_device) {
+      device->free(geometry_data_device);
     }
     if (geometries_device) {
       device->free(geometries_device);
@@ -87,14 +89,14 @@ namespace embree
     if (scene_device) {
       device->free(scene_device);
     }
-    if (geometries_data_host) {
-      device->free(geometries_data_host);
+    if (offsets) {
+      device->free(offsets);
     }
     if (geometries_host) {
       device->free(geometries_host);
     }
-    if (offsets) {
-      device->free(offsets);
+    if (geometry_data_host) {
+      device->free(geometry_data_host);
     }
 #endif
 
