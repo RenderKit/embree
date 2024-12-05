@@ -194,7 +194,7 @@ namespace embree
     void build_gpu_accels();
     void commit_internal (bool join);
 #if defined(EMBREE_SYCL_SUPPORT)
-    void commit (bool join, sycl::queue queue);
+    void commit (bool join, sycl::queue queue, sycl::event* event);
 #endif
     void commit (bool join);
     void commit_task ();
@@ -319,7 +319,7 @@ namespace embree
 #if defined(EMBREE_SYCL_SUPPORT)
   private:
     void syncWithDevice();
-    void syncWithDevice(sycl::queue queue);
+    void syncWithDevice(sycl::queue queue, sycl::event* event);
 #endif
 
   public:
@@ -354,6 +354,11 @@ namespace embree
     Geometry** geometries_device; //!< list of all geometries on device
     char* geometries_data_device; //!< data buffer of all geometries on device
     size_t num_geometries_device;
+
+    size_t geometry_data_device_byte_size;
+    size_t* offsets;
+    Geometry** geometries_host;
+    char* geometries_data_host;
 
   public:
 

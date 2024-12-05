@@ -51,6 +51,10 @@ namespace embree
       geometries_device(nullptr),
       geometries_data_device(nullptr),
       num_geometries_device(0),
+      geometry_data_device_byte_size(0),
+      offsets(nullptr),
+      geometries_host(nullptr),
+      geometries_data_host(nullptr),
       taskGroup(new TaskGroup()),
       progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0)
   {
@@ -82,6 +86,15 @@ namespace embree
     }
     if (scene_device) {
       device->free(scene_device);
+    }
+    if (geometries_data_host) {
+      device->free(geometries_data_host);
+    }
+    if (geometries_host) {
+      device->free(geometries_host);
+    }
+    if (offsets) {
+      device->free(offsets);
     }
 #endif
 
@@ -894,10 +907,10 @@ namespace embree
   }
 
 #if defined(EMBREE_SYCL_SUPPORT)
-  void Scene::commit (bool join, sycl::queue queue)
+  void Scene::commit (bool join, sycl::queue queue, sycl::event* event)
   {
     commit_internal(join);
-    syncWithDevice(queue);
+    syncWithDevice(queue, event);
   }
 #endif
 

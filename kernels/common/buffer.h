@@ -8,6 +8,12 @@
 
 namespace embree
 {
+  enum class BufferDataPointerType {
+    HOST = 0,
+    DEVICE = 1,
+    UNKNOWN = 2
+  };
+
   /*! Implements an API data buffer object. This class may or may not own the data. */
   class Buffer : public RefCount
   {
@@ -120,8 +126,13 @@ namespace embree
     }
 
     /*! returns pointer to first element */
-    __forceinline char* getPtr() const {
-      return ptr;
+    __forceinline char* getPtr(BufferDataPointerType type) const
+    {
+      if (type == BufferDataPointerType::HOST) return getHostPtr();
+      else if (type == BufferDataPointerType::DEVICE) return getDevicePtr();
+
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer data pointer type specified");
+      return nullptr;
     }
 
     /*! returns pointer to first element */
@@ -153,27 +164,34 @@ namespace embree
       DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device);
       if (gpu_device) {
         sycl::queue queue(gpu_device->getGPUDevice());
-        commit(queue);
+        commit(queue, nullptr);
         queue.wait_and_throw();
       }
 #endif
     }
 
 #if defined(EMBREE_SYCL_SUPPORT)
-    __forceinline void commit(sycl::queue queue) {
-      if (dptr == ptr) return;
-      queue.memcpy(dptr, ptr, numBytes);
+    __forceinline void commit(sycl::queue queue, sycl::event* event) {
+      if (dptr == ptr)
+        return;
+
+      sycl::event last_event = queue.memcpy(dptr, ptr, numBytes);
+
+      if (event)
+        *event = last_event;
     }
 #endif
 
   public:
     Device* device;      //!< device to report memory usage to
-    size_t numBytes;        //!< number of bytes in the buffer
-    char* ptr;              //!< pointer to buffer data
-    bool shared;            //!< set if memory is shared with application
+    size_t numBytes;     //!< number of bytes in the buffer
+    char* ptr;           //!< pointer to buffer data
 #if defined(EMBREE_SYCL_SUPPORT)
-    char* dptr;
-    bool dshared;           //!< set if memory is shared with application
+    char* dptr;          //!< pointer to buffer data on device
+#endif
+    bool shared;         //!< set if memory is shared with application
+#if defined(EMBREE_SYCL_SUPPORT)
+    bool dshared;        //!< set if device memory is shared with application
 #endif
   };
 
@@ -200,6 +218,18 @@ namespace embree
       modCounter++;
       modified = true;
       buffer = buffer_in;
+    }
+
+    /*! returns pointer to the i'th element */
+    __forceinline char* getPtr(BufferDataPointerType pointerType) const
+    {
+      if (pointerType == BufferDataPointerType::HOST)
+        return ptr_ofs;
+      else if (pointerType == BufferDataPointerType::DEVICE)
+        return dptr_ofs;
+
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer data pointer type specified");
+      return nullptr;
     }
 
     /*! returns pointer to the first element */

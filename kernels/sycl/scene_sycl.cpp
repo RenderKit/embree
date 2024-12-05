@@ -130,11 +130,11 @@ void Scene::syncWithDevice()
   }
 
   sycl::queue queue = sycl::queue(gpu_device->getGPUDevice());
-  syncWithDevice(queue);
+  syncWithDevice(queue, nullptr);
   queue.wait_and_throw();
 }
 
-void Scene::syncWithDevice(sycl::queue queue)
+void Scene::syncWithDevice(sycl::queue queue, sycl::event* event)
 {
   auto startSyncWithDevice = std::chrono::high_resolution_clock::now();
   if(!device->is_gpu()) {
@@ -149,62 +149,69 @@ void Scene::syncWithDevice(sycl::queue queue)
   std::cout << "accelBufferCommit took " << durationAccelBufferCommit.count() << " milliseconds to execute." << std::endl;
 #endif
 
-  //for (uint32_t run = 0; run < 1; run++)
-  {
-    num_geometries_device = geometries.size();
+  bool num_geometries_changed = num_geometries_device != geometries.size();
+  num_geometries_device = geometries.size();
 
-    size_t* offsets = (size_t*)device->malloc(geometries.size() * sizeof(size_t), 16, EmbreeMemoryType::UNKNOWN);
-    size_t geometry_data_byte_size = 0;
-    for (size_t i = 0; i < geometries.size(); ++i) {
-      Geometry* geom = geometries[i].ptr;
-      const size_t byte_size = geom->getGeometryDataDeviceByteSize();
-      offsets[i] = geometry_data_byte_size;
-      geometry_data_byte_size += byte_size;
-    }
-
-    if (geometries_data_device) {
-      device->free(geometries_data_device);
-    }
+  if (num_geometries_changed) {
     if (geometries_device) {
       device->free(geometries_device);
     }
+    if (geometries_host) {
+      device->free(geometries_host);
+    }
+    if (offsets) {
+      device->free(offsets);
+    }
+    offsets = (size_t*)device->malloc(geometries.size() * sizeof(size_t), 16, EmbreeMemoryType::UNKNOWN);
     geometries_device = (Geometry**)device->malloc(sizeof(Geometry*) * geometries.size(), 16, EmbreeMemoryType::DEVICE);
-    geometries_data_device = (char*)device->malloc(geometry_data_byte_size, 16, EmbreeMemoryType::DEVICE);
-
-    Geometry** geometries_host = (Geometry**)device->malloc(sizeof(Geometry*)*geometries.size(), 16, EmbreeMemoryType::UNKNOWN);
-    char* geometries_data_host = (char*)device->malloc(geometry_data_byte_size, 16, EmbreeMemoryType::UNKNOWN);
-
-    std::memset(geometries_host, 0, sizeof(Geometry*) * geometries.size());
-    std::memset(geometries_data_host, 0, geometry_data_byte_size);
-
-    //TODO:
-    for(size_t i = 0; i < geometries.size(); ++i) {
-    //parallel_for(geometries.size(), [&] ( const size_t i ) {
-      if (geometries[i] && geometries[i]->isEnabled()) {
-        geometries[i]->convertToDeviceRepresentation(offsets[i], geometries_data_host, geometries_data_device);
-        geometries_host[i] = (Geometry*)(geometries_data_device + offsets[i]);
-      }
-    }//);
-
-    queue.memcpy(geometries_data_device, geometries_data_host, geometry_data_byte_size);
-    queue.memcpy(geometries_device, geometries_host, sizeof(Geometry*) * geometries.size());
-    queue.wait_and_throw();
-
-    device->free(geometries_data_host);
-    device->free(geometries_host);
-    device->free(offsets);
-
-  } // run
-  
-  if (scene_device) {
-    device->free(scene_device);
+    geometries_host = (Geometry**)device->malloc(sizeof(Geometry*)*geometries.size(), 16, EmbreeMemoryType::UNKNOWN);
   }
-  scene_device = (Scene*) device->malloc(sizeof(Scene), 16, EmbreeMemoryType::DEVICE);
-  queue.memcpy(scene_device, (void*)this, sizeof(Scene));
+
+  size_t geometry_data_byte_size_ = 0;
+  for (size_t i = 0; i < geometries.size(); ++i) {
+    Geometry* geom = geometries[i].ptr;
+    const size_t byte_size = geom->getGeometryDataDeviceByteSize();
+    offsets[i] = geometry_data_byte_size_;
+    geometry_data_byte_size_ += byte_size;
+  }
+
+  bool geometry_data_device_byte_size_changed = geometry_data_device_byte_size != geometry_data_byte_size_;
+  geometry_data_device_byte_size = geometry_data_byte_size_;
+
+  if (geometry_data_device_byte_size_changed) {
+    if (geometries_data_device) {
+      device->free(geometries_data_device);
+    }
+    if (geometries_data_host) {
+      device->free(geometries_data_host);
+    }
+    geometries_data_device = (char*)device->malloc(geometry_data_device_byte_size, 16, EmbreeMemoryType::DEVICE);
+    geometries_data_host = (char*)device->malloc(geometry_data_device_byte_size, 16, EmbreeMemoryType::UNKNOWN);
+  }
+
+  //TODO:
+  for(size_t i = 0; i < geometries.size(); ++i) {
+  //parallel_for(geometries.size(), [&] ( const size_t i ) {
+    if (geometries[i] && geometries[i]->isEnabled()) {
+      geometries[i]->convertToDeviceRepresentation(offsets[i], geometries_data_host, geometries_data_device);
+      geometries_host[i] = (Geometry*)(geometries_data_device + offsets[i]);
+    }
+  }//);
+
+  queue.memcpy(geometries_data_device, geometries_data_host, geometry_data_device_byte_size);
+  queue.memcpy(geometries_device, geometries_host, sizeof(Geometry*) * geometries.size());
+
+  if (!scene_device) {
+    scene_device = (Scene*) device->malloc(sizeof(Scene), 16, EmbreeMemoryType::DEVICE);
+  }
+  sycl::event last_event = queue.memcpy(scene_device, (void*)this, sizeof(Scene));
   auto endSyncWithDevice = std::chrono::high_resolution_clock::now();
   auto durationSyncWithDevice = std::chrono::duration_cast<std::chrono::milliseconds>(endSyncWithDevice - startSyncWithDevice);
 
   std::cout << "Scene sync with device took " << durationSyncWithDevice.count() << " milliseconds to execute." << std::endl;
+
+  if (event)
+    *event = last_event;
 }
 
 #endif

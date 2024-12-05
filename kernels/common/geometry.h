@@ -467,7 +467,7 @@ namespace embree
     }
 
     /*! Gets specified buffer. */
-    virtual void* getBuffer(RTCBufferType type, unsigned int slot) {
+    virtual void* getBufferData(RTCBufferType type, unsigned int slot, BufferDataPointerType pointerType) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry");
     }
 
