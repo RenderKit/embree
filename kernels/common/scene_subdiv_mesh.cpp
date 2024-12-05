@@ -115,7 +115,7 @@ namespace embree
   void SubdivMesh::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num)
   { 
     /* verify that all accesses are 4 bytes aligned */
-    if (((size_t(buffer->getPtr()) + offset) & 0x3) || (stride & 0x3))
+    if (((size_t(buffer->getHostPtr()) + offset) & 0x3) || (stride & 0x3))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION, "data must be 4 bytes aligned");
 
     if (type != RTC_BUFFER_TYPE_LEVEL)
@@ -223,67 +223,67 @@ namespace embree
     }
   }
 
-  void* SubdivMesh::getBuffer(RTCBufferType type, unsigned int slot)
+  void* SubdivMesh::getBufferData(RTCBufferType type, unsigned int slot, BufferDataPointerType pointerType)
   {
     if (type == RTC_BUFFER_TYPE_VERTEX)
     {
       if (slot >= vertices.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return vertices[slot].getPtr();
+      return vertices[slot].getPtr(pointerType);
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
       if (slot >= vertexAttribs.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return vertexAttribs[slot].getPtr();
+      return vertexAttribs[slot].getPtr(pointerType);
     }
     else if (type == RTC_BUFFER_TYPE_FACE)
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return faceVertices.getPtr();
+      return faceVertices.getPtr(pointerType);
     }
     else if (type == RTC_BUFFER_TYPE_INDEX)
     {
       if (slot >= topology.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return topology[slot].vertexIndices.getPtr();
+      return topology[slot].vertexIndices.getPtr(pointerType);
     }
     else if (type == RTC_BUFFER_TYPE_EDGE_CREASE_INDEX)
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return edge_creases.getPtr();
+      return edge_creases.getPtr(pointerType);
     }
     else if (type == RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT)
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return edge_crease_weights.getPtr();
+      return edge_crease_weights.getPtr(pointerType);
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX)
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return vertex_creases.getPtr();
+      return vertex_creases.getPtr(pointerType);
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT)
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return vertex_crease_weights.getPtr();
+      return vertex_crease_weights.getPtr(pointerType);
     }
     else if (type == RTC_BUFFER_TYPE_HOLE)
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return holes.getPtr();
+      return holes.getPtr(pointerType);
     }
     else if (type == RTC_BUFFER_TYPE_LEVEL)
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return levels.getPtr();
+      return levels.getPtr(pointerType);
     }
     else
     {

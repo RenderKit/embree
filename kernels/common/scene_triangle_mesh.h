@@ -36,7 +36,7 @@ namespace embree
     virtual void setNumTimeSteps (unsigned int numTimeSteps) override;
     virtual void setVertexAttributeCount (unsigned int N) override;
     virtual void setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num) override;
-    virtual void* getBuffer(RTCBufferType type, unsigned int slot) override;
+    virtual void* getBufferData(RTCBufferType type, unsigned int slot, BufferDataPointerType pointerType) override;
     virtual void updateBuffer(RTCBufferType type, unsigned int slot) override;
     virtual void commit() override;
     virtual bool verify() override;

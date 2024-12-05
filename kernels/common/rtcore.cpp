@@ -83,25 +83,24 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END(nullptr);
   }
 
-  RTC_API void rtcCommitSceneWithQueue (RTCScene hscene, sycl::queue queue)
+  RTC_API void rtcCommitSceneWithQueue (RTCScene hscene, sycl::queue queue, sycl::event* event)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
-    RTC_TRACE(rtcCommitScene);
+    RTC_TRACE(rtcCommitSceneWithQueue);
     RTC_VERIFY_HANDLE(hscene);
     RTC_ENTER_DEVICE(hscene);
-    scene->commit(false, queue);
-
+    scene->commit(false, queue, event);
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcCommitBufferWithQueue(RTCBuffer hbuffer, sycl::queue queue) {
+  RTC_API void rtcCommitBufferWithQueue(RTCBuffer hbuffer, sycl::queue queue, sycl::event* event) {
     Buffer* buffer = (Buffer*)hbuffer;
     RTC_CATCH_BEGIN;
-    RTC_TRACE(rtcCommitBuffer);
+    RTC_TRACE(rtcCommitBufferWithQueue);
     RTC_VERIFY_HANDLE(hbuffer);
     RTC_ENTER_DEVICE(hbuffer);
-    buffer->commit(queue);
+    buffer->commit(queue, event);
     RTC_CATCH_END2(buffer);
   }
 
@@ -325,7 +324,7 @@ RTC_NAMESPACE_BEGIN;
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
-    RTC_TRACE(rtcGetSceneDevice);
+    RTC_TRACE(rtcGetSceneTraversable);
     RTC_VERIFY_HANDLE(hscene);
     RTCTraversable traversable = (RTCTraversable)scene->getTraversable();
     if (!traversable)
@@ -1942,6 +1941,8 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     else
 #endif
     {
+      if (dptr != nullptr)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"Embree device is no SYCL device. Device pointer argument must not be valid, pass NULL instead");
       rtcSetSharedGeometryBuffer(hgeometry, type, slot, format, ptr, byteOffset, byteStride, itemCount);
     }
 
@@ -1990,23 +1991,23 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
       if (bufferType == RTC_BUFFER_TYPE_VERTEX || bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
         bytes += (16 - (byteStride%16))%16;
 
-      if ((ptr == nullptr) || (dptr == nullptr)) {
-        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"host and device pointer handles 'ptr' and 'dptr' may not be NULL pointers when using SYCL devices");
-      }
-
       Ref<Buffer> buffer = new Buffer(geometry->device, bytes, nullptr, nullptr);
       geometry->setBuffer(bufferType, slot, format, buffer, 0, byteStride, (unsigned int)itemCount);
 
-      *ptr = buffer->getHostPtr();
-      *dptr = buffer->getDevicePtr();
+      if(ptr)
+        *ptr = buffer->getHostPtr();
+      if (dptr)
+        *dptr = buffer->getDevicePtr();
     }
     else
 #endif
     {
+      void* tmp = rtcSetNewGeometryBuffer(hgeometry, bufferType, slot, format, byteStride, itemCount);
       if(ptr)
-        *ptr = rtcSetNewGeometryBuffer(hgeometry, bufferType, slot, format, byteStride, itemCount);
-      else
-        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"host pointer handle 'ptr' may not be NULL when using SYCL devices");
+        *ptr = tmp;
+      if (dptr) {
+        *dptr = tmp;
+      }
     }
 
     RTC_CATCH_END2(geometry);
@@ -2019,7 +2020,19 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     RTC_TRACE(rtcGetGeometryBufferData);
     RTC_VERIFY_HANDLE(hgeometry);
     RTC_ENTER_DEVICE(hgeometry);
-    return geometry->getBuffer(type, slot);
+    return geometry->getBufferData(type, slot, BufferDataPointerType::HOST);
+    RTC_CATCH_END2(geometry);
+    return nullptr;
+  }
+
+  RTC_API void* rtcGetGeometryBufferDataDevice(RTCGeometry hgeometry, RTCBufferType type, unsigned int slot)
+  {
+    Geometry* geometry = (Geometry*) hgeometry;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetGeometryBufferDataDevice);
+    RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
+    return geometry->getBufferData(type, slot, BufferDataPointerType::DEVICE);
     RTC_CATCH_END2(geometry);
     return nullptr;
   }

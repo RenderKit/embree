@@ -257,7 +257,6 @@ void animateSphere (int id, float time)
 {
   /* animate vertices */
   RTCGeometry geom = rtcGetGeometry(data.g_scene,id);
-  Vertex* vertices = (Vertex*) rtcGetGeometryBufferData(geom,RTC_BUFFER_TYPE_VERTEX,0);
   const float rcpNumTheta = rcp((float)data.numTheta);
   const float rcpNumPhi   = rcp((float)data.numPhi);
   const Vec3fa pos = Vec3fa(data.position[id]);
@@ -265,23 +264,12 @@ void animateSphere (int id, float time)
   const float f = 2.0f*(1.0f+0.5f*sin(time));
 
   /* loop over all vertices */
-//#if !defined(EMBREE_SYCL_TUTORIAL) // enables parallel execution
+  Vertex* vertices = (Vertex*) rtcGetGeometryBufferData(geom,RTC_BUFFER_TYPE_VERTEX,0);
   parallel_for(size_t(0),size_t(data.numPhi+1),[&](const range<size_t>& range) {
     const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
       animateSphere((int)i,threadIndex,vertices,rcpNumTheta,rcpNumPhi,pos,r,f);
-  }); 
-//#else
-//  for (unsigned int phi=0; phi<data.numPhi+1; phi++) for (int theta=0; theta<data.numTheta; theta++)
-//  {
-//    Vertex* v = &vertices[phi*data.numTheta+theta];
-//    const float phif   = phi*float(pi)*rcpNumPhi;
-//    const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
-//    v->x = pos.x+r*sin(f*phif)*sin(thetaf);
-//    v->y = pos.y+r*cos(phif);
-//    v->z = pos.z+r*sin(f*phif)*cos(thetaf);
-//  }
-//#endif
+  });
 
   /* commit mesh */
   rtcUpdateGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0);
@@ -340,7 +328,7 @@ extern "C" void device_render (int* pixels,
   /* commit changes to scene */
   auto start_commit = std::chrono::high_resolution_clock::now();
 #if defined(EMBREE_SYCL_TUTORIAL)
-  rtcCommitSceneWithQueue (data.g_scene, *global_gpu_queue);
+  rtcCommitSceneWithQueue (data.g_scene, *global_gpu_queue, nullptr);
 #else
   rtcCommitScene (data.g_scene);
 #endif

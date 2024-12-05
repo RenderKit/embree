@@ -34,7 +34,7 @@ RTC_API void rtcSetDeviceSYCLDevice(RTCDevice device, const sycl::device sycl_de
 
 /* rtcCommitSceneWithQueue is asynchronous, user has to call queue.wait()
    for synchronization. rtcCommitScene is blocking. */
-RTC_API void rtcCommitSceneWithQueue(RTCScene scene, sycl::queue queue);
+RTC_API void rtcCommitSceneWithQueue(RTCScene scene, sycl::queue queue, sycl::event* event);
 
 #endif
 

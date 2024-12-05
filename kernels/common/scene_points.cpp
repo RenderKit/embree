@@ -44,7 +44,7 @@ namespace embree
                          unsigned int num)
   {
     /* verify that all accesses are 4 bytes aligned */
-    if ((type != RTC_BUFFER_TYPE_FLAGS) && (((size_t(buffer->getPtr()) + offset) & 0x3) || (stride & 0x3)))
+    if ((type != RTC_BUFFER_TYPE_FLAGS) && (((size_t(buffer->getHostPtr()) + offset) & 0x3) || (stride & 0x3)))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION, "data must be 4 bytes aligned");
 
     if (type == RTC_BUFFER_TYPE_VERTEX) {
@@ -82,20 +82,20 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
   }
 
-  void* Points::getBuffer(RTCBufferType type, unsigned int slot)
+  void* Points::getBufferData(RTCBufferType type, unsigned int slot, BufferDataPointerType pointerType)
   {
     if (type == RTC_BUFFER_TYPE_VERTEX) {
       if (slot >= vertices.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return vertices[slot].getPtr();
+      return vertices[slot].getPtr(pointerType);
     } else if (type == RTC_BUFFER_TYPE_NORMAL) {
       if (slot >= normals.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return normals[slot].getPtr();
+      return normals[slot].getPtr(pointerType);
     } else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
       if (slot >= vertexAttribs.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return vertexAttribs[slot].getPtr();
+      return vertexAttribs[slot].getPtr(pointerType);
     } else {
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
       return nullptr;
