@@ -5,10 +5,10 @@
 #include "../common/tutorial/benchmark_render.h"
 
 #if defined(EMBREE_SYCL_TUTORIAL)
-#  define NAME "debug_device_memory_sycl"
+#  define NAME "host_device_memory_sycl"
 #  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
 #else
-#  define NAME "debug_device_memory"
+#  define NAME "host_device_memory"
 #  define FEATURES FEATURE_RTCORE
 #endif
 
@@ -30,7 +30,7 @@ namespace embree
 int main(int argc, char** argv) {
   try {
     if (embree::TutorialBenchmark::benchmark(argc, argv)) {
-      return embree::TutorialBenchmark(embree::renderBenchFunc<embree::Tutorial>).main(argc, argv, "debug_device_memory");
+      return embree::TutorialBenchmark(embree::renderBenchFunc<embree::Tutorial>).main(argc, argv, "host_device_memory");
     }
     return embree::Tutorial().main(argc,argv);
   } catch (std::exception& e ) {
