@@ -146,8 +146,15 @@ void update_trees(float time)
   rtcGetSceneBounds(scene_terrain, &bounds);
 
   RTCTraversable traversable = rtcGetSceneTraversable(scene_terrain);
-  TutorialData ldata = data;
   unsigned int lnum_trees_sqrt = num_trees_sqrt;
+
+#if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION)
+  unsigned int* tree_ids = data.tree_ids_device;
+  AffineSpace3fa* tree_transforms = data.tree_transforms_device;
+#else
+  unsigned int* tree_ids = data.tree_ids_host;
+  AffineSpace3fa* tree_transforms = data.tree_transforms_host;
+#endif
 
 #if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION)
   unsigned int lnum_trees = num_trees;
@@ -161,7 +168,7 @@ void update_trees(float time)
 #endif
     RandomSampler rng;
     RandomSampler_init(rng, t);
-    ldata.tree_ids_device[t] = min(5, (int)(6 * RandomSampler_getFloat(rng)));
+    tree_ids[t] = min(5, (int)(6 * RandomSampler_getFloat(rng)));
 
     unsigned int j = t / lnum_trees_sqrt;
     unsigned int i = t % lnum_trees_sqrt;
@@ -210,12 +217,12 @@ void update_trees(float time)
       treePos = Vec3fa(inf, inf, inf);
     }
 
-    ldata.tree_transforms_device[t] = AffineSpace3fa::translate(treePos);
+    tree_transforms[t] = AffineSpace3fa::translate(treePos);
 #if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION)
     });
   });
-  global_gpu_queue->memcpy(ldata.tree_ids_host, ldata.tree_ids_device, sizeof(uint32_t)*num_trees);
-  global_gpu_queue->memcpy(ldata.tree_transforms_host, ldata.tree_transforms_device, sizeof(AffineSpace3fa)*num_trees);
+  global_gpu_queue->memcpy(data.tree_ids_host, data.tree_ids_device, sizeof(uint32_t)*num_trees);
+  global_gpu_queue->memcpy(data.tree_transforms_host, data.tree_transforms_device, sizeof(AffineSpace3fa)*num_trees);
   global_gpu_queue->wait_and_throw();
 #else
   }});
@@ -293,10 +300,17 @@ void rebuild_instances(size_t old_num_trees)
 
   if (g_use_instance_array)
   {
+#if defined(EMBREE_SYCL_TUTORIAL)
+    void* tree_ids_device = data.tree_ids_device;
+    void* tree_transforms_device = data.tree_transforms_device;
+#else
+    void* tree_ids_device = nullptr;
+    void* tree_transforms_device = nullptr;
+#endif
     instance_array = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE_ARRAY);
     rtcSetGeometryInstancedScenes(instance_array,(RTCScene*)scene_trees_selected,6);
-    rtcSetSharedGeometryBufferHostDevice(instance_array, RTC_BUFFER_TYPE_INDEX,     0, RTC_FORMAT_UINT,                  (void*)data.tree_ids_host, (void*)data.tree_ids_device, 0, sizeof(unsigned int),  num_trees);
-    rtcSetSharedGeometryBufferHostDevice(instance_array, RTC_BUFFER_TYPE_TRANSFORM, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, (void*)data.tree_transforms_host, (void*)data.tree_transforms_device, 0, sizeof(AffineSpace3fa), num_trees);
+    rtcSetSharedGeometryBufferHostDevice(instance_array, RTC_BUFFER_TYPE_INDEX,     0, RTC_FORMAT_UINT,                  (void*)data.tree_ids_host, tree_ids_device, 0, sizeof(unsigned int),  num_trees);
+    rtcSetSharedGeometryBufferHostDevice(instance_array, RTC_BUFFER_TYPE_TRANSFORM, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, (void*)data.tree_transforms_host, tree_transforms_device, 0, sizeof(AffineSpace3fa), num_trees);
     rtcAttachGeometry(data.g_scene,instance_array);
     rtcReleaseGeometry(instance_array);
     rtcCommitGeometry(instance_array);

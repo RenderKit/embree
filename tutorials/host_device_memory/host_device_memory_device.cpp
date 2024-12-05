@@ -1,23 +1,18 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "debug_device_memory_device.h"
+#include "host_device_memory_device.h"
 
 #include <stdlib.h>
 
 namespace embree {
 
-AffineSpace3fa axfm0;
-AffineSpace3fa axfm1;
-
 /* all features required by this tutorial */
 #define FEATURE_MASK \
   RTC_FEATURE_FLAG_TRIANGLE | \
-  RTC_FEATURE_FLAG_INSTANCE | \
   RTC_FEATURE_FLAG_MOTION_BLUR
 
 RTCScene g_scene = nullptr;
-RTCScene g_scene1 = nullptr;
 TutorialData data;
 
 #define GEOMETRY_MOTION_BLUR
@@ -57,24 +52,25 @@ unsigned int addCubeHostDevice (RTCScene scene, Vec3fa d)
 #endif
 
   /* set triangles and face colors */
-  Triangle* hTriangles = data.hTrianglesHostDevice = (Triangle*) alignedMalloc(12*sizeof(Triangle), 16);
-  Triangle* dTriangles = data.dTrianglesHostDevice = data.hTrianglesHostDevice;
+  Triangle* fillTriangles;
+  Triangle* hTriangles = fillTriangles = data.hTrianglesHostDevice = (Triangle*) alignedMalloc(12*sizeof(Triangle), 16);
+  Triangle* dTriangles = nullptr;
 #if defined(EMBREE_SYCL_TUTORIAL)
-  dTriangles = data.dTrianglesHostDevice = sycl::aligned_alloc_device<Triangle>(16, 12, *global_gpu_device, *global_gpu_context);
+  dTriangles = fillTriangles = data.dTrianglesHostDevice = sycl::aligned_alloc_device<Triangle>(16, 12, *global_gpu_device, *global_gpu_context);
   global_gpu_queue->single_task([=](){
 #endif
-    dTriangles[ 0].v0 = 0; dTriangles[ 0].v1 = 1; dTriangles[ 0].v2 = 2;
-    dTriangles[ 1].v0 = 1; dTriangles[ 1].v1 = 3; dTriangles[ 1].v2 = 2;
-    dTriangles[ 2].v0 = 4; dTriangles[ 2].v1 = 6; dTriangles[ 2].v2 = 5;
-    dTriangles[ 3].v0 = 5; dTriangles[ 3].v1 = 6; dTriangles[ 3].v2 = 7;
-    dTriangles[ 4].v0 = 0; dTriangles[ 4].v1 = 4; dTriangles[ 4].v2 = 1;
-    dTriangles[ 5].v0 = 1; dTriangles[ 5].v1 = 4; dTriangles[ 5].v2 = 5;
-    dTriangles[ 6].v0 = 2; dTriangles[ 6].v1 = 3; dTriangles[ 6].v2 = 6;
-    dTriangles[ 7].v0 = 3; dTriangles[ 7].v1 = 7; dTriangles[ 7].v2 = 6;
-    dTriangles[ 8].v0 = 0; dTriangles[ 8].v1 = 2; dTriangles[ 8].v2 = 4;
-    dTriangles[ 9].v0 = 2; dTriangles[ 9].v1 = 6; dTriangles[ 9].v2 = 4;
-    dTriangles[10].v0 = 1; dTriangles[10].v1 = 5; dTriangles[10].v2 = 3;
-    dTriangles[11].v0 = 3; dTriangles[11].v1 = 5; dTriangles[11].v2 = 7;
+    fillTriangles[ 0].v0 = 0; fillTriangles[ 0].v1 = 1; fillTriangles[ 0].v2 = 2;
+    fillTriangles[ 1].v0 = 1; fillTriangles[ 1].v1 = 3; fillTriangles[ 1].v2 = 2;
+    fillTriangles[ 2].v0 = 4; fillTriangles[ 2].v1 = 6; fillTriangles[ 2].v2 = 5;
+    fillTriangles[ 3].v0 = 5; fillTriangles[ 3].v1 = 6; fillTriangles[ 3].v2 = 7;
+    fillTriangles[ 4].v0 = 0; fillTriangles[ 4].v1 = 4; fillTriangles[ 4].v2 = 1;
+    fillTriangles[ 5].v0 = 1; fillTriangles[ 5].v1 = 4; fillTriangles[ 5].v2 = 5;
+    fillTriangles[ 6].v0 = 2; fillTriangles[ 6].v1 = 3; fillTriangles[ 6].v2 = 6;
+    fillTriangles[ 7].v0 = 3; fillTriangles[ 7].v1 = 7; fillTriangles[ 7].v2 = 6;
+    fillTriangles[ 8].v0 = 0; fillTriangles[ 8].v1 = 2; fillTriangles[ 8].v2 = 4;
+    fillTriangles[ 9].v0 = 2; fillTriangles[ 9].v1 = 6; fillTriangles[ 9].v2 = 4;
+    fillTriangles[10].v0 = 1; fillTriangles[10].v1 = 5; fillTriangles[10].v2 = 3;
+    fillTriangles[11].v0 = 3; fillTriangles[11].v1 = 5; fillTriangles[11].v2 = 7;
 #if defined(EMBREE_SYCL_TUTORIAL)
   });
 
@@ -324,42 +320,7 @@ extern "C" void device_init (char* cfg)
   /* create scene */
   TutorialData_Constructor(&data);
 
-#if 0 && defined(EMBREE_SYCL_TUTORIAL)
-
-  for (size_t i = 0; i < 1024 * 1024; ++i) {
-    std::cout << "start " << i << std::endl;
-
-    std::cout << "rtcNewScene" << std::endl;
-    RTCScene scene = rtcNewScene(g_device);
-
-    /* add cubes */
-    std::cout << "addCubes"  << std::endl;
-    addCubeHostDevice       (scene, Vec3fa(-3.f, 0.f, -3.f));
-    addCubeShared           (scene, Vec3fa(-3.f, 0.f,  3.f));
-    addCubeBufferHostDevice (scene, Vec3fa( 3.f, 0.f, -3.f));
-    addCubeBufferShared     (scene, Vec3fa( 3.f, 0.f,  3.f));
-
-    std::cout << "rtcCommitScene"  << std::endl;
-    rtcCommitScene(scene);
-
-    std::cout << "rtcReleaseScene"  << std::endl;
-    rtcReleaseScene(scene);
-
-    // clean up memory
-    alignedUSMFree(data.hTrianglesHostDevice); data.hTrianglesHostDevice = nullptr;
-    alignedUSMFree(data.hTrianglesBufferHostDevice); data.hTrianglesBufferHostDevice = nullptr;
-    alignedUSMFree(data.dTrianglesHostDevice); data.dTrianglesHostDevice = nullptr;
-    alignedUSMFree(data.trianglesShared); data.trianglesShared = nullptr;
-    alignedUSMFree(data.trianglesBufferShared); data.trianglesBufferShared = nullptr;
-
-    std::cout << "done " << i << std::endl;
-  }
-
-#endif
-
   g_scene = data.g_scene = rtcNewScene(g_device);
-  //g_scene1 = rtcNewScene(g_device);
-  //rtcSetSceneFlags(data.g_scene, RTC_SCENE_FLAG_PREFETCH_USM_SHARED_ON_GPU);
 
   /* create face and vertex color arrays */
   data.face_colors = (Vec3fa*) alignedUSMMalloc((12)*sizeof(Vec3fa),16);
@@ -392,30 +353,13 @@ extern "C" void device_init (char* cfg)
   addCubeBufferHostDevice (g_scene, Vec3fa( 3.f, 0.f, -3.f));
   addCubeBufferShared     (g_scene, Vec3fa( 3.f, 0.f,  3.f));
 
-  //RTCGeometry inst = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-
-  //rtcSetGeometryTimeStepCount(inst, 2);
-  //rtcSetGeometryInstancedScene(inst, g_scene1);
-
-  //LinearSpace3fa xfm = one;
-  //axfm0 = AffineSpace3fa(xfm,Vec3fa(0.f, 0.f, 0.f));
-  //axfm1 = AffineSpace3fa(xfm,Vec3fa(0.f, 2.f, 0.f));
-  //rtcSetGeometryTransform(inst,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&(axfm0.l.vx.x));
-  //rtcSetGeometryTransform(inst,1,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&(axfm1.l.vx.x));
-  
-  //rtcAttachGeometry(data.g_scene,inst);
-  //rtcReleaseGeometry(inst);
-  //rtcCommitGeometry(inst);
-
   /* add ground plane */
   addGroundPlane(data.g_scene);
 
   /* commit changes to scene */
 #if defined(EMBREE_SYCL_SUPPORT) && defined(EMBREE_SYCL_TUTORIAL)
-  //rtcCommitSceneWithQueue (g_scene1, *global_gpu_queue, nullptr);
   rtcCommitSceneWithQueue (data.g_scene, *global_gpu_queue, nullptr);
 #else
-  //rtcCommitScene (g_scene1);
   rtcCommitScene (data.g_scene);
 #endif
   data.g_traversable = rtcGetSceneTraversable(data.g_scene);
@@ -460,7 +404,6 @@ void renderPixelStandard(const TutorialData& data,
   Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // || ray.instID[0] != RTC_INVALID_GEOMETRY_ID)
   {
-#if 1
     Vec3fa diffuse = data.face_colors[ray.primID];
     color = color + diffuse*0.5f;
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
@@ -478,44 +421,6 @@ void renderPixelStandard(const TutorialData& data,
     /* add light contribution */
     if (shadow.tfar >= 0.0f)
       color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f);
-#else
-
-#if 0
-    if (ray.geomID == 0)
-      color = Vec3fa(0.f, 0.f, 1.f);
-    else if (ray.geomID == 1)
-      color = Vec3fa(0.f, 1.f, 0.f);
-    else if (ray.geomID == 2)
-      color = Vec3fa(1.f, 0.f, 0.f);
-    else
-      color = Vec3fa(1.f);
-#endif
-
-#if 1
-    if (ray.primID == RTC_INVALID_GEOMETRY_ID)
-      color = Vec3fa(0.f, 1.f, 1.f);
-    else if (ray.primID < 0)
-      color = Vec3fa(1.f, 0.f, 0.f);
-    else if (ray.primID == 0)
-      color = Vec3fa(0.f, 0.f, 1.f);
-    else if (ray.primID == 1)
-      color = Vec3fa(0.f, 1.f, 0.f);
-    else if (ray.primID == 2)
-      color = Vec3fa(0.5f, 0.5f, 0.f);
-    else
-      color = Vec3fa(1.f);
-#endif
-
-#if 0
-    color = Vec3fa(ray.u, ray.v, 0.f);
-#endif
-
-#if 0
-    color = Vec3fa(0.f, 1.f, 0.f);
-#endif
-
-#endif
-
   }
 
   /* write color to framebuffer */
