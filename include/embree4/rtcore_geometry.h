@@ -183,6 +183,11 @@ RTC_API void rtcSetNewGeometryBufferHostDevice(RTCGeometry geometry, enum RTCBuf
 /* Returns the pointer to the data of a buffer. */
 RTC_API void* rtcGetGeometryBufferData(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot);
 
+/* Returns a pointer to the buffer data on the device. Returns the same pointer as
+  rtcGetGeometryBufferData if the device is no SYCL device or if Embree is executed on a
+  system with unified memory (e.g., iGPUs). */
+RTC_API void* rtcGetGeometryBufferDataDevice(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot);
+
 /* Updates a geometry buffer. */
 RTC_API void rtcUpdateGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot);
 
