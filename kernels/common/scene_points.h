@@ -30,7 +30,7 @@ namespace embree
                    size_t offset,
                    size_t stride,
                    unsigned int num);
-    void* getBuffer(RTCBufferType type, unsigned int slot);
+    void* getBufferData(RTCBufferType type, unsigned int slot, BufferDataPointerType pointerType);
     void updateBuffer(RTCBufferType type, unsigned int slot);
     void commit();
     bool verify();

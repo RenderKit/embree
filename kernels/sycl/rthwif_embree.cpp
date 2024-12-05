@@ -666,6 +666,7 @@ SYCL_EXTERNAL __attribute__((always_inline)) void rtcIntersectRTHW(sycl::global_
   ray.v = 0;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
+
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   for (uint32_t l=0; l<RTC_MAX_INSTANCE_LEVEL_COUNT; l++) {
     ray.instID[l] = RTC_INVALID_GEOMETRY_ID;

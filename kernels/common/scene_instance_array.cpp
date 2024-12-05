@@ -88,7 +88,7 @@ namespace embree
   void InstanceArray::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num)
   {
     /* verify that all accesses are 4 bytes aligned */
-    if (((size_t(buffer->getPtr()) + offset) & 0x3) || (stride & 0x3))
+    if (((size_t(buffer->getHostPtr()) + offset) & 0x3) || (stride & 0x3))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION, "data must be 4 bytes aligned");
 
     if (type == RTC_BUFFER_TYPE_TRANSFORM)
@@ -122,19 +122,19 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
   }
 
-  void* InstanceArray::getBuffer(RTCBufferType type, unsigned int slot)
+  void* InstanceArray::getBufferData(RTCBufferType type, unsigned int slot, BufferDataPointerType pointerType)
   {
     if (type == RTC_BUFFER_TYPE_TRANSFORM)
     {
       if (slot >= l2w_buf.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid transform buffer slot");
-      return l2w_buf[slot].getPtr();
+      return l2w_buf[slot].getPtr(pointerType);
     }
     else if (type == RTC_BUFFER_TYPE_INDEX)
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid index buffer slot. must be 0");
-      return object_ids.getPtr();
+      return object_ids.getPtr(pointerType);
     }
     else
     {
