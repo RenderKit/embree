@@ -47,6 +47,18 @@
       }
     },
     {
+      "name": "nightly-windows-DG2-MULTILEVEL",
+      "inherits": ["package-windows", "env", "dpcpp-windows", "ispc_NEWEST", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "SSE2",
+        "EMBREE_MAX_INSTANCE_LEVEL_COUNT": "2"
+      }
+    },
+    {
       "name": "nightly-windows-DG2-JIT",
       "inherits": ["package-windows", "env", "dpcpp-windows", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
