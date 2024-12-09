@@ -12,6 +12,6 @@ ADD_LIBRARY(scenegraph STATIC
     scenegraph.cpp
     geometry_creation.cpp)
 
-TARGET_LINK_LIBRARIES(scenegraph sys math lexers image embree)
+TARGET_LINK_LIBRARIES(scenegraph alloc_tutorial sys math lexers image embree)
 SET_PROPERTY(TARGET scenegraph PROPERTY FOLDER tutorials/common)
 SET_PROPERTY(TARGET scenegraph APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
