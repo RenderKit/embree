@@ -720,11 +720,9 @@ namespace embree
   }
 
   void DeviceGPU::enter() {
-    enableUSMAllocEmbree(&gpu_context,&gpu_device);
   }
 
   void DeviceGPU::leave() {
-    disableUSMAllocEmbree();
   }
 
   void* DeviceGPU::malloc(size_t size, size_t align) {
