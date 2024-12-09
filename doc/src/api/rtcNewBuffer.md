@@ -26,6 +26,13 @@ and deallocated when the buffer is destroyed.
 ``` {include=src/api/inc/buffer_padding.md}
 ```
 
+If the `device` is a Embree SYCL device, the buffer will be allocated
+using SYCL USM shared memory, i.e. the buffer can be accessed on the host
+and device (GPU) and the SYCL runtime will handle buffer transfers automatically.
+
+For precise control over when memory is copied from host to device, 
+a buffer can also be created using `rtcNewBufferHostDevice`.
+
 #### EXIT STATUS
 
 On failure `NULL` is returned and an error code is set that can be
@@ -33,4 +40,4 @@ queried using `rtcGetDeviceError`.
 
 #### SEE ALSO
 
-[rtcRetainBuffer], [rtcReleaseBuffer]
+[rtcNewBufferHostDevice], [rtcRetainBuffer], [rtcReleaseBuffer]
