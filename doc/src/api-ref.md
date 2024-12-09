@@ -460,14 +460,23 @@
 ```
 \pagebreak
 
-
 ## rtcNewBuffer
 ``` {include=src/api/rtcNewBuffer.md}
 ```
 \pagebreak
 
+## rtcNewBufferHostDevice
+``` {include=src/api/rtcNewBufferHostDevice.md}
+```
+\pagebreak
+
 ## rtcNewSharedBuffer
 ``` {include=src/api/rtcNewSharedBuffer.md}
+```
+\pagebreak
+
+## rtcNewSharedBufferHostDevice
+``` {include=src/api/rtcNewSharedBufferHostDevice.md}
 ```
 \pagebreak
 
@@ -483,6 +492,21 @@
 
 ## rtcGetBufferData
 ``` {include=src/api/rtcGetBufferData.md}
+```
+\pagebreak
+
+## rtcGetBufferDataDevice
+``` {include=src/api/rtcGetBufferDataDevice.md}
+```
+\pagebreak
+
+## rtcCommitBuffer
+``` {include=src/api/rtcCommitBuffer.md}
+```
+\pagebreak
+
+## rtcCommitBufferWithQueue
+``` {include=src/api/rtcCommitBufferWithQueue.md}
 ```
 \pagebreak
 
