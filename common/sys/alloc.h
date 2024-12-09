@@ -9,34 +9,21 @@
 
 namespace embree
 {
-#if defined(EMBREE_SYCL_SUPPORT)
-
-  /* enables SYCL USM allocation */
-  void enableUSMAllocEmbree(sycl::context* context, sycl::device* device);
-  void enableUSMAllocTutorial(sycl::context* context, sycl::device* device);
-
-  /* disables SYCL USM allocation */
-  void disableUSMAllocEmbree();
-  void disableUSMAllocTutorial();
-
-#endif
-  
 #define ALIGNED_STRUCT_(align)                                            \
   void* operator new(size_t size) { return alignedMalloc(size,align); }   \
   void operator delete(void* ptr) { alignedFree(ptr); }                   \
   void* operator new[](size_t size) { return alignedMalloc(size,align); } \
   void operator delete[](void* ptr) { alignedFree(ptr); }
   
-#define ALIGNED_STRUCT_USM_(align)                                          \
-  void* operator new(size_t size) { return alignedUSMMalloc(size,align); }   \
-  void operator delete(void* ptr) { alignedUSMFree(ptr); }                   \
-  void* operator new[](size_t size) { return alignedUSMMalloc(size,align); } \
-  void operator delete[](void* ptr) { alignedUSMFree(ptr); }
-  
 #define ALIGNED_CLASS_(align)                                          \
  public:                                                               \
     ALIGNED_STRUCT_(align)                                             \
  private:
+
+  /*! aligned allocation */
+  void* alignedMalloc(size_t size, size_t align);
+  void alignedFree(void* ptr);
+
 
   enum EmbreeUSMMode {
     EMBREE_USM_SHARED = 0,
@@ -50,32 +37,13 @@ namespace embree
     SHARED = 2,
     UNKNOWN = 3
   };
-  
-  /*! aligned allocation */
-  void* alignedMalloc(size_t size, size_t align);
-  void alignedFree(void* ptr);
-
-  /*! aligned allocation using SYCL USM */
-  void* alignedUSMMalloc(size_t size, size_t align = 16, EmbreeUSMMode mode = EMBREE_USM_SHARED_DEVICE_READ_ONLY);
-  void alignedUSMFree(void* ptr);
 
 #if defined(EMBREE_SYCL_SUPPORT)
-  
+
   /*! aligned allocation using SYCL USM */
   void* alignedSYCLMalloc(sycl::context* context, sycl::device* device, size_t size, size_t align, EmbreeUSMMode mode);
   void* alignedSYCLMalloc(sycl::context* context, sycl::device* device, size_t size, size_t align, EmbreeUSMMode mode, EmbreeMemoryType type);
   void alignedSYCLFree(sycl::context* context, void* ptr);
-
-  // deleter functor to use as deleter in std unique or shared pointers that
-  // capture raw pointers created by sycl::malloc and it's variants
-  template<typename T>
-  struct sycl_deleter
-  {
-    void operator()(T const* ptr)
-    {
-      alignedUSMFree((void*)ptr);
-    }
-  };
 
 #endif
   
