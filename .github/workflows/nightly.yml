@@ -449,6 +449,32 @@ jobs:
         cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
+  nightly-windows-DG2-MULTILEVEL-build:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    with:
+      runs-on: '[ "Windows", "NAS", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
+      artifact-out: nightly-windows-DG2-MULTILEVEL-build
+      artifact-path: ./build/*.zip
+      cmd: |
+        cmake --preset nightly-windows-DG2-MULTILEVEL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --config Release --target build
+
+  nightly-windows-DG2-MULTILEVEL-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    needs: ["nightly-windows-DG2-MULTILEVEL-build"]
+    with:
+      runs-on: '[ "Windows", "NAS", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
+      artifact-in: nightly-windows-DG2-MULTILEVEL-build
+      cmd: |
+        cmake --preset nightly-windows-DG2-MULTILEVEL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --config Release --target test_package
+
   ################################################################################
   ################################################################################
   # CPU tests
