@@ -1,4 +1,4 @@
-% rtcCommitSBuffer(3) | Embree Ray Tracing Kernels 4
+% rtcCommitBuffer(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 

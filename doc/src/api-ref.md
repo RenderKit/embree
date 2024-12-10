@@ -269,8 +269,18 @@
 ```
 \pagebreak
 
+## rtcSetSharedGeometryBufferHostDevice
+``` {include=src/api/rtcSetSharedGeometryBufferHostDevice.md}
+```
+\pagebreak
+
 ## rtcSetNewGeometryBuffer
 ``` {include=src/api/rtcSetNewGeometryBuffer.md}
+```
+\pagebreak
+
+## rtcSetNewGeometryBufferHostDevice
+``` {include=src/api/rtcSetNewGeometryBufferHostDevice.md}
 ```
 \pagebreak
 
@@ -286,6 +296,11 @@
 
 ## rtcGetGeometryBufferData
 ``` {include=src/api/rtcGetGeometryBufferData.md}
+```
+\pagebreak
+
+## rtcGetGeometryBufferDataDevice
+``` {include=src/api/rtcGetGeometryBufferDataDevice.md}
 ```
 \pagebreak
 
