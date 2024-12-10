@@ -1,9 +1,9 @@
-% rtcSetSharedGeometryBuffer(3) | Embree Ray Tracing Kernels 4
+% rtcSetSharedGeometryBufferHostDevice(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 
-    rtcSetSharedGeometryBuffer - assigns a view of a shared data buffer
-      to a geometry
+    rtcSetSharedGeometryBufferHostDevice - assigns views of shared data buffers
+      to a geometry using explicit host and device memory
 
 #### SYNOPSIS
 
@@ -15,6 +15,7 @@
       unsigned int slot,
       enum RTCFormat format,
       const void* ptr,
+      const void* dptr,
       size_t byteOffset,
       size_t byteStride,
       size_t itemCount
@@ -22,10 +23,12 @@
 
 #### DESCRIPTION
 
-The `rtcSetSharedGeometryBuffer` function binds a view of a
-shared user-managed data buffer (`ptr` argument) to a geometry buffer
+The `rtcSetSharedGeometryBufferHostDevice` function binds views of a
+shared user-managed data buffers to a geometry buffer
 type and slot (`type` and `slot` argument) of the specified geometry
-(`geometry` argument).
+(`geometry` argument). The user-managed data buffers are passed using the
+`ptr` argument for the host side allocated memory and the `dptr` parameter
+for the memory allocated on the device.
 
 One can specify the start of the first buffer element in bytes
 (`byteOffset` argument), the byte stride between individual buffer
@@ -34,7 +37,7 @@ elements (`byteStride` argument), the format of the buffer elements
 
 The start address (`byteOffset` argument) and stride (`byteStride`
 argument) must be both aligned to 4 bytes; otherwise the
-`rtcSetSharedGeometryBuffer` function will fail.
+`rtcSetSharedGeometryBufferHostDevice` function will fail.
 
 ``` {include=src/api/inc/buffer_padding.md}
 ```
@@ -43,10 +46,14 @@ The buffer data must remain valid for as long as the buffer may be
 used, and the user is responsible for freeing the buffer data when no
 longer required.
 
-If using a SYCL Embree device, `ptr` must be allocated using SYCL USM shared
-memory to be accessible on the device. Alternatively the function
-`rtcSetSharedGeometryBufferHostDevice` can be used to pass an explicitly
-managed host/device buffer pair.
+The application is responsible of keeping the host and device memory
+in sync. The host memory has to be updated before calls of
+`rtcCommitScene` involving the associated geometry.
+
+If Embree has no SYCL support or the associated Embree device is no
+SYCL device the `dptr` argument must be a null pointer. In this case
+the function `rtcSetSharedGeometryBufferHostDevice` will behave like
+`rtcSetSharedGeometryBuffer`.
 
 Sharing buffers can significantly reduce the memory required by the
 application, thus we recommend using this feature. When enabling the
@@ -60,4 +67,4 @@ On failure an error code is set that can be queried using
 
 #### SEE ALSO
 
-[rtcSetSharedGeometryBufferHostDevice], [rtcSetGeometryBuffer], [rtcSetNewGeometryBuffer]
+[rtcSetSharedGeometryBuffer], [rtcSetGeometryBuffer], [rtcSetNewGeometryBuffer]
