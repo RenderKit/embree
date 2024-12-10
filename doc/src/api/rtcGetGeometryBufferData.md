@@ -22,6 +22,10 @@ element of the buffer view attached to the specified buffer type and
 slot (`type` and `slot` argument) of the geometry (`geometry`
 argument).
 
+If the device associated with `geometry` is a SYCL device,
+the returned pointer only accessible on the host. The function
+`rtcGetGeometryBufferDataDevice` can be used to get a pointer
+accessible on the SYCL device.
 #### EXIT STATUS
 
 On failure an error code is set that can be queried using
@@ -29,4 +33,5 @@ On failure an error code is set that can be queried using
 
 #### SEE ALSO
 
-[rtcSetGeometryBuffer], [rtcSetSharedGeometryBuffer], [rtcSetNewGeometryBuffer]
+[rtcGetGeometryBufferDataDevice], [rtcSetGeometryBuffer],
+[rtcSetSharedGeometryBuffer], [rtcSetNewGeometryBuffer]
