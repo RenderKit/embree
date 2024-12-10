@@ -113,6 +113,11 @@
 ```
 \pagebreak
 
+## rtcCommitSceneWithQueue
+``` {include=src/api/rtcCommitSceneWithQueue.md}
+```
+\pagebreak
+
 ## rtcJoinCommitScene
 ``` {include=src/api/rtcJoinCommitScene.md}
 ```
