@@ -30,7 +30,7 @@ specified geometry (`geometry` argument). The buffer data is managed
 internally and automatically freed when the geometry is destroyed.
 
 The byte stride (`byteStride` argument) must be aligned to 4 bytes;
-otherwise the `rtcSetNewGeometryBuffer` function will fail.
+otherwise the `rtcSetNewGeometryBufferHostDevice` function will fail.
 
 The allocated buffer will be automatically over-allocated slightly
 when used as a vertex buffer, where a requirement is that each buffer
