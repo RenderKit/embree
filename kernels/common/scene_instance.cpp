@@ -17,7 +17,7 @@ namespace embree
     gsubtype = GTY_SUBTYPE_INSTANCE_LINEAR;
     world2local0 = one;
     device->memoryMonitor(numTimeSteps*sizeof(AffineSpace3ff), false);
-    local2world = (AffineSpace3ff*) device->malloc(numTimeSteps*sizeof(AffineSpace3ff),16,EmbreeMemoryType::UNKNOWN);
+    local2world = (AffineSpace3ff*) device->malloc(numTimeSteps*sizeof(AffineSpace3ff),16,EmbreeMemoryType::MALLOC);
     for (size_t i = 0; i < numTimeSteps; i++)
       local2world[i] = one;
     device->memoryMonitor(sizeof(*this), false);
@@ -37,7 +37,7 @@ namespace embree
       return;
 
     device->memoryMonitor(numTimeSteps_in*sizeof(AffineSpace3ff), false);
-    AffineSpace3ff* local2world2 = (AffineSpace3ff*) device->malloc(numTimeSteps_in*sizeof(AffineSpace3ff),16,EmbreeMemoryType::UNKNOWN);
+    AffineSpace3ff* local2world2 = (AffineSpace3ff*) device->malloc(numTimeSteps_in*sizeof(AffineSpace3ff),16,EmbreeMemoryType::MALLOC);
 
     for (size_t i = 0; i < min(numTimeSteps, numTimeSteps_in); i++) {
       local2world2[i] = local2world[i];

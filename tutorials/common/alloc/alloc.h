@@ -28,7 +28,7 @@ namespace embree
   void operator delete[](void* ptr) { alignedUSMFree(ptr); }
 
   /*! aligned allocation using SYCL USM */
-  void* alignedUSMMalloc(size_t size, size_t align = 16, EmbreeUSMMode mode = EMBREE_USM_SHARED_DEVICE_READ_ONLY);
+  void* alignedUSMMalloc(size_t size, size_t align = 16, EmbreeUSMMode mode = EmbreeUSMMode::DEVICE_READ_ONLY);
   void alignedUSMFree(void* ptr);
 
 }
