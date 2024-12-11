@@ -52,7 +52,7 @@ RTC_API void rtcCommitBuffer(RTCBuffer buffer);
 
 #if defined(EMBREE_SYCL_SUPPORT) && defined(SYCL_LANGUAGE_VERSION)
 
-RTC_API void rtcCommitBufferWithQueue(RTCBuffer buffer, sycl::queue queue, sycl::event* event);
+RTC_API_CPP sycl::event rtcCommitBufferWithQueue(RTCBuffer buffer, sycl::queue queue);
 
 #endif
 
