@@ -14,8 +14,8 @@
 
 The `rtcGetBufferDataDevice` function returns a pointer to the buffer data
 of the specified buffer object (`buffer` argument) which can be used for
-accessing the data on the device. If Embree has no SYCL support or the SYCL 
-device has host unified memory, the pointer is equal to the pointer returend 
+accessing the data on the device. If Embree has no SYCL support or the SYCL
+device has host unified memory, the pointer is equal to the pointer returned
 by `rtcGetBufferData`.
 
 #### EXIT STATUS
