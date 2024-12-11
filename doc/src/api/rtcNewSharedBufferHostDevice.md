@@ -35,9 +35,9 @@ longer required.
 ```
 
 The data pointer (`ptr` argument) must be aligned to 4 bytes; otherwise
-the `rtcNewSharedBuffer` function will fail.
+the `rtcNewSharedBufferHostDevice` function will fail.
 
-The function `rtcCommitBuffer` can be used to synchronize the buffer 
+The function `rtcCommitBuffer` can be used to synchronize the buffer
 content with the device.
 
 #### EXIT STATUS
