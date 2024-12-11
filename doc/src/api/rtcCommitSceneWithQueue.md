@@ -27,11 +27,11 @@ host-to-device memory transfers and the latter uses an internal and temporary
 SYCL queue and is blocking, i.e. the function returns after all memory
 transfers are completed.
 
-The application is reponsible for synchronization when using `rtcCommitSceneWithQueue`
+The application is responsible for synchronization when using `rtcCommitSceneWithQueue`
 by either calling `wait()` on the `queue` or use the optional `event` argument
 to receive a copy of the sycl::event associated with the last memcpy command
 that was submitted to the queue. The argument `event` can also be a null pointer
-in which case the argument will be ingnored internally.
+in which case the argument will be ignored internally.
 
 A SYCL kernel calling rtcTraversableIntersect or rtcTraversableOccluded
 using a RTCTraversable associated with the RTCScene `scene` has a dependency on
