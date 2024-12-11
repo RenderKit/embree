@@ -328,7 +328,7 @@ extern "C" void device_render (int* pixels,
   /* commit changes to scene */
   auto start_commit = std::chrono::high_resolution_clock::now();
 #if defined(EMBREE_SYCL_TUTORIAL)
-  rtcCommitSceneWithQueue (data.g_scene, *global_gpu_queue, nullptr);
+  rtcCommitSceneWithQueue (data.g_scene, *global_gpu_queue);
 #else
   rtcCommitScene (data.g_scene);
 #endif

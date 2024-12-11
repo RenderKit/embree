@@ -132,21 +132,21 @@ void Scene::syncWithDevice()
   }
 
   sycl::queue queue = sycl::queue(gpu_device->getGPUDevice());
-  syncWithDevice(queue, nullptr);
+  syncWithDevice(queue);
   queue.wait_and_throw();
 }
 
-void Scene::syncWithDevice(sycl::queue queue, sycl::event* event)
+sycl::event Scene::syncWithDevice(sycl::queue queue)
 {
   if(!device->is_gpu()) {
-    return;
+    return sycl::event();
   }
 
   // TODO: why is this compiled for __SYCL_DEVICE_ONLY__ ???
 #if !defined(__SYCL_DEVICE_ONLY__)
   accelBuffer.commit(queue);
 #endif
-  
+
   const bool dynamic_scene = getSceneFlags() & RTC_SCENE_FLAG_DYNAMIC;
 
   const bool num_geometries_changed = num_geometries != geometries.size();
@@ -225,9 +225,7 @@ void Scene::syncWithDevice(sycl::queue queue, sycl::event* event)
     scene_device = (Scene*) device->malloc(sizeof(Scene), 16, EmbreeMemoryType::USM_DEVICE);
   }
 
-  sycl::event last_event = queue.memcpy(scene_device, (void*)this, sizeof(Scene));
-  if (event)
-    *event = last_event;
+  return queue.memcpy(scene_device, (void*)this, sizeof(Scene));
 }
 
 #endif

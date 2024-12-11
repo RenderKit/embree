@@ -909,10 +909,10 @@ namespace embree
   }
 
 #if defined(EMBREE_SYCL_SUPPORT)
-  void Scene::commit (bool join, sycl::queue queue, sycl::event* event)
+  sycl::event Scene::commit (bool join, sycl::queue queue)
   {
     commit_internal(join);
-    syncWithDevice(queue, event);
+    return syncWithDevice(queue);
   }
 #endif
 
