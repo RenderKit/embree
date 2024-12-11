@@ -138,14 +138,12 @@ void Scene::syncWithDevice()
 
 sycl::event Scene::syncWithDevice(sycl::queue queue)
 {
+#if !defined(__SYCL_DEVICE_ONLY__)
   if(!device->is_gpu()) {
     return sycl::event();
   }
 
-  // TODO: why is this compiled for __SYCL_DEVICE_ONLY__ ???
-#if !defined(__SYCL_DEVICE_ONLY__)
-  accelBuffer.commit(queue);
-#endif
+  sycl::event event_accel_buffer_commit = accelBuffer.commit(queue);
 
   const bool dynamic_scene = getSceneFlags() & RTC_SCENE_FLAG_DYNAMIC;
 
@@ -207,14 +205,15 @@ sycl::event Scene::syncWithDevice(sycl::queue queue)
     }
   });
 
-  queue.memcpy(geometry_data_device, geometry_data_host, geometry_data_byte_size);
-  queue.memcpy(geometries_device, geometries_host, sizeof(Geometry*) * geometries.size());
+  sycl::event event_copy_geometry_data = queue.memcpy(geometry_data_device, geometry_data_host, geometry_data_byte_size);
+  sycl::event event_copy_geometries = queue.memcpy(geometries_device, geometries_host, sizeof(Geometry*) * geometries.size());
 
   if (!dynamic_scene)
   {
-    queue.wait_and_throw();
     device->free(offsets);
+    event_copy_geometry_data.wait_and_throw();
     device->free(geometry_data_host);
+    event_copy_geometries.wait_and_throw();
     device->free(geometries_host);
     offsets = nullptr;
     geometry_data_host = nullptr;
@@ -225,7 +224,10 @@ sycl::event Scene::syncWithDevice(sycl::queue queue)
     scene_device = (Scene*) device->malloc(sizeof(Scene), 16, EmbreeMemoryType::USM_DEVICE);
   }
 
-  return queue.memcpy(scene_device, (void*)this, sizeof(Scene));
+  return queue.memcpy(scene_device, (void*)this, sizeof(Scene), {event_accel_buffer_commit, event_copy_geometry_data, event_copy_geometries});
+#else
+  return sycl::event();
+#endif
 }
 
 #endif

@@ -695,24 +695,26 @@ namespace embree
     hwaccel_bounds = aabb;
   }
 
-  void AccelBuffer::commit(sycl::queue queue)
+  sycl::event AccelBuffer::commit(sycl::queue queue)
   {
     if (unifiedMemory) {
       hwaccel = (char*)accelBufferShared.data();
-      return;
+      return sycl::event();
     }
 
     auto deviceGPU = reinterpret_cast<DeviceGPU*>(device);
     if (!deviceGPU) {
-      return;
+      return sycl::event();
     }
 
     if (accelBufferDevice.size() != accelBufferHost.size())
       accelBufferDevice.resize(accelBufferHost.size());
 
-    queue.memcpy(accelBufferDevice.data(), accelBufferHost.data(), accelBufferHost.size());
+    sycl::event event = queue.memcpy(accelBufferDevice.data(), accelBufferHost.data(), accelBufferHost.size());
 
     hwaccel = (char*)accelBufferDevice.data();
+
+    return event;
   }
 
 }
