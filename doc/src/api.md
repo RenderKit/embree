@@ -63,7 +63,7 @@ Standard Embree API functions for scene construction can get used on
 the host but not the device. 
 
 Before version 4.4, Embree made heavy use of unified shared memory (USM)
-shared memory which simplifies memory managment with SYCL devices
+shared memory which simplifies memory management with SYCL devices
 by letting the SYCL runtime transfer data from host to device implicitly.
 However, some applications require more control over when and how data
 is migrated from CPU to GPU. Embree 4.4 allows to use explicit host and device
@@ -129,7 +129,7 @@ Device side rendering can get invoked by submitting a SYCL
     queue.wait_and_throw();
 
 
-This example passes a feature mask using a specialization contant to
+This example passes a feature mask using a specialization constant to
 the `rtcTraversableIntersect1` function, which is recommended for GPU
 rendering. For best performance, this feature mask should get used to
 enable only features required by the application to render the scene,
@@ -191,7 +191,7 @@ device. To render on the CPU just use the standard C99 API without
 relying on SYCL.
 
 The SYCL language spec puts some restrictions to device functions,
-such as disallowing: global variable access, malloc, invokation of
+such as disallowing: global variable access, malloc, invocation of
 virtual functions, function pointers, runtime type information,
 exceptions, recursion, etc. See Section `5.4. Language Restrictions
 for device functions` of the [SYCL
@@ -214,7 +214,7 @@ get used on the GPU:
 - The packet tracing functions `rtcTraversableIntersect4/8/16` and
   `rtcTraversableOccluded4/8/16` are not supported in SYCL
   device side code. Using these functions makes no sense for SYCL, as
-  the programming model is implicitely executed in SIMT mode on the
+  the programming model is implicitly executed in SIMT mode on the
   GPU anyway.
 
 - Filter and user geometry callbacks stored inside the geometry
