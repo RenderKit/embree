@@ -49,6 +49,38 @@ jobs:
         cmake --preset linux-DG2-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
+  linux-DG2-JIT-BVH-HOST-DEVICE-build:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    with:
+      image: embree/ubuntu:22.04
+      runs-on: '[ "Linux", "docker", "build" ]'
+      project: embree
+      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
+      artifact-out: linux-DG2-JIT-BVH-HOST-DEVICE-build
+      artifact-path: ./build/*.tar.gz
+      cmd: |
+        module load cmake/3.25.3
+        cmake --preset linux-DG2-JIT-INTERNAL -DEMBREE_SYCL_BVH_DATA_HOST_DEVICE=ON -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target build
+
+  linux-DG2-JIT-BVH-HOST-DEVICE-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    needs: ["linux-DG2-JIT-BVH-HOST-DEVICE-build"]
+    with:
+      image: embree/ubuntu:22.04
+      options: --device=/dev/dri:/dev/dri
+      runs-on: '[ "Linux", "docker", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/gfx-ubuntu22-internal.env
+      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
+      artifact-in: linux-DG2-JIT-BVH-HOST-DEVICE-build
+      cmd: |
+        module load cmake/3.25.3
+        cmake --preset linux-DG2-JIT-INTERNAL -DEMBREE_SYCL_BVH_DATA_HOST_DEVICE=ON -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
+
   linux-DG2-JIT-PUBLIC-build:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
@@ -322,6 +354,33 @@ jobs:
         cmake --preset nightly-windows-DG2-JIT-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
+  windows-DG2-JIT-BVH-HOST-DEVICE-build:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    with:
+      force-delete: true
+      runs-on: '[ "Windows", "NAS", "build" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
+      artifact-out: windows-DG2-JIT-BVH-HOST-DEVICE-build
+      artifact-path: ./build/*.zip
+      cmd: |
+        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DEMBREE_SYCL_BVH_DATA_HOST_DEVICE=ON -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target build
+
+  windows-DG2-JIT-BVH-HOST-DEVICE-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    needs: ["windows-DG2-JIT-BVH-HOST-DEVICE-build"]
+    with:
+      runs-on: '[ "Windows", "NAS", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
+      artifact-in: windows-DG2-JIT-BVH-HOST-DEVICE-build
+      cmd: |
+        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DEMBREE_SYCL_BVH_DATA_HOST_DEVICE=ON -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
+
 #   ################################################################################
 #   ################################################################################
 #   # CPU tests
@@ -500,6 +559,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - linux-DG2-JIT-INTERNAL-test
+      - linux-DG2-JIT-BVH-HOST-DEVICE-test
       - linux-DG2-JIT-PUBLIC-test
       - linux-ATSM-JIT-PUBLIC-test
       - linux-DG2-JIT-PUBLIC-ICX-test
@@ -510,6 +570,7 @@ jobs:
       - windows-DG2-JIT-PUBLIC-test
       - windows-DG2-JIT-ICX-INTERNAL-test
       - windows-DG2-JIT-ICX-PUBLIC-test
+      - windows-DG2-JIT-BVH-HOST-DEVICE-test
       - linux-fedora29-CLANG4
       - linux-fedora29-CLANG5-INT-ADDRSANITIZER
       - linux-fedora29-ICX
