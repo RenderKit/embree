@@ -97,6 +97,14 @@ There is no image output to keep the tutorial as simple as possible.
 
 [Source Code](https://github.com/embree/embree/blob/master/tutorials/minimal/minimal.cpp)
 
+Host Device Memory
+------------------
+
+This tutorial shows four different ways to use explicit host and device memory
+with SYCL.
+
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/host_device_memory/host_device_memory_device.cpp)
+
 Triangle Geometry
 -----------------
 
