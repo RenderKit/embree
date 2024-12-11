@@ -203,9 +203,6 @@ __forceinline bool intersect_user_geometry(intel_ray_query_t& query, Ray& ray, U
   raydesc.mask = mask32_to_mask8(ray.mask);
   raydesc.flags = intel_ray_flags_force_non_opaque | intel_ray_flags_accept_first_hit_and_end_search;
 
-  //if (context.enforceArgumentFilterFunction())
-  //  raydesc.flags |= intel_ray_flags_force_non_opaque;
-
 #if defined(EMBREE_BACKFACE_CULLING)
   raydesc.flags |= intel_ray_flags_cull_back_facing_triangles;
 #endif
@@ -315,9 +312,9 @@ __forceinline bool intersect_instance(intel_ray_query_t& query, Ray& ray, Geomet
   raydesc.mask = mask32_to_mask8(ray.mask);
   raydesc.flags = intel_ray_flags_accept_first_hit_and_end_search;
 
-  //if (context->enforceArgumentFilterFunction())
-  //  raydesc.flags |= intel_ray_flags_force_non_opaque;
-  
+  if (context->enforceArgumentFilterFunction())
+    raydesc.flags |= intel_ray_flags_force_non_opaque;
+
 #if defined(EMBREE_BACKFACE_CULLING)
   raydesc.flags |= intel_ray_flags_cull_back_facing_triangles;
 #endif
