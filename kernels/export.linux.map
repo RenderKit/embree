@@ -15,6 +15,8 @@ global:
   _ZN??????rtc*;
   _ZN6embree13TaskScheduler*;
   _ZN6embree?13TaskScheduler*;
+  _Z??rtcCommitBufferWithQueue*;
+  _Z??rtcCommitSceneWithQueue*;
 local: 
   *;
 };
