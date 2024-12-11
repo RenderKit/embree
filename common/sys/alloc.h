@@ -25,17 +25,17 @@ namespace embree
   void alignedFree(void* ptr);
 
 
-  enum EmbreeUSMMode {
-    EMBREE_USM_SHARED = 0,
-    EMBREE_USM_SHARED_DEVICE_READ_WRITE = 0,
-    EMBREE_USM_SHARED_DEVICE_READ_ONLY = 1
+  enum class EmbreeUSMMode {
+    DEFAULT = 0,
+    DEVICE_READ_WRITE = 0,
+    DEVICE_READ_ONLY = 1
   };
 
-  enum EmbreeMemoryType {
-    HOST = 0,
-    DEVICE = 1,
-    SHARED = 2,
-    UNKNOWN = 3
+  enum class EmbreeMemoryType {
+    USM_HOST = 0,
+    USM_DEVICE = 1,
+    USM_SHARED = 2,
+    MALLOC = 3
   };
 
 #if defined(EMBREE_SYCL_SUPPORT)

@@ -38,7 +38,7 @@ namespace embree
       
       __forceinline pointer allocate( size_type n ) {
         assert(device);
-        return (pointer) device->malloc(n*sizeof(T),alignment,EmbreeMemoryType::UNKNOWN);
+        return (pointer) device->malloc(n*sizeof(T),alignment,EmbreeMemoryType::MALLOC);
       }
       
       __forceinline void deallocate( pointer p, size_type n ) {

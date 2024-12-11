@@ -44,7 +44,7 @@ namespace embree
     assert((align & (align-1)) == 0);
 
     void* ptr = nullptr;
-    if (mode == EMBREE_USM_SHARED_DEVICE_READ_ONLY)
+    if (mode == EmbreeUSMMode::DEVICE_READ_ONLY)
       ptr = sycl::aligned_alloc_shared(align,size,*device,*context,sycl::ext::oneapi::property::usm::device_read_only());
     else
       ptr = sycl::aligned_alloc_shared(align,size,*device,*context);
@@ -66,16 +66,16 @@ namespace embree
     assert((align & (align-1)) == 0);
 
     void* ptr = nullptr;
-    if (type == EmbreeMemoryType::SHARED) {
-      if (mode == EMBREE_USM_SHARED_DEVICE_READ_ONLY)
+    if (type == EmbreeMemoryType::USM_SHARED) {
+      if (mode == EmbreeUSMMode::DEVICE_READ_ONLY)
         ptr = sycl::aligned_alloc_shared(align,size,*device,*context,sycl::ext::oneapi::property::usm::device_read_only());
       else
         ptr = sycl::aligned_alloc_shared(align,size,*device,*context);
     }
-    else if (type == EmbreeMemoryType::HOST) {
+    else if (type == EmbreeMemoryType::USM_HOST) {
       ptr = sycl::aligned_alloc_host(align,size,*context);
     }
-    else if (type == EmbreeMemoryType::DEVICE) {
+    else if (type == EmbreeMemoryType::USM_DEVICE) {
       ptr = sycl::aligned_alloc_device(align,size,*device,*context);
     }
     else {
