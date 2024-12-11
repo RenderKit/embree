@@ -1,0 +1,4 @@
+-i min_width_flat_bezier_curves.xml
+--min-width 32 4
+--vp 0.4361093044 5.049027443 -4.992072105 --vi 1.762598276 1.575241089 -2.778378963 --vu 0 1 0 --fov 90 --righthanded
+-dirlight 1 -1 1 3 3 3

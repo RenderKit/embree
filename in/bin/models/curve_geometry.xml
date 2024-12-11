@@ -1,0 +1,111 @@
+<?xml version="1.0"?>
+
+<scene>
+  <Group>
+
+    <PerspectiveCamera name="camera0" from="0.244145155 5.310973883 7.09447964281" to="0.0 0.0 0.0" up="0 1 0" fov="90"/>
+    
+    <DirectionalLight>
+      <AffineSpace>
+        1 0 0 0
+        0 0 -1 0
+        0 1 0 0
+      </AffineSpace>
+      <E>3 3 3</E>
+    </DirectionalLight>
+
+    <Curves basis="catmull_rom" type="flat">
+      
+      <positions>
+        -4.0 +0.0 -2.0 +0.2
+        -3.0 -1.0 +0.0 +0.2
+        -2.0 +0.0 +2.0 +0.2
+        -4.0 +0.0 +2.0 +0.2
+        -3.0 +1.0 +0.0 +0.6
+        -2.0 +0.0 -2.0 +0.2
+        -4.0 +0.0 -2.0 +0.2
+        -3.0 -1.0 +0.0 +0.2
+        -2.0 +0.0 +2.0 +0.2
+      </positions>
+      
+      <indices>
+        0 1 2 3 4 5
+      </indices>
+      
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 0 0</float3>
+        </parameters>
+      </material>
+      
+    </Curves>
+
+    <Curves basis="catmull_rom" type="round">
+      
+      <positions>
+        -1.0 +0.0 -2.0 +0.2
+        +0.0 -1.0 +0.0 +0.2
+        +1.0 +0.0 +2.0 +0.2
+        -1.0 +0.0 +2.0 +0.2
+        +0.0 +1.0 +0.0 +0.6
+        +1.0 +0.0 -2.0 +0.2
+        -1.0 +0.0 -2.0 +0.2
+        +0.0 -1.0 +0.0 +0.2
+        +1.0 +0.0 +2.0 +0.2
+      </positions>
+      
+      <indices>
+        0 1 2 3 4 5
+      </indices>
+      
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 0 0</float3>
+        </parameters>
+      </material>
+      
+    </Curves>
+
+    <Curves basis="catmull_rom" type="normal_oriented">
+      
+      <positions>
+        +2.0 +0.0 -2.0 +0.2
+        +3.0 -1.0 +0.0 +0.2
+        +4.0 +0.0 +2.0 +0.2
+        +2.0 +0.0 +2.0 +0.2
+        +3.0 +1.0 +0.0 +0.6
+        +4.0 +0.0 -2.0 +0.2
+        +2.0 +0.0 -2.0 +0.2
+        +3.0 -1.0 +0.0 +0.2
+        +4.0 +0.0 +2.0 +0.2
+      </positions>
+      
+      <normals>
+        -1.0 +0.0 +0.0
+        +0.0 +1.0 +0.0
+        +1.0 +0.0 +0.0
+        +0.0 -1.0 +0.0
+        -1.0 +0.0 +0.0
+        +0.0 +1.0 +0.0
+        +1.0 +0.0 +0.0
+        +0.0 -1.0 +0.0
+        -1.0 +0.0 +0.0
+      </normals>
+      
+      <indices>
+        0 1 2 3 4 5
+      </indices>
+      
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 0 0</float3>
+        </parameters>
+      </material>
+      
+    </Curves>
+    
+  </Group>
+</scene>

@@ -1,0 +1,3 @@
+-i subdiv_no_boundary.xml
+--fov 25
+--shader texcoords-grid

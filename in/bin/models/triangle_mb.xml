@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<scene>
+  <Group>
+    <TriangleMesh>
+      <animated_positions>
+        <positions>
+          -2 -1 1
+           0 -1 1
+          -1  1 1
+        </positions>
+        <positions>
+           0 -1 1
+           2 -1 1
+           1  1 1
+        </positions>
+      </animated_positions>
+      <triangles>
+        0 1 2
+      </triangles>
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 1 1</float3>
+        </parameters>
+      </material>
+    </TriangleMesh>
+    <!--
+    <TriangleMesh>
+      <positions>
+        -2 -1 1
+         0 -1 1
+        -1  1 1
+      </positions>
+      <triangles>
+        0 1 2
+      </triangles>
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 1 1</float3>
+        </parameters>
+      </material>
+    </TriangleMesh>
+    -->
+  </Group>
+</scene>

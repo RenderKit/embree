@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<scene>
+    <PerspectiveCamera name="frontview" from="1e6 1e6 -2e7" to="0 0 0" up="0 1 0" fov="90"/>
+    <TriangleMesh id="1">
+      <animated_positions>
+        <positions>
+            -1e7 -1e7 0
+            0 1e7 3e7
+            1e7 -1e7 0
+        </positions>
+        <positions2>
+            -1e7 -1e7 0
+            1e7 1e7 3e7
+            1e7 -1e7 0
+        </positions2>
+      </animated_positions>
+      <texcoords>
+        0 0
+        1 0
+        0 1
+      </texcoords>
+      <triangles>
+        0 2 1
+      </triangles>
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">0.8 0.8 0.8</float3>
+        </parameters>
+      </material>
+    </TriangleMesh>
+</scene>

@@ -1,0 +1,2 @@
+-i grid4x4_mb.xml
+--vp -4.85 4.73 -1.92 --vi -1.97 1.74 0.88 --vu 0 1 0 --fov 80 --righthanded

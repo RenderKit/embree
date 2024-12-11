@@ -1,0 +1,4 @@
+-i round_line_segments_7.xml
+--vp 0.2688014507 2.18133235 0.2518517673 --vi -0.2912774682 0.06478619576 -0.2013261914 --vu 0 1 0 --fov 90 --righthanded
+--shader primID
+

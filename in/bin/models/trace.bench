@@ -1,0 +1,11 @@
+barbarian barbarian/barbarian.ecs
+barbarian_msmblur barbarian/barbarian_msmblur.ecs
+barbarian_mblur_instancing barbarian/barbarian_mblur_instancing.ecs
+barbarian_msmblur_instancing barbarian/barbarian_msmblur_instancing.ecs
+barbarian_subdiv barbarian/barbarian_subdiv.ecs
+barbarian_subdiv_mblur barbarian/barbarian_subdiv_mblur.ecs
+barbarian_subdiv_msmblur barbarian/barbarian_subdiv_msmblur.ecs
+sophie sophie/sophie.ecs
+crown crown/crown.ecs
+sponza sponza/sponza.ecs
+conference conference/conference.ecs

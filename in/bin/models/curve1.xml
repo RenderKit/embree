@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+
+<scene>
+  <Group>
+    <TriangleMesh>
+      <positions>
+        -20 0 -20
+        -20 0 +20
+        +20 0 +20
+        +20 0 -20
+      </positions>
+      <triangles>
+        0 2 1
+        0 3 2
+      </triangles>
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 1 1</float3>
+        </parameters>
+      </material>
+    </TriangleMesh>
+
+    <BSplineCurves>
+
+      <positions>
+        -2.0  1.0 -1.0 0.2
+        +0.0  0.0 +0.0 0.2
+        +2.0  1.0 +1.0 0.2
+        +2.0  1.0 -1.0 0.6
+        +0.0 +2.0 +0.0 0.2
+        -2.0  1.0 +1.0 0.2
+        -2.0  1.0 -1.0 0.2
+        +0.0  0.0 +0.0 0.2
+        +2.0  1.0 +1.0 0.2
+      </positions>
+
+      <indices>
+        0 1 2 3 4 5
+      </indices>
+
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 1 1</float3>
+        </parameters>
+      </material>
+
+    </BSplineCurves>
+
+  </Group>
+</scene>

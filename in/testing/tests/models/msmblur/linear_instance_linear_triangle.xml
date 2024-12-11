@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<scene>
+  <TransformAnimation>
+    <AffineSpace point="0 0 0" axis="0 0 1" angle="0"/>
+    <AffineSpace point="0 0 0" axis="0 0 1" angle="90"/>
+    <Flatten>
+      <TransformAnimation>
+        <AffineSpace translate="0 0 0"/>
+        <AffineSpace translate="-10 10 0"/>
+        <TriangleMesh>
+          <material>
+            <code>"OBJ"</code>
+            <parameters>
+              <float name="d">1.000000</float>
+              <float3 name="Kd">0.5 0.5 0.5</float3>
+              <float3 name="Ks">0.000000 0.000000 0.000000</float3>
+              <float name="Ns">1.000000</float>
+            </parameters>
+          </material>
+          <positions>
+            10 0 0
+            20 0 0
+            20 10 0
+          </positions>
+          <triangles>
+            0 1 2
+          </triangles>
+        </TriangleMesh>
+      </TransformAnimation>
+    </Flatten>
+  </TransformAnimation>
+
+  <TransformAnimation>
+    <AffineSpace point="0 0 0" axis="0 0 1" angle="0"/>
+    <AffineSpace point="0 0 0" axis="0 0 1" angle="-90"/>
+    <Flatten>
+      <TransformAnimation>
+        <AffineSpace translate="0 0 0"/>
+        <AffineSpace translate="10 -10 0"/>
+        <TriangleMesh>
+          <material>
+            <code>"OBJ"</code>
+            <parameters>
+              <float name="d">1.000000</float>
+              <float3 name="Kd">0.5 0.5 0.5</float3>
+              <float3 name="Ks">0.000000 0.000000 0.000000</float3>
+              <float name="Ns">1.000000</float>
+            </parameters>
+          </material>
+          <positions>
+            10 0 0
+            20 0 0
+            20 10 0
+          </positions>
+          <triangles>
+            0 1 2
+          </triangles>
+        </TriangleMesh>
+      </TransformAnimation>
+    </Flatten>
+  </TransformAnimation>
+</scene>

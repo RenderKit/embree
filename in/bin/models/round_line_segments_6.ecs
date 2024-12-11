@@ -1,0 +1,3 @@
+-i round_line_segments_6.xml
+--vp 1.5 0 4 --vd 0 0 -1 --fov 90
+

@@ -1,0 +1,66 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 11,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "user-package",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "BUILD_TESTING": "ON",
+        "EMBREE_TESTING_INSTALL_TESTS": "ON",
+        "EMBREE_ZIP_MODE": "ON",
+        "EMBREE_INSTALL_DEPENDENCIES": "ON",
+        "EMBREE_BUILD_GLFW_FROM_SOURCE": "ON",
+        "EMBREE_PATCH_GLFW_SOURCE": "ON",
+        "CMAKE_INSTALL_INCLUDEDIR": "include",
+        "CMAKE_INSTALL_LIBDIR": "lib",
+        "CMAKE_INSTALL_DOCDIR": "doc",
+        "CMAKE_INSTALL_BINDIR": "bin",
+        "CMAKE_INSTALL_TESTDIR": "testing"
+      }
+    },
+
+    {
+      "name": "user-package-linux",
+      "hidden": true,
+      "inherits": ["package", "linux"],
+      "cacheVariables": {
+        "CMAKE_SKIP_INSTALL_RPATH": "OFF"
+      }
+    },
+
+
+
+
+    {
+      "name": "user",
+      "inherits": ["user-package-linux", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_TASKING_SYSTEM": "TBB",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    },
+
+    {
+      "name": "user-sycl",
+      "inherits": ["package-windows", "env", "icx-windows", "ispc1_19_0", "tbb2021_9_0"],
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    }
+  ]
+}

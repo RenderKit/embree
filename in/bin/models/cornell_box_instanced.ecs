@@ -1,0 +1,3 @@
+-i cornell_box_instanced.xml
+--vp 2.01 2.01 -2 --vi 2 2 0 --vu 0 1 0 --fov 90 --righthanded
+

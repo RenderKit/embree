@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+
+<scene>
+  <Group>
+    <TriangleMesh>
+      <positions>
+        -20 0 -20
+        -20 0 +20
+        +20 0 +20
+        +20 0 -20
+      </positions>
+      <triangles>
+        0 2 1
+        0 3 2
+      </triangles>
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 1 1</float3>
+        </parameters>
+      </material>
+    </TriangleMesh>
+
+    <Curves basis="bezier" type="flat" tessellation_rate="16">
+
+      <positions>
+        0 0 -4 0.01
+        8 4 -4 0.01
+       -4 4 -4 0.01
+        4 0 -5 0.01
+        
+        0 0 -2 0.02
+        8 4 -2 0.02
+       -4 4 -2 0.02
+        4 0 -3 0.02
+
+        0 0 0 0.04
+        8 4 0 0.04
+       -4 4 0 0.04
+        4 0 -1 0.04
+      </positions>
+
+      <indices>
+        0
+        4
+        8
+      </indices>
+
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 0 0</float3>
+        </parameters>
+      </material>
+
+    </Curves>
+
+  </Group>
+</scene>

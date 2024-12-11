@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<scene>
+    <Transform time_steps="2">
+      <AffineSpace>
+        1.0 0.0 0.0 -2.0
+        0.0 1.0 0.0 0.0
+        0.0 0.0 1.0 0.0
+      </AffineSpace>
+      <AffineSpace>
+        1.0 0.0 0.0 2.0
+        0.0 1.0 0.0 0.0
+        0.0 0.0 1.0 0.0
+      </AffineSpace>
+      <Points type="sphere" id="1">
+        <positions>
+          0 0 0 1
+        </positions>
+        <material>
+          <code>"OBJ"</code>
+          <parameters>
+            <float3 name="Kd">1 1 1</float3>
+          </parameters>
+        </material>
+      </Points>
+    </Transform>
+    <Transform time_steps="2">
+      <AffineSpace>
+        1.0 0.0 0.0 0.0
+        0.0 1.0 0.0 -2.0
+        0.0 0.0 1.0 0.0
+      </AffineSpace>
+      <AffineSpace>
+        1.0 0.0 0.0 0.0
+        0.0 1.0 0.0 2.0
+        0.0 0.0 1.0 0.0
+      </AffineSpace>
+      <ref id="1"/>
+    </Transform>
+</scene>

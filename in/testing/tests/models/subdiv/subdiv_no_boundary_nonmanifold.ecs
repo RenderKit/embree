@@ -1,0 +1,4 @@
+-i subdiv_no_boundary_nonmanifold.xml
+--fov 25
+--vp 10.83919239 1.7700454 5.8757658 --vi 8.1628685 1.410816789 4.568944454 --vu 0 1 0
+##--shader texcoords-grid

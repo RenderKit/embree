@@ -1,0 +1,128 @@
+<?xml version="1.0"?>
+<scene>
+  <Group>
+    <Points type="sphere">
+      <positions>
+        -3 3 0 0.75
+        -1 3 0 0.75
+        +1 3 0 0.75
+        +3 3 0 0.75
+      </positions>
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 1 1</float3>
+        </parameters>
+      </material>
+    </Points>
+    <Points type="disc">
+      <positions>
+        -3 1 0 0.75
+        -1 1 0 0.75
+        +1 1 0 0.75
+        +3 1 0 0.75
+      </positions>
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 1 1</float3>
+        </parameters>
+      </material>
+    </Points>
+    <Points type="oriented">
+      <positions>
+        -3 -1 0 0.75
+        -1 -1 0 0.75
+        +1 -1 0 0.75
+        +3 -1 0 0.75
+      </positions>
+      <normals>
+        1.0 0 -1
+        0.5 0 -1
+       -0.5 0 -1
+       -1.0 0 -1
+      </normals>
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 1 1</float3>
+        </parameters>
+      </material>
+    </Points>
+    <Points type="oriented">
+      <positions>
+        -3 -3 0 0.75
+        -3 -3 0 0.75
+        -3 -3 0 0.75
+        -3 -3 0 0.75
+        -3 -3 0 0.75
+        -3 -3 0 0.75
+        -3 -3 0 0.75
+        -3 -3 0 0.75
+      </positions>
+      <normals>
+         0 0 -1
+         0 0  1
+         1 0  0
+         1 0  1
+         1 0 -1
+        -1 0  0
+        -1 0  1
+        -1 0 -1
+      </normals>
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 1 1</float3>
+        </parameters>
+      </material>
+    </Points>
+    <Points type="sphere">
+      <positions>
+        -1.5 -3  0.0 0.5
+        -0.5 -3  0.0 0.5
+        -1   -3  0.5 0.5
+        -1   -3 -0.5 0.5
+        -1   -3  0.0 0.75
+      </positions>
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 1 1</float3>
+        </parameters>
+      </material>
+    </Points>
+    <Points type="sphere">
+      <positions>
+        1 -3 0.0 0.25
+        3 -3 0.0 0.25
+      </positions>
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 1 1</float3>
+        </parameters>
+      </material>
+    </Points>
+    <Points type="oriented">
+      <positions>
+        1 -3 0.0 0.75
+        1 -3 0.0 0.75
+        3 -3 0.0 0.75
+        3 -3 0.0 0.75
+      </positions>
+      <normals>
+          1 0  0
+         -1 0  0
+          0 0 -1
+          0 0  1
+      </normals>
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 1 1</float3>
+        </parameters>
+      </material>
+    </Points>
+  </Group>
+</scene>

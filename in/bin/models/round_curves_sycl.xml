@@ -1,0 +1,120 @@
+<?xml version="1.0"?>
+
+<scene>
+  <Group>
+<!--
+    <TriangleMesh>
+      <positions>
+        -20 0 -20
+        -20 0 +20
+        +20 0 +20
+        +20 0 -20
+      </positions>
+      <triangles>
+        0 2 1
+        0 3 2
+      </triangles>
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 1 1</float3>
+        </parameters>
+      </material>
+    </TriangleMesh>
+-->
+<!--
+    <BSplineCurves>
+
+      <positions>
+        0 0 0 0.3
+        0 1 0 0.3
+        0 1 1 0.3
+        1 1 1 0.3
+        2 1 1 0.3
+        2 3 1 0.3
+        4 3 1 0.1
+        4 0 1 0.1
+        2 1 2 0.5
+        2 2 5 0.7
+
+        5 0 0 0.3
+        5 1 0 0.3
+        5 2 0 0.0
+        nan nan nan nan
+
+        5 0 -2 3.0
+        5 1 -2 0.3
+        5 2 -2 0.0
+        nan nan nan nan
+      </positions>
+
+      <indices>
+        0 1 2 3 4 5 6
+        10
+        14
+      </indices>
+
+      <curveid>
+        0 0 0 0 0 0 0
+        1
+        2
+      </curveid>
+
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 1 1</float3>
+        </parameters>
+      </material>
+
+    </BSplineCurves>
+-->
+    <BezierCurves>
+
+      <positions>
+        0 0 -2 0.2
+        8 4 -2 0.2
+       -4 4 -2 0.2
+        4 0 -3 0.2
+      </positions>
+
+      <indices>
+        0 0
+      </indices>
+
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 0 0</float3>
+        </parameters>
+      </material>
+
+    </BezierCurves>
+<!--
+    <Curves basis="hermite" type="round">
+
+      <positions>
+        0 0 -5 0.2
+        4 0 -6 0.2
+      </positions>
+
+      <tangents>
+        24 12 0 0
+        24 -12 -3 0
+      </tangents>
+
+      <indices>
+        0
+      </indices>
+
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 0 0</float3>
+        </parameters>
+      </material>
+
+    </Curves>
+-->
+  </Group>
+</scene>

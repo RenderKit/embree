@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+
+<scene>
+  <Group>
+
+    <Curves type="normal_oriented" basis="bspline">
+
+      <positions>
+          0.0   0.0 0.0 1.0
+        100.0   0.0 0.0 1.0
+        100.0 100.0 0.0 1.0
+        101.0   0.0 0.0 1.0
+      </positions>
+
+      <normals>
+        0 0 1
+        0 0 1
+        0 0 1
+        0 0 1
+      </normals>
+
+      <indices>
+        0
+      </indices>
+
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 0 0</float3>
+        </parameters>
+      </material>
+
+    </Curves>
+
+  </Group>
+</scene>

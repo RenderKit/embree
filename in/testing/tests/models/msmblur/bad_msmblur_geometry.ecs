@@ -1,0 +1,4 @@
+-i bad_msmblur_geometry.xml
+#-vp 0 0 -20 -vi 0 0 0 -vu 0 1 0
+-vp 0 11 -2 -vi 0 11 0 -vu 0 1 0 -fov 90
+--ambientlight 1 1 1

@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<scene>
+    <PerspectiveCamera name="frontview" from="0 0 -2e6" to="0 0 0" up="0 1 0" fov="90"/>
+    <QuadMesh id="1">
+      <animated_positions>
+      <positions>
+          -1e6 -1e6 1e6
+          -1e6 1e6 2e6
+          1e6 1e6 3e6
+          1e6 -1e6 4e6
+      </positions>
+        <positions>
+          -2e6 -1e6 1e6
+          -2e6 1e6 2e6
+          1e6 1e6 3e6
+          2e6 -1e6 4e6
+        </positions>
+      </animated_positions>
+      <texcoords>
+        0 0
+        1 0
+        1 1
+        0 1
+      </texcoords>
+      <indices>
+        0 1 2 3
+        0 1 2 3
+      </indices>
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">0.8 0.8 0.8</float3>
+        </parameters>
+      </material>
+    </QuadMesh>
+</scene>

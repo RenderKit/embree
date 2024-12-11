@@ -1,0 +1,104 @@
+<?xml version="1.0"?>
+<scene>
+  <PerspectiveCamera name="frontview" from="278 273 -800" to="278 273 0" up="0 1 0" fov="37"/>
+  <PerspectiveCamera name="small_cube" from="280.1202698 284.0853577 -196.5418854" to="208.7026978 115.5031433 89.10266113" up="0 1 0" fov="45"/>
+  <PerspectiveCamera name="large_cube" from="420.1874695 341.1406555 -148.3326111" to="361.8019409 190.7811584 265.979126" up="0 1 0" fov="45"/>
+  <Group id="0">
+    <Group id="1">
+      <TriangleMesh id="2">
+        <material id="3">
+          <code>"OBJ"</code>
+          <parameters>
+            <float name="d">1</float>
+            <float3 name="Kd">1 1 1</float3>
+            <float3 name="Ks">0 0 0</float3>
+            <float name="Ns">1</float>
+          </parameters>
+        </material>
+        <positions ofs="0" size="12"/>
+        <normals ofs="144" size="0"/>
+        <texcoords ofs="144" size="0"/>
+        <triangles ofs="144" size="6"/>
+      </TriangleMesh>
+      <TriangleMesh id="4">
+        <material id="3"/>
+        <positions ofs="216" size="4"/>
+        <normals ofs="264" size="0"/>
+        <texcoords ofs="264" size="0"/>
+        <triangles ofs="264" size="2"/>
+      </TriangleMesh>
+      <TriangleMesh id="5">
+        <material id="3"/>
+        <positions ofs="288" size="4"/>
+        <normals ofs="336" size="0"/>
+        <texcoords ofs="336" size="0"/>
+        <triangles ofs="336" size="2"/>
+      </TriangleMesh>
+      <TriangleMesh id="6">
+        <material id="7">
+          <code>"OBJ"</code>
+          <parameters>
+            <float name="d">1</float>
+            <float3 name="Kd">0 1 0</float3>
+            <float3 name="Ks">0 0 0</float3>
+            <float name="Ns">1</float>
+          </parameters>
+        </material>
+        <positions ofs="360" size="4"/>
+        <normals ofs="408" size="0"/>
+        <texcoords ofs="408" size="0"/>
+        <triangles ofs="408" size="2"/>
+      </TriangleMesh>
+
+      <TriangleMesh id="8">
+        <material id="9">
+          <code>"OBJ"</code>
+          <parameters>
+            <float name="d">1</float>
+            <float3 name="Kd">1 0 0</float3>
+            <float3 name="Ks">0 0 0</float3>
+            <float name="Ns">1</float>
+          </parameters>
+        </material>
+        <positions ofs="432" size="4"/>
+        <normals ofs="480" size="0"/>
+        <texcoords ofs="480" size="0"/>
+        <triangles ofs="480" size="2"/>
+      </TriangleMesh>
+
+      <TimeRange time="0.5 0.75">
+        <Flatten>
+          <TransformAnimation>
+            <AffineSpace translate="0 0 0"/>
+            <AffineSpace translate="20 200 0"/>
+            <AffineSpace translate="40 0 100"/>
+            <Group>           
+              <TriangleMesh id="10">
+                <material id="3"/>
+                <positions ofs="504" size="20"/>
+                <normals ofs="744" size="0"/>
+                <texcoords ofs="744" size="0"/>
+                <triangles ofs="744" size="10"/>
+              </TriangleMesh>
+            </Group>
+          </TransformAnimation>
+        </Flatten>
+      </TimeRange>
+            
+      <TriangleMesh id="11">
+        <material id="3"/>
+        <positions ofs="864" size="4"/>
+        <normals ofs="912" size="0"/>
+        <texcoords ofs="912" size="0"/>
+        <triangles ofs="912" size="2"/>
+      </TriangleMesh>
+      <TriangleMesh id="12">
+        <material id="3"/>
+        <positions ofs="936" size="16"/>
+        <normals ofs="1128" size="0"/>
+        <texcoords ofs="1128" size="0"/>
+        <triangles ofs="1128" size="8"/>
+      </TriangleMesh>
+    </Group>
+  </Group>
+</scene>

@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+
+<scene>
+  <Group>
+    <RoundLineSegments>
+
+      <positions>
+        0 0 0 1
+        1 1 0 1.5
+        0 2 1 1.5
+        1 3 0 1.5
+        0 4 1 1
+      </positions>
+
+      <indices>
+        0 1 2 3
+      </indices>
+
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 1 1</float3>
+        </parameters>
+      </material>
+
+    </RoundLineSegments>
+  </Group>
+</scene>
