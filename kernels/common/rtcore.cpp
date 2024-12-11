@@ -83,25 +83,27 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END(nullptr);
   }
 
-  RTC_API void rtcCommitSceneWithQueue (RTCScene hscene, sycl::queue queue, sycl::event* event)
+  RTC_API_CPP sycl::event rtcCommitSceneWithQueue (RTCScene hscene, sycl::queue queue)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcCommitSceneWithQueue);
     RTC_VERIFY_HANDLE(hscene);
     RTC_ENTER_DEVICE(hscene);
-    scene->commit(false, queue, event);
+    return scene->commit(false, queue);
     RTC_CATCH_END2(scene);
+    return sycl::event();
   }
 
-  RTC_API void rtcCommitBufferWithQueue(RTCBuffer hbuffer, sycl::queue queue, sycl::event* event) {
+  RTC_API_CPP sycl::event rtcCommitBufferWithQueue(RTCBuffer hbuffer, sycl::queue queue) {
     Buffer* buffer = (Buffer*)hbuffer;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcCommitBufferWithQueue);
     RTC_VERIFY_HANDLE(hbuffer);
     RTC_ENTER_DEVICE(hbuffer);
-    buffer->commit(queue, event);
+    return buffer->commit(queue);
     RTC_CATCH_END2(buffer);
+    return sycl::event();
   }
 
 #endif

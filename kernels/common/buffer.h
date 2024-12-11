@@ -170,21 +170,18 @@ namespace embree
       DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device);
       if (gpu_device) {
         sycl::queue queue(gpu_device->getGPUDevice());
-        commit(queue, nullptr);
+        commit(queue);
         queue.wait_and_throw();
       }
 #endif
     }
 
 #if defined(EMBREE_SYCL_SUPPORT)
-    __forceinline void commit(sycl::queue queue, sycl::event* event) {
+    __forceinline sycl::event commit(sycl::queue queue) {
       if (dptr == ptr)
-        return;
+        return sycl::event();
 
-      sycl::event last_event = queue.memcpy(dptr, ptr, numBytes);
-
-      if (event)
-        *event = last_event;
+      return queue.memcpy(dptr, ptr, numBytes);
     }
 #endif
 
