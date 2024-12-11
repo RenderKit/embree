@@ -190,7 +190,6 @@ namespace embree
 
     void* ptr = nullptr;
 
-    // TODO: modify memory monitor to account for host and device code separately
     if (embree_device) embree_device->memoryMonitor(bytes,false);
 
     ze_result_t result;

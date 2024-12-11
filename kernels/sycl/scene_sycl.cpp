@@ -157,7 +157,7 @@ void Scene::syncWithDevice(sycl::queue queue, sycl::event* event)
     if (geometries_device) {
       device->free(geometries_device);
     }
-    geometries_device = (Geometry**)device->malloc(sizeof(Geometry*) * geometries.size(), 16, EmbreeMemoryType::DEVICE);
+    geometries_device = (Geometry**)device->malloc(sizeof(Geometry*) * geometries.size(), 16, EmbreeMemoryType::USM_DEVICE);
   }
 
   if (num_geometries_changed || !dynamic_scene)
@@ -165,12 +165,12 @@ void Scene::syncWithDevice(sycl::queue queue, sycl::event* event)
     if (offsets) {
       device->free(offsets);
     }
-    offsets = (size_t*)device->malloc(geometries.size() * sizeof(size_t), 16, EmbreeMemoryType::UNKNOWN);
+    offsets = (size_t*)device->malloc(geometries.size() * sizeof(size_t), 16, EmbreeMemoryType::MALLOC);
 
     if (geometries_host) {
       device->free(geometries_host);
     }
-    geometries_host = (Geometry**)device->malloc(sizeof(Geometry*)*geometries.size(), 16, EmbreeMemoryType::UNKNOWN);
+    geometries_host = (Geometry**)device->malloc(sizeof(Geometry*)*geometries.size(), 16, EmbreeMemoryType::MALLOC);
   }
 
   size_t geometry_data_byte_size_ = 0;
@@ -189,7 +189,7 @@ void Scene::syncWithDevice(sycl::queue queue, sycl::event* event)
     if (geometry_data_device) {
       device->free(geometry_data_device);
     }
-    geometry_data_device = (char*)device->malloc(geometry_data_byte_size, 16, EmbreeMemoryType::DEVICE);
+    geometry_data_device = (char*)device->malloc(geometry_data_byte_size, 16, EmbreeMemoryType::USM_DEVICE);
   }
 
   if (geometry_data_byte_size_changed || !dynamic_scene)
@@ -197,7 +197,7 @@ void Scene::syncWithDevice(sycl::queue queue, sycl::event* event)
     if (geometry_data_host) {
       device->free(geometry_data_host);
     }
-    geometry_data_host = (char*)device->malloc(geometry_data_byte_size, 16, EmbreeMemoryType::UNKNOWN);
+    geometry_data_host = (char*)device->malloc(geometry_data_byte_size, 16, EmbreeMemoryType::MALLOC);
   }
 
   parallel_for(geometries.size(), [&] ( const size_t i ) {
@@ -222,7 +222,7 @@ void Scene::syncWithDevice(sycl::queue queue, sycl::event* event)
   }
 
   if (!scene_device) {
-    scene_device = (Scene*) device->malloc(sizeof(Scene), 16, EmbreeMemoryType::DEVICE);
+    scene_device = (Scene*) device->malloc(sizeof(Scene), 16, EmbreeMemoryType::USM_DEVICE);
   }
 
   sycl::event last_event = queue.memcpy(scene_device, (void*)this, sizeof(Scene));

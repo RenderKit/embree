@@ -59,7 +59,7 @@ namespace embree
 
     numObjects = numScenes;
     device->memoryMonitor(numObjects*sizeof(Accel*), false);
-    objects = (Accel**) device->malloc(numScenes*sizeof(Accel*),16,EmbreeMemoryType::UNKNOWN);
+    objects = (Accel**) device->malloc(numScenes*sizeof(Accel*),16,EmbreeMemoryType::MALLOC);
     for (size_t i = 0; i < numObjects; ++i) {
       Ref<Scene> scene = (Scene*) scenes[i];
       objects[i] = scene.ptr;
