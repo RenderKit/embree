@@ -46,6 +46,13 @@ CPU with such a device. To render on the CPU and GPU in parallel, the
 user has to create a second Embree device and create a second
 scene to be used on the CPU.
 
+Starting with Embree 4.4 scene objects (`RTCScene` types) are
+not valid handles on SYCL devices anymore and therefore can not
+be used for Embree API calls in a SYCL kernel. Instead, Embree API
+calls on a SYCL kernel have a variation which use traversable objects
+(`RTCTraversable` type). To get a traversable object for a scene object
+the application can call `rtcGetSceneTraversable`.
+
 Files containing SYCL code, have to get compiled with the Intel®
 oneAPI DPC++ compiler. Please see section [Linux SYCL Compilation] and
 [Windows SYCL Compilation] for supported compilers. The DPC++ compiler
@@ -53,18 +60,29 @@ performs a two-phase compilation, where host code is compiled in a
 first phase, and device code compiled in a second compilation phase.
 
 Standard Embree API functions for scene construction can get used on
-the host but not the device. Data buffers that are shared with Embree
-(e.g. for vertex of index buffers) have to get allocated as SYCL
-unified shared memory (USM memory), using the `sycl::malloc` or
+the host but not the device. 
+
+Before version 4.4, Embree made heavy use of unified shared memory (USM)
+shared memory which simplifies memory managment with SYCL devices
+by letting the SYCL runtime transfer data from host to device implicitly.
+However, some applications require more control over when and how data
+is migrated from CPU to GPU. Embree 4.4 allows to use explicit host and device
+memory allocations. See for example `rtcSetNewGeometryBufferHostDevice`,
+`rtcSetSharedGeometryBufferHostDevice`, `rtcNewBufferHostDevice`, and
+`rtcNewSharedBufferHostDevice`. It is still possible to share
+data buffers with Embree using SYCL USM shared memory by using
+the API calls without the `HostDevice` suffix.
+
+The easiest way to share data buffers with Embree
+(e.g. for vertex of index buffers) is to allocate the
+data as USM shared memory, using the `sycl::malloc` or
 `sycl::aligned_alloc` calls with `sycl::usm::alloc::shared` property,
 or the sycl::aligned_alloc_shared call, e.g:
 
     void* ptr = sycl::aligned_alloc(16, bytes, queue, sycl::usm::alloc::shared);
 
 These shared allocations have to be valid during rendering, as Embree
-may access contained data when tracing rays. Embree does not support
-device-only memory allocations, as the BVH builder implemented on the
-CPU relies on reading the data buffers.
+may access contained data when tracing rays.
 
 Device side rendering can get invoked by submitting a SYCL
 `parallel_for` to the SYCL queue:
@@ -72,6 +90,8 @@ Device side rendering can get invoked by submitting a SYCL
     const sycl::specialization_id<RTCFeatureFlags> feature_mask;
 
     RTCFeatureFlags required_features = RTC_FEATURE_FLAG_TRIANGLE;
+    
+    RTCTraversable traversable = rtcGetSceneTraversable(scene);
 
     queue.submit([=](sycl::handler& cgh)
     {
@@ -99,7 +119,7 @@ Device side rendering can get invoked by submitting a SYCL
         rayhit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
         rayhit.hit.instID[0] = RTC_INVALID_GEOMETRY_ID;
   
-        rtcIntersect1(scene, &rayhit, &args);
+        rtcTraversableIntersect1(traversable, &rayhit, &args);
   
         result->geomID = rayhit.hit.geomID;
         result->primID = rayhit.hit.primID;
@@ -110,20 +130,22 @@ Device side rendering can get invoked by submitting a SYCL
 
 
 This example passes a feature mask using a specialization contant to
-the `rtcIntersect1` function, which is recommended for GPU
+the `rtcTraversableIntersect1` function, which is recommended for GPU
 rendering. For best performance, this feature mask should get used to
 enable only features required by the application to render the scene,
 e.g. just triangles in this example.
 
 Inside the SYCL `parallel_for` loop you can use rendering related functions,
-such as the `rtcIntersect1` and `rtcOccluded1` functions to trace rays,
-`rtcForwardIntersect1/Ex` and `rtcForwardOccluded1/Ex` to continue object
-traversal from inside a user geometry callback, 
-and `rtcGetGeometryUserDataFromScene` to get the user data pointer of some
+such as the `rtcTraversableIntersect1` and `rtcTraversableOccluded1` functions 
+to trace rays, `rtcTraversableForwardIntersect1/Ex` and `rtcTraversableForwardOccluded1/Ex`
+to continue object traversal from inside a user geometry callback,
+and `rtcGetGeometryUserDataFromTraversable` to get the user data pointer of some
 geometry.
 
-Have a look at the [Minimal] tutorial for a minimal SYCL example.
-
+Have a look at the [Minimal] tutorial for a minimal SYCL example and the
+[Host Device Memory] tutorial shows four different ways in which
+data buffers can be created by or shared with Embree using explicit
+host/device data buffers.
 
 SYCL JIT caching
 -----------------
@@ -183,8 +205,14 @@ reasons.
 Some features are not supported by the Embree SYCL API thus cannot
 get used on the GPU:
 
-- The packet tracing functions `rtcIntersect4/8/16` and
-  `rtcOccluded4/8/16` are not supported in SYCL
+- Since Embree 4.4, all the ray query functions
+  that take an `RTCScene` object as argument cannot get used in
+  SYCL device side code. Instead, the API functions
+  taking a `RTCTraversable` object (e.g. `rtcTraversableIntersect1`)
+  have to be used.
+
+- The packet tracing functions `rtcTraversableIntersect4/8/16` and
+  `rtcTraversableOccluded4/8/16` are not supported in SYCL
   device side code. Using these functions makes no sense for SYCL, as
   the programming model is implicitely executed in SIMT mode on the
   GPU anyway.
@@ -203,10 +231,10 @@ get used on the GPU:
   interpolating over, thus its implementation on the GPU would contain
   a large switch statement for all potential geometry types.
 
-- Tracing rays using `rtcIntersect1` and `rtcOccluded1` functions from
-  user geometry callbacks is not supported in SYCL. Please use the
-  tail recursive `rtcForwardIntersect1` and `rtcForwardOccluded1`
-  calls instead.
+- Tracing rays using `rtcTraversableIntersect1` and `rtcTraversableOccluded1`
+  functions from user geometry callbacks is not supported in SYCL. 
+  Please use the tail recursive `rtcTraversableForwardIntersect1` 
+  and `rtcTraversableForwardOccluded1` calls instead.
 
 - Subdivision surfaces are not supported for Embree SYCL devices.
 
@@ -220,12 +248,8 @@ get used on the GPU:
 Embree SYCL Known Issues
 ------------------------
 
-- The SYCL support of Embree is in beta phase. Current functionality,
-  quality, and GPU performance may not reflect that of the final
-  product.
-  
-- Compilation with build configuration "debug" is currently not working on
-  Windows.
+- Compilation with build configuration "debug" is currently not feasible because
+  compilation times are very long.
 
 
 Upgrading from Embree 3 to Embree 4
@@ -303,20 +327,21 @@ required:
   instantiated object. In Embree 4 using `rtcIntersect` recursively is
   disallowed on the GPU but still supported on the CPU. To properly
   continue a ray inside an instantiated object use the new
-  `rtcForwardIntersect1` and `rtcForwardOccluded1` functions.
+  `rtc(Traversable)ForwardIntersect1` and `rtc(Traversable)ForwardOccluded1` functions.
 
-- The geometry object of Embree 4 is a host side only object, thus
+- The geometry object and scene object of Embree 4 are a host side only objects, thus
   accessing it during rendering from the GPU is not allowed. Thus all
-  API functions that take an RTCGeometry object as argument cannot get
-  used during rendering. Thus in particular the
-  `rtcGetGeometryUserData(RTCGeometry)` call cannot get used, but
-  there is an alternative function
-  `rtcGetGeometryUserDataFromScene(RTCScene scene,uint geomID)` that
-  should get used instead.
+  API functions that take an RTCGeometry object or RTCScene object as argument cannot get
+  used during rendering. In particular the `rtcGetGeometryUserData(RTCGeometry)`
+  call cannot get used, but there is an alternative function
+  `rtcGetGeometryUserDataFromTraversable(RTCTraversable traversable,uint geomID)` that
+  should get used instead. To perform ray queries on the GPU (e.g. `rtcTraversableIntersect1`)
+  the application has to get a `RTCTraversable` object first (using
+  `rtcGetSceneTraversable`) and pass it to the SYCL kernel.
 
 - The user geometry callback and filter callback functions should get
   passed through the intersection and occlusion argument structures to
-  the `rtcIntersect1` and `rtcOccluded1` functions directly to allow
+  the `rtcTraversableIntersect1` and `rtcTraversableOccluded1` functions directly to allow
   inlining. The experimental geometry version of the callbacks is
   disabled in SYCL and should not get used.
 
