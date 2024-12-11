@@ -726,11 +726,11 @@ namespace embree
   }
 
   void* DeviceGPU::malloc(size_t size, size_t align) {
-    return alignedSYCLMalloc(&gpu_context,&gpu_device,size,align,EMBREE_USM_SHARED_DEVICE_READ_ONLY);
+    return alignedSYCLMalloc(&gpu_context,&gpu_device,size,align,EmbreeUSMMode::DEVICE_READ_ONLY);
   }
 
   void* DeviceGPU::malloc(size_t size, size_t align, EmbreeMemoryType type) {
-    return alignedSYCLMalloc(&gpu_context,&gpu_device,size,align,EMBREE_USM_SHARED_DEVICE_READ_ONLY,type);
+    return alignedSYCLMalloc(&gpu_context,&gpu_device,size,align,EmbreeUSMMode::DEVICE_READ_ONLY,type);
   }
 
   void DeviceGPU::free(void* ptr) {

@@ -40,7 +40,7 @@ namespace embree
     {
       device->refInc();
 
-      ptr = alloc(ptr_in, shared, EmbreeMemoryType::SHARED);
+      ptr = alloc(ptr_in, shared, EmbreeMemoryType::USM_SHARED);
 #if defined(EMBREE_SYCL_SUPPORT)
       dshared = true;
       dptr = ptr;
@@ -53,15 +53,21 @@ namespace embree
       device->refInc();
 
 #if defined(EMBREE_SYCL_SUPPORT)
-      if (device->is_gpu())
+      if (device->is_gpu() && !device->has_unified_memory())
       {
-        ptr  = alloc( ptr_in,  shared, EmbreeMemoryType::UNKNOWN);
-        dptr = alloc(dptr_in, dshared, EmbreeMemoryType::DEVICE);
+        ptr  = alloc( ptr_in,  shared, EmbreeMemoryType::MALLOC);
+        dptr = alloc(dptr_in, dshared, EmbreeMemoryType::USM_DEVICE);
+      }
+      else if (device->is_gpu() && device->has_unified_memory())
+      {
+        ptr = alloc(ptr_in, shared, EmbreeMemoryType::USM_SHARED);
+        dshared = true;
+        dptr = ptr;
       }
       else
 #endif
       {
-        ptr = alloc(ptr_in, shared, EmbreeMemoryType::SHARED);
+        ptr = alloc(ptr_in, shared, EmbreeMemoryType::MALLOC);
 #if defined(EMBREE_SYCL_SUPPORT)
         dshared = true;
         dptr = ptr;

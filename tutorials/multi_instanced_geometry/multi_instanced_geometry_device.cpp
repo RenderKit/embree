@@ -355,7 +355,7 @@ extern "C" void device_render(int* pixels,
 {
   if (g_data.g_accu_width != width || g_data.g_accu_height != height) {
     alignedUSMFree(g_data.g_accu);
-    g_data.g_accu = (Vec3ff*) alignedUSMMalloc((width*height)*sizeof(Vec3ff),16,EMBREE_USM_SHARED_DEVICE_READ_WRITE);
+    g_data.g_accu = (Vec3ff*) alignedUSMMalloc((width*height)*sizeof(Vec3ff),16,EmbreeUSMMode::DEVICE_READ_WRITE);
     g_data.g_accu_width = width;
     g_data.g_accu_height = height;
     for (unsigned int i=0; i<width*height; i++)
