@@ -30,8 +30,10 @@ namespace embree
     /* first terminate threads in case we configured them */
     if (g_tbb_threads_initialized) {
 #if TBB_INTERFACE_VERSION >= 11005
-      delete g_tbb_thread_control;
-      g_tbb_thread_control = nullptr;
+      if (numThreads != std::numeric_limits<size_t>::max()) {
+        delete g_tbb_thread_control;
+        g_tbb_thread_control = nullptr;
+      }
 #else
       g_tbb_threads.terminate();
 #endif
@@ -53,7 +55,9 @@ namespace embree
       const size_t max_concurrency = threadCount();
       if (numThreads > max_concurrency) numThreads = max_concurrency;
 #if TBB_INTERFACE_VERSION >= 11005
-      g_tbb_thread_control = new tbb::global_control(tbb::global_control::max_allowed_parallelism,numThreads);
+      if (numThreads != std::numeric_limits<size_t>::max()) {
+        g_tbb_thread_control = new tbb::global_control(tbb::global_control::max_allowed_parallelism, numThreads);
+      }
 #else
       g_tbb_threads.initialize(int(numThreads));
 #endif
