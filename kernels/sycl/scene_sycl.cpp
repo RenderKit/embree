@@ -174,7 +174,7 @@ sycl::event Scene::syncWithDevice(sycl::queue queue)
   size_t geometry_data_byte_size_ = 0;
   for (size_t i = 0; i < geometries.size(); ++i) {
     Geometry* geom = geometries[i].ptr;
-    const size_t byte_size = geom->getGeometryDataDeviceByteSize();
+    const size_t byte_size = geom? geom->getGeometryDataDeviceByteSize(): 0;
     offsets[i] = geometry_data_byte_size_;
     geometry_data_byte_size_ += byte_size;
   }
@@ -202,6 +202,9 @@ sycl::event Scene::syncWithDevice(sycl::queue queue)
     if (geometries[i] && geometries[i]->isEnabled()) {
       geometries[i]->convertToDeviceRepresentation(offsets[i], geometry_data_host, geometry_data_device);
       geometries_host[i] = (Geometry*)(geometry_data_device + offsets[i]);
+    }
+    else {
+      geometries_host[i] = NULL;
     }
   });
 
