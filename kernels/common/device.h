@@ -132,6 +132,8 @@ namespace embree
     /*! returns true if device and host have shared memory system (e.g., integrated GPU) */
     virtual bool has_unified_memory() const { return true; }
 
+    virtual EmbreeMemoryType get_memory_type(void* ptr) const { return EmbreeMemoryType::MALLOC; }
+
   private:
 
     /*! initializes the tasking system */
@@ -191,6 +193,15 @@ namespace embree
 
     /*! returns true if device and host have shared memory system (e.g., integrated GPU) */
     virtual bool has_unified_memory() const override;
+
+    virtual EmbreeMemoryType get_memory_type(void* ptr) const override {
+      switch(sycl::get_pointer_type(ptr, gpu_context)) {
+        case sycl::usm::alloc::host: return EmbreeMemoryType::USM_HOST;
+        case sycl::usm::alloc::device: return EmbreeMemoryType::USM_DEVICE;
+        case sycl::usm::alloc::shared: return EmbreeMemoryType::USM_SHARED;
+        default: return EmbreeMemoryType::MALLOC;
+      }
+    }
 
   private:
     sycl::context gpu_context;

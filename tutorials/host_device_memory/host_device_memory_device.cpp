@@ -141,7 +141,6 @@ unsigned int addCubeShared (RTCScene scene, Vec3fa d)
     triangles[11].v0 = 3; triangles[11].v1 = 5; triangles[11].v2 = 7;
 #if defined(EMBREE_SYCL_TUTORIAL)
   });
-  global_gpu_queue->wait_and_throw();
 #endif
 
   rtcSetSharedGeometryBuffer(mesh, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, triangles, 0, sizeof(Triangle), 12);
@@ -275,7 +274,6 @@ unsigned int addCubeBufferShared (RTCScene scene, Vec3fa d)
     triangles[11].v0 = 3; triangles[11].v1 = 5; triangles[11].v2 = 7;
 #if defined(EMBREE_SYCL_TUTORIAL)
   });
-  global_gpu_queue->wait_and_throw();
 #endif
 
   RTCBuffer triangleBuffer = rtcNewSharedBuffer(g_device, triangles, 12 * sizeof(Triangle));
@@ -356,8 +354,12 @@ extern "C" void device_init (char* cfg)
   /* add ground plane */
   addGroundPlane(data.g_scene);
 
-  /* commit changes to scene */
 #if defined(EMBREE_SYCL_SUPPORT) && defined(EMBREE_SYCL_TUTORIAL)
+  // we fill data on GPU and copy to host. we have to ensure
+  // that the data is on host before building the scene
+  // with rtcCommitScene
+  global_gpu_queue->wait_and_throw();
+
   rtcCommitSceneWithQueue (data.g_scene, *global_gpu_queue);
 #else
   rtcCommitScene (data.g_scene);
