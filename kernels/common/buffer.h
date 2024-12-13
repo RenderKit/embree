@@ -61,8 +61,16 @@ namespace embree
       else if (device->is_gpu() && device->has_unified_memory())
       {
         ptr = alloc(ptr_in, shared, EmbreeMemoryType::USM_SHARED);
-        dshared = true;
-        dptr = ptr;
+
+        if (device->get_memory_type(ptr) != EmbreeMemoryType::USM_SHARED)
+        {
+          dptr = alloc(dptr_in, dshared, EmbreeMemoryType::USM_DEVICE);
+        }
+        else
+        {
+          dshared = true;
+          dptr = ptr;
+        }
       }
       else
 #endif
@@ -92,6 +100,11 @@ namespace embree
     virtual void free()
     {
       if (!shared && ptr) {
+#if defined(EMBREE_SYCL_SUPPORT)
+        if (dptr == ptr) {
+          dptr = nullptr;
+        }
+#endif
         device->free(ptr);
         device->memoryMonitor(-ssize_t(this->bytes()), true);
         ptr = nullptr;
