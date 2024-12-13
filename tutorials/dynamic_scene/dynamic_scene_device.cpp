@@ -319,26 +319,16 @@ extern "C" void device_render (int* pixels,
                            const float time,
                            const ISPCCamera& camera)
 {
-  auto start_animate = std::chrono::high_resolution_clock::now();
   /* animate sphere */
   for (int i=0; i<data.numSpheres; i++)
     animateSphere(i,time+i);
-  auto end_animate = std::chrono::high_resolution_clock::now();
 
   /* commit changes to scene */
-  auto start_commit = std::chrono::high_resolution_clock::now();
 #if defined(EMBREE_SYCL_TUTORIAL)
   rtcCommitSceneWithQueue (data.g_scene, *global_gpu_queue);
 #else
   rtcCommitScene (data.g_scene);
 #endif
-  auto end_commit = std::chrono::high_resolution_clock::now();
-
-  auto duration_animate = std::chrono::duration_cast<std::chrono::milliseconds>(end_animate - start_animate);
-  auto duration_commit = std::chrono::duration_cast<std::chrono::milliseconds>(end_commit - start_commit);
-
-  std::cout << "animate took " << duration_animate.count() << " milliseconds to execute." << std::endl;
-  std::cout << "commit took " << duration_commit.count() << " milliseconds to execute." << std::endl;
   data.g_traversable = rtcGetSceneTraversable(data.g_scene);
 }
 
