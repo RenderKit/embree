@@ -1,4 +1,4 @@
-## Copyright 2009-2021 Intel Corporation
+## Copyright 2009-2024 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
 SET(EMBREE_ZE_LOADER_RUNTIME_LINK_NAME_LINUX "libze_loader.so.1" CACHE STRING "Name of the ze_loader lib that is looked for at runtime on Linux")
@@ -23,6 +23,8 @@ SET_PROPERTY(TARGET ze_wrapper PROPERTY FOLDER common)
 SET_PROPERTY(TARGET ze_wrapper APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 
 IF (EMBREE_STATIC_LIB)
-  INSTALL(TARGETS ze_wrapper EXPORT ze_wrapper-targets ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT devel)
+  INSTALL(TARGETS ze_wrapper 
+      EXPORT ze_wrapper-targets ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT devel
+      FRAMEWORK DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT runtime OPTIONAL)
   INSTALL(EXPORT ze_wrapper-targets DESTINATION "${EMBREE_CMAKEEXPORT_DIR}" COMPONENT devel)
 ENDIF()
