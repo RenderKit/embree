@@ -75,7 +75,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      env-from-files: ./.github/workflows/gfx-ubuntu22-public.env
       artifact-in: nightly-linux-DG2-INTERNAL-L0RTAS-build
       cmd: |
         module load cmake/3.25.3
@@ -89,7 +89,7 @@ jobs:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      env-from-files: ./.github/workflows/gfx-ubuntu22-public.env
       dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
       artifact-out: linux-DG2-JIT-PUBLIC-sycl-RC-build
       artifact-path: ./build/*.tar.gz
@@ -107,7 +107,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      env-from-files: ./.github/workflows/gfx-ubuntu22-public.env
       dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
       artifact-in: linux-DG2-JIT-PUBLIC-sycl-RC-build
       cmd: |
@@ -156,7 +156,6 @@ jobs:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env
       dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
       artifact-out: linux-PVC-JIT-INTERNAL-SYCL-RC-build
       artifact-path: ./build/*.tar.gz
@@ -174,7 +173,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "pvc" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-internal.env
+      env-from-files: ./.github/workflows/gfx-ubuntu22-internal.env
       dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
       artifact-in: linux-PVC-JIT-INTERNAL-SYCL-RC-build
       cmd: |
@@ -195,7 +194,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "pvc" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-internal.env
+      env-from-files: ./.github/workflows/gfx-ubuntu22-internal.env
       dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
       artifact-in: linux-PVC-JIT-INTERNAL-SYCL-RC-build
       cmd: |
@@ -215,7 +214,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "pvc" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-internal.env
+      env-from-files: ./.github/workflows/gfx-ubuntu22-internal.env
       dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
       artifact-in: linux-PVC-JIT-INTERNAL-SYCL-RC-build
       cmd: |
@@ -223,52 +222,52 @@ jobs:
         cmake --preset linux-PVC-JIT-INTERNAL-SYCL-RC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
-  linux-ATSM-JIT-SYCL-RC-build:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    with:
-      image: embree/ubuntu:22.04
-      runs-on: '[ "Linux", "docker", "build" ]'
-      project: embree
-      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
-      artifact-out: linux-ATSM-JIT-SYCL-RC-build
-      artifact-path: ./build/*.tar.gz
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target build
+  # linux-ATSM-JIT-SYCL-RC-build:
+  #   secrets: inherit
+  #   uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+  #   with:
+  #     image: embree/ubuntu:22.04
+  #     runs-on: '[ "Linux", "docker", "build" ]'
+  #     project: embree
+  #     dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
+  #     artifact-out: linux-ATSM-JIT-SYCL-RC-build
+  #     artifact-path: ./build/*.tar.gz
+  #     cmd: |
+  #       module load cmake/3.25.3
+  #       cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+  #       cmake --build build --config Release --target build
 
-  linux-ATSM-JIT-PUBLIC-SYCL-RC-test:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    needs: ["linux-ATSM-JIT-SYCL-RC-build"]
-    with:
-      image: embree/ubuntu:22.04
-      options: --device=/dev/dri:/dev/dri
-      runs-on: '[ "Linux", "docker", "atsm" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-public.env
-      artifact-in: linux-ATSM-JIT-SYCL-RC-build
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target test_package
+  # linux-ATSM-JIT-PUBLIC-SYCL-RC-test:
+  #   secrets: inherit
+  #   uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+  #   needs: ["linux-ATSM-JIT-SYCL-RC-build"]
+  #   with:
+  #     image: embree/ubuntu:22.04
+  #     options: --device=/dev/dri:/dev/dri
+  #     runs-on: '[ "Linux", "docker", "atsm" ]'
+  #     project: embree
+  #     env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-public.env
+  #     artifact-in: linux-ATSM-JIT-SYCL-RC-build
+  #     cmd: |
+  #       module load cmake/3.25.3
+  #       cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+  #       cmake --build build --config Release --target test_package
 
-  linux-ATSM-JIT-INTERNAL-SYCL-RC-test:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    needs: ["linux-ATSM-JIT-SYCL-RC-build"]
-    with:
-      image: embree/ubuntu:22.04
-      options: --device=/dev/dri:/dev/dri
-      runs-on: '[ "Linux", "docker", "atsm" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
-      artifact-in: linux-ATSM-JIT-SYCL-RC-build
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target test_package
+  # linux-ATSM-JIT-INTERNAL-SYCL-RC-test:
+  #   secrets: inherit
+  #   uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+  #   needs: ["linux-ATSM-JIT-SYCL-RC-build"]
+  #   with:
+  #     image: embree/ubuntu:22.04
+  #     options: --device=/dev/dri:/dev/dri
+  #     runs-on: '[ "Linux", "docker", "atsm" ]'
+  #     project: embree
+  #     env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
+  #     artifact-in: linux-ATSM-JIT-SYCL-RC-build
+  #     cmd: |
+  #       module load cmake/3.25.3
+  #       cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+  #       cmake --build build --config Release --target test_package
 
   ########################################
   # Windows
@@ -280,7 +279,7 @@ jobs:
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
+      env-from-files: ./.github/workflows/gfx-windows-public.env
       dpcpp-version: icx/compiler_ppkg-rel/20240129
       artifact-out: nightly-windows-DG2-JIT-ICX-RC-build
       artifact-path: ./build/*.zip
@@ -308,7 +307,7 @@ jobs:
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
+      env-from-files: ./.github/workflows/gfx-windows-public.env
       dpcpp-version: intel-llvm/nightly-2023-09-22-rk
       artifact-out: nightly-windows-DG2-JIT-NIGHTLY-RK-bulid
       artifact-path: ./build/*.zip
@@ -401,7 +400,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
+      env-from-files: ./.github/workflows/gfx-windows-public.env
       artifact-out: windows-DG2-JIT-sycl-RC-build
       artifact-path: ./build/*.zip
       cmd: |
@@ -416,7 +415,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
+      env-from-files: ./.github/workflows/gfx-windows-public.env
       artifact-in: windows-DG2-JIT-sycl-RC-build
       cmd: |
         cmake --preset nightly-windows-DG2-JIT -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
@@ -542,75 +541,75 @@ jobs:
         cmake --build build --target test_package
 
   # ICX
-  nightly-linux-DEBUG-ICX2024_0-ISPC1_16_1-AVX-TBB2019_2:
+  nightly-linux-DEBUG-ICX2025_0-ISPC1_16_1-AVX-TBB2019_2:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: embree/rockylinux:8.7
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2025.0
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX-TBB2019_2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
         cmake --build build --target build
         cmake --build build --target test_package
 
-  nightly-linux-DEBUG-ICX2024_0-ISPC1_16_1-AVX512VL-TBB2019_2:
+  nightly-linux-DEBUG-ICX2025_0-ISPC1_16_1-AVX512VL-TBB2019_2:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2025.0
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX512VL-TBB2019_2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
         cmake --build build --target build
         cmake --build build --target test_package
 
-  nightly-linux-DEBUG-ICX2024_0-ISPC1_16_1-AVX512-TBB2019_9:
+  nightly-linux-DEBUG-ICX2025_0-ISPC1_16_1-AVX512-TBB2019_9:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: embree/fedora:29
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2025.0
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX512-TBB2019_9 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
         cmake --build build --target build
         cmake --build build --target test_package
 
-  nightly-linux-DEBUG-ICX2024_0-ISPC1_16_1-AVX2-TBB2021_2_0:
+  nightly-linux-DEBUG-ICX2025_0-ISPC1_16_1-AVX2-TBB2021_2_0:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: embree/fedora:29
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2025.0
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX2-TBB2021_2_0 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
         cmake --build build --target build
         cmake --build build --target test_package
 
-  nightly-linux-DEBUG-ICX2024_0-ISPC1_17_0-AVX2-TBB2019_9:
+  nightly-linux-DEBUG-ICX2025_0-ISPC1_17_0-AVX2-TBB2019_9:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: embree/rockylinux:8.7
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2025.0
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_17_0-AVX2-TBB2019_9 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
         cmake --build build --target build
         cmake --build build --target test_package
 
-  nightly-linux-DEBUG-ICX2024_0-ISPC1_17_0-AVX512VL-TBB2021_5_0:
+  nightly-linux-DEBUG-ICX2025_0-ISPC1_17_0-AVX512VL-TBB2021_5_0:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2025.0
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_17_0-AVX512VL-TBB2021_5_0 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
@@ -904,32 +903,32 @@ jobs:
 ########################################
 # Windows
 ########################################
-  nightly-windows-RELEASE-ICX2024_0-ISPC1_13_0-AVX2-TBB2021_5_0:
+  nightly-windows-RELEASE-ICX2025_0-ISPC1_13_0-AVX2-TBB2021_5_0:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
-      dpcpp-version: oneAPI/compiler/2024.1
+      dpcpp-version: intel/2025.0
       cmd: |
         cmake --preset nightly-windows-RELEASE-ICX-ISPC1_13_0-AVX2-TBB2021_5_0 -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
         cmake --build build --config Release --target build
         cmake --build build --config Release --target test_package
 
-  nightly-windows-RELEASE-ICX2024_0-ISPC1_13_0-AVX512-TBB2019_9:
+  nightly-windows-RELEASE-ICX2025_0-ISPC1_13_0-AVX512-TBB2019_9:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-      dpcpp-version: oneAPI/compiler/2024.1
+      dpcpp-version: intel/2025.0
       cmd: |
         cmake --preset nightly-windows-RELEASE-ICX-ISPC1_13_0-AVX512-TBB2019_9 -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
         cmake --build build --config Release --target build
         cmake --build build --config Release --target test_package
 
-  nightly-windows-RELEASE-ICX2024_0-ISPC1_14_1-AVX2-TBB2021_2_0:
+  nightly-windows-RELEASE-ICX2025_0-ISPC1_14_1-AVX2-TBB2021_2_0:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
-      dpcpp-version: oneAPI/compiler/2024.1
+      dpcpp-version: intel/2025.0
       cmd: |
         cmake --preset nightly-windows-RELEASE-ICX-ISPC1_14_1-AVX2-TBB2021_2_0 -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
         cmake --build build --config Release --target build

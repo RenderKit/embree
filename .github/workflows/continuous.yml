@@ -87,8 +87,7 @@ jobs:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2025.0
       artifact-out: linux-DG2-JIT-PUBLIC-ICX-build
       artifact-path: ./build/*.tar.gz
       cmd: |
@@ -106,31 +105,11 @@ jobs:
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2025.0
       artifact-in: linux-DG2-JIT-PUBLIC-ICX-build
       cmd: |
         module load cmake/3.25.3
         cmake --preset linux-DG2-JIT-PUBLIC-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target test_package
-
-#   ########################################
-#   # Linux ATS-M
-#   ########################################
-
-  linux-ATSM-JIT-PUBLIC-test:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    needs: ["linux-DG2-JIT-PUBLIC-build"]
-    with:
-      image: embree/ubuntu:22.04
-      options: --device=/dev/dri:/dev/dri
-      runs-on: '[ "Linux", "docker", "atsm" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-public.env
-      artifact-in: linux-DG2-JIT-PUBLIC-build
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
   ########################################
@@ -286,8 +265,8 @@ jobs:
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
-      dpcpp-version: oneAPI/compiler/2024.1
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-windows-public.env
+      dpcpp-version: intel/2025.0
+      env-from-files: ./.github/workflows/gfx-windows-public.env
       artifact-out: windows-DG2-JIT-ICX-build
       artifact-path: ./build/*.zip
       cmd: |
@@ -301,7 +280,7 @@ jobs:
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
-      dpcpp-version: oneAPI/compiler/2024.1
+      dpcpp-version: intel/2025.0
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
       artifact-in: windows-DG2-JIT-ICX-build
       cmd: |
@@ -315,7 +294,7 @@ jobs:
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
-      dpcpp-version: oneAPI/compiler/2024.1
+      dpcpp-version: intel/2025.0
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
       artifact-in: windows-DG2-JIT-ICX-build
       cmd: |
@@ -362,7 +341,7 @@ jobs:
     with:
       image: embree/fedora:29
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2025.0
       cmd: |
         module load cmake/3.25.3
         cmake --preset linux-fedora29-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
@@ -375,7 +354,7 @@ jobs:
     with:
       image: embree/fedora:32
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2025.0
       cmd: |
         module load cmake/3.25.3
         cmake --preset linux-fedora32-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
@@ -400,7 +379,7 @@ jobs:
     with:
       image: embree/ubuntu:20.04
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2025.0
       cmd: |
         module load cmake/3.25.3
         cmake --preset linux-ubuntu20_04-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
@@ -429,7 +408,7 @@ jobs:
     with:
       force-delete: true
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-      dpcpp-version: oneAPI/compiler/2024.1
+      dpcpp-version: intel/2025.0
       cmd: |
         cmake --preset windows-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
         cmake --build build --config RelWithDebInfo --target build
@@ -501,7 +480,6 @@ jobs:
     needs:
       - linux-DG2-JIT-INTERNAL-test
       - linux-DG2-JIT-PUBLIC-test
-      - linux-ATSM-JIT-PUBLIC-test
       - linux-DG2-JIT-PUBLIC-ICX-test
       - linux-PVC-JIT-INTERNAL-test-1T
       - linux-PVC-JIT-INTERNAL-test-2T
