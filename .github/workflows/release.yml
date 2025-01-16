@@ -158,7 +158,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      env-from-files: ./.github/workflows/gfx-ubuntu22-public.env
       dpcpp-version: intel-llvm/nightly-2023-10-26-rk
       artifact-in: release-linux-sycl
       cmd: |
@@ -175,7 +175,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "pvc" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      env-from-files: ./.github/workflows/gfx-ubuntu22-public.env
       dpcpp-version: intel-llvm/nightly-2023-10-26-rk
       artifact-in: release-linux-sycl
       cmd: |
@@ -274,7 +274,7 @@ jobs:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      env-from-files: ./.github/workflows/gfx-ubuntu22-public.env
       artifact-in: release-linux
       artifact-out: release-testing-PACKAGE-ZIP
       artifact-path: ./build/*.tar.gz
