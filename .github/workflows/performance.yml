@@ -19,7 +19,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      env-from-files: ./.github/workflows/gfx-ubuntu22-public.env
       dpcpp-version: intel/2023.0
       artifact-out: perf-linux-SYCL-DPCPP
       artifact-path: ./build/*.tar.gz
@@ -37,7 +37,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2", "perf", "A770" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      env-from-files: ./.github/workflows/gfx-ubuntu22-public.env
       artifact-in: perf-linux-SYCL-DPCPP
       setup-benny: true
       cmd: |
@@ -57,7 +57,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "pvc", "perf" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      env-from-files: ./.github/workflows/gfx-ubuntu22-public.env
       artifact-in: perf-linux-SYCL-DPCPP
       setup-benny: true
       cmd: |
@@ -83,7 +83,7 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2025.0
       artifact-out: perf-linux-x86-ICX-ISPC-build
       artifact-path: ./build/*.tar.gz
       cmd: |
@@ -159,7 +159,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2", "perf", "A770" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
+      env-from-files: ./.github/workflows/gfx-ubuntu22-public.env
       artifact-in: perf-linux-SYCL-DPCPP
       setup-benny: true
       cmd: |
