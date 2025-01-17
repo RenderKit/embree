@@ -51,37 +51,6 @@ jobs:
         cmake --preset nightly-linux-DG2-JIT-MULTILEVEL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
-  nightly-linux-DG2-INTERNAL-L0RTAS-build:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    with:
-      image: embree/ubuntu:22.04
-      runs-on: '[ "Linux", "docker", "build" ]'
-      project: embree
-      dpcpp-version: intel-llvm/nightly-2023-12-18-rk
-      artifact-out: nightly-linux-DG2-INTERNAL-L0RTAS-build
-      artifact-path: ./build/*.tar.gz
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset nightly-linux-DG2-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target build
-
-  linux-DG2-JIT-INTERNAL-L0RTAS-test:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    needs: ["nightly-linux-DG2-INTERNAL-L0RTAS-build"]
-    with:
-      image: embree/ubuntu:22.04
-      options: --device=/dev/dri:/dev/dri
-      runs-on: '[ "Linux", "docker", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/gfx-ubuntu22-public.env
-      artifact-in: nightly-linux-DG2-INTERNAL-L0RTAS-build
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset nightly-linux-DG2-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target test_package
-
   linux-DG2-JIT-PUBLIC-sycl-RC-build:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
@@ -381,18 +350,6 @@ jobs:
         cmake --preset nightly-windows-DG2-JIT -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
         cmake --build build --config Release --target test_package
 
-  windows-DG2-JIT-INTERNAL-VALIDATION_API:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-    with:
-      runs-on: '[ "Windows", "NAS", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
-      cmd: |
-        python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_SYCL_SUPPORT:ON sycl:none rt_validation_api:ON implicit_dispatch_globals:OFF L0RTAS:OFF intensity:3 tasking:TBB2020.3
-        python scripts/test.py build
-        python scripts/test.py test
-
   windows-DG2-JIT-sycl-RC-build:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
@@ -419,33 +376,6 @@ jobs:
       artifact-in: windows-DG2-JIT-sycl-RC-build
       cmd: |
         cmake --preset nightly-windows-DG2-JIT -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target test_package
-
-  windows-DG2-JIT-INTERNAL-L0RTAS-build:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-    with:
-      force-delete: true
-      runs-on: '[ "Windows", "NAS", "build" ]'
-      project: embree
-      dpcpp-version: intel-llvm/nightly-2023-10-26-rk
-      artifact-out: windows-DG2-JIT-INTERNAL-L0RTAS-build
-      artifact-path: ./build/*.zip
-      cmd: |
-        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target build
-
-  windows-DG2-JIT-INTERNAL-L0RTAS-test:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-    needs: ["windows-DG2-JIT-INTERNAL-L0RTAS-build"]
-    with:
-      runs-on: '[ "Windows", "NAS", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
-      artifact-in: windows-DG2-JIT-INTERNAL-L0RTAS-build
-      cmd: |
-        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
   nightly-windows-DG2-MULTILEVEL-build:
