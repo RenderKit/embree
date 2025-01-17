@@ -23,7 +23,7 @@
 #include "../geometry/triangle_intersector_pluecker.h"
 
 #include "rthwif_embree.h"
-#include "../rthwif/rttrace/rttrace.h"
+#include "rthwif_rttrace.h"
 
 using namespace embree;
 

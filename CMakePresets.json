@@ -40,7 +40,6 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "EMBREE_SYCL_SUPPORT": "ON",
-        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
         "EMBREE_SYCL_AOT_DEVICES": "none",
         "EMBREE_MAX_ISA": "AVX512",
         "EMBREE_USE_GOOGLE_BENCHMARK": "ON",
@@ -83,7 +82,6 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "EMBREE_SYCL_SUPPORT": "ON",
-        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
         "EMBREE_SYCL_AOT_DEVICES": "none",
         "EMBREE_MAX_ISA": "AVX512"
       }
