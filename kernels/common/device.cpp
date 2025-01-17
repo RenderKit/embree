@@ -662,7 +662,6 @@ namespace embree
     if (result != ZE_RESULT_SUCCESS)
       throw_RTCError(RTC_ERROR_UNKNOWN, "zeDriverGetExtensionProperties failed");
 
-#if defined(EMBREE_SYCL_L0_RTAS_BUILDER)
     bool ze_rtas_builder = false;
     for (uint32_t i=0; i<extensions.size(); i++)
     {
@@ -672,22 +671,16 @@ namespace embree
     if (!ze_rtas_builder)
       throw_RTCError(RTC_ERROR_LEVEL_ZERO_RAYTRACING_SUPPORT_MISSING, "ZE_experimental_rtas_builder extension not found. Please install a recent driver. On Linux, make sure that the package intel-level-zero-gpu-raytracing is installed");
 
-    result = ZeWrapper::initRTASBuilder(hDriver,ZeWrapper::LEVEL_ZERO);
+    result = ZeWrapper::initRTASBuilder(hDriver);
     if (result == ZE_RESULT_ERROR_DEPENDENCY_UNAVAILABLE) {
       throw_RTCError(RTC_ERROR_LEVEL_ZERO_RAYTRACING_SUPPORT_MISSING, "cannot load ZE_experimental_rtas_builder extension. Please install a recent driver. On Linux, make sure that the package intel-level-zero-gpu-raytracing is installed");
     }
     if (result != ZE_RESULT_SUCCESS)
       throw_RTCError(RTC_ERROR_UNKNOWN, "cannot initialize ZE_experimental_rtas_builder extension");
-#else
-    ZeWrapper::initRTASBuilder(hDriver,ZeWrapper::INTERNAL);
-#endif
 
     if (State::verbosity(1))
     {
-      if (ZeWrapper::rtas_builder == ZeWrapper::INTERNAL)
-        std::cout << "  Internal RTAS Builder" << std::endl;
-      else
-        std::cout << "  Level Zero RTAS Builder" << std::endl;
+      std::cout << "  Level Zero RTAS Builder" << std::endl;
     }
 
     /* check if extension library can get loaded */

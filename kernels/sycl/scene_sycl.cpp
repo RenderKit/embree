@@ -9,11 +9,6 @@
 #include "../common/scene.h"
 #include "../common/context.h"
 #include "../geometry/filter.h"
-#include "rthwif_embree.h"
-
-#if defined(EMBREE_SYCL_SUPPORT)
-#  include "../sycl/rthwif_embree_builder.h"
-#endif
 
 #include "../../common/algorithms/parallel_for.h"
 
