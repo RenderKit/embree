@@ -29,7 +29,6 @@
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "EMBREE_SYCL_SUPPORT": "ON",
-        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
         "EMBREE_SYCL_AOT_DEVICES": "none"
       }
     }

@@ -18,30 +18,17 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "EMBREE_SYCL_SUPPORT": "ON",
-        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
         "EMBREE_SYCL_AOT_DEVICES": "none",
         "EMBREE_MAX_ISA": "SSE2",
         "EMBREE_MAX_INSTANCE_LEVEL_COUNT": "2"
       }
     }, 
     {
-      "name": "nightly-linux-DG2-INTERNAL-L0RTAS",
-      "inherits": ["package-linux", "env", "dpcpp", "ispc_NEWEST", "tbb_NEWEST"],
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "EMBREE_SYCL_SUPPORT": "ON",
-        "EMBREE_SYCL_L0_RTAS_BUILDER" : "ON",
-        "EMBREE_SYCL_AOT_DEVICES": "none",
-        "EMBREE_MAX_ISA": "SSE2"
-      }
-    },
-    {
       "name": "nightly-linux-PVC-JIT",
       "inherits": ["package-linux", "env", "dpcpp", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "EMBREE_SYCL_SUPPORT": "ON",
-        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
         "EMBREE_SYCL_AOT_DEVICES": "none",
         "EMBREE_MAX_ISA": "SSE2"
       }
@@ -52,7 +39,6 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "EMBREE_SYCL_SUPPORT": "ON",
-        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
         "EMBREE_SYCL_AOT_DEVICES": "none",
         "EMBREE_MAX_ISA": "SSE2",
         "EMBREE_MAX_INSTANCE_LEVEL_COUNT": "2"
@@ -64,7 +50,6 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "EMBREE_SYCL_SUPPORT": "ON",
-        "EMBREE_SYCL_L0_RTAS_BUILDER" : "OFF",
         "EMBREE_SYCL_AOT_DEVICES": "none",
         "EMBREE_MAX_ISA": "SSE2"
       }
@@ -75,7 +60,6 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "EMBREE_SYCL_SUPPORT": "ON",
-        "EMBREE_SYCL_L0_RTAS_BUILDER" : "ON",
         "EMBREE_SYCL_AOT_DEVICES": "none",
         "EMBREE_MAX_ISA": "AVX512"
       }
@@ -86,7 +70,6 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "EMBREE_SYCL_SUPPORT": "ON",
-        "EMBREE_SYCL_L0_RTAS_BUILDER" : "ON",
         "EMBREE_SYCL_AOT_DEVICES": "none",
         "EMBREE_MAX_ISA": "AVX512"
       }
