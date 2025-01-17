@@ -7,10 +7,6 @@
 #include "rtcore.h"
 #endif
 
-#if defined(EMBREE_SYCL_RT_VALIDATION_API)
-#  include "rttrace_validation.h"
-#else
-
 #include <cstdint>
 
 #pragma clang diagnostic push
@@ -262,5 +258,3 @@ inline bool intel_has_committed_hit( intel_ray_query_t query ) { return false; }
 #endif
 
 #pragma clang diagnostic pop
-
-#endif

@@ -109,9 +109,7 @@ namespace embree
     if (result != ZE_RESULT_SUCCESS) return -1;
     
     bool ze_extension_ray_tracing = false;
-#if defined(EMBREE_SYCL_L0_RTAS_BUILDER)
     bool ze_rtas_builder = false;
-#endif
     for (uint32_t i=0; i<extensions.size(); i++)
     {
       //std::cout << extensions[i].name << " version " << extensions[i].version << std::endl;
@@ -119,18 +117,14 @@ namespace embree
       if (strncmp("ZE_extension_raytracing",extensions[i].name,sizeof(extensions[i].name)) == 0)
         ze_extension_ray_tracing = true;
       
-#if defined(EMBREE_SYCL_L0_RTAS_BUILDER)
       if (strncmp("ZE_experimental_rtas_builder",extensions[i].name,sizeof(extensions[i].name)) == 0)
         ze_rtas_builder = true;
-#endif
     }
     if (!ze_extension_ray_tracing)
       return -1;
 
-#if defined(EMBREE_SYCL_L0_RTAS_BUILDER)
     if (!ze_rtas_builder)
       return -1;
-#endif
 
     /* check if ray queries are supported */
     ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(sycl_device);
