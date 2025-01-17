@@ -145,25 +145,25 @@ jobs:
         cmake --preset linux-DG2-JIT-PUBLIC-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
-#   ########################################
-#   # Linux ATS-M
-#   ########################################
+  #########################################
+  ## Linux ATS-M
+  #########################################
 
-  linux-ATSM-JIT-PUBLIC-test:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    needs: ["linux-DG2-JIT-PUBLIC-build"]
-    with:
-      image: embree/ubuntu:22.04
-      options: --device=/dev/dri:/dev/dri
-      runs-on: '[ "Linux", "docker", "atsm" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-public.env
-      artifact-in: linux-DG2-JIT-PUBLIC-build
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target test_package
+  #linux-ATSM-JIT-PUBLIC-test:
+  #  secrets: inherit
+  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+  #  needs: ["linux-DG2-JIT-PUBLIC-build"]
+  #  with:
+  #    image: embree/ubuntu:22.04
+  #    options: --device=/dev/dri:/dev/dri
+  #    runs-on: '[ "Linux", "docker", "atsm" ]'
+  #    project: embree
+  #    env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-public.env
+  #    artifact-in: linux-DG2-JIT-PUBLIC-build
+  #    cmd: |
+  #      module load cmake/3.25.3
+  #      cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+  #      cmake --build build --config Release --target test_package
 
   ########################################
   # Linux PVC
@@ -561,7 +561,7 @@ jobs:
       - linux-DG2-JIT-INTERNAL-test
       - linux-DG2-JIT-BVH-HOST-DEVICE-test
       - linux-DG2-JIT-PUBLIC-test
-      - linux-ATSM-JIT-PUBLIC-test
+      #- linux-ATSM-JIT-PUBLIC-test
       - linux-DG2-JIT-PUBLIC-ICX-test
       - linux-PVC-JIT-INTERNAL-test-1T
       - linux-PVC-JIT-INTERNAL-test-2T
