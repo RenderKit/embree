@@ -146,7 +146,7 @@ OPTION(EMBREE_STACK_PROTECTOR "When enabled Embree compiles with stack protectio
 IF (NOT APPLE)
   OPTION(EMBREE_SYCL_SUPPORT "Enables SYCL GPU support." OFF)
 ENDIF()
-CMAKE_DEPENDENT_OPTION(EMBREE_SYCL_BVH_DATA_HOST_DEVICE "Enables BVH data in explicit host/device memory mode. Requires driver fix. Turned off until driver fix publicly available." OFF "EMBREE_SYCL_SUPPORT" OFF)
+CMAKE_DEPENDENT_OPTION(EMBREE_SYCL_DISABLE_BVH_DATA_HOST_DEVICE "Disables BVH data in explicit host/device memory mode. May be turned off if the most current driver is not installed." OFF "EMBREE_SYCL_SUPPORT" OFF)
 CMAKE_DEPENDENT_OPTION(EMBREE_SYCL_LARGEGRF "Enables SYCL large GRF support." OFF "EMBREE_SYCL_SUPPORT" OFF)
 CMAKE_DEPENDENT_OPTION(EMBREE_SYCL_DBG "Enables DPC++ debug info." OFF "EMBREE_SYCL_SUPPORT" OFF)
 CMAKE_DEPENDENT_OPTION(EMBREE_SYCL_GEOMETRY_CALLBACK  "Enabled geometry callbacks which are disabled by default for SYCL." OFF  "EMBREE_SYCL_SUPPORT" OFF)
