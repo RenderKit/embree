@@ -61,7 +61,7 @@ jobs:
       artifact-path: ./build/*.tar.gz
       cmd: |
         module load cmake/3.25.3
-        cmake --preset linux-DG2-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --preset linux-DG2-JIT-INTERNAL -DEMBREE_SYCL_BVH_DATA_HOST_DEVICE=ON -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target build
 
   linux-DG2-JIT-BVH-HOST-DEVICE-test:
@@ -78,7 +78,7 @@ jobs:
       artifact-in: linux-DG2-JIT-BVH-HOST-DEVICE-build
       cmd: |
         module load cmake/3.25.3
-        cmake --preset linux-DG2-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --preset linux-DG2-JIT-INTERNAL -DEMBREE_SYCL_BVH_DATA_HOST_DEVICE=ON -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
   linux-DG2-JIT-PUBLIC-build:
@@ -344,7 +344,7 @@ jobs:
       artifact-out: windows-DG2-JIT-BVH-HOST-DEVICE-build
       artifact-path: ./build/*.zip
       cmd: |
-        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DEMBREE_SYCL_BVH_DATA_HOST_DEVICE=ON -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target build
 
   windows-DG2-JIT-BVH-HOST-DEVICE-test:
@@ -357,7 +357,7 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
       artifact-in: windows-DG2-JIT-BVH-HOST-DEVICE-build
       cmd: |
-        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DEMBREE_SYCL_BVH_DATA_HOST_DEVICE=ON -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
 #   ################################################################################
