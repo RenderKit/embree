@@ -329,6 +329,7 @@ extern "C" void device_render (int* pixels,
 #else
   rtcCommitScene (data.g_scene);
 #endif
+  /* The RTCTraversable object may be invaludated and has to be acquired again after the dynamic scene has been commited */
   data.g_traversable = rtcGetSceneTraversable(data.g_scene);
 }
 
