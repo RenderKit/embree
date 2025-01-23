@@ -49,10 +49,14 @@ such values without causing overflows).
 In case the RTCDevice associated with the `scene` is a SYCL device,
 `rtcCommitScene` will internally create a temporary SYCL queue to
 issue memory transfers from host to device memory. In this case,
-the call to 'rtcCommitScene` will be blocking and return only after
+the call to `rtcCommitScene` will be blocking and return only after
 the memory transfers are completed and SYCL kernels can traverse
 the scene savely on the device. The function `rtcCommitSceneWithQueue`
 can be used to commit all changes for the specified scene asynchronously.
+Handles to traversal objects (`RTCTraversable` type) that have been
+aquired before a call to `rtcCommitScene` will be invalidated. 
+Use `rtcGetSceneTraversable` to get a valid handle from the scene after
+every scene commit.
 
 #### EXIT STATUS
 
