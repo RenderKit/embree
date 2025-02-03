@@ -287,8 +287,8 @@ jobs:
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
-      #env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env TODO: change back to public driver
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env #TODO: change back to public driver
+      #env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
       artifact-in: windows-DG2-JIT-build
       cmd: |
         cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
@@ -330,8 +330,8 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       dpcpp-version: intel/2025.0
-      #env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env TODO: change back to public driver
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env #TODO: change back to public driver
+      #env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
       artifact-in: windows-DG2-JIT-ICX-build
       cmd: |
         cmake --preset nightly-windows-DG2-JIT-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
