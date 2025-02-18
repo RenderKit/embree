@@ -118,6 +118,7 @@ Index of this file:
 #pragma clang diagnostic ignored "-Wold-style-cast"
 #if __has_warning("-Wzero-as-null-pointer-constant")
 #pragma clang diagnostic ignored "-Wzero-as-null-pointer-constant"
+#pragma clang diagnostic ignored "-Wnontrivial-memaccess"           // warning: first argument in call to 'memset' is a pointer to non-trivially copyable type
 #endif
 #elif defined(__GNUC__)
 #pragma GCC diagnostic push
