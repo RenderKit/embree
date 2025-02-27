@@ -137,10 +137,12 @@ namespace embree
   void GridMesh::commit()
   {
     /* verify that stride of all time steps are identical */
-    for (unsigned int t=0; t<numTimeSteps; t++)
+    for (unsigned int t=0; t<numTimeSteps; t++) {
       if (vertices[t].getStride() != vertices[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
-
+      syncBufferWithDevice(vertices[t]);
+    }
+    syncBufferWithDevice(grids);
 #if defined(EMBREE_SYCL_SUPPORT)
     
     /* build quadID_to_primID_xy mapping when hardware ray tracing is supported */
@@ -209,8 +211,6 @@ namespace embree
   size_t GridMesh::getGeometryDataDeviceByteSize() const {
     size_t byte_size = sizeof(GridMesh);
     byte_size += numTimeSteps * sizeof(BufferView<Vec3fa>);
-    //if (vertexAttribs.size() > 0)
-    //  byte_size += numTimeSteps * sizeof(RawBufferView);
     byte_size += quadID_to_primID_xy.size() * sizeof(PrimID_XY);
     return 16 * ((byte_size + 15) / 16);
   }
@@ -229,15 +229,6 @@ namespace embree
     }
     // override vertices pointer with device ptr
     mesh->vertices.setDataPtr((BufferView<Vec3fa>*)(data_device + offsetVertices));
-
-    //if (vertexAttribs.size() > 0) {
-    //  const size_t offsetVertexAttribs = offset;
-    //  for (size_t t = 0; t < numTimeSteps; ++t) {
-    //    std::memcpy(data_host + offset, &(vertexAttribs[t]), sizeof(RawBufferView));
-    //    offset += sizeof(RawBufferView);
-    //  }
-    //  mesh->vertexAttribs.setDataPtr((RawBufferView*)(data_device + offsetVertexAttribs));
-    //}
 
     std::memcpy(data_host + offset, quadID_to_primID_xy.data(), quadID_to_primID_xy.size() * sizeof(PrimID_XY));
     mesh->quadID_to_primID_xy.setDataPtr((PrimID_XY*)(data_device + offset));
