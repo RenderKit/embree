@@ -15,6 +15,11 @@ namespace embree
   class Scene;
   class Geometry;
 
+  template <typename T> void syncBufferWithDevice(BufferView<T> &buffer) {
+    if (buffer.buffer->needsCommit()) {
+      buffer.buffer->commit();
+    }
+  }
   struct GeometryCounts 
   {
     __forceinline GeometryCounts()
