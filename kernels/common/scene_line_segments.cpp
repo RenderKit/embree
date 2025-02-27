@@ -190,13 +190,17 @@ namespace embree
   void LineSegments::commit() 
   {
     /* verify that stride of all time steps are identical */
-    for (unsigned int t=0; t<numTimeSteps; t++)
+    for (unsigned int t=0; t<numTimeSteps; t++) {
       if (vertices[t].getStride() != vertices[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
+      syncBufferWithDevice(vertices[t]);
+    }
 
-    for (const auto& buffer : normals)
+    for (auto& buffer : normals) {
       if (buffer.getStride() != normals[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of normal buffers have to be identical for each time step");
+      syncBufferWithDevice(buffer);
+    }
 
     vertices0 = vertices[0];
     if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
@@ -225,6 +229,10 @@ namespace embree
         hasLeft = hasRight;
       }
       flags.buffer->commit();
+    }
+
+    if (recompute_flags_buffer) {
+      segments.buffer->commit();
     }
     segments.clearLocalModified();
 
@@ -278,8 +286,6 @@ namespace embree
       byte_size += numTimeSteps * sizeof(BufferView<Vec3ff>);
     if (normals.size() > 0)
       byte_size += numTimeSteps * sizeof(BufferView<Vec3fa>);
-    //if (vertexAttribs.size() > 0)
-    //  byte_size += numTimeSteps * sizeof(BufferView<char>);
     return 16 * ((byte_size + 15) / 16);
   }
 
@@ -303,14 +309,6 @@ namespace embree
       }
       geom->normals.setDataPtr((BufferView<Vec3fa>*)(data_device + offsetNormals));
     }
-    //if (vertexAttribs.size() > 0) {
-    //  const size_t offsetVertexAttribs = offset;
-    //  for (size_t t = 0; t < numTimeSteps; ++t) {
-    //    std::memcpy(data_host + offset, &(vertexAttribs[t]), sizeof(BufferView<char>));
-    //    offset += sizeof(BufferView<char>);
-    //  }
-    //  points->vertexAttribs.setDataPtr((BufferView<char>*)(data_device + offsetVertexAttribs));
-    //}
   }
 #endif
 

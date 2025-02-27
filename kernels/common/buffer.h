@@ -44,6 +44,7 @@ namespace embree
 #if defined(EMBREE_SYCL_SUPPORT)
       dshared = true;
       dptr = ptr;
+      modified = true;
 #endif
     }
 
@@ -79,6 +80,7 @@ namespace embree
 #if defined(EMBREE_SYCL_SUPPORT)
         dshared = true;
         dptr = ptr;
+        modified = true;
 #endif
       }
     }
@@ -186,6 +188,7 @@ namespace embree
         commit(queue);
         queue.wait_and_throw();
       }
+      modified = false;
 #endif
     }
 
@@ -195,8 +198,23 @@ namespace embree
         return sycl::event();
 
       return queue.memcpy(dptr, ptr, numBytes);
+      modified = false;
     }
 #endif
+
+    __forceinline bool needsCommit() const {
+#if defined(EMBREE_SYCL_SUPPORT)
+     return (dptr == ptr) ? false : modified;
+#else
+      return false;
+#endif
+    }
+
+    __forceinline void setNeedsCommit(bool isModified = true) {
+#if defined(EMBREE_SYCL_SUPPORT)
+      modified = isModified;
+#endif
+    }
 
   public:
     Device* device;      //!< device to report memory usage to
@@ -208,6 +226,7 @@ namespace embree
     bool shared;         //!< set if memory is shared with application
 #if defined(EMBREE_SYCL_SUPPORT)
     bool dshared;        //!< set if device memory is shared with application
+    bool modified;       //!< to be set when host memory has been modified and dev needs update
 #endif
   };
 
@@ -294,6 +313,7 @@ namespace embree
     __forceinline void setModified() {
       modCounter++;
       modified = true;
+      buffer->setNeedsCommit();
     }
 
     /*! mark buffer as modified or unmodified */
