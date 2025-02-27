@@ -340,23 +340,28 @@ namespace embree
 
   void CurveGeometry::commit()
   {
+    syncBufferWithDevice(curves);
     /* verify that stride of all time steps are identical */
-    for (const auto& buffer : vertices)
+    for (auto& buffer : vertices) {
       if (buffer.getStride() != vertices[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
-
-    for (const auto& buffer : normals)
+      syncBufferWithDevice(buffer);
+    }
+    for (auto& buffer : normals) {
       if (buffer.getStride() != normals[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of normal buffers have to be identical for each time step");
-
-    for (const auto& buffer : tangents)
+      syncBufferWithDevice(buffer);
+    }
+    for (auto& buffer : tangents) {
       if (buffer.getStride() != tangents[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of tangent buffers have to be identical for each time step");
-
-    for (const auto& buffer : dnormals)
+      syncBufferWithDevice(buffer);
+    }
+    for (auto& buffer : dnormals){
       if (buffer.getStride() != dnormals[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of normal derivative buffers have to be identical for each time step");
-    
+      syncBufferWithDevice(buffer);
+    }
     vertices0 = vertices[0];
     if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
     {
@@ -380,8 +385,6 @@ namespace embree
       byte_size += numTimeSteps * sizeof(BufferView<Vec3ff>);
     if (dnormals.size() > 0)
       byte_size += numTimeSteps * sizeof(BufferView<Vec3fa>);
-    //if (vertexAttribs.size() > 0)
-    //  byte_size += numTimeSteps * sizeof(BufferView<char>);
     return 16 * ((byte_size + 15) / 16);
   }
 
@@ -421,14 +424,6 @@ namespace embree
       }
       curve->dnormals.setDataPtr((BufferView<Vec3fa>*)(data_device + offsetDNormals));
     }
-    //if (vertexAttribs.size() > 0) {
-    //  const size_t offsetVertexAttribs = offset;
-    //  for (size_t t = 0; t < numTimeSteps; ++t) {
-    //    std::memcpy(data_host + offset, &(vertexAttribs[t]), sizeof(BufferView<char>));
-    //    offset += sizeof(BufferView<char>);
-    //  }
-    //  points->vertexAttribs.setDataPtr((BufferView<char>*)(data_device + offsetVertexAttribs));
-    //}
   }
 
 #endif
