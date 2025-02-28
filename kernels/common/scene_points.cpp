@@ -133,12 +133,12 @@ namespace embree
     for (unsigned int t = 0; t < numTimeSteps; t++) {
       if (vertices[t].getStride() != vertices[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "stride of vertex buffers have to be identical for each time step");
-      syncBufferWithDevice(vertices[t]);
+      vertices[t].buffer->commitIfNeeded();
     }
     for (auto& buffer : normals) {
       if (buffer.getStride() != normals[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "stride of normal buffers have to be identical for each time step");
-      syncBufferWithDevice(buffer);
+      buffer.buffer->commitIfNeeded();
     }
     vertices0 = vertices[0];
     if (getType() == GTY_ORIENTED_DISC_POINT)
