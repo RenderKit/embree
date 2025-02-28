@@ -54,6 +54,7 @@ namespace embree
       device->refInc();
 
 #if defined(EMBREE_SYCL_SUPPORT)
+      modified = true;
       if (device->is_gpu() && !device->has_unified_memory())
       {
         ptr  = alloc( ptr_in,  shared, EmbreeMemoryType::MALLOC);
@@ -80,7 +81,6 @@ namespace embree
 #if defined(EMBREE_SYCL_SUPPORT)
         dshared = true;
         dptr = ptr;
-        modified = true;
 #endif
       }
     }
@@ -214,6 +214,12 @@ namespace embree
 #if defined(EMBREE_SYCL_SUPPORT)
       modified = isModified;
 #endif
+    }
+
+    __forceinline void commitIfNeeded() {
+      if (needsCommit()) {
+        commit();
+      }
     }
 
   public:
