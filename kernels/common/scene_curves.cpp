@@ -340,27 +340,27 @@ namespace embree
 
   void CurveGeometry::commit()
   {
-    curves.buffer->commitIfNeeded();
+    if (curves) curves.buffer->commitIfNeeded();
     /* verify that stride of all time steps are identical */
     for (auto& buffer : vertices) {
       if (buffer.getStride() != vertices[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
-      buffer.buffer->commitIfNeeded();
+      if (buffer) buffer.buffer->commitIfNeeded();
     }
     for (auto& buffer : normals) {
       if (buffer.getStride() != normals[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of normal buffers have to be identical for each time step");
-      buffer.buffer->commitIfNeeded();
+      if (buffer) buffer.buffer->commitIfNeeded();
     }
     for (auto& buffer : tangents) {
       if (buffer.getStride() != tangents[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of tangent buffers have to be identical for each time step");
-      buffer.buffer->commitIfNeeded();
+      if (buffer) buffer.buffer->commitIfNeeded();
     }
     for (auto& buffer : dnormals){
       if (buffer.getStride() != dnormals[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of normal derivative buffers have to be identical for each time step");
-      buffer.buffer->commitIfNeeded();
+      if (buffer) buffer.buffer->commitIfNeeded();
     }
     vertices0 = vertices[0];
     if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)

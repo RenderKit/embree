@@ -197,8 +197,8 @@ namespace embree
       if (dptr == ptr)
         return sycl::event();
 
-      return queue.memcpy(dptr, ptr, numBytes);
       modified = false;
+      return queue.memcpy(dptr, ptr, numBytes);
     }
 #endif
 
