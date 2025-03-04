@@ -252,10 +252,6 @@ IF (EMBREE_SYCL_SUPPORT)
   # scene_sycl.cpp in embree4.dll/embree4.so
   TARGET_LINK_OPTIONS(embree PRIVATE "-fsycl")
 
-  IF (EMBREE_SYCL_BVH_DATA_HOST_DEVICE)
-    ADD_DEFINITIONS("-DEMBREE_SYCL_BVH_DATA_HOST_DEVICE")
-  ENDIF()
-
   ADD_LIBRARY(embree_sycl STATIC
     sycl/rtcore_sycl.cpp
     sycl/rthwif_embree.cpp)
