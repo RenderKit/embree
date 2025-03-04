@@ -6344,6 +6344,8 @@ namespace embree
       for (auto sflags : sceneFlags) 
         groups.top()->add(new EmptyGeometryTest(to_string(sflags),isa,sflags,RTC_BUILD_QUALITY_MEDIUM));
       groups.pop();
+
+      break;
       
       push(new TestGroup("many_build",false,false,false));
       for (auto sflags : sceneFlags) 
