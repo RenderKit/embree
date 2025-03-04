@@ -541,9 +541,6 @@ jobs:
       - linux-DG2-JIT-BVH-HOST-DEVICE-test
       - linux-DG2-JIT-PUBLIC-test
       - linux-DG2-JIT-PUBLIC-ICX-test
-      - linux-PVC-JIT-INTERNAL-test-1T
-      - linux-PVC-JIT-INTERNAL-test-2T
-      - linux-PVC-JIT-INTERNAL-test-flat
       - windows-DG2-JIT-INTERNAL-test
       - windows-DG2-JIT-PUBLIC-test
       - windows-DG2-JIT-ICX-INTERNAL-test
