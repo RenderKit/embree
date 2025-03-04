@@ -73,14 +73,7 @@ unsigned int addCubeHostDevice (RTCScene scene, Vec3fa d)
     fillTriangles[11].v0 = 3; fillTriangles[11].v1 = 5; fillTriangles[11].v2 = 7;
 #if defined(EMBREE_SYCL_TUTORIAL)
   });
-
-  global_gpu_queue->memcpy(dVertices0, hVertices0, 8 * sizeof(Vertex));
   global_gpu_queue->memcpy(hTriangles, dTriangles, 12 * sizeof(Triangle));
-
-#if defined(GEOMETRY_MOTION_BLUR)
-  global_gpu_queue->memcpy(dVertices1, hVertices1, 8 * sizeof(Vertex));
-#endif
-
 #endif
 
   rtcSetSharedGeometryBufferHostDevice(mesh, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, hTriangles, dTriangles, 0, sizeof(Triangle), 12);
