@@ -665,12 +665,8 @@ namespace embree
     {
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "AccelBuffer constructor called with non-GPU device");
     }
-#if defined(EMBREE_SYCL_BVH_DATA_HOST_DEVICE)
-    unifiedMemory = gpu_device->has_unified_memory();
-#else
-    unifiedMemory = true;
-#endif
 
+    unifiedMemory = gpu_device->has_unified_memory();
     if (unifiedMemory)
     {
       accelBufferShared = AccelBufferData(AccelAllocator<char>(device, gpu_device->getGPUDevice(), gpu_device->getGPUContext(), sycl::usm::alloc::shared), 0);
