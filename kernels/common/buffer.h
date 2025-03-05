@@ -319,7 +319,7 @@ namespace embree
     __forceinline void setModified() {
       modCounter++;
       modified = true;
-      buffer->setNeedsCommit();
+      if (buffer) buffer->setNeedsCommit();
     }
 
     /*! mark buffer as modified or unmodified */

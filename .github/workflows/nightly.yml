@@ -24,10 +24,10 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/ubuntu:22.04
+      image: embree/ubuntu:24.04
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
       artifact-out: nightly-linux-DG2-JIT-MULTILEVEL-build
       artifact-path: ./build/*.tar.gz
       cmd: |
@@ -40,48 +40,46 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     needs: ["nightly-linux-DG2-JIT-MULTILEVEL-build"]
     with:
-      image: embree/ubuntu:22.04
+      image: embree/ubuntu:24.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu24-public.env
       artifact-in: nightly-linux-DG2-JIT-MULTILEVEL-build
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DG2-JIT-MULTILEVEL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
-  linux-DG2-JIT-PUBLIC-sycl-RC-build:
+  nightly-linux-DG2-JIT-PUBLIC-build:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/ubuntu:22.04
+      image: embree/ubuntu:24.04
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
-      env-from-files: ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
-      artifact-out: linux-DG2-JIT-PUBLIC-sycl-RC-build
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
+      artifact-out: nightly-linux-DG2-JIT-PUBLIC-build
       artifact-path: ./build/*.tar.gz
       cmd: |
         module load cmake/3.25.3
-        cmake --preset linux-DG2-JIT-PUBLIC-sycl-nightly-RK -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target build
 
-  linux-DG2-JIT-PUBLIC-sycl-RC-test:
+  nightly-linux-DG2-JIT-PUBLIC-test:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    needs: ["linux-DG2-JIT-PUBLIC-sycl-RC-build"]
+    needs: ["nightly-linux-DG2-JIT-PUBLIC-build"]
     with:
-      image: embree/ubuntu:22.04
+      image: embree/ubuntu:24.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
-      artifact-in: linux-DG2-JIT-PUBLIC-sycl-RC-build
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu24-public.env
+      artifact-in: nightly-linux-DG2-JIT-PUBLIC-build
       cmd: |
         module load cmake/3.25.3
-        cmake --preset linux-DG2-JIT-PUBLIC-sycl-nightly-RK -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
   # TODO: Reenable after patch
@@ -251,7 +249,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/gfx-windows-public.env
-      dpcpp-version: icx/compiler_ppkg-rel/20240129
+      dpcpp-version: intel/2025.0
       artifact-out: nightly-windows-DG2-JIT-ICX-RC-build
       artifact-path: ./build/*.zip
       cmd: |
@@ -266,7 +264,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
-      dpcpp-version: icx/compiler_ppkg-rel/20240110
+      dpcpp-version: intel/2025.0
       artifact-in: nightly-windows-DG2-JIT-ICX-RC-build
       cmd: |
         cmake --preset nightly-windows-DG2-JIT-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=2
@@ -279,7 +277,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/gfx-windows-public.env
-      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
+      dpcpp-version: intel-llvm/nightly-2024-09-04
       artifact-out: nightly-windows-DG2-JIT-NIGHTLY-RK-bulid
       artifact-path: ./build/*.zip
       cmd: |
@@ -294,7 +292,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
-      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
+      dpcpp-version: intel-llvm/nightly-2024-09-04
       artifact-in: nightly-windows-DG2-JIT-NIGHTLY-RK-bulid
       cmd: |
         cmake --preset nightly-windows-DG2-JIT-NIGHTLY -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=2
@@ -350,34 +348,6 @@ jobs:
       artifact-in: nightly-windows-DG2-JIT-PUBLIC-build
       cmd: |
         cmake --preset nightly-windows-DG2-JIT -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
-        cmake --build build --config Release --target test_package
-
-  windows-DG2-JIT-sycl-RC-build:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-    with:
-      runs-on: '[ "Windows", "NAS", "dg2" ]'
-      project: embree
-      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
-      env-from-files: ./.github/workflows/gfx-windows-public.env
-      artifact-out: windows-DG2-JIT-sycl-RC-build
-      artifact-path: ./build/*.zip
-      cmd: |
-        cmake --preset nightly-windows-DG2-JIT -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target build
-
-  windows-DG2-JIT-sycl-RC-PUBLIC-test:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-    needs: ["windows-DG2-JIT-sycl-RC-build"]
-    with:
-      runs-on: '[ "Windows", "NAS", "dg2" ]'
-      project: embree
-      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
-      env-from-files: ./.github/workflows/gfx-windows-public.env
-      artifact-in: windows-DG2-JIT-sycl-RC-build
-      cmd: |
-        cmake --preset nightly-windows-DG2-JIT -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
   nightly-windows-DG2-MULTILEVEL-build:
