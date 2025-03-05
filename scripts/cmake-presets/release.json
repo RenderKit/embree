@@ -43,7 +43,7 @@
     },
     {
       "name": "release-linux",
-      "inherits": ["package-linux", "env", "dpcpp", "ispc1_23_0", "tbb2021_11_0"],
+      "inherits": ["package-linux", "env", "dpcpp", "ispc_NEWEST", "tbb_NEWEST"],
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
