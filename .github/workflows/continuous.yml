@@ -41,7 +41,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/gfx-ubuntu22-internal.env
+      env-from-files: ./.github/workflows/gfx-ubuntu24-internal.env
       dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
       artifact-in: linux-DG2-JIT-INTERNAL-build
       cmd: |
@@ -73,7 +73,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-public.env
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu24-public.env
       artifact-in: linux-DG2-JIT-PUBLIC-build
       cmd: |
         module load cmake/3.25.3
@@ -104,7 +104,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
-      env-from-files: ./.github/workflows/gfx-ubuntu22-public.env
+      env-from-files: ./.github/workflows/gfx-ubuntu24-public.env
       dpcpp-version: intel/2025.0
       artifact-in: linux-DG2-JIT-PUBLIC-ICX-build
       cmd: |

@@ -60,7 +60,6 @@ jobs:
       project: embree
       env-from-files: ./.github/workflows/gfx-ubuntu22-public.env
       dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
-      artifact-out: linux-DG2-JIT-PUBLIC-sycl-RC-build
       artifact-path: ./build/*.tar.gz
       cmd: |
         module load cmake/3.25.3
@@ -251,7 +250,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/gfx-windows-public.env
-      dpcpp-version: icx/compiler_ppkg-rel/20240129
+      dpcpp-version: intel/2025.0
       artifact-out: nightly-windows-DG2-JIT-ICX-RC-build
       artifact-path: ./build/*.zip
       cmd: |
@@ -266,7 +265,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
-      dpcpp-version: icx/compiler_ppkg-rel/20240110
+      dpcpp-version: intel/2025.0
       artifact-in: nightly-windows-DG2-JIT-ICX-RC-build
       cmd: |
         cmake --preset nightly-windows-DG2-JIT-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=2
@@ -279,7 +278,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/gfx-windows-public.env
-      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
+      dpcpp-version: intel-llvm/nightly-2024-09-04
       artifact-out: nightly-windows-DG2-JIT-NIGHTLY-RK-bulid
       artifact-path: ./build/*.zip
       cmd: |
@@ -294,7 +293,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
-      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
+      dpcpp-version: intel-llvm/nightly-2024-09-04
       artifact-in: nightly-windows-DG2-JIT-NIGHTLY-RK-bulid
       cmd: |
         cmake --preset nightly-windows-DG2-JIT-NIGHTLY -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=2
@@ -358,7 +357,7 @@ jobs:
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
-      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
+      dpcpp-version: intel-llvm/nightly-2024-09-04-rk
       env-from-files: ./.github/workflows/gfx-windows-public.env
       artifact-out: windows-DG2-JIT-sycl-RC-build
       artifact-path: ./build/*.zip
@@ -373,7 +372,7 @@ jobs:
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
-      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
+      dpcpp-version: intel-llvm/nightly-2024-09-04-rk
       env-from-files: ./.github/workflows/gfx-windows-public.env
       artifact-in: windows-DG2-JIT-sycl-RC-build
       cmd: |
