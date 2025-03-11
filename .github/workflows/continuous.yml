@@ -301,33 +301,6 @@ jobs:
         cmake --preset nightly-windows-DG2-JIT-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
-  windows-DG2-JIT-BVH-HOST-DEVICE-build:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-    with:
-      force-delete: true
-      runs-on: '[ "Windows", "NAS", "build" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
-      artifact-out: windows-DG2-JIT-BVH-HOST-DEVICE-build
-      artifact-path: ./build/*.zip
-      cmd: |
-        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target build
-
-  windows-DG2-JIT-BVH-HOST-DEVICE-test:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-    needs: ["windows-DG2-JIT-BVH-HOST-DEVICE-build"]
-    with:
-      runs-on: '[ "Windows", "NAS", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
-      artifact-in: windows-DG2-JIT-BVH-HOST-DEVICE-build
-      cmd: |
-        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target test_package
-
 #   ################################################################################
 #   ################################################################################
 #   # CPU tests
