@@ -272,5 +272,5 @@ jobs:
       artifact-out: release-testing-PACKAGE-ZIP
       artifact-path: ./build/*.tar.gz
       cmd: |
-        rm build/embree-4.3.3.x86_64.linux.tar.gz
-        mv build/embree-4.3.3.x86_64.linux-testing.tar.gz build/embree-4.3.3-testing.tar.gz
+        rm build/embree-4.4.0.x86_64.linux.tar.gz
+        mv build/embree-4.4.0.x86_64.linux-testing.tar.gz build/embree-4.4.0-testing.tar.gz
