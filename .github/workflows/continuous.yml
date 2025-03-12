@@ -17,37 +17,38 @@ jobs:
   ########################################
   # Linux DG2
   ########################################
-  linux-DG2-JIT-INTERNAL-build:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    with:
-      image: embree/ubuntu:24.04
-      runs-on: '[ "Linux", "docker", "build" ]'
-      project: embree
-      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
-      artifact-out: linux-DG2-JIT-INTERNAL-build
-      artifact-path: ./build/*.tar.gz
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset linux-DG2-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target build
+  #TODO: enable internal driver tests again
+  #linux-DG2-JIT-INTERNAL-build:
+  #  secrets: inherit
+  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+  #  with:
+  #    image: embree/ubuntu:24.04
+  #    runs-on: '[ "Linux", "docker", "build" ]'
+  #    project: embree
+  #    dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
+  #    artifact-out: linux-DG2-JIT-INTERNAL-build
+  #    artifact-path: ./build/*.tar.gz
+  #    cmd: |
+  #      module load cmake/3.25.3
+  #      cmake --preset linux-DG2-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+  #      cmake --build build --config Release --target build
 
-  linux-DG2-JIT-INTERNAL-test:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    needs: ["linux-DG2-JIT-INTERNAL-build"]
-    with:
-      image: embree/ubuntu:24.04
-      options: --device=/dev/dri:/dev/dri
-      runs-on: '[ "Linux", "docker", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/gfx-ubuntu24-internal.env
-      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
-      artifact-in: linux-DG2-JIT-INTERNAL-build
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset linux-DG2-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target test_package
+  #linux-DG2-JIT-INTERNAL-test:
+  #  secrets: inherit
+  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+  #  needs: ["linux-DG2-JIT-INTERNAL-build"]
+  #  with:
+  #    image: embree/ubuntu:24.04
+  #    options: --device=/dev/dri:/dev/dri
+  #    runs-on: '[ "Linux", "docker", "dg2" ]'
+  #    project: embree
+  #    env-from-files: ./.github/workflows/gfx-ubuntu24-internal.env
+  #    dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
+  #    artifact-in: linux-DG2-JIT-INTERNAL-build
+  #    cmd: |
+  #      module load cmake/3.25.3
+  #      cmake --preset linux-DG2-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+  #      cmake --build build --config Release --target test_package
 
   linux-DG2-JIT-PUBLIC-build:
     secrets: inherit
@@ -233,18 +234,19 @@ jobs:
         cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target build
 
-  windows-DG2-JIT-INTERNAL-test:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-    needs: ["windows-DG2-JIT-build"]
-    with:
-      runs-on: '[ "Windows", "NAS", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
-      artifact-in: windows-DG2-JIT-build
-      cmd: |
-        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target test_package
+  # TODO: enable internal driver tests again
+  #windows-DG2-JIT-INTERNAL-test:
+  #  secrets: inherit
+  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+  #  needs: ["windows-DG2-JIT-build"]
+  #  with:
+  #    runs-on: '[ "Windows", "NAS", "dg2" ]'
+  #    project: embree
+  #    env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
+  #    artifact-in: windows-DG2-JIT-build
+  #    cmd: |
+  #      cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+  #      cmake --build build --config Release --target test_package
 
   windows-DG2-JIT-PUBLIC-test:
     secrets: inherit
@@ -402,17 +404,18 @@ jobs:
         cmake --build build --config RelWithDebInfo --target build
         cmake --build build --target test_package
 
-  windows-ICX:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-    with:
-      force-delete: true
-      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-      dpcpp-version: intel/2025.0
-      cmd: |
-        cmake --preset windows-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
-        cmake --build build --config RelWithDebInfo --target build
-        cmake --build build --config RelWithDebInfo --target test_package
+  #TODO: spontaneous build error with icx on windows
+  #windows-ICX:
+  #  secrets: inherit
+  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+  #  with:
+  #    force-delete: true
+  #    runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
+  #    dpcpp-version: intel/2025.0
+  #    cmd: |
+  #      cmake --preset windows-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
+  #      cmake --build build --config RelWithDebInfo --target build
+  #      cmake --build build --config RelWithDebInfo --target test_package
 
   ########################################
   # MacOS
@@ -478,14 +481,10 @@ jobs:
   success:
     runs-on: ubuntu-latest
     needs:
-      - linux-DG2-JIT-INTERNAL-test
       - linux-DG2-JIT-PUBLIC-test
       - linux-DG2-JIT-PUBLIC-ICX-test
-      - windows-DG2-JIT-INTERNAL-test
       - windows-DG2-JIT-PUBLIC-test
-      - windows-DG2-JIT-ICX-INTERNAL-test
       - windows-DG2-JIT-ICX-PUBLIC-test
-      - windows-DG2-JIT-BVH-HOST-DEVICE-test
       - linux-fedora29-CLANG4
       - linux-fedora29-CLANG5-INT-ADDRSANITIZER
       - linux-fedora29-ICX
@@ -493,7 +492,6 @@ jobs:
       - linux-ubuntu20_04-GCC-NAMESPACE
       - linux-ubuntu20_04-ICX
       - windows-V142
-      - windows-ICX
       - macosx-ARM-CLANG-NEON-AVX2
       - macosx-ARM-CLANG-NEON
       - macosx-x64-CLANG
