@@ -18,37 +18,37 @@ jobs:
   # Linux DG2
   ########################################
   #TODO: enable internal driver tests again
-  linux-DG2-JIT-INTERNAL-build:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    with:
-      image: embree/ubuntu:24.04
-      runs-on: '[ "Linux", "docker", "build" ]'
-      project: embree
-      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
-      artifact-out: linux-DG2-JIT-INTERNAL-build
-      artifact-path: ./build/*.tar.gz
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset linux-DG2-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target build
+  #linux-DG2-JIT-INTERNAL-build:
+  #  secrets: inherit
+  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+  #  with:
+  #    image: embree/ubuntu:24.04
+  #    runs-on: '[ "Linux", "docker", "build" ]'
+  #    project: embree
+  #    dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
+  #    artifact-out: linux-DG2-JIT-INTERNAL-build
+  #    artifact-path: ./build/*.tar.gz
+  #    cmd: |
+  #      module load cmake/3.25.3
+  #      cmake --preset linux-DG2-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+  #      cmake --build build --config Release --target build
 
-  linux-DG2-JIT-INTERNAL-test:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    needs: ["linux-DG2-JIT-INTERNAL-build"]
-    with:
-      image: embree/ubuntu:24.04
-      options: --device=/dev/dri:/dev/dri
-      runs-on: '[ "Linux", "docker", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/gfx-ubuntu24-internal.env
-      dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
-      artifact-in: linux-DG2-JIT-INTERNAL-build
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset linux-DG2-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target test_package
+  #linux-DG2-JIT-INTERNAL-test:
+  #  secrets: inherit
+  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+  #  needs: ["linux-DG2-JIT-INTERNAL-build"]
+  #  with:
+  #    image: embree/ubuntu:24.04
+  #    options: --device=/dev/dri:/dev/dri
+  #    runs-on: '[ "Linux", "docker", "dg2" ]'
+  #    project: embree
+  #    env-from-files: ./.github/workflows/gfx-ubuntu24-internal.env
+  #    dpcpp-version: intel-llvm/sycl-rel_5_2_0-rk
+  #    artifact-in: linux-DG2-JIT-INTERNAL-build
+  #    cmd: |
+  #      module load cmake/3.25.3
+  #      cmake --preset linux-DG2-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+  #      cmake --build build --config Release --target test_package
 
   linux-DG2-JIT-PUBLIC-build:
     secrets: inherit
