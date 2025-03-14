@@ -132,12 +132,18 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/ubuntu:24.04
+      image: rockylinux:8.7
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
       artifact-out: release-linux-sycl
       artifact-path: ./build/*.tar.gz
+      pre-cmd: |
+        yum -y install epel-release
+        dnf makecache --refresh
+        dnf config-manager --set-enabled powertools
+        dnf -y update
+        dnf -y install ninja-build
       cmd: |
         module load cmake/3.25.3
         cmake --preset release-linux-sycl -DCMAKE_BUILD_TYPE=Release
