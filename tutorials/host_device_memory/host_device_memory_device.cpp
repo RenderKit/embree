@@ -73,7 +73,10 @@ unsigned int addCubeHostDevice (RTCScene scene, Vec3fa d)
     fillTriangles[11].v0 = 3; fillTriangles[11].v1 = 5; fillTriangles[11].v2 = 7;
 #if defined(EMBREE_SYCL_TUTORIAL)
   });
-  global_gpu_queue->memcpy(hTriangles, dTriangles, 12 * sizeof(Triangle));
+  // needs to be copied back into host memory, because 
+  // - rtcCommitGeometry will copy from host to device again
+  // - bvh builde uses host meory internally
+  global_gpu_queue->memcpy(hTriangles, dTriangles, 12 * sizeof(Triangle)).wait();
 #endif
 
   rtcSetSharedGeometryBufferHostDevice(mesh, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, hTriangles, dTriangles, 0, sizeof(Triangle), 12);
@@ -118,7 +121,7 @@ unsigned int addCubeShared (RTCScene scene, Vec3fa d)
   /* set triangles and face colors */
   Triangle* triangles = data.trianglesShared = (Triangle*) alignedUSMMalloc(12*sizeof(Triangle), 16);
 #if defined(EMBREE_SYCL_TUTORIAL)
-  global_gpu_queue->single_task([=](){
+  auto sycl_event = global_gpu_queue->single_task([=](){
 #endif
     triangles[ 0].v0 = 0; triangles[ 0].v1 = 1; triangles[ 0].v2 = 2;
     triangles[ 1].v0 = 1; triangles[ 1].v1 = 3; triangles[ 1].v2 = 2;
@@ -134,6 +137,8 @@ unsigned int addCubeShared (RTCScene scene, Vec3fa d)
     triangles[11].v0 = 3; triangles[11].v1 = 5; triangles[11].v2 = 7;
 #if defined(EMBREE_SYCL_TUTORIAL)
   });
+  // rtcCommit uses different queue internally, so we have to wait here
+  sycl_event.wait();
 #endif
 
   rtcSetSharedGeometryBuffer(mesh, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, triangles, 0, sizeof(Triangle), 12);
@@ -266,7 +271,7 @@ unsigned int addCubeBufferShared (RTCScene scene, Vec3fa d)
     triangles[10].v0 = 1; triangles[10].v1 = 5; triangles[10].v2 = 3;
     triangles[11].v0 = 3; triangles[11].v1 = 5; triangles[11].v2 = 7;
 #if defined(EMBREE_SYCL_TUTORIAL)
-  });
+  }).wait();
 #endif
 
   RTCBuffer triangleBuffer = rtcNewSharedBuffer(g_device, triangles, 12 * sizeof(Triangle));
