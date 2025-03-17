@@ -289,6 +289,28 @@ RTC_NAMESPACE_BEGIN;
     return nullptr;
   }
 
+  RTC_API bool rtcIsBufferShared(RTCBuffer hbuffer)
+  {
+    Buffer* buffer = (Buffer*)hbuffer;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcIsBufferShared);
+    RTC_VERIFY_HANDLE(hbuffer);
+    return buffer->isShared();
+    RTC_CATCH_END2(buffer);
+    return false;
+  }
+
+  RTC_API size_t rtcGetBufferSize(RTCBuffer hbuffer)
+  {
+    Buffer* buffer = (Buffer*)hbuffer;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetBufferSize);
+    RTC_VERIFY_HANDLE(hbuffer);
+    return buffer->bytes();
+    RTC_CATCH_END2(buffer);
+    return 0;
+  }
+
   RTC_API void* rtcGetBufferData(RTCBuffer hbuffer)
   {
     Buffer* buffer = (Buffer*)hbuffer;
@@ -329,7 +351,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(buffer);
   }
 
-  RTC_API RTCScene rtcNewScene (RTCDevice hdevice) 
+  RTC_API RTCScene rtcNewScene (RTCDevice hdevice)
   {
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewScene);
@@ -365,7 +387,7 @@ RTC_NAMESPACE_BEGIN;
     return (RTCTraversable)nullptr;
   }
 
-  RTC_API void rtcSetSceneProgressMonitorFunction(RTCScene hscene, RTCProgressMonitorFunction progress, void* ptr) 
+  RTC_API void rtcSetSceneProgressMonitorFunction(RTCScene hscene, RTCProgressMonitorFunction progress, void* ptr)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -419,7 +441,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcCommitScene);
     RTC_VERIFY_HANDLE(hscene);
-    
+
     scene->commit(false);
 
 #if defined(EMBREE_SYCL_SUPPORT)
@@ -435,7 +457,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcJoinCommitScene);
     RTC_VERIFY_HANDLE(hscene);
-    
+
     scene->commit(true);
     RTC_CATCH_END2(scene);
   }
@@ -1406,7 +1428,7 @@ RTC_NAMESPACE_BEGIN;
     rtcForwardOccluded16Ex(valid, args, (RTCScene)htraversable, iray, instID, instPrimID);
   }
 
-  RTC_API void rtcRetainScene (RTCScene hscene) 
+  RTC_API void rtcRetainScene (RTCScene hscene)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
