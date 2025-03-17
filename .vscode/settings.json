@@ -1,7 +1,0 @@
-{
-    "files.associations": {
-        "iosfwd": "cpp",
-        "xlocbuf": "cpp",
-        "*.isph": "cpp"
-    }
-}
