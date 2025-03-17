@@ -22,7 +22,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
       artifact-out: release-windows
       artifact-path: ./build/embree-*.zip
-      dpcpp-version: intel-llvm/nightly-2023-10-26-rk
+      dpcpp-version: intel-llvm/v6.0.0-rk
       shell: cmd
       cmd: |
         cmake --preset release-windows -DCMAKE_BUILD_TYPE=Release
@@ -95,7 +95,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       artifact-out: release-linux
       artifact-path: ./build/*.tar.gz
-      dpcpp-version: intel-llvm/nightly-2023-10-26-rk
+      dpcpp-version: intel-llvm/v6.0.0-rk
       pre-cmd: |
         yum -y install epel-release
         dnf makecache --refresh
