@@ -181,6 +181,28 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END(device);
   }
 
+  RTC_API RTCErrorFunction rtcGetDeviceErrorFunction(RTCDevice hdevice)
+  {
+    Device* device = (Device*) hdevice;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetDeviceErrorFunction);
+    RTC_VERIFY_HANDLE(hdevice);
+    return device->getErrorFunction();
+    RTC_CATCH_END(device);
+    return nullptr;
+  }
+
+  RTC_API void* rtcGetDeviceErrorFunctionUserPtr(RTCDevice hdevice)
+  {
+    Device* device = (Device*) hdevice;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetDeviceErrorFunctionUserPtr);
+    RTC_VERIFY_HANDLE(hdevice);
+    return device->getErrorFunctionUserPtr();
+    RTC_CATCH_END(device);
+    return nullptr;
+  }
+
   RTC_API void rtcSetDeviceMemoryMonitorFunction(RTCDevice hdevice, RTCMemoryMonitorFunction memoryMonitor, void* userPtr)
   {
     Device* device = (Device*) hdevice;
@@ -188,6 +210,28 @@ RTC_NAMESPACE_BEGIN;
     RTC_TRACE(rtcSetDeviceMemoryMonitorFunction);
     device->setMemoryMonitorFunction(memoryMonitor, userPtr);
     RTC_CATCH_END(device);
+  }
+
+  RTC_API RTCMemoryMonitorFunction rtcGetDeviceMemoryMonitorFunction(RTCDevice hdevice)
+  {
+    Device* device = (Device*) hdevice;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetDeviceMemoryMonitorFunction);
+    RTC_VERIFY_HANDLE(hdevice);
+    return device->getMemoryMonitorFunction();
+    RTC_CATCH_END(device);
+    return nullptr;
+  }
+
+  RTC_API void* rtcGetDeviceMemoryMonitorFunctionUserPtr(RTCDevice hdevice)
+  {
+    Device* device = (Device*) hdevice;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetDeviceMemoryMonitorFunctionUserPtr);
+    RTC_VERIFY_HANDLE(hdevice);
+    return device->getMemoryMonitorFunctionUserPtr();
+    RTC_CATCH_END(device);
+    return nullptr;
   }
 
   RTC_API RTCBuffer rtcNewBuffer(RTCDevice hdevice, size_t byteSize)

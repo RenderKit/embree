@@ -116,10 +116,22 @@ typedef void (*RTCErrorFunction)(void* userPtr, enum RTCError code, const char* 
 /* Sets the error callback function. */
 RTC_API void rtcSetDeviceErrorFunction(RTCDevice device, RTCErrorFunction error, void* userPtr);
 
+/* Gets the error callback function pointer. */
+RTC_API RTCErrorFunction rtcGetDeviceErrorFunction(RTCDevice device);
+
+/* Gets the error callback function user pointer. */
+RTC_API void* rtcGetDeviceErrorFunctionUserPtr(RTCDevice device);
+
 /* Memory monitor callback function */
 typedef bool (*RTCMemoryMonitorFunction)(void* ptr, ssize_t bytes, bool post);
 
 /* Sets the memory monitor callback function. */
 RTC_API void rtcSetDeviceMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunction memoryMonitor, void* userPtr);
+
+/* Gets the memory monitor callback function pointer. */
+RTC_API RTCMemoryMonitorFunction rtcGetDeviceMemoryMonitorFunction(RTCDevice device);
+
+/* Gets the memory monitor callback function user pointer. */
+RTC_API void* rtcGetDeviceMemoryMonitorFunctionUserPtr(RTCDevice device);
 
 RTC_NAMESPACE_END
