@@ -383,6 +383,8 @@ namespace embree
     std::atomic<size_t> progress_monitor_counter;
     void progressMonitor(double nprims);
     void setProgressMonitorFunction(RTCProgressMonitorFunction func, void* ptr);
+    RTCProgressMonitorFunction getProgressMonitorFunction() const;
+    void* getProgressMonitorFunctionUserPtr() const;
 
   private:
     GeometryCounts world;               //!< counts for geometry
