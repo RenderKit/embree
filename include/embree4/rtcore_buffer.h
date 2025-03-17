@@ -41,6 +41,12 @@ RTC_API RTCBuffer rtcNewBuffer(RTCDevice device, size_t byteSize);
 /* Creates a new shared buffer. */
 RTC_API RTCBuffer rtcNewSharedBuffer(RTCDevice device, void* ptr, size_t byteSize);
 
+/* Returns if the buffer is a shared buffer. */
+RTC_API bool rtcIsBufferShared(RTCBuffer buffer);
+
+/* Returns the size of the buffer in bytes. */
+RTC_API size_t rtcGetBufferSize(RTCBuffer buffer);
+
 /* Returns a pointer to the buffer data. */
 RTC_API void* rtcGetBufferData(RTCBuffer buffer);
 

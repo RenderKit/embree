@@ -111,6 +111,11 @@ namespace embree
     __forceinline size_t bytes() const { 
       return numBytes;
     }
+
+    /*! returns the number of bytes of the buffer */
+    __forceinline bool isShared() const {
+      return shared;
+    }
     
     /*! returns true of the buffer is not empty */
     __forceinline operator bool() const { 
@@ -213,6 +218,16 @@ namespace embree
     {
       if (ptr_ofs && num)
         volatile int MAYBE_UNUSED w = *((int*)getPtr(size()-1)+3); // FIXME: is failing hard avoidable?
+    }
+
+    /*! returns the buffer object */
+    __forceinline Ref<Buffer> getBuffer() {
+      return buffer;
+    }
+
+    /*! returns the offset of the view from the base pointer */
+    __forceinline size_t getOffset() const {
+      return ptr_ofs - buffer->getPtr();
     }
 
   public:
