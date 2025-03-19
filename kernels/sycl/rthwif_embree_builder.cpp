@@ -373,7 +373,7 @@ namespace embree
     out->pTransform = (float*) &out->xfmdata;
     out->pBounds = (ze_rtas_aabb_exp_t*) &dynamic_cast<Scene*>(geom->object)->accelBuffer.getBounds();
     out->xfmdata = *(ze_rtas_transform_float3x4_aligned_column_major_exp_t*) &local2world;
-    out->pAccelerationStructure = dynamic_cast<Scene*>(geom->object)->accelBuffer.getHWAccel(0);
+    out->pAccelerationStructure = dynamic_cast<Scene*>(geom->object)->accelBuffer.getAccelBufferDeviceData(0);
   }
 
   void createGeometryDesc(ze_rtas_builder_instance_geometry_info_exp_t* out, Scene* scene, Instance* geom)
@@ -387,7 +387,7 @@ namespace embree
     out->transformFormat = ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FLOAT3X4_ALIGNED_COLUMN_MAJOR;
     out->pTransform = (float*) &geom->local2world[0];
     out->pBounds = (ze_rtas_aabb_exp_t*) &dynamic_cast<Scene*>(geom->object)->accelBuffer.getBounds();
-    out->pAccelerationStructure = dynamic_cast<Scene*>(geom->object)->accelBuffer.getHWAccel(0);
+    out->pAccelerationStructure = dynamic_cast<Scene*>(geom->object)->accelBuffer.getAccelBufferDeviceData(0);
   }
 
   void createGeometryDesc(char* out, Scene* scene, Geometry* geom, GEOMETRY_TYPE type)
