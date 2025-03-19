@@ -103,13 +103,20 @@ namespace embree
       }
 
 #if !defined(__SYCL_DEVICE_ONLY__)
-
       __forceinline AccelBufferData& getAccelBufferData() {
         if (unifiedMemory)
           return accelBufferShared;
         else
           return accelBufferHost;
       }
+
+      __forceinline char* getAccelBufferDeviceData(uint32_t time_segment) {
+        if (unifiedMemory)
+          return (char*)accelBufferShared.data() + time_segment * hwaccel_stride;
+        else
+          return (char*)accelBufferDevice.data() + time_segment * hwaccel_stride;
+      }
+
 
       inline BBox3f const& getBounds() { return hwaccel_bounds; }
 
