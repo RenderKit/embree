@@ -171,9 +171,14 @@ namespace embree
     relaxed.pNext = &rt_desc;
     relaxed.flags = ZE_RELAXED_ALLOCATION_LIMITS_EXP_FLAG_MAX_SIZE;
 
+    ze_memory_compression_hints_ext_desc_t compressed;
+    compressed.stype = ZE_STRUCTURE_TYPE_MEMORY_COMPRESSION_HINTS_EXT_DESC;
+    compressed.pNext = &relaxed;
+    compressed.flags = ZE_MEMORY_COMPRESSION_HINTS_EXT_FLAG_UNCOMPRESSED;
+
     ze_device_mem_alloc_desc_t device_desc;
     device_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_MEM_ALLOC_DESC;
-    device_desc.pNext = &relaxed;
+    device_desc.pNext = &compressed;
     device_desc.flags = ZE_DEVICE_MEM_ALLOC_FLAG_BIAS_CACHED;
     device_desc.ordinal = 0;
 
