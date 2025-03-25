@@ -83,12 +83,9 @@ IF (EMBREE_SYCL_SUPPORT AND EMBREE_INSTALL_DEPENDENCIES)
       "${DPCPP_COMPILER_DIR}/../lib/libsycl.so.?.?"
       "${DPCPP_COMPILER_DIR}/../lib/libsycl.so.?.?.?"
       "${DPCPP_COMPILER_DIR}/../lib/libsycl.so.?.?.?-?"
-      "${DPCPP_COMPILER_DIR}/../lib/libur_adapter_level_zero.so"
-      "${DPCPP_COMPILER_DIR}/../lib/libur_adapter_level_zero.so.*"
-      "${DPCPP_COMPILER_DIR}/../lib/libur_loader.so"
-      "${DPCPP_COMPILER_DIR}/../lib/libur_loader.so.*"
-      "${DPCPP_COMPILER_DIR}/../lib/libumf.so"
-      "${DPCPP_COMPILER_DIR}/../lib/libumf.so.*")
+      "${DPCPP_COMPILER_DIR}/../lib/libur_adapter_level_zero.so*"
+      "${DPCPP_COMPILER_DIR}/../lib/libur_loader.so*"
+      "${DPCPP_COMPILER_DIR}/../lib/libumf.so*")
     INSTALL(FILES ${LIB_SYCL_FILES} DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
 
     # copy additional oneAPI runtime libraries
