@@ -159,7 +159,6 @@ jobs:
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: intel-llvm/v6.0.0-rk
       artifact-in: release-linux-sycl
       cmd: |
         module load cmake/3.25.3
