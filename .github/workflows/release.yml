@@ -262,22 +262,3 @@ jobs:
       artifact-in-macos: release-macosx-arm
       path: "build/*.zip"
       artifact-out-name: "antivirus-scan-arm"
-
-#####################################################################
-# Testing package
-#####################################################################
-  test-package:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    needs: [release-linux]
-    with:
-      image: embree/ubuntu:22.04
-      runs-on: '[ "Linux", "docker", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/gfx-ubuntu22-public.env
-      artifact-in: release-linux
-      artifact-out: release-testing-PACKAGE-ZIP
-      artifact-path: ./build/*.tar.gz
-      cmd: |
-        rm build/embree-4.4.0.x86_64.linux.tar.gz
-        mv build/embree-4.4.0.x86_64.linux-testing.tar.gz build/embree-4.4.0-testing.tar.gz
