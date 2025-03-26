@@ -412,9 +412,6 @@ jobs:
         cmake --build build --config Release --target test_integration
 
 
-
-
-
   integrate-static-linux-ICX:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
@@ -537,7 +534,6 @@ jobs:
     with:
       image: embree/ubuntu:24.04
       runs-on: '[ "Linux", "docker", "build" ]'
-      project: embree
       dpcpp-version: intel/2025.0
       artifact-out: integrate-sycl-linux-ICX
       artifact-path: ./build/*.tar.gz
@@ -554,7 +550,6 @@ jobs:
       image: embree/ubuntu:24.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
-      project: embree
       env-from-files: ./.github/workflows/gfx-ubuntu24-public.env
       dpcpp-version: intel/2025.0
       artifact-in: integrate-sycl-linux-ICX
@@ -569,16 +564,15 @@ jobs:
     with:
       image: embree/ubuntu:24.04
       runs-on: '[ "Linux", "docker", "build" ]'
-      project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
-      artifact-out: linux-DG2-JIT-PUBLIC-build
+      artifact-out: integrate-sycl-linux-DPCPP
       artifact-path: ./build/*.tar.gz
       cmd: |
         module load cmake/3.25.3
         cmake --preset integrate-sycl-linux-dpcpp -DCMAKE_BUILD_TYPE=Release
         cmake --build build --config Release --target build
 
-  istegrate-sycl-linux-DPCPP-test:
+  integrate-sycl-linux-DPCPP-test:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     needs: [ "integrate-sycl-linux-DPCPP" ]
@@ -586,12 +580,11 @@ jobs:
       image: embree/ubuntu:24.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
-      project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu24-public.env
       artifact-in: integrate-sycl-linux-DPCPP
       cmd: |
         module load cmake/3.25.3
-        cmake --preset integrate-sycl-linux-dpcpp -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
+        cmake --preset integrate-sycl-linux-dpcpp -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-clang
         cmake --build build --config Release --target test_integration
         
 
@@ -635,8 +628,6 @@ jobs:
         cmake --preset integrate-macos-gcc -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-macos-clang
         cmake --build build --config Release --target test_integration
       
-
-
 
 
 #  TODO: cant find tbb/tbb.h ???
