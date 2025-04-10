@@ -431,7 +431,7 @@
 \pagebreak
 
 ## rtcGetGeometryTransformFromTraversable
-``` {include=src/api/rtcGetGeometryTransformFromScenTraversable.md}
+``` {include=src/api/rtcGetGeometryTransformFromTraversable.md}
 ```
 \pagebreak
 
