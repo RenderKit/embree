@@ -65,7 +65,7 @@ namespace embree
       BarrierSys barrier(numThreads);
       tbb::parallel_for(size_t(0), size_t(numThreads), size_t(1), [&] ( size_t i ) {
           barrier.wait();
-        });
+        }, tbb::static_partitioner());
     }
   }
 
