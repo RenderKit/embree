@@ -28,7 +28,6 @@ RTC_API_EXTERN_C bool prefetchUSMSharedOnGPU(RTCScene hscene)
   //RTC_CATCH_BEGIN;
   //RTC_TRACE(prefetchUSMSharedOnGPU);
   //RTC_VERIFY_HANDLE(hscene);
-  //RTC_ENTER_DEVICE(hscene);
 
   if (!(rtcGetSceneFlags(hscene) & RTC_SCENE_FLAG_PREFETCH_USM_SHARED_ON_GPU)) {
     return false;
