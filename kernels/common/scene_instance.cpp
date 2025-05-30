@@ -28,7 +28,7 @@ namespace embree
     device->free(local2world);
     device->memoryMonitor(-ssize_t(numTimeSteps*sizeof(AffineSpace3ff)), true);
     if (object) object->refDec();
-    device->memoryMonitor(-sizeof(*this), false);
+    device->memoryMonitor(-ssize_t(sizeof(*this)), false);
   }
 
   void Instance::setNumTimeSteps (unsigned int numTimeSteps_in)

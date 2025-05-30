@@ -28,7 +28,7 @@ namespace embree
       }
       device->free(objects);
     }
-    device->memoryMonitor(-sizeof(*this), false);
+    device->memoryMonitor(-ssize_t(sizeof(*this)), false);
   }
 
   void InstanceArray::setNumTimeSteps (unsigned int numTimeSteps_in)
