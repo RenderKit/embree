@@ -125,7 +125,7 @@ void createPoints (TutorialData& data)
   data.points = (Point*) alignedMalloc(data.num_points*sizeof(Point), 16);
   data.points_tmp = (Point*) alignedMalloc(data.num_points*sizeof(Point), 16);
   unsigned int geomID = rtcAttachGeometry(data.scene, geom);
-  for (unsigned int i=0; i<data.num_points; i++) {
+  for (int i=0; i<data.num_points; i++) {
     data.points[i].geometry = geom;
     data.points[i].geomID = geomID;
     data.points_tmp[i].geometry = geom;
@@ -139,7 +139,7 @@ void createPoints (TutorialData& data)
 
   RandomSampler rs;
   RandomSampler_init(rs, 42);
-  for (unsigned int i = 0; i < data.num_points; ++i) 
+  for (int i = 0; i < data.num_points; ++i) 
   {
     float xi1 = RandomSampler_getFloat(rs);
     float xi2 = RandomSampler_getFloat(rs);

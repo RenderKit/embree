@@ -171,7 +171,7 @@ namespace embree {
                      const float f)
   {
     int phi = taskIndex;
-    for (unsigned int theta = 0; theta < data.numTheta; theta++)
+    for (int theta = 0; theta < data.numTheta; theta++)
     {
       Vertex* v = &vertices[phi * data.numTheta + theta];
       const float phif = phi * float(pi) * rcpNumPhi;
@@ -276,7 +276,7 @@ namespace embree {
           animateSphere((int)i, threadIndex, vertices, rcpNumTheta, rcpNumPhi, pos, r, f);
       });
 #else
-    for (unsigned int phi = 0; phi < data.numPhi + 1; phi++) for (int theta = 0; theta < data.numTheta; theta++)
+    for (int phi = 0; phi < data.numPhi + 1; phi++) for (int theta = 0; theta < data.numTheta; theta++)
                                                         {
                                                           Vertex* v = &vertices[phi * data.numTheta + theta];
                                                           const float phif = phi * float(pi) * rcpNumPhi;
