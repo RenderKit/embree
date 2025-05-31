@@ -155,7 +155,7 @@ void animateSphere (int taskIndex, int threadIndex, Vertex* vertices,
                          const float f)
 {
   int phi = taskIndex;
-  for (unsigned int theta=0; theta<data.numTheta; theta++)
+  for (int theta=0; theta<data.numTheta; theta++)
   {
     Vertex* v = &vertices[phi*data.numTheta+theta];
     const float phif   = phi*float(pi)*rcpNumPhi;

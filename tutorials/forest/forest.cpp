@@ -70,8 +70,8 @@ namespace embree
       : TutorialApplication(NAME,FEATURES,1280,720)
     {
       /* set default camera */
-      camera.from = Vec3fa(507.72, 109.37, 1173.20);
-      camera.to   = Vec3fa(504.62, 108.63, 1161.37);
+      camera.from = Vec3fa(507.72f, 109.37f, 1173.20f);
+      camera.to   = Vec3fa(504.62f, 108.63f, 1161.37f);
     }
 
 #if defined(USE_GLFW)
