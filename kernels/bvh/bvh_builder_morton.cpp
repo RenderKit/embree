@@ -52,7 +52,7 @@ namespace embree
           node->setBounds(i,b);
         }
 
-        BBox3fx result = (BBox3fx&)res;
+        BBox3fx result = (BBox3fx)res;
 #if ROTATE_TREE
         if (N == 4)
         {
@@ -343,7 +343,7 @@ namespace embree
           new (&accel[i]) Object(geomID_,primID);
         }
 
-        BBox3fx box_o = (BBox3fx&)bounds;
+        BBox3fx box_o = (BBox3fx)bounds;
 #if ROTATE_TREE
         if (N == 4)
           box_o.lower.a = current.size();
@@ -387,7 +387,7 @@ namespace embree
           new (&accel[i]) InstancePrimitive(instance, geomID_);
         }
 
-        BBox3fx box_o = (BBox3fx&)bounds;
+        BBox3fx box_o = (BBox3fx)bounds;
 #if ROTATE_TREE
         if (N == 4)
           box_o.lower.a = current.size();
@@ -431,7 +431,7 @@ namespace embree
           new (&accel[i]) InstanceArrayPrimitive(geomID_, primID);
         }
 
-        BBox3fx box_o = (BBox3fx&)bounds;
+        BBox3fx box_o = (BBox3fx)bounds;
 #if ROTATE_TREE
         if (N == 4)
           box_o.lower.a = current.size();
