@@ -5719,7 +5719,7 @@ namespace embree
     float benchmark(VerifyApplication* state)
     {
       double t0 = getSeconds();
-      for (volatile size_t i=0; i<10000000; i++);
+      for (volatile size_t i=0; i<10000000; i = i + 1);
       double t1 = getSeconds();
       return 1.0f/float(t1-t0);
     }
