@@ -10,7 +10,7 @@ webimages := $(addprefix www/, $(images_jpg))
 docfiles := $(addprefix doc/, README.md CHANGELOG.md readme.pdf)
 spec := embree-spec.rst
 man_src := $(wildcard src/api/*.md)
-manfiles := $(patsubst src/api/%.md,man/man3/%.4embree4,$(man_src))
+manfiles := $(patsubst src/api/%.md,man/man3/%.3embree4,$(man_src))
 
 all: www images man doc spec
 www: $(webpages) $(webimages)
@@ -175,7 +175,7 @@ doc/readme.pdf: tmp/readme.tex tmp/readme_all.tex $(images_jpg) $(images_pdf)
 ### manpages
 ########################################################################
 
-man/man3/%.4embree4: src/api/%.md
+man/man3/%.3embree4: src/api/%.md
 	$(PANDOC) -s -t man $< -o $@
 
 ########################################################################
