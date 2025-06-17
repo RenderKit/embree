@@ -6,6 +6,7 @@ SET(FLAGS_SSE42 "${FLAGS_SSE2} /D__SSE3__ /D__SSSE3__ /D__SSE4_1__ /D__SSE4_2__"
 SET(FLAGS_AVX   "${FLAGS_SSE42} /arch:AVX")
 SET(FLAGS_AVX2  "${FLAGS_SSE42} /arch:AVX2")
 SET(FLAGS_AVX512  "${FLAGS_AVX2} /arch:AVX512")
+SET(FLAGS_AVX10_1  "${FLAGS_AVX2} /arch:AVX10.1")
 
 SET(COMMON_CXX_FLAGS "")
 SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /EHsc")        # catch C++ exceptions only and extern "C" functions never throw a C++ exception
