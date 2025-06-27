@@ -214,10 +214,10 @@ __forceinline bool intersect_user_geometry(intel_ray_query_t& query, Ray& ray, U
 }
 
 template<typename Ray>
-__forceinline bool intersect_instance(intel_ray_query_t& query, Ray& ray, Geometry* geom, Scenes& scenes, sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID, bool instance_array);
+__forceinline bool intersect_instance(intel_ray_query_t& query, Ray& ray, Geometry* geom, Scenes& scenes, sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID, bool instance_array, const RTCFeatureFlags feature_mask);
 
 template<>
-__forceinline bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Geometry* geom, Scenes& scenes, sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID, bool instance_array)
+__forceinline bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Geometry* geom, Scenes& scenes, sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID, bool instance_array, const RTCFeatureFlags feature_mask)
 {
   /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
@@ -239,9 +239,18 @@ __forceinline bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Geo
     : (Scene*) ((Instance*)geom)->object;
   if (!object) return false;
 
-  const AffineSpace3fa world2local = instance_array
-    ? ((InstanceArray*)geom)->getWorld2Local(primID, ray.time())
-    : ((Instance*)geom)->getWorld2Local(ray.time());
+  AffineSpace3fa world2local;
+  if (feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR) {
+    world2local =
+        instance_array
+            ? ((InstanceArray *)geom)->getWorld2Local(primID, ray.time())
+            : ((Instance *)geom)->getWorld2Local(ray.time());
+  } else {
+    world2local =
+        instance_array
+            ? ((InstanceArray *)geom)->getWorld2Local(primID)
+            : ((Instance *)geom)->getWorld2Local();
+  }
 
   const Vec3fa ray_org = xfmPoint (world2local, (Vec3f) ray.org);
   const Vec3fa ray_dir = xfmVector(world2local, (Vec3f) ray.dir);
@@ -260,7 +269,7 @@ __forceinline bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Geo
 #endif
 
   uint32_t bvh_id = 0;
-  if (context->args->feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR) {
+  if (feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR) {
     float time = clamp(ray.time(),0.0f,1.0f);
     uint32_t numTimeSegments = object->getMaxTimeSegments();
     bvh_id = (uint32_t) clamp(uint32_t(numTimeSegments*time), 0u, numTimeSegments-1);
@@ -274,7 +283,7 @@ __forceinline bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Geo
 }
 
 template<>
-__forceinline bool intersect_instance(intel_ray_query_t& query, Ray& ray, Geometry* geom, Scenes& scenes, sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID, bool instance_array)
+__forceinline bool intersect_instance(intel_ray_query_t& query, Ray& ray, Geometry* geom, Scenes& scenes, sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID, bool instance_array, const RTCFeatureFlags feature_mask)
 {
   /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
@@ -296,9 +305,18 @@ __forceinline bool intersect_instance(intel_ray_query_t& query, Ray& ray, Geomet
     : (Scene*) ((Instance*)geom)->object;
   if (!object) return false;
 
-  const AffineSpace3fa world2local = instance_array
-    ? ((InstanceArray*)geom)->getWorld2Local(primID, ray.time())
-    : ((Instance*)geom)->getWorld2Local(ray.time());
+  AffineSpace3fa world2local;
+  if (feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR) {
+    world2local =
+        instance_array
+            ? ((InstanceArray *)geom)->getWorld2Local(primID, ray.time())
+            : ((Instance *)geom)->getWorld2Local(ray.time());
+  } else {
+    world2local =
+        instance_array
+            ? ((InstanceArray *)geom)->getWorld2Local(primID)
+            : ((Instance *)geom)->getWorld2Local();
+  }
 
   const Vec3fa ray_org = xfmPoint (world2local, (Vec3f) ray.org);
   const Vec3fa ray_dir = xfmVector(world2local, (Vec3f) ray.dir);
@@ -352,7 +370,7 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
 #if defined(EMBREE_GEOMETRY_INSTANCE) || defined(EMBREE_GEOMETRY_INSTANCE_ARRAY)
   if ((feature_mask & RTC_FEATURE_FLAG_INSTANCE) && (geom->getTypeMask() & Geometry::MTY_INSTANCE) ||
       (feature_mask & RTC_FEATURE_FLAG_INSTANCE_ARRAY) && (geom->getTypeMask() & Geometry::MTY_INSTANCE_ARRAY)) {
-    return intersect_instance(query,ray,(Instance*)geom, scenes, context, geomID, primID, geom->getTypeMask() & Geometry::MTY_INSTANCE_ARRAY);
+    return intersect_instance(query,ray,(Instance*)geom, scenes, context, geomID, primID, geom->getTypeMask() & Geometry::MTY_INSTANCE_ARRAY, feature_mask);
   }
 #endif
 
