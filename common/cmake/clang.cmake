@@ -28,6 +28,7 @@ ELSE ()
   _SET_IF_EMPTY(FLAGS_AVX   "-mavx")
   _SET_IF_EMPTY(FLAGS_AVX2  "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
   _SET_IF_EMPTY(FLAGS_AVX512 "-march=skx")
+  _SET_IF_EMPTY(FLAGS_APX  "-march=skx -mapxf")
 ENDIF ()
 
 IF (WIN32)
