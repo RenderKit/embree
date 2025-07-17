@@ -566,16 +566,16 @@ namespace embree
 #endif
 
 #if defined(EMBREE_GEOMETRY_INSTANCE)
-    Builder* BVH4InstanceMeshBuilderMortonGeneral (void* bvh, Instance* mesh, Geometry::GTypeMask gtype, unsigned int geomID, size_t mode) { return new class BVHNMeshBuilderMorton<4,Instance,InstancePrimitive>((BVH4*)bvh,mesh,gtype,geomID,1,BVH4::maxLeafBlocks); }
+    Builder* BVH4InstanceMeshBuilderMortonGeneral (void* bvh, Instance* mesh, unsigned int geomID, size_t mode) { return new class BVHNMeshBuilderMorton<4,Instance,InstancePrimitive>((BVH4*)bvh,mesh,geomID,1,BVH4::maxLeafBlocks); }
 #if defined(__AVX__)
-    Builder* BVH8InstanceMeshBuilderMortonGeneral (void* bvh, Instance* mesh, Geometry::GTypeMask gtype, unsigned int geomID, size_t mode) { return new class BVHNMeshBuilderMorton<8,Instance,InstancePrimitive>((BVH8*)bvh,mesh,gtype,geomID,1,BVH4::maxLeafBlocks); }
+    Builder* BVH8InstanceMeshBuilderMortonGeneral (void* bvh, Instance* mesh, unsigned int geomID, size_t mode) { return new class BVHNMeshBuilderMorton<8,Instance,InstancePrimitive>((BVH8*)bvh,mesh,geomID,1,BVH4::maxLeafBlocks); }
 #endif
 #endif
 
 #if defined(EMBREE_GEOMETRY_INSTANCE_ARRAY)
-    Builder* BVH4InstanceArrayMeshBuilderMortonGeneral (void* bvh, InstanceArray* mesh, Geometry::GTypeMask gtype, unsigned int geomID, size_t mode) { return new class BVHNMeshBuilderMorton<4,InstanceArray,InstanceArrayPrimitive>((BVH4*)bvh,mesh,gtype,geomID,1,BVH4::maxLeafBlocks); }
+    Builder* BVH4InstanceArrayMeshBuilderMortonGeneral (void* bvh, InstanceArray* mesh, unsigned int geomID, size_t mode) { return new class BVHNMeshBuilderMorton<4,InstanceArray,InstanceArrayPrimitive>((BVH4*)bvh,mesh,geomID,1,BVH4::maxLeafBlocks); }
 #if defined(__AVX__)
-    Builder* BVH8InstanceArrayMeshBuilderMortonGeneral (void* bvh, InstanceArray* mesh, Geometry::GTypeMask gtype, unsigned int geomID, size_t mode) { return new class BVHNMeshBuilderMorton<8,InstanceArray,InstanceArrayPrimitive>((BVH8*)bvh,mesh,gtype,geomID,1,BVH4::maxLeafBlocks); }
+    Builder* BVH8InstanceArrayMeshBuilderMortonGeneral (void* bvh, InstanceArray* mesh, unsigned int geomID, size_t mode) { return new class BVHNMeshBuilderMorton<8,InstanceArray,InstanceArrayPrimitive>((BVH8*)bvh,mesh,geomID,1,BVH4::maxLeafBlocks); }
 #endif
 #endif
 
