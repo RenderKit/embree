@@ -15,7 +15,8 @@
     "scripts/cmake-presets/release.json",
     "scripts/cmake-presets/integrate.json",
     "scripts/cmake-presets/performance.json",
-    "scripts/cmake-presets/public.json"
+    "scripts/cmake-presets/public.json",
+    "scripts/benchmark/presets.json"
   ],
   "configurePresets": [
 

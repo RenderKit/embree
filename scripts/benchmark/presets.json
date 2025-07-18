@@ -1,0 +1,57 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 11,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "bench",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX2",
+        "EMBREE_TASKING_SYSTEM": "TBB",
+        "TBB_DIR": "/home/dopitz/tbb-2022.1.0/lib/cmake/tbb",
+        "EMBREE_ZIP_MODE": "ON",
+        "EMBREE_INSTALL_DEPENDENCIES": "ON",
+        "EMBREE_BUILD_GLFW_FROM_SOURCE": "ON",
+        "EMBREE_PATCH_GLFW_SOURCE": "ON",
+        "CMAKE_INSTALL_INCLUDEDIR": "include",
+        "CMAKE_INSTALL_LIBDIR": "lib",
+        "CMAKE_INSTALL_DOCDIR": "doc",
+        "CMAKE_INSTALL_BINDIR": "bin",
+        "CMAKE_INSTALL_TESTDIR": "testing",
+        "EMBREE_USE_GOOGLE_BENCHMARK": "ON",
+        "EMBREE_BUILD_GOOGLE_BENCHMARK_FROM_SOURCE": "ON"
+      }
+    },
+    {
+      "name": "bench-apx",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_MAX_ISA": "AVX2",
+        "ENABLE_APX": "ON",
+        "EMBREE_TASKING_SYSTEM": "TBB",
+        "TBB_DIR": "/home/dopitz/tbb-2022.1.0/lib/cmake/tbb",
+        "EMBREE_ZIP_MODE": "ON",
+        "EMBREE_INSTALL_DEPENDENCIES": "ON",
+        "EMBREE_BUILD_GLFW_FROM_SOURCE": "ON",
+        "EMBREE_PATCH_GLFW_SOURCE": "ON",
+        "CMAKE_INSTALL_INCLUDEDIR": "include",
+        "CMAKE_INSTALL_LIBDIR": "lib",
+        "CMAKE_INSTALL_DOCDIR": "doc",
+        "CMAKE_INSTALL_BINDIR": "bin",
+        "CMAKE_INSTALL_TESTDIR": "testing",
+        "EMBREE_USE_GOOGLE_BENCHMARK": "ON",
+        "EMBREE_BUILD_GOOGLE_BENCHMARK_FROM_SOURCE": "ON"
+      }
+    }
+  ]
+}
