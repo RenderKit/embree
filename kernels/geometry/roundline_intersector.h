@@ -161,9 +161,10 @@ namespace embree
                (p0-p)^2 * (dP^2 - dr^2) - y^2 < dP^2 * r0^2 + 2.0f*r0*dr*y;
           */
 
-          __forceinline vbool<M> isInsideCappedCone(const vbool<M>& valid_i, const Vec3vf<M>& p) const
+          __forceinline vbool<M> isInsideCappedCone(const vbool<M>& valid_i, const vfloat<M>& t) const
           {
-            const Vec3vf<M> p0p = p - p0;
+            Vec3vf<M> p0p = -p0;
+            p0p.z += t;
             const vfloat<M> y = dot(p0p,dP);
             const vfloat<M> cap0 = vfloat<M>(ulp) - r0dr;
             const vfloat<M> cap1 = dPdP - r1*dr;
@@ -193,22 +194,20 @@ namespace embree
         struct ConeGeometryIntersector : public ConeGeometry<M>
       {
         using ConeGeometry<M>::p0;
-        using ConeGeometry<M>::p1;
         using ConeGeometry<M>::dP;
-        using ConeGeometry<M>::dPdP;
         using ConeGeometry<M>::r0;
         using ConeGeometry<M>::sqr_r0;
-        using ConeGeometry<M>::r1;
         using ConeGeometry<M>::dr;
         using ConeGeometry<M>::r0dr;
+        using ConeGeometry<M>::drdr;
         using ConeGeometry<M>::g;
 
-        ConeGeometryIntersector (const Vec3vf<M>& ray_org, const Vec3vf<M>& ray_dir, const vfloat<M>& dOdO, const vfloat<M>& rcp_dOdO, const Vec4vf<M>& a, const Vec4vf<M>& b)
-          : ConeGeometry<M>(a,b), org(ray_org), P(p0-ray_org), dO(ray_dir),  dOdO(dOdO), rcp_dOdO(rcp_dOdO), OdO(dot(dO,P)), dOdP(dot(dP,dO)), OdO_dOdO(OdO*rcp_dOdO), dOdP_dOdO(dOdP*rcp_dOdO) {
-            const Vec3vf<M> l = P - OdO_dOdO * dO; // more precise than dot(P,P) - OdO^2/dOdO (catastrophic cancellation of squared terms)
-            G = sqr_r0 - sqr(l);
-            C = g - dOdP * dOdP_dOdO;
-            F = r0dr - dot(dP,P) + dOdP * OdO_dOdO;
+        ConeGeometryIntersector(const Vec4vf<M>& a, const Vec4vf<M>& b)
+          : ConeGeometry<M>(a,b) {
+            G = sqr_r0 - sqr(p0.x) - sqr(p0.y);
+            C = sqr(dP.x) + sqr(dP.y) - drdr;
+            E = sqr(dP.z) + C;
+            F = r0dr - p0.x*dP.x - p0.y*dP.y;
           }
 
         /*
@@ -220,13 +219,13 @@ namespace embree
         __forceinline bool intersectConeU(vbool<M>& valid, vfloat<M>& u_front, vfloat<M>& u_back)
         {
           /* we miss the cone if determinant is smaller than zero */
-          const vfloat<M> D = (F*F + G*C) * rcp_dOdO * rcp(g);
+          const vfloat<M> D = (F*F + G*C) * rcp(E);
           valid &= (D >= 0.0f) | (g <= 0.0f);  // or inside a sphere end
 
           if (unlikely(none(valid)))
             return false;
 
-          const vfloat<M> Q = dOdP * sqrt(D);
+          const vfloat<M> Q = dP.z * sqrt(D);
           const vfloat<M> rcp_C = rcp(C);
           vfloat<M> u0 = (F + Q) * rcp_C;
           vfloat<M> u1 = (F - Q) * rcp_C;
@@ -234,7 +233,7 @@ namespace embree
           u0 = select(r0 + u0*dr < 0.0f, 1.0f-u0, u0);
           u1 = select(r0 + u1*dr < 0.0f, 1.0f-u1, u1);
           const vfloat<M> uend = select(dr >= 0.0f, vfloat<M>(one), vfloat<M>(zero));
-          const vbool<M> swap = (dOdP >= 0.0) != (u1 > u0);
+          const vbool<M> swap = (dP.z >= 0.0) != (u1 > u0);
           // already clamp for end sphere (always present)
           u_front = min(1.0f, select(g > 0.0f, select(swap, u1, u0), uend));
 #if !defined (EMBREE_BACKFACE_CULLING_CURVES)
@@ -265,67 +264,77 @@ namespace embree
            This normal is valid for the cone as well for the end cap spheres.
 
              Ng = h - (p0 + u*dP)
+             h = (0,0,t)
         */
 
         __forceinline Vec3vf<M> Ng(const vfloat<M>& u, const vfloat<M>& t) const
         {
-          return t*dO-P - u*dP;
+          Vec3vf<M> n = -(p0 + u*dP);
+          n.z += t;
+          return n;
         }
 
       private:
-        Vec3vf<M> org;
-        Vec3vf<M> P;
-        Vec3vf<M> dO;
-        vfloat<M> dOdO;
-        vfloat<M> rcp_dOdO;
-        vfloat<M> OdO;
-        vfloat<M> dOdP;
-        vfloat<M> OdO_dOdO;
-        vfloat<M> dOdP_dOdO;
         vfloat<M> C;
+        vfloat<M> E;
         vfloat<M> F;
         vfloat<M> G;
       };
 
       template<int M, typename Epilog, typename ray_tfar_func>
         static __forceinline bool intersectConeSphere(const vbool<M>& valid_i,
-                                                      const Vec3vf<M>& ray_org, const Vec3vf<M>& ray_dir,
+                                                      const Vec3vf<M>& ray_org, const Vec3vf<M>& ray_dir_in,
                                                       const vfloat<M>& ray_tnear, const ray_tfar_func& ray_tfar,
-                                                      const Vec4vf<M>& v0, const Vec4vf<M>& v1,
-                                                      const Vec4vf<M>& vL, const Vec4vf<M>& vR,
+                                                      const Vec4vf<M>& v0_in, const Vec4vf<M>& v1_in,
+                                                      const Vec4vf<M>& vL_in, const Vec4vf<M>& vR_in,
                                                       const Epilog& epilog)
       {
         vbool<M> valid = valid_i;
 
-        const vfloat<M> dOdO = sqr(ray_dir);
-        const vfloat<M> rcp_dOdO = rcp(dOdO);
+        // normalize ray dir, keep length
+        const vfloat<M> rcp_rd = rcp_length(ray_dir_in);
+        const vfloat<M> rd = rcp(rcp_rd);
+        const Vec3vf<M>& ray_dir = ray_dir_in*rcp_rd;
+
+        // transform into ray space
+        const LinearSpace3vf<M> m = frame(ray_dir);
+        const Vec4vf<M> v0 = Vec4vf<M>(m*(Vec3vf<M>(v0_in)-ray_org), v0_in.w);
+        const Vec4vf<M> v1 = Vec4vf<M>(m*(Vec3vf<M>(v1_in)-ray_org), v1_in.w);
 
         /* intersect with cone from v0 to v1 */
-        ConeGeometryIntersector<M> cone (ray_org, ray_dir, dOdO, rcp_dOdO, v0, v1);
+        ConeGeometryIntersector<M> cone(v0, v1);
         vfloat<M> u_front, u_back;
         if (unlikely(!cone.intersectConeU(valid, u_front, u_back)))
           return false;
 
         /* calculate front hit */
-        vbool<M> validFront = valid & ((u_front >= 0.0f) | (vL[0] == vfloat<M>(pos_inf)));
+        vbool<M> validFront = valid & ((u_front >= 0.0f) | (vL_in[0] == vfloat<M>(pos_inf)));
         u_front = max(u_front, 0.0f);
         vfloat<M> t_lower;
         cone.template intersectSphere<true>(validFront, u_front, t_lower);
 
+        // for normal
+        Vec3vf<M> dP = v0_in.xyz() - v1_in.xyz();
+        Vec3vf<M> P = ray_org - v0_in.xyz();
+
 #if !defined (EMBREE_BACKFACE_CULLING_CURVES)
         /* hits inside the neighboring capped cones are inside the geometry and thus ignored */
+        const Vec4vf<M> vL = Vec4vf<M>(m*(Vec3vf<M>(vL_in)-ray_org), vL_in.w);
         const ConeGeometry<M> coneL (v0, vL);
+        const Vec4vf<M> vR = Vec4vf<M>(m*(Vec3vf<M>(vR_in)-ray_org), vR_in.w);
         const ConeGeometry<M> coneR (v1, vR);
-        const Vec3vf<M> hit_lower = ray_org + t_lower*ray_dir;
-        validFront &= !coneL.isInsideCappedCone(validFront, hit_lower) & !coneR.isInsideCappedCone(validFront, hit_lower);
+        validFront &= !coneL.isInsideCappedCone(validFront, t_lower) & !coneR.isInsideCappedCone(validFront, t_lower);
 
         /* calculate back hit */
-        vbool<M> validBack = valid & ((u_back >= 0.0f) | (vL[0] == vfloat<M>(pos_inf)));
+        vbool<M> validBack = valid & ((u_back >= 0.0f) | (vL_in[0] == vfloat<M>(pos_inf)));
         u_back = max(u_back, 0.0f);
         vfloat<M> t_upper;
         cone.template intersectSphere<false>(validBack, u_back, t_upper);
-        const Vec3vf<M> hit_upper = ray_org + t_upper*ray_dir;
-        validBack &= !coneL.isInsideCappedCone(validBack, hit_upper) & !coneR.isInsideCappedCone(validBack, hit_upper);
+        validBack &= !coneL.isInsideCappedCone(validBack, t_upper) & !coneR.isInsideCappedCone(validBack, t_upper);
+
+        // scale back
+        t_lower *= rd;
+        t_upper *= rd;
 
         /* filter out hits that are not in tnear/tfar range */
         const vbool<M> valid_lower = validFront & ray_tnear <= t_lower & t_lower <= ray_tfar();
@@ -341,7 +350,7 @@ namespace embree
         const vfloat<M> u_first = select(valid_lower, u_front, u_back);
 
         /* invoke intersection filter for first hit */
-        RoundLineIntersectorHitM<M> hit(u_first,zero,t_first,cone.Ng(u_first,t_first));
+        RoundLineIntersectorHitM<M> hit(u_first,zero,t_first,t_first*ray_dir_in + P + u_first*dP);
         const bool is_hit_first = epilog(valid_first, hit);
 
         /* check for possible second hits before potentially accepted hit */
@@ -350,11 +359,14 @@ namespace embree
           return is_hit_first;
 
         /* invoke intersection filter for second hit */
-        hit = RoundLineIntersectorHitM<M>(u_back,zero,t_upper,cone.Ng(u_back,t_upper));
+        hit = RoundLineIntersectorHitM<M>(u_back,zero,t_upper,t_upper*ray_dir_in + P + u_back*dP);
         const bool is_hit_second = epilog(valid_second, hit);
 
         return is_hit_first | is_hit_second;
 #else
+        // scale back
+        t_lower *= rd;
+
         /* filter out hits that are not in tnear/tfar range */
         const vbool<M> valid_lower = validFront & ray_tnear <= t_lower & t_lower <= ray_tfar();
 
@@ -363,7 +375,7 @@ namespace embree
           return false;
 
         /* construct first hit and invoke intersection filter for first hit */
-        RoundLineIntersectorHitM<M> hit(u_front,zero,t_lower,cone.Ng(u_front,t_lower));
+        RoundLineIntersectorHitM<M> hit(u_front,zero,t_lower,t_lower*ray_dir_in + P + u_front*dP);
         const bool is_hit_first = epilog(valid_lower, hit);
 
         return is_hit_first;
