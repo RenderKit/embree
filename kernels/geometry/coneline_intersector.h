@@ -10,16 +10,16 @@ namespace embree
 {
   namespace isa
   {
-    namespace __coneline_internal 
+    namespace __coneline_internal
     {
       template<int M, typename Epilog, typename ray_tfar_func>
         static __forceinline bool intersectCone(const vbool<M>& valid_i,
-                                                const Vec3vf<M>& ray_org_in, const Vec3vf<M>& ray_dir, 
+                                                const Vec3vf<M>& ray_org_in, const Vec3vf<M>& ray_dir,
                                                 const vfloat<M>& ray_tnear, const ray_tfar_func& ray_tfar,
                                                 const Vec4vf<M>& v0, const Vec4vf<M>& v1,
                                                 const vbool<M>& cL, const vbool<M>& cR,
                                                 const Epilog& epilog)
-      {   
+      {
         vbool<M> valid = valid_i;
 
         /* move ray origin closer to make calculations numerically stable */
@@ -32,10 +32,10 @@ namespace embree
         const Vec3vf<M> dP = v1.xyz() - v0.xyz();
         const Vec3vf<M> p0 = ray_org - v0.xyz();
         const Vec3vf<M> p1 = ray_org - v1.xyz();
-        
+
         const vfloat<M> dPdP  = sqr(dP);
         const vfloat<M> dP0   = dot(p0,dP);
-        const vfloat<M> dP1   = dot(p1,dP); 
+        const vfloat<M> dP1   = dot(p1,dP);
         const vfloat<M> dOdP  = dot(ray_dir,dP);
 
         // intersect cone body
@@ -45,11 +45,11 @@ namespace embree
         const vfloat<M> OO  = sqr(p0);
         const vfloat<M> dPdP2 = sqr(dPdP);
         const vfloat<M> dPdPr0 = dPdP*v0.w;
-        
+
         const vfloat<M> A = dPdP2     - sqr(dOdP)*hy;
         const vfloat<M> B = dPdP2*dO0 - dP0*dOdP*hy   + dPdPr0*(dr*dOdP);
         const vfloat<M> C = dPdP2*OO  - sqr(dP0)*hy   + dPdPr0*(2.0f*dr*dP0 - dPdPr0);
-        
+
         const vfloat<M> D = B*B - A*C;
         valid &= D >= 0.0f;
         if (unlikely(none(valid))) {
@@ -78,8 +78,8 @@ namespace embree
         const vfloat<M> t_disk_upper = max(t_disk0, t_disk1);
 
         const vfloat<M> t_lower = min(t_cone_lower, t_disk_lower);
-        const vfloat<M> t_upper = max(t_cone_upper, select(t_lower==t_disk_lower, 
-                                                      select(t_disk_upper==vfloat<M>(pos_inf),neg_inf,t_disk_upper), 
+        const vfloat<M> t_upper = max(t_cone_upper, select(t_lower==t_disk_lower,
+                                                      select(t_disk_upper==vfloat<M>(pos_inf),neg_inf,t_disk_upper),
                                                       select(t_disk_lower==vfloat<M>(pos_inf),neg_inf,t_disk_lower)));
 
         const vbool<M> valid_lower = valid & ray_tnear <= dt+t_lower & dt+t_lower <= ray_tfar() & t_lower != vfloat<M>(pos_inf);
@@ -110,7 +110,7 @@ namespace embree
         const vbool<M> valid_second = valid_lower & valid_upper & (dt+t_upper <= ray_tfar());
         if (unlikely(none(valid_second)))
           return is_hit_first;
-        
+
         /* invoke intersection filter for second hit */
         const vbool<M> cone_hit_second = t_second == t_cone_lower | t_second == t_cone_upper;
         const vbool<M> disk0_hit_second = t_second == t_disk0;
@@ -119,7 +119,7 @@ namespace embree
 
         hit = RoundLineIntersectorHitM<M>(u_second,zero,dt+t_second,Ng_second);
         const bool is_hit_second = epilog(valid_second, hit);
-        
+
         return is_hit_first | is_hit_second;
       }
     }
@@ -128,7 +128,7 @@ namespace embree
       struct ConeLineIntersectorHitM
       {
         __forceinline ConeLineIntersectorHitM() {}
-        
+
         __forceinline ConeLineIntersectorHitM(const vfloat<M>& u, const vfloat<M>& v, const vfloat<M>& t, const Vec3vf<M>& Ng)
           : vu(u), vv(v), vt(t), vNg(Ng) {}
 	
@@ -144,12 +144,12 @@ namespace embree
         vfloat<M> vt;
         Vec3vf<M> vNg;
       };
-    
+
     template<int M>
       struct ConeCurveIntersector1
       {
         typedef CurvePrecalculations1 Precalculations;
-        
+
         struct ray_tfar {
           Ray& ray;
           __forceinline ray_tfar(Ray& ray) : ray(ray) {}
@@ -174,19 +174,19 @@ namespace embree
           return  __coneline_internal::intersectCone<M>(valid_i,ray_org,ray_dir,ray_tnear,ray_tfar(ray),v0,v1,cL,cR,epilog);
         }
       };
-    
+
     template<int M, int K>
       struct ConeCurveIntersectorK
       {
         typedef CurvePrecalculationsK<K> Precalculations;
-        
+
         struct ray_tfar {
           RayK<K>& ray;
           size_t k;
           __forceinline ray_tfar(RayK<K>& ray, size_t k) : ray(ray), k(k) {}
           __forceinline vfloat<M> operator() () const { return ray.tfar[k]; };
         };
-        
+
         template<typename Epilog>
         static __forceinline bool intersect(const vbool<M>& valid_i,
                                             RayK<K>& ray, size_t k,

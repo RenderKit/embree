@@ -113,13 +113,18 @@ namespace embree
   template<typename T> __forceinline LinearSpace3<T> operator +( const LinearSpace3<T>& a ) { return LinearSpace3<T>(+a.vx,+a.vy,+a.vz); }
   template<typename T> __forceinline LinearSpace3<T> rcp       ( const LinearSpace3<T>& a ) { return a.inverse(); }
 
-  /* constructs a coordinate frame form a normalized normal */
+  /* constructs a coordinate frame form a normalized normal
+     following http://jcgt.org/published/0006/01/01/ */
   template<typename T> __forceinline LinearSpace3<T> frame(const T& N) 
   {
-    const T dx0(0,N.z,-N.y);
-    const T dx1(-N.z,0,N.x);
-    const T dx = normalize(select(dot(dx0,dx0) > dot(dx1,dx1),dx0,dx1));
-    const T dy = normalize(cross(N,dx));
+    const typename T::Scalar sgn = sign(N.z);
+    const typename T::Scalar rs = N.z - sgn;
+    const typename T::Scalar a = rcp(rs);
+    const typename T::Scalar rxxs = N.x*N.x + sgn*rs;
+    const typename T::Scalar ryys = N.y*N.y + sgn*rs;
+    const typename T::Scalar rxy = N.x*N.y;
+    const T dx = T(rxxs*a,rxy*a,N.x);
+    const T dy = T(rxy*a,ryys*a,N.y);
     return LinearSpace3<T>(dx,dy,N);
   }
 
