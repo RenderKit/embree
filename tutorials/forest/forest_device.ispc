@@ -119,7 +119,7 @@ uniform unsigned int addTerrain(RTCScene scene_i)
   return geomID;
 }
 
-unmasked uniform bool monitorMemoryFunction(void* uniform ptr, uniform int64 bytes, uniform bool post)
+unmasked uniform bool monitorMemoryFunction(void* uniform ptr, uniform intptr_t bytes, uniform bool post)
 {
   g_memory_consumed += bytes;
   return true;
