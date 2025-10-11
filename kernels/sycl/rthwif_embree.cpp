@@ -731,12 +731,14 @@ SYCL_EXTERNAL __attribute__((always_inline)) void rtcIntersectRTHW(sycl::global_
   if (valid)
   {
     float t = intel_get_hit_distance(query, intel_hit_type_committed_hit);
-    float2 uv = intel_get_hit_barycentrics (query, intel_hit_type_committed_hit);
+    float2 uv(ray.u, ray.v);
     unsigned int geomID = intel_get_hit_geometry_id(query, intel_hit_type_committed_hit);
 
     unsigned int primID = ray.primID;
-    if (intel_get_hit_candidate(query, intel_hit_type_committed_hit) == intel_candidate_type_triangle)
+    if (intel_get_hit_candidate(query, intel_hit_type_committed_hit) == intel_candidate_type_triangle) {
       primID = intel_get_hit_triangle_primitive_id(query, intel_hit_type_committed_hit);
+      uv = intel_get_hit_barycentrics (query, intel_hit_type_committed_hit);
+    }
       
     rayhit_i->ray.tfar = t;
     rayhit_i->hit.geomID = geomID;
