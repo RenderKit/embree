@@ -3,11 +3,11 @@
 
 #include "pathtracer_device.h"
 
-#include "../common/lights/ambient_light.cpp"
-#include "../common/lights/directional_light.cpp"
-#include "../common/lights/point_light.cpp"
-#include "../common/lights/quad_light.cpp"
-#include "../common/lights/spot_light.cpp"
+#include "../common/lights/ambient_light.cpp" // NOLINT(bugprone-suspicious-include)
+#include "../common/lights/directional_light.cpp" // NOLINT(bugprone-suspicious-include)
+#include "../common/lights/point_light.cpp" // NOLINT(bugprone-suspicious-include)
+#include "../common/lights/quad_light.cpp" // NOLINT(bugprone-suspicious-include)
+#include "../common/lights/spot_light.cpp" // NOLINT(bugprone-suspicious-include)
 
 namespace embree {
 

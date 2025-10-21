@@ -9,8 +9,8 @@
   #define PAGE_SIZE 4096
 #endif
 
-#define PAGE_SIZE_2M (2*1024*1024)
-#define PAGE_SIZE_4K (4*1024)
+constexpr size_t PAGE_SIZE_2M = 2*1024*1024;
+constexpr size_t PAGE_SIZE_4K = 4*1024;
 
 #include "platform.h"
 

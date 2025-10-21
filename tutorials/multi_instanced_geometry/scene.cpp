@@ -170,10 +170,10 @@ void addInstances(RTCDevice device,
  * Initialize the main scene. Note that we store complex geometry in
  * separate files purely for readability.
  */
-#include "geometry/ground.cpp"
-#include "geometry/twig.cpp"
-#include "geometry/tree.cpp"
-#include "geometry/trees.cpp"
+#include "geometry/ground.cpp" // NOLINT(bugprone-suspicious-include)
+#include "geometry/twig.cpp" // NOLINT(bugprone-suspicious-include)
+#include "geometry/tree.cpp" // NOLINT(bugprone-suspicious-include)
+#include "geometry/trees.cpp" // NOLINT(bugprone-suspicious-include)
 
 extern "C" void cleanupScene(TutorialData& data)
 {
