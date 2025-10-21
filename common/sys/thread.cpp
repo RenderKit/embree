@@ -47,7 +47,7 @@ namespace embree
       int groups = pGetActiveProcessorGroupCount();
       int totalProcessors = 0, group = 0, number = 0;
       for (int i = 0; i<groups; i++) {
-        int processors = pGetActiveProcessorCount(i);
+        DWORD processors = pGetActiveProcessorCount(i);
         if (totalProcessors + processors > affinity) {
           group = i;
           number = (int)affinity - totalProcessors;

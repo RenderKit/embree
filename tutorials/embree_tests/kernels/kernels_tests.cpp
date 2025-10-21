@@ -5,5 +5,5 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include "common/common_tests.cpp"
-#include "geometry/geometry_tests.cpp"
+#include "common/common_tests.cpp" // NOLINT(bugprone-suspicious-include)
+#include "geometry/geometry_tests.cpp" // NOLINT(bugprone-suspicious-include)

@@ -1,7 +1,7 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "bvh_intersector_hybrid.cpp"
+#include "bvh_intersector_hybrid.cpp" // NOLINT(bugprone-suspicious-include)
 
 namespace embree
 {

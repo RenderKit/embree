@@ -3,7 +3,7 @@
 
 #include "../../../external/catch.hpp"
 #include "../../../../kernels/geometry/sphere_intersector.h"
-#include "../../../../common/simd/sse.cpp"
+#include "../../../../common/simd/sse.cpp" // NOLINT(bugprone-suspicious-include)
 
 using namespace embree;
 
