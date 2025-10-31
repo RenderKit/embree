@@ -48,7 +48,7 @@ installation, put the path to `ispc` permanently into your `PATH` environment
 variable or you set the `EMBREE_ISPC_EXECUTABLE` variable to point at the ISPC
 executable during CMake configuration.
 
-You additionally have to install CMake 3.1.0 or higher and the developer
+You additionally have to install CMake 3.10 or higher and the developer
 version of [GLFW](https://www.glfw.org/) version 3.
 
 Under macOS, all these dependencies can be installed
