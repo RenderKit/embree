@@ -24,7 +24,7 @@ namespace embree {
       {
         for (uint32_t i=0; i<extensions.size(); i++)
         {
-          //std::cout << extensions[i].name << " version " << extensions[i].version << std::endl;
+          //std::cout << extensions[i].name << " version " << extensions[i].version << "\n";
 
           if (strncmp("ZE_extension_raytracing",extensions[i].name,sizeof(extensions[i].name)) == 0)
             has_raytracing = true;
@@ -85,9 +85,9 @@ namespace embree {
     if (device.is_gpu()) { 
       std::cout << "  Type: GPU\n";
       std::cout << "  Max Work Group Size : " << device.get_info<sycl::info::device::max_work_group_size>() << "\n";
-      std::cout << "  Max Compute Units   : " << device.get_info<sycl::info::device::max_compute_units>() << std::endl;
+      std::cout << "  Max Compute Units   : " << device.get_info<sycl::info::device::max_compute_units>() << "\n";
     } else {
-      std::cout << "  Type: CPU" << std::endl;
+      std::cout << "  Type: CPU\n";
     }
 
     /* list extensions */
@@ -97,10 +97,10 @@ namespace embree {
     sycl::platform platform = device.get_platform();
     check_raytracing_support(platform, ze_extension_ray_tracing, ze_rtas_builder);
 
-    std::cout << "  raytracing = " << (ze_extension_ray_tracing ? "YES" : "NO") << std::endl;
-    std::cout << "  rtas_builder = " << (ze_rtas_builder ? "YES" : "NO") << std::endl;
+    std::cout << "  raytracing = " << (ze_extension_ray_tracing ? "YES" : "NO") << "\n";
+    std::cout << "  rtas_builder = " << (ze_rtas_builder ? "YES" : "NO") << "\n";
 
-    std::cout << std::endl;
+    std::cout << "\n";
   }
 
   inline void printAllSYCLDevices()
@@ -121,26 +121,26 @@ namespace embree {
     }
   
     if (compatible_devices.empty() && incompatible_devices.empty()) {
-      std::cout << "No SYCL device found." << std::endl;
-      std::cout << std::endl;
+      std::cout << "No SYCL device found.\n";
+      std::cout << "\n";
       return;
     }
 
     if (compatible_devices.empty()) {
-      std::cout << "No Embree compatible SYCL GPU device found." << std::endl;
-      std::cout << std::endl;
+      std::cout << "No Embree compatible SYCL GPU device found.\n";
+      std::cout << "\n";
     } else {
-      std::cout << "Embree compatible SYCL " << (compatible_devices.size() > 1 ? "devices:" : "device") << std::endl;
+      std::cout << "Embree compatible SYCL " << (compatible_devices.size() > 1 ? "devices:" : "device") << "\n";
       for (auto & device : compatible_devices)
         printDeviceInfo(device);
       if (compatible_devices.empty())
-        std::cout << std::endl;
+        std::cout << "\n";
     }
     if (!incompatible_devices.empty()  ) {
-      std::cout << "Embree incompatible SYCL " << (incompatible_devices.size() > 1 ? "devices:" : "device") << std::endl;
+      std::cout << "Embree incompatible SYCL " << (incompatible_devices.size() > 1 ? "devices:" : "device") << "\n";
       for (auto & device : incompatible_devices)
         printDeviceInfo(device);
-      std::cout << std::endl;
+      std::cout << "\n";
     }
   }
 }

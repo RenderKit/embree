@@ -133,7 +133,7 @@ namespace embree
   {
     HANDLE hToken;
     if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES, &hToken)) {
-      if (verbose) std::cout << "WARNING: OpenProcessToken failed while trying to enable SeLockMemoryPrivilege: " << GetLastError() << std::endl;
+      if (verbose) std::cout << "WARNING: OpenProcessToken failed while trying to enable SeLockMemoryPrivilege: " << GetLastError() << "\n";
       return false;
     }
 
@@ -142,18 +142,18 @@ namespace embree
     tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
 
     if (!LookupPrivilegeValueW(nullptr, L"SeLockMemoryPrivilege", &tp.Privileges[0].Luid)) {
-      if (verbose) std::cout << "WARNING: LookupPrivilegeValue failed while trying to enable SeLockMemoryPrivilege: " << GetLastError() << std::endl;
+      if (verbose) std::cout << "WARNING: LookupPrivilegeValue failed while trying to enable SeLockMemoryPrivilege: " << GetLastError() << "\n";
       return false;
     }
     
     SetLastError(ERROR_SUCCESS);
     if (!AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(tp), nullptr, 0)) {
-      if (verbose) std::cout << "WARNING: AdjustTokenPrivileges failed while trying to enable SeLockMemoryPrivilege" << std::endl;
+      if (verbose) std::cout << "WARNING: AdjustTokenPrivileges failed while trying to enable SeLockMemoryPrivilege\n";
       return false;
     }
     
     if (GetLastError() == ERROR_NOT_ALL_ASSIGNED) {
-      if (verbose) std::cout << "WARNING: AdjustTokenPrivileges failed to enable SeLockMemoryPrivilege: Add SeLockMemoryPrivilege for current user and run process in elevated mode (Run as administrator)." << std::endl;
+      if (verbose) std::cout << "WARNING: AdjustTokenPrivileges failed to enable SeLockMemoryPrivilege: Add SeLockMemoryPrivilege for current user and run process in elevated mode (Run as administrator).\n";
       return false;
     } 
 
@@ -271,7 +271,7 @@ namespace embree
     std::ifstream file; 
     file.open("/proc/meminfo",std::ios::in);
     if (!file.is_open()) {
-      if (verbose) std::cout << "WARNING: Could not open /proc/meminfo. Huge page support cannot get enabled!" << std::endl;
+      if (verbose) std::cout << "WARNING: Could not open /proc/meminfo. Huge page support cannot get enabled!\n";
       huge_pages_enabled = false;
       return false;
     }
@@ -294,7 +294,7 @@ namespace embree
     
     if (hugepagesize != PAGE_SIZE_2M) 
     {
-      if (verbose) std::cout << "WARNING: Only 2MB huge pages supported. Huge page support cannot get enabled!" << std::endl;
+      if (verbose) std::cout << "WARNING: Only 2MB huge pages supported. Huge page support cannot get enabled!\n";
       huge_pages_enabled = false;
       return false;
     }

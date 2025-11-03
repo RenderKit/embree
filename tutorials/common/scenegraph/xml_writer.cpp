@@ -106,19 +106,19 @@ namespace embree
 
   void XMLWriter::open(std::string str)
   {
-    tab(); xml << "<" << str << ">" << std::endl;
+    tab(); xml << "<" << str << ">\n";
     ident+=2;
   }
 
   void XMLWriter::open(std::string str, size_t id)
   {
-    tab(); xml << "<" << str << " id=\"" << id << "\">" << std::endl;
+    tab(); xml << "<" << str << " id=\"" << id << "\">\n";
     ident+=2;
   }
 
   void XMLWriter::open(std::string str, size_t id, std::string name)
   {
-    tab(); xml << "<" << str << " id=\"" << id << "\" name=\"" << name << "\">" << std::endl;
+    tab(); xml << "<" << str << " id=\"" << id << "\" name=\"" << name << "\">\n";
     ident+=2;
   }
 
@@ -126,47 +126,47 @@ namespace embree
   {
     assert(ident>=2);
     ident-=2;
-    tab(); xml << "</" << str << ">" << std::endl;
+    tab(); xml << "</" << str << ">\n";
   }
 
   void XMLWriter::store(const char* name, const char* str) {
-    tab(); xml << "<" << name << ">\"" << str << "\"</" << name << ">" << std::endl;
+    tab(); xml << "<" << name << ">\"" << str << "\"</" << name << ">\n";
   }
 
   void XMLWriter::store(const char* name, const float& v) {
-    tab(); xml << "<" << name << ">" << v << "</" << name << ">" << std::endl;
+    tab(); xml << "<" << name << ">" << v << "</" << name << ">\n";
   }
 
   void XMLWriter::store(const char* name, const Vec3fa& v) {
-    tab(); xml << "<" << name << ">" << v.x << " " << v.y << " " << v.z << "</" << name << ">" << std::endl;
+    tab(); xml << "<" << name << ">" << v.x << " " << v.y << " " << v.z << "</" << name << ">\n";
   }
 
   void XMLWriter::store_array_elt(const int& v) {
-    xml << v << std::endl;
+    xml << v << "\n";
   }
   
   void XMLWriter::store_array_elt(const Vec2f& v) {
-    xml << v.x << " " << v.y << std::endl;
+    xml << v.x << " " << v.y << "\n";
   }
   
   void XMLWriter::store_array_elt(const Vec3f& v) {
-    xml << v.x << " " << v.y << " " << v.z << std::endl;
+    xml << v.x << " " << v.y << " " << v.z << "\n";
   }
 
   void XMLWriter::store_array_elt(const Vec3fa& v) {
-    xml << v.x << " " << v.y << " " << v.z << std::endl;
+    xml << v.x << " " << v.y << " " << v.z << "\n";
   }
 
   void XMLWriter::store_array_elt(const Vec3ff& v) {
-    xml << v.x << " " << v.y << " " << v.z << " " << v.w << std::endl;
+    xml << v.x << " " << v.y << " " << v.z << " " << v.w << "\n";
   }
 
   void XMLWriter::store_array_elt(const SceneGraph::TriangleMeshNode::Triangle& v) {
-    xml << v.v0 << " " << v.v1 << " " << v.v2 << std::endl;
+    xml << v.v0 << " " << v.v1 << " " << v.v2 << "\n";
   }
 
   void XMLWriter::store_array_elt(const SceneGraph::QuadMeshNode::Quad& v) {
-    xml << v.v0 << " " << v.v1 << " " << v.v2 << " "  << v.v3 << std::endl;
+    xml << v.v0 << " " << v.v1 << " " << v.v2 << " "  << v.v3 << "\n";
   }
 
   template<typename T>
@@ -183,7 +183,7 @@ namespace embree
   void XMLWriter::store_array_binary(const char* name, const std::vector<T>& vec)
   {
     std::streampos offset = bin.tellg();
-    tab(); xml << "<" << name << " ofs=\"" << offset << "\" size=\"" << vec.size() << "\"/>" << std::endl;
+    tab(); xml << "<" << name << " ofs=\"" << offset << "\" size=\"" << vec.size() << "\"/>\n";
     if (vec.size()) bin.write((char*)vec.data(),vec.size()*sizeof(T));
   }
 
@@ -206,7 +206,7 @@ namespace embree
   void XMLWriter::store_array_binary(const char* name, const avector<Vec3fa>& vec)
   {
     std::streampos offset = bin.tellg();
-    tab(); xml << "<" << name << " ofs=\"" << offset << "\" size=\"" << vec.size() << "\"/>" << std::endl;
+    tab(); xml << "<" << name << " ofs=\"" << offset << "\" size=\"" << vec.size() << "\"/>\n";
     for (size_t i=0; i<vec.size(); i++) bin.write((char*)&vec[i],sizeof(Vec3f));
   }
 
@@ -228,7 +228,7 @@ namespace embree
   void XMLWriter::store_array_binary(const char* name, const avector<Vec3ff>& vec)
   {
     std::streampos offset = bin.tellg();
-    tab(); xml << "<" << name << " ofs=\"" << offset << "\" size=\"" << vec.size() << "\"/>" << std::endl;
+    tab(); xml << "<" << name << " ofs=\"" << offset << "\" size=\"" << vec.size() << "\"/>\n";
     for (size_t i=0; i<vec.size(); i++) bin.write((char*)&vec[i],sizeof(Vec3ff));
   }
 
@@ -239,11 +239,11 @@ namespace embree
   }
 
   void XMLWriter::store_parm(const char* name, const float& v) {
-    tab(); xml << "<float name=\"" << name << "\">" << v << "</float>" << std::endl;
+    tab(); xml << "<float name=\"" << name << "\">" << v << "</float>\n";
   }
 
   void XMLWriter::store_parm(const char* name, const Vec3fa& v) {
-    tab(); xml << "<float3 name=\"" << name << "\">" << v.x << " " << v.y << " " << v.z << "</float3>" << std::endl;
+    tab(); xml << "<float3 name=\"" << name << "\">" << v.x << " " << v.y << " " << v.z << "</float3>\n";
   }
 
   void XMLWriter::store_parm(const char* name, const std::shared_ptr<Texture> tex) 
@@ -251,28 +251,28 @@ namespace embree
     if (tex == nullptr) return;
 
     if (textureMap.find(tex) != textureMap.end()) {
-      tab(); xml << "<texture3d name=\"" << name << "\" id=\"" << textureMap[tex] << "\"/>" << std::endl;
+      tab(); xml << "<texture3d name=\"" << name << "\" id=\"" << textureMap[tex] << "\"/>\n";
     } else if (embedTextures) {
       std::streampos offset = bin.tellg();
       bin.write((char*)tex->data,tex->width*tex->height*tex->bytesPerTexel);
       const size_t id = textureMap[tex] = currentNodeID++;
       tab(); xml << "<texture3d name=\"" << name << "\" id=\"" << id << "\" ofs=\"" << offset 
                  << "\" width=\"" << tex->width << "\" height=\"" << tex->height 
-                 << "\" format=\"" << Texture::format_to_string(tex->format) << "\"/>" << std::endl;
+                 << "\" format=\"" << Texture::format_to_string(tex->format) << "\"/>\n";
     }
     else {
       const size_t id = textureMap[tex] = currentNodeID++;
-      tab(); xml << "<texture3d name=\"" << name << "\" id=\"" << id << "\" src=\"" << tex->fileName << "\"/>" << std::endl;
+      tab(); xml << "<texture3d name=\"" << name << "\" id=\"" << id << "\" src=\"" << tex->fileName << "\"/>\n";
     }
   }
 
   void XMLWriter::store(const char* name, const AffineSpace3fa& space)
   {
-    tab(); xml << "<" << name << ">" << std::endl;
-    tab(); xml << "  " << space.l.vx.x << " " << space.l.vy.x << " " << space.l.vz.x << " " << space.p.x << std::endl;
-    tab(); xml << "  " << space.l.vx.y << " " << space.l.vy.y << " " << space.l.vz.y << " " << space.p.y << std::endl;
-    tab(); xml << "  " << space.l.vx.z << " " << space.l.vy.z << " " << space.l.vz.z << " " << space.p.z << std::endl;
-    tab(); xml << "</" << name << ">" << std::endl;
+    tab(); xml << "<" << name << ">\n";
+    tab(); xml << "  " << space.l.vx.x << " " << space.l.vy.x << " " << space.l.vz.x << " " << space.p.x << "\n";
+    tab(); xml << "  " << space.l.vx.y << " " << space.l.vy.y << " " << space.l.vz.y << " " << space.p.y << "\n";
+    tab(); xml << "  " << space.l.vx.z << " " << space.l.vy.z << " " << space.l.vz.z << " " << space.p.z << "\n";
+    tab(); xml << "</" << name << ">\n";
   }
                   
   void XMLWriter::store(const SceneGraph::PointLight& light, ssize_t id)
@@ -494,13 +494,13 @@ namespace embree
   {
     /* let materials reference by their name, allows separate bindings of materials */
     if (referenceMaterials) {
-      tab(); xml << "<material id=\""+mnode->name+"\"/>" << std::endl;
+      tab(); xml << "<material id=\""+mnode->name+"\"/>\n";
       return;
     }
     
     Ref<SceneGraph::Node> node = mnode.dynamicCast<SceneGraph::Node>();
     if (nodeMap.find(node) != nodeMap.end()) {
-      tab(); xml << "<material id=\"" << nodeMap[node] << "\"/>" << std::endl;
+      tab(); xml << "<material id=\"" << nodeMap[node] << "\"/>\n";
       return;
     }
     const ssize_t id = nodeMap[node] = currentNodeID++;
@@ -656,7 +656,7 @@ namespace embree
       "from=\"" << camera->data.from.x << " " << camera->data.from.y << " " << camera->data.from.z << "\" " <<
       "to=\""   << camera->data.to.x   << " " << camera->data.to.y   << " " << camera->data.to.z << "\" " <<
       "up=\""   << camera->data.up.x   << " " << camera->data.up.y   << " " << camera->data.up.z << "\" " <<
-      "fov=\""  << camera->data.fov << "\" " << "/>" << std::endl;
+      "fov=\""  << camera->data.fov << "\" " << "/>\n";
   }
 
   void XMLWriter::store(Ref<SceneGraph::AnimatedPerspectiveCameraNode> camera, ssize_t id)
@@ -702,7 +702,7 @@ namespace embree
     
     open("MultiTransform");
     std::streampos offset = bin.tellg();
-    tab(); xml << "<AffineSpace3f ofs=\"" << offset << "\" size=\"" << nodes.size() << "\"/>" << std::endl;
+    tab(); xml << "<AffineSpace3f ofs=\"" << offset << "\" size=\"" << nodes.size() << "\"/>\n";
     for (size_t i=0; i<nodes.size(); i++) {
       assert(nodes[i]->spaces.size() == 1);
       assert(nodes[i]->child == nodes[0]->child);
@@ -749,12 +749,12 @@ namespace embree
   void XMLWriter::store(Ref<SceneGraph::Node> node)
   {
     if (nodeMap.find(node) != nodeMap.end()) {
-      tab(); xml << "<ref id=\"" << nodeMap[node] << "\"/>" << std::endl; return;
+      tab(); xml << "<ref id=\"" << nodeMap[node] << "\"/>\n"; return;
     }
     
     const ssize_t id = nodeMap[node] = currentNodeID++;
     if (node->fileName != "") {
-      tab(); xml << "<extern id=\"" << id << "\" src=\"" << node->fileName << "\"/>" << std::endl; return;
+      tab(); xml << "<extern id=\"" << id << "\" src=\"" << node->fileName << "\"/>\n"; return;
     }
 
     if      (Ref<SceneGraph::AnimatedLightNode> cnode = node.dynamicCast<SceneGraph::AnimatedLightNode>()) store(cnode,id);
@@ -784,7 +784,7 @@ namespace embree
       bin.open (binFileName, std::fstream::out | std::fstream::binary);
     }
 
-    xml << "<?xml version=\"1.0\"?>" << std::endl;
+    xml << "<?xml version=\"1.0\"?>\n";
     root->calculateInDegree();
     open("scene");
     store(root);

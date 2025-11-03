@@ -508,7 +508,7 @@ namespace embree
 #define embree_ostream std::ostream&
 #define embree_cout std::cout
 #define embree_cout_uniform std::cout
-#define embree_endl std::endl
+#define embree_endl "\n"
 
 #endif
 

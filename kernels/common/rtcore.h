@@ -89,7 +89,7 @@ namespace embree
     throw_RTCError(RTC_ERROR_INVALID_OPERATION,"argument out of bounds");
   
 #if 0 // enable to debug print all API calls
-#define RTC_TRACE(x) std::cout << #x << std::endl;
+#define RTC_TRACE(x) std::cout << #x << "\n";
 #else
 #define RTC_TRACE(x) 
 #endif

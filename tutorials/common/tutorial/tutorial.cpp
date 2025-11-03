@@ -793,7 +793,7 @@ namespace embree
           fullscreen = !fullscreen;
           break;
           
-        case GLFW_KEY_C : std::cout << camera.str() << std::endl; break;
+        case GLFW_KEY_C : std::cout << camera.str() << "\n"; break;
         case GLFW_KEY_HOME: g_debug=clamp(g_debug+0.01f); PRINT(g_debug); break;
         case GLFW_KEY_END : g_debug=clamp(g_debug-0.01f); PRINT(g_debug); break;
           
@@ -892,7 +892,7 @@ namespace embree
     
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
      if (print_camera)
-      std::cout << camera.str() << std::endl;
+      std::cout << camera.str() << "\n";
 
     /* render image using ISPC */
     initRayStats();
@@ -980,7 +980,7 @@ namespace embree
       stream << 1.0f/dt1 << " fps, ";
       stream << dt1*1000.0f << " ms, ";
       stream << width << "x" << height << " pixels";
-      std::cout << stream.str() << std::endl;
+      std::cout << stream.str() << "\n";
     } 
   }
 
@@ -1071,7 +1071,7 @@ namespace embree
     
 #else
     if (interactive) 
-      std::cout << "GLFW is disabled, you can only render to disk using -o command line option." << std::endl;
+      std::cout << "GLFW is disabled, you can only render to disk using -o command line option.\n";
 #endif
   }
 
@@ -1104,7 +1104,7 @@ namespace embree
             std::rethrow_exception(e);
           } catch (sycl::exception const &e) {
             std::cout << "ERROR: Caught asynchronous SYCL exception:\n"
-                      << e.what() << std::endl;
+                      << e.what() << "\n";
             exit(1);
           }
         }
@@ -1114,7 +1114,7 @@ namespace embree
       try {
         device = new sycl::device(rtcSYCLDeviceSelector);
       } catch(std::exception& e) {
-        std::cerr << "Caught exception creating sycl::device: " << e.what() << std::endl;
+        std::cerr << "Caught exception creating sycl::device: " << e.what() << "\n";
         printAllSYCLDevices();
         throw;
       }
@@ -1166,11 +1166,11 @@ namespace embree
     return 0;
   }
   catch (const std::exception& e) {
-    std::cout << "Error: " << e.what() << std::endl;
+    std::cout << "Error: " << e.what() << "\n";
     return 1;
   }
   catch (...) {
-    std::cout << "Error: unknown exception caught." << std::endl;
+    std::cout << "Error: unknown exception caught.\n";
     return 1;
   }
 
@@ -1184,7 +1184,7 @@ namespace embree
       postParseCommandLine();
     }
     catch (const std::exception& e) {
-      std::cout << "Error: " << e.what() << std::endl;
+      std::cout << "Error: " << e.what() << "\n";
     }
 
     /* create embree device */
@@ -1221,7 +1221,7 @@ namespace embree
         scene->add(SceneGraph::load(keyFramesFilenames[i]));
       
       if (verbosity >= 1) 
-        std::cout << " [DONE]" << std::endl << std::flush;
+        std::cout << " [DONE]\n" << std::flush;
     }
 
     /* clear texture cache */
@@ -1233,10 +1233,10 @@ namespace embree
 
     /* perform conversions */
     if (sgop.size() && verbosity >= 1) {
-      std::cout << std::endl;
-      std::cout << "scene statistics (pre-convert):" << std::endl;
+      std::cout << "\n";
+      std::cout << "scene statistics (pre-convert):\n";
       SceneGraph::calculateStatistics(scene.dynamicCast<SceneGraph::Node>()).print();
-      std::cout << std::endl;
+      std::cout << "\n";
     }
 
     /* perform scene graph conversions */
@@ -1260,20 +1260,20 @@ namespace embree
     Application::instance->log(1,"converting scene done");
 
     if (verbosity >= 1) {
-      std::cout << std::endl;
-      std::cout << "scene statistics (pre-flattening):" << std::endl;
+      std::cout << "\n";
+      std::cout << "scene statistics (pre-flattening):\n";
       SceneGraph::calculateStatistics(scene.dynamicCast<SceneGraph::Node>()).print();
-      std::cout << std::endl;
+      std::cout << "\n";
     }
     
     Ref<SceneGraph::GroupNode> flattened_scene = SceneGraph::flatten(scene,instancing_mode);
     Application::instance->log(1,"flattening scene done");
 
     if (verbosity >= 1) {
-      std::cout << std::endl;
-      std::cout << "scene statistics (post-flattening):" << std::endl;
+      std::cout << "\n";
+      std::cout << "scene statistics (post-flattening):\n";
       SceneGraph::calculateStatistics(flattened_scene.dynamicCast<SceneGraph::Node>()).print();
-      std::cout << std::endl;
+      std::cout << "\n";
     }
 
     /* convert model */
@@ -1314,11 +1314,11 @@ namespace embree
     return 0;
   }
   catch (const std::exception& e) {
-    std::cout << "Error: " << e.what() << std::endl;
+    std::cout << "Error: " << e.what() << "\n";
     return 1;
   }
   catch (...) {
-    std::cout << "Error: unknown exception caught." << std::endl;
+    std::cout << "Error: unknown exception caught.\n";
     return 1;
   }
 
@@ -1344,6 +1344,6 @@ namespace embree
   }
   
   extern "C" void progressEnd() {
-    std::cout << "]" << std::endl;
+    std::cout << "]\n";
 }
 }

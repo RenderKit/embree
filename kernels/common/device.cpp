@@ -189,29 +189,29 @@ namespace embree
   void Device::print()
   {
     const int cpu_features = getCPUFeatures();
-    std::cout << std::endl;
-    std::cout << "Embree Ray Tracing Kernels " << RTC_VERSION_STRING << " (" << RTC_HASH << ")" << std::endl;
-    std::cout << "  Compiler  : " << getCompilerName() << std::endl;
+    std::cout << "\n";
+    std::cout << "Embree Ray Tracing Kernels " << RTC_VERSION_STRING << " (" << RTC_HASH << ")\n";
+    std::cout << "  Compiler  : " << getCompilerName() << "\n";
     std::cout << "  Build     : ";
 #if defined(DEBUG)
-    std::cout << "Debug " << std::endl;
+    std::cout << "Debug \n";
 #else
-    std::cout << "Release " << std::endl;
+    std::cout << "Release \n";
 #endif
-    std::cout << "  Platform  : " << getPlatformName() << std::endl;
-    std::cout << "  CPU       : " << stringOfCPUModel(getCPUModel()) << " (" << getCPUVendor() << ")" << std::endl;
-    std::cout << "   Threads  : " << getNumberOfLogicalThreads() << std::endl;
-    std::cout << "   ISA      : " << stringOfCPUFeatures(cpu_features) << std::endl;
-    std::cout << "   Targets  : " << supportedTargetList(cpu_features) << std::endl;
+    std::cout << "  Platform  : " << getPlatformName() << "\n";
+    std::cout << "  CPU       : " << stringOfCPUModel(getCPUModel()) << " (" << getCPUVendor() << ")\n";
+    std::cout << "   Threads  : " << getNumberOfLogicalThreads() << "\n";
+    std::cout << "   ISA      : " << stringOfCPUFeatures(cpu_features) << "\n";
+    std::cout << "   Targets  : " << supportedTargetList(cpu_features) << "\n";
     const bool hasFTZ = _mm_getcsr() & _MM_FLUSH_ZERO_ON;
     const bool hasDAZ = _mm_getcsr() & _MM_DENORMALS_ZERO_ON;
-    std::cout << "   MXCSR    : " << "FTZ=" << hasFTZ << ", DAZ=" << hasDAZ << std::endl;
-    std::cout << "  Config" << std::endl;
-    std::cout << "    Threads : " << (numThreads ? toString(numThreads) : std::string("default")) << std::endl;
-    std::cout << "    ISA     : " << stringOfCPUFeatures(enabled_cpu_features) << std::endl;
-    std::cout << "    Targets : " << supportedTargetList(enabled_cpu_features) << " (supported)" << std::endl;
-    std::cout << "              " << getEnabledTargets() << " (compile time enabled)" << std::endl;
-    std::cout << "    Features: " << getEmbreeFeatures() << std::endl;
+    std::cout << "   MXCSR    : " << "FTZ=" << hasFTZ << ", DAZ=" << hasDAZ << "\n";
+    std::cout << "  Config\n";
+    std::cout << "    Threads : " << (numThreads ? toString(numThreads) : std::string("default")) << "\n";
+    std::cout << "    ISA     : " << stringOfCPUFeatures(enabled_cpu_features) << "\n";
+    std::cout << "    Targets : " << supportedTargetList(enabled_cpu_features) << " (supported)\n";
+    std::cout << "              " << getEnabledTargets() << " (compile time enabled)\n";
+    std::cout << "    Features: " << getEmbreeFeatures() << "\n";
     std::cout << "    Tasking : ";
 #if defined(TASKING_TBB)
     std::cout << "TBB" << TBB_VERSION_MAJOR << "." << TBB_VERSION_MINOR << " ";
@@ -227,7 +227,7 @@ namespace embree
 #if defined(TASKING_PPL)
 	std::cout << "PPL ";
 #endif
-    std::cout << std::endl;
+    std::cout << "\n";
 
 #if defined(__X86_64__)
     /* check of FTZ and DAZ flags are set in CSR */
@@ -237,24 +237,24 @@ namespace embree
       if (State::verbosity(1)) 
 #endif
       {
-        std::cout << std::endl;
-        std::cout << "================================================================================" << std::endl;
-        std::cout << "  WARNING: \"Flush to Zero\" or \"Denormals are Zero\" mode not enabled "         << std::endl 
-                  << "           in the MXCSR control and status register. This can have a severe "     << std::endl
-                  << "           performance impact. Please enable these modes for each application "   << std::endl
-                  << "           thread the following way:" << std::endl
-                  << std::endl 
-                  << "           #include \"xmmintrin.h\"" << std::endl 
-                  << "           #include \"pmmintrin.h\"" << std::endl 
-                  << std::endl 
-                  << "           _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);" << std::endl 
-                  << "           _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);" << std::endl;
-        std::cout << "================================================================================" << std::endl;
-        std::cout << std::endl;
+        std::cout << "\n";
+        std::cout << "================================================================================\n";
+        std::cout << "  WARNING: \"Flush to Zero\" or \"Denormals are Zero\" mode not enabled "         << "\n" 
+                  << "           in the MXCSR control and status register. This can have a severe "     << "\n"
+                  << "           performance impact. Please enable these modes for each application "   << "\n"
+                  << "           thread the following way:\n"
+                  << "\n" 
+                  << "           #include \"xmmintrin.h\"\n" 
+                  << "           #include \"pmmintrin.h\"\n" 
+                  << "\n" 
+                  << "           _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);\n" 
+                  << "           _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);\n";
+        std::cout << "================================================================================\n";
+        std::cout << "\n";
       }
     }
 #endif
-    std::cout << std::endl;
+    std::cout << "\n";
   }
 
   void Device::setDeviceErrorCode(RTCError error, std::string const& msg)
@@ -316,7 +316,7 @@ namespace embree
     {
       std::cerr << "Embree: " << getErrorString(error);
       if (str) std::cerr << ", (" << str << ")";
-      std::cerr << std::endl;
+      std::cerr << "\n";
     }
 
     /* call user specified error callback */
@@ -680,7 +680,7 @@ namespace embree
 
     if (State::verbosity(1))
     {
-      std::cout << "  Level Zero RTAS Builder" << std::endl;
+      std::cout << "  Level Zero RTAS Builder\n";
     }
 
     /* check if extension library can get loaded */
@@ -697,11 +697,11 @@ namespace embree
     if (State::verbosity(1))
     {
       sycl::platform platform = gpu_context.get_platform();
-      std::cout << "  Platform              : " << platform.get_info<sycl::info::platform::name>() << std::endl;
-      std::cout << "    Device              : " << getGPUDevice().get_info<sycl::info::device::name>() << std::endl;
-      std::cout << "    Max Work Group Size : " << gpu_maxWorkGroupSize << std::endl;
-      std::cout << "    Max Compute Units   : " << gpu_maxComputeUnits  << std::endl;
-      std::cout << std::endl;
+      std::cout << "  Platform              : " << platform.get_info<sycl::info::platform::name>() << "\n";
+      std::cout << "    Device              : " << getGPUDevice().get_info<sycl::info::device::name>() << "\n";
+      std::cout << "    Max Work Group Size : " << gpu_maxWorkGroupSize << "\n";
+      std::cout << "    Max Compute Units   : " << gpu_maxComputeUnits  << "\n";
+      std::cout << "\n";
     }
     
     dispatchGlobalsPtr = zeRTASInitExp(gpu_device, gpu_context);

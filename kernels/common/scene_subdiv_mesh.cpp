@@ -685,7 +685,7 @@ namespace embree
               << "numRegularQuadFaces = " << numRegularQuadFaces << " (" << 100.0f * numRegularQuadFaces / numFaces() << "%), " 
               << "numIrregularQuadFaces " << numIrregularQuadFaces << " (" << 100.0f * numIrregularQuadFaces / numFaces() << "%) " 
               << "numComplexFaces " << numComplexFaces << " (" << 100.0f * numComplexFaces / numFaces() << "%) " 
-              << std::endl;
+              << "\n";
   }
 
   void SubdivMesh::initializeHalfEdgeStructures ()
@@ -751,7 +751,7 @@ namespace embree
 
     /* print statistics in verbose mode */
     if (device->verbosity(2)) {
-      std::cout << "half edge generation = " << 1000.0*(t1-t0) << "ms, " << 1E-6*double(numHalfEdges)/(t1-t0) << "M/s" << std::endl;
+      std::cout << "half edge generation = " << 1000.0*(t1-t0) << "ms, " << 1E-6*double(numHalfEdges)/(t1-t0) << "M/s\n";
       printStatistics();
     }
   }

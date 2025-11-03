@@ -127,7 +127,7 @@ namespace embree
               << std::setw(8) << std::setprecision(2) << std::fixed << double(log_virtual_memory)/1E6 << " MB virtual, "
               << std::setw(8) << std::setprecision(2) << std::fixed << double(log_resident_memory)/1E6 << " MB resident ] "
               << str << std::fixed 
-              << std::endl << std::flush;
+              << "\n" << std::flush;
     
     last_time = time;
     last_virtual_memory = virtual_memory;
@@ -173,7 +173,7 @@ namespace embree
         /* handle unknown command line options */
         std::cerr << "unknown command line parameter: " << tag0 << " ";
         while (cin->peek() != "" && cin->peek()[0] != '-') std::cerr << cin->getString() << " ";
-        std::cerr << std::endl;
+        std::cerr << "\n";
       }
     }
   }
@@ -181,7 +181,7 @@ namespace embree
   void CommandLineParser::printCommandLineHelp()
   {
     for (auto& c : commandLineOptionList) {
-      std::cout << c->description << std::endl;
+      std::cout << c->description << "\n";
     }
   }
 }

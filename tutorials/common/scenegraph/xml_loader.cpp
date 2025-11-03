@@ -895,7 +895,7 @@ namespace embree
       return state.materialMap[id];
 
     if (!xml->hasChild("parameters")) {
-      std::cout << "Warning: material " << id << " is not defined" << std::endl;
+      std::cout << "Warning: material " << id << " is not defined\n";
       return new MatteMaterial(Vec3fa(0.5f,0.0f,0.0f));
     }
     Ref<XML> parameters = xml->child("parameters");
@@ -1010,7 +1010,7 @@ namespace embree
       return new HairMaterial(Kr,Kt,nx,ny);
     }
     else {
-      std::cout << "Warning: unsupported material " << type << std::endl;
+      std::cout << "Warning: unsupported material " << type << "\n";
       return new OBJMaterial(1.0f,Vec3fa(0.5f),Vec3fa(0.0f),0.0f);
     }
   }

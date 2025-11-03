@@ -305,7 +305,7 @@ int main()
   try {
     sycl_device = sycl::device(rtcSYCLDeviceSelector);
   } catch(std::exception& e) {
-    std::cerr << "Caught exception creating sycl::device: " << e.what() << std::endl;
+    std::cerr << "Caught exception creating sycl::device: " << e.what() << "\n";
     embree::printAllSYCLDevices();
     return 1;
   }
@@ -334,7 +334,7 @@ int main()
   rtcReleaseDevice(device);
 
   } catch(std::exception& e) {
-    std::cerr << "Caught exception " << e.what() << std::endl;
+    std::cerr << "Caught exception " << e.what() << "\n";
     return 1;
   }
   return 0;

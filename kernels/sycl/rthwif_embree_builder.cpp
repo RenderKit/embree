@@ -112,7 +112,7 @@ namespace embree
     bool ze_rtas_builder = false;
     for (uint32_t i=0; i<extensions.size(); i++)
     {
-      //std::cout << extensions[i].name << " version " << extensions[i].version << std::endl;
+      //std::cout << extensions[i].name << " version " << extensions[i].version << "\n";
       
       if (strncmp("ZE_extension_raytracing",extensions[i].name,sizeof(extensions[i].name)) == 0)
         ze_extension_ray_tracing = true;
@@ -543,7 +543,7 @@ namespace embree
     uint32_t maxTimeSegments = scene->getMaxTimeSegments();
     if (maxTimeSegments < 1) {
       // TODO: remove
-      std::cerr << "maxTimeSegments not yet computed. this is unexpected." << std::endl;
+      std::cerr << "maxTimeSegments not yet computed. this is unexpected.\n";
     }
     assert(maxTimeSegments > 0);
 

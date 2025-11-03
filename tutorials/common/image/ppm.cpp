@@ -100,9 +100,9 @@ namespace embree
     file.open (fileName.c_str(), std::fstream::out | std::fstream::binary);
 
     /* write file header */
-    file << "P6" << std::endl;
-    file << img->width << " " << img->height << std::endl;
-    file << 255 << std::endl;
+    file << "P6\n";
+    file << img->width << " " << img->height << "\n";
+    file << 255 << "\n";
 
     /* write image */
     for (size_t y=0; y<img->height; y++) {

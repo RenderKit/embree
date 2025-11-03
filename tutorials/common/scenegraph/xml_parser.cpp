@@ -148,27 +148,27 @@ namespace embree
   std::ostream& emitXML(std::ostream& cout, const Ref<XML>& xml, size_t depth = 0)
   {
     /* print header */
-    if (depth == 0) cout << "<?xml version=\"1.0\"?>" << std::endl << std::endl;
+    if (depth == 0) cout << "<?xml version=\"1.0\"?>\n" << "\n";
 
     /* print tag opening */
     indent(cout,depth); cout << "<" << xml->name;
     for (std::map<std::string,std::string>::const_iterator i=xml->parms.begin(); i!=xml->parms.end(); i++)
       cout << " " << i->first << "=" << "\"" << i->second << "\"";
     if (xml->children.size() == 0 && xml->body.size() == 0) {
-      cout << "/>" << std::endl;
+      cout << "/>\n";
       return cout;
     }
     cout << ">";
 
     bool compact = xml->body.size() < 16 && xml->children.size() == 0;
-    if (!compact) cout << std::endl;
+    if (!compact) cout << "\n";
 
     /* print token list */
     if (xml->body.size()) {
       if (!compact) indent(cout,depth+1);
       for (size_t i=0; i<xml->body.size(); i++)
         cout << xml->body[i] << (i!=xml->body.size()-1?" ":"");
-      if (!compact) cout << std::endl;
+      if (!compact) cout << "\n";
     }
 
     /* print children */
@@ -177,7 +177,7 @@ namespace embree
 
     /* print tag closing */
     if (!compact) indent(cout,depth);
-    return cout << "</" << xml->name << ">" << std::endl;
+    return cout << "</" << xml->name << ">\n";
   }
 
   /* store XML to stream */

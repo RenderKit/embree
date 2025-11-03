@@ -200,7 +200,7 @@ namespace embree
 
 #if 0
       for (size_t i=0;i<threadIDs.size();i++)
-        std::cout << i << " -> " << threadIDs[i] << std::endl;
+        std::cout << i << " -> " << threadIDs[i] << "\n";
 #endif
 
       /* verify the mapping and do not use it if the mapping has errors */

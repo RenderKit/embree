@@ -138,7 +138,7 @@ namespace embree
     for (size_t i=0; i<accels.size(); i++)
     {
       for (size_t j=0; j<ident; j++) std::cout << " "; 
-      std::cout << "accels[" << i << "]" << std::endl;
+      std::cout << "accels[" << i << "]\n";
       accels[i]->intersectors.print(ident+2);
     }
   }

@@ -463,85 +463,85 @@ namespace embree
 
   void State::print()
   {
-    std::cout << "general:" << std::endl;
-    std::cout << "  build threads      = " << numThreads   << std::endl;
-    std::cout << "  build user threads = " << numUserThreads   << std::endl;
-    std::cout << "  start_threads      = " << start_threads << std::endl;
-    std::cout << "  affinity           = " << set_affinity << std::endl;
+    std::cout << "general:\n";
+    std::cout << "  build threads      = " << numThreads   << "\n";
+    std::cout << "  build user threads = " << numUserThreads   << "\n";
+    std::cout << "  start_threads      = " << start_threads << "\n";
+    std::cout << "  affinity           = " << set_affinity << "\n";
     std::cout << "  frequency_level    = ";
     switch (frequency_level) {
-    case FREQUENCY_SIMD128: std::cout << "simd128" << std::endl; break;
-    case FREQUENCY_SIMD256: std::cout << "simd256" << std::endl; break;
-    case FREQUENCY_SIMD512: std::cout << "simd512" << std::endl; break;
-    default: std::cout << "error" << std::endl; break;
+    case FREQUENCY_SIMD128: std::cout << "simd128\n"; break;
+    case FREQUENCY_SIMD256: std::cout << "simd256\n"; break;
+    case FREQUENCY_SIMD512: std::cout << "simd512\n"; break;
+    default: std::cout << "error\n"; break;
     }
     
     std::cout << "  hugepages          = ";
-    if (!hugepages) std::cout << "disabled" << std::endl;
-    else if (hugepages_success) std::cout << "enabled" << std::endl;
-    else std::cout << "failed" << std::endl;
+    if (!hugepages) std::cout << "disabled\n";
+    else if (hugepages_success) std::cout << "enabled\n";
+    else std::cout << "failed\n";
 
-    std::cout << "  verbosity          = " << verbose << std::endl;
-    std::cout << "  cache_size         = " << float(tessellation_cache_size)*1E-6 << " MB" << std::endl;
-    std::cout << "  max_spatial_split_replications = " << max_spatial_split_replications << std::endl;
+    std::cout << "  verbosity          = " << verbose << "\n";
+    std::cout << "  cache_size         = " << float(tessellation_cache_size)*1E-6 << " MB\n";
+    std::cout << "  max_spatial_split_replications = " << max_spatial_split_replications << "\n";
     
-    std::cout << "triangles:" << std::endl;
-    std::cout << "  accel              = " << tri_accel << std::endl;
-    std::cout << "  builder            = " << tri_builder << std::endl;
-    std::cout << "  traverser          = " << tri_traverser << std::endl;
+    std::cout << "triangles:\n";
+    std::cout << "  accel              = " << tri_accel << "\n";
+    std::cout << "  builder            = " << tri_builder << "\n";
+    std::cout << "  traverser          = " << tri_traverser << "\n";
         
-    std::cout << "motion blur triangles:" << std::endl;
-    std::cout << "  accel              = " << tri_accel_mb << std::endl;
-    std::cout << "  builder            = " << tri_builder_mb << std::endl;
-    std::cout << "  traverser          = " << tri_traverser_mb << std::endl;
+    std::cout << "motion blur triangles:\n";
+    std::cout << "  accel              = " << tri_accel_mb << "\n";
+    std::cout << "  builder            = " << tri_builder_mb << "\n";
+    std::cout << "  traverser          = " << tri_traverser_mb << "\n";
 
-    std::cout << "quads:" << std::endl;
-    std::cout << "  accel              = " << quad_accel << std::endl;
-    std::cout << "  builder            = " << quad_builder << std::endl;
-    std::cout << "  traverser          = " << quad_traverser << std::endl;
+    std::cout << "quads:\n";
+    std::cout << "  accel              = " << quad_accel << "\n";
+    std::cout << "  builder            = " << quad_builder << "\n";
+    std::cout << "  traverser          = " << quad_traverser << "\n";
 
-    std::cout << "motion blur quads:" << std::endl;
-    std::cout << "  accel              = " << quad_accel_mb << std::endl;
-    std::cout << "  builder            = " << quad_builder_mb << std::endl;
-    std::cout << "  traverser          = " << quad_traverser_mb << std::endl;
+    std::cout << "motion blur quads:\n";
+    std::cout << "  accel              = " << quad_accel_mb << "\n";
+    std::cout << "  builder            = " << quad_builder_mb << "\n";
+    std::cout << "  traverser          = " << quad_traverser_mb << "\n";
 
-    std::cout << "line segments:" << std::endl;
-    std::cout << "  accel              = " << line_accel << std::endl;
-    std::cout << "  builder            = " << line_builder << std::endl;
-    std::cout << "  traverser          = " << line_traverser << std::endl;
+    std::cout << "line segments:\n";
+    std::cout << "  accel              = " << line_accel << "\n";
+    std::cout << "  builder            = " << line_builder << "\n";
+    std::cout << "  traverser          = " << line_traverser << "\n";
 
-    std::cout << "motion blur line segments:" << std::endl;
-    std::cout << "  accel              = " << line_accel_mb << std::endl;
-    std::cout << "  builder            = " << line_builder_mb << std::endl;
-    std::cout << "  traverser          = " << line_traverser_mb << std::endl;
+    std::cout << "motion blur line segments:\n";
+    std::cout << "  accel              = " << line_accel_mb << "\n";
+    std::cout << "  builder            = " << line_builder_mb << "\n";
+    std::cout << "  traverser          = " << line_traverser_mb << "\n";
     
-    std::cout << "hair:" << std::endl;
-    std::cout << "  accel              = " << hair_accel << std::endl;
-    std::cout << "  builder            = " << hair_builder << std::endl;
-    std::cout << "  traverser          = " << hair_traverser << std::endl;
+    std::cout << "hair:\n";
+    std::cout << "  accel              = " << hair_accel << "\n";
+    std::cout << "  builder            = " << hair_builder << "\n";
+    std::cout << "  traverser          = " << hair_traverser << "\n";
 
-    std::cout << "motion blur hair:" << std::endl;
-    std::cout << "  accel              = " << hair_accel_mb << std::endl;
-    std::cout << "  builder            = " << hair_builder_mb << std::endl;
-    std::cout << "  traverser          = " << hair_traverser_mb << std::endl;
+    std::cout << "motion blur hair:\n";
+    std::cout << "  accel              = " << hair_accel_mb << "\n";
+    std::cout << "  builder            = " << hair_builder_mb << "\n";
+    std::cout << "  traverser          = " << hair_traverser_mb << "\n";
     
-    std::cout << "subdivision surfaces:" << std::endl;
-    std::cout << "  accel              = " << subdiv_accel << std::endl;
+    std::cout << "subdivision surfaces:\n";
+    std::cout << "  accel              = " << subdiv_accel << "\n";
 
-    std::cout << "grids:" << std::endl;
-    std::cout << "  accel              = " << grid_accel << std::endl;
-    std::cout << "  builder            = " << grid_builder << std::endl;
+    std::cout << "grids:\n";
+    std::cout << "  accel              = " << grid_accel << "\n";
+    std::cout << "  builder            = " << grid_builder << "\n";
 
-    std::cout << "motion blur grids:" << std::endl;
-    std::cout << "  accel              = " << grid_accel_mb << std::endl;
-    std::cout << "  builder            = " << grid_builder_mb << std::endl;
+    std::cout << "motion blur grids:\n";
+    std::cout << "  accel              = " << grid_accel_mb << "\n";
+    std::cout << "  builder            = " << grid_builder_mb << "\n";
 
-    std::cout << "object_accel:" << std::endl;
-    std::cout << "  min_leaf_size      = " << object_accel_min_leaf_size << std::endl;
-    std::cout << "  max_leaf_size      = " << object_accel_max_leaf_size << std::endl;
+    std::cout << "object_accel:\n";
+    std::cout << "  min_leaf_size      = " << object_accel_min_leaf_size << "\n";
+    std::cout << "  max_leaf_size      = " << object_accel_max_leaf_size << "\n";
 
-    std::cout << "object_accel_mb:" << std::endl;
-    std::cout << "  min_leaf_size      = " << object_accel_mb_min_leaf_size << std::endl;
-    std::cout << "  max_leaf_size      = " << object_accel_mb_max_leaf_size << std::endl;
+    std::cout << "object_accel_mb:\n";
+    std::cout << "  min_leaf_size      = " << object_accel_mb_min_leaf_size << "\n";
+    std::cout << "  max_leaf_size      = " << object_accel_mb_max_leaf_size << "\n";
   }
 }

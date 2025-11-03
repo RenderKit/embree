@@ -41,12 +41,12 @@ namespace embree
   void TutorialScene::print_camera_names ()
   {
     if (cameras.size() == 0) {
-      std::cout << "no cameras inside the scene" << std::endl;
+      std::cout << "no cameras inside the scene\n";
       return;
     }
     
     for (size_t i=0; i<cameras.size(); i++)
-      std::cout << "camera " << i << ": " << cameras[i]->name << std::endl;
+      std::cout << "camera " << i << ": " << cameras[i]->name << "\n";
   }
 
   Ref<SceneGraph::PerspectiveCameraNode> TutorialScene::getDefaultCamera()

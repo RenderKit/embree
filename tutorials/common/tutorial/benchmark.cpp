@@ -186,7 +186,7 @@ void TutorialBenchmark::registerBenchmark(std::string const& name, int argc, cha
 {
 #ifdef USE_GOOGLE_BENCHMARK
   if (params.legacy) {
-    std::cout << "BENCHMARK SCENE: " << name << std::endl;
+    std::cout << "BENCHMARK SCENE: " << name << "\n";
     BenchState benchState;
     func(benchState, params, argc, argv);
   }
@@ -194,7 +194,7 @@ void TutorialBenchmark::registerBenchmark(std::string const& name, int argc, cha
     ::benchmark::RegisterBenchmark(name.c_str(), callBenchFunc, argc, argv, params, func)->Unit(::benchmark::TimeUnit::kMillisecond);
   }
 #else
-  std::cout << "BENCHMARK SCENE: " << name << std::endl;
+  std::cout << "BENCHMARK SCENE: " << name << "\n";
   BenchState benchState;
   func(benchState, params, argc, argv);
 #endif
@@ -217,7 +217,7 @@ void TutorialBuildBenchmark::registerBuildBenchmark(std::string name, BuildBench
     p.buildBenchType = buildBenchType;
 #ifdef USE_GOOGLE_BENCHMARK
     if (params.legacy) {
-      std::cout << "BENCHMARK SCENE: " << name << std::endl;
+      std::cout << "BENCHMARK SCENE: " << name << "\n";
       BenchState benchState;
       buildBenchFunc(benchState, params, p, argc, argv);
     }
@@ -225,7 +225,7 @@ void TutorialBuildBenchmark::registerBuildBenchmark(std::string name, BuildBench
       ::benchmark::RegisterBenchmark(name.c_str(), callBuildBenchFunc, argc, argv, params, p, buildBenchFunc)->Unit(::benchmark::TimeUnit::kMillisecond);
     }
 #else
-    std::cout << "BENCHMARK SCENE: " << name << std::endl;
+    std::cout << "BENCHMARK SCENE: " << name << "\n";
     BenchState benchState;
     buildBenchFunc(benchState, params, p, argc, argv);
 #endif

@@ -432,10 +432,10 @@ namespace embree
     } 
     else
     {
-      if      (v == SKIPPED ) std::cout << state->green (" [SKIPPED]") << std::endl << std::flush;
-      else if (passed       ) std::cout << state->green (" [PASSED]" ) << std::endl << std::flush;
-      else if (ignoreFailure) std::cout << state->yellow(" [FAILED] (ignored)") << std::endl << std::flush;
-      else                    std::cout << state->red   (" [FAILED]" ) << std::endl << std::flush;
+      if      (v == SKIPPED ) std::cout << state->green (" [SKIPPED]") << "\n" << std::flush;
+      else if (passed       ) std::cout << state->green (" [PASSED]" ) << "\n" << std::flush;
+      else if (ignoreFailure) std::cout << state->yellow(" [FAILED] (ignored)") << "\n" << std::flush;
+      else                    std::cout << state->red   (" [FAILED]" ) << "\n" << std::flush;
     }
 
     /* update passed/failed counters */
@@ -492,7 +492,7 @@ namespace embree
     std::fstream db;
     FileName base = state->database+FileName(name);
     db.open(base.addExt(".txt"), std::fstream::out | std::fstream::app);
-    db << hash << " " << stat.getAvg() << " " << bestAvg << std::endl;
+    db << hash << " " << stat.getAvg() << " " << bestAvg << "\n";
     db.close();
   }
 
@@ -501,18 +501,18 @@ namespace embree
     std::fstream plot;
     FileName base = state->database+FileName(name);
     plot.open(base.addExt(".plot"), std::fstream::out | std::fstream::trunc);
-    plot << "set terminal png size 2048,600 enhanced" << std::endl;
-    plot << "set output \"" << base.addExt(".png") << "\"" << std::endl;
-    plot << "set key inside right top vertical Right noreverse enhanced autotitles box linetype -1 linewidth 1.000" << std::endl;
-    plot << "set samples 50, 50" << std::endl;
-    //plot << "set title \"" << name << "\"" << std::endl; 
-    //plot << "set xlabel \"" << name << "\""<< std::endl;
-    plot << "set xtics axis rotate by 90" << std::endl;
-    plot << "set ylabel \"" << unit << "\"" << std::endl;
-    plot << "set yrange [0:]" << std::endl;
-    plot << "plot \"" << FileName(name).addExt(".txt") << "\" using :2:xtic(1) title \"" << name << "\" with lines, \\" << std::endl; 
-    plot << "     \"" << FileName(name).addExt(".txt") << "\" using :3         title \"best\" with lines" << std::endl;
-    plot << std::endl;
+    plot << "set terminal png size 2048,600 enhanced\n";
+    plot << "set output \"" << base.addExt(".png") << "\"\n";
+    plot << "set key inside right top vertical Right noreverse enhanced autotitles box linetype -1 linewidth 1.000\n";
+    plot << "set samples 50, 50\n";
+    //plot << "set title \"" << name << "\"\n"; 
+    //plot << "set xlabel \"" << name << "\"\n";
+    plot << "set xtics axis rotate by 90\n";
+    plot << "set ylabel \"" << unit << "\"\n";
+    plot << "set yrange [0:]\n";
+    plot << "plot \"" << FileName(name).addExt(".txt") << "\" using :2:xtic(1) title \"" << name << "\" with lines, \\\n"; 
+    plot << "     \"" << FileName(name).addExt(".txt") << "\" using :3         title \"best\" with lines\n";
+    plot << "\n";
     plot.close();
   }
 
@@ -602,8 +602,8 @@ namespace embree
     double rate1 = 0; if (avgdb            ) rate1 = 100.0f*(bestStat.getAvg()-avgdb)/avgdb;
     
     std::cout << std::setw(8) << std::setprecision(3) << std::fixed << bestStat.getAvg() << " " << unit << " (+/-" << rate0 << "%)";
-    if (passed) std::cout << state->green(" [PASSED]" ) << " (" << rate1 << "%) (" << i << " attempts)" << std::endl << std::flush;
-    else        std::cout << state->red  (" [FAILED]" ) << " (" << rate1 << "%) (" << i << " attempts)" << std::endl << std::flush;
+    if (passed) std::cout << state->green(" [PASSED]" ) << " (" << rate1 << "%) (" << i << " attempts)\n" << std::flush;
+    else        std::cout << state->red  (" [FAILED]" ) << " (" << rate1 << "%) (" << i << " attempts)\n" << std::flush;
     if (state->database != "")
       plotDatabase(state);
 
@@ -616,7 +616,7 @@ namespace embree
       //  FileName base = state->database+FileName(name);
       //  std::string command = std::string("cd ")+state->database.str()+std::string(" && gnuplot ") + FileName(name).addExt(".plot").str();
       //  if (system(command.c_str()) == 0)
-      //    std::cout << "<DartMeasurementFile name=\"" << name << "\" type=\"image/png\">" << base.addExt(".png") << "</DartMeasurementFile>" << std::endl;
+      //    std::cout << "<DartMeasurementFile name=\"" << name << "\" type=\"image/png\">" << base.addExt(".png") << "</DartMeasurementFile>\n";
       //}
     //}   
 
@@ -631,14 +631,14 @@ namespace embree
   catch (const std::exception& e)
   {
     std::cout << std::setw(TEXT_ALIGN) << name << ": " << std::flush;
-    std::cout << state->red(" [FAILED] ") << "(" << e.what() << ")" << std::endl << std::flush;
+    std::cout << state->red(" [FAILED] ") << "(" << e.what() << ")\n" << std::flush;
     state->numFailedTests++;
     return VerifyApplication::FAILED;
   }
   catch (...)
   {
     std::cout << std::setw(TEXT_ALIGN) << name << ": " << std::flush;
-    std::cout << state->red(" [FAILED] ") << " (unknown error)" << std::endl << std::flush;
+    std::cout << state->red(" [FAILED] ") << " (unknown error)\n" << std::flush;
     state->numFailedTests++;
     return VerifyApplication::FAILED;
   }
@@ -672,8 +672,8 @@ namespace embree
     }
 
     if (leaftest) {
-      if (passed) std::cout << state->green(" [PASSED]") << std::endl << std::flush;
-      else        std::cout << state->red  (" [FAILED]") << std::endl << std::flush;
+      if (passed) std::cout << state->green(" [PASSED]") << "\n" << std::flush;
+      else        std::cout << state->red  (" [FAILED]") << "\n" << std::flush;
     }
 
     return passed ? PASSED : FAILED;
@@ -1513,7 +1513,7 @@ namespace embree
           std::cout << "N = " << num_primitives << ", n = " << ceilf(sqrtf(N/4.0f)) << ", "
             "expected = " << bytes_expected/num_primitives << " B, " << 
             "1 thread = " << bytes_one_thread.second/num_primitives << " B (" << 100.0f*expected_to_single << " %)" << (failed0 ? state->red(" [FAILED]") : "") << ", " << 
-            "all_threads = " << bytes_all_threads.second/num_primitives << " B (" << 100.0f*single_to_threaded << " %)" << (failed1 ? state->red(" [FAILED]") : "") << std::endl;
+            "all_threads = " << bytes_all_threads.second/num_primitives << " B (" << 100.0f*single_to_threaded << " %)" << (failed1 ? state->red(" [FAILED]") : "") << "\n";
         }
       }
       return ret;
@@ -5456,7 +5456,7 @@ namespace embree
           num_executed++;
         });
       } catch (std::exception&) {
-        //std::cerr << "exception caught: " << e.what() << std::endl;
+        //std::cerr << "exception caught: " << e.what() << "\n";
         exceptionCaught = true;
       }
 
@@ -5482,13 +5482,13 @@ namespace embree
       try {
         parallel_for(100, [&](size_t i) {
           if (i == 5) {
-            //std::cerr << "throw error!" << std::endl;
+            //std::cerr << "throw error!\n";
             throw_RTCError(RTC_ERROR_CANCELLED, "idontlikefive");
           }
         });
       } catch (std::exception& e) {
         exceptionCaught = true;
-        //std::cerr << "exception caught: " << e.what() << std::endl;
+        //std::cerr << "exception caught: " << e.what() << "\n";
         if (regex_match(e.what(), ".*idontlikefive"))
           rightExceptionCaught = true;
       }
@@ -5520,7 +5520,7 @@ namespace embree
         });
       } catch (std::exception& e) {
         exceptionCaught = true;
-        //std::cerr << "exception caught: " << e.what() << std::endl;
+        //std::cerr << "exception caught: " << e.what() << "\n";
         if (regex_match(e.what(), ".*vector.*"))
           rightExceptionCaught = true;
       }
@@ -5553,7 +5553,7 @@ namespace embree
             }
         });
       } catch (std::exception& e) {
-        std::cerr << "\nexception caught: " << e.what() << std::endl;
+        std::cerr << "\nexception caught: " << e.what() << "\n";
         exceptionCaught = true;
       }
 
@@ -5585,7 +5585,7 @@ namespace embree
           sum += vec.at(i);
         });
       } catch (std::exception& e) {
-        //std::cerr << "\nexception caught: " << e.what() << std::endl;
+        //std::cerr << "\nexception caught: " << e.what() << "\n";
         exceptionCaught = true;
         if (regex_match(e.what(), ".*vector.*"))
           rightExceptionCaught = true;
@@ -5596,9 +5596,9 @@ namespace embree
         sum += vec.at(i);
       });
 
-      //std::cerr << "exception caught: " << exceptionCaught << std::endl;
-      //std::cerr << "right exception caught: " << rightExceptionCaught << std::endl;
-      //std::cerr << "second parallel for executed: " << secondParallelForExecuted << std::endl;
+      //std::cerr << "exception caught: " << exceptionCaught << "\n";
+      //std::cerr << "right exception caught: " << rightExceptionCaught << "\n";
+      //std::cerr << "second parallel for executed: " << secondParallelForExecuted << "\n";
 
       AssertNoError(device);
       const bool success = (secondParallelForExecuted && exceptionCaught && rightExceptionCaught);
@@ -5631,11 +5631,11 @@ namespace embree
 
       } catch (std::exception& e) {
         exceptionCaught = true;
-        std::cerr << "failure: test encountered exception " << e.what() << std::endl;
+        std::cerr << "failure: test encountered exception " << e.what() << "\n";
       }
 
-      //std::cerr << "sum: " << sum << std::endl;
-      //std::cerr << "exception caught: " << exceptionCaught << std::endl;
+      //std::cerr << "sum: " << sum << "\n";
+      //std::cerr << "exception caught: " << exceptionCaught << "\n";
 
       AssertNoError(device);
       const bool success = (!exceptionCaught && (sum == 1100));
@@ -5672,7 +5672,7 @@ namespace embree
               sum1 += vec.at(i);
             });
           } catch (std::exception& e) {
-            //std::cerr << "expected exception caught: " << e.what() << std::endl;
+            //std::cerr << "expected exception caught: " << e.what() << "\n";
             exceptionCaught = true;
             if (regex_match(e.what(), ".*vector.*"))
               caughtExpectedException = true;
@@ -5684,13 +5684,13 @@ namespace embree
               sum2 += vec.at(i);
             });
           } catch (std::exception& e) {
-            std::cerr << "secound inner for loop caught unexpected exception: " << e.what() << std::endl;
+            std::cerr << "secound inner for loop caught unexpected exception: " << e.what() << "\n";
             exceptionCaught = true;
             caughtUnexpectedException = true;
           }
         });
       } catch (std::exception& e) {
-        std::cerr << "outer for loop caught unexpected exception: " << e.what() << std::endl;
+        std::cerr << "outer for loop caught unexpected exception: " << e.what() << "\n";
         caughtUnexpectedException = true;
       }
 
@@ -6849,7 +6849,7 @@ namespace embree
         user_specified_tests = true;
         std::string regex = cin->getString();
         if (!enable_disable_some_tests(tests,regex,true)) {
-          std::cout << "no tests matched regular expression " << regex << std::endl;
+          std::cout << "no tests matched regular expression " << regex << "\n";
           exit(1);
         }
       }, "--run <regexpr>: Runs all tests whose name match the regular expression. If no test matches the application fails.");
@@ -7015,11 +7015,11 @@ namespace embree
 
     if (Ref<TestGroup> group = test.dynamicCast<TestGroup>()) 
     {
-      std::cout << std::string(2*depth,' ') << group->name << (group->name != "" ? " " : "") << "{" << std::endl;
+      std::cout << std::string(2*depth,' ') << group->name << (group->name != "" ? " " : "") << "{\n";
       for (auto& t : group->tests) print_tests(t,depth+1);
-      std::cout << std::string(2*depth,' ') << "}" << std::endl;
+      std::cout << std::string(2*depth,' ') << "}\n";
     } else {
-      std::cout << std::string(2*depth,' ') << test->name << std::endl;
+      std::cout << std::string(2*depth,' ') << test->name << "\n";
     }
   }
 
@@ -7031,7 +7031,7 @@ namespace embree
     {
       for (auto& t : group->tests) print_ctests(t,depth+1);
     } else {
-      std::cout << "ADD_TEST(NAME " << test->name << " COMMAND verify --no-colors --cdash-measurements --run " << test->name << std::endl;
+      std::cout << "ADD_TEST(NAME " << test->name << " COMMAND verify --no-colors --cdash-measurements --run " << test->name << "\n";
     }
   }
 
@@ -7069,36 +7069,36 @@ namespace embree
   {
     std::fstream plot;
     plot.open(outFileName, std::fstream::out | std::fstream::trunc);
-    plot << "set key inside right top vertical Right noreverse enhanced autotitles box linetype -1 linewidth 1.000" << std::endl;
-    plot << "set samples 50, 50" << std::endl;
-    plot << "set title \"" << outFileName.name() << "\"" << std::endl; 
-    plot << "set xlabel \"" + xlabel + "\"" << std::endl;
-    if (f != 1.0f) plot << "set logscale x" << std::endl;
+    plot << "set key inside right top vertical Right noreverse enhanced autotitles box linetype -1 linewidth 1.000\n";
+    plot << "set samples 50, 50\n";
+    plot << "set title \"" << outFileName.name() << "\"\n"; 
+    plot << "set xlabel \"" + xlabel + "\"" << "\n";
+    if (f != 1.0f) plot << "set logscale x" << "\n";
     if (benchmarks.size()) {
-      plot << "set ylabel \"" << benchmarks[0]->unit << "\"" << std::endl;
-      plot << "set yrange [0:]" << std::endl;
+      plot << "set ylabel \"" << benchmarks[0]->unit << "\"" << "\n";
+      plot << "set yrange [0:]" << "\n";
 
-      plot << "plot \\" << std::endl;
+      plot << "plot \\" << "\n";
       for (size_t i=0; i<benchmarks.size(); i++) {
         plot << "\"" << outFileName.name() << "." << benchmarks[i]->name << ".txt\" using 1:2 title \"" << benchmarks[i]->name << "\" with lines";
         if (i != benchmarks.size()-1) plot << ",\\";
-        plot << std::endl;
+        plot << "\n";
       }
     }
-    plot << std::endl;
+    plot << "\n";
     plot.close();
     
     for (auto benchmark : benchmarks) 
     {
       std::fstream data;
       data.open(outFileName.name()+"."+benchmark->name+".txt", std::fstream::out | std::fstream::trunc);
-      std::cout << benchmark->name << std::endl;
+      std::cout << benchmark->name << "\n";
       for (size_t i=startN; i<=endN; i=size_t(i*f)+dn) 
       {
         size_t N = i;
         Statistics stat = test(benchmark,N);
-        data << " " << N << " " << stat.getAvg() << std::endl;
-        std::cout<< " " << N << " " << stat.getAvg() << std::endl;
+        data << " " << N << " " << stat.getAvg() << "\n";
+        std::cout<< " " << N << " " << stat.getAvg() << "\n";
       }
       data.close();
     }
@@ -7117,20 +7117,20 @@ namespace embree
     tests->execute(this,false);
 
     /* print result */
-    std::cout << std::endl;
-    std::cout << std::setw(TEXT_ALIGN) << "Tests passed" << ": " << numPassedTests << std::endl; 
-    std::cout << std::setw(TEXT_ALIGN) << "Tests failed" << ": " << numFailedTests << std::endl; 
-    std::cout << std::setw(TEXT_ALIGN) << "Tests failed and ignored" << ": " << numFailedAndIgnoredTests << std::endl; 
-    std::cout << std::endl;
+    std::cout << "\n";
+    std::cout << std::setw(TEXT_ALIGN) << "Tests passed" << ": " << numPassedTests << "\n"; 
+    std::cout << std::setw(TEXT_ALIGN) << "Tests failed" << ": " << numFailedTests << "\n"; 
+    std::cout << std::setw(TEXT_ALIGN) << "Tests failed and ignored" << ": " << numFailedAndIgnoredTests << "\n"; 
+    std::cout << "\n";
 
     return (int)numFailedTests;
   }
   catch (const std::exception& e) {
-    std::cout << "Error: " << e.what() << std::endl;
+    std::cout << "Error: " << e.what() << "\n";
     return 1;
   }
   catch (...) {
-    std::cout << "Error: unknown exception caught." << std::endl;
+    std::cout << "Error: unknown exception caught.\n";
     return 1;
   }
 }

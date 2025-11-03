@@ -33,89 +33,89 @@ namespace embree
   }
 
   void SceneGraph::PerspectiveCameraNode::print(std::ostream& cout, int depth) {
-    cout << "PerspectiveCameraNode @ " << this << " { " << std::endl;
+    cout << "PerspectiveCameraNode @ " << this << " { \n";
     if (name != "") {
-      tab(cout, depth+1); cout << "name = " << name << std::endl;
+      tab(cout, depth+1); cout << "name = " << name << "\n";
     }
-    tab(cout, depth+1); cout << "from = " << data.from << std::endl;
-    tab(cout, depth+1); cout << "to   = " << data.to   << std::endl;
-    tab(cout, depth+1); cout << "up   = " << data.up   << std::endl;
-    tab(cout, depth+1); cout << "fov  = " << data.fov  << std::endl;
-    tab(cout, depth); cout << "}" << std::endl;
+    tab(cout, depth+1); cout << "from = " << data.from << "\n";
+    tab(cout, depth+1); cout << "to   = " << data.to   << "\n";
+    tab(cout, depth+1); cout << "up   = " << data.up   << "\n";
+    tab(cout, depth+1); cout << "fov  = " << data.fov  << "\n";
+    tab(cout, depth); cout << "}\n";
   }
 
   void SceneGraph::AnimatedPerspectiveCameraNode::print(std::ostream& cout, int depth) {
-    cout << "AnimatedPerspectiveCameraNode @ " << this << " { " << std::endl;
+    cout << "AnimatedPerspectiveCameraNode @ " << this << " { \n";
     if (name != "") {
-      tab(cout, depth+1); cout << "name = " << name << std::endl;
+      tab(cout, depth+1); cout << "name = " << name << "\n";
     }
     for (size_t i=0; i<cameras.size(); i++) {
       tab(cout,depth+1); cameras[i]->print(cout,depth+1);
     }
-    tab(cout, depth); cout << "}" << std::endl;
+    tab(cout, depth); cout << "}\n";
   }
 
   void SceneGraph::TransformNode::print(std::ostream& cout, int depth)
   {
-    cout << "TransformNode @ " << this << " { " << std::endl;
-    tab(cout, depth+1); cout << "closed = " << closed << std::endl;
-    tab(cout, depth+1); cout << "numTimeSteps = " << spaces.size() << std::endl;
+    cout << "TransformNode @ " << this << " { \n";
+    tab(cout, depth+1); cout << "closed = " << closed << "\n";
+    tab(cout, depth+1); cout << "numTimeSteps = " << spaces.size() << "\n";
     tab(cout, depth+1); cout << "child = "; child->print(cout,depth+1);
-    tab(cout, depth); cout << "}" << std::endl;
+    tab(cout, depth); cout << "}\n";
   }
 
   void SceneGraph::MultiTransformNode::print(std::ostream& cout, int depth)
   {
-    cout << "MultiTransformNode @ " << this << " { " << std::endl;
-    tab(cout, depth+1); cout << "closed = " << closed << std::endl;
-    tab(cout, depth+1); cout << "numInstances = " << spaces.size() << std::endl;
+    cout << "MultiTransformNode @ " << this << " { \n";
+    tab(cout, depth+1); cout << "closed = " << closed << "\n";
+    tab(cout, depth+1); cout << "numInstances = " << spaces.size() << "\n";
     if (spaces.size() > 0) {
-      tab(cout, depth+1); cout << "numTimeSteps = " << spaces[0].size() << std::endl;
+      tab(cout, depth+1); cout << "numTimeSteps = " << spaces[0].size() << "\n";
     }
     tab(cout, depth+1); cout << "child = "; child->print(cout,depth+1);
-    tab(cout, depth); cout << "}" << std::endl;
+    tab(cout, depth); cout << "}\n";
   }
 
   void SceneGraph::GroupNode::print(std::ostream& cout, int depth)
   {
-    cout << "GroupNode @ " << this << " { " << std::endl;
-    tab(cout, depth+1); cout << "closed = " << closed << std::endl;
+    cout << "GroupNode @ " << this << " { \n";
+    tab(cout, depth+1); cout << "closed = " << closed << "\n";
     for (size_t i=0; i<children.size(); i++) {
       tab(cout, depth+1); cout << "child" << i << " = "; children[i]->print(cout,depth+1);
     }
-    tab(cout, depth); cout << "}" << std::endl;
+    tab(cout, depth); cout << "}\n";
   }
 
   void SceneGraph::MaterialNode::print(std::ostream& cout, int depth) {
-    cout << "MaterialNode @ " << this << " { closed = " << closed << " }" << std::endl;
+    cout << "MaterialNode @ " << this << " { closed = " << closed << " }\n";
   }
   
   void SceneGraph::LightNode::print(std::ostream& cout, int depth) {
-    cout << "LightNode @ " << this << " { closed = " << closed << " }" << std::endl;
+    cout << "LightNode @ " << this << " { closed = " << closed << " }\n";
   }
 
   void SceneGraph::TriangleMeshNode::print(std::ostream& cout, int depth) {
-    cout << "TriangleMeshNode @ " << this << " { closed = " << closed << " }" << std::endl;
+    cout << "TriangleMeshNode @ " << this << " { closed = " << closed << " }\n";
   }
 
   void SceneGraph::QuadMeshNode::print(std::ostream& cout, int depth) {
-    cout << "QuadMeshNode @ " << this << " { closed = " << closed << " }" << std::endl;
+    cout << "QuadMeshNode @ " << this << " { closed = " << closed << " }\n";
   }
 
   void SceneGraph::SubdivMeshNode::print(std::ostream& cout, int depth) {
-    cout << "SubdivMeshNode @ " << this << " { closed = " << closed << " }" << std::endl;
+    cout << "SubdivMeshNode @ " << this << " { closed = " << closed << " }\n";
   }
 
   void SceneGraph::HairSetNode::print(std::ostream& cout, int depth) {
-    cout << "HairSetNode @ " << this << " { closed = " << closed << " }" << std::endl;
+    cout << "HairSetNode @ " << this << " { closed = " << closed << " }\n";
   }
 
   void SceneGraph::PointSetNode::print(std::ostream& cout, int depth) {
-    cout << "PointSetNode @ " << this << " { closed = " << closed << " }" << std::endl;
+    cout << "PointSetNode @ " << this << " { closed = " << closed << " }\n";
   }
 
   void SceneGraph::GridMeshNode::print(std::ostream& cout, int depth) {
-    cout << "GridMeshNode @ " << this << " { closed = " << closed << " }" << std::endl;
+    cout << "GridMeshNode @ " << this << " { closed = " << closed << " }\n";
   }
     
   void SceneGraph::Node::calculateStatistics(Statistics& stat) {
@@ -264,23 +264,23 @@ namespace embree
 
   void SceneGraph::Statistics::print()
   {
-    std::cout << "  # transform nodes : " << numTransformNodes << std::endl;
-    std::cout << "    # objects       : " << numTransformedObjects << std::endl;
-    std::cout << "  # triangle meshes : " << numTriangleMeshes << " ( " << 1E-6*numTriangleBytes << " MB )" << std::endl;
-    std::cout << "    # triangles     : " << numTriangles << std::endl;
-    std::cout << "  # quad meshes     : " << numQuadMeshes << " ( " << 1E-6*numQuadBytes << " MB )" << std::endl;
-    std::cout << "    # quads         : " << numQuads << std::endl;
-    std::cout << "  # subdiv meshes   : " << numSubdivMeshes << " ( " << 1E-6*numSubdivBytes << " MB )" << std::endl;
-    std::cout << "    # patches       : " << numPatches << std::endl;
-    std::cout << "  # curve sets      : " << numCurveSets << " ( " << 1E-6*numCurveBytes << " MB )" << std::endl;
-    std::cout << "    # curves        : " << numCurves << std::endl;
-    std::cout << "  # grid meshes     : " << numGridMeshNodes << " ( " << 1E-6*numGridBytes << " MB )" << std::endl;
-    std::cout << "    # grids         : " << numGrids << std::endl;
-    std::cout << "  # point sets      : " << numPointSets << " ( " << 1E-6*numPointBytes << " MB )" << std::endl;
-    std::cout << "    # points        : " << numPoints << std::endl;
-    std::cout << "  # lights          : " << numLights << std::endl;
-    std::cout << "  # cameras         : " << numCameras << std::endl;
-    std::cout << "  # materials       : " << numMaterials << std::endl;
+    std::cout << "  # transform nodes : " << numTransformNodes << "\n";
+    std::cout << "    # objects       : " << numTransformedObjects << "\n";
+    std::cout << "  # triangle meshes : " << numTriangleMeshes << " ( " << 1E-6*numTriangleBytes << " MB )\n";
+    std::cout << "    # triangles     : " << numTriangles << "\n";
+    std::cout << "  # quad meshes     : " << numQuadMeshes << " ( " << 1E-6*numQuadBytes << " MB )\n";
+    std::cout << "    # quads         : " << numQuads << "\n";
+    std::cout << "  # subdiv meshes   : " << numSubdivMeshes << " ( " << 1E-6*numSubdivBytes << " MB )\n";
+    std::cout << "    # patches       : " << numPatches << "\n";
+    std::cout << "  # curve sets      : " << numCurveSets << " ( " << 1E-6*numCurveBytes << " MB )\n";
+    std::cout << "    # curves        : " << numCurves << "\n";
+    std::cout << "  # grid meshes     : " << numGridMeshNodes << " ( " << 1E-6*numGridBytes << " MB )\n";
+    std::cout << "    # grids         : " << numGrids << "\n";
+    std::cout << "  # point sets      : " << numPointSets << " ( " << 1E-6*numPointBytes << " MB )\n";
+    std::cout << "    # points        : " << numPoints << "\n";
+    std::cout << "  # lights          : " << numLights << "\n";
+    std::cout << "  # cameras         : " << numCameras << "\n";
+    std::cout << "  # materials       : " << numMaterials << "\n";
   }
 
   void SceneGraph::Node::calculateInDegree() {

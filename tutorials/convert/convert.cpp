@@ -293,7 +293,7 @@ namespace embree
       else {
         std::cerr << "unknown command line parameter: " << tag << " ";
         while (cin->peek() != "" && cin->peek()[0] != '-') std::cerr << cin->getString() << " ";
-        std::cerr << std::endl;
+        std::cerr << "\n";
       }
     }
   }
@@ -320,11 +320,11 @@ int main(int argc, char** argv)
     return embree::main(argc, argv);
   }
   catch (const std::exception& e) {
-    std::cout << "Error: " << e.what() << std::endl;
+    std::cout << "Error: " << e.what() << "\n";
     return 1;
   }
   catch (...) {
-    std::cout << "Error: unknown exception caught." << std::endl;
+    std::cout << "Error: unknown exception caught.\n";
     return 1;
   }
 }

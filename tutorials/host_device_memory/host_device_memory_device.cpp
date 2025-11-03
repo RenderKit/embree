@@ -18,7 +18,7 @@ TutorialData data;
 #define GEOMETRY_MOTION_BLUR
 
 /* adds a cube to the scene with explicitly managed host/device memory */
-unsigned int addCubeHostDevice (RTCScene scene, Vec3fa d)
+unsigned int addCubeHostDevice (RTCScene scene, const Vec3fa &d)
 {
   /* create a triangulated cube with 12 triangles and 8 vertices */
   RTCGeometry mesh = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
@@ -89,7 +89,7 @@ unsigned int addCubeHostDevice (RTCScene scene, Vec3fa d)
 
 
 /* adds a cube to the scene with USM shared memory */
-unsigned int addCubeShared (RTCScene scene, Vec3fa d)
+unsigned int addCubeShared (RTCScene scene, const Vec3fa &d)
 {
   /* create a triangulated cube with 12 triangles and 8 vertices */
   RTCGeometry mesh = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
@@ -152,7 +152,7 @@ unsigned int addCubeShared (RTCScene scene, Vec3fa d)
 
 
 /* adds a cube to the scene with explicitly managed host/device memory through the RTCBuffer interface */
-unsigned int addCubeBufferHostDevice (RTCScene scene, Vec3fa d)
+unsigned int addCubeBufferHostDevice (RTCScene scene, const Vec3fa &d)
 {
   /* create a triangulated cube with 12 triangles and 8 vertices */
   RTCGeometry mesh = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
@@ -218,7 +218,7 @@ unsigned int addCubeBufferHostDevice (RTCScene scene, Vec3fa d)
 
 
 /* adds a cube to the scene with explicitly managed host/device memory through the RTCBuffer interface */
-unsigned int addCubeBufferShared (RTCScene scene, Vec3fa d)
+unsigned int addCubeBufferShared (RTCScene scene, const Vec3fa &d)
 {
   /* create a triangulated cube with 12 triangles and 8 vertices */
   RTCGeometry mesh = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_TRIANGLE);

@@ -132,7 +132,7 @@ namespace embree
       Node* root = (Node*) rtcBuildBVH(&arguments);
       double t1 = getSeconds();
       const float sah = root ? root->sah() : 0.0f;
-      std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(prims.size())/(t1-t0) << " Mprims/s, sah = " << sah << " [DONE]" << std::endl;
+      std::cout << 1000.0f*(t1-t0) << "ms, " << 1E-6*double(prims.size())/(t1-t0) << " Mprims/s, sah = " << sah << " [DONE]\n";
     }
 
     rtcReleaseBVH(bvh);
@@ -166,13 +166,13 @@ namespace embree
       prims[i] = prim;
     }
 
-    std::cout << "Low quality BVH build:" << std::endl;
+    std::cout << "Low quality BVH build:\n";
     build(RTC_BUILD_QUALITY_LOW,prims,cfg);
 
-    std::cout << "Normal quality BVH build:" << std::endl;
+    std::cout << "Normal quality BVH build:\n";
     build(RTC_BUILD_QUALITY_MEDIUM,prims,cfg);
 
-    std::cout << "High quality BVH build:" << std::endl;
+    std::cout << "High quality BVH build:\n";
     build(RTC_BUILD_QUALITY_HIGH,prims,cfg,extraSpace);
   }
 
