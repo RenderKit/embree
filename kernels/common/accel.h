@@ -217,23 +217,23 @@ namespace embree
       {
         if (collider.name) {
           for (size_t i=0; i<ident; i++) std::cout << " ";
-          std::cout << "collider  = " << collider.name << std::endl;
+          std::cout << "collider  = " << collider.name << "\n";
         }
         if (intersector1.name) {
           for (size_t i=0; i<ident; i++) std::cout << " ";
-          std::cout << "intersector1  = " << intersector1.name << std::endl;
+          std::cout << "intersector1  = " << intersector1.name << "\n";
         }
         if (intersector4.name) {
           for (size_t i=0; i<ident; i++) std::cout << " ";
-          std::cout << "intersector4  = " << intersector4.name << std::endl;
+          std::cout << "intersector4  = " << intersector4.name << "\n";
         }
         if (intersector8.name) {
           for (size_t i=0; i<ident; i++) std::cout << " ";
-          std::cout << "intersector8  = " << intersector8.name << std::endl;
+          std::cout << "intersector8  = " << intersector8.name << "\n";
         }
         if (intersector16.name) {
           for (size_t i=0; i<ident; i++) std::cout << " ";
-          std::cout << "intersector16 = " << intersector16.name << std::endl;
+          std::cout << "intersector16 = " << intersector16.name << "\n";
         }
       }
 

@@ -349,7 +349,7 @@ namespace embree
     std::ifstream cin;
     cin.open(fileName.c_str());
     if (!cin.is_open()) {
-      std::cerr << "cannot open " << fileName.str() << std::endl;
+      std::cerr << "cannot open " << fileName.str() << "\n";
       return;
     }
 
@@ -476,7 +476,7 @@ namespace embree
         if (!strncmp(token, "k",                 1)) { parseSep(token +=  1); cur.k = getVec3f(token); continue; }
       } 
       catch (const std::runtime_error& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
+        std::cerr << "Error: " << e.what() << "\n";
       }
     }
 
@@ -528,19 +528,19 @@ namespace embree
     const std::map<Vertex, uint32_t>::iterator& entry = vertexMap.find(i);
     if (entry != vertexMap.end()) return(entry->second);
     
-    if (i.v >= v.size()) std::cout << "WARNING: corrupted OBJ file" << std::endl;
+    if (i.v >= v.size()) std::cout << "WARNING: corrupted OBJ file\n";
     else mesh->positions[0].push_back(v[i.v]);
       
     if (i.vn != -1) {
       while (mesh->normals[0].size() < mesh->positions[0].size()) mesh->normals[0].push_back(zero); // some vertices might not had a normal
 
-      if (i.vn >= vn.size()) std::cout << "WARNING: corrupted OBJ file" << std::endl;
+      if (i.vn >= vn.size()) std::cout << "WARNING: corrupted OBJ file\n";
       else mesh->normals[0][mesh->positions[0].size()-1] = vn[i.vn];
     }
     if (i.vt != -1) {
       while (mesh->texcoords.size() < mesh->positions[0].size()) mesh->texcoords.push_back(zero); // some vertices might not had a texture coordinate
 
-      if (i.vt >= vt.size()) std::cout << "WARNING: corrupted OBJ file" << std::endl;
+      if (i.vt >= vt.size()) std::cout << "WARNING: corrupted OBJ file\n";
       else mesh->texcoords[mesh->positions[0].size()-1] = vt[i.vt];
     }
     return (vertexMap[i] = (unsigned int)(mesh->positions[0].size()) - 1);

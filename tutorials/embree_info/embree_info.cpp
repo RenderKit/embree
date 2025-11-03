@@ -18,7 +18,7 @@ int main() {
   try {
     embree::check_raytracing_support();
   } catch (std::exception& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << e.what() << "\n";
     return 1;
   }
 
@@ -29,7 +29,7 @@ int main() {
     embree::printAllSYCLDevices();
     rtcReleaseDevice(device);
   } catch (std::exception& e) {
-    std::cerr << "Failed to create a SYCL Embree GPU device. Reason: " << e.what() << std::endl;
+    std::cerr << "Failed to create a SYCL Embree GPU device. Reason: " << e.what() << "\n";
     embree::printAllSYCLDevices();
     return 1;
   }

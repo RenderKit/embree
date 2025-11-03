@@ -34,6 +34,6 @@ int main(int argc, char** argv) {
     }
     return embree::Tutorial().main(argc,argv);
   } catch (std::exception& e ) {
-    std::cerr << "Exception caught: " << e.what() << std::endl;
+    std::cerr << "Exception caught: " << e.what() << "\n";
   }
 }

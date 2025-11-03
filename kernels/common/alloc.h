@@ -677,7 +677,7 @@ namespace embree
              << "used = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesUsed << " MB, "
              << "                                                            " 
              << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(bytesUsed)/double(numPrimitives);
-        std::cout << str0.str() << std::endl;
+        std::cout << str0.str() << "\n";
       
         std::stringstream str1;
         str1.setf(std::ios::fixed, std::ios::floatfield);
@@ -687,13 +687,13 @@ namespace embree
              << "wasted = " << std::setw(7) << std::setprecision(3) << 1E-6f*bytesWasted << " MB, "            
              << "total = " << std::setw(7) << std::setprecision(3) << 1E-6f*(bytesUsed+bytesFree+bytesWasted) << " MB, "
              << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(bytesUsed+bytesFree+bytesWasted)/double(numPrimitives);
-        std::cout << str1.str() << std::endl;
+        std::cout << str1.str() << "\n";
      
-        std::cout << "  total : " << stat_all.str(numPrimitives) << std::endl;
-        std::cout << "  4K    : " << stat_4K.str(numPrimitives) << std::endl;
-        std::cout << "  2M    : " << stat_2M.str(numPrimitives) << std::endl;
-        std::cout << "  malloc: " << stat_malloc.str(numPrimitives) << std::endl;
-        std::cout << "  shared: " << stat_shared.str(numPrimitives) << std::endl;
+        std::cout << "  total : " << stat_all.str(numPrimitives) << "\n";
+        std::cout << "  4K    : " << stat_4K.str(numPrimitives) << "\n";
+        std::cout << "  2M    : " << stat_2M.str(numPrimitives) << "\n";
+        std::cout << "  malloc: " << stat_malloc.str(numPrimitives) << "\n";
+        std::cout << "  shared: " << stat_shared.str(numPrimitives) << "\n";
       }
 
     private:
@@ -714,15 +714,15 @@ namespace embree
                 << ", use_single_mode = " << use_single_mode
                 << ", maxGrowSize = " << maxGrowSize
                 << ", defaultBlockSize = " << defaultBlockSize
-                << std::endl;
+                << "\n";
 
       std::cout << "  used blocks = ";
       if (usedBlocks.load() != nullptr) usedBlocks.load()->print_list();
-      std::cout << "[END]" << std::endl;
+      std::cout << "[END]\n";
 
       std::cout << "  free blocks = ";
       if (freeBlocks.load() != nullptr) freeBlocks.load()->print_list();
-      std::cout << "[END]" << std::endl;
+      std::cout << "[END]\n";
     }
 
   private:

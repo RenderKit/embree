@@ -18,21 +18,21 @@ namespace embree
   {
     std::ostringstream stream;
     stream.setf(std::ios::fixed, std::ios::floatfield);
-    stream << "  primitives = " << bvh->numPrimitives << ", vertices = " << bvh->numVertices << ", depth = " << stat.depth << std::endl;
+    stream << "  primitives = " << bvh->numPrimitives << ", vertices = " << bvh->numVertices << ", depth = " << stat.depth << "\n";
     size_t totalBytes = stat.bytes(bvh);
     double totalSAH = stat.sah(bvh);
     stream << "  total            : sah = "  << std::setw(7) << std::setprecision(3) << totalSAH << " (100.00%), ";
     stream << "#bytes = " << std::setw(7) << std::setprecision(2) << totalBytes/1E6 << " MB (100.00%), ";
     stream << "#nodes = " << std::setw(7) << stat.size() << " (" << std::setw(6) << std::setprecision(2) << 100.0*stat.fillRate(bvh) << "% filled), ";
-    stream << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(totalBytes)/double(bvh->numPrimitives) << std::endl;
-    if (stat.statAABBNodes.numNodes    ) stream << "  getAABBNodes     : "  << stat.statAABBNodes.toString(bvh,totalSAH,totalBytes) << std::endl;
-    if (stat.statOBBNodes.numNodes  ) stream << "  ungetAABBNodes   : "  << stat.statOBBNodes.toString(bvh,totalSAH,totalBytes) << std::endl;
-    if (stat.statAABBNodesMB.numNodes  ) stream << "  getAABBNodesMB   : "  << stat.statAABBNodesMB.toString(bvh,totalSAH,totalBytes) << std::endl;
-    if (stat.statAABBNodesMB4D.numNodes) stream << "  getAABBNodesMB4D : "  << stat.statAABBNodesMB4D.toString(bvh,totalSAH,totalBytes) << std::endl;
-    if (stat.statOBBNodesMB.numNodes) stream << "  ungetAABBNodesMB : "  << stat.statOBBNodesMB.toString(bvh,totalSAH,totalBytes) << std::endl;
-    if (stat.statQuantizedNodes.numNodes  ) stream << "  quantizedNodes   : "  << stat.statQuantizedNodes.toString(bvh,totalSAH,totalBytes) << std::endl;
-    if (true)                               stream << "  leaves           : "  << stat.statLeaf.toString(bvh,totalSAH,totalBytes) << std::endl;
-    if (true)                               stream << "    histogram      : "  << stat.statLeaf.histToString() << std::endl;
+    stream << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(totalBytes)/double(bvh->numPrimitives) << "\n";
+    if (stat.statAABBNodes.numNodes    ) stream << "  getAABBNodes     : "  << stat.statAABBNodes.toString(bvh,totalSAH,totalBytes) << "\n";
+    if (stat.statOBBNodes.numNodes  ) stream << "  ungetAABBNodes   : "  << stat.statOBBNodes.toString(bvh,totalSAH,totalBytes) << "\n";
+    if (stat.statAABBNodesMB.numNodes  ) stream << "  getAABBNodesMB   : "  << stat.statAABBNodesMB.toString(bvh,totalSAH,totalBytes) << "\n";
+    if (stat.statAABBNodesMB4D.numNodes) stream << "  getAABBNodesMB4D : "  << stat.statAABBNodesMB4D.toString(bvh,totalSAH,totalBytes) << "\n";
+    if (stat.statOBBNodesMB.numNodes) stream << "  ungetAABBNodesMB : "  << stat.statOBBNodesMB.toString(bvh,totalSAH,totalBytes) << "\n";
+    if (stat.statQuantizedNodes.numNodes  ) stream << "  quantizedNodes   : "  << stat.statQuantizedNodes.toString(bvh,totalSAH,totalBytes) << "\n";
+    if (true)                               stream << "  leaves           : "  << stat.statLeaf.toString(bvh,totalSAH,totalBytes) << "\n";
+    if (true)                               stream << "    histogram      : "  << stat.statLeaf.histToString() << "\n";
     return stream.str();
   }
   

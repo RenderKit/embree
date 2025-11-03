@@ -152,7 +152,7 @@ namespace embree
         try {
           return Texture::load(path+src);
         } catch (const std::runtime_error& e) {
-          std::cerr << "failed to load " << path+src << ": " << e.what() << std::endl;
+          std::cerr << "failed to load " << path+src << ": " << e.what() << "\n";
         }
       }
       else if (mapClass == "Reference") {

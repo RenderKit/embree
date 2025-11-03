@@ -87,7 +87,7 @@ static void renderBenchmarkLegacy(BenchState& state, BenchParams& params ,int ar
       double dt = t1-t0;
       if (ispccamera.render_time != 0.0)
 	dt = ispccamera.render_time;
-      std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " <<  std::setw(8) << 1.0/dt << " fps (skipped)" << std::endl << std::flush;
+      std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " <<  std::setw(8) << 1.0/dt << " fps (skipped)\n" << std::flush;
     }
 
     for (size_t i=params.skipIterations; i<numTotalFrames; i++)
@@ -116,7 +116,7 @@ static void renderBenchmarkLegacy(BenchState& state, BenchParams& params ,int ar
                   << "min = " << std::setw(8) << fpsStat.getMin() << " fps, "
                   << "avg = " << std::setw(8) << fpsStat.getAvg() << " fps, "
                   << "max = " << std::setw(8) << fpsStat.getMax() << " fps, "
-                  << "sigma = " << std::setw(6) << fpsStat.getSigma() << " (" << rate << "%)" << std::endl << std::flush;
+                  << "sigma = " << std::setw(6) << fpsStat.getSigma() << " (" << rate << "%)\n" << std::flush;
       }
     }
 
@@ -128,21 +128,21 @@ static void renderBenchmarkLegacy(BenchState& state, BenchParams& params ,int ar
               << "min = " << std::setw(8) << fpsStat.getMin() << " fps, "
               << "avg = " << std::setw(8) << fpsStat.getAvg() << " fps, "
               << "max = " << std::setw(8) << fpsStat.getMax() << " fps, "
-              << "sigma = " << std::setw(6) << fpsStat.getAvgSigma() << " (" << rate << "%)" << std::endl;
+              << "sigma = " << std::setw(6) << fpsStat.getAvgSigma() << " (" << rate << "%)\n";
   }
 
-  std::cout << "BENCHMARK_RENDER_MIN " << fpsStat.getMin() << std::endl;
-  std::cout << "BENCHMARK_RENDER_AVG " << fpsStat.getAvg() << std::endl;
-  std::cout << "BENCHMARK_RENDER_MAX " << fpsStat.getMax() << std::endl;
-  std::cout << "BENCHMARK_RENDER_SIGMA " << fpsStat.getSigma() << std::endl;
-  std::cout << "BENCHMARK_RENDER_AVG_SIGMA " << fpsStat.getAvgSigma() << std::endl;
+  std::cout << "BENCHMARK_RENDER_MIN " << fpsStat.getMin() << "\n";
+  std::cout << "BENCHMARK_RENDER_AVG " << fpsStat.getAvg() << "\n";
+  std::cout << "BENCHMARK_RENDER_MAX " << fpsStat.getMax() << "\n";
+  std::cout << "BENCHMARK_RENDER_SIGMA " << fpsStat.getSigma() << "\n";
+  std::cout << "BENCHMARK_RENDER_AVG_SIGMA " << fpsStat.getAvgSigma() << "\n";
 
 #if defined(RAY_STATS)
-  std::cout << "BENCHMARK_RENDER_MRAYPS_MIN " << mraypsStat.getMin() << std::endl;
-  std::cout << "BENCHMARK_RENDER_MRAYPS_AVG " << mraypsStat.getAvg() << std::endl;
-  std::cout << "BENCHMARK_RENDER_MRAYPS_MAX " << mraypsStat.getMax() << std::endl;
-  std::cout << "BENCHMARK_RENDER_MRAYPS_SIGMA " << mraypsStat.getSigma() << std::endl;
-  std::cout << "BENCHMARK_RENDER_MRAYPS_AVG_SIGMA " << mraypsStat.getAvgSigma() << std::endl;
+  std::cout << "BENCHMARK_RENDER_MRAYPS_MIN " << mraypsStat.getMin() << "\n";
+  std::cout << "BENCHMARK_RENDER_MRAYPS_AVG " << mraypsStat.getAvg() << "\n";
+  std::cout << "BENCHMARK_RENDER_MRAYPS_MAX " << mraypsStat.getMax() << "\n";
+  std::cout << "BENCHMARK_RENDER_MRAYPS_SIGMA " << mraypsStat.getSigma() << "\n";
+  std::cout << "BENCHMARK_RENDER_MRAYPS_AVG_SIGMA " << mraypsStat.getAvgSigma() << "\n";
 #endif
 
   std::cout << std::flush;

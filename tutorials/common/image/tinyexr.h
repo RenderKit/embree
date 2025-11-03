@@ -2890,13 +2890,13 @@ static bool hufDecode(const long long *hcode,  // i : encoding table
         //
 
         lc -= pl.len;
-        // std::cout << "lit = " << pl.lit << std::endl;
-        // std::cout << "rlc = " << rlc << std::endl;
-        // std::cout << "c = " << c << std::endl;
-        // std::cout << "lc = " << lc << std::endl;
-        // std::cout << "in = " << in << std::endl;
-        // std::cout << "out = " << out << std::endl;
-        // std::cout << "oe = " << oe << std::endl;
+        // std::cout << "lit = " << pl.lit << "\n";
+        // std::cout << "rlc = " << rlc << "\n";
+        // std::cout << "c = " << c << "\n";
+        // std::cout << "lc = " << lc << "\n";
+        // std::cout << "in = " << in << "\n";
+        // std::cout << "out = " << out << "\n";
+        // std::cout << "oe = " << oe << "\n";
         if (!getCode(pl.lit, rlc, c, lc, in, ie, out, outb, oe)) {
           return false;
         }
@@ -4719,50 +4719,50 @@ static int ParseEXRHeader(HeaderInfo *info, bool *empty_header,
 
     if (!has_compression) {
       ss_err << "\"compression\" attribute not found in the header."
-             << std::endl;
+             << "\n";
     }
 
     if (!has_channels) {
-      ss_err << "\"channels\" attribute not found in the header." << std::endl;
+      ss_err << "\"channels\" attribute not found in the header.\n";
     }
 
     if (!has_line_order) {
-      ss_err << "\"lineOrder\" attribute not found in the header." << std::endl;
+      ss_err << "\"lineOrder\" attribute not found in the header.\n";
     }
 
     if (!has_display_window) {
       ss_err << "\"displayWindow\" attribute not found in the header."
-             << std::endl;
+             << "\n";
     }
 
     if (!has_data_window) {
       ss_err << "\"dataWindow\" attribute not found in the header or invalid."
-             << std::endl;
+             << "\n";
     }
 
     if (!has_pixel_aspect_ratio) {
       ss_err << "\"pixelAspectRatio\" attribute not found in the header."
-             << std::endl;
+             << "\n";
     }
 
     if (!has_screen_window_width) {
       ss_err << "\"screenWindowWidth\" attribute not found in the header."
-             << std::endl;
+             << "\n";
     }
 
     if (!has_screen_window_center) {
       ss_err << "\"screenWindowCenter\" attribute not found in the header."
-             << std::endl;
+             << "\n";
     }
 
     if (version->multipart || version->non_image) {
       if (!has_name) {
         ss_err << "\"name\" attribute not found in the header."
-          << std::endl;
+          << "\n";
       }
       if (!has_type) {
         ss_err << "\"type\" attribute not found in the header."
-          << std::endl;
+          << "\n";
       }
     }
 
@@ -5194,7 +5194,7 @@ static int DecodeChunk(EXRImage *exr_image, const EXRHeader *exr_header,
         std::stringstream ss;
         ss << "data_with or data_height too large. data_width: " << data_width
            << ", "
-           << "data_height = " << data_height << std::endl;
+           << "data_height = " << data_height << "\n";
         (*err) += ss.str();
       }
       return TINYEXR_ERROR_INVALID_DATA;
@@ -5205,7 +5205,7 @@ static int DecodeChunk(EXRImage *exr_image, const EXRHeader *exr_header,
           std::stringstream ss;
           ss << "tile with or tile height too large. tile width: " << exr_header->tile_size_x
             << ", "
-            << "tile height = " << exr_header->tile_size_y << std::endl;
+            << "tile height = " << exr_header->tile_size_y << "\n";
           (*err) += ss.str();
         }
         return TINYEXR_ERROR_INVALID_DATA;
@@ -5335,7 +5335,7 @@ static int DecodeChunk(EXRImage *exr_image, const EXRHeader *exr_header,
         std::stringstream ss;
         ss << "Image data size is zero or too large: width = " << data_width
            << ", height = " << data_height << ", channels = " << num_channels
-           << std::endl;
+           << "\n";
         (*err) += ss.str();
       }
       return TINYEXR_ERROR_INVALID_DATA;
@@ -6115,7 +6115,7 @@ static int DecodeEXRImage(EXRImage *exr_image, const EXRHeader *exr_header,
         // TODO(syoyo) Report as warning?
         // if (err) {
         //  stringstream ss;
-        //  ss << "Incomplete lineOffsets." << std::endl;
+        //  ss << "Incomplete lineOffsets.\n";
         //  (*err) += ss.str();
         //}
         bool ret =
@@ -9103,7 +9103,7 @@ int SaveEXRToMemory(const float *data, int width, int height, int components,
     // OK
   } else {
     std::stringstream ss;
-    ss << "Unsupported component value : " << components << std::endl;
+    ss << "Unsupported component value : " << components << "\n";
 
     tinyexr::SetErrorMessage(ss.str(), err);
     return TINYEXR_ERROR_INVALID_ARGUMENT;
@@ -9258,7 +9258,7 @@ int SaveEXR(const float *data, int width, int height, int components,
     // OK
   } else {
     std::stringstream ss;
-    ss << "Unsupported component value : " << components << std::endl;
+    ss << "Unsupported component value : " << components << "\n";
 
     tinyexr::SetErrorMessage(ss.str(), err);
     return TINYEXR_ERROR_INVALID_ARGUMENT;

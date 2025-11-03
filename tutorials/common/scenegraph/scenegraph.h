@@ -278,7 +278,7 @@ namespace embree
         }
         else if (q0 == true && q1 == true)
         {
-          std::cout << "warning: cannot multiply two quaternion decompositions. will convert to regular transforms and multiply" << std::endl;
+          std::cout << "warning: cannot multiply two quaternion decompositions. will convert to regular transforms and multiply\n";
           return quaternionDecompositionToAffineSpace(M0) * quaternionDecompositionToAffineSpace(M1);
         }
         else if (q0 == true && q1 == false)
@@ -287,13 +287,13 @@ namespace embree
           quaternionDecomposition(M0, T, Q, S);
           S = S * AffineSpace3fa(M1);
           if (S.l.vx.y != 0.f || S.l.vx.z != 0 || S.l.vy.z != 0)
-            std::cout << "warning: cannot multiply quaternion and general transformation matrix. will ignore lower diagonal" << std::endl;
+            std::cout << "warning: cannot multiply quaternion and general transformation matrix. will ignore lower diagonal\n";
           q = true;
           return quaternionDecomposition(T, Q, S);
         }
         else {
           if (M0.l.vx.y != 0.f || M0.l.vx.z != 0 || M0.l.vy.z != 0 || M0.l.vy.x != 0.f || M0.l.vz.x != 0 || M0.l.vz.y != 0)
-            std::cout << "warning: cannot multiply general transformation matrix and quaternion. will only consider translation and diagonal as scale factors" << std::endl;
+            std::cout << "warning: cannot multiply general transformation matrix and quaternion. will only consider translation and diagonal as scale factors\n";
           AffineSpace3ff M = M1;
           M.l.vx.y += M0.p.x;
           M.l.vx.z += M0.p.y;

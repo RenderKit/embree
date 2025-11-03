@@ -136,11 +136,11 @@ namespace embree
     {
       BVH4::AABBNode* n = node.getAABBNode();
       
-      std::cout << "AABBNode {" << std::endl;
+      std::cout << "AABBNode {\n";
       for (size_t i=0; i<4; i++)
       {
         for (size_t k=0; k<depth; k++) std::cout << "  ";
-        std::cout << "  bounds" << i << " = " << n->bounds(i) << std::endl;
+        std::cout << "  bounds" << i << " = " << n->bounds(i) << "\n";
       }
 
       for (size_t i=0; i<4; i++)
@@ -153,25 +153,25 @@ namespace embree
         print_bvh4_triangle4v(n->child(i),depth+1); 
       }
       for (size_t k=0; k<depth; k++) std::cout << "  ";
-      std::cout << "}" << std::endl;
+      std::cout << "}\n";
     }
     else
     {
       size_t num; 
       const Triangle4v* tri = (const Triangle4v*) node.leaf(num);
 
-      std::cout << "Leaf {" << std::endl;
+      std::cout << "Leaf {\n";
       for (size_t i=0; i<num; i++) {
         for (size_t j=0; j<tri[i].size(); j++) {
           for (size_t k=0; k<depth; k++) std::cout << "  ";
           std::cout << "  Triangle { v0 = (" << tri[i].v0.x[j] << ", " << tri[i].v0.y[j] << ", " << tri[i].v0.z[j] << "),  "
             "v1 = (" << tri[i].v1.x[j] << ", " << tri[i].v1.y[j] << ", " << tri[i].v1.z[j] << "), "
             "v2 = (" << tri[i].v2.x[j] << ", " << tri[i].v2.y[j] << ", " << tri[i].v2.z[j] << "), "
-            "geomID = " << tri[i].geomID(j) << ", primID = " << tri[i].primID(j) << " }" << std::endl;
+            "geomID = " << tri[i].geomID(j) << ", primID = " << tri[i].primID(j) << " }\n";
         }
       }
       for (size_t k=0; k<depth; k++) std::cout << "  ";
-      std::cout << "}" << std::endl;
+      std::cout << "}\n";
     }
   }
 
@@ -247,11 +247,11 @@ int main(int argc, char** argv)
     return embree::main(argc, argv);
   }
   catch (const std::exception& e) {
-    std::cout << "Error: " << e.what() << std::endl;
+    std::cout << "Error: " << e.what() << "\n";
     return 1;
   }
   catch (...) {
-    std::cout << "Error: unknown exception caught." << std::endl;
+    std::cout << "Error: unknown exception caught.\n";
     return 1;
   }
 }

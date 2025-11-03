@@ -132,12 +132,12 @@ namespace embree
     std::cout << std::setw(23) << "segments" << ": ";
     for (size_t t=0; t<max_time_steps; t++)
       std::cout << std::setw(10) << t;
-    std::cout << std::endl;
+    std::cout << "\n";
 
     std::cout << "-------------------------";
     for (size_t t=0; t<max_time_steps; t++)
       std::cout << "----------";
-    std::cout << std::endl;
+    std::cout << "\n";
     
     for (size_t p=0; p<Geometry::GTY_END; p++)
     {
@@ -145,7 +145,7 @@ namespace embree
       std::cout << std::setw(23) << Geometry::gtype_names[p] << ": ";
       for (size_t t=0; t<max_time_steps; t++)
         std::cout << std::setw(10) << statistics[p][t];
-      std::cout << std::endl;
+      std::cout << "\n";
     }
   }
 
@@ -810,9 +810,9 @@ namespace embree
     }
 
     if (device->verbosity(2)) {
-      std::cout << "created scene intersector" << std::endl;
+      std::cout << "created scene intersector\n";
       accels_print(2);
-      std::cout << "selected scene intersector" << std::endl;
+      std::cout << "selected scene intersector\n";
       intersectors.print(2);
     }
   }
