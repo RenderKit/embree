@@ -82,38 +82,35 @@ jobs:
         cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
-  # TODO: Reenable after patch
-  #nightly-linux-PVC-JIT-build:
-  #  secrets: inherit
-  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-  #  with:
-  #    image: embree/ubuntu:22.04
-  #    runs-on: '[ "Linux", "docker", "build" ]'
-  #    project: embree
-  #    env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-public.env
-  #    artifact-out: nightly-linux-PVC-JIT-build
-  #    artifact-path: ./build/*.tar.gz
-  #    cmd: |
-  #      module load cmake/3.25.3
-  #      cmake --preset nightly-linux-PVC-JIT -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
-  #      cmake --build build --config Release --target build
+  nightly-linux-PVC-JIT-build:
+   secrets: inherit
+   uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+   with:
+     image: embree/ubuntu:24.04
+     runs-on: '[ "Linux", "docker", "build" ]'
+     project: embree
+     env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
+     artifact-out: nightly-linux-PVC-JIT-build
+     artifact-path: ./build/*.tar.gz
+     cmd: |
+       cmake --preset nightly-linux-PVC-JIT -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
+       cmake --build build --config Release --target build
 
-  #nightly-linux-PVC-JIT-test:
+  # nightly-linux-PVC-JIT-test:
   #  secrets: inherit
   #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
   #  needs: ["nightly-linux-PVC-JIT-build"]
   #  with:
-  #    image: embree/ubuntu:22.04
+  #    image: embree/ubuntu:24.04
   #    options: --device=/dev/dri:/dev/dri
   #    runs-on: '[ "Linux", "docker", "pvc" ]'
   #    project: embree
-  #    env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-public.env
+  #    env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu24-public.env
   #    artifact-in: nightly-linux-PVC-JIT-build
   #    cmd: |
   #      export NEOReadDebugKeys=1
   #      export UseKmdMigration=0
   #      export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
-  #      module load cmake/3.25.3
   #      cmake --preset nightly-linux-PVC-JIT -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
   #      cmake --build build --config Release --target test_package
 
@@ -246,29 +243,14 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
-      runs-on: '[ "Windows", "NAS", "dg2" ]'
+      runs-on: '[ "Windows", "NAS", "build" ]'
       project: embree
-      env-from-files: ./.github/workflows/gfx-windows-public.env
-      dpcpp-version: intel/2025.0
+      dpcpp-version: intel/2025.2
       artifact-out: nightly-windows-DG2-JIT-ICX-RC-build
       artifact-path: ./build/*.zip
       cmd: |
         cmake --preset nightly-windows-DG2-JIT-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=2
         cmake --build build --config Release --target build
-
-  nightly-windows-DG2-JIT-ICX-RC-test:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-    needs: ["nightly-windows-DG2-JIT-ICX-RC-build"]
-    with:
-      runs-on: '[ "Windows", "NAS", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
-      dpcpp-version: intel/2025.0
-      artifact-in: nightly-windows-DG2-JIT-ICX-RC-build
-      cmd: |
-        cmake --preset nightly-windows-DG2-JIT-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=2
-        cmake --build build --config Release --target test_package
 
   nightly-windows-DG2-JIT-NIGHTLY-RK-bulid:
     secrets: inherit
@@ -475,7 +457,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: embree/rockylinux:8.7
-      dpcpp-version: intel/2025.0
+      dpcpp-version: intel/2025.2
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX-TBB2019_2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
@@ -488,7 +470,7 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2025.0
+      dpcpp-version: intel/2025.2
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX512VL-TBB2019_2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
@@ -501,7 +483,7 @@ jobs:
     with:
       image: embree/fedora:29
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2025.0
+      dpcpp-version: intel/2025.2
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX512-TBB2019_9 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
@@ -513,7 +495,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: embree/fedora:29
-      dpcpp-version: intel/2025.0
+      dpcpp-version: intel/2025.2
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX2-TBB2021_2_0 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
@@ -525,7 +507,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: embree/rockylinux:8.7
-      dpcpp-version: intel/2025.0
+      dpcpp-version: intel/2025.2
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_17_0-AVX2-TBB2019_9 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
@@ -538,7 +520,7 @@ jobs:
     with:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2025.0
+      dpcpp-version: intel/2025.2
       cmd: |
         module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_17_0-AVX512VL-TBB2021_5_0 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
@@ -832,36 +814,7 @@ jobs:
 ########################################
 # Windows
 ########################################
-  nightly-windows-RELEASE-ICX2025_0-ISPC1_13_0-AVX2-TBB2021_5_0:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-    with:
-      dpcpp-version: intel/2025.0
-      cmd: |
-        cmake --preset nightly-windows-RELEASE-ICX-ISPC1_13_0-AVX2-TBB2021_5_0 -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
-        cmake --build build --config Release --target build
-        cmake --build build --config Release --target test_package
 
-  nightly-windows-RELEASE-ICX2025_0-ISPC1_13_0-AVX512-TBB2019_9:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-    with:
-      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-      dpcpp-version: intel/2025.0
-      cmd: |
-        cmake --preset nightly-windows-RELEASE-ICX-ISPC1_13_0-AVX512-TBB2019_9 -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
-        cmake --build build --config Release --target build
-        cmake --build build --config Release --target test_package
-
-  nightly-windows-RELEASE-ICX2025_0-ISPC1_14_1-AVX2-TBB2021_2_0:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-    with:
-      dpcpp-version: intel/2025.0
-      cmd: |
-        cmake --preset nightly-windows-RELEASE-ICX-ISPC1_14_1-AVX2-TBB2021_2_0 -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=4
-        cmake --build build --config Release --target build
-        cmake --build build --config Release --target test_package
 
   ########################################
   # MacOS
