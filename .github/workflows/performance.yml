@@ -83,7 +83,7 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2025.0
+      dpcpp-version: intel/2025.2
       artifact-out: perf-linux-x86-ICX-ISPC-build
       artifact-path: ./build/*.tar.gz
       cmd: |
