@@ -109,11 +109,11 @@ namespace embree
         map_d(nullptr), map_Ka(nullptr), map_Kd(nullptr), map_Ks(nullptr), map_Kt(nullptr), map_Ns(nullptr), map_Displ(nullptr) {}
 
     OBJMaterial (float d, const std::shared_ptr<Texture> map_d,
-                 const Vec3fa& Ka, const std::shared_ptr<Texture> map_Ka, 
-                 const Vec3fa& Kd, const std::shared_ptr<Texture> map_Kd, 
-                 const Vec3fa& Ks, const std::shared_ptr<Texture> map_Ks,
-                 const Vec3fa& Kt, const std::shared_ptr<Texture> map_Kt, 
-                 const float Ns, const std::shared_ptr<Texture> map_Ns, 
+                 const Vec3fa& Ka, const std::shared_ptr<Texture> &map_Ka,
+                 const Vec3fa& Kd, const std::shared_ptr<Texture> &map_Kd,
+                 const Vec3fa& Ks, const std::shared_ptr<Texture> &map_Ks,
+                 const Vec3fa& Kt, const std::shared_ptr<Texture> &map_Kt,
+                 const float Ns, const std::shared_ptr<Texture> &map_Ns,
                  const std::shared_ptr<Texture> map_Displ)
       : base(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(Ka), Kd(Kd), Ks(Ks), Kt(Kt), 
       map_d(nullptr), map_Ka(nullptr), map_Kd(nullptr), map_Ks(nullptr), map_Kt(nullptr), map_Ns(nullptr), map_Displ(nullptr),

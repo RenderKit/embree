@@ -992,7 +992,7 @@ namespace embree
 
     struct AnimatedLightNode : public LightNode
     {
-      AnimatedLightNode (const std::vector<Ref<LightNode>>&& lights, BBox1f time_range)
+      AnimatedLightNode (const std::vector<Ref<LightNode>>& lights, BBox1f time_range)
         : lights(lights), time_range(time_range) {}
 
       virtual LightType getType() const {
