@@ -41,7 +41,7 @@ namespace embree
     
   public:
     Texture (); 
-    Texture (Ref<Image> image, const std::string fileName); 
+    Texture (Ref<Image> image, const std::string &&fileName); 
     Texture (unsigned width, unsigned height, const Format format, const char* in = nullptr);
     ~Texture ();
 
