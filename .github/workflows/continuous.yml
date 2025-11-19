@@ -50,7 +50,7 @@ jobs:
   #      cmake --preset linux-DG2-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
   #      cmake --build build --config Release --target test_package
 
-  linux-DG2-JIT-PUBLIC-build:
+  linux-GPU-JIT-build:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
@@ -58,26 +58,39 @@ jobs:
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
-      artifact-out: linux-DG2-JIT-PUBLIC-build
+      artifact-out: linux-GPU-JIT-build
       artifact-path: ./build/*.tar.gz
       cmd: |
-        module load cmake/3.25.3
         cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target build
 
   linux-DG2-JIT-PUBLIC-test:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    needs: ["linux-DG2-JIT-PUBLIC-build"]
+    needs: ["linux-GPU-JIT-build"]
     with:
       image: embree/ubuntu:24.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu24-public.env
-      artifact-in: linux-DG2-JIT-PUBLIC-build
+      artifact-in: linux-GPU-JIT-build
       cmd: |
-        module load cmake/3.25.3
+        cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
+
+  linux-PVC-JIT-PUBLIC-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    needs: ["linux-GPU-JIT-build"]
+    with:
+      image: embree/ubuntu:24.04
+      options: --device=/dev/dri:/dev/dri
+      runs-on: '[ "Linux", "docker", "pvc" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu24-public.env
+      artifact-in: linux-GPU-JIT-build
+      cmd: |
         cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
@@ -92,7 +105,6 @@ jobs:
       artifact-out: linux-DG2-JIT-PUBLIC-ICX-build
       artifact-path: ./build/*.tar.gz
       cmd: |
-        module load cmake/3.25.3
         cmake --preset linux-DG2-JIT-PUBLIC-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target build
 
@@ -109,7 +121,6 @@ jobs:
       dpcpp-version: intel/2025.2
       artifact-in: linux-DG2-JIT-PUBLIC-ICX-build
       cmd: |
-        module load cmake/3.25.3
         cmake --preset linux-DG2-JIT-PUBLIC-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
@@ -125,114 +136,8 @@ jobs:
       artifact-out: linux-DG2-JIT-PUBLIC-debug-build
       artifact-path: ./build/*.tar.gz
       cmd: |
-        module load cmake/3.25.3
         cmake --preset linux-DG2-JIT-PUBLIC-debug -DCMAKE_BUILD_TYPE=Debug -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Debug --target build
-
-
-
-  ##########################################
-  ### Linux PVC TODO: Reenable after patch
-  ##########################################
-
-  #linux-PVC-JIT-INTERNAL-build:
-  #  secrets: inherit
-  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-  #  with:
-  #    image: embree/ubuntu:22.04
-  #    runs-on: '[ "Linux", "docker", "build" ]'
-  #    project: embree
-  #    env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
-  #    artifact-out: linux-PVC-JIT-INTERNAL-build
-  #    artifact-path: ./build/*.tar.gz
-  #    cmd: |
-  #      module load cmake/3.25.3
-  #      cmake --preset linux-PVC-JIT-INTERNAL-SYCL-RC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3 -DSKIP_TEST_PVC=ON
-  #      cmake --build build --config Release --target build
-
-  ##  TODO: move to nightly
-  #linux-PVC-JIT-INTERNAL-test-1T:
-  #  secrets: inherit
-  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-  #  needs: ["linux-PVC-JIT-INTERNAL-build"]
-  #  with:
-  #    image: embree/ubuntu:22.04
-  #    options: --device=/dev/dri:/dev/dri
-  #    runs-on: '[ "Linux", "docker", "pvc" ]'
-  #    project: embree
-  #    env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
-  #    artifact-in: linux-PVC-JIT-INTERNAL-build
-  #    cmd: |
-  #      export NEOReadDebugKeys=1
-  #      export UseKmdMigration=0
-  #      export EnableImplicitScaling=0
-  #      export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
-  #      module load cmake/3.25.3
-  #      cmake --preset linux-PVC-JIT-INTERNAL-SYCL-RC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3  -DSKIP_TEST_PVC=ON
-  #      cmake --build build --config Release --target test_package
-
-  #linux-PVC-JIT-INTERNAL-test-2T:
-  #  secrets: inherit
-  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-  #  needs: ["linux-PVC-JIT-INTERNAL-build"]
-  #  with:
-  #    image: embree/ubuntu:22.04
-  #    options: --device=/dev/dri:/dev/dri
-  #    runs-on: '[ "Linux", "docker", "pvc" ]'
-  #    project: embree
-  #    env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
-  #    artifact-in: linux-PVC-JIT-INTERNAL-build
-  #    cmd: |
-  #      export NEOReadDebugKeys=1
-  #      export UseKmdMigration=0
-  #      export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
-  #      module load cmake/3.25.3
-  #      cmake --preset linux-PVC-JIT-INTERNAL-SYCL-RC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3  -DSKIP_TEST_PVC=ON
-  #      cmake --build build --config Release --target test_package
-
-  #linux-PVC-JIT-INTERNAL-test-flat:
-  #  secrets: inherit
-  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-  #  needs: ["linux-PVC-JIT-INTERNAL-build"]
-  #  with:
-  #    image: embree/ubuntu:22.04
-  #    options: --device=/dev/dri:/dev/dri
-  #    runs-on: '[ "Linux", "docker", "pvc" ]'
-  #    project: embree
-  #    env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
-  #    artifact-in: linux-PVC-JIT-INTERNAL-build
-  #    cmd: |
-  #      module load cmake/3.25.3
-  #      cmake --preset linux-PVC-JIT-INTERNAL-SYCL-RC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3  -DSKIP_TEST_PVC=ON
-  #      cmake --build build --config Release --target test_package
-
-
-  #  linux-PVC-JIT-PUBLIC:
-  #    secrets: inherit
-  #    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-  #    with:
-  #      image: embree/ubuntu:22.04
-  #      runs-on: '[ "Linux", "docker", "build" ]'
-  #      artifact-out: linux-PVC-JIT-PUBLIC
-  #      artifact-path: ./build .ctest_conf
-  #      cmd: |
-  #        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4
-  #        scripts/test.py build --debug
-  #        scripts/test.py build
-  #
-  #  linux-PVC-JIT-PUBLIC-test:
-  #    secrets: inherit
-  #    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-  #    needs: ["linux-PVC-JIT-PUBLIC"]
-  #    with:
-  #      image: embree/ubuntu:22.04
-  #      options: --device=/dev/dri:/dev/dri
-  #      runs-on: '[ "Linux", "docker", "pvc" ]'
-  #      artifact-in: linux-PVC-JIT-PUBLIC
-  #      cmd: |
-  #        scripts/test.py test --debug
-  #        scripts/test.py test
-
 
   ########################################
   # Windows DG2
