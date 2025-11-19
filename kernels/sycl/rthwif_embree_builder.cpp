@@ -150,6 +150,28 @@ namespace embree
     return sycl_device.get_info<sycl::info::device::max_compute_units>();
   }
 
+  const bool isPVC(const ze_device_handle_t hDevice)
+  {
+    ze_device_properties_t device_props{ ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES };
+    ze_result_t status = ZeWrapper::zeDeviceGetProperties(hDevice, &device_props);
+    if (status != ZE_RESULT_SUCCESS)
+      throw_RTCError(RTC_ERROR_UNKNOWN, "zeDeviceGetProperties properties failed");
+
+    /* check for Intel vendor */
+    const uint32_t vendor_id = device_props.vendorId;
+    const uint32_t device_id = device_props.deviceId;
+    if (vendor_id != 0x8086) return false;
+
+    /* PVC */
+    const bool pvc =
+      (0x0BD5 <= device_id && device_id <= 0x0BDB) ||
+      (device_id == 0x0B69) ||
+      (device_id == 0x0B6E) ||
+      (device_id == 0x0BD4);
+
+    return pvc;
+  }
+
   void* rthwifAllocAccelBuffer(Device* embree_device, size_t bytes, sycl::device device, sycl::context context, sycl::usm::alloc alloc_type)
   {
     ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
@@ -190,6 +212,13 @@ namespace embree
     void* ptr = nullptr;
 
     if (embree_device) embree_device->memoryMonitor(bytes,false);
+
+    if (alloc_type == sycl::usm::alloc::device && isPVC(hDevice)) {
+      // This is Workaround for PVC.
+      // There is existing bug on PVC which prevents us from allocating RTAS memory on device
+      // so we fallback to shared allocation for device USM allocations.
+      alloc_type = sycl::usm::alloc::shared;
+    }
 
     ze_result_t result;
     switch (alloc_type) {
