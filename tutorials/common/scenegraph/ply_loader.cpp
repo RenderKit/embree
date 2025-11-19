@@ -118,7 +118,7 @@ namespace embree
           if (line == "end_header") break;
           if (line.find_first_of('#') == 0) continue;
           if (line == "") continue;
-          header.push_back(line);
+          header.emplace_back(line);
         }
 
         /* parse header */
@@ -191,7 +191,7 @@ namespace embree
           Type ty = parseType(line);
           std::string name; line >> name;
           elt.type[name] = ty; 
-          elt.properties.push_back(name);
+          elt.properties.emplace_back(name);
         }
 
         mesh.elements[name] = elt;
@@ -267,7 +267,7 @@ namespace embree
         std::vector<size_t> lst;
         size_t num = loadInteger(index_ty);
         for (size_t i=0; i<num; i++) lst.push_back(loadInteger(data_ty));
-        vec.push_back(lst);
+        vec.emplace_back(lst);
       }
 
       /* load a data element */
