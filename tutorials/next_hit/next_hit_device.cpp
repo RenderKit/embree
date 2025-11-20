@@ -318,6 +318,10 @@ Vec3ff renderPixelStandard(const TutorialData& data, float x, float y,
   
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, 0.0f);
+  ray.Ng = {0.0f, 1.0f, 0.0f};
+  ray.flags = 0;
+  ray.id = 0;
+  ray.u = ray.v = 0.0f;
 
   /* either gather hits in single pass or using multiple passes */
   HitList hits(data);
