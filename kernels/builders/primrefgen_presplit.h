@@ -116,7 +116,7 @@ namespace embree
 	const float area_aabb  = area(ref.bounds());
 	const float area_prim  = primitiveArea(ref);
         if (area_prim == 0.0f) return 0.0f;
-        const unsigned int diff = 31 - lzcnt(mc.x^mc.y);
+        const int diff = 31 - lzcnt(mc.x^mc.y);
         //assert(area_prim <= area_aabb); // may trigger due to numerical issues 
         const float area_diff = max(0.0f, area_aabb - area_prim);
         //const float priority = powf(area_diff * powf(PRIORITY_SPLIT_POS_WEIGHT,(float)diff),1.0f/4.0f);   
