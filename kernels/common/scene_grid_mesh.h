@@ -155,16 +155,16 @@ namespace embree
     __forceinline unsigned int getNumQuads(const size_t gridID) const
     {
       const Grid& g = grid(gridID);
-      assert(g.resX > maxGridRes);
-      assert(g.resY > maxGridRes);
+      assert(g.resX <= maxGridRes);
+      assert(g.resY <= maxGridRes);
       return (unsigned int) max((int)1,((int)g.resX-1) * ((int)g.resY-1));
     }
     
     __forceinline unsigned int getNumSubGrids(const size_t gridID) const
     {
       const Grid& g = grid(gridID);
-      assert(g.resX > maxGridRes);
-      assert(g.resY > maxGridRes);
+      assert(g.resX <= maxGridRes);
+      assert(g.resY <= maxGridRes);
       return max((unsigned int)1,((unsigned int)g.resX >> 1) * ((unsigned int)g.resY >> 1));
     }
 

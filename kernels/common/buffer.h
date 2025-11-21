@@ -256,7 +256,7 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"item count too large");
       }
 
-      if (offset_in > 0 && offset_in >= buffer_in->numBytes) {
+      if (offset_in > buffer_in->numBytes) {
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "offset too large");
       }
 
