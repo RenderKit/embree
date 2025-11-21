@@ -7,7 +7,7 @@ permissions: read-all
 
 on: 
   schedule:
-    - cron:  '00 01 * * *'
+    - cron:  '02 00 * * *'
   workflow_dispatch:
 
 jobs:
@@ -71,11 +71,6 @@ jobs:
         cd bin
         source ../embree-vars.sh
         $GITHUB_WORKSPACE/scripts/run-perf.sh gpu
-
-
-
-
-
 
   perf-linux-x86-ICX-ISPC-build:
     secrets: inherit
