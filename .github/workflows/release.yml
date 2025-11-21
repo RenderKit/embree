@@ -165,7 +165,6 @@ jobs:
         cmake --preset integrate-sycl-linux-dpcpp -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
         cmake --build build --target test_package
 
-
   #release-linux-sycl-pvc-test:
   #  secrets: inherit
   #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main

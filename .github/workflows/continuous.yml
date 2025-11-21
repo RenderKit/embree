@@ -50,7 +50,7 @@ jobs:
   #      cmake --preset linux-DG2-JIT-INTERNAL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
   #      cmake --build build --config Release --target test_package
 
-  linux-DG2-JIT-PUBLIC-build:
+  linux-GPU-JIT-build:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
@@ -58,26 +58,39 @@ jobs:
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
-      artifact-out: linux-DG2-JIT-PUBLIC-build
+      artifact-out: linux-GPU-JIT-build
       artifact-path: ./build/*.tar.gz
       cmd: |
-        module load cmake/3.25.3
         cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target build
 
   linux-DG2-JIT-PUBLIC-test:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    needs: ["linux-DG2-JIT-PUBLIC-build"]
+    needs: ["linux-GPU-JIT-build"]
     with:
       image: embree/ubuntu:24.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu24-public.env
-      artifact-in: linux-DG2-JIT-PUBLIC-build
+      artifact-in: linux-GPU-JIT-build
       cmd: |
-        module load cmake/3.25.3
+        cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
+
+  linux-PVC-JIT-PUBLIC-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    needs: ["linux-GPU-JIT-build"]
+    with:
+      image: embree/ubuntu:24.04
+      options: --device=/dev/dri:/dev/dri
+      runs-on: '[ "Linux", "docker", "pvc" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu24-public.env
+      artifact-in: linux-GPU-JIT-build
+      cmd: |
         cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
@@ -88,11 +101,10 @@ jobs:
       image: embree/ubuntu:24.04
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
-      dpcpp-version: intel/2025.0
+      dpcpp-version: intel/2025.2
       artifact-out: linux-DG2-JIT-PUBLIC-ICX-build
       artifact-path: ./build/*.tar.gz
       cmd: |
-        module load cmake/3.25.3
         cmake --preset linux-DG2-JIT-PUBLIC-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target build
 
@@ -106,10 +118,9 @@ jobs:
       runs-on: '[ "Linux", "docker", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/gfx-ubuntu24-public.env
-      dpcpp-version: intel/2025.0
+      dpcpp-version: intel/2025.2
       artifact-in: linux-DG2-JIT-PUBLIC-ICX-build
       cmd: |
-        module load cmake/3.25.3
         cmake --preset linux-DG2-JIT-PUBLIC-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
@@ -125,114 +136,8 @@ jobs:
       artifact-out: linux-DG2-JIT-PUBLIC-debug-build
       artifact-path: ./build/*.tar.gz
       cmd: |
-        module load cmake/3.25.3
         cmake --preset linux-DG2-JIT-PUBLIC-debug -DCMAKE_BUILD_TYPE=Debug -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Debug --target build
-
-
-
-  ##########################################
-  ### Linux PVC TODO: Reenable after patch
-  ##########################################
-
-  #linux-PVC-JIT-INTERNAL-build:
-  #  secrets: inherit
-  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-  #  with:
-  #    image: embree/ubuntu:22.04
-  #    runs-on: '[ "Linux", "docker", "build" ]'
-  #    project: embree
-  #    env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
-  #    artifact-out: linux-PVC-JIT-INTERNAL-build
-  #    artifact-path: ./build/*.tar.gz
-  #    cmd: |
-  #      module load cmake/3.25.3
-  #      cmake --preset linux-PVC-JIT-INTERNAL-SYCL-RC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3 -DSKIP_TEST_PVC=ON
-  #      cmake --build build --config Release --target build
-
-  ##  TODO: move to nightly
-  #linux-PVC-JIT-INTERNAL-test-1T:
-  #  secrets: inherit
-  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-  #  needs: ["linux-PVC-JIT-INTERNAL-build"]
-  #  with:
-  #    image: embree/ubuntu:22.04
-  #    options: --device=/dev/dri:/dev/dri
-  #    runs-on: '[ "Linux", "docker", "pvc" ]'
-  #    project: embree
-  #    env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
-  #    artifact-in: linux-PVC-JIT-INTERNAL-build
-  #    cmd: |
-  #      export NEOReadDebugKeys=1
-  #      export UseKmdMigration=0
-  #      export EnableImplicitScaling=0
-  #      export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
-  #      module load cmake/3.25.3
-  #      cmake --preset linux-PVC-JIT-INTERNAL-SYCL-RC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3  -DSKIP_TEST_PVC=ON
-  #      cmake --build build --config Release --target test_package
-
-  #linux-PVC-JIT-INTERNAL-test-2T:
-  #  secrets: inherit
-  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-  #  needs: ["linux-PVC-JIT-INTERNAL-build"]
-  #  with:
-  #    image: embree/ubuntu:22.04
-  #    options: --device=/dev/dri:/dev/dri
-  #    runs-on: '[ "Linux", "docker", "pvc" ]'
-  #    project: embree
-  #    env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
-  #    artifact-in: linux-PVC-JIT-INTERNAL-build
-  #    cmd: |
-  #      export NEOReadDebugKeys=1
-  #      export UseKmdMigration=0
-  #      export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
-  #      module load cmake/3.25.3
-  #      cmake --preset linux-PVC-JIT-INTERNAL-SYCL-RC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3  -DSKIP_TEST_PVC=ON
-  #      cmake --build build --config Release --target test_package
-
-  #linux-PVC-JIT-INTERNAL-test-flat:
-  #  secrets: inherit
-  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-  #  needs: ["linux-PVC-JIT-INTERNAL-build"]
-  #  with:
-  #    image: embree/ubuntu:22.04
-  #    options: --device=/dev/dri:/dev/dri
-  #    runs-on: '[ "Linux", "docker", "pvc" ]'
-  #    project: embree
-  #    env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu22-internal.env
-  #    artifact-in: linux-PVC-JIT-INTERNAL-build
-  #    cmd: |
-  #      module load cmake/3.25.3
-  #      cmake --preset linux-PVC-JIT-INTERNAL-SYCL-RC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3  -DSKIP_TEST_PVC=ON
-  #      cmake --build build --config Release --target test_package
-
-
-  #  linux-PVC-JIT-PUBLIC:
-  #    secrets: inherit
-  #    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-  #    with:
-  #      image: embree/ubuntu:22.04
-  #      runs-on: '[ "Linux", "docker", "build" ]'
-  #      artifact-out: linux-PVC-JIT-PUBLIC
-  #      artifact-path: ./build .ctest_conf
-  #      cmd: |
-  #        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4
-  #        scripts/test.py build --debug
-  #        scripts/test.py build
-  #
-  #  linux-PVC-JIT-PUBLIC-test:
-  #    secrets: inherit
-  #    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-  #    needs: ["linux-PVC-JIT-PUBLIC"]
-  #    with:
-  #      image: embree/ubuntu:22.04
-  #      options: --device=/dev/dri:/dev/dri
-  #      runs-on: '[ "Linux", "docker", "pvc" ]'
-  #      artifact-in: linux-PVC-JIT-PUBLIC
-  #      cmd: |
-  #        scripts/test.py test --debug
-  #        scripts/test.py test
-
 
   ########################################
   # Windows DG2
@@ -279,13 +184,26 @@ jobs:
         cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
+  windows-DG2-JIT-INTERNAL-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    needs: ["windows-DG2-JIT-build"]
+    with:
+      runs-on: '[ "Windows", "NAS", "dg2" ]'
+      project: embree
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
+      artifact-in: windows-DG2-JIT-build
+      cmd: |
+        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target test_package
+
   windows-DG2-JIT-ICX-build:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
-      dpcpp-version: intel/2025.0
+      dpcpp-version: intel/2025.2
       env-from-files: ./.github/workflows/gfx-windows-public.env
       artifact-out: windows-DG2-JIT-ICX-build
       artifact-path: ./build/*.zip
@@ -293,46 +211,17 @@ jobs:
         cmake --preset nightly-windows-DG2-JIT-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target build
 
-  windows-DG2-JIT-ICX-INTERNAL-test:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-    needs: ["windows-DG2-JIT-ICX-build"]
-    with:
-      runs-on: '[ "Windows", "NAS", "dg2" ]'
-      project: embree
-      dpcpp-version: intel/2025.0
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
-      artifact-in: windows-DG2-JIT-ICX-build
-      cmd: |
-        cmake --preset nightly-windows-DG2-JIT-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target test_package
-
-  windows-DG2-JIT-ICX-PUBLIC-test:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-    needs: ["windows-DG2-JIT-ICX-build"]
-    with:
-      runs-on: '[ "Windows", "NAS", "dg2" ]'
-      project: embree
-      dpcpp-version: intel/2025.0
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
-      artifact-in: windows-DG2-JIT-ICX-build
-      cmd: |
-        cmake --preset nightly-windows-DG2-JIT-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target test_package
-
-
-  windows-DG2-JIT-debug-build:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-    with:
-      force-delete: true
-      runs-on: '[ "Windows", "NAS", "build" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
-      cmd: |
-        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS-debug -DCMAKE_BUILD_TYPE=Debug -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Debug --target build
+  # windows-DG2-JIT-debug-build:
+  #   secrets: inherit
+  #   uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+  #   with:
+  #     force-delete: true
+  #     runs-on: '[ "Windows", "NAS", "build" ]'
+  #     project: embree
+  #     env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
+  #     cmd: |
+  #       cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS-debug -DCMAKE_BUILD_TYPE=Debug -DEMBREE_TESTING_INTENSITY=3
+  #       cmake --build build --config Debug --target build
 
 #   ################################################################################
 #   ################################################################################
@@ -374,7 +263,7 @@ jobs:
     with:
       image: embree/fedora:29
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2025.0
+      dpcpp-version: intel/2025.2
       cmd: |
         module load cmake/3.25.3
         cmake --preset linux-fedora29-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
@@ -387,7 +276,7 @@ jobs:
     with:
       image: embree/fedora:32
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2025.0
+      dpcpp-version: intel/2025.2
       cmd: |
         module load cmake/3.25.3
         cmake --preset linux-fedora32-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
@@ -412,7 +301,7 @@ jobs:
     with:
       image: embree/ubuntu:20.04
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2025.0
+      dpcpp-version: intel/2025.2
       cmd: |
         module load cmake/3.25.3
         cmake --preset linux-ubuntu20_04-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
@@ -442,7 +331,7 @@ jobs:
   #  with:
   #    force-delete: true
   #    runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-  #    dpcpp-version: intel/2025.0
+  #    dpcpp-version: intel/2025.2
   #    cmd: |
   #      cmake --preset windows-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
   #      cmake --build build --config RelWithDebInfo --target build
@@ -496,19 +385,6 @@ jobs:
   # Coverity
   ########################################
 
-  #static-analysis:
-  #  secrets: inherit
-  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/static_analysis.yml@main
-  #  with:
-  #    project: Embree
-  #    submodules: true
-  #    coverity: true
-  #    prebuild: >
-  #      module load cmake/3.25.3 &&
-  #      export NAS_LINUX=$STORAGE_PATH/packages/apps &&
-  #      cmake --preset linux-coverity
-  #    build: sh scripts/coverity.sh
-
   static-analysis-lin:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/static_analysis.yml@main
@@ -517,20 +393,6 @@ jobs:
       project: Embree
       submodules: true
       prebuild: >
-        module load cmake/3.25.3 &&
-        export NAS_LINUX=$STORAGE_PATH/packages/apps &&
-        cmake --preset linux-coverity
-      build: sh scripts/coverity.sh
-
-  static-analysis-win:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/static_analysis.yml@main
-    with:
-      os: Windows
-      project: Embree
-      submodules: true
-      prebuild: >
-        module load cmake/3.25.3 &&
         export NAS_LINUX=$STORAGE_PATH/packages/apps &&
         cmake --preset linux-coverity
       build: sh scripts/coverity.sh
@@ -542,8 +404,7 @@ jobs:
       - linux-DG2-JIT-PUBLIC-ICX-test
       - linux-DG2-JIT-PUBLIC-debug-build
       - windows-DG2-JIT-PUBLIC-test
-      - windows-DG2-JIT-ICX-PUBLIC-test
-      - windows-DG2-JIT-debug-build
+      - windows-DG2-JIT-INTERNAL-test
       - linux-fedora29-CLANG4
       - linux-fedora29-CLANG5-INT-ADDRSANITIZER
       - linux-fedora29-ICX
@@ -556,7 +417,6 @@ jobs:
       - macosx-x64-CLANG
       - macosx-ARM-CLANG-NEON-AVX2-universal-binaries
       - static-analysis-lin
-      - static-analysis-win
 
 
     if: failure() || cancelled()
