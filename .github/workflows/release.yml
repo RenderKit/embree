@@ -7,7 +7,7 @@ permissions: read-all
 
 on:
   schedule:
-    - cron:  '00 00 * * *'
+    - cron:  '01 00 * * *'
   workflow_dispatch:
 
 jobs:
@@ -22,7 +22,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
       artifact-out: release-windows
       artifact-path: ./build/embree-*.zip
-      dpcpp-version: intel-llvm/v6.0.0-rk
+      dpcpp-version: intel-llvm/v6.2.0
       shell: cmd
       cmd: |
         cmake --preset release-windows -DCMAKE_BUILD_TYPE=Release
@@ -95,7 +95,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       artifact-out: release-linux
       artifact-path: ./build/*.tar.gz
-      dpcpp-version: intel-llvm/v6.0.0-rk
+      dpcpp-version: intel-llvm/v6.2.0
       pre-cmd: |
         yum -y install epel-release
         dnf makecache --refresh
@@ -119,7 +119,7 @@ jobs:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       project: embree
       env-from-files: ./.github/workflows/gfx-windows-internal.env
-      dpcpp-version: intel-llvm/v6.0.0-rk
+      dpcpp-version: intel-llvm/v6.2.0
       artifact-out: release-windows-sycl
       artifact-path: ./build/*.zip
       shell: cmd
@@ -135,7 +135,7 @@ jobs:
       image: rockylinux:8.7
       runs-on: '[ "Linux", "docker", "build" ]'
       project: embree
-      dpcpp-version: intel-llvm/v6.0.0-rk
+      dpcpp-version: intel-llvm/v6.2.0
       artifact-out: release-linux-sycl
       artifact-path: ./build/*.tar.gz
       pre-cmd: |
@@ -164,24 +164,6 @@ jobs:
         module load cmake/3.25.3
         cmake --preset integrate-sycl-linux-dpcpp -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
         cmake --build build --target test_package
-
-  #release-linux-sycl-pvc-test:
-  #  secrets: inherit
-  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-  #  needs: ["release-linux-sycl"]
-  #  with:
-  #    image: embree/ubuntu:22.04
-  #    options: --device=/dev/dri:/dev/dri
-  #    runs-on: '[ "Linux", "docker", "pvc" ]'
-  #    project: embree
-  #    env-from-files: ./.github/workflows/gfx-ubuntu22-public.env
-  #    dpcpp-version: intel-llvm/nightly-2023-10-26-rk
-  #    artifact-in: release-linux-sycl
-  #    cmd: |
-  #      module load cmake/3.25.3
-  #      export ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
-  #      cmake --preset integrate-sycl-linux-dpcpp -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
-  #      cmake --build build --target test_package
 
 #####################################################################
 # Release binaries scans

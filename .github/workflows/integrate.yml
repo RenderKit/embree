@@ -5,10 +5,9 @@ name: integrate
 
 permissions: read-all
 
-# same as nightly...
 on:
   schedule:
-    - cron:  '00 00 * * *'
+    - cron:  '01 00 * * *'
   workflow_dispatch:
 
 jobs:
