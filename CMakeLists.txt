@@ -1,7 +1,7 @@
 ## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
-CMAKE_MINIMUM_REQUIRED(VERSION 3.5)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
 
 SET(EMBREE_VERSION_MAJOR 4)
 SET(EMBREE_VERSION_MINOR 4)
@@ -57,26 +57,14 @@ IF(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
 ENDIF()
 
 IF(COMMAND cmake_policy)
-  if (POLICY CMP0003)
-    cmake_policy(SET CMP0003 NEW)
-  endif()
-  if (POLICY CMP0042)
-    cmake_policy(SET CMP0042 NEW)
-  endif()
   if(POLICY CMP0072)
     cmake_policy(SET CMP0072 NEW)
-  endif()
-  if(POLICY CMP0022)
-    cmake_policy(SET CMP0022 NEW)
   endif()
   if(POLICY CMP0074)
     cmake_policy(SET CMP0074 NEW)
   endif()
   if(POLICY CMP0135)
     cmake_policy(SET CMP0135 NEW)
-  endif()
-  if(POLICY CMP0057)
-    cmake_policy(SET CMP0057 NEW)
   endif()
 ENDIF()
 

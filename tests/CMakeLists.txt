@@ -50,7 +50,7 @@ IF (EMBREE_TESTING_INSTALL_TESTS)
     "# Copyright 2009-2021 Intel Corporation\n"
     "# SPDX-License-Identifier: Apache-2.0\n"
     "# This file was automatically generated\n"
-    "cmake_minimum_required(VERSION 3.5)\n"
+    "cmake_minimum_required(VERSION 3.10)\n"
     "\n"
     "project(embree-testing)\n"
     "\n"
