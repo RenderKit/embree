@@ -69,3 +69,54 @@ jobs:
           cmake --preset public-gcc-tbb -DEMBREE_TESTING_INTENSITY=3
           cmake --build build --target build
           cmake --build build --target test_package
+
+
+  ubuntu-24_04-superbuild:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:24.04
+    steps:
+      - name: Install packages (ubuntu 24.04)
+        run: |
+          apt-get update
+          apt-get -y upgrade
+          apt-get -y install g++ cmake git-lfs freeglut3-dev libglfw3-dev libxmu-dev libxi-dev unzip xorg-dev pip
+          apt-get -y install libopenimageio-dev
+          cmake --version
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build and Run
+        run: |
+          mkdir build
+          cd build
+          cmake -D EMBREE_EXTRA_OPTIONS="-DBUILD_TESTING=ON -DEMBREE_TUTORIALS=ON -DEMBREE_ISPC_SUPPORT=ON -DEMBREE_TESTING_INTENSITY=3" ../superbuild
+          cmake --build .
+          cd embree/build
+          ctest
+
+  ubuntu-24_04-superbuild-tbbsrc:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:24.04
+    steps:
+      - name: Install packages (ubuntu 24.04)
+        run: |
+          apt-get update
+          apt-get -y upgrade
+          apt-get -y install g++ cmake git-lfs freeglut3-dev libglfw3-dev libxmu-dev libxi-dev unzip xorg-dev pip
+          apt-get -y install libopenimageio-dev
+          cmake --version
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build and Run
+        run: |
+          mkdir build
+          cd build
+          cmake -D BUILD_TBB_FROM_SOURCE=ON -D EMBREE_EXTRA_OPTIONS="-DBUILD_TESTING=ON -DEMBREE_TUTORIALS=ON -DEMBREE_ISPC_SUPPORT=ON -DEMBREE_TESTING_INTENSITY=3" ../superbuild
+          cmake --build .
+          cd embree/build
+          ctest
