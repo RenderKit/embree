@@ -13,11 +13,11 @@ jobs:
   # GPU tests
   ################################################################################
   ###############################################################################
-  
+
   ########################################
   # Linux DG2
   ########################################
-  
+
   linux-GPU-JIT-build:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
@@ -153,7 +153,7 @@ jobs:
       cmd: |
         cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
-        
+
   windows-DG2-JIT-INTERNAL-test:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
@@ -275,6 +275,16 @@ jobs:
         cmake --build build --config RelWithDebInfo --target build
         cmake --build build --config RelWithDebInfo --target test_package
 
+  linux-ubuntu24_04-GCC:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    with:
+      image: embree/ubuntu:24.04
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      cmd: |
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DEMBREE_TESTING_INSTALL_TESTS=ON -DCMAKE_INSTALL_TESTDIR="testing" -DEMBREE_TESTING_INTENSITY=3
+        cmake --build build --config Release --target build
+        cmake --build build --config Release --target test_package
 
   ########################################
   # Windows
@@ -337,7 +347,7 @@ jobs:
         cmake --preset macos-x64-CLANG -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
         cmake --build build --config RelWithDebInfo --target build
         cmake --build build --config RelWithDebInfo --target test_package
-  
+
   macosx-ARM-CLANG-NEON-AVX2-universal-binaries:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
