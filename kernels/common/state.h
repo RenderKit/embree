@@ -189,6 +189,16 @@ namespace embree
       error_function_userptr = uptr;
     }
 
+    RTCErrorFunction getErrorFunction() const
+    {
+      return error_function;
+    }
+
+    void* getErrorFunctionUserPtr() const
+    {
+      return error_function_userptr;
+    }
+
     RTCErrorFunction error_function;
     void* error_function_userptr;
 
@@ -197,6 +207,16 @@ namespace embree
     {
       memory_monitor_function = fptr;
       memory_monitor_userptr = uptr;
+    }
+
+    RTCMemoryMonitorFunction getMemoryMonitorFunction() const
+    {
+      return memory_monitor_function;
+    }
+
+    void* getMemoryMonitorFunctionUserPtr() const
+    {
+      return memory_monitor_userptr;
     }
 
     RTCMemoryMonitorFunction memory_monitor_function;
