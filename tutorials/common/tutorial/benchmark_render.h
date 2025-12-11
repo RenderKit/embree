@@ -109,7 +109,7 @@ static void renderBenchmarkLegacy(BenchState& state, BenchParams& params ,int ar
       if (numTotalFrames >= 1024 && (i % 64 == 0))
       {
         double rate = 0;
-        if (fpsStat.getAvg()) rate = 100.0f*fpsStat.getSigma()/fpsStat.getAvg();
+        if (fpsStat.getAvg() != 0.0) rate = 100.0f*fpsStat.getSigma()/fpsStat.getAvg();
 
         std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: "
                   << std::setw(8) << fps << " fps, "
