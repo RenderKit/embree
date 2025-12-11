@@ -219,10 +219,14 @@ namespace embree {
       FATAL("unknown flags");
 
     if (iterations == 0) iterations = 1;
+    if (time != 0.0) {
     std::cout << iterations << " iterations, " << primitives << " primitives, " << objects << " objects, "
               << time/iterations << " s, "
               << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
-
+    }
+    else {
+      std::cout << "error: measured build time of 0!\n";
+    }
     rtcReleaseScene (scene);
   }
   
@@ -523,10 +527,11 @@ namespace embree {
       }
 
       if (iterations == 0) iterations = 1;
-      std::cout << primitives << " primitives, " << objects << " objects, "
-                << time/iterations << " s, "
-                << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
-
+      if (time > 0.0) {
+        std::cout << primitives << " primitives, " << objects << " objects, "
+                  << time/iterations << " s, "
+                  << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
+      }
       rtcReleaseScene(helper.scene);
     }
 
