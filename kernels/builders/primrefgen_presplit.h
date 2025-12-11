@@ -287,7 +287,10 @@ namespace embree
         },[](const float& a, const float& b) -> float { return a+b; });
 
       /* compute number of splits per primitive */
-      const float inv_psum = 1.0f / psum;
+      float inv_psum = 1.0f;
+      if (psum > 0.0) {
+        inv_psum = 1.0f / psum;
+      }
       parallel_for( size_t(0), numPrimitives, size_t(MIN_STEP_SIZE), [&](const range<size_t>& r) -> void {
           for (size_t i=r.begin(); i<r.end(); i++)
           {
