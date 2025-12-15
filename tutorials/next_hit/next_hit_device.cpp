@@ -26,12 +26,13 @@ RTCFeatureFlags g_feature_mask;
 struct HitList
 {
   HitList (const TutorialData& data)
-    : data(data), begin(0), end(0) {}
+    : data(data), begin(0), end(0) {
+    }
 
   /* Hit structure that defines complete order over hits */
   struct Hit
   {
-    Hit() {}
+    Hit() : opaque(false), t(0.0f), primID(RTC_INVALID_GEOMETRY_ID), geomID(RTC_INVALID_GEOMETRY_ID), instID(RTC_INVALID_GEOMETRY_ID) {}
 
     Hit (bool opaque, float t, unsigned int primID = 0xFFFFFFFF, unsigned int geomID = 0xFFFFFFFF, unsigned int instID = 0xFFFFFFFF)
       : opaque(opaque), t(t), primID(primID), geomID(geomID), instID(instID) {}
