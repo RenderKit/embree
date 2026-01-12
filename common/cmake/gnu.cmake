@@ -17,7 +17,7 @@ ELSE ()
   _SET_IF_EMPTY(FLAGS_SSE42 "-msse4.2")
   _SET_IF_EMPTY(FLAGS_AVX   "-mavx")
   _SET_IF_EMPTY(FLAGS_AVX2  "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
-  _SET_IF_EMPTY(FLAGS_AVX512 "-mavx512f -mavx512dq -mavx512cd -mavx512bw -mavx512vl -mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2 -mprefer-vector-width=256")
+  _SET_IF_EMPTY(FLAGS_AVX512 "-march=skylake-avx512")
 ENDIF ()
 
 OPTION(EMBREE_IGNORE_CMAKE_CXX_FLAGS "When enabled Embree ignores default CMAKE_CXX_FLAGS." ON)
