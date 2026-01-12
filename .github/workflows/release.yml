@@ -12,253 +12,326 @@ on:
 
 jobs:
 
-#####################################################################
-# Release Builds
 ####################################################################
-  release-windows:
+# CPU Builds and Tests
+####################################################################
+  build-windows:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
-      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-      artifact-out: release-windows
+      runs-on: '[ "Windows", "build"]'
+      artifact-out: build-windows
       artifact-path: ./build/embree-*.zip
       dpcpp-version: intel-llvm/v6.2.0
-      shell: cmd
       cmd: |
         cmake --preset release-windows -DCMAKE_BUILD_TYPE=Release
         cmake --build build --config Release --target build
-        cmake --build build --target test_package
 
-  release-macosx:
+  windows-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    needs: ["build-windows"]
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [avx2, avx512]
+    with:
+      runs-on: '[ "Windows", "${{ matrix.platform }}" ]'
+      artifact-in: build-windows
+      cmd: |
+        # Merge binaries & testing packages
+        $dest = "./build/embree-release"
+        New-Item -ItemType Directory -Path $dest -Force | Out-Null
+        Get-ChildItem -Path "./build/*.zip" | 
+          ForEach-Object { Expand-Archive -Path $_.FullName -DestinationPath $dest -Force }
+        
+        # Run testing
+        cd $dest
+        cmake -S testing -B build
+        cd build
+        ctest -C Release --output-on-failure -VV
+
+  build-macosx-x86_64:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
     with:
-      project: embree
       runs-on: '[ "macOS", "build", "x86_64" ]'
       cmd: |
         source scripts/cmake-presets/macos-env.sh
         cmake --preset release-macos -DCMAKE_BUILD_TYPE=Release
         cmake --build build --config Release --target build
-        cmake --build build --target test_package
-        rm build/embree-*-testing.zip
-      notarize-package: build/embree-*.zip
-      artifact-out: release-macosx
-      artifact-path: ./build/*.zip
+      notarize-package: ./build/embree-*.x86_64.macosx.zip
+      artifact-out: build-macosx-x86_64
+      artifact-path: ./build/embree-*.zip
 
-  verify-package-macosx:
-    needs: release-macosx
+  test-macosx-x86_64:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
+    needs: ["build-macosx-x86_64"]
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [arm, x86_64]
     with:
-      project: embree
-      runs-on: '[ "macOS", "build", "x86_64" ]'
-      artifact-in: release-macosx
+      runs-on: '[ "macOS", "${{ matrix.platform }}" ]'
+      artifact-in: build-macosx-x86_64
       cmd: |
-        mkdir package
-        tar -xzvf build/embree-* -C ./package
-      sign-path-verify: ./package
+        # Merge binaries & testing packages
+        dest="./build/embree-release"
+        mkdir -p "$dest"
+        for archive in ./build/*.zip; do
+          unzip -o "$archive" -d "$dest"
+        done
 
-  release-macosx-arm:
+        # Run testing
+        cd $dest
+        cmake -S testing -B build
+        cd build
+        ctest -C Release --output-on-failure -VV
+
+  build-macosx-arm:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
     with:
-      project: embree
-      runs-on: '[ "macOS13", "test", "arm" ]'
+      runs-on: '[ "macOS", "build", "arm" ]'
       cmd: |
         source scripts/cmake-presets/macos-env.sh
         cmake --preset release-macos-arm -DCMAKE_BUILD_TYPE=Release
         cmake --build build --config Release --target build
-        cmake --build build --target test_package
-        rm build/embree-*-testing.zip
-      notarize-package: build/embree-*.zip
-      artifact-out: release-macosx-arm
+      notarize-package: build/embree-*.arm64.macosx.zip
+      artifact-out: build-macosx-arm
       artifact-path: ./build/*.zip
 
-  verify-package-macosx-arm:
-    needs: release-macosx-arm
+  test-macosx-arm:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
+    needs: ["build-macosx-arm"]
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [arm]
     with:
-      project: embree
-      runs-on: '[ "macOS13", "test", "arm" ]'
-      artifact-in: release-macosx-arm
+      runs-on: '[ "macOS", "${{ matrix.platform }}" ]'
+      artifact-in: build-macosx-arm
       cmd: |
-        mkdir package
-        tar -xzvf build/embree-* -C ./package
-      sign-path-verify: ./package
+        # Merge binaries & testing packages
+        dest="./build/embree-release"
+        mkdir -p "$dest"
+        for archive in ./build/*.zip; do
+          unzip -o "$archive" -d "$dest"
+        done
 
-  release-linux:
+        # Run testing
+        cd $dest
+        cmake -S testing -B build
+        cd build
+        ctest -C Release --output-on-failure -VV
+
+  build-linux:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: rockylinux:8.7
-      runs-on: '[ "Linux", "docker", "avx512" ]'
-      artifact-out: release-linux
+      runs-on: '[ "Linux", "build" ]'
+      artifact-out: build-linux
       artifact-path: ./build/*.tar.gz
       dpcpp-version: intel-llvm/v6.2.0
       pre-cmd: |
-        yum -y install epel-release
-        dnf makecache --refresh
-        dnf config-manager --set-enabled powertools
-        dnf -y update
+        dnf -y install epel-release
+        dnf -y config-manager --set-enabled powertools
         dnf -y install ninja-build
       cmd: |
-        module load cmake/3.25.3
         cmake --preset release-linux -DCMAKE_BUILD_TYPE=Release
         cmake --build build --config Release --target build
-        cmake --build build --target test_package
+
+  linux-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    needs: ["build-linux"]
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [avx512, avx2]
+    with:
+      image: ubuntu:24.04
+      runs-on: '[ "Linux", "${{ matrix.platform }}" ]'
+      artifact-in: build-linux
+      cmd: |
+        # Merge binaries & testing packages
+        dest="./build/embree-release"
+        mkdir -p "$dest"
+        for archive in ./build/*.tar.gz; do
+          tar -xzf "$archive" -C "$dest"
+        done
+
+        # Run testing
+        cd $dest
+        cmake -S testing -B build
+        cd build
+        ctest -C Release --output-on-failure -VV
 
 
 #####################################################################
-# DPC++ Release Builds
+# SYCL Builds and Tests
 ####################################################################
-  release-windows-sycl:
+  build-windows-sycl:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
-      runs-on: '[ "Windows", "NAS", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/gfx-windows-internal.env
+      runs-on: '[ "Windows", "build" ]'
       dpcpp-version: intel-llvm/v6.2.0
-      artifact-out: release-windows-sycl
+      artifact-out: build-windows-sycl
       artifact-path: ./build/*.zip
-      shell: cmd
       cmd: |
         cmake --preset release-windows-sycl -DCMAKE_BUILD_TYPE=Release
         cmake --build build --config Release --target build
-        cmake --build build --target test_package
 
-  release-linux-sycl:
+  build-linux-sycl:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
       image: rockylinux:8.7
-      runs-on: '[ "Linux", "docker", "build" ]'
-      project: embree
+      runs-on: '[ "Linux", "build" ]'
       dpcpp-version: intel-llvm/v6.2.0
-      artifact-out: release-linux-sycl
+      artifact-out: build-linux-sycl
       artifact-path: ./build/*.tar.gz
       pre-cmd: |
-        yum -y install epel-release
-        dnf makecache --refresh
-        dnf config-manager --set-enabled powertools
-        dnf -y update
+        dnf -y install epel-release
+        dnf -y config-manager --set-enabled powertools
         dnf -y install ninja-build
       cmd: |
-        module load cmake/3.25.3
         cmake --preset release-linux-sycl -DCMAKE_BUILD_TYPE=Release
         cmake --build build --config Release --target build
 
-  release-linux-sycl-test:
+  windows-sycl-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    needs: ["build-windows-sycl"]
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [dg2, bmg, lnl]
+    with:
+      runs-on: '[ "Windows", "${{ matrix.platform }}" ]'
+      env-from-files: ./.github/workflows/gfx-windows-public.env
+      artifact-in: build-windows-sycl
+      cmd: |
+        # Merge binaries & testing packages
+        $dest = "./build/embree-release"
+        New-Item -ItemType Directory -Path $dest -Force | Out-Null
+        Get-ChildItem -Path "./build/*.zip" | 
+          ForEach-Object { Expand-Archive -Path $_.FullName -DestinationPath $dest -Force }
+        
+        # Run testing
+        cd $dest
+        cmake -S testing -B build
+        cd build
+        ctest -C Release --output-on-failure -VV
+
+  linux-sycl-test:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    needs: ["release-linux-sycl"]
+    needs: ["build-linux-sycl"]
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [dg2, pvc, atsm]
     with:
-      image: embree/ubuntu:22.04
+      image: ubuntu:24.04
       options: --device=/dev/dri:/dev/dri
-      runs-on: '[ "Linux", "docker", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/gfx-ubuntu22-public.env
-      artifact-in: release-linux-sycl
+      runs-on: '[ "Linux", "${{ matrix.platform }}" ]'
+      env-from-files: ./.github/workflows/gfx-ubuntu24-public.env
+      artifact-in: build-linux-sycl
       cmd: |
-        module load cmake/3.25.3
-        cmake --preset integrate-sycl-linux-dpcpp -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
-        cmake --build build --target test_package
+        # Merge binaries & testing packages
+        dest="./build/embree-release"
+        mkdir -p "$dest"
+        for archive in ./build/*.tar.gz; do
+          tar -xzf "$archive" -C "$dest"
+        done
+
+        # Run testing
+        cd $dest
+        cmake -S testing -B build
+        cd build
+        ctest -C Release --output-on-failure -VV
+
 
 #####################################################################
 # Release binaries scans
 #####################################################################
   binary-analysis:
     needs:
-      - release-windows
-      - release-macosx
-      - release-linux
+      - build-windows
+      - build-macosx-x86_64
+      - build-linux
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/binary_analysis.yml@main
     with:
       project: embree
-      artifact-in-windows: release-windows
-      artifact-in-macos: release-macosx
-      artifact-in-linux: release-linux
+      artifact-in-windows: build-windows
+      artifact-in-macos: build-macosx-x86_64
+      artifact-in-linux: build-linux
       path: "build/*.zip build/*.gz"
 
   antivirus-scan:
     needs:
-      - release-windows
-      - release-macosx
-      - release-linux
+      - build-windows
+      - build-macosx-x86_64
+      - build-linux
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/antivirus_scan.yml@main
     with:
       project: embree
-      artifact-in-windows: release-windows
-      artifact-in-macos: release-macosx
-      artifact-in-linux: release-linux
+      artifact-in-windows: build-windows
+      artifact-in-macos: build-macosx-x86_64
+      artifact-in-linux: build-linux
       path: "build/*.zip build/*.gz"
 
-  binary-analysis-dpcpp:
+  binary-analysis-sycl:
     needs:
-      - release-windows-sycl
-      - release-linux-sycl-test
+      - build-windows-sycl
+      - build-linux-sycl
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/binary_analysis.yml@main
     with:
       project: embree
-      artifact-in-windows: release-windows-sycl
-      artifact-in-linux: release-linux-sycl
+      artifact-in-windows: build-windows-sycl
+      artifact-in-linux: build-linux-sycl
       path: "build/*.zip build/*.gz"
-      artifact-out-name: "binary-analysis-dpcpp"
+      artifact-out-name: "binary-analysis-sycl"
 
-  antivirus-scan-dpcpp:
+  antivirus-scan-sycl:
     needs:
-      - release-windows-sycl
-      - release-linux-sycl-test
+      - build-windows-sycl
+      - build-linux-sycl
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/antivirus_scan.yml@main
     with:
       project: embree
-      artifact-in-windows: release-windows-sycl
-      artifact-in-linux: release-linux-sycl
+      artifact-in-windows: build-windows-sycl
+      artifact-in-linux: build-linux-sycl
       path: "build/*.zip build/*.gz"
-      artifact-out-name: "antivirus-scan-dpcpp"
+      artifact-out-name: "antivirus-scan-sycl"
 
   binary-analysis-arm:
     needs:
-      - release-macosx-arm
+      - build-macosx-arm
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/binary_analysis.yml@main
     with:
       project: embree
-      artifact-in-macos: release-macosx-arm
+      artifact-in-macos: build-macosx-arm
       path: "build/*.zip"
       artifact-out-name: "binary-analysis-arm"
 
   antivirus-scan-arm:
     needs:
-      - release-macosx-arm
+      - build-macosx-arm
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/antivirus_scan.yml@main
     with:
       project: embree
-      artifact-in-macos: release-macosx-arm
+      artifact-in-macos: build-macosx-arm
       path: "build/*.zip"
       artifact-out-name: "antivirus-scan-arm"
-
-
-#####################################################################
-# Testing package 
-#####################################################################
-  create-testing-package:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    needs: [release-linux]
-    with:
-      image: embree/ubuntu:22.04
-      runs-on: '[ "Linux", "docker" ]'
-      project: embree
-      artifact-in: release-linux
-      artifact-out: release-testing-PACKAGE-ZIP
-      artifact-path: ./build/*.tar.gz
-      cmd: |
-        rm build/embree-4.4.0.x86_64.linux.tar.gz
-        mv build/embree-4.4.0.x86_64.linux-testing.tar.gz build/embree-4.4.0-testing.tar.gz
