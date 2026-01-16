@@ -109,6 +109,16 @@
 #define SSE2NEON_ALLOC_DEFINED
 #endif
 
+/* Include Windows.h and define NOMINMAX
+ * for Windows ARM64 builds
+ */
+#if defined(__WIN32__)
+#  if !defined(NOMINMAX)
+#    define NOMINMAX
+#  endif
+#  include <windows.h>
+#endif
+
 /* If using MSVC */
 #ifdef _MSC_VER
 #include <intrin.h>
