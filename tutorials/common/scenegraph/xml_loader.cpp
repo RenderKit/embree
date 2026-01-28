@@ -77,7 +77,7 @@ namespace embree
     Variant (const std::string& str) : type(STRING), str(str) {}
 
     /*! Constructs a variant object holding a texture value. */
-    Variant (const std::shared_ptr<Texture> tex) : type(TEXTURE), texture(tex) {}
+    Variant (const std::shared_ptr<Texture> tex) : type(TEXTURE), texture(std::move(tex)) {}
 
     /*! Extracts a boolean from the variant type. */
     bool  getBool () const { return b[0]; }
@@ -1371,7 +1371,7 @@ namespace embree
 
       data[i++] = Vec3fa(0, r, 0);
       data[i++] = Vec3fa(0, -r, 0);
-      mesh->positions.push_back(data);
+      mesh->positions.emplace_back(data);
     }
 
     {
@@ -1500,10 +1500,10 @@ namespace embree
           }
       }
 
-      hairs->positions.push_back(pos);
-      if (is_normaloriented) hairs->normals.push_back(norm);
-      if (is_hermite) hairs->tangents.push_back(tans);
-      if (is_hermite && is_normaloriented) hairs->dnormals.push_back(dnorm);
+      hairs->positions.emplace_back(pos);
+      if (is_normaloriented) hairs->normals.emplace_back(norm);
+      if (is_hermite) hairs->tangents.emplace_back(tans);
+      if (is_hermite && is_normaloriented) hairs->dnormals.emplace_back(dnorm);
 
       // linear uses 3 segments per hair
       if (is_linear) {
