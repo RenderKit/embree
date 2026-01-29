@@ -289,8 +289,7 @@ Linux
   - oneAPI DPC++/C++ Compiler 2023-10-26
   - Clang 5.0.0
   - Clang 4.0.0
-  - GCC 10.0.1 (Fedora 32) AVX512 support
-  - GCC  8.3.1 (Fedora 29) AVX512 support
+  - GCC 15 (Fedora 42) AVX512 support
   - Intel® Implicit SPMD Program Compiler 1.22.0
 
 macOS x86_64

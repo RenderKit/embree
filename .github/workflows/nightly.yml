@@ -31,7 +31,6 @@ jobs:
       artifact-out: nightly-linux-DG2-JIT-MULTILEVEL-build
       artifact-path: ./build/*.tar.gz
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-DG2-JIT-MULTILEVEL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target build
 
@@ -47,7 +46,6 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu24-public.env
       artifact-in: nightly-linux-DG2-JIT-MULTILEVEL-build
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-DG2-JIT-MULTILEVEL -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
@@ -62,7 +60,6 @@ jobs:
       artifact-out: nightly-linux-DG2-JIT-PUBLIC-build
       artifact-path: ./build/*.tar.gz
       cmd: |
-        module load cmake/3.25.3
         cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target build
 
@@ -78,7 +75,6 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu24-public.env
       artifact-in: nightly-linux-DG2-JIT-PUBLIC-build
       cmd: |
-        module load cmake/3.25.3
         cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target test_package
 
@@ -268,50 +264,46 @@ jobs:
 
   # CLANG
 
-  nightly-linux-DEBUG-CLANG4-SSE2-NAMESPACE:
+  nightly-linux-DEBUG-CLANG-SSE2-NAMESPACE:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
-        cmake --preset nightly-linux-DEBUG-CLANG4-SSE2-NAMESPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
+        cmake --preset nightly-linux-DEBUG-CLANG-SSE2-NAMESPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
         cmake --build build --target build
         cmake --build build --target test_package
 
-  nightly-linux-DEBUG-CLANG5-ISPC1_14_1-AVX2-INT-ADDRSANITIZER:
+  nightly-linux-DEBUG-CLANG-ISPC1_14_1-AVX2-INT-ADDRSANITIZER:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
-        cmake --preset nightly-linux-DEBUG-CLANG5-ISPC1_14_1-AVX2-INT-ADDRSANITIZER -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
+        cmake --preset nightly-linux-DEBUG-CLANG-ISPC1_14_1-AVX2-INT-ADDRSANITIZER -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
         cmake --build build --target build
         cmake --build build --target test_package
 
-  nightly-linux-DEBUG-CLANG4-ISPC1_16_1-AVX2-TBB2021_9_0-STATIC:
+  nightly-linux-DEBUG-CLANG-ISPC1_16_1-AVX2-TBB2021_9_0-STATIC:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
-        cmake --preset nightly-linux-DEBUG-CLANG4-ISPC1_16_1-AVX2-TBB2021_9_0-STATIC -DCMAKE_BUILD_TYPE=RelWithDebInfo  -DEMBREE_TESTING_INTENSITY=4
+        cmake --preset nightly-linux-DEBUG-CLANG-ISPC1_16_1-AVX2-TBB2021_9_0-STATIC -DCMAKE_BUILD_TYPE=RelWithDebInfo  -DEMBREE_TESTING_INTENSITY=4
         cmake --build build --target build
         cmake --build build --target test_package
 
   # GCC
 
-  nightly-linux-DEBUG-CLANG4-ISPC1_16_1-AVX512VL-TBB2020_2:
+  nightly-linux-DEBUG-CLANG-ISPC1_16_1-AVX512VL-TBB2020_2:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       runs-on: '[ "Linux", "docker", "avx512" ]'
       cmd: |
-        module load cmake/3.25.3
-        cmake --preset nightly-linux-DEBUG-CLANG4-ISPC1_16_1-AVX512VL-TBB2020_2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=3
+        cmake --preset nightly-linux-DEBUG-CLANG-ISPC1_16_1-AVX512VL-TBB2020_2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --target build
         cmake --build build --target test_package
 
@@ -319,9 +311,8 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-GCC-ISPC1_16_1-SSE2-TBB2021_2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
         cmake --build build --target build
         cmake --build build --target test_package
@@ -330,9 +321,8 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-GCC-ISPC1_16_1-AVX-TBB2019_9 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
         cmake --build build --target build
         cmake --build build --target test_package
@@ -341,9 +331,8 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-GCC-ISPC1_17_0-AVX2-TBB2021_2_0 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
         cmake --build build --target build
         cmake --build build --target test_package
@@ -356,7 +345,6 @@ jobs:
       image: embree/rockylinux:8.7
       dpcpp-version: intel/2025.2
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX-TBB2019_2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
         cmake --build build --target build
         cmake --build build --target test_package
@@ -369,7 +357,6 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       dpcpp-version: intel/2025.2
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX512VL-TBB2019_2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
         cmake --build build --target build
         cmake --build build --target test_package
@@ -378,11 +365,10 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       runs-on: '[ "Linux", "docker", "avx512" ]'
       dpcpp-version: intel/2025.2
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX512-TBB2019_9 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
         cmake --build build --target build
         cmake --build build --target test_package
@@ -391,10 +377,9 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       dpcpp-version: intel/2025.2
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_16_1-AVX2-TBB2021_2_0 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
         cmake --build build --target build
         cmake --build build --target test_package
@@ -406,7 +391,6 @@ jobs:
       image: embree/rockylinux:8.7
       dpcpp-version: intel/2025.2
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_17_0-AVX2-TBB2019_9 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=4
         cmake --build build --target build
         cmake --build build --target test_package
@@ -419,44 +403,19 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       dpcpp-version: intel/2025.2
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-DEBUG-ICX-ISPC1_17_0-AVX512VL-TBB2021_5_0 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
         cmake --build build --target build
         cmake --build build --target test_package
 
   # Testing different distros
 
-  nightly-ubuntu20_04-DEBUG:
+  nightly-fedora42-DEBUG-AVX512:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/ubuntu:20.04
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset nightly-distrotest-ISPC1_14_1-TBB2021_2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
-        cmake --build build --target build
-        cmake --build build --target test_package
-
-  nightly-ubuntu20_04-RELEASE-ISPC1_14_1-TBB2021_2_0:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    with:
-      image: embree/ubuntu:20.04
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset nightly-distrotest-ISPC1_14_1-TBB2021_2 -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=2
-        cmake --build build --target build
-        cmake --build build --target test_package
-
-
-  nightly-fedora32-DEBUG-AVX512:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    with:
-      image: embree/fedora:32
+      image: embree/fedora:42
       runs-on: '[ "Linux", "docker", "avx512" ]'
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-distrotest-AVX512 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
         cmake --build build --target build
         cmake --build build --target test_package
@@ -464,101 +423,92 @@ jobs:
 
   # Testing single primiteve types
 
-  nightly-linux-DEBUG-CLANG4-TRI:
+  nightly-linux-DEBUG-CLANG-TRI:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-singleprimitive-TRI -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --target build
         cmake --build build --target test_package
 
-  nightly-linux-DEBUG-CLANG4-QUAD:
+  nightly-linux-DEBUG-CLANG-QUAD:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-singleprimitive-QUAD -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --target build
         cmake --build build --target test_package
 
-  nightly-linux-DEBUG-CLANG4-GRID:
+  nightly-linux-DEBUG-CLANG-GRID:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-singleprimitive-GRID -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --target build
         cmake --build build --target test_package
 
-  nightly-linux-DEBUG-CLANG4-CURVE:
+  nightly-linux-DEBUG-CLANG-CURVE:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-singleprimitive-CURVE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --target build
         cmake --build build --target test_package
 
-  nightly-linux-DEBUG-CLANG4-SUBDIV:
+  nightly-linux-DEBUG-CLANG-SUBDIV:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-singleprimitive-SUBDIV -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --target build
         cmake --build build --target test_package
 
-  nightly-linux-DEBUG-CLANG4-USERGEOM:
+  nightly-linux-DEBUG-CLANG-USERGEOM:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-singleprimitive-USERGEOM -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --target build
         cmake --build build --target test_package
 
-  nightly-linux-DEBUG-CLANG4-INSTANCE:
+  nightly-linux-DEBUG-CLANG-INSTANCE:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-singleprimitive-INSTANCE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --target build
         cmake --build build --target test_package
 
-  nightly-linux-Debug-CLANG4-INSTANCE_ARRAY:
+  nightly-linux-Debug-CLANG-INSTANCE_ARRAY:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-singleprimitive-INSTANCE_ARRAY -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --target build
         cmake --build build --target test_package
 
-  nightly-linux-DEBUG-CLANG4-INSTANCE-INSTANCE_ARRAY:
+  nightly-linux-DEBUG-CLANG-INSTANCE-INSTANCE_ARRAY:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-singleprimitive-INSTANCE-INSTANCE_ARRAY -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --target build
         cmake --build build --target test_package
@@ -569,9 +519,8 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-feature-NO_ISPC -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --target build
         cmake --build build --target test_package
@@ -580,9 +529,8 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-feature-NO_TUTORIALS -DCMAKE_BUILD_TYPE=RelWithDebInfo
         cmake --build build --target build
 
@@ -590,9 +538,8 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-feature-BACKFACECULLING -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --target build
 
@@ -600,9 +547,8 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-feature-IGNORE-INVALID-RAYS -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --target build
 
@@ -610,9 +556,8 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-feature-NO-FILTER-FUNCTION -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --target build
 
@@ -620,9 +565,8 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-feature-RAYMASKS -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --target build
         cmake --build build --target test_package
@@ -631,9 +575,8 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-feature-NO-PACKETS -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --target build
 
@@ -641,9 +584,8 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-feature-STATCOUNTER -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --target build
         cmake --build build --target test_package
@@ -654,9 +596,8 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-individualisa-SSE2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --target build
         cmake --build build --target test_package
@@ -665,9 +606,8 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-individualisa-SSE42 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --target build
         cmake --build build --target test_package
@@ -676,9 +616,8 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-individualisa-AVX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --target build
         cmake --build build --target test_package
@@ -687,9 +626,8 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-individualisa-AVX2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --target build
         cmake --build build --target test_package
@@ -698,9 +636,8 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       cmd: |
-        module load cmake/3.25.3
         cmake --preset nightly-linux-individualisa-AVX512 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --target build
         cmake --build build --target test_package

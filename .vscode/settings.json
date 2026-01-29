@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.isph": "cpp",
+        "tuple": "cpp",
+        "iterator": "cpp",
+        "random": "cpp"
+    }
+}

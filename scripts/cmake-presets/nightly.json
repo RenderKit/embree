@@ -76,8 +76,8 @@
     },
 
     {
-      "name": "nightly-linux-DEBUG-CLANG4-SSE2-NAMESPACE",
-      "inherits": ["package-linux", "env", "clang4", "tbb_NEWEST"],
+      "name": "nightly-linux-DEBUG-CLANG-SSE2-NAMESPACE",
+      "inherits": ["package-linux", "env", "clang", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_MAX_ISA": "SSE2",
@@ -88,8 +88,8 @@
       }
     },
     {
-      "name": "nightly-linux-DEBUG-CLANG5-ISPC1_14_1-AVX2-INT-ADDRSANITIZER",
-      "inherits": ["package-linux", "env", "clang5", "ispc1_14_1", "tasking_internal"],
+      "name": "nightly-linux-DEBUG-CLANG-ISPC1_14_1-AVX2-INT-ADDRSANITIZER",
+      "inherits": ["package-linux", "env", "clang", "ispc1_14_1", "tasking_internal"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_MAX_ISA": "AVX2",
@@ -98,8 +98,8 @@
       }
     },
     {
-      "name": "nightly-linux-DEBUG-CLANG4-ISPC1_16_1-AVX2-TBB2021_9_0-STATIC",
-      "inherits": ["package-static-linux", "env", "clang4", "ispc1_16_1", "tbb2021_9_0"],
+      "name": "nightly-linux-DEBUG-CLANG-ISPC1_16_1-AVX2-TBB2021_9_0-STATIC",
+      "inherits": ["package-static-linux", "env", "clang", "ispc1_16_1", "tbb2021_9_0"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_CONFIG": "frequency_level=simd128",
@@ -108,8 +108,8 @@
       }
     },
     {
-      "name": "nightly-linux-DEBUG-CLANG4-ISPC1_16_1-AVX512VL-TBB2020_2",
-      "inherits": ["package-linux", "env", "clang4", "ispc1_16_1", "tbb2020_2_0"],
+      "name": "nightly-linux-DEBUG-CLANG-ISPC1_16_1-AVX512VL-TBB2020_2",
+      "inherits": ["package-linux", "env", "clang", "ispc1_16_1", "tbb2020_2_0"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_CONFIG": "frequency_level=simd256",
@@ -230,7 +230,7 @@
     },
     {
       "name": "nightly-singleprimitive",
-      "inherits": ["package-linux", "env", "clang4", "ispc_NEWEST", "tbb_NEWEST"],
+      "inherits": ["package-linux", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_MAX_ISA": "AVX2",
@@ -320,7 +320,7 @@
     },
     {
       "name": "nightly-linux-feature-NO_ISPC",
-      "inherits": ["package-linux", "env", "clang4", "tbb_NEWEST"],
+      "inherits": ["package-linux", "env", "clang", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_MAX_ISA": "AVX2",
@@ -329,7 +329,7 @@
     },
     {
       "name": "nightly-linux-feature-NO_TUTORIALS",
-      "inherits": ["package-linux", "env", "clang4", "ispc_NEWEST", "tbb_NEWEST"],
+      "inherits": ["package-linux", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_MAX_ISA": "AVX2",
@@ -339,7 +339,7 @@
     },
     {
       "name": "nightly-linux-feature-BACKFACECULLING",
-      "inherits": ["package-linux", "env", "clang4", "ispc_NEWEST", "tbb_NEWEST"],
+      "inherits": ["package-linux", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_MAX_ISA": "AVX2",
@@ -349,7 +349,7 @@
     },
     {
       "name": "nightly-linux-feature-IGNORE-INVALID-RAYS",
-      "inherits": ["package-linux", "env", "clang4", "ispc_NEWEST", "tbb_NEWEST"],
+      "inherits": ["package-linux", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_MAX_ISA": "AVX2",
@@ -359,7 +359,7 @@
     },
     {
       "name": "nightly-linux-feature-NO-FILTER-FUNCTION",
-      "inherits": ["package-linux", "env", "clang4", "ispc_NEWEST", "tbb_NEWEST"],
+      "inherits": ["package-linux", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_MAX_ISA": "AVX2",
@@ -369,7 +369,7 @@
     },
     {
       "name": "nightly-linux-feature-RAYMASKS",
-      "inherits": ["package-linux", "env", "clang4", "ispc_NEWEST", "tbb_NEWEST"],
+      "inherits": ["package-linux", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_MAX_ISA": "AVX2",
@@ -379,7 +379,7 @@
     },
     {
       "name": "nightly-linux-feature-NO-PACKETS",
-      "inherits": ["package-linux", "env", "clang4", "ispc_NEWEST", "tbb_NEWEST"],
+      "inherits": ["package-linux", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_MAX_ISA": "AVX2",
@@ -389,7 +389,7 @@
     },
     {
       "name": "nightly-linux-feature-STATCOUNTER",
-      "inherits": ["package-linux", "env", "clang4", "ispc_NEWEST", "tbb_NEWEST"],
+      "inherits": ["package-linux", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_MAX_ISA": "AVX2",
@@ -399,7 +399,7 @@
     },
     {
       "name": "nightly-linux-individualisa",
-      "inherits": ["package-linux", "env", "clang4", "ispc_NEWEST", "tbb_NEWEST"],
+      "inherits": ["package-linux", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_TUTORIALS_GLFW": "OFF",
