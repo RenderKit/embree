@@ -27,6 +27,16 @@
       "inherits": "linux-DG2-JIT-INTERNAL"
     },
     {
+      "name": "linux-DG2-JIT-PUBLIC-debug",
+      "inherits": ["package-linux", "env", "dpcpp", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    },
+    {
       "name": "linux-DG2-JIT-EMBARGO",
       "inherits": ["package-linux", "env", "dpcpp", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
@@ -51,6 +61,16 @@
         "EMBREE_SYCL_SUPPORT": "ON",
         "EMBREE_SYCL_AOT_DEVICES": "none",
         "EMBREE_MAX_ISA": "AVX512"
+      }
+    },
+    {
+      "name": "linux-DG2-JIT-PUBLIC-ICX-debug",
+      "inherits": ["package-linux", "env", "icx", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "SSE2"
       }
     },
     {
@@ -92,6 +112,16 @@
       "inherits": ["package-windows", "env", "dpcpp-windows", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
+        "EMBREE_SYCL_SUPPORT": "ON",
+        "EMBREE_SYCL_AOT_DEVICES": "none",
+        "EMBREE_MAX_ISA": "SSE2"
+      }
+    },
+    {
+      "name": "windows-DG2-JIT-INTERNAL-L0RTAS-debug",
+      "inherits": ["package-windows", "env", "dpcpp-windows", "tbb_NEWEST"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
         "EMBREE_SYCL_SUPPORT": "ON",
         "EMBREE_SYCL_AOT_DEVICES": "none",
         "EMBREE_MAX_ISA": "SSE2"

@@ -142,7 +142,17 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
       if (vertices[t]) vertices[t].buffer->commitIfNeeded();
     }
-    if (grids) grids.buffer->commitIfNeeded();
+    if (grids) {
+      /* Verify that grid sizes are in bounds */
+      for (size_t primID=0; primID<numPrimitives; primID++) {
+        const Grid& g = grid(primID);
+        if (g.resX > maxGridRes || g.resY > maxGridRes) {
+          throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "grid dimensions are too big");
+        }
+
+      }
+      grids.buffer->commitIfNeeded();
+    }
 #if defined(EMBREE_SYCL_SUPPORT)
     
     /* build quadID_to_primID_xy mapping when hardware ray tracing is supported */
