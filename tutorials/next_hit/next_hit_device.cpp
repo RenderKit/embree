@@ -26,12 +26,13 @@ RTCFeatureFlags g_feature_mask;
 struct HitList
 {
   HitList (const TutorialData& data)
-    : data(data), begin(0), end(0) {}
+    : data(data), begin(0), end(0) {
+    }
 
   /* Hit structure that defines complete order over hits */
   struct Hit
   {
-    Hit() {}
+    Hit() : opaque(false), t(0.0f), primID(RTC_INVALID_GEOMETRY_ID), geomID(RTC_INVALID_GEOMETRY_ID), instID(RTC_INVALID_GEOMETRY_ID) {}
 
     Hit (bool opaque, float t, unsigned int primID = 0xFFFFFFFF, unsigned int geomID = 0xFFFFFFFF, unsigned int instID = 0xFFFFFFFF)
       : opaque(opaque), t(t), primID(primID), geomID(geomID), instID(instID) {}
@@ -317,6 +318,10 @@ Vec3ff renderPixelStandard(const TutorialData& data, float x, float y,
   
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, 0.0f);
+  ray.Ng = {0.0f, 1.0f, 0.0f};
+  ray.flags = 0;
+  ray.id = 0;
+  ray.u = ray.v = 0.0f;
 
   /* either gather hits in single pass or using multiple passes */
   HitList hits(data);
