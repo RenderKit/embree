@@ -515,7 +515,7 @@ FORCE_INLINE int64_t sse2neon_recast_f64_s64(double val)
  * natural access to all surrounding variables.
  *
  * For MSVC: Uses immediately-invoked lambdas. The distinction between
- * _sse2neon_define0 ([=] capture) and _sse2neon_define1 ([] no capture)
+ * _sse2neon_define[02] ([=] capture) and _sse2neon_define1 ([] no capture)
  * exists for lambda capture semantics, though in practice both work the
  * same since 'imm' parameters are compile-time constants that get
  * substituted before the lambda is created.
@@ -537,7 +537,7 @@ FORCE_INLINE int64_t sse2neon_recast_f64_s64(double val)
 #define _sse2neon_define0(type, a, body) [=](type _a) { body }(a)
 #define _sse2neon_define1(type, a, body) [](type _a) { body }(a)
 #define _sse2neon_define2(type, a, b, body) \
-    [](type _a, type _b) { body }((a), (b))
+    [=](type _a, type _b) { body }((a), (b))
 #define _sse2neon_return(ret) return ret
 #endif
 
@@ -669,6 +669,21 @@ FORCE_INLINE void _sse2neon_smp_mb(void)
  * argument "a" of mm_shuffle_ps that will be places in fp1 of result.
  * fp0 is the same for fp0 of result.
  */
+#if defined(__aarch64__)
+#define _MN_SHUFFLE(fp3,fp2,fp1,fp0) ( (uint8x16_t){ (((fp3)*4)+0), (((fp3)*4)+1), (((fp3)*4)+2), (((fp3)*4)+3),  (((fp2)*4)+0), (((fp2)*4)+1), (((fp2)*4)+\
+2), (((fp2)*4)+3),  (((fp1)*4)+0), (((fp1)*4)+1), (((fp1)*4)+2), (((fp1)*4)+3),  (((fp0)*4)+0), (((fp0)*4)+1), (((fp0)*4)+2), (((fp0)*4)+3) } )
+#define _MF_SHUFFLE(fp3,fp2,fp1,fp0) ( (uint8x16_t){ (((fp3)*4)+0), (((fp3)*4)+1), (((fp3)*4)+2), (((fp3)*4)+3),  (((fp2)*4)+0), (((fp2)*4)+1), (((fp2)*4)+\
+2), (((fp2)*4)+3),  (((fp1)*4)+16+0), (((fp1)*4)+16+1), (((fp1)*4)+16+2), (((fp1)*4)+16+3),  (((fp0)*4)+16+0), (((fp0)*4)+16+1), (((fp0)*4)+16+2), (((fp0)*\
+4)+16+3) } )
+#elif defined(_M_ARM64)
+#define _MN_SHUFFLE(fp3,fp2,fp1,fp0) ( uint8x16_t{ \
+     ((uint64_t)(((fp3)*4)+0) << 0) | ((uint64_t)(((fp3)*4)+1) << 8) | ((uint64_t)(((fp3)*4)+2) << 16)| ((uint64_t)(((fp3)*4)+3) << 24)| ((uint64_t)(((fp2)*4)+0) << 32)| ((uint64_t)(((fp2)*4)+1) << 40)| ((uint64_t)(((fp2)*4)+2) << 48)| ((uint64_t)(((fp2)*4)+3) << 56), \
+     ((uint64_t)(((fp1)*4)+0) << 0) | ((uint64_t)(((fp1)*4)+1) << 8) | ((uint64_t)(((fp1)*4)+2) << 16)| ((uint64_t)(((fp1)*4)+3) << 24)| ((uint64_t)(((fp0)*4)+0) << 32)| ((uint64_t)(((fp0)*4)+1) << 40)| ((uint64_t)(((fp0)*4)+2) << 48)| ((uint64_t)(((fp0)*4)+3) << 56) } )
+#define _MF_SHUFFLE(fp3,fp2,fp1,fp0) ( uint8x16_t{ \
+     ((uint64_t)(((fp3)*4)+0) << 0) | ((uint64_t)(((fp3)*4)+1) << 8) | ((uint64_t)(((fp3)*4)+2) << 16)| ((uint64_t)(((fp3)*4)+3) << 24)| ((uint64_t)(((fp2)*4)+0) << 32)| ((uint64_t)(((fp2)*4)+1) << 40)| ((uint64_t)(((fp2)*4)+2) << 48)| ((uint64_t)(((fp2)*4)+3) << 56), \
+     ((uint64_t)(((fp1)*4)+16+0) << 0) | ((uint64_t)(((fp1)*4)+16+1) << 8) | ((uint64_t)(((fp1)*4)+16+2) << 16)| ((uint64_t)(((fp1)*4)+16+3) << 24)| ((uint64_t)(((fp0)*4)+16+0) << 32)| ((uint64_t)(((fp0)*4)+16+1) << 40)| ((uint64_t)(((fp0)*4)+16+2) << 48)| ((uint64_t)(((fp0)*4)+16+3) << 56) } )
+#endif
+
 #ifndef _MM_SHUFFLE
 #define _MM_SHUFFLE(fp3, fp2, fp1, fp0) \
     (((fp3) << 6) | ((fp2) << 4) | ((fp1) << 2) | ((fp0)))
