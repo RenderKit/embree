@@ -62,7 +62,7 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     __forceinline vboold(FalseTy) : v(_mm256_setzero_pd()) {}
-#if !defined(__aarch64__)
+#if !defined(__aarch64__) && !defined(_M_ARM64)
     __forceinline vboold(TrueTy)  : v(_mm256_cmp_pd(_mm256_setzero_pd(), _mm256_setzero_pd(), _CMP_EQ_OQ)) {}
 #else
     __forceinline vboold(TrueTy)  : v(_mm256_cmpeq_pd(_mm256_setzero_pd(), _mm256_setzero_pd())) {}
@@ -111,7 +111,7 @@ namespace embree
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-#if !defined(__aarch64__)
+#if !defined(__aarch64__) && !defined(_M_ARM64)
   __forceinline vboold4 unpacklo(const vboold4& a, const vboold4& b) { return _mm256_unpacklo_pd(a, b); }
   __forceinline vboold4 unpackhi(const vboold4& a, const vboold4& b) { return _mm256_unpackhi_pd(a, b); }
 #endif

@@ -4,7 +4,7 @@
 #pragma once
 
 /* Make precision match SSE, at the cost of some performance */
-#if !defined(__aarch64__)
+#if !defined(__aarch64__) && !defined(_M_ARM64)
 #  define SSE2NEON_PRECISE_DIV 1
 #  define SSE2NEON_PRECISE_SQRT 1
 #endif
