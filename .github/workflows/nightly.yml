@@ -294,7 +294,7 @@ jobs:
         cmake --build build --target build
         cmake --build build --target test_package
 
-  # GCC
+  # CLANG
 
   nightly-linux-DEBUG-CLANG-ISPC1_16_1-AVX512VL-TBB2020_2:
     secrets: inherit
@@ -421,7 +421,7 @@ jobs:
         cmake --build build --target test_package
  
 
-  # Testing single primiteve types
+  # Testing single primitive types
 
   nightly-linux-DEBUG-CLANG-TRI:
     secrets: inherit
