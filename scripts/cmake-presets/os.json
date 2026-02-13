@@ -58,8 +58,6 @@
       "name": "env",
       "hidden": true,
       "environment": {
-        "EMBREE_CLANG_3_0_0_PP": "$env{APPS_PATH}/clang/v3.0.0/bin/clang++",
-        "EMBREE_CLANG_3_0_0": "$env{APPS_PATH}/clang/v3.0.0/bin/clang",
         "EMBREE_CLANG_4_0_0_PP": "$env{APPS_PATH}/clang/v4.0.0/bin/clang++",
         "EMBREE_CLANG_4_0_0": "$env{APPS_PATH}/clang/v4.0.0/bin/clang",
         "EMBREE_CLANG_5_0_0_PP": "$env{APPS_PATH}/clang/v5.0.0/bin/clang++",

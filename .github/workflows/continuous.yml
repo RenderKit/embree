@@ -200,78 +200,37 @@ jobs:
 #   # Linux
 #   ########################################
 
-  linux-fedora29-CLANG4:
+  linux-fedora42-CLANG:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       runs-on: '[ "Linux", "docker", "avx512" ]'
       cmd: |
-        module load cmake/3.25.3
-        cmake --preset linux-fedora29-CLANG4 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
+        cmake --preset linux-fedora42-CLANG -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
         cmake --build build --config RelWithDebInfo --target build
         cmake --build build --config RelWithDebInfo --target test_package
 
-  linux-fedora29-CLANG5-INT-ADDRSANITIZER:
+  linux-fedora42-CLANG-INT-ADDRSANITIZER:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       runs-on: '[ "Linux", "docker", "build" ]'
       cmd: |
-        module load cmake/3.25.3
-        cmake --preset linux-fedora29-CLANG5-INT-ADDRSANITIZER -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
+        cmake --preset linux-fedora42-CLANG-INT-ADDRSANITIZER -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
         cmake --build build --config RelWithDebInfo --target build
         cmake --build build --config RelWithDebInfo --target test_package
 
-  linux-fedora29-ICX:
+  linux-fedora42-ICX:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/fedora:29
+      image: embree/fedora:42
       runs-on: '[ "Linux", "docker", "avx512" ]'
       dpcpp-version: intel/2025.2
       cmd: |
-        module load cmake/3.25.3
-        cmake --preset linux-fedora29-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
-        cmake --build build --config RelWithDebInfo --target build
-        cmake --build build --config RelWithDebInfo --target test_package
-
-  linux-fedora32-ICX:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    with:
-      image: embree/fedora:32
-      runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2025.2
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset linux-fedora32-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
-        cmake --build build --config RelWithDebInfo --target build
-        cmake --build build --config RelWithDebInfo --target test_package
-
-  linux-ubuntu20_04-GCC-NAMESPACE:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    with:
-      image: embree/ubuntu:20.04
-      runs-on: '[ "Linux", "docker", "build" ]'
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset linux-ubuntu20_04-GCC-NAMESPACE -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
-        cmake --build build --config RelWithDebInfo --target build
-        cmake --build build --config RelWithDebInfo --target test_package
-
-  linux-ubuntu20_04-ICX:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
-    with:
-      image: embree/ubuntu:20.04
-      runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2025.2
-      cmd: |
-        module load cmake/3.25.3
-        cmake --preset linux-ubuntu20_04-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
+        cmake --preset linux-fedora42-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
         cmake --build build --config RelWithDebInfo --target build
         cmake --build build --config RelWithDebInfo --target test_package
 
@@ -285,6 +244,18 @@ jobs:
         cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DEMBREE_TESTING_INSTALL_TESTS=ON -DCMAKE_INSTALL_TESTDIR="testing" -DEMBREE_TESTING_INTENSITY=3
         cmake --build build --config Release --target build
         cmake --build build --config Release --target test_package
+
+  linux-ubuntu24_04-ICX:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
+    with:
+      image: embree/ubuntu:24.04
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      dpcpp-version: intel/2025.2
+      cmd: |
+        cmake --preset linux-ubuntu24_04-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
+        cmake --build build --config RelWithDebInfo --target build
+        cmake --build build --config RelWithDebInfo --target test_package
 
   ########################################
   # Windows

@@ -128,8 +128,8 @@
       }
     },
     {
-      "name": "linux-fedora29-CLANG4",
-      "inherits": ["package-linux", "env", "clang4", "ispc_NEWEST", "tbb_NEWEST"],
+      "name": "linux-fedora42-CLANG",
+      "inherits": ["package-linux", "env", "clang", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "EMBREE_CONFIG": "frequency_level=simd128",
@@ -138,8 +138,8 @@
       }
     },
     {
-      "name": "linux-fedora29-CLANG5-INT-ADDRSANITIZER",
-      "inherits": ["package-linux", "env", "clang5", "ispc_NEWEST", "tasking_internal"],
+      "name": "linux-fedora42-CLANG-INT-ADDRSANITIZER",
+      "inherits": ["package-linux", "env", "clang", "ispc_NEWEST", "tasking_internal"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "EMBREE_MAX_ISA": "SSE2",
@@ -148,7 +148,7 @@
       }
     },
     {
-      "name": "linux-fedora29-ICX",
+      "name": "linux-fedora42-ICX",
       "inherits": ["package-linux", "env", "dpcpp", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
@@ -159,11 +159,7 @@
       }
     },
     {
-      "name": "linux-fedora32-ICX",
-      "inherits": "linux-fedora29-ICX"
-    },
-    {
-      "name": "linux-fedora32-GCC",
+      "name": "linux-fedora42-GCC",
       "inherits": ["package-linux", "env", "gcc", "ispc_NEWEST", "tbb_NEWEST"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
@@ -174,18 +170,7 @@
       }
     },
     {
-      "name": "linux-ubuntu20_04-GCC-NAMESPACE",
-      "inherits": ["package-linux", "env", "gcc", "tbb_NEWEST"],
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "EMBREE_CONFIG": "frequency_level=simd256",
-        "EMBREE_MAX_ISA": "AVX2",
-        "EMBREE_API_NAMESPACE": "myembree",
-        "EMBREE_LIBRARY_NAME": "myembree"
-      }
-    },
-    {
-      "name": "linux-ubuntu20_04-ICX",
+      "name": "linux-ubuntu24_04-ICX",
       "inherits": ["package-linux", "env", "icx", "ispc_NEWEST", "tbb_SYSTEM"],
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
@@ -194,8 +179,8 @@
       }
     },
     {
-      "name": "linux-ubuntu20_04-ICX-RC",
-      "inherits": "linux-ubuntu20_04-ICX"
+      "name": "linux-ubuntu24_04-ICX-RC",
+      "inherits": "linux-ubuntu24_04-ICX"
     },
     {
       "name": "linux-centos7_4-GCC",

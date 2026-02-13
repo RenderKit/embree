@@ -17,12 +17,10 @@ C++11. Embree is tested with the following compilers:
 
 Linux
 
-  - Intel® oneAPI DPC++/C++ Compiler 2024.0.2
-  - oneAPI DPC++/C++ Compiler 2023-10-26
-  - Clang 5.0.0
-  - Clang 4.0.0
-  - GCC 10.0.1 (Fedora 32) AVX512 support
-  - GCC  8.3.1 (Fedora 29) AVX512 support
+  - Intel® oneAPI DPC++/C++ Compiler 2025.2
+  - oneAPI DPC++/C++ Compiler 6.2.0
+  - Clang 20
+  - GCC 15 (Fedora 42) AVX512 support
   - Intel® Implicit SPMD Program Compiler 1.22.0
 
 macOS x86_64
@@ -131,7 +129,7 @@ The "oneAPI DPC++ Compiler" is more up-to-date than the "Intel(R) oneAPI
 DPC++/C++ Compiler" but less stable. The current tested version of the "oneAPI
 DPC++ compiler is
 
-  - [oneAPI DPC++ Compiler 2023-10-26](https://github.com/intel/llvm/releases/tag/nightly-2023-10-26)
+  - [oneAPI DPC++ Compiler 6.2.0](https://github.com/intel/llvm/releases/tag/v6.2.0)
   
 The compiler can be downloaded and simply extracted. The oneAPI DPC++ compiler
 can be set up executing the following commands in a Linux (bash) shell:
@@ -214,8 +212,8 @@ Windows
 
 Embree is tested using the following compilers under Windows:
 
-  - Intel® oneAPI DPC++/C++ Compiler 2024.0.2
-  - oneAPI DPC++/C++ Compiler 2023-10-26
+  - Intel® oneAPI DPC++/C++ Compiler 2025.2
+  - oneAPI DPC++/C++ Compiler 6.2.0
   - Visual Studio 2022
   - Visual Studio 2019
   - Visual Studio 2017
@@ -336,7 +334,7 @@ The "oneAPI DPC++ Compiler" is more up-to-date than the "Intel(R) oneAPI
 DPC++/C++ Compiler" but less stable. The current tested version of the oneAPI
 DPC++ compiler is
 
-  - [oneAPI DPC++ Compiler 2023-10-26](https://github.com/intel/llvm/releases/tag/nightly-2023-10-26)
+  - [oneAPI DPC++ Compiler 6.2.0](https://github.com/intel/llvm/releases/tag/v6.2.0)
 
 Download and unpack the archive and open the "x64 Native Tools Command Prompt"
 of Visual Studio and execute the following lines to properly configure the

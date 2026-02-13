@@ -24,7 +24,6 @@ jobs:
       artifact-out: perf-linux-SYCL-DPCPP
       artifact-path: ./build/*.tar.gz
       cmd: |
-        module load cmake/3.25.3
         cmake --preset perf-linux-icx-sycl -DCMAKE_BUILD_TYPE=Release
         cmake --build build --config Release --target build
 
@@ -82,7 +81,6 @@ jobs:
       artifact-out: perf-linux-x86-ICX-ISPC-build
       artifact-path: ./build/*.tar.gz
       cmd: |
-        module load cmake/3.25.3
         cmake --preset perf-linux-icx -DCMAKE_BUILD_TYPE=Release
         cmake --build build --config Release --target build
 
