@@ -229,7 +229,7 @@ namespace embree
   }
 #elif defined(__SSE__) || defined(__ARM_NEON) || defined(_M_ARM64)
   template<> __forceinline Vec4<vfloat4>::Vec4( const Vec3fx& a ) {
-    const vfloat4 v = vfloat4(a.m128); x = shuffle<0,0,0,0>(v); y = shuffle<1,1,1,1>(v); z = shuffle<2,2,2,2>(v); w = shuffle<3,3,3,3>(v);
+    const vfloat4 v = vfloat4(a.v); x = shuffle<0,0,0,0>(v); y = shuffle<1,1,1,1>(v); z = shuffle<2,2,2,2>(v); w = shuffle<3,3,3,3>(v);
   }
 #endif
 

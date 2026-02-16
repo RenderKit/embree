@@ -63,12 +63,12 @@ namespace embree
           assert(i[2] >= 0 && (size_t)i[2] < num);
           
           // we clamp to handle corner cases that could calculate out of bounds bin
-          return Vec3ia(clamp(i,vint4(0),vint4(num-1)));
+          return Vec3ia(clamp(i,vint4(0),vint4(num-1)).m128i());
         }
 
         /*! faster but unsafe binning */
         __forceinline Vec3ia bin_unsafe(const Vec3fa& p) const {
-          return Vec3ia(floori((vfloat4(p)-ofs)*scale));
+          return Vec3ia(floori((vfloat4(p)-ofs)*scale).m128i());
         }
 
         /*! faster but unsafe binning */

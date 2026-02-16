@@ -26,14 +26,6 @@ __forceinline __m128 _mm_broadcast_ss (float const * mem_addr)
 // AVX2 emulation leverages Intel FMA defs above.  Include after them.
 #include "avx2neon.h"
 
-/* Dummy defines for floating point control */
-#define _MM_MASK_MASK 0x1f80
-#define _MM_MASK_DIV_ZERO 0x200
-// #define _MM_FLUSH_ZERO_ON 0x8000
-#define _MM_MASK_DENORM 0x100
-#define _MM_SET_EXCEPTION_MASK(x)
-// #define _MM_SET_FLUSH_ZERO_MODE(x)
-
 /*
 __forceinline int _mm_getcsr()
 {

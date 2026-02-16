@@ -33,8 +33,8 @@ namespace embree
         
         /* encode UVs */
         for (unsigned i=0; i<dim_offset; i+=VSIZEX) {
-          const vintx iu = (vintx) clamp(vfloatx::load(&local_grid_u[i])*(0x10000/8.0f), vfloatx(0.0f), vfloatx(0xFFFF));
-          const vintx iv = (vintx) clamp(vfloatx::load(&local_grid_v[i])*(0x10000/8.0f), vfloatx(0.0f), vfloatx(0xFFFF));
+          const vintx iu = (vintx) clamp(vfloatx::load(&local_grid_u[i])*(0x10000/8.0f), vfloatx(0.0f), vfloatx(0xFFFF)).vec_int();
+          const vintx iv = (vintx) clamp(vfloatx::load(&local_grid_v[i])*(0x10000/8.0f), vfloatx(0.0f), vfloatx(0xFFFF)).vec_int();
           vintx::storeu(&local_grid_uv[i], (iv << 16) | iu);
         }
 

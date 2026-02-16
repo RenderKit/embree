@@ -738,8 +738,8 @@ __m256i _mm256_set_epi16 (short e15, short e14, short e13, short e12, short e11,
     int16x8_t lo;
     int16x8_t hi;
     for(char i = 0; i < 8; i++) {
-        lo.n128_i8[i] = lo_arr[i];
-        hi.n128_i8[i] = hi_arr[i];
+        lo.n128_i16[i] = lo_arr[i];
+        hi.n128_i16[i] = hi_arr[i];
     }
 #else
     int16x8_t lo = {e0,e1,e2,e3,e4,e5,e6,e7};
@@ -759,8 +759,8 @@ __m256i _mm256_setr_epi16 (short e0, short e1, short e2, short e3, short e4, sho
     int16x8_t lo;
     int16x8_t hi;
     for(char i = 0; i < 8; i++) {
-        lo.n128_i8[i] = lo_arr[i];
-        hi.n128_i8[i] = hi_arr[i];
+        lo.n128_i16[i] = lo_arr[i];
+        hi.n128_i16[i] = hi_arr[i];
     }
 #else
     int16x8_t lo = {e0,e1,e2,e3,e4,e5,e6,e7};

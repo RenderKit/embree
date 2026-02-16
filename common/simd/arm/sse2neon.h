@@ -7901,14 +7901,14 @@ FORCE_INLINE __m64 _mm_sign_pi8(__m64 _a, __m64 _b)
     _sse2neon_define2(                                                       \
         __m128i, a, b, SSE2NEON_REQUIRE_CONST_RANGE(imm, 0, 255);            \
         const uint16_t _mask[8] = _sse2neon_init(                            \
-            ((imm) & (1 << 0)) ? _sse2neon_static_cast(uint16_t, -1) : 0x0,  \
-            ((imm) & (1 << 1)) ? _sse2neon_static_cast(uint16_t, -1) : 0x0,  \
-            ((imm) & (1 << 2)) ? _sse2neon_static_cast(uint16_t, -1) : 0x0,  \
-            ((imm) & (1 << 3)) ? _sse2neon_static_cast(uint16_t, -1) : 0x0,  \
-            ((imm) & (1 << 4)) ? _sse2neon_static_cast(uint16_t, -1) : 0x0,  \
-            ((imm) & (1 << 5)) ? _sse2neon_static_cast(uint16_t, -1) : 0x0,  \
-            ((imm) & (1 << 6)) ? _sse2neon_static_cast(uint16_t, -1) : 0x0,  \
-            ((imm) & (1 << 7)) ? _sse2neon_static_cast(uint16_t, -1) : 0x0); \
+            ((imm) & (1 << 0)) ? _sse2neon_static_cast(uint16_t, -1) : _sse2neon_static_cast(uint16_t, 0x0), \
+            ((imm) & (1 << 1)) ? _sse2neon_static_cast(uint16_t, -1) : _sse2neon_static_cast(uint16_t, 0x0),  \
+            ((imm) & (1 << 2)) ? _sse2neon_static_cast(uint16_t, -1) : _sse2neon_static_cast(uint16_t, 0x0),  \
+            ((imm) & (1 << 3)) ? _sse2neon_static_cast(uint16_t, -1) : _sse2neon_static_cast(uint16_t, 0x0),  \
+            ((imm) & (1 << 4)) ? _sse2neon_static_cast(uint16_t, -1) : _sse2neon_static_cast(uint16_t, 0x0),  \
+            ((imm) & (1 << 5)) ? _sse2neon_static_cast(uint16_t, -1) : _sse2neon_static_cast(uint16_t, 0x0),  \
+            ((imm) & (1 << 6)) ? _sse2neon_static_cast(uint16_t, -1) : _sse2neon_static_cast(uint16_t, 0x0),  \
+            ((imm) & (1 << 7)) ? _sse2neon_static_cast(uint16_t, -1) : _sse2neon_static_cast(uint16_t, 0x0)); \
         uint16x8_t _mask_vec = vld1q_u16(_mask);                             \
         uint16x8_t __a = vreinterpretq_u16_m128i(_a);                        \
         uint16x8_t __b = vreinterpretq_u16_m128i(_b); _sse2neon_return(      \

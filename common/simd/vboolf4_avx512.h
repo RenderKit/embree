@@ -32,7 +32,6 @@ namespace embree
     __forceinline vboolf4& operator =(const vboolf4& f) { v = f.v; return *this; }
 
     __forceinline vboolf(const __mmask8 &t) { v = t; }
-    __forceinline operator __mmask8() const { return v; }
 
     __forceinline vboolf(bool b) { v = b ? 0xf : 0x0; }
     __forceinline vboolf(int t)  { v = (__mmask8)t; }
@@ -40,6 +39,12 @@ namespace embree
 
     __forceinline vboolf(bool a, bool b, bool c, bool d)
       : v((__mmask8)((int(d) << 3) | (int(c) << 2) | (int(b) << 1) | int(a))) {}
+
+    /* return packed 8 bits mask */
+    __forceinline __mmask8 packedMask8() const { return v; }
+
+    /* return packed 16 bits mask */
+    __forceinline __mmask8 packedMask16() const { return (__mmask16)v; }
 
     /* return int8 mask */
     __forceinline __m128i mask8() const {
@@ -76,17 +81,17 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vboolf4 operator !(const vboolf4& a) { return _mm512_kandn(a, 0xf); }
+  __forceinline vboolf4 operator !(const vboolf4& a) { return _mm512_kandn(a.packedMask16(), 0xf); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vboolf4 operator &(const vboolf4& a, const vboolf4& b) { return _mm512_kand(a, b); }
-  __forceinline vboolf4 operator |(const vboolf4& a, const vboolf4& b) { return _mm512_kor(a, b); }
-  __forceinline vboolf4 operator ^(const vboolf4& a, const vboolf4& b) { return _mm512_kxor(a, b); }
+  __forceinline vboolf4 operator &(const vboolf4& a, const vboolf4& b) { return _mm512_kand(a.packedMask16(), b.packedMask16()); }
+  __forceinline vboolf4 operator |(const vboolf4& a, const vboolf4& b) { return _mm512_kor(a.packedMask16(), b.packedMask16()); }
+  __forceinline vboolf4 operator ^(const vboolf4& a, const vboolf4& b) { return _mm512_kxor(a.packedMask16(), b.packedMask16()); }
 
-  __forceinline vboolf4 andn(const vboolf4& a, const vboolf4& b) { return _mm512_kandn(b, a); }
+  __forceinline vboolf4 andn(const vboolf4& a, const vboolf4& b) { return _mm512_kandn(b.packedMask16(), a.packedMask16()); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
@@ -100,11 +105,11 @@ namespace embree
   /// Comparison Operators + Select
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vboolf4 operator !=(const vboolf4& a, const vboolf4& b) { return _mm512_kxor(a, b); }
-  __forceinline vboolf4 operator ==(const vboolf4& a, const vboolf4& b) { return _mm512_kand(_mm512_kxnor(a, b), 0xf); }
+  __forceinline vboolf4 operator !=(const vboolf4& a, const vboolf4& b) { return _mm512_kxor(a.packedMask16(), b.packedMask16()); }
+  __forceinline vboolf4 operator ==(const vboolf4& a, const vboolf4& b) { return _mm512_kand(_mm512_kxnor(a.packedMask16(), b.packedMask16()), 0xf); }
 
   __forceinline vboolf4 select(const vboolf4& s, const vboolf4& a, const vboolf4& b) {
-    return _mm512_kor(_mm512_kand(s, a), _mm512_kandn(s, b));
+    return _mm512_kor(_mm512_kand(s.packedMask16(), a.packedMask16()), _mm512_kandn(s.packedMask16(), b.packedMask16()));
   }
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -112,21 +117,21 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline int all (const vboolf4& a) { return a.v == 0xf; }
-  __forceinline int any (const vboolf4& a) { return _mm512_kortestz(a, a) == 0; }
-  __forceinline int none(const vboolf4& a) { return _mm512_kortestz(a, a) != 0; }
+  __forceinline int any (const vboolf4& a) { return _mm512_kortestz(a.packedMask16(), a.packedMask16()) == 0; }
+  __forceinline int none(const vboolf4& a) { return _mm512_kortestz(a.packedMask16(), a.packedMask16()) != 0; }
 
   __forceinline int all (const vboolf4& valid, const vboolf4& b) { return all((!valid) | b); }
   __forceinline int any (const vboolf4& valid, const vboolf4& b) { return any(valid & b); }
   __forceinline int none(const vboolf4& valid, const vboolf4& b) { return none(valid & b); }
 
-  __forceinline size_t movemask(const vboolf4& a) { return _mm512_kmov(a); }
+  __forceinline size_t movemask(const vboolf4& a) { return _mm512_kmov(a.packedMask16()); }
   __forceinline size_t popcnt  (const vboolf4& a) { return popcnt(a.v); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Conversion Operations
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline unsigned int toInt(const vboolf4& a) { return mm512_mask2int(a); }
+  __forceinline unsigned int toInt(const vboolf4& a) { return mm512_mask2int(a.packedMask16()); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Get/Set Functions

@@ -47,7 +47,7 @@ namespace embree
         Vec3ia iupper(floor(gupper));
         
         /* this ignores dimensions that are empty */
-        iupper = (Vec3ia)select(vint4(glower) >= vint4(gupper),vint4(ilower),vint4(iupper));
+        iupper = (Vec3ia)(select(vint4(glower) >= vint4(gupper),vint4(ilower),vint4(iupper))).m128i();
         
         /* compute a morton code for the lower and upper grid coordinates. */
         const unsigned int lower_code = bitInterleave(ilower.x,ilower.y,ilower.z);
@@ -85,7 +85,7 @@ namespace embree
         Vec3ia iupper(floor(gupper));
         
         /* this ignores dimensions that are empty */
-        iupper = (Vec3ia)select(vint4(glower) >= vint4(gupper),vint4(ilower),vint4(iupper));
+        iupper = (Vec3ia)(select(vint4(glower) >= vint4(gupper),vint4(ilower),vint4(iupper))).m128i();
         
         /* compute a morton code for the lower and upper grid coordinates. */
         const unsigned int lower_code = bitInterleave(ilower.x,ilower.y,ilower.z);
