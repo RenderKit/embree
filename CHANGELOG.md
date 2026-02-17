@@ -1,6 +1,20 @@
 Version History
 ---------------
 
+### Embree 4.4.1
+
+-  Added specialization constants for curves, motion blur, and motion blurred instances to reduce code complexity.
+-  Enabled AVX512 support with MSVC compiler.
+-  Fixed numerous potential uninitialized variables, integer over/underflows, and out-of-bounds accesses.
+-  Fixed bounds checking for buffer stride and grid dimensions.
+-  Fixed rare hang in rtcNewDevice when using single thread mode (start_threads=1).
+-  Fixed morton builder for instance arrays.
+-  Improved compiler warning handling for C++26, GCC, and ARM builds.
+-  Improved AVX512 flag consistency between GCC and Clang.
+-  Updated TinyEXR dependency to fix resource leaks.
+-  Reduced memory copies and improved move semantics usage.
+-  Bumped CMake minimum required version to 3.10.
+
 ### Embree 4.4
 
 -  Added support for passing geometry data to Embree using explicit host and SYCL device memory (see `rtcSetSharedGeometryBufferHostDevice`, `rtcNewBufferHostDevice`, and other API calls with `HostDevice` suffix).
