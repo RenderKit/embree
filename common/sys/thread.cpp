@@ -8,6 +8,8 @@
 #include <iostream>
 #if defined(__ARM_NEON)
 #include "../simd/arm/emulation.h"
+#elif defined(__riscv_v)
+#include "../simd/riscv/emulation.h"
 #else
 #include <xmmintrin.h>
 #if defined(__EMSCRIPTEN__)

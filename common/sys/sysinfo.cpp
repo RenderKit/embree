@@ -376,6 +376,16 @@ namespace embree
     cpu_features |= CPU_FEATURE_NEON_2X;
     return cpu_features;
 
+#elif defined(__riscv)
+
+    int cpu_features = CPU_FEATURE_SSE|CPU_FEATURE_SSE2;
+    cpu_features |= CPU_FEATURE_SSE3|CPU_FEATURE_SSSE3|CPU_FEATURE_SSE41|CPU_FEATURE_SSE42;
+    cpu_features |= CPU_FEATURE_XMM_ENABLED;
+    cpu_features |= CPU_FEATURE_POPCNT;
+    cpu_features |= CPU_FEATURE_FMA3;
+    cpu_features |= CPU_FEATURE_LZCNT;
+    return cpu_features;
+
 #else
     /* Unknown CPU. */
     return 0;
