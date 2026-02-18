@@ -14,7 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#if \
+if defined(__AVX10_1__)
+char const *info_isa = "ISA" ":" "AVX10.1"
+#elif \
   defined(__AVX512F__) &&  defined(__AVX512CD__) && \
   defined(__AVX512DQ__) && defined(__AVX512BW__) && defined(__AVX512VL__)
 char const *info_isa = "ISA" ":" "AVX512";
