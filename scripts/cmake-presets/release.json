@@ -14,7 +14,7 @@
   "configurePresets": [
     {
       "name": "release-windows",
-      "inherits": ["package-windows-signed", "env", "dpcpp-windows", "ispc1_23_0", "tbb2021_11_0"],
+      "inherits": ["package-windows-signed", "env", "dpcpp-windows", "ispc1_23_0", "tbb2022_3_0"],
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
@@ -23,7 +23,7 @@
     },
     {
       "name": "release-macos",
-      "inherits": ["package-macos", "env", "clang", "ispc1_23_0", "tbb2021_11_0"],
+      "inherits": ["package-macos", "env", "clang", "ispc1_23_0", "tbb2022_3_0"],
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
@@ -33,7 +33,7 @@
     },
     {
       "name": "release-macos-arm",
-      "inherits": ["package-macos", "env", "clang", "ispc1_23_0", "tbb2021_11_0"],
+      "inherits": ["package-macos", "env", "clang", "ispc1_23_0", "tbb2022_3_0"],
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
@@ -53,7 +53,7 @@
 
     {
       "name": "release-windows-sycl",
-      "inherits": ["package-windows-signed", "env", "dpcpp-windows", "ispc1_23_0", "tbb2021_11_0"],
+      "inherits": ["package-windows-signed", "env", "dpcpp-windows", "ispc1_23_0", "tbb2022_3_0"],
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
@@ -64,7 +64,7 @@
     },
     {
       "name": "release-linux-sycl",
-      "inherits": ["package-linux", "env", "dpcpp", "ispc1_23_0", "tbb2021_11_0"],
+      "inherits": ["package-linux", "env", "dpcpp", "ispc1_23_0", "tbb2022_3_0"],
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",

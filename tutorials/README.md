@@ -23,9 +23,9 @@ use the DPC++ compiler:
     set "INCLUDE=%DPCPP_DIR%\include;%INCLUDE%"
     set "LIB=%DPCPP_DIR%\lib;%LIB%"
 
-Now download and unpack some recent TBB version for Windows, e.g. oneTBB 2021.2.0:
+Now download and unpack some recent TBB version for Windows, e.g. oneTBB 2022.3.0:
 
-  https://github.com/oneapi-src/oneTBB/releases/download/v2021.2.0/oneapi-tbb-2021.2.0-win.zip
+  https://github.com/oneapi-src/oneTBB/releases/download/v2022.3.0/oneapi-tbb-2022.3.0-win.zip
   
 To compile tutorials contained in this folder first create and enter a
 build folder inside the tutorial you want to compile. E.g. for the
@@ -72,10 +72,10 @@ To properly configure your environment, you have to source the
 
     source dpcpp_compiler/startup.sh
 
-Now download and unpack some recent TBB version for Linux, e.g. oneTBB 2021.2.0:
+Now download and unpack some recent TBB version for Linux, e.g. oneTBB 2022.3.0:
 
-  wget https://github.com/oneapi-src/oneTBB/releases/download/v2021.2.0/oneapi-tbb-2021.2.0-lin.tgz
-  tar xzf oneapi-tbb-2021.2.0-lin.tgz
+  wget https://github.com/oneapi-src/oneTBB/releases/download/v2021.2.0/oneapi-tbb-2022.3.0-lin.tgz
+  tar xzf oneapi-tbb-2022.3.0-lin.tgz
 
 To compile tutorials contained in this folder first create and enter a
 build folder inside the tutorial you want to compile. E.g. for the
