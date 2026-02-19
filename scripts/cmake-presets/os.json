@@ -91,7 +91,7 @@
         "EMBREE_TBB_2021_10_0_DIR": "$env{APPS_PATH}/tbb/tbb-2021.10.0-$env{EMBREE_TBB_VERSION_SUFFIX}/lib/cmake/tbb",
         "EMBREE_TBB_2021_11_0_DIR": "$env{APPS_PATH}/tbb/tbb-2021.11.0-$env{EMBREE_TBB_VERSION_SUFFIX}/lib/cmake/tbb",
         "EMBREE_TBB_2021_12_0_DIR": "$env{APPS_PATH}/tbb/tbb-2021.12.0-$env{EMBREE_TBB_VERSION_SUFFIX}/lib/cmake/tbb",
-        "EMBREE_TBB_2022_3_0_DIR": "$env{APPS_PATH}/tbb/tbb-2021.12.0-$env{EMBREE_TBB_VERSION_SUFFIX}/lib/cmake/tbb",
+        "EMBREE_TBB_2022_3_0_DIR": "$env{APPS_PATH}/tbb/tbb-2022.3.0-$env{EMBREE_TBB_VERSION_SUFFIX}/lib/cmake/tbb",
         "EMBREE_TBB_DIR": ""
       }
     }
