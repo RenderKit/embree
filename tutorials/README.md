@@ -74,7 +74,7 @@ To properly configure your environment, you have to source the
 
 Now download and unpack some recent TBB version for Linux, e.g. oneTBB 2022.3.0:
 
-  wget https://github.com/oneapi-src/oneTBB/releases/download/v2021.2.0/oneapi-tbb-2022.3.0-lin.tgz
+  wget https://github.com/oneapi-src/oneTBB/releases/download/v2022.3.0/oneapi-tbb-2022.3.0-lin.tgz
   tar xzf oneapi-tbb-2022.3.0-lin.tgz
 
 To compile tutorials contained in this folder first create and enter a
