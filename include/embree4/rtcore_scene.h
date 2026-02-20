@@ -107,6 +107,14 @@ RTC_API void rtcAttachGeometryByID(RTCScene scene, RTCGeometry geometry, unsigne
 /* Detaches the geometry from the scene. */
 RTC_API void rtcDetachGeometry(RTCScene scene, unsigned int geomID);
 
+/* Gets the number of geometry IDs attached to the scene. To get the array of valid IDs allocate an array of the correct size and pass it as geomIDs. */
+RTC_API size_t rtcGetNumAttachedGeometryIDs(RTCScene scene);
+RTC_API void rtcGetAttachedGeometryIDs(RTCScene scene, size_t* numGeomIDs, unsigned int* geomIDs RTC_DEFAULT_VALUE(nullptr));
+
+/* Gets the number of geometries attached to the scene. To get the array of valid geometries allocate an array of the correct size and pass it as geometries. */
+RTC_API size_t rtcGetNumAttachedGeometries(RTCScene scene);
+RTC_API void rtcGetAttachedGeometries(RTCScene scene, size_t* numGeoms, RTCGeometry* geometries RTC_DEFAULT_VALUE(nullptr));
+
 /* Gets a geometry handle from the scene. This function is not thread safe and should get used during rendering. */
 RTC_API RTCGeometry rtcGetGeometry(RTCScene scene, unsigned int geomID);
 
@@ -120,6 +128,9 @@ RTC_API void rtcCommitScene(RTCScene scene);
 /* Commits the scene from multiple threads. */
 RTC_API void rtcJoinCommitScene(RTCScene scene);
 
+/* Returns if the scene has been modified since it was last committed. */
+RTC_API bool rtcIsSceneModified(RTCScene scene);
+
 
 /* Progress monitor callback function */
 typedef bool (*RTCProgressMonitorFunction)(void* ptr, double n);
@@ -127,8 +138,17 @@ typedef bool (*RTCProgressMonitorFunction)(void* ptr, double n);
 /* Sets the progress monitor callback function of the scene. */
 RTC_API void rtcSetSceneProgressMonitorFunction(RTCScene scene, RTCProgressMonitorFunction progress, void* ptr);
 
+/* Gets the progress monitor callback function of the scene. */
+RTC_API RTCProgressMonitorFunction rtcGetSceneProgressMonitorFunction(RTCScene scene);
+
+/* Gets the progress monitor callback function user pointer of the scene. */
+RTC_API void* rtcGetSceneProgressMonitorFunctionUserPtr(RTCScene scene);
+
 /* Sets the build quality of the scene. */
 RTC_API void rtcSetSceneBuildQuality(RTCScene scene, enum RTCBuildQuality quality);
+
+/* Gets the build quality of the scene. */
+RTC_API enum RTCBuildQuality rtcGetSceneBuildQuality(RTCScene scene);
 
 /* Sets the scene flags. */
 RTC_API void rtcSetSceneFlags(RTCScene scene, enum RTCSceneFlags flags);
