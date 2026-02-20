@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 4.4.0
+% Embree: High Performance Ray Tracing Kernels 4.4.1
 % Intel Corporation
 
 Intel® Embree Overview
@@ -100,7 +100,7 @@ Windows Installation
 --------------------
 
 A pre-built version of Embree for Windows is provided as a ZIP archive
-[embree-4.4.0.x64.windows.zip](https://github.com/embree/embree/releases/download/v4.4.0/embree-4.4.0.x64.windows.zip). After
+[embree-4.4.1.x64.windows.zip](https://github.com/embree/embree/releases/download/v4.4.1/embree-4.4.1.x64.windows.zip). After
 unpacking this ZIP file, you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree.
@@ -110,13 +110,13 @@ Linux Installation
 ------------------
 
 A pre-built version of Embree for Linux is provided as a `tar.gz` archive:
-[embree-4.4.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v4.4.0/embree-4.4.0.x86_64.linux.tar.gz). Unpack
+[embree-4.4.1.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v4.4.1/embree-4.4.1.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    tar xzf embree-4.4.0.x86_64.linux.tar.gz
-    source embree-4.4.0.x86_64.linux/embree-vars.sh
+    tar xzf embree-4.4.1.x86_64.linux.tar.gz
+    source embree-4.4.1.x86_64.linux/embree-vars.sh
 
 We recommend adding a relative `RPATH` to your application that points
 to the location where Embree (and TBB) can be found, e.g. `$ORIGIN/../lib`.
@@ -126,12 +126,12 @@ macOS Installation
 ------------------
 
 The macOS version of Embree is also delivered as a ZIP file:
-[embree-4.4.0.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v4.4.0/embree-4.4.0.x86_64.macosx.zip). Unpack
+[embree-4.4.1.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v4.4.1/embree-4.4.1.x86_64.macosx.zip). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    unzip embree-4.4.0.x64.macosx.zip    source embree-4.4.0.x64.macosx/embree-vars.sh
+    unzip embree-4.4.1.x64.macosx.zip    source embree-4.4.1.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided ZIP file. The library name of that Embree
@@ -156,7 +156,7 @@ set the `TBB_DIR` variable to the path containing `TBB-config.cmake` of a local
 TBB install, in case you do not have TBB installed globally on your system,
 e.g:
 
-    cmake -D embree_DIR=path_to_embree_package/lib/cmake/embree-4.4.0/ \
+    cmake -D embree_DIR=path_to_embree_package/lib/cmake/embree-4.4.1/ \
           -D TBB_DIR=path_to_tbb_package/lib/cmake/tbb/ \
           ..
 
@@ -257,7 +257,7 @@ Embree is released with a bundle of tests in an optional testing package.
 To run these tests extract the testing package in the same folder as your embree installation.
 e.g.:
     
-    tar -xzf embree-4.4.0-testing.zip -C /path/to/installed/embree
+    tar -xzf embree-4.4.1-testing.zip -C /path/to/installed/embree
 
 The tests are extracted into a new folder inside you embree installation and can be run with:
 
@@ -314,7 +314,7 @@ installation, put the path to `ispc` permanently into your `PATH` environment
 variable or you set the `EMBREE_ISPC_EXECUTABLE` variable to point at the ISPC
 executable during CMake configuration.
 
-You additionally have to install CMake 3.1.0 or higher and the developer
+You additionally have to install CMake 3.10 or higher and the developer
 version of [GLFW](https://www.glfw.org/) version 3.
 
 Under macOS, all these dependencies can be installed
@@ -480,7 +480,7 @@ Windows
 
 Embree is tested using the following compilers under Windows:
 
-  - Intel® oneAPI DPC++/C++ Compiler 2024.2
+  - Intel® oneAPI DPC++/C++ Compiler 2025.2
   - oneAPI DPC++/C++ Compiler 6.2.0
   - Visual Studio 2022
   - Visual Studio 2019
