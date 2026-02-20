@@ -15,7 +15,7 @@ Version History
 -  Reduced memory copies and improved move semantics usage.
 -  Bumped CMake minimum required version to 3.10.
 
-### Embree 4.4
+### Embree 4.4.0
 
 -  Added support for passing geometry data to Embree using explicit host and SYCL device memory (see `rtcSetSharedGeometryBufferHostDevice`, `rtcNewBufferHostDevice`, and other API calls with `HostDevice` suffix).
 -  Embree does not use SYCL shared memory anymore internally on systems without host unified memory (i.e., discrete GPUs). Therefore, memory transfers are triggered by specific Embree API calls (e.g. `rtcCommitScene`, `rtcCommitBuffer`).
