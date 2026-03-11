@@ -3,6 +3,7 @@ Version History
 
 ### Embree 4.4.1
 
+-  Enabled support for Intel® Core™ Ultra series 3 integrated GPUs.
 -  Added specialization constants for curves, motion blur, and motion blurred instances to reduce code complexity.
 -  Enabled AVX512 support with MSVC compiler.
 -  Fixed numerous potential uninitialized variables, integer over/underflows, and out-of-bounds accesses.
