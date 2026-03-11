@@ -22,5 +22,5 @@ FetchContent_Declare(IntelStyle
 
 FetchContent_GetProperties(IntelStyle)
 if(NOT IntelStyle_POPULATED)
-  FetchContent_Populate(IntelStyle)
+  FetchContent_MakeAvailable(IntelStyle)
 endif()
