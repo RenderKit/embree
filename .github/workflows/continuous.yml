@@ -5,7 +5,9 @@ name: continuous
 
 permissions: read-all
 
-on: [push, workflow_dispatch]
+on:
+  workflow_dispatch:
+  push:
 
 jobs:
   ################################################################################
@@ -28,8 +30,25 @@ jobs:
       artifact-out: linux-GPU-JIT-build
       artifact-path: ./build/*.tar.gz
       cmd: |
-        cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target build
+        opts="-DCMAKE_BUILD_TYPE=Release"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_TESTING_INTENSITY=3"
+        opts+=" -DEMBREE_SYCL_SUPPORT=ON"
+        opts+=" -DEMBREE_SYCL_AOT_DEVICES=none"
+        opts+=" -DEMBREE_MAX_ISA=AVX512"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+        opts+=" -DCMAKE_C_COMPILER=clang"
+        opts+=" -DCMAKE_CXX_COMPILER=clang++"
+
+        cmake -S superbuild -B build -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config Release
+        cmake --build build/embree/build --config Release --target build
+        cp build/embree/build/embree-*.tar.gz build/
 
   linux-DG2-JIT-PUBLIC-test:
     secrets: inherit
@@ -42,8 +61,8 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu24-public.env
       artifact-in: linux-GPU-JIT-build
       cmd: |
-        cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target test_package
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type ctest)
+        ./scripts/run-tests.sh --type ctest --embree-dir "$EMBREE_PATH" --ctest-config RelWithDebInfo
 
   linux-PVC-JIT-PUBLIC-test:
     secrets: inherit
@@ -56,8 +75,8 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu24-public.env
       artifact-in: linux-GPU-JIT-build
       cmd: |
-        cmake --preset linux-DG2-JIT-PUBLIC -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target test_package
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type ctest)
+        ./scripts/run-tests.sh --type ctest --embree-dir "$EMBREE_PATH" --ctest-config Release
 
   linux-DG2-JIT-PUBLIC-ICX-build:
     secrets: inherit
@@ -69,8 +88,25 @@ jobs:
       artifact-out: linux-DG2-JIT-PUBLIC-ICX-build
       artifact-path: ./build/*.tar.gz
       cmd: |
-        cmake --preset linux-DG2-JIT-PUBLIC-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target build
+        opts="-DCMAKE_BUILD_TYPE=Release"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_TESTING_INTENSITY=3"
+        opts+=" -DEMBREE_SYCL_SUPPORT=ON"
+        opts+=" -DEMBREE_SYCL_AOT_DEVICES=none"
+        opts+=" -DEMBREE_MAX_ISA=AVX512"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+        opts+=" -DCMAKE_C_COMPILER=icx"
+        opts+=" -DCMAKE_CXX_COMPILER=icpx"
+
+        cmake -S superbuild -B build -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config Release
+        cmake --build build/embree/build --config Release --target build
+        cp build/embree/build/embree-*.tar.gz build/
 
   linux-DG2-JIT-PUBLIC-ICX-test:
     secrets: inherit
@@ -84,8 +120,8 @@ jobs:
       dpcpp-version: intel/2025.2
       artifact-in: linux-DG2-JIT-PUBLIC-ICX-build
       cmd: |
-        cmake --preset linux-DG2-JIT-PUBLIC-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target test_package
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type ctest)
+        ./scripts/run-tests.sh --type ctest --embree-dir "$EMBREE_PATH" --ctest-config Release
 
 
   linux-DG2-JIT-PUBLIC-debug-build:
@@ -98,8 +134,23 @@ jobs:
       artifact-out: linux-DG2-JIT-PUBLIC-debug-build
       artifact-path: ./build/*.tar.gz
       cmd: |
-        cmake --preset linux-DG2-JIT-PUBLIC-debug -DCMAKE_BUILD_TYPE=Debug -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Debug --target build
+        opts="-DCMAKE_BUILD_TYPE=Debug"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_TESTING_INTENSITY=3"
+        opts+=" -DEMBREE_SYCL_SUPPORT=ON"
+        opts+=" -DEMBREE_SYCL_AOT_DEVICES=none"
+        opts+=" -DEMBREE_MAX_ISA=AVX512"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+
+        cmake -S superbuild -B build -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config Debug
+        cmake --build build/embree/build --config Debug --target build
+        cp build/embree/build/embree-*.tar.gz build/
 
   ########################################
   # Windows DG2
@@ -110,13 +161,30 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       force-delete: true
-      runs-on: '[ "Windows", "NAS", "build" ]'
+      runs-on: '[ "Windows",  "build" ]'
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
       artifact-out: windows-JIT-build
       artifact-path: ./build/*.zip
       cmd: |
-        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target build
+        $opts  = "-DCMAKE_BUILD_TYPE=Release"
+        $opts += " -DBUILD_TESTING=ON"
+        $opts += " -DEMBREE_TUTORIALS=ON"
+        $opts += " -DEMBREE_ISPC_SUPPORT=ON"
+        $opts += " -DEMBREE_TESTING_INTENSITY=3"
+        $opts += " -DEMBREE_SYCL_SUPPORT=ON"
+        $opts += " -DEMBREE_SYCL_AOT_DEVICES=none"
+        $opts += " -DEMBREE_MAX_ISA=AVX512"
+        $opts += " -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        $opts += " -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        $opts += " -DCMAKE_INSTALL_TESTDIR=testing"
+        $opts += " -DEMBREE_ZIP_MODE=ON"
+        $opts += " -DCMAKE_C_COMPILER=clang"
+        $opts += " -DCMAKE_CXX_COMPILER=clang++"
+
+        cmake -S superbuild -B build -G Ninja -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config Release
+        cmake --build build/embree/build --config Release --target build
+        Copy-Item build/embree/build/embree-*.zip build/ -Force
 
   windows-DG2-JIT-test:
     secrets: inherit
@@ -127,8 +195,8 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
       artifact-in: windows-JIT-build
       cmd: |
-        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target test_package
+        $EmbreeDir = .\\scripts\\prepare-test-files.ps1 -TestType ctest
+        .\\scripts\\run-tests.ps1 -TestType ctest -EmbreeDir $EmbreeDir -CtestConfig Release
 
   windows-BMG-JIT-test:
     secrets: inherit
@@ -139,8 +207,8 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
       artifact-in: windows-JIT-build
       cmd: |
-        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target test_package
+        $EmbreeDir = .\\scripts\\prepare-test-files.ps1 -TestType ctest
+        .\\scripts\\run-tests.ps1 -TestType ctest -EmbreeDir $EmbreeDir -CtestConfig Release
 
   windows-LNL-JIT-test:
     secrets: inherit
@@ -151,44 +219,75 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
       artifact-in: windows-JIT-build
       cmd: |
-        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target test_package
+        $EmbreeDir = .\\scripts\\prepare-test-files.ps1 -TestType ctest
+        .\\scripts\\run-tests.ps1 -TestType ctest -EmbreeDir $EmbreeDir -CtestConfig Release
 
   windows-DG2-JIT-INTERNAL-test:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     needs: ["windows-JIT-build"]
     with:
-      runs-on: '[ "Windows", "NAS", "dg2" ]'
+      runs-on: '[ "Windows",  "dg2" ]'
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
       artifact-in: windows-JIT-build
       cmd: |
-        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target test_package
+        $EmbreeDir = .\\scripts\\prepare-test-files.ps1 -TestType ctest
+        .\\scripts\\run-tests.ps1 -TestType ctest -EmbreeDir $EmbreeDir -CtestConfig Release
 
   windows-DG2-JIT-ICX-build:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
-      runs-on: '[ "Windows", "NAS", "dg2" ]'
+      runs-on: '[ "Windows",  "build" ]'
       dpcpp-version: intel/2025.2
-      env-from-files: ./.github/workflows/gfx-windows-public.env
       artifact-out: windows-DG2-JIT-ICX-build
       artifact-path: ./build/*.zip
       cmd: |
-        cmake --preset nightly-windows-DG2-JIT-ICX -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target build
+        $opts  = "-DCMAKE_BUILD_TYPE=Release"
+        $opts += " -DBUILD_TESTING=ON"
+        $opts += " -DEMBREE_TUTORIALS=ON"
+        $opts += " -DEMBREE_ISPC_SUPPORT=ON"
+        $opts += " -DEMBREE_TESTING_INTENSITY=3"
+        $opts += " -DEMBREE_SYCL_SUPPORT=ON"
+        $opts += " -DEMBREE_SYCL_AOT_DEVICES=none"
+        $opts += " -DEMBREE_MAX_ISA=AVX512"
+        $opts += " -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        $opts += " -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        $opts += " -DCMAKE_INSTALL_TESTDIR=testing"
+        $opts += " -DEMBREE_ZIP_MODE=ON"
+        $opts += " -DCMAKE_C_COMPILER=icx"
+        $opts += " -DCMAKE_CXX_COMPILER=icx"
+
+        cmake -S superbuild -B build -G Ninja -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config Release
+        cmake --build build/embree/build --config Release --target build
+        Copy-Item build/embree/build/embree-*.zip build/ -Force
 
   windows-DG2-JIT-debug-build:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       force-delete: true
-      runs-on: '[ "Windows", "NAS", "build" ]'
+      runs-on: '[ "Windows",  "build" ]'
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
       cmd: |
-        cmake --preset windows-DG2-JIT-INTERNAL-L0RTAS-debug -DCMAKE_BUILD_TYPE=Debug -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Debug --target build
+        $opts  = "-DCMAKE_BUILD_TYPE=Debug"
+        $opts += " -DBUILD_TESTING=ON"
+        $opts += " -DEMBREE_TUTORIALS=ON"
+        $opts += " -DEMBREE_ISPC_SUPPORT=ON"
+        $opts += " -DEMBREE_TESTING_INTENSITY=3"
+        $opts += " -DEMBREE_SYCL_SUPPORT=ON"
+        $opts += " -DEMBREE_SYCL_AOT_DEVICES=none"
+        $opts += " -DEMBREE_MAX_ISA=AVX512"
+        $opts += " -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        $opts += " -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        $opts += " -DCMAKE_INSTALL_TESTDIR=testing"
+        $opts += " -DEMBREE_ZIP_MODE=ON"
+
+        cmake -S superbuild -B build -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -D EMBREE_EXTRA_OPTIONS="$opts"
+        # Reduce parallelism for debug build to avoid OOM issues on CI machines with limited resources
+        cmake --build build --config Debug --parallel 4
+        cmake --build build/embree/build --config Debug --target build --parallel 4
 
 #   ################################################################################
 #   ################################################################################
@@ -207,9 +306,26 @@ jobs:
       image: embree/fedora:42
       runs-on: '[ "Linux", "docker", "avx512" ]'
       cmd: |
-        cmake --preset linux-fedora42-CLANG -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
-        cmake --build build --config RelWithDebInfo --target build
-        cmake --build build --config RelWithDebInfo --target test_package
+        opts="-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_TESTING_INTENSITY=2"
+        opts+=" -DEMBREE_MAX_ISA=AVX512"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+        opts+=" -DCMAKE_C_COMPILER=clang"
+        opts+=" -DCMAKE_CXX_COMPILER=clang++"
+
+        cmake -S superbuild -B build -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config RelWithDebInfo
+        cmake --build build/embree/build --config RelWithDebInfo --target build
+        cp build/embree/build/embree-*.tar.gz build/
+
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type ctest)
+        ./scripts/run-tests.sh --type ctest --embree-dir "$EMBREE_PATH" --ctest-config RelWithDebInfo
 
   linux-fedora42-CLANG-INT-ADDRSANITIZER:
     secrets: inherit
@@ -218,9 +334,28 @@ jobs:
       image: embree/fedora:42
       runs-on: '[ "Linux", "docker", "build" ]'
       cmd: |
-        cmake --preset linux-fedora42-CLANG-INT-ADDRSANITIZER -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=1
-        cmake --build build --config RelWithDebInfo --target build
-        cmake --build build --config RelWithDebInfo --target test_package
+        opts="-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_TESTING_INTENSITY=1"
+        opts+=" -DEMBREE_MAX_ISA=AVX512"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DEMBREE_TASKING_SYSTEM=INTERNAL"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+        opts+=" -DCMAKE_C_COMPILER=clang"
+        opts+=" -DCMAKE_CXX_COMPILER=clang++"
+        opts+=" -DEMBREE_ADDRESS_SANITIZER=ON"
+
+        cmake -S superbuild -B build -D BUILD_TBB=OFF -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config RelWithDebInfo
+        cmake --build build/embree/build --config RelWithDebInfo --target build
+        cp build/embree/build/embree-*.tar.gz build/
+
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type ctest)
+        ./scripts/run-tests.sh --type ctest --embree-dir "$EMBREE_PATH" --ctest-config RelWithDebInfo
 
   linux-fedora42-ICX:
     secrets: inherit
@@ -230,9 +365,26 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       dpcpp-version: intel/2025.2
       cmd: |
-        cmake --preset linux-fedora42-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
-        cmake --build build --config RelWithDebInfo --target build
-        cmake --build build --config RelWithDebInfo --target test_package
+        opts="-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_TESTING_INTENSITY=2"
+        opts+=" -DEMBREE_MAX_ISA=AVX512"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+        opts+=" -DCMAKE_C_COMPILER=icx"
+        opts+=" -DCMAKE_CXX_COMPILER=icpx"
+
+        cmake -S superbuild -B build -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config RelWithDebInfo
+        cmake --build build/embree/build --config RelWithDebInfo --target build
+        cp build/embree/build/embree-*.tar.gz build/
+
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type ctest)
+        ./scripts/run-tests.sh --type ctest --embree-dir "$EMBREE_PATH" --ctest-config RelWithDebInfo
 
   linux-ubuntu24_04-GCC:
     secrets: inherit
@@ -241,9 +393,24 @@ jobs:
       image: embree/ubuntu:24.04
       runs-on: '[ "Linux", "docker", "avx512" ]'
       cmd: |
-        cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DEMBREE_TESTING_INSTALL_TESTS=ON -DCMAKE_INSTALL_TESTDIR="testing" -DEMBREE_TESTING_INTENSITY=3
-        cmake --build build --config Release --target build
-        cmake --build build --config Release --target test_package
+        opts="-DCMAKE_BUILD_TYPE=Release"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_TESTING_INTENSITY=3"
+        opts+=" -DEMBREE_MAX_ISA=AVX512"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+
+        cmake -S superbuild -B build -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config Release
+        cmake --build build/embree/build --config Release --target build
+        cp build/embree/build/embree-*.tar.gz build/
+
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type ctest)
+        ./scripts/run-tests.sh --type ctest --embree-dir "$EMBREE_PATH" --ctest-config Release
 
   linux-ubuntu24_04-ICX:
     secrets: inherit
@@ -253,9 +420,26 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       dpcpp-version: intel/2025.2
       cmd: |
-        cmake --preset linux-ubuntu24_04-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
-        cmake --build build --config RelWithDebInfo --target build
-        cmake --build build --config RelWithDebInfo --target test_package
+        opts="-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_TESTING_INTENSITY=2"
+        opts+=" -DEMBREE_MAX_ISA=AVX512"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+        opts+=" -DCMAKE_C_COMPILER=icx"
+        opts+=" -DCMAKE_CXX_COMPILER=icpx"
+
+        cmake -S superbuild -B build -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config RelWithDebInfo
+        cmake --build build/embree/build --config RelWithDebInfo --target build
+        cp build/embree/build/embree-*.tar.gz build/
+
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type ctest)
+        ./scripts/run-tests.sh --type ctest --embree-dir "$EMBREE_PATH" --ctest-config RelWithDebInfo
 
   ########################################
   # Windows
@@ -265,25 +449,27 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       force-delete: true
-      runs-on: '[ "Windows", "NAS", "build" ]'
-      dpcpp-version: none
+      runs-on: '[ "Windows",  "build" ]'
+      msvc-version: 2019
       cmd: |
-        cmake --preset windows-V142 -D CMAKE_BUILD_TYPE=RelWithDebInfo -D EMBREE_TESTING_INTENSITY=2
-        cmake --build build --config RelWithDebInfo --target build
-        cmake --build build --target test_package
+        $opts  = "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+        $opts += " -DBUILD_TESTING=ON"
+        $opts += " -DEMBREE_TUTORIALS=ON"
+        $opts += " -DEMBREE_ISPC_SUPPORT=ON"
+        $opts += " -DEMBREE_MAX_INSTANCE_LEVEL_COUNT=8"
+        $opts += " -DEMBREE_MAX_ISA=SSE2"
+        $opts += " -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        $opts += " -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        $opts += " -DCMAKE_INSTALL_TESTDIR=testing"
+        $opts += " -DEMBREE_ZIP_MODE=ON"
 
-  #TODO: spontaneous build error with icx on windows
-  #windows-ICX:
-  #  secrets: inherit
-  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-  #  with:
-  #    force-delete: true
-  #    runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-  #    dpcpp-version: intel/2025.2
-  #    cmd: |
-  #      cmake --preset windows-ICX -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
-  #      cmake --build build --config RelWithDebInfo --target build
-  #      cmake --build build --config RelWithDebInfo --target test_package
+        cmake -S superbuild -B build -G Ninja -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config RelWithDebInfo
+        cmake --build build/embree/build --config RelWithDebInfo --target build
+        Copy-Item build/embree/build/embree-*.zip build/ -Force
+
+        $EmbreeDir = .\\scripts\\prepare-test-files.ps1 -TestType ctest
+        .\\scripts\\run-tests.ps1 -TestType ctest -EmbreeDir $EmbreeDir -CtestConfig RelWithDebInfo
 
   ########################################
   # MacOS
@@ -295,9 +481,34 @@ jobs:
     with:
       runs-on: '[ "macOS", "build", "arm" ]'
       cmd: |
-        cmake --preset macos-ARM-CLANG-NEON-AVX2 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
-        cmake --build build --config RelWithDebInfo --target build
-        cmake --build build --config RelWithDebInfo --target test_package
+        opts="-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_TESTING_INTENSITY=2"
+        opts+=" -DCMAKE_CXX_COMPILER=clang++"
+        opts+=" -DCMAKE_C_COMPILER=clang"
+        opts+=" -DCMAKE_INSTALL_BINDIR=bin"
+        opts+=" -DCMAKE_INSTALL_DOCDIR=doc"
+        opts+=" -DCMAKE_INSTALL_INCLUDEDIR=include"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DCMAKE_MACOSX_RPATH=ON"
+        opts+=" -DCMAKE_SKIP_INSTALL_RPATH=OFF"
+        opts+=" -DEMBREE_BUILD_GLFW_FROM_SOURCE=ON"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_MAX_ISA=NEON2X"
+        opts+=" -DEMBREE_PATCH_GLFW_SOURCE=ON"
+        opts+=" -DEMBREE_TASKING_SYSTEM=TBB"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+
+        cmake -S superbuild -B build -D BUILD_TBB_FROM_SOURCE=ON -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config RelWithDebInfo
+        cmake --build build/embree/build --config RelWithDebInfo --target build
+        cp build/embree/build/embree-*.zip build/
+
+        EMBREE_PATH=$(./scripts/prepare-test-files-macos.sh --type ctest)
+        ./scripts/run-tests.sh --type ctest --embree-dir "$EMBREE_PATH" --ctest-config RelWithDebInfo
 
   macosx-ARM-CLANG-NEON:
     secrets: inherit
@@ -305,9 +516,34 @@ jobs:
     with:
       runs-on: '[ "macOS", "build", "arm" ]'
       cmd: |
-        cmake --preset macos-ARM-CLANG-NEON -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
-        cmake --build build --config RelWithDebInfo --target build
-        cmake --build build --config RelWithDebInfo --target test_package
+        opts="-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_TESTING_INTENSITY=2"
+        opts+=" -DCMAKE_CXX_COMPILER=clang++"
+        opts+=" -DCMAKE_C_COMPILER=clang"
+        opts+=" -DCMAKE_INSTALL_BINDIR=bin"
+        opts+=" -DCMAKE_INSTALL_DOCDIR=doc"
+        opts+=" -DCMAKE_INSTALL_INCLUDEDIR=include"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DCMAKE_MACOSX_RPATH=ON"
+        opts+=" -DCMAKE_SKIP_INSTALL_RPATH=OFF"
+        opts+=" -DEMBREE_BUILD_GLFW_FROM_SOURCE=ON"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_MAX_ISA=NEON"
+        opts+=" -DEMBREE_PATCH_GLFW_SOURCE=ON"
+        opts+=" -DEMBREE_TASKING_SYSTEM=TBB"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+
+        cmake -S superbuild -B build -D BUILD_TBB_FROM_SOURCE=ON -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config RelWithDebInfo
+        cmake --build build/embree/build --config RelWithDebInfo --target build
+        cp build/embree/build/embree-*.zip build/
+
+        EMBREE_PATH=$(./scripts/prepare-test-files-macos.sh --type ctest)
+        ./scripts/run-tests.sh --type ctest --embree-dir "$EMBREE_PATH" --ctest-config RelWithDebInfo
 
   macosx-x64-CLANG:
     secrets: inherit
@@ -315,9 +551,34 @@ jobs:
     with:
       runs-on: '[ "macOS", "build", "x86_64" ]'
       cmd: |
-        cmake --preset macos-x64-CLANG -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2
-        cmake --build build --config RelWithDebInfo --target build
-        cmake --build build --config RelWithDebInfo --target test_package
+        opts="-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_TESTING_INTENSITY=2"
+        opts+=" -DCMAKE_CXX_COMPILER=clang++"
+        opts+=" -DCMAKE_C_COMPILER=clang"
+        opts+=" -DCMAKE_INSTALL_BINDIR=bin"
+        opts+=" -DCMAKE_INSTALL_DOCDIR=doc"
+        opts+=" -DCMAKE_INSTALL_INCLUDEDIR=include"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DCMAKE_MACOSX_RPATH=ON"
+        opts+=" -DCMAKE_SKIP_INSTALL_RPATH=OFF"
+        opts+=" -DEMBREE_BUILD_GLFW_FROM_SOURCE=ON"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_MAX_ISA=AVX512"
+        opts+=" -DEMBREE_PATCH_GLFW_SOURCE=ON"
+        opts+=" -DEMBREE_TASKING_SYSTEM=TBB"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+
+        cmake -S superbuild -B build -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config RelWithDebInfo
+        cmake --build build/embree/build --config RelWithDebInfo --target build
+        cp build/embree/build/embree-*.zip build/
+
+        EMBREE_PATH=$(./scripts/prepare-test-files-macos.sh --type ctest)
+        ./scripts/run-tests.sh --type ctest --embree-dir "$EMBREE_PATH" --ctest-config RelWithDebInfo
 
   macosx-ARM-CLANG-NEON-AVX2-universal-binaries:
     secrets: inherit
@@ -325,9 +586,35 @@ jobs:
     with:
       runs-on: '[ "macOS", "build", "arm" ]'
       cmd: |
-        cmake --preset macos-ARM-CLANG-NEON-AVX2-UB -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEMBREE_TESTING_INTENSITY=2 -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DEMBREE_BUILD_GLFW_FROM_SOURCE=ON -DEMBREE_ISPC_SUPPORT=OFF
-        cmake --build build --config RelWithDebInfo --target build
-        cmake --build build --config RelWithDebInfo --target test_package
+        opts="-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=OFF"
+        opts+=" -DEMBREE_TESTING_INTENSITY=2"
+        opts+=" -DCMAKE_CXX_COMPILER=clang++"
+        opts+=" -DCMAKE_C_COMPILER=clang"
+        opts+=" -DCMAKE_INSTALL_BINDIR=bin"
+        opts+=" -DCMAKE_INSTALL_DOCDIR=doc"
+        opts+=" -DCMAKE_INSTALL_INCLUDEDIR=include"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DCMAKE_MACOSX_RPATH=ON"
+        opts+=" -DCMAKE_SKIP_INSTALL_RPATH=OFF"
+        opts+=" -DEMBREE_BUILD_GLFW_FROM_SOURCE=ON"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_MAX_ISA=NEON2X"
+        opts+=" -DEMBREE_PATCH_GLFW_SOURCE=ON"
+        opts+=" -DEMBREE_TASKING_SYSTEM=TBB"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+        opts+=" -DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
+
+        cmake -S superbuild -B build -D BUILD_TBB_FROM_SOURCE=ON -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config RelWithDebInfo
+        cmake --build build/embree/build --config RelWithDebInfo --target build
+        cp build/embree/build/embree-*.zip build/
+
+        EMBREE_PATH=$(./scripts/prepare-test-files-macos.sh --type ctest)
+        ./scripts/run-tests.sh --type ctest --embree-dir "$EMBREE_PATH" --ctest-config RelWithDebInfo
 
   ########################################
   # Static code analysis jobs
@@ -339,8 +626,7 @@ jobs:
     with:
       os: Linux
       project: Embree
-      submodules: true
-      prebuild: >
-        export NAS_LINUX=$STORAGE_PATH/packages/apps &&
-        cmake --preset linux-coverity
-      build: sh scripts/coverity.sh
+      prebuild: |
+        cmake -S superbuild -B build -D EMBREE_EXTRA_OPTIONS="-DCMAKE_BUILD_TYPE=Release -DEMBREE_MAX_ISA=SSE2"
+      build: |
+        cmake --build build --config Release

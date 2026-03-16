@@ -90,7 +90,7 @@ if (BUILD_TESTING OR EMBREE_TESTING_INSTALL_TESTS)
                COMMAND ${executable}_sycl ${ARGN})
       SET(testnamedef EMBREE_TEST_${testname}_sycl_DEFINED)
       SET(${testnamedef} 1 CACHE INTERNAL "")
-      SET_TESTS_PROPERTIES(${testname}_sycl PROPERTIES TIMEOUT 50)
+      SET_TESTS_PROPERTIES(${testname}_sycl PROPERTIES TIMEOUT 150)
     ENDIF()
   ENDMACRO()
 

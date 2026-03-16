@@ -24,8 +24,21 @@ jobs:
       artifact-path: ./build/embree-*.zip
       dpcpp-version: intel-llvm/v6.2.0
       cmd: |
-        cmake --preset release-windows -DCMAKE_BUILD_TYPE=Release
-        cmake --build build --config Release --target build
+        $opts  = "-DCMAKE_BUILD_TYPE=Release"
+        $opts += " -DBUILD_TESTING=ON"
+        $opts += " -DEMBREE_TUTORIALS=ON"
+        $opts += " -DEMBREE_ISPC_SUPPORT=ON"
+        $opts += " -DEMBREE_TESTING_INTENSITY=3"
+        $opts += " -DEMBREE_MAX_ISA=AVX512"
+        $opts += " -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        $opts += " -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        $opts += " -DCMAKE_INSTALL_TESTDIR=testing"
+        $opts += " -DEMBREE_ZIP_MODE=ON"
+
+        cmake -S superbuild -B build -G Ninja -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config Release
+        cmake --build build/embree/build --config Release --target build
+        Copy-Item build/embree/build/embree-*.zip build/ -Force
 
   windows-test:
     secrets: inherit
@@ -39,17 +52,8 @@ jobs:
       runs-on: '[ "Windows", "${{ matrix.platform }}" ]'
       artifact-in: build-windows
       cmd: |
-        # Merge binaries & testing packages
-        $dest = "./build/embree-release"
-        New-Item -ItemType Directory -Path $dest -Force | Out-Null
-        Get-ChildItem -Path "./build/*.zip" | 
-          ForEach-Object { Expand-Archive -Path $_.FullName -DestinationPath $dest -Force }
-        
-        # Run testing
-        cd $dest
-        cmake -S testing -B build
-        cd build
-        ctest -C Release --output-on-failure -VV
+        $EmbreeDir = .\\scripts\\prepare-test-files.ps1 -TestType ctest
+        .\\scripts\\run-tests.ps1 -TestType ctest -EmbreeDir $EmbreeDir -CtestConfig Release
 
   build-macosx-x86_64:
     secrets: inherit
@@ -57,9 +61,32 @@ jobs:
     with:
       runs-on: '[ "macOS", "build", "x86_64" ]'
       cmd: |
-        source scripts/cmake-presets/macos-env.sh
-        cmake --preset release-macos -DCMAKE_BUILD_TYPE=Release
-        cmake --build build --config Release --target build
+        opts="-DCMAKE_BUILD_TYPE=Release"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_TESTING_INTENSITY=3"
+        opts+=" -DCMAKE_CXX_COMPILER=clang++"
+        opts+=" -DCMAKE_C_COMPILER=clang"
+        opts+=" -DCMAKE_INSTALL_BINDIR=bin"
+        opts+=" -DCMAKE_INSTALL_DOCDIR=doc"
+        opts+=" -DCMAKE_INSTALL_INCLUDEDIR=include"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DCMAKE_MACOSX_RPATH=ON"
+        opts+=" -DCMAKE_SKIP_INSTALL_RPATH=OFF"
+        opts+=" -DEMBREE_BUILD_GLFW_FROM_SOURCE=ON"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_MAX_ISA=AVX512"
+        opts+=" -DEMBREE_PATCH_GLFW_SOURCE=ON"
+        opts+=" -DEMBREE_TASKING_SYSTEM=TBB"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+        opts+=" -DCPACK_PRE_BUILD_SCRIPTS=$CPACK_PRE_BUILD_SIGNING_SCRIPT"
+
+        cmake -S superbuild -B build -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config Release
+        cmake --build build/embree/build --config Release --target build
+        cp build/embree/build/embree-*.zip build/
       notarize-package: ./build/embree-*.x86_64.macosx.zip
       artifact-out: build-macosx-x86_64
       artifact-path: ./build/embree-*.zip
@@ -76,18 +103,8 @@ jobs:
       runs-on: '[ "macOS", "${{ matrix.platform }}" ]'
       artifact-in: build-macosx-x86_64
       cmd: |
-        # Merge binaries & testing packages
-        dest="./build/embree-release"
-        mkdir -p "$dest"
-        for archive in ./build/*.zip; do
-          unzip -o "$archive" -d "$dest"
-        done
-
-        # Run testing
-        cd $dest
-        cmake -S testing -B build
-        cd build
-        ctest -C Release --output-on-failure -VV
+        EMBREE_PATH=$(./scripts/prepare-test-files-macos.sh --type ctest)
+        ./scripts/run-tests.sh --type ctest --embree-dir "$EMBREE_PATH" --ctest-config Release
 
   build-macosx-arm:
     secrets: inherit
@@ -95,12 +112,35 @@ jobs:
     with:
       runs-on: '[ "macOS", "build", "arm" ]'
       cmd: |
-        source scripts/cmake-presets/macos-env.sh
-        cmake --preset release-macos-arm -DCMAKE_BUILD_TYPE=Release
-        cmake --build build --config Release --target build
+        opts="-DCMAKE_BUILD_TYPE=Release"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_TESTING_INTENSITY=3"
+        opts+=" -DCMAKE_CXX_COMPILER=clang++"
+        opts+=" -DCMAKE_C_COMPILER=clang"
+        opts+=" -DCMAKE_INSTALL_BINDIR=bin"
+        opts+=" -DCMAKE_INSTALL_DOCDIR=doc"
+        opts+=" -DCMAKE_INSTALL_INCLUDEDIR=include"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DCMAKE_MACOSX_RPATH=ON"
+        opts+=" -DCMAKE_SKIP_INSTALL_RPATH=OFF"
+        opts+=" -DEMBREE_BUILD_GLFW_FROM_SOURCE=ON"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_MAX_ISA=NEON2X"
+        opts+=" -DEMBREE_PATCH_GLFW_SOURCE=ON"
+        opts+=" -DEMBREE_TASKING_SYSTEM=TBB"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+        opts+=" -DCPACK_PRE_BUILD_SCRIPTS=$CPACK_PRE_BUILD_SIGNING_SCRIPT"
+
+        cmake -S superbuild -B build -D BUILD_TBB_FROM_SOURCE=ON -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config Release
+        cmake --build build/embree/build --config Release --target build
+        cp build/embree/build/embree-*.zip build/
       notarize-package: build/embree-*.arm64.macosx.zip
       artifact-out: build-macosx-arm
-      artifact-path: ./build/*.zip
+      artifact-path: ./build/embree-*.zip
 
   test-macosx-arm:
     secrets: inherit
@@ -114,18 +154,8 @@ jobs:
       runs-on: '[ "macOS", "${{ matrix.platform }}" ]'
       artifact-in: build-macosx-arm
       cmd: |
-        # Merge binaries & testing packages
-        dest="./build/embree-release"
-        mkdir -p "$dest"
-        for archive in ./build/*.zip; do
-          unzip -o "$archive" -d "$dest"
-        done
-
-        # Run testing
-        cd $dest
-        cmake -S testing -B build
-        cd build
-        ctest -C Release --output-on-failure -VV
+        EMBREE_PATH=$(./scripts/prepare-test-files-macos.sh --type ctest)
+        ./scripts/run-tests.sh --type ctest --embree-dir "$EMBREE_PATH" --ctest-config Release
 
   build-linux:
     secrets: inherit
@@ -141,8 +171,21 @@ jobs:
         dnf -y config-manager --set-enabled powertools
         dnf -y install ninja-build
       cmd: |
-        cmake --preset release-linux -DCMAKE_BUILD_TYPE=Release
-        cmake --build build --config Release --target build
+        opts="-DCMAKE_BUILD_TYPE=Release"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_TESTING_INTENSITY=3"
+        opts+=" -DEMBREE_MAX_ISA=AVX512"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+
+        cmake -S superbuild -B build -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config Release
+        cmake --build build/embree/build --config Release --target build
+        cp build/embree/build/embree-*.tar.gz build/
 
   linux-test:
     secrets: inherit
@@ -157,21 +200,11 @@ jobs:
       runs-on: '[ "Linux", "${{ matrix.platform }}" ]'
       artifact-in: build-linux
       cmd: |
-        # Merge binaries & testing packages
-        dest="./build/embree-release"
-        mkdir -p "$dest"
-        for archive in ./build/*.tar.gz; do
-          tar -xzf "$archive" -C "$dest"
-        done
-
-        # Run testing
-        cd $dest
-        cmake -S testing -B build
-        cd build
-        ctest -C Release --output-on-failure -VV
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type ctest | tail -1)
+        ./scripts/run-tests.sh --type ctest --embree-dir "$EMBREE_PATH" --ctest-config Release
 
 
-#####################################################################
+####################################################################
 # SYCL Builds and Tests
 ####################################################################
   build-windows-sycl:
@@ -183,8 +216,23 @@ jobs:
       artifact-out: build-windows-sycl
       artifact-path: ./build/*.zip
       cmd: |
-        cmake --preset release-windows-sycl -DCMAKE_BUILD_TYPE=Release
-        cmake --build build --config Release --target build
+        $opts  = "-DCMAKE_BUILD_TYPE=Release"
+        $opts += " -DBUILD_TESTING=ON"
+        $opts += " -DEMBREE_TUTORIALS=ON"
+        $opts += " -DEMBREE_ISPC_SUPPORT=ON"
+        $opts += " -DEMBREE_TESTING_INTENSITY=3"
+        $opts += " -DEMBREE_SYCL_SUPPORT=ON"
+        $opts += " -DEMBREE_SYCL_AOT_DEVICES=none"
+        $opts += " -DEMBREE_MAX_ISA=AVX512"
+        $opts += " -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        $opts += " -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        $opts += " -DCMAKE_INSTALL_TESTDIR=testing"
+        $opts += " -DEMBREE_ZIP_MODE=ON"
+
+        cmake -S superbuild -B build -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config Release
+        cmake --build build/embree/build --config Release --target build
+        Copy-Item build/embree/build/embree-*.zip build/ -Force
 
   build-linux-sycl:
     secrets: inherit
@@ -200,8 +248,23 @@ jobs:
         dnf -y config-manager --set-enabled powertools
         dnf -y install ninja-build
       cmd: |
-        cmake --preset release-linux-sycl -DCMAKE_BUILD_TYPE=Release
-        cmake --build build --config Release --target build
+        opts="-DCMAKE_BUILD_TYPE=Release"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_TESTING_INTENSITY=3"
+        opts+=" -DEMBREE_SYCL_SUPPORT=ON"
+        opts+=" -DEMBREE_SYCL_AOT_DEVICES=none"
+        opts+=" -DEMBREE_MAX_ISA=AVX512"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+
+        cmake -S superbuild -B build -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config Release
+        cmake --build build/embree/build --config Release --target build
+        cp build/embree/build/embree-*.tar.gz build/
 
   windows-sycl-test:
     secrets: inherit
@@ -216,17 +279,8 @@ jobs:
       env-from-files: ./.github/workflows/gfx-windows-public.env
       artifact-in: build-windows-sycl
       cmd: |
-        # Merge binaries & testing packages
-        $dest = "./build/embree-release"
-        New-Item -ItemType Directory -Path $dest -Force | Out-Null
-        Get-ChildItem -Path "./build/*.zip" | 
-          ForEach-Object { Expand-Archive -Path $_.FullName -DestinationPath $dest -Force }
-        
-        # Run testing
-        cd $dest
-        cmake -S testing -B build
-        cd build
-        ctest -C Release --output-on-failure -VV
+        $EmbreeDir = .\\scripts\\prepare-test-files.ps1 -TestType ctest
+        .\\scripts\\run-tests.ps1 -TestType ctest -EmbreeDir $EmbreeDir -CtestConfig Release
 
   linux-sycl-test:
     secrets: inherit
@@ -243,23 +297,13 @@ jobs:
       env-from-files: ./.github/workflows/gfx-ubuntu24-public.env
       artifact-in: build-linux-sycl
       cmd: |
-        # Merge binaries & testing packages
-        dest="./build/embree-release"
-        mkdir -p "$dest"
-        for archive in ./build/*.tar.gz; do
-          tar -xzf "$archive" -C "$dest"
-        done
-
-        # Run testing
-        cd $dest
-        cmake -S testing -B build
-        cd build
-        ctest -C Release --output-on-failure -VV
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type ctest | tail -1)
+        ./scripts/run-tests.sh --type ctest --embree-dir "$EMBREE_PATH" --ctest-config Release
 
 
-#####################################################################
+####################################################################
 # Release binaries scans
-#####################################################################
+####################################################################
   binary-analysis:
     needs:
       - build-windows
