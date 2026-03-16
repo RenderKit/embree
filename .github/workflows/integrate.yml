@@ -11,176 +11,6 @@ on:
   workflow_dispatch:
 
 jobs:
-#####################################################################
-# Integration Tests
-####################################################################
-
-# TODO: investigate windows integration tests not working
-#####################################################################
-## Windows
-#####################################################################
-#  integrate-windows-ICX:
-#    secrets: inherit
-#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-#    with:
-#      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-#      artifact-out: integrate-windows-ICX
-#      artifact-path: ./build/embree-*.zip
-#      dpcpp-version: oneAPI/compiler/2024.1
-#      cmd: |
-#        cmake --preset integrate-windows-icx
-#        cmake --build build --config Release --target package -j8
-#        cmake --build build --config Release --target post_package
-#
-#  integrate-windows-ICX-test:
-#    secrets: inherit
-#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-#    needs: ["integrate-windows-ICX"]
-#    with:
-#      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-#      artifact-in: integrate-windows-ICX
-#      dpcpp-version: oneAPI/compiler/2024.1
-#      cmd: |
-#        cd build
-#        . ..\tests\integration\test_embree_release\unpack-windows.ps1
-#        cd ..\tests\integration\test_embree_release
-#        cmake --preset test-windows-icx
-#        cmake --build build --config Release
-#        .\build\test.exe
-#        
-#
-#
-#
-#
-#  integrate-windows-v142:
-#    secrets: inherit
-#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-#    with:
-#      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-#      artifact-out: integrate-windows-v142
-#      artifact-path: ./build/embree-*.zip
-#      cmd: |
-#        cmake --preset integrate-windows-v142
-#        cmake --build build --config Release --target package -j8
-#        cmake --build build --config Release --target post_package
-#
-#  integrate-windows-v142-test-v142:
-#    secrets: inherit
-#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-#    needs: ["integrate-windows-v142"]
-#    with:
-#      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-#      artifact-in: integrate-windows-v142
-#      cmd: |
-#        cd build
-#        . ..\tests\integration\test_embree_release\unpack-windows.ps1
-#        cd ..\tests\integration\test_embree_release
-#        cmake --preset test-windows-v142
-#        cmake --build build --config Release
-#        .\build\Release\test.exe
-#
-#  integrate-windows-v142-test-ICX:
-#    secrets: inherit
-#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-#    needs: ["integrate-windows-v142"]
-#    with:
-#      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-#      artifact-in: integrate-windows-v142
-#      dpcpp-version: oneAPI/compiler/2024.1
-#      cmd: |
-#        cd build
-#        . ..\tests\integration\test_embree_release\unpack-windows.ps1
-#        cd ..\tests\integration\test_embree_release
-#        cmake --preset test-windows-icx
-#        cmake --build build --config Release
-#        .\build\test.exe
-#        
-#
-#
-#
-#
-#####################################################################
-## Windows STATIC
-#####################################################################
-#  integrate-static-windows-ICX:
-#    secrets: inherit
-#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-#    with:
-#      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-#      artifact-out: integrate-static-windows-ICX
-#      artifact-path: ./build/embree-*.zip
-#      dpcpp-version: oneAPI/compiler/2024.1
-#      cmd: |
-#        cmake --preset integrate-static-windows-icx
-#        cmake --build build --config Release --target package -j8
-#        cmake --build build --config Release --target post_package
-#
-#  integrate-static-windows-ICX-test:
-#    secrets: inherit
-#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-#    needs: ["integrate-static-windows-ICX"]
-#    with:
-#      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-#      artifact-in: integrate-static-windows-ICX
-#      dpcpp-version: oneAPI/compiler/2024.1
-#      cmd: |
-#        cd build
-#        . ..\tests\integration\test_embree_release\unpack-windows.ps1
-#        cd ..\tests\integration\test_embree_release
-#        cmake --preset test-windows-icx
-#        cmake --build build --config Release
-#        .\build\test.exe
-#        
-#
-#
-#
-#
-#  integrate-static-windows-v142:
-#    secrets: inherit
-#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-#    with:
-#      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-#      artifact-out: integrate-static-windows-v142
-#      artifact-path: ./build/embree-*.zip
-#      cmd: |
-#        cmake --preset integrate-windows-v142
-#        cmake --build build --config Release --target package -j8
-#        cmake --build build --config Release --target post_package
-#
-#  integrate-static-windows-v142-test-v142:
-#    secrets: inherit
-#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-#    needs: ["integrate-static-windows-v142"]
-#    with:
-#      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-#      artifact-in: integrate-static-windows-v142
-#      cmd: |
-#        cd build
-#        . ..\tests\integration\test_embree_release\unpack-windows.ps1
-#        cd ..\tests\integration\test_embree_release
-#        cmake --preset test-windows-v142
-#        cmake --build build --config Release
-#        .\build\Release\test.exe
-#
-#  integrate-static-windows-v142-test-ICX:
-#    secrets: inherit
-#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
-#    needs: ["integrate-static-windows-v142"]
-#    with:
-#      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-#      artifact-in: integrate-static-windows-v142
-#      dpcpp-version: oneAPI/compiler/2024.1
-#      cmd: |
-#        cd build
-#        . ..\tests\integration\test_embree_release\unpack-windows.ps1
-#        cd ..\tests\integration\test_embree_release
-#        cmake --preset test-windows-icx
-#        cmake --build build --config Release
-#        .\build\test.exe
-
-
-
-
 
 ####################################################################
 # Linux
@@ -194,8 +24,20 @@ jobs:
       artifact-out: integrate-linux-GCC
       artifact-path: ./build/*.tar.gz
       cmd: |
-        cmake --preset integrate-linux-gcc -DCMAKE_BUILD_TYPE=Release
-        cmake --build build --config Release --target build
+        opts="-DCMAKE_BUILD_TYPE=Release"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_MAX_ISA=AVX512"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+
+        cmake -S superbuild -B build -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config Release
+        cmake --build build/embree/build --config Release --target build
+        cp build/embree/build/embree-*.tar.gz build/
 
   integrate-linux-GCC-test-GCC:
     secrets: inherit
@@ -206,8 +48,8 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       artifact-in: integrate-linux-GCC
       cmd: |
-        cmake --preset integrate-linux-gcc -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-gcc
-        cmake --build build --config Release --target test_integration
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type integration)
+        ./scripts/run-tests.sh --type integration --embree-dir "$EMBREE_PATH"
 
   integrate-linux-GCC-test-CLANG:
     secrets: inherit
@@ -218,8 +60,8 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       artifact-in: integrate-linux-GCC
       cmd: |
-        cmake --preset integrate-linux-gcc -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-clang
-        cmake --build build --config Release --target test_integration
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type integration)
+        ./scripts/run-tests.sh --type integration --embree-dir "$EMBREE_PATH" --c-compiler clang --cxx-compiler clang++
 
   integrate-linux-GCC-test-ICX:
     secrets: inherit
@@ -231,8 +73,8 @@ jobs:
       dpcpp-version: intel/2025.2
       artifact-in: integrate-linux-GCC
       cmd: |
-        cmake --preset integrate-linux-gcc -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
-        cmake --build build --config Release --target test_integration
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type integration)
+        ./scripts/run-tests.sh --type integration --embree-dir "$EMBREE_PATH" --c-compiler icx --cxx-compiler icpx
 
   integrate-linux-ICX:
     secrets: inherit
@@ -244,8 +86,22 @@ jobs:
       artifact-out: integrate-linux-ICX
       artifact-path: ./build/*.tar.gz
       cmd: |
-        cmake --preset integrate-linux-icx -DCMAKE_BUILD_TYPE=Release
-        cmake --build build --config Release --target build
+        opts="-DCMAKE_BUILD_TYPE=Release"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_MAX_ISA=AVX512"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+        opts+=" -DCMAKE_C_COMPILER=icx"
+        opts+=" -DCMAKE_CXX_COMPILER=icpx"
+
+        cmake -S superbuild -B build -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config Release
+        cmake --build build/embree/build --config Release --target build
+        cp build/embree/build/embree-*.tar.gz build/
 
   integrate-linux-ICX-test-GCC:
     secrets: inherit
@@ -256,8 +112,8 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       artifact-in: integrate-linux-ICX
       cmd: |
-        cmake --preset integrate-linux-gcc -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-gcc
-        cmake --build build --config Release --target test_integration
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type integration)
+        ./scripts/run-tests.sh --type integration --embree-dir "$EMBREE_PATH"
 
   integrate-linux-ICX-test-CLANG:
     secrets: inherit
@@ -269,8 +125,8 @@ jobs:
       dpcpp-version: intel/2025.2
       artifact-in: integrate-linux-ICX
       cmd: |
-        cmake --preset integrate-linux-icx -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-clang
-        cmake --build build --config Release --target test_integration
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type integration)
+        ./scripts/run-tests.sh --type integration --embree-dir "$EMBREE_PATH" --c-compiler clang --cxx-compiler clang++
 
   integrate-linux-ICX-test-ICX:
     secrets: inherit
@@ -282,13 +138,9 @@ jobs:
       dpcpp-version: intel/2025.2
       artifact-in: integrate-linux-ICX
       cmd: |
-        cmake --preset integrate-linux-icx -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
-        cmake --build build --config Release --target test_integration
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type integration)
+        ./scripts/run-tests.sh --type integration --embree-dir "$EMBREE_PATH" --c-compiler icx --cxx-compiler icpx
         
-
-
-
-
   integrate-static-linux-CLANG:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
@@ -298,8 +150,22 @@ jobs:
       artifact-out: integrate-static-linux-CLANG
       artifact-path: ./build/*.tar.gz
       cmd: |
-        cmake --preset integrate-static-linux-clang -DCMAKE_BUILD_TYPE=Release
-        cmake --build build --config Release --target build
+        opts="-DCMAKE_BUILD_TYPE=Release"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_MAX_ISA=AVX512"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+        opts+=" -DCMAKE_C_COMPILER=clang"
+        opts+=" -DCMAKE_CXX_COMPILER=clang++"
+
+        cmake -S superbuild -B build -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config Release
+        cmake --build build/embree/build --config Release --target build
+        cp build/embree/build/embree-*.tar.gz build/
 
   integrate-static-linux-CLANG-test-GCC:
     secrets: inherit
@@ -310,8 +176,8 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       artifact-in: integrate-static-linux-CLANG
       cmd: |
-        cmake --preset integrate-static-linux-clang -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-gcc
-        cmake --build build --config Release --target test_integration
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type integration)
+        ./scripts/run-tests.sh --type integration --embree-dir "$EMBREE_PATH"
 
   integrate-static-linux-CLANG-test-CLANG:
     secrets: inherit
@@ -322,8 +188,8 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       artifact-in: integrate-static-linux-CLANG
       cmd: |
-        cmake --preset integrate-static-linux-clang -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-clang
-        cmake --build build --config Release --target test_integration
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type integration)
+        ./scripts/run-tests.sh --type integration --embree-dir "$EMBREE_PATH" --c-compiler clang --cxx-compiler clang++
 
   integrate-static-linux-CLANG-test-ICX:
     secrets: inherit
@@ -335,8 +201,8 @@ jobs:
       dpcpp-version: intel/2025.2
       artifact-in: integrate-static-linux-CLANG
       cmd: |
-        cmake --preset integrate-static-linux-clang -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
-        cmake --build build --config Release --target test_integration
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type integration)
+        ./scripts/run-tests.sh --type integration --embree-dir "$EMBREE_PATH" --c-compiler icx --cxx-compiler icpx
         
 
 
@@ -352,8 +218,20 @@ jobs:
       artifact-out: integrate-static-linux-GCC
       artifact-path: ./build/*.tar.gz
       cmd: |
-        cmake --preset integrate-static-linux-gcc -DCMAKE_BUILD_TYPE=Release
-        cmake --build build --config Release --target build
+        opts="-DCMAKE_BUILD_TYPE=Release"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_MAX_ISA=AVX512"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+
+        cmake -S superbuild -B build -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config Release
+        cmake --build build/embree/build --config Release --target build
+        cp build/embree/build/embree-*.tar.gz build/
 
   integrate-static-linux-GCC-test-GCC:
     secrets: inherit
@@ -364,8 +242,8 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       artifact-in: integrate-static-linux-GCC
       cmd: |
-        cmake --preset integrate-static-linux-gcc -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-gcc
-        cmake --build build --config Release --target test_integration
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type integration)
+        ./scripts/run-tests.sh --type integration --embree-dir "$EMBREE_PATH"
 
   integrate-static-linux-GCC-test-CLANG:
     secrets: inherit
@@ -376,8 +254,8 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       artifact-in: integrate-static-linux-GCC
       cmd: |
-        cmake --preset integrate-static-linux-gcc -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-clang
-        cmake --build build --config Release --target test_integration
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type integration)
+        ./scripts/run-tests.sh --type integration --embree-dir "$EMBREE_PATH" --c-compiler clang --cxx-compiler clang++
 
   integrate-static-linux-GCC-test-ICX:
     secrets: inherit
@@ -389,8 +267,8 @@ jobs:
       dpcpp-version: intel/2025.2
       artifact-in: integrate-static-linux-GCC
       cmd: |
-        cmake --preset integrate-static-linux-gcc -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
-        cmake --build build --config Release --target test_integration
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type integration)
+        ./scripts/run-tests.sh --type integration --embree-dir "$EMBREE_PATH" --c-compiler icx --cxx-compiler icpx
 
 
   integrate-static-linux-ICX:
@@ -403,8 +281,22 @@ jobs:
       artifact-out: integrate-static-linux-ICX
       artifact-path: ./build/*.tar.gz
       cmd: |
-        cmake --preset integrate-static-linux-icx -DCMAKE_BUILD_TYPE=Release
-        cmake --build build --config Release --target build
+        opts="-DCMAKE_BUILD_TYPE=Release"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_MAX_ISA=AVX512"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+        opts+=" -DCMAKE_C_COMPILER=icx"
+        opts+=" -DCMAKE_CXX_COMPILER=icpx"
+
+        cmake -S superbuild -B build -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config Release
+        cmake --build build/embree/build --config Release --target build
+        cp build/embree/build/embree-*.tar.gz build/
 
   integrate-static-linux-ICX-test-GCC:
     secrets: inherit
@@ -416,8 +308,8 @@ jobs:
       dpcpp-version: intel/2025.2
       artifact-in: integrate-static-linux-ICX
       cmd: |
-        cmake --preset integrate-static-linux-icx -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-gcc
-        cmake --build build --config Release --target test_integration
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type integration)
+        ./scripts/run-tests.sh --type integration --embree-dir "$EMBREE_PATH"
 
   integrate-static-linux-ICX-test-CLANG:
     secrets: inherit
@@ -429,8 +321,8 @@ jobs:
       dpcpp-version: intel/2025.2
       artifact-in: integrate-static-linux-ICX
       cmd: |
-        cmake --preset integrate-static-linux-icx -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-clang
-        cmake --build build --config Release --target test_integration
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type integration)
+        ./scripts/run-tests.sh --type integration --embree-dir "$EMBREE_PATH" --c-compiler clang --cxx-compiler clang++
 
   integrate-static-linux-ICX-test-ICX:
     secrets: inherit
@@ -442,8 +334,8 @@ jobs:
       dpcpp-version: intel/2025.2
       artifact-in: integrate-static-linux-ICX
       cmd: |
-        cmake --preset integrate-static-linux-icx -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
-        cmake --build build --config Release --target test_integration
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type integration)
+        ./scripts/run-tests.sh --type integration --embree-dir "$EMBREE_PATH" --c-compiler icx --cxx-compiler icpx
         
   integrate-linux-CLANG:
     secrets: inherit
@@ -454,8 +346,22 @@ jobs:
       artifact-out: integrate-linux-CLANG
       artifact-path: ./build/*.tar.gz
       cmd: |
-        cmake --preset integrate-linux-clang -DCMAKE_BUILD_TYPE=Release
-        cmake --build build --config Release --target build
+        opts="-DCMAKE_BUILD_TYPE=Release"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_MAX_ISA=AVX512"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+        opts+=" -DCMAKE_C_COMPILER=clang"
+        opts+=" -DCMAKE_CXX_COMPILER=clang++"
+
+        cmake -S superbuild -B build -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config Release
+        cmake --build build/embree/build --config Release --target build
+        cp build/embree/build/embree-*.tar.gz build/
 
   integrate-linux-CLANG-test-GCC:
     secrets: inherit
@@ -466,8 +372,8 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       artifact-in: integrate-linux-CLANG
       cmd: |
-        cmake --preset integrate-linux-clang -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-gcc
-        cmake --build build --config Release --target test_integration
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type integration)
+        ./scripts/run-tests.sh --type integration --embree-dir "$EMBREE_PATH"
 
   integrate-linux-CLANG-test-CLANG:
     secrets: inherit
@@ -478,8 +384,8 @@ jobs:
       runs-on: '[ "Linux", "docker", "avx512" ]'
       artifact-in: integrate-linux-CLANG
       cmd: |
-        cmake --preset integrate-linux-clang -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-clang
-        cmake --build build --config Release --target test_integration
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type integration)
+        ./scripts/run-tests.sh --type integration --embree-dir "$EMBREE_PATH" --c-compiler clang --cxx-compiler clang++
 
   integrate-linux-CLANG-test-ICX:
     secrets: inherit
@@ -491,9 +397,8 @@ jobs:
       dpcpp-version: intel/2025.2
       artifact-in: integrate-linux-CLANG
       cmd: |
-        cmake --preset integrate-linux-clang -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
-        cmake --build build --config Release --target test_integration
-
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type integration)
+        ./scripts/run-tests.sh --type integration --embree-dir "$EMBREE_PATH" --c-compiler icx --cxx-compiler icpx
 
 
 
@@ -511,8 +416,24 @@ jobs:
       artifact-out: integrate-sycl-linux-ICX
       artifact-path: ./build/*.tar.gz
       cmd: |
-        cmake --preset integrate-sycl-linux-icx -DCMAKE_BUILD_TYPE=Release
-        cmake --build build --config Release --target build
+        opts="-DCMAKE_BUILD_TYPE=Release"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_MAX_ISA=AVX512"
+        opts+=" -DEMBREE_SYCL_SUPPORT=ON"
+        opts+=" -DEMBREE_SYCL_AOT_DEVICES=none"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+        opts+=" -DCMAKE_C_COMPILER=icx"
+        opts+=" -DCMAKE_CXX_COMPILER=icpx"
+
+        cmake -S superbuild -B build -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config Release
+        cmake --build build/embree/build --config Release --target build
+        cp build/embree/build/embree-*.tar.gz build/
 
   integrate-sycl-linux-ICX-test:
     secrets: inherit
@@ -526,8 +447,11 @@ jobs:
       dpcpp-version: intel/2025.2
       artifact-in: integrate-sycl-linux-ICX
       cmd: |
-        cmake --preset integrate-sycl-linux-icx -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
-        cmake --build build --config Release --target test_integration
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type integration)
+        cd tests/integration/test_embree_release
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx -Dembree_DIR="$EMBREE_PATH"
+        cmake --build build --config Release
+        ./build/test
         
   integrate-sycl-linux-DPCPP:
     secrets: inherit
@@ -539,8 +463,24 @@ jobs:
       artifact-out: integrate-sycl-linux-DPCPP
       artifact-path: ./build/*.tar.gz
       cmd: |
-        cmake --preset integrate-sycl-linux-dpcpp -DCMAKE_BUILD_TYPE=Release
-        cmake --build build --config Release --target build
+        opts="-DCMAKE_BUILD_TYPE=Release"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_MAX_ISA=SSE2"
+        opts+=" -DEMBREE_SYCL_SUPPORT=ON"
+        opts+=" -DEMBREE_SYCL_AOT_DEVICES=none"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+        opts+=" -DCMAKE_C_COMPILER=clang"
+        opts+=" -DCMAKE_CXX_COMPILER=clang++"
+
+        cmake -S superbuild -B build -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config Release
+        cmake --build build/embree/build --config Release --target build
+        cp build/embree/build/embree-*.tar.gz build/
 
   integrate-sycl-linux-DPCPP-test:
     secrets: inherit
@@ -553,8 +493,11 @@ jobs:
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu24-public.env
       artifact-in: integrate-sycl-linux-DPCPP
       cmd: |
-        cmake --preset integrate-sycl-linux-dpcpp -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-clang
-        cmake --build build --config Release --target test_integration
+        EMBREE_PATH=$(./scripts/prepare-test-files.sh --type integration)
+        cd tests/integration/test_embree_release
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -Dembree_DIR="$EMBREE_PATH"
+        cmake --build build --config Release
+        ./build/test
         
 
 
@@ -571,9 +514,28 @@ jobs:
       artifact-out: integrate-macos-GCC
       artifact-path: ./build/*.zip
       cmd: |
-        cmake --preset integrate-macos-gcc -DCMAKE_BUILD_TYPE=Release
-        cmake --build build --config Release --target build
-#        cmake --build build --config Release --target post_package_notarize     TODO: reactivate this when notarization problems are solved
+        opts="-DCMAKE_BUILD_TYPE=Release"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_MAX_ISA=AVX512"
+        opts+=" -DCMAKE_INSTALL_BINDIR=bin"
+        opts+=" -DCMAKE_INSTALL_DOCDIR=doc"
+        opts+=" -DCMAKE_INSTALL_INCLUDEDIR=include"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DCMAKE_MACOSX_RPATH=ON"
+        opts+=" -DCMAKE_SKIP_INSTALL_RPATH=OFF"
+        opts+=" -DEMBREE_BUILD_GLFW_FROM_SOURCE=ON"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_PATCH_GLFW_SOURCE=ON"
+        opts+=" -DEMBREE_TASKING_SYSTEM=TBB"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+
+        cmake -S superbuild -B build -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config Release
+        cmake --build build/embree/build --config Release --target build
+        cp build/embree/build/embree-*.zip build/
 
   integrate-macos-GCC-test-GCC:
     secrets: inherit
@@ -583,8 +545,11 @@ jobs:
       runs-on: '[ "macOS", "build", "x86_64" ]'
       artifact-in: integrate-macos-GCC
       cmd: |
-        cmake --preset integrate-macos-gcc -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-macos-gcc
-        cmake --build build --config Release --target test_integration
+        EMBREE_PATH=$(./scripts/prepare-test-files-macos.sh --type integration)
+        cd tests/integration/test_embree_release
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -Dembree_DIR="$EMBREE_PATH"
+        cmake --build build --config Release
+        ./build/test
 
   integrate-macos-GCC-test-CLANG:
     secrets: inherit
@@ -594,12 +559,12 @@ jobs:
       runs-on: '[ "macOS", "build", "x86_64" ]'
       artifact-in: integrate-macos-GCC
       cmd: |
-        cmake --preset integrate-macos-gcc -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-macos-clang
-        cmake --build build --config Release --target test_integration
+        EMBREE_PATH=$(./scripts/prepare-test-files-macos.sh --type integration)
+        cd tests/integration/test_embree_release
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -Dembree_DIR="$EMBREE_PATH"
+        cmake --build build --config Release
+        ./build/test
       
-
-
-#  TODO: cant find tbb/tbb.h ???
   integrate-macos-CLANG:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/macos.yml@main
@@ -608,9 +573,30 @@ jobs:
       artifact-out: integrate-macos-CLANG
       artifact-path: ./build/*.zip
       cmd: |
-        cmake --preset integrate-macos-clang -DCMAKE_BUILD_TYPE=Release
-        cmake --build build --config Release --target build
-#        cmake --build build --config Release --target post_package_notarize     TODO: reactivate this when notarization problems are solved
+        opts="-DCMAKE_BUILD_TYPE=Release"
+        opts+=" -DBUILD_TESTING=ON"
+        opts+=" -DEMBREE_TUTORIALS=ON"
+        opts+=" -DEMBREE_ISPC_SUPPORT=ON"
+        opts+=" -DEMBREE_MAX_ISA=AVX512"
+        opts+=" -DCMAKE_CXX_COMPILER=clang++"
+        opts+=" -DCMAKE_C_COMPILER=clang"
+        opts+=" -DCMAKE_INSTALL_BINDIR=bin"
+        opts+=" -DCMAKE_INSTALL_DOCDIR=doc"
+        opts+=" -DCMAKE_INSTALL_INCLUDEDIR=include"
+        opts+=" -DCMAKE_INSTALL_TESTDIR=testing"
+        opts+=" -DCMAKE_MACOSX_RPATH=ON"
+        opts+=" -DCMAKE_SKIP_INSTALL_RPATH=OFF"
+        opts+=" -DEMBREE_BUILD_GLFW_FROM_SOURCE=ON"
+        opts+=" -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        opts+=" -DEMBREE_PATCH_GLFW_SOURCE=ON"
+        opts+=" -DEMBREE_TASKING_SYSTEM=TBB"
+        opts+=" -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        opts+=" -DEMBREE_ZIP_MODE=ON"
+
+        cmake -S superbuild -B build -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config Release
+        cmake --build build/embree/build --config Release --target build
+        cp build/embree/build/embree-*.zip build/
 
   integrate-macos-CLANG-test-GCC:
     secrets: inherit
@@ -620,8 +606,11 @@ jobs:
       runs-on: '[ "macOS", "build", "x86_64" ]'
       artifact-in: integrate-macos-CLANG
       cmd: |
-        cmake --preset integrate-macos-clang -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-macos-gcc
-        cmake --build build --config Release --target test_integration
+        EMBREE_PATH=$(./scripts/prepare-test-files-macos.sh --type integration)
+        cd tests/integration/test_embree_release
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -Dembree_DIR="$EMBREE_PATH"
+        cmake --build build --config Release
+        ./build/test
 
   integrate-macos-CLANG-test-CLANG:
     secrets: inherit
@@ -631,5 +620,8 @@ jobs:
       runs-on: '[ "macOS", "build", "x86_64" ]'
       artifact-in: integrate-macos-CLANG
       cmd: |
-        cmake --preset integrate-macos-clang -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-macos-clang
-        cmake --build build --config Release --target test_integration
+        EMBREE_PATH=$(./scripts/prepare-test-files-macos.sh --type integration)
+        cd tests/integration/test_embree_release
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -Dembree_DIR="$EMBREE_PATH"
+        cmake --build build --config Release
+        ./build/test

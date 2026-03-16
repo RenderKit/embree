@@ -32,40 +32,85 @@ jobs:
           dnf config-manager --set-enabled powertools
           dnf -y update
           dnf -y install ninja-build
+
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          submodules: true
 
       - name: Build and Run
         run: |
-          cmake --preset public-gcc-tbb -DEMBREE_TESTING_INTENSITY=3
-          cmake --build build --target build
-          cmake --build build --target test_package
+          mkdir build
+          cd build
+          cmake -DBUILD_TESTING=ON -DEMBREE_TUTORIALS=ON -DEMBREE_ISPC_SUPPORT=OFF -DEMBREE_TESTING_INTENSITY=3 ..
+          make -j$(nproc)
+          ctest
 
-
-  ubuntu-22_04:
+  ubuntu-24-tbb-and-ispc-from-os:
     runs-on: ubuntu-latest
     container:
-      image: ubuntu:22.04
+      image: ubuntu:24.04
     steps:
-      - name: Install packages (ubuntu 22.04)
+      - name: Install packages (ubuntu 24.04)
         run: |
           apt-get update
           apt-get -y upgrade
-          apt-get -y install g++ python3 clang git-lfs libtbb-dev freeglut3-dev libglfw3-dev libxmu-dev libxi-dev unzip xorg-dev pip
-          apt-get -y install libtinfo5
+          apt-get -y install g++ cmake git-lfs freeglut3-dev libglfw3-dev libxmu-dev libxi-dev unzip xorg-dev pip libtbb-dev ispc
           apt-get -y install libopenimageio-dev
-          apt-get -y install ninja-build
-          pip install --upgrade cmake
-          cmake --version
+
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          submodules: true
 
       - name: Build and Run
         run: |
-          cmake --preset public-gcc-tbb -DEMBREE_TESTING_INTENSITY=3
-          cmake --build build --target build
-          cmake --build build --target test_package
+          mkdir build
+          cd build
+          cmake -DBUILD_TESTING=ON -DEMBREE_TUTORIALS=ON -DEMBREE_ISPC_SUPPORT=ON -DEMBREE_TESTING_INTENSITY=3 ..
+          make -j$(nproc)
+          ctest
+
+  ubuntu-24-tbb-and-ispc-prebuilt:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:24.04
+    steps:
+      - name: Install packages (ubuntu 24.04)
+        run: |
+          apt-get update
+          apt-get -y upgrade
+          apt-get -y install g++ cmake git-lfs freeglut3-dev libglfw3-dev libxmu-dev libxi-dev unzip xorg-dev pip
+          apt-get -y install libopenimageio-dev
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build and Run
+        run: |
+          mkdir build
+          cd build
+          cmake -D EMBREE_EXTRA_OPTIONS="-DBUILD_TESTING=ON -DEMBREE_TUTORIALS=ON -DEMBREE_ISPC_SUPPORT=ON -DEMBREE_TESTING_INTENSITY=3" ../superbuild
+          cmake --build .
+          cd embree/build
+          ctest
+
+  ubuntu-24-tbb-src-ispc-prebuilt:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:24.04
+    steps:
+      - name: Install packages (ubuntu 24.04)
+        run: |
+          apt-get update
+          apt-get -y upgrade
+          apt-get -y install g++ cmake git-lfs freeglut3-dev libglfw3-dev libxmu-dev libxi-dev unzip xorg-dev pip
+          apt-get -y install libopenimageio-dev
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build and Run
+        run: |
+          mkdir build
+          cd build
+          cmake -D BUILD_TBB_FROM_SOURCE=ON -D EMBREE_EXTRA_OPTIONS="-DBUILD_TESTING=ON -DEMBREE_TUTORIALS=ON -DEMBREE_ISPC_SUPPORT=ON -DEMBREE_TESTING_INTENSITY=3" ../superbuild
+          cmake --build .
+          cd embree/build
+          ctest
