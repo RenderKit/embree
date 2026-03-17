@@ -95,7 +95,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       env-from-files: ./.github/workflows/gfx-ubuntu24-public.env
-      dpcpp-version: intel-llvm/v6.2.0
+      dpcpp-version: intel-llvm/v6.3.0
       artifact-in: nightly-linux-DG2-JIT-PUBLIC-build
       cmd: |
         EMBREE_PATH=$(./scripts/prepare-test-files.sh --type ctest)
@@ -140,7 +140,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "pvc" ]'
       env-from-files: ./.github/workflows/gfx-ubuntu24-public.env
-      dpcpp-version: intel-llvm/v6.2.0
+      dpcpp-version: intel-llvm/v6.3.0
       artifact-in: nightly-linux-PVC-JIT-build
       cmd: |
         export NEOReadDebugKeys=1
@@ -159,7 +159,7 @@ jobs:
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "pvc" ]'
       env-from-files: ./.github/workflows/gfx-ubuntu24-public.env
-      dpcpp-version: intel-llvm/v6.2.0
+      dpcpp-version: intel-llvm/v6.3.0
       artifact-in: nightly-linux-PVC-JIT-build
       cmd: |
         export NEOReadDebugKeys=1
@@ -208,7 +208,7 @@ jobs:
     with:
       runs-on: '[ "Windows",  "dg2" ]'
       env-from-files: ./.github/workflows/gfx-windows-public.env
-      dpcpp-version: intel-llvm/v6.2.0
+      dpcpp-version: intel-llvm/v6.3.0
       artifact-out: nightly-windows-DG2-JIT-INTELLLVM-bulid
       artifact-path: ./build/*.zip
       cmd: |
@@ -239,7 +239,7 @@ jobs:
     with:
       runs-on: '[ "Windows",  "dg2" ]'
       env-from-files: ./.github/workflows/gfx-windows-public.env
-      dpcpp-version: intel-llvm/v6.2.0
+      dpcpp-version: intel-llvm/v6.3.0
       artifact-in: nightly-windows-DG2-JIT-INTELLLVM-bulid
       cmd: |
         $EmbreeDir = .\scripts\prepare-test-files.ps1 -TestType ctest
@@ -251,7 +251,7 @@ jobs:
     with:
       runs-on: '[ "Windows",  "dg2" ]'
       env-from-files: ./.github/workflows/gfx-windows-public.env
-      dpcpp-version: intel-llvm/v6.2.0
+      dpcpp-version: intel-llvm/v6.3.0
       artifact-out: nightly-windows-DG2-JIT-PUBLIC-build
       artifact-path: ./build/*.zip
       cmd: |
@@ -282,7 +282,7 @@ jobs:
     with:
       runs-on: '[ "Windows",  "dg2" ]'
       env-from-files: ./.github/workflows/gfx-windows-public.env
-      dpcpp-version: intel-llvm/v6.2.0
+      dpcpp-version: intel-llvm/v6.3.0
       artifact-in: nightly-windows-DG2-JIT-PUBLIC-build
       cmd: |
         $EmbreeDir = .\scripts\prepare-test-files.ps1 -TestType ctest

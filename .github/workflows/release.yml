@@ -22,7 +22,7 @@ jobs:
       runs-on: '[ "Windows", "build"]'
       artifact-out: build-windows
       artifact-path: ./build/embree-*.zip
-      dpcpp-version: intel-llvm/v6.2.0
+      dpcpp-version: intel-llvm/v6.3.0
       cmd: |
         $opts  = "-DCMAKE_BUILD_TYPE=Release"
         $opts += " -DBUILD_TESTING=ON"
@@ -165,7 +165,7 @@ jobs:
       runs-on: '[ "Linux", "build" ]'
       artifact-out: build-linux
       artifact-path: ./build/*.tar.gz
-      dpcpp-version: intel-llvm/v6.2.0
+      dpcpp-version: intel-llvm/v6.3.0
       pre-cmd: |
         dnf -y install epel-release
         dnf -y config-manager --set-enabled powertools
@@ -212,7 +212,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       runs-on: '[ "Windows", "build" ]'
-      dpcpp-version: intel-llvm/v6.2.0
+      dpcpp-version: intel-llvm/v6.3.0
       artifact-out: build-windows-sycl
       artifact-path: ./build/*.zip
       cmd: |
@@ -240,7 +240,7 @@ jobs:
     with:
       image: rockylinux:8.7
       runs-on: '[ "Linux", "build" ]'
-      dpcpp-version: intel-llvm/v6.2.0
+      dpcpp-version: intel-llvm/v6.3.0
       artifact-out: build-linux-sycl
       artifact-path: ./build/*.tar.gz
       pre-cmd: |
