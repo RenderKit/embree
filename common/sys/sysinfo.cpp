@@ -455,6 +455,9 @@ namespace embree
     if (isa == AVX) return "AVX";
     if (isa == AVX2) return "AVX2";
     if (isa == AVX512) return "AVX512";
+    if (isa == AVX10_1) return "AVX10.1";
+    if (isa == AVX10_2) return "AVX10.2";
+    if (isa == APX) return "APX";
 
     if (isa == NEON) return "NEON";
     if (isa == NEON_2X) return "2xNEON";

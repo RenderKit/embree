@@ -7,7 +7,7 @@ namespace embree
 {
   namespace isa
   {
-    int getISA() {
+    int64_t getISA() {
       return VerifyMultiTargetLinking::getISA();
     }
 

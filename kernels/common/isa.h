@@ -18,6 +18,9 @@ namespace embree
   namespace avx    { extern type name(); }                           \
   namespace avx2   { extern type name(); }                           \
   namespace avx512 { extern type name(); }                           \
+  namespace avx10_1 { extern type name(); }                          \
+  namespace avx10_2 { extern type name(); }                          \
+  namespace apx { extern type name(); }                              \
   void name##_error2() { throw_RTCError(RTC_ERROR_UNKNOWN,"internal error in ISA selection for " TOSTRING(name)); } \
   type name##_error() { return type(name##_error2); }                   \
   type name##_zero() { return type(nullptr); }
@@ -27,7 +30,10 @@ namespace embree
   namespace sse42  { extern type symbol(args); }                       \
   namespace avx    { extern type symbol(args); }                       \
   namespace avx2   { extern type symbol(args); }                       \
-  namespace avx512 { extern type symbol(args); }                     \
+  namespace avx512 { extern type symbol(args); }                       \
+  namespace avx10_1 { extern type symbol(args); }                      \
+  namespace avx10_2 { extern type symbol(args); }                      \
+  namespace apx { extern type symbol(args); }                          \
   inline type symbol##_error(args) { throw_RTCError(RTC_ERROR_UNSUPPORTED_CPU,"function " TOSTRING(symbol) " not supported by your CPU"); } \
   typedef type (*symbol##Ty)(args);                                       \
   
@@ -91,6 +97,37 @@ namespace embree
 #else
 #define SELECT_SYMBOL_AVX512(features,intersector)
 #endif
+
+#if defined(EMBREE_TARGET_AVX10_1)
+#if !defined(EMBREE_TARGET_SIMD16)
+#define EMBREE_TARGET_SIMD16
+#endif
+#define SELECT_SYMBOL_AVX10_1(features,intersector) \
+  if ((features & AVX10_1) == AVX10_1) intersector = avx10_1::intersector;
+#else
+#define SELECT_SYMBOL_AVX10_1(features,intersector)
+#endif
+
+#if defined(EMBREE_TARGET_AVX10_2)
+#if !defined(EMBREE_TARGET_SIMD16)
+#define EMBREE_TARGET_SIMD16
+#endif
+#define SELECT_SYMBOL_AVX10_2(features,intersector) \
+  if ((features & AVX10_2) == AVX10_2) intersector = avx10_2::intersector;
+#else
+#define SELECT_SYMBOL_AVX10_2(features,intersector)
+#endif
+
+#if defined(EMBREE_TARGET_APX)
+#if !defined(EMBREE_TARGET_SIMD16)
+#define EMBREE_TARGET_SIMD16
+#endif
+#define SELECT_SYMBOL_APX(features,intersector) \
+  if ((features & APX) == APX) intersector = apx::intersector;
+#else
+#define SELECT_SYMBOL_APX(features,intersector)
+#endif
+
 
 #define SELECT_SYMBOL_DEFAULT_SSE42(features,intersector) \
   SELECT_SYMBOL_DEFAULT(features,intersector);            \
@@ -233,14 +270,17 @@ namespace embree
   SELECT_SYMBOL_AVX2(features,intersector);
 
   struct VerifyMultiTargetLinking {
-    static __noinline int getISA(int depth = 5) { 
+    static __noinline int64_t getISA(int depth = 5) { 
       if (depth == 0) return ISA; 
       else return getISA(depth-1); 
     }
   };
-  namespace sse2   { int getISA(); };
-  namespace sse42  { int getISA(); };
-  namespace avx    { int getISA(); };
-  namespace avx2   { int getISA(); };
-  namespace avx512 { int getISA(); };
+  namespace sse2   { int64_t getISA(); };
+  namespace sse42  { int64_t getISA(); };
+  namespace avx    { int64_t getISA(); };
+  namespace avx2   { int64_t getISA(); };
+  namespace avx512 { int64_t getISA(); };
+  namespace avx10_1 { int64_t getISA(); };
+  namespace avx10_2 { int64_t getISA(); };
+  namespace apx { int64_t getISA(); };
 }

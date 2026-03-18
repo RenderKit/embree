@@ -46,7 +46,7 @@ namespace embree
     bool verbosity(size_t N);
 
     /*! checks if some particular ISA is enabled */
-    bool hasISA(const int isa);
+    bool hasISA(const int64_t isa);
 
     /*! check whether selected ISA is supported by the HW */    
     bool checkISASupport();

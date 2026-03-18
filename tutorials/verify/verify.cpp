@@ -763,7 +763,7 @@ namespace embree
 
   struct MultipleDevicesTest : public VerifyApplication::Test
   {
-    MultipleDevicesTest (std::string name, int isa)
+    MultipleDevicesTest (std::string name, int64_t isa)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -786,7 +786,7 @@ namespace embree
   {
     GeometryType gtype;
 
-    GetBoundsTest (std::string name, int isa, GeometryType gtype)
+    GetBoundsTest (std::string name, int64_t isa, GeometryType gtype)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), gtype(gtype) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -826,7 +826,7 @@ namespace embree
   {
     GeometryType gtype;
 
-    GetLinearBoundsTest (std::string name, int isa, GeometryType gtype)
+    GetLinearBoundsTest (std::string name, int64_t isa, GeometryType gtype)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), gtype(gtype) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -864,7 +864,7 @@ namespace embree
 
   struct GetUserDataTest : public VerifyApplication::Test
   {
-    GetUserDataTest (std::string name, int isa)
+    GetUserDataTest (std::string name, int64_t isa)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -916,7 +916,7 @@ namespace embree
   {
     GeometryType gtype;
 
-    BufferStrideTest (std::string name, int isa, GeometryType gtype)
+    BufferStrideTest (std::string name, int64_t isa, GeometryType gtype)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), gtype(gtype) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -1023,7 +1023,7 @@ namespace embree
    */
   struct TypesTest : public VerifyApplication::Test
   {
-    TypesTest(std::string name, int isa)
+    TypesTest(std::string name, int64_t isa)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS)
     {}
 
@@ -1053,7 +1053,7 @@ namespace embree
 
   struct EmptySceneTest : public VerifyApplication::Test
   {
-    EmptySceneTest (std::string name, int isa, SceneFlags sflags)
+    EmptySceneTest (std::string name, int64_t isa, SceneFlags sflags)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -1088,7 +1088,7 @@ namespace embree
     SceneFlags sflags;
     RTCBuildQuality quality;
 
-    EmptyGeometryTest (std::string name, int isa, SceneFlags sflags, RTCBuildQuality quality)
+    EmptyGeometryTest (std::string name, int64_t isa, SceneFlags sflags, RTCBuildQuality quality)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), quality(quality) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -1122,7 +1122,7 @@ namespace embree
     SceneFlags sflags;
     RTCBuildQuality quality; 
     
-    ManyBuildTest (std::string name, int isa, SceneFlags sflags, RTCBuildQuality quality)
+    ManyBuildTest (std::string name, int64_t isa, SceneFlags sflags, RTCBuildQuality quality)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS,false), sflags(sflags), quality(quality) {}
     
     VerifyApplication::TestReturnValue run (VerifyApplication* state, bool silent)
@@ -1175,7 +1175,7 @@ namespace embree
     SceneFlags sflags;
     RTCBuildQuality quality; 
 
-    BuildTest (std::string name, int isa, SceneFlags sflags, RTCBuildQuality quality)
+    BuildTest (std::string name, int64_t isa, SceneFlags sflags, RTCBuildQuality quality)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), quality(quality) {}
     
     VerifyApplication::TestReturnValue run (VerifyApplication* state, bool silent)
@@ -1212,7 +1212,7 @@ namespace embree
     RTCBuildQuality quality; 
     size_t N;
     
-    OverlappingGeometryTest (std::string name, int isa, SceneFlags sflags, RTCBuildQuality quality, size_t N)
+    OverlappingGeometryTest (std::string name, int64_t isa, SceneFlags sflags, RTCBuildQuality quality, size_t N)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), quality(quality), N(N) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -1314,7 +1314,7 @@ namespace embree
     SceneFlags sflags;
     RTCBuildQuality quality;
     
-    MemoryConsumptionTest (std::string name, int isa, GeometryType gtype, SceneFlags sflags, RTCBuildQuality quality)
+    MemoryConsumptionTest (std::string name, int64_t isa, GeometryType gtype, SceneFlags sflags, RTCBuildQuality quality)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), gtype(gtype), sflags(sflags), quality(quality) {}
 
     static bool memoryMonitor(void* userPtr, const ssize_t bytes, const bool /*post*/)
@@ -1524,7 +1524,7 @@ namespace embree
   {
     SceneFlags sflags;
 
-    NewDeleteGeometryTest (std::string name, int isa, SceneFlags sflags)
+    NewDeleteGeometryTest (std::string name, int64_t isa, SceneFlags sflags)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -1592,7 +1592,7 @@ namespace embree
   {
     SceneFlags sflags;
 
-    UserGeometryIDTest (std::string name, int isa, SceneFlags sflags)
+    UserGeometryIDTest (std::string name, int64_t isa, SceneFlags sflags)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -1646,7 +1646,7 @@ namespace embree
   {
     SceneFlags sflags;
 
-    EnableDisableGeometryTest (std::string name, int isa, SceneFlags sflags)
+    EnableDisableGeometryTest (std::string name, int64_t isa, SceneFlags sflags)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -1701,7 +1701,7 @@ namespace embree
   {
     SceneFlags sflags;
 
-    DisableAndDetachGeometryTest (std::string name, int isa, SceneFlags sflags)
+    DisableAndDetachGeometryTest (std::string name, int64_t isa, SceneFlags sflags)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -1778,7 +1778,7 @@ namespace embree
 
   struct TriangleSplitRegression : public VerifyApplication::Test
   {
-    TriangleSplitRegression (int isa)
+    TriangleSplitRegression (int64_t isa)
       : VerifyApplication::Test("TriangleSplitRegression", isa, VerifyApplication::TEST_SHOULD_PASS) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -1837,7 +1837,7 @@ namespace embree
     SceneFlags sflags;
     RTCBuildQuality quality;
 
-    UpdateTest (std::string name, int isa, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant)
+    UpdateTest (std::string name, int64_t isa, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant)
       : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), quality(quality) {}
     
     static void move_mesh(RTCGeometry mesh, size_t numVertices, Vec3fa& pos) 
@@ -1914,7 +1914,7 @@ namespace embree
 
   struct GarbageGeometryTest : public VerifyApplication::Test
   {
-    GarbageGeometryTest (std::string name, int isa)
+    GarbageGeometryTest (std::string name, int64_t isa)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -2043,7 +2043,7 @@ namespace embree
   {
     unsigned int N;
     
-    InterpolateSubdivTest (std::string name, int isa, unsigned int N)
+    InterpolateSubdivTest (std::string name, int64_t isa, unsigned int N)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), N(N) {}
 
     bool checkInterpolation2D(RTCGeometry geom, int primID, float u, float v, int v0, RTCBufferType bufferType, unsigned int bufferSlot, float* data, unsigned int N, unsigned int N_total)
@@ -2182,7 +2182,7 @@ namespace embree
   {
     size_t N;
     
-    InterpolateTrianglesTest (std::string name, int isa, size_t N)
+    InterpolateTrianglesTest (std::string name, int64_t isa, size_t N)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), N(N) {}
     
     bool checkTriangleInterpolation(RTCGeometry geom, int primID, float u, float v, int v0, int v1, int v2, RTCBufferType bufferType, unsigned int bufferSlot, float* data, size_t N, size_t N_total)
@@ -2278,7 +2278,7 @@ namespace embree
   {
     size_t N;
     
-    InterpolateGridTest (std::string name, int isa, size_t N)
+    InterpolateGridTest (std::string name, int64_t isa, size_t N)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), N(N) {}
     
     bool checkGridInterpolation(RTCGeometry geom, int primID, float u, float v, RTCBufferType bufferType, unsigned int bufferSlot, size_t N)
@@ -2357,7 +2357,7 @@ namespace embree
   {
     size_t N;
     
-    InterpolateHairTest (std::string name, int isa, size_t N)
+    InterpolateHairTest (std::string name, int64_t isa, size_t N)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), N(N) {}
     
     bool checkHairInterpolation(RTCGeometry geom, int primID, float u, float v, int v0, RTCBufferType bufferType, unsigned int bufferSlot, float* data, size_t N, size_t N_total)
@@ -2464,7 +2464,7 @@ namespace embree
     SceneFlags sflags; 
     RTCBuildQuality quality; 
 
-    TriangleHitTest (std::string name, int isa, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant)
+    TriangleHitTest (std::string name, int64_t isa, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant)
       : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), quality(quality) {}
 
     inline Vec3fa uniformSampleTriangle(const Vec3fa &a, const Vec3fa &b, const Vec3fa &c, float &u, float& v)
@@ -2551,7 +2551,7 @@ namespace embree
     SceneFlags sflags; 
     RTCBuildQuality quality; 
 
-    QuadHitTest (std::string name, int isa, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant)
+    QuadHitTest (std::string name, int64_t isa, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant)
       : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), quality(quality) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -2628,7 +2628,7 @@ namespace embree
     SceneFlags sflags; 
     RTCBuildQuality quality; 
 
-    RayMasksTest (std::string name, int isa, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant)
+    RayMasksTest (std::string name, int64_t isa, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant)
       : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), quality(quality) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -2697,7 +2697,7 @@ namespace embree
     RTCBuildQuality quality;
     GeometryType gtype;
 
-    BackfaceCullingTest (std::string name, int isa, SceneFlags sflags, RTCBuildQuality quality, GeometryType gtype, IntersectMode imode, IntersectVariant ivariant)
+    BackfaceCullingTest (std::string name, int64_t isa, SceneFlags sflags, RTCBuildQuality quality, GeometryType gtype, IntersectMode imode, IntersectVariant ivariant)
       : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), quality(quality), gtype(gtype) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -2765,7 +2765,7 @@ namespace embree
     RTCBuildQuality quality;
     bool subdiv;
 
-    IntersectionFilterTest (std::string name, int isa, SceneFlags sflags, RTCBuildQuality quality, bool subdiv, IntersectMode imode, IntersectVariant ivariant)
+    IntersectionFilterTest (std::string name, int64_t isa, SceneFlags sflags, RTCBuildQuality quality, bool subdiv, IntersectMode imode, IntersectVariant ivariant)
       : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), quality(quality), subdiv(subdiv) {}
     
     static void intersectionFilterN(const RTCFilterFunctionNArguments* const args)
@@ -2842,7 +2842,7 @@ namespace embree
     RTCBuildQuality quality;
     bool subdiv;
 
-    InstancingTest (std::string name, int isa, SceneFlags sflags, RTCBuildQuality quality, bool subdiv, IntersectMode imode, IntersectVariant ivariant)
+    InstancingTest (std::string name, int64_t isa, SceneFlags sflags, RTCBuildQuality quality, bool subdiv, IntersectMode imode, IntersectVariant ivariant)
       : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), quality(quality), subdiv(subdiv) {
       }
 
@@ -2946,7 +2946,7 @@ namespace embree
     SceneFlags sflags;
     RTCBuildQuality quality;
 
-    InstanceArrayTest (std::string name, int isa, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant)
+    InstanceArrayTest (std::string name, int64_t isa, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant)
       : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), quality(quality) {
       }
 
@@ -3161,7 +3161,7 @@ namespace embree
     SceneFlags sflags;
     RTCBuildQuality quality;
 
-    InstanceArrayRandomTest (std::string name, int isa, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant)
+    InstanceArrayRandomTest (std::string name, int64_t isa, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant)
       : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), quality(quality) {
       }
 
@@ -3448,7 +3448,7 @@ namespace embree
     SceneFlags sflags;
     RTCBuildQuality quality;
 
-    InstanceArrayTestFormats (std::string name, int isa, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant)
+    InstanceArrayTestFormats (std::string name, int64_t isa, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant)
       : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), quality(quality) {
       }
 
@@ -3558,7 +3558,7 @@ namespace embree
     static const size_t N = 10;
     static const size_t maxStreamSize = 100;
     
-    InactiveRaysTest (std::string name, int isa, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant)
+    InactiveRaysTest (std::string name, int64_t isa, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant)
       : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), quality(quality) {}
    
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -3617,7 +3617,7 @@ namespace embree
     static const size_t N = 5;
     static const size_t maxStreamSize = 30;
     
-    WatertightTest (std::string name, int isa, SceneFlags sflags, IntersectMode imode, std::string model, const Vec3fa& pos)
+    WatertightTest (std::string name, int64_t isa, SceneFlags sflags, IntersectMode imode, std::string model, const Vec3fa& pos)
       : VerifyApplication::IntersectTest(name,isa,imode,VARIANT_INTERSECT,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), model(model), pos(pos) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -3698,7 +3698,7 @@ namespace embree
     static const size_t N = 10000;
     static const size_t maxStreamSize = 100;
     
-    SmallTriangleHitTest (std::string name, int isa, SceneFlags sflags, IntersectMode imode, const Vec3fa& pos, const float radius)
+    SmallTriangleHitTest (std::string name, int64_t isa, SceneFlags sflags, IntersectMode imode, const Vec3fa& pos, const float radius)
       : VerifyApplication::IntersectTest(name,isa,imode,VARIANT_INTERSECT,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), pos(pos), radius(radius) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -3764,7 +3764,7 @@ namespace embree
     static const size_t N = 10;
     static const size_t maxStreamSize = 100;
     
-    RayAlignmentTest (std::string name, int isa, SceneFlags sflags, IntersectMode imode, std::string model)
+    RayAlignmentTest (std::string name, int64_t isa, SceneFlags sflags, IntersectMode imode, std::string model)
       : VerifyApplication::IntersectTest(name,isa,imode,VARIANT_INTERSECT,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), model(model) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -3815,7 +3815,7 @@ namespace embree
     SceneFlags sflags;
     RTCBuildQuality quality;
     
-    NaNTest (std::string name, int isa, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant)
+    NaNTest (std::string name, int64_t isa, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant)
       : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), quality(quality)  {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -3886,7 +3886,7 @@ namespace embree
     SceneFlags sflags;
     RTCBuildQuality quality;
     
-    InfTest (std::string name, int isa, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant)
+    InfTest (std::string name, int64_t isa, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant)
       : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), quality(quality) {}
    
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -3971,7 +3971,7 @@ namespace embree
   {
     SceneFlags sflags; 
 
-    PointQueryAPICallsTest (std::string name, int isa, SceneFlags sflags)
+    PointQueryAPICallsTest (std::string name, int64_t isa, SceneFlags sflags)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication *state, bool silent)
@@ -4232,7 +4232,7 @@ namespace embree
     SceneFlags sflags; 
     std::string tri_accel;
 
-    PointQueryTest (std::string name, int isa, SceneFlags sflags, std::string tri_accel = "")
+    PointQueryTest (std::string name, int64_t isa, SceneFlags sflags, std::string tri_accel = "")
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), tri_accel(tri_accel) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -4327,7 +4327,7 @@ namespace embree
     SceneFlags sflags; 
     std::string tri_accel;
 
-    PointQueryMotionBlurTest (std::string name, int isa, SceneFlags sflags, std::string tri_accel = "")
+    PointQueryMotionBlurTest (std::string name, int64_t isa, SceneFlags sflags, std::string tri_accel = "")
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), tri_accel(tri_accel) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -4473,7 +4473,7 @@ namespace embree
 
   struct GeometryStateTest : public VerifyApplication::Test
   {
-    GeometryStateTest (std::string name, int isa)
+    GeometryStateTest (std::string name, int64_t isa)
       : VerifyApplication::Test (name, isa, VerifyApplication::TEST_SHOULD_PASS) {}
     
     VerifyApplication::TestReturnValue run (VerifyApplication* state, bool silent)
@@ -4556,7 +4556,7 @@ namespace embree
 		  }
 	  };
 
-	  SceneCheckModifiedGeometryTest (std::string name, int isa) 
+	  SceneCheckModifiedGeometryTest (std::string name, int64_t isa) 
 		: VerifyApplication::Test(name, isa, VerifyApplication::TEST_SHOULD_PASS)
 	  {}
 
@@ -4637,7 +4637,7 @@ namespace embree
       void* userRayExt;         
     };
     
-    SphereFilterMultiHitTest (std::string name, int isa) 
+    SphereFilterMultiHitTest (std::string name, int64_t isa) 
       : VerifyApplication::Test(name, isa, VerifyApplication::TEST_SHOULD_PASS)
     {}
     
@@ -5303,7 +5303,7 @@ namespace embree
     std::vector<IntersectMode> intersectModes;
     std::vector<thread_t> threads;
     
-    IntensiveRegressionTest (std::string name, int isa, thread_func func, int mode, float intensity)
+    IntensiveRegressionTest (std::string name, int64_t isa, thread_func func, int mode, float intensity)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), func(func), mode(mode), intensity(intensity) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -5381,7 +5381,7 @@ namespace embree
     float intensity;
     std::vector<IntersectMode> intersectModes;
     
-    MemoryMonitorTest (std::string name, int isa, thread_func func, float intensity)
+    MemoryMonitorTest (std::string name, int64_t isa, thread_func func, float intensity)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), func(func), intensity(intensity) {}
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -5440,7 +5440,7 @@ namespace embree
   
   struct ParallelForExceptionTest1 : public VerifyApplication::Test
   {
-    ParallelForExceptionTest1 (std::string name, int isa)
+    ParallelForExceptionTest1 (std::string name, int64_t isa)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -5468,7 +5468,7 @@ namespace embree
 
   struct ParallelForExceptionTest2 : public VerifyApplication::Test
   {
-    ParallelForExceptionTest2 (std::string name, int isa)
+    ParallelForExceptionTest2 (std::string name, int64_t isa)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -5501,7 +5501,7 @@ namespace embree
 
   struct ParallelForExceptionTest3 : public VerifyApplication::Test
   {
-    ParallelForExceptionTest3 (std::string name, int isa)
+    ParallelForExceptionTest3 (std::string name, int64_t isa)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -5533,7 +5533,7 @@ namespace embree
 
   struct ParallelForExceptionTest4 : public VerifyApplication::Test
   {
-    ParallelForExceptionTest4 (std::string name, int isa)
+    ParallelForExceptionTest4 (std::string name, int64_t isa)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -5565,7 +5565,7 @@ namespace embree
 
   struct ParallelForExceptionTest5 : public VerifyApplication::Test
   {
-    ParallelForExceptionTest5 (std::string name, int isa)
+    ParallelForExceptionTest5 (std::string name, int64_t isa)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -5608,7 +5608,7 @@ namespace embree
 
   struct ParallelForExceptionTest6 : public VerifyApplication::Test
   {
-    ParallelForExceptionTest6 (std::string name, int isa)
+    ParallelForExceptionTest6 (std::string name, int64_t isa)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -5647,7 +5647,7 @@ namespace embree
 
   struct ParallelForExceptionTest7 : public VerifyApplication::Test
   {
-    ParallelForExceptionTest7 (std::string name, int isa)
+    ParallelForExceptionTest7 (std::string name, int64_t isa)
       : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS) {}
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
@@ -5713,7 +5713,7 @@ namespace embree
 
   struct SimpleBenchmark : public VerifyApplication::Benchmark
   {
-    SimpleBenchmark (std::string name, int isa)
+    SimpleBenchmark (std::string name, int64_t isa)
       : VerifyApplication::Benchmark(name,isa,"1/s",true,10) {}
     
     float benchmark(VerifyApplication* state)
@@ -5729,7 +5729,7 @@ namespace embree
   {
     unsigned int N, dN;
     
-    ParallelIntersectBenchmark (std::string name, int isa, unsigned int N, unsigned int dN)
+    ParallelIntersectBenchmark (std::string name, int64_t isa, unsigned int N, unsigned int dN)
       : VerifyApplication::Benchmark(name,isa,"Mrps",true,10), N(N), dN(dN) {}
 
     bool setup(VerifyApplication* state) 
@@ -5771,7 +5771,7 @@ namespace embree
 	static const size_t numTilesX = width / tileSizeX;
 	static const size_t numTilesY = height / tileSizeY;
     
-    CoherentRaysBenchmark (std::string name, int isa, GeometryType gtype, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
+    CoherentRaysBenchmark (std::string name, int64_t isa, GeometryType gtype, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
       : ParallelIntersectBenchmark(name,isa,numTilesX*numTilesY,1), gtype(gtype), sflags(sflags), quality(quality), imode(imode), ivariant(ivariant), numPhi(numPhi) {}
     
     size_t setNumPrimitives(size_t N) 
@@ -5933,7 +5933,7 @@ namespace embree
     static const size_t numRays = 16*1024*1024;
     static const size_t deltaRays = 1024;
     
-    IncoherentRaysBenchmark (std::string name, int isa, GeometryType gtype, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
+    IncoherentRaysBenchmark (std::string name, int64_t isa, GeometryType gtype, SceneFlags sflags, RTCBuildQuality quality, IntersectMode imode, IntersectVariant ivariant, size_t numPhi)
       : ParallelIntersectBenchmark(name,isa,numRays,deltaRays), gtype(gtype), sflags(sflags), quality(quality), imode(imode), ivariant(ivariant), numPhi(numPhi), device(nullptr)  {}
 
     size_t setNumPrimitives(size_t N) 
@@ -6075,7 +6075,7 @@ namespace embree
     Ref<VerifyScene> scene;
     std::vector<Ref<SceneGraph::Node>> geometries;
     
-    CreateGeometryBenchmark (std::string name, int isa, GeometryType gtype, SceneFlags sflags, RTCBuildQuality quality, size_t numPhi, size_t numMeshes, bool update, bool dobenchmark)
+    CreateGeometryBenchmark (std::string name, int64_t isa, GeometryType gtype, SceneFlags sflags, RTCBuildQuality quality, size_t numPhi, size_t numMeshes, bool update, bool dobenchmark)
       : VerifyApplication::Benchmark(name,isa,dobenchmark ? "Mprims/s" : "MB",dobenchmark,dobenchmark?10:1), gtype(gtype), sflags(sflags), quality(quality), 
         numPhi(numPhi), numMeshes(numMeshes), update(update), dobenchmark(dobenchmark),
         numPrimitives(0), device(nullptr), scene(nullptr) {}
@@ -6248,6 +6248,15 @@ namespace embree
 #endif
 #if defined(EMBREE_TARGET_AVX512)
     if (hasISA(AVX512)) isas.push_back(AVX512);
+#endif
+#if defined(EMBREE_TARGET_AVX10_1)
+    if (hasISA(AVX10_1)) isas.push_back(AVX10_1);
+#endif
+#if defined(EMBREE_TARGET_AVX10_2)
+    if (hasISA(AVX10_2)) isas.push_back(AVX10_2);
+#endif
+#if defined(EMBREE_TARGET_APX)
+    if (hasISA(APX)) isas.push_back(APX);
 #endif
 
     /* create list of all intersect modes to test */
