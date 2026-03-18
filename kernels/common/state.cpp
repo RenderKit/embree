@@ -144,7 +144,7 @@ namespace embree
   State::~State() {
   }
 
-  bool State::hasISA(const int isa) {
+  bool State::hasISA(const int64_t isa) {
     return (enabled_cpu_features & isa) == isa;
   }
 
@@ -232,7 +232,7 @@ namespace embree
     parse(cin);
   }
   
-  int string_to_cpufeatures(const std::string& isa)
+  int64_t string_to_cpufeatures(const std::string& isa)
   {
     if      (isa == "sse" ) return SSE;
     else if (isa == "sse2") return SSE2;

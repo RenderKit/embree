@@ -140,32 +140,37 @@ namespace embree
   static const int CPU_FEATURE_ZMM_ENABLED = 1 << 27;
   static const int CPU_FEATURE_NEON = 1 << 28;
   static const int CPU_FEATURE_NEON_2X = 1 << 29;
+  static const int CPU_FEATURE_APX = 1 << 30;
+  // Note: AVX10_1 and AVX10_2 use bits in a bitmask spanning beyond 32 bits
+  // For now we use long long types in feature detection
+  static const int64_t CPU_FEATURE_AVX10_1 = 1LL << 32;
+  static const int64_t CPU_FEATURE_AVX10_2 = 1LL << 33;
 
   /*! get CPU features */
-  int getCPUFeatures();
+  int64_t getCPUFeatures();
 
   /*! convert CPU features into a string */
   std::string stringOfCPUFeatures(int features);
 
   /*! creates a string of all supported targets that are supported */
-  std::string supportedTargetList (int isa);
+  std::string supportedTargetList (int64_t isa);
 
   /*! ISAs */
-  static const int SSE    = CPU_FEATURE_SSE | CPU_FEATURE_XMM_ENABLED; 
-  static const int SSE2   = SSE | CPU_FEATURE_SSE2;
-  static const int SSE3   = SSE2 | CPU_FEATURE_SSE3;
-  static const int SSSE3  = SSE3 | CPU_FEATURE_SSSE3;
-  static const int SSE41  = SSSE3 | CPU_FEATURE_SSE41;
-  static const int SSE42  = SSE41 | CPU_FEATURE_SSE42 | CPU_FEATURE_POPCNT;
-  static const int AVX    = SSE42 | CPU_FEATURE_AVX | CPU_FEATURE_YMM_ENABLED;
-  static const int AVXI   = AVX | CPU_FEATURE_F16C;
-  static const int AVX2   = AVXI | CPU_FEATURE_AVX2 | CPU_FEATURE_FMA3 | CPU_FEATURE_BMI1 | CPU_FEATURE_BMI2 | CPU_FEATURE_LZCNT;
-  static const int AVX512 = AVX2 | CPU_FEATURE_AVX512F | CPU_FEATURE_AVX512DQ | CPU_FEATURE_AVX512CD | CPU_FEATURE_AVX512BW | CPU_FEATURE_AVX512VL | CPU_FEATURE_ZMM_ENABLED;
-  static const int NEON = CPU_FEATURE_NEON | CPU_FEATURE_SSE | CPU_FEATURE_SSE2;
-  static const int NEON_2X = CPU_FEATURE_NEON_2X | AVX2;
+  static const int64_t SSE    = CPU_FEATURE_SSE | CPU_FEATURE_XMM_ENABLED; 
+  static const int64_t SSE2   = SSE | CPU_FEATURE_SSE2;
+  static const int64_t SSE3   = SSE2 | CPU_FEATURE_SSE3;
+  static const int64_t SSSE3  = SSE3 | CPU_FEATURE_SSSE3;
+  static const int64_t SSE41  = SSSE3 | CPU_FEATURE_SSE41;
+  static const int64_t SSE42  = SSE41 | CPU_FEATURE_SSE42 | CPU_FEATURE_POPCNT;
+  static const int64_t AVX    = SSE42 | CPU_FEATURE_AVX | CPU_FEATURE_YMM_ENABLED;
+  static const int64_t AVXI   = AVX | CPU_FEATURE_F16C;
+  static const int64_t AVX2   = AVXI | CPU_FEATURE_AVX2 | CPU_FEATURE_FMA3 | CPU_FEATURE_BMI1 | CPU_FEATURE_BMI2 | CPU_FEATURE_LZCNT;
+  static const int64_t AVX512 = AVX2 | CPU_FEATURE_AVX512F | CPU_FEATURE_AVX512DQ | CPU_FEATURE_AVX512CD | CPU_FEATURE_AVX512BW | CPU_FEATURE_AVX512VL | CPU_FEATURE_ZMM_ENABLED;
+  static const int64_t NEON = CPU_FEATURE_NEON | CPU_FEATURE_SSE | CPU_FEATURE_SSE2;
+  static const int64_t NEON_2X = CPU_FEATURE_NEON_2X | AVX2;
 
   /*! converts ISA bitvector into a string */
-  std::string stringOfISA(int features);
+  std::string stringOfISA(int64_t features);
 
   /*! return the number of logical threads of the system */
   unsigned int getNumberOfLogicalThreads();

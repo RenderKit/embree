@@ -253,6 +253,16 @@ namespace embree
   
   /* cpuid[eax=7,ecx=0].ecx */
   static const int CPU_FEATURE_BIT_AVX512VBMI = 1 << 1;   // AVX512VBMI (vector bit manipulation instructions)
+  
+  /* cpuid[eax=7,ecx=1].eax */
+  static const int CPU_FEATURE_BIT_APX = 1 << 21;         // APX (Advanced Performance Extensions)
+  
+  /* cpuid[eax=7,ecx=1].ecx */
+  static const int CPU_FEATURE_BIT_AVX10 = 1 << 19;       // AVX-10 (256-bit and 512-bit vector instructions)
+  
+  /* cpuid[eax=7,ecx=1].eax bits for AVX-10 version */
+  static const int CPU_FEATURE_BIT_AVX10_VERSION_SHIFT = 12;
+  static const int CPU_FEATURE_BIT_AVX10_VERSION_MASK = 0x3;  // 2 bits for version
 #endif
 
 #if defined(__X86_ASM__)
@@ -270,11 +280,11 @@ namespace embree
   }
 #endif
 
-  int getCPUFeatures()
+  int64_t getCPUFeatures()
   {
 #if defined(__X86_ASM__)
     /* cache CPU features access */
-    static int cpu_features = 0;
+    static int64_t cpu_features = 0;
     if (cpu_features) 
       return cpu_features;
 
@@ -291,27 +301,32 @@ namespace embree
     /* get CPUID leaves for EAX = 1,7, and 0x80000001 */
     int cpuid_leaf_1[4] = { 0,0,0,0 };
     int cpuid_leaf_7[4] = { 0,0,0,0 };
+    int cpuid_leaf_7_1[4] = { 0,0,0,0 };
     int cpuid_leaf_e1[4] = { 0,0,0,0 };
     if (nIds >= 1) __cpuid (cpuid_leaf_1,0x00000001);
 #if _WIN32
 #if _MSC_VER && (_MSC_FULL_VER < 160040219)
 #else
     if (nIds >= 7) __cpuidex(cpuid_leaf_7,0x00000007,0);
+    if (nIds >= 7) __cpuidex(cpuid_leaf_7_1,0x00000007,1);
 #endif
 #else
     if (nIds >= 7) __cpuid_count(cpuid_leaf_7,0x00000007,0);
+    if (nIds >= 7) __cpuid_count(cpuid_leaf_7_1,0x00000007,1);
 #endif
     if (nExIds >= 0x80000001) __cpuid(cpuid_leaf_e1,0x80000001);
 
-    /* detect if OS saves XMM, YMM, and ZMM states */
+    /* detect if OS saves XMM, YMM, and ZMM states, and APX state */
     bool xmm_enabled = true;
     bool ymm_enabled = false;
     bool zmm_enabled = false;
+    bool apx_enabled = false;
     if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_OXSAVE) {
       int64_t xcr0 = get_xcr0();
       xmm_enabled = ((xcr0 & 0x02) == 0x02);                /* checks if xmm are enabled in XCR0 */
       ymm_enabled = xmm_enabled && ((xcr0 & 0x04) == 0x04); /* checks if ymm state are enabled in XCR0 */
       zmm_enabled = ymm_enabled && ((xcr0 & 0xE0) == 0xE0); /* checks if OPMASK state, upper 256-bit of ZMM0-ZMM15 and ZMM16-ZMM31 state are enabled in XCR0 */
+      apx_enabled = ((xcr0 & 0x030000) == 0x030000);         /* checks if APX state (bit 17 and 18) are enabled in XCR0 */
     }
     if (xmm_enabled) cpu_features |= CPU_FEATURE_XMM_ENABLED;
     if (ymm_enabled) cpu_features |= CPU_FEATURE_YMM_ENABLED;
@@ -343,6 +358,15 @@ namespace embree
     if (cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512IFMA) cpu_features |= CPU_FEATURE_AVX512IFMA;
     if (cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512VL  ) cpu_features |= CPU_FEATURE_AVX512VL;
     if (cpuid_leaf_7[ECX] & CPU_FEATURE_BIT_AVX512VBMI) cpu_features |= CPU_FEATURE_AVX512VBMI;
+    
+    if ((cpuid_leaf_7_1[EAX] & CPU_FEATURE_BIT_APX) && apx_enabled) cpu_features |= CPU_FEATURE_APX;
+    
+    /* detect AVX-10 version */
+    if (cpuid_leaf_7_1[ECX] & CPU_FEATURE_BIT_AVX10) {
+      uint32_t avx10_version = (cpuid_leaf_7_1[EAX] >> CPU_FEATURE_BIT_AVX10_VERSION_SHIFT) & CPU_FEATURE_BIT_AVX10_VERSION_MASK;
+      if (avx10_version >= 1) cpu_features |= CPU_FEATURE_AVX10_1;
+      if (avx10_version >= 2) cpu_features |= CPU_FEATURE_AVX10_2;
+    }
 
 #if defined(__MACOSX__)
     if (   (cpu_features & CPU_FEATURE_AVX512F)
@@ -382,7 +406,7 @@ namespace embree
 #endif
   }
 
-  std::string stringOfCPUFeatures(int features)
+  std::string stringOfCPUFeatures(int64_t features)
   {
     std::string str;
     if (features & CPU_FEATURE_XMM_ENABLED) str += "XMM ";
@@ -412,12 +436,15 @@ namespace embree
     if (features & CPU_FEATURE_AVX512VL) str += "AVX512VL ";
     if (features & CPU_FEATURE_AVX512IFMA) str += "AVX512IFMA ";
     if (features & CPU_FEATURE_AVX512VBMI) str += "AVX512VBMI ";
+    if (features & CPU_FEATURE_APX) str += "APX ";
+    if (features & CPU_FEATURE_AVX10_1) str += "AVX10.1 ";
+    if (features & CPU_FEATURE_AVX10_2) str += "AVX10.2 ";
     if (features & CPU_FEATURE_NEON) str += "NEON ";
     if (features & CPU_FEATURE_NEON_2X) str += "2xNEON ";
     return str;
   }
   
-  std::string stringOfISA (int isa)
+  std::string stringOfISA (int64_t isa)
   {
     if (isa == SSE) return "SSE";
     if (isa == SSE2) return "SSE2";
@@ -434,11 +461,11 @@ namespace embree
     return "UNKNOWN";
   }
 
-  bool hasISA(int features, int isa) {
+  bool hasISA(int64_t features, int64_t isa) {
     return (features & isa) == isa;
   }
   
-  std::string supportedTargetList (int features)
+  std::string supportedTargetList (int64_t features)
   {
     std::string v;
     if (hasISA(features,SSE)) v += "SSE ";
@@ -451,6 +478,9 @@ namespace embree
     if (hasISA(features,AVXI)) v += "AVXI ";
     if (hasISA(features,AVX2)) v += "AVX2 ";
     if (hasISA(features,AVX512)) v += "AVX512 ";
+    if (hasISA(features, CPU_FEATURE_APX)) v += "APX ";
+    if (hasISA(features, CPU_FEATURE_AVX10_1)) v += "AVX10.1 ";
+    if (hasISA(features, CPU_FEATURE_AVX10_2)) v += "AVX10.2 ";
 
     if (hasISA(features,NEON)) v += "NEON ";
     if (hasISA(features,NEON_2X)) v += "2xNEON ";

@@ -45,9 +45,9 @@ namespace embree
     }
   }
 
-  bool hasISA(const int isa) 
+  bool hasISA(const int64_t isa) 
   {
-    int cpu_features = getCPUFeatures();
+    int64_t cpu_features = getCPUFeatures();
     return (cpu_features & isa) == isa;
   }
 
