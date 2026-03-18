@@ -224,7 +224,7 @@ namespace embree
   DECLARE_ISA_FUNCTION(Builder*,BVH8BuilderTwoLevelInstanceSAH,void* COMMA Scene* COMMA Geometry::GTypeMask COMMA bool);
   DECLARE_ISA_FUNCTION(Builder*,BVH8BuilderTwoLevelInstanceArraySAH,void* COMMA Scene* COMMA Geometry::GTypeMask COMMA bool);
 
-  BVH8Factory::BVH8Factory(int bfeatures, int ifeatures)
+  BVH8Factory::BVH8Factory(int64_t bfeatures, int64_t ifeatures)
   {
     SELECT_SYMBOL_INIT_AVX(ifeatures,BVH8ColliderUserGeom);
     
@@ -232,7 +232,7 @@ namespace embree
     selectIntersectors(ifeatures);
   }
 
-  void BVH8Factory::selectBuilders(int features)
+  void BVH8Factory::selectBuilders(int64_t features)
   {
     IF_ENABLED_CURVES_OR_POINTS(SELECT_SYMBOL_INIT_AVX(features,BVH8Curve8vBuilder_OBB_New));
     IF_ENABLED_CURVES_OR_POINTS(SELECT_SYMBOL_INIT_AVX(features,BVH8OBBCurve8iMBBuilder_OBB));
@@ -275,7 +275,7 @@ namespace embree
     IF_ENABLED_INSTANCE_ARRAY (SELECT_SYMBOL_INIT_AVX(features,BVH8BuilderTwoLevelInstanceArraySAH));
   }
 
-  void BVH8Factory::selectIntersectors(int features)
+  void BVH8Factory::selectIntersectors(int64_t features)
   {
     IF_ENABLED_CURVES_OR_POINTS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512(features,VirtualCurveIntersector8v));
     IF_ENABLED_CURVES_OR_POINTS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512(features,VirtualCurveIntersector8iMB));

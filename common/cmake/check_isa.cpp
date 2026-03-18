@@ -14,7 +14,11 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-if defined(__AVX10_1__)
+if defined(__APX_F__)
+char const *info_isa = "ISA" ":" "APX"
+#elif defined(__AVX10_2__)
+char const *info_isa = "ISA" ":" "AVX10.2"
+#elif defined(__AVX10_1__)
 char const *info_isa = "ISA" ":" "AVX10.1"
 #elif \
   defined(__AVX512F__) &&  defined(__AVX512CD__) && \

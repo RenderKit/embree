@@ -250,7 +250,7 @@ namespace embree
   DECLARE_ISA_FUNCTION(Builder*,BVH4Quad4vMeshRefitSAH,void* COMMA QuadMesh* COMMA unsigned int COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH4VirtualMeshRefitSAH,void* COMMA UserGeometry* COMMA unsigned int COMMA size_t);
 
-  BVH4Factory::BVH4Factory(int bfeatures, int ifeatures)
+  BVH4Factory::BVH4Factory(int64_t bfeatures, int64_t ifeatures)
   {
     SELECT_SYMBOL_DEFAULT_AVX_AVX2(ifeatures,BVH4ColliderUserGeom);
 
@@ -258,7 +258,7 @@ namespace embree
     selectIntersectors(ifeatures);
   }
 
-  void BVH4Factory::selectBuilders(int features)
+  void BVH4Factory::selectBuilders(int64_t features)
   {
     IF_ENABLED_TRIS (SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderTwoLevelTriangle4MeshSAH));
     IF_ENABLED_TRIS (SELECT_SYMBOL_DEFAULT_AVX(features,BVH4BuilderTwoLevelTriangle4iMeshSAH));
@@ -308,7 +308,7 @@ namespace embree
     IF_ENABLED_SUBDIV(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4SubdivPatch1MBBuilderSAH));
   }
 
-  void BVH4Factory::selectIntersectors(int features)
+  void BVH4Factory::selectIntersectors(int64_t features)
   {
     IF_ENABLED_CURVES_OR_POINTS(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(features,VirtualCurveIntersector4i));
     IF_ENABLED_CURVES_OR_POINTS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512(features,VirtualCurveIntersector8i));
