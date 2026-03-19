@@ -134,6 +134,26 @@ namespace embree
     uint32_t DisplayFamily_DisplayModel = (DisplayFamily << 8) + (DisplayModel << 0);
 
     // Data from Intel® 64 and IA-32 Architectures, Volume 4, Chapter 2, Table 2-1 (CPUID Signature Values of DisplayFamily_DisplayModel)
+    if (DisplayFamily_DisplayModel == 0x1301) return CPU::DIAMOND_RAPIDS;
+    if (DisplayFamily_DisplayModel == 0x06AF) return CPU::SIERRA_FOREST;
+    if (DisplayFamily_DisplayModel == 0x06AD) return CPU::GRANITE_RAPIDS;
+    if (DisplayFamily_DisplayModel == 0x06AE) return CPU::GRANITE_RAPIDS;
+    if (DisplayFamily_DisplayModel == 0x06CF) return CPU::EMERALD_RAPIDS;
+    if (DisplayFamily_DisplayModel == 0x068F) return CPU::SAPPHIRE_RAPIDS;
+    if (DisplayFamily_DisplayModel == 0x06D7) return CPU::BARTLETT_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06CC) return CPU::PANTHER_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06BD) return CPU::LUNAR_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06B5) return CPU::ARROW_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06C5) return CPU::ARROW_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06C6) return CPU::ARROW_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06AA) return CPU::METEOR_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06AC) return CPU::METEOR_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06B7) return CPU::RAPTOR_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06BA) return CPU::RAPTOR_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06BF) return CPU::RAPTOR_LAKE;
+    if (DisplayFamily_DisplayModel == 0x0697) return CPU::ALDER_LAKE;
+    if (DisplayFamily_DisplayModel == 0x069A) return CPU::ALDER_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06A7) return CPU::ROCKET_LAKE;
     if (DisplayFamily_DisplayModel == 0x067D) return CPU::CORE_ICE_LAKE;
     if (DisplayFamily_DisplayModel == 0x067E) return CPU::CORE_ICE_LAKE;
     if (DisplayFamily_DisplayModel == 0x068C) return CPU::CORE_TIGER_LAKE;
@@ -184,6 +204,19 @@ namespace embree
   std::string stringOfCPUModel(CPU model)
   {
     switch (model) {
+    case CPU::DIAMOND_RAPIDS         : return "Diamond Rapids";
+    case CPU::SIERRA_FOREST          : return "Sierra Forest";
+    case CPU::GRANITE_RAPIDS         : return "Granite Rapids";
+    case CPU::EMERALD_RAPIDS         : return "Emerald Rapids";
+    case CPU::SAPPHIRE_RAPIDS        : return "Sapphire Rapids";
+    case CPU::BARTLETT_LAKE          : return "Bartlett Lake";
+    case CPU::PANTHER_LAKE           : return "Panther Lake";
+    case CPU::LUNAR_LAKE             : return "Lunar Lake";
+    case CPU::ARROW_LAKE             : return "Arrow Lake";
+    case CPU::METEOR_LAKE            : return "Meteor Lake";
+    case CPU::RAPTOR_LAKE            : return "Raptor Lake";
+    case CPU::ALDER_LAKE             : return "Alder Lake";
+    case CPU::ROCKET_LAKE            : return "Rocket Lake";
     case CPU::XEON_ICE_LAKE           : return "Xeon Ice Lake";
     case CPU::CORE_ICE_LAKE           : return "Core Ice Lake";
     case CPU::CORE_TIGER_LAKE         : return "Core Tiger Lake";
