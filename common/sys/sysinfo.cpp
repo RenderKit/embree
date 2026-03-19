@@ -287,15 +287,11 @@ namespace embree
   /* cpuid[eax=7,ecx=0].ecx */
   static const int CPU_FEATURE_BIT_AVX512VBMI = 1 << 1;   // AVX512VBMI (vector bit manipulation instructions)
   
-  /* cpuid[eax=7,ecx=1].eax */
+  /* cpuid[eax=7,ecx=1].edx */
   static const int CPU_FEATURE_BIT_APX = 1 << 21;         // APX (Advanced Performance Extensions)
   
   /* cpuid[eax=7,ecx=1].ecx */
   static const int CPU_FEATURE_BIT_AVX10 = 1 << 19;       // AVX-10 (256-bit and 512-bit vector instructions)
-  
-  /* cpuid[eax=7,ecx=1].eax bits for AVX-10 version */
-  static const int CPU_FEATURE_BIT_AVX10_VERSION_SHIFT = 12;
-  static const int CPU_FEATURE_BIT_AVX10_VERSION_MASK = 0x3;  // 2 bits for version
 #endif
 
 #if defined(__X86_ASM__)
@@ -359,8 +355,9 @@ namespace embree
       xmm_enabled = ((xcr0 & 0x02) == 0x02);                /* checks if xmm are enabled in XCR0 */
       ymm_enabled = xmm_enabled && ((xcr0 & 0x04) == 0x04); /* checks if ymm state are enabled in XCR0 */
       zmm_enabled = ymm_enabled && ((xcr0 & 0xE0) == 0xE0); /* checks if OPMASK state, upper 256-bit of ZMM0-ZMM15 and ZMM16-ZMM31 state are enabled in XCR0 */
-      apx_enabled = ((xcr0 & 0x030000) == 0x030000);         /* checks if APX state (bit 17 and 18) are enabled in XCR0 */
+      apx_enabled = ((xcr0 & (0x80000)) == 0x80000);        /* checks if APX state (bit 19) is enabled in XCR0 */
     }
+
     if (xmm_enabled) cpu_features |= CPU_FEATURE_XMM_ENABLED;
     if (ymm_enabled) cpu_features |= CPU_FEATURE_YMM_ENABLED;
     if (zmm_enabled) cpu_features |= CPU_FEATURE_ZMM_ENABLED;
@@ -392,11 +389,21 @@ namespace embree
     if (cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512VL  ) cpu_features |= CPU_FEATURE_AVX512VL;
     if (cpuid_leaf_7[ECX] & CPU_FEATURE_BIT_AVX512VBMI) cpu_features |= CPU_FEATURE_AVX512VBMI;
     
-    if ((cpuid_leaf_7_1[EAX] & CPU_FEATURE_BIT_APX) && apx_enabled) cpu_features |= CPU_FEATURE_APX;
+    if ((cpuid_leaf_7_1[EDX] & CPU_FEATURE_BIT_APX) && apx_enabled) cpu_features |= CPU_FEATURE_APX;
     
     /* detect AVX-10 version */
-    if (cpuid_leaf_7_1[ECX] & CPU_FEATURE_BIT_AVX10) {
-      uint32_t avx10_version = (cpuid_leaf_7_1[EAX] >> CPU_FEATURE_BIT_AVX10_VERSION_SHIFT) & CPU_FEATURE_BIT_AVX10_VERSION_MASK;
+    if ((cpuid_leaf_7_1[EDX] & CPU_FEATURE_BIT_AVX10) && (nIds >= 0x24)) {
+      int cpuid_leaf_24_0[4] = { 0, 0, 0, 0 };
+       
+#if _WIN32
+#if _MSC_VER && (_MSC_FULL_VER < 160040219)
+#else
+    __cpuidex(cpuid_leaf_24_0, 0x00000024, 0);
+#endif
+#else
+    __cpuid_count(cpuid_leaf_24_0, 0x00000024, 0);
+#endif
+      int avx10_version = cpuid_leaf_24_0[EBX] & 0xff;
       if (avx10_version >= 1) cpu_features |= CPU_FEATURE_AVX10_1;
       if (avx10_version >= 2) cpu_features |= CPU_FEATURE_AVX10_2;
     }
