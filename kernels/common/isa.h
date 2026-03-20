@@ -129,107 +129,195 @@ namespace embree
 #endif
 
 
+// Macro expansion helpers: define ISA combo macros from ISA lists.
+// Usage: ISA_EXPAND_N(features,intersector, ISA1, ISA2, ..., ISAN)
+// Example: ISA_EXPAND_3(f,i, DEFAULT, SSE42, AVX) expands to:
+//   SELECT_SYMBOL_DEFAULT(f,i); SELECT_SYMBOL_SSE42(f,i); SELECT_SYMBOL_AVX(f,i);
+#define ISA_EXPAND_2(f,i, A,B) \
+  SELECT_SYMBOL_##A(f,i); SELECT_SYMBOL_##B(f,i)
+#define ISA_EXPAND_3(f,i, A,B,C) \
+  SELECT_SYMBOL_##A(f,i); SELECT_SYMBOL_##B(f,i); SELECT_SYMBOL_##C(f,i)
+#define ISA_EXPAND_4(f,i, A,B,C,D) \
+  SELECT_SYMBOL_##A(f,i); SELECT_SYMBOL_##B(f,i); SELECT_SYMBOL_##C(f,i); SELECT_SYMBOL_##D(f,i)
+#define ISA_EXPAND_5(f,i, A,B,C,D,E) \
+  SELECT_SYMBOL_##A(f,i); SELECT_SYMBOL_##B(f,i); SELECT_SYMBOL_##C(f,i); SELECT_SYMBOL_##D(f,i); SELECT_SYMBOL_##E(f,i)
+#define ISA_EXPAND_6(f,i, A,B,C,D,E,F) \
+  SELECT_SYMBOL_##A(f,i); SELECT_SYMBOL_##B(f,i); SELECT_SYMBOL_##C(f,i); SELECT_SYMBOL_##D(f,i); SELECT_SYMBOL_##E(f,i); SELECT_SYMBOL_##F(f,i)
+#define ISA_EXPAND_7(f,i, A,B,C,D,E,F,G) \
+  SELECT_SYMBOL_##A(f,i); SELECT_SYMBOL_##B(f,i); SELECT_SYMBOL_##C(f,i); SELECT_SYMBOL_##D(f,i); SELECT_SYMBOL_##E(f,i); SELECT_SYMBOL_##F(f,i); SELECT_SYMBOL_##G(f,i)
+#define ISA_EXPAND_8(f,i, A,B,C,D,E,F,G,H) \
+  SELECT_SYMBOL_##A(f,i); SELECT_SYMBOL_##B(f,i); SELECT_SYMBOL_##C(f,i); SELECT_SYMBOL_##D(f,i); SELECT_SYMBOL_##E(f,i); SELECT_SYMBOL_##F(f,i); SELECT_SYMBOL_##G(f,i); SELECT_SYMBOL_##H(f,i)
+
+// Helper for initializer-style macros (INIT_, ZERO_)
+#define INIT_EXPAND_2(f,i, A,B) \
+  INIT_SYMBOL(f,i); SELECT_SYMBOL_##A(f,i); SELECT_SYMBOL_##B(f,i)
+#define INIT_EXPAND_3(f,i, A,B,C) \
+  INIT_SYMBOL(f,i); SELECT_SYMBOL_##A(f,i); SELECT_SYMBOL_##B(f,i); SELECT_SYMBOL_##C(f,i)
+#define INIT_EXPAND_4(f,i, A,B,C,D) \
+  INIT_SYMBOL(f,i); SELECT_SYMBOL_##A(f,i); SELECT_SYMBOL_##B(f,i); SELECT_SYMBOL_##C(f,i); SELECT_SYMBOL_##D(f,i)
+#define INIT_EXPAND_5(f,i, A,B,C,D,E) \
+  INIT_SYMBOL(f,i); SELECT_SYMBOL_##A(f,i); SELECT_SYMBOL_##B(f,i); SELECT_SYMBOL_##C(f,i); SELECT_SYMBOL_##D(f,i); SELECT_SYMBOL_##E(f,i)
+#define INIT_EXPAND_6(f,i, A,B,C,D,E,F) \
+  INIT_SYMBOL(f,i); SELECT_SYMBOL_##A(f,i); SELECT_SYMBOL_##B(f,i); SELECT_SYMBOL_##C(f,i); SELECT_SYMBOL_##D(f,i); SELECT_SYMBOL_##E(f,i); SELECT_SYMBOL_##F(f,i)
+#define INIT_EXPAND_7(f,i, A,B,C,D,E,F,G) \
+  INIT_SYMBOL(f,i); SELECT_SYMBOL_##A(f,i); SELECT_SYMBOL_##B(f,i); SELECT_SYMBOL_##C(f,i); SELECT_SYMBOL_##D(f,i); SELECT_SYMBOL_##E(f,i); SELECT_SYMBOL_##F(f,i); SELECT_SYMBOL_##G(f,i)
+
+#define ZERO_EXPAND_5(f,i, A,B,C,D,E) \
+  ZERO_SYMBOL(f,i); SELECT_SYMBOL_##A(f,i); SELECT_SYMBOL_##B(f,i); SELECT_SYMBOL_##C(f,i); SELECT_SYMBOL_##D(f,i); SELECT_SYMBOL_##E(f,i)
+
+// ISA combination macros (add new combos here by defining with ISA_EXPAND_N or INIT_EXPAND_N)
 #define SELECT_SYMBOL_DEFAULT_SSE42(features,intersector) \
-  SELECT_SYMBOL_DEFAULT(features,intersector);            \
-  SELECT_SYMBOL_SSE42(features,intersector);                                  
-  
+  ISA_EXPAND_2(features,intersector, DEFAULT,SSE42)
 #define SELECT_SYMBOL_DEFAULT_SSE42_AVX(features,intersector) \
-  SELECT_SYMBOL_DEFAULT(features,intersector);                \
-  SELECT_SYMBOL_SSE42(features,intersector);                  \
-  SELECT_SYMBOL_AVX(features,intersector);                        
-  
+  ISA_EXPAND_3(features,intersector, DEFAULT,SSE42,AVX)
 #define SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2(features,intersector) \
-  SELECT_SYMBOL_DEFAULT(features,intersector);                     \
-  SELECT_SYMBOL_SSE42(features,intersector);                       \
-  SELECT_SYMBOL_AVX(features,intersector);                         \
-  SELECT_SYMBOL_AVX2(features,intersector);                       
-
+  ISA_EXPAND_4(features,intersector, DEFAULT,SSE42,AVX,AVX2)
 #define SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX512(features,intersector) \
-  SELECT_SYMBOL_DEFAULT(features,intersector);                          \
-  SELECT_SYMBOL_SSE42(features,intersector);                            \
-  SELECT_SYMBOL_AVX(features,intersector);                              \
-  SELECT_SYMBOL_AVX512(features,intersector);
-
-#define SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(features,intersector) \
-  SELECT_SYMBOL_DEFAULT(features,intersector);                                   \
-  SELECT_SYMBOL_AVX(features,intersector);                                       \
-  SELECT_SYMBOL_AVX2(features,intersector);                                      \
-  SELECT_SYMBOL_AVX512(features,intersector);
-
-#define SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512(features,intersector) \
-  SELECT_SYMBOL_DEFAULT(features,intersector);                                         \
-  SELECT_SYMBOL_SSE42(features,intersector);                                           \
-  SELECT_SYMBOL_AVX(features,intersector);                                             \
-  SELECT_SYMBOL_AVX2(features,intersector);                                            \
-  SELECT_SYMBOL_AVX512(features,intersector);
-
+  ISA_EXPAND_4(features,intersector, DEFAULT,SSE42,AVX,AVX512)
 #define SELECT_SYMBOL_DEFAULT_AVX(features,intersector) \
-  SELECT_SYMBOL_DEFAULT(features,intersector);          \
-  SELECT_SYMBOL_AVX(features,intersector);                        
-  
+  ISA_EXPAND_2(features,intersector, DEFAULT,AVX)
 #define SELECT_SYMBOL_DEFAULT_AVX_AVX2(features,intersector) \
-  SELECT_SYMBOL_DEFAULT(features,intersector);               \
-  SELECT_SYMBOL_AVX(features,intersector);                   \
-  SELECT_SYMBOL_AVX2(features,intersector);                       
-    
+  ISA_EXPAND_3(features,intersector, DEFAULT,AVX,AVX2)
 #define SELECT_SYMBOL_DEFAULT_AVX_AVX512(features,intersector) \
-  SELECT_SYMBOL_DEFAULT(features,intersector);                              \
-  SELECT_SYMBOL_AVX(features,intersector);                                  \
-  SELECT_SYMBOL_AVX512(features,intersector);
+  ISA_EXPAND_3(features,intersector, DEFAULT,AVX,AVX512)
+#define SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(features,intersector) \
+  ISA_EXPAND_4(features,intersector, DEFAULT,AVX,AVX2,AVX512)
+#define SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512(features,intersector) \
+  ISA_EXPAND_5(features,intersector, DEFAULT,SSE42,AVX,AVX2,AVX512)
 
 #define SELECT_SYMBOL_INIT_AVX(features,intersector) \
-  INIT_SYMBOL(features,intersector);                 \
-  SELECT_SYMBOL_AVX(features,intersector);                                
-  
+  INIT_EXPAND_1(features,intersector, AVX)
 #define SELECT_SYMBOL_INIT_AVX_AVX2(features,intersector) \
-  INIT_SYMBOL(features,intersector);                      \
-  SELECT_SYMBOL_AVX(features,intersector);                \
-  SELECT_SYMBOL_AVX2(features,intersector);
-
+  INIT_EXPAND_2(features,intersector, AVX,AVX2)
+#define SELECT_SYMBOL_INIT_AVX_AVX512(features,intersector) \
+  INIT_EXPAND_2(features,intersector, AVX,AVX512)
 #define SELECT_SYMBOL_INIT_AVX_AVX2_AVX512(features,intersector) \
-  INIT_SYMBOL(features,intersector);                                \
-  SELECT_SYMBOL_AVX(features,intersector);                          \
-  SELECT_SYMBOL_AVX2(features,intersector);                         \
-  SELECT_SYMBOL_AVX512(features,intersector);
+  INIT_EXPAND_3(features,intersector, AVX,AVX2,AVX512)
 
 #define SELECT_SYMBOL_INIT_SSE42_AVX_AVX2(features,intersector) \
-  INIT_SYMBOL(features,intersector);                            \
-  SELECT_SYMBOL_SSE42(features,intersector);                    \
-  SELECT_SYMBOL_AVX(features,intersector);                      \
-  SELECT_SYMBOL_AVX2(features,intersector);
-  
-#define SELECT_SYMBOL_INIT_AVX_AVX512(features,intersector) \
-  INIT_SYMBOL(features,intersector);                                     \
-  SELECT_SYMBOL_AVX(features,intersector);                               \
-  SELECT_SYMBOL_AVX512(features,intersector);
-
+  INIT_EXPAND_3(features,intersector, SSE42,AVX,AVX2)
 #define SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512(features,intersector) \
-  INIT_SYMBOL(features,intersector);                                                \
-  SELECT_SYMBOL_SSE42(features,intersector);                                        \
-  SELECT_SYMBOL_AVX(features,intersector);                                          \
-  SELECT_SYMBOL_AVX2(features,intersector);                                         \
-  SELECT_SYMBOL_AVX512(features,intersector);
+  INIT_EXPAND_4(features,intersector, SSE42,AVX,AVX2,AVX512)
 
 #define SELECT_SYMBOL_ZERO_SSE42_AVX_AVX2_AVX512(features,intersector) \
-  ZERO_SYMBOL(features,intersector);                                    \
-  SELECT_SYMBOL_SSE42(features,intersector);                            \
-  SELECT_SYMBOL_AVX(features,intersector);                              \
-  SELECT_SYMBOL_AVX2(features,intersector);                             \
-  SELECT_SYMBOL_AVX512(features,intersector);
+  ZERO_EXPAND_5(features,intersector, DEFAULT,SSE42,AVX,AVX2,AVX512)
 
-#define SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(features,intersector) \
-  SELECT_SYMBOL_DEFAULT(features,intersector);                                   \
-  SELECT_SYMBOL_AVX(features,intersector);                                       \
-  SELECT_SYMBOL_AVX2(features,intersector);                                      \
-  SELECT_SYMBOL_AVX512(features,intersector);
-  
 #define SELECT_SYMBOL_INIT_AVX512(features,intersector) \
-  INIT_SYMBOL(features,intersector);                                 \
-  SELECT_SYMBOL_AVX512(features,intersector);
-  
+  INIT_EXPAND_1(features,intersector, AVX512)
+
+// AVX10_1 combinations
+#define SELECT_SYMBOL_DEFAULT_AVX10_1(features,intersector) \
+  ISA_EXPAND_2(features,intersector, DEFAULT,AVX10_1)
+#define SELECT_SYMBOL_DEFAULT_AVX_AVX10_1(features,intersector) \
+  ISA_EXPAND_3(features,intersector, DEFAULT,AVX,AVX10_1)
+#define SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX10_1(features,intersector) \
+  ISA_EXPAND_4(features,intersector, DEFAULT,AVX,AVX2,AVX10_1)
+#define SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512_AVX10_1(features,intersector) \
+  ISA_EXPAND_5(features,intersector, DEFAULT,AVX,AVX2,AVX512,AVX10_1)
+#define SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512_AVX10_1(features,intersector) \
+  ISA_EXPAND_6(features,intersector, DEFAULT,SSE42,AVX,AVX2,AVX512,AVX10_1)
+
+// AVX10_2 combinations
+#define SELECT_SYMBOL_DEFAULT_AVX10_2(features,intersector) \
+  ISA_EXPAND_2(features,intersector, DEFAULT,AVX10_2)
+#define SELECT_SYMBOL_DEFAULT_AVX_AVX10_2(features,intersector) \
+  ISA_EXPAND_3(features,intersector, DEFAULT,AVX,AVX10_2)
+#define SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX10_2(features,intersector) \
+  ISA_EXPAND_4(features,intersector, DEFAULT,AVX,AVX2,AVX10_2)
+#define SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512_AVX10_2(features,intersector) \
+  ISA_EXPAND_5(features,intersector, DEFAULT,AVX,AVX2,AVX512,AVX10_2)
+#define SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512_AVX10_2(features,intersector) \
+  ISA_EXPAND_6(features,intersector, DEFAULT,SSE42,AVX,AVX2,AVX512,AVX10_2)
+
+// APX combinations
+#define SELECT_SYMBOL_DEFAULT_APX(features,intersector) \
+  ISA_EXPAND_2(features,intersector, DEFAULT,APX)
+#define SELECT_SYMBOL_DEFAULT_AVX_APX(features,intersector) \
+  ISA_EXPAND_3(features,intersector, DEFAULT,AVX,APX)
+#define SELECT_SYMBOL_DEFAULT_AVX_AVX2_APX(features,intersector) \
+  ISA_EXPAND_4(features,intersector, DEFAULT,AVX,AVX2,APX)
+#define SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512_APX(features,intersector) \
+  ISA_EXPAND_5(features,intersector, DEFAULT,AVX,AVX2,AVX512,APX)
+#define SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512_APX(features,intersector) \
+  ISA_EXPAND_6(features,intersector, DEFAULT,SSE42,AVX,AVX2,AVX512,APX)
+
+// INIT_AVX10_1 combinations
+#define SELECT_SYMBOL_INIT_AVX10_1(features,intersector) \
+  INIT_EXPAND_1(features,intersector, AVX10_1)
+#define SELECT_SYMBOL_INIT_AVX_AVX10_1(features,intersector) \
+  INIT_EXPAND_2(features,intersector, AVX,AVX10_1)
+#define SELECT_SYMBOL_INIT_AVX_AVX2_AVX10_1(features,intersector) \
+  INIT_EXPAND_3(features,intersector, AVX,AVX2,AVX10_1)
+#define SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_AVX10_1(features,intersector) \
+  INIT_EXPAND_4(features,intersector, AVX,AVX2,AVX512,AVX10_1)
+#define SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512_AVX10_1(features,intersector) \
+  INIT_EXPAND_5(features,intersector, SSE42,AVX,AVX2,AVX512,AVX10_1)
+
+// INIT_AVX10_2 combinations
+#define SELECT_SYMBOL_INIT_AVX10_2(features,intersector) \
+  INIT_EXPAND_1(features,intersector, AVX10_2)
+#define SELECT_SYMBOL_INIT_AVX_AVX10_2(features,intersector) \
+  INIT_EXPAND_2(features,intersector, AVX,AVX10_2)
+#define SELECT_SYMBOL_INIT_AVX_AVX2_AVX10_2(features,intersector) \
+  INIT_EXPAND_3(features,intersector, AVX,AVX2,AVX10_2)
+#define SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_AVX10_2(features,intersector) \
+  INIT_EXPAND_4(features,intersector, AVX,AVX2,AVX512,AVX10_2)
+#define SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512_AVX10_2(features,intersector) \
+  INIT_EXPAND_5(features,intersector, SSE42,AVX,AVX2,AVX512,AVX10_2)
+
+// INIT_APX combinations
+#define SELECT_SYMBOL_INIT_APX(features,intersector) \
+  INIT_EXPAND_1(features,intersector, APX)
+#define SELECT_SYMBOL_INIT_AVX_APX(features,intersector) \
+  INIT_EXPAND_2(features,intersector, AVX,APX)
+#define SELECT_SYMBOL_INIT_AVX_AVX2_APX(features,intersector) \
+  INIT_EXPAND_3(features,intersector, AVX,AVX2,APX)
+#define SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_APX(features,intersector) \
+  INIT_EXPAND_4(features,intersector, AVX,AVX2,AVX512,APX)
+#define SELECT_SYMBOL_INIT_AVX512_AVX10_1_AVX10_2_APX(features,intersector) \
+  INIT_EXPAND_4(features,intersector, AVX512,AVX10_1,AVX10_2,APX)
+#define SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512_APX(features,intersector) \
+  INIT_EXPAND_5(features,intersector, SSE42,AVX,AVX2,AVX512,APX)
+
+// AVX10_1 + AVX10_2 combinations
+#define SELECT_SYMBOL_DEFAULT_AVX10_1_AVX10_2(features,intersector) \
+  ISA_EXPAND_3(features,intersector, DEFAULT,AVX10_1,AVX10_2)
+#define SELECT_SYMBOL_DEFAULT_AVX_AVX10_1_AVX10_2(features,intersector) \
+  ISA_EXPAND_4(features,intersector, DEFAULT,AVX,AVX10_1,AVX10_2)
+#define SELECT_SYMBOL_INIT_AVX10_1_AVX10_2(features,intersector) \
+  INIT_EXPAND_2(features,intersector, AVX10_1,AVX10_2)
+#define SELECT_SYMBOL_INIT_AVX_AVX10_1_AVX10_2(features,intersector) \
+  INIT_EXPAND_3(features,intersector, AVX,AVX10_1,AVX10_2)
+
+// AVX10_1 + AVX10_2 + APX combinations
+#define SELECT_SYMBOL_DEFAULT_AVX10_1_AVX10_2_APX(features,intersector) \
+  ISA_EXPAND_4(features,intersector, DEFAULT,AVX10_1,AVX10_2,APX)
+#define SELECT_SYMBOL_DEFAULT_AVX_AVX10_1_AVX10_2_APX(features,intersector) \
+  ISA_EXPAND_5(features,intersector, DEFAULT,AVX,AVX10_1,AVX10_2,APX)
+#define SELECT_SYMBOL_INIT_AVX10_1_AVX10_2_APX(features,intersector) \
+  INIT_EXPAND_3(features,intersector, AVX10_1,AVX10_2,APX)
+#define SELECT_SYMBOL_INIT_AVX_AVX10_1_AVX10_2_APX(features,intersector) \
+  INIT_EXPAND_4(features,intersector, AVX,AVX10_1,AVX10_2,APX)
+
+// Full chains: DEFAULT_AVX_AVX2_AVX512_AVX10_1_AVX10_2_APX and SSE42 variants
+#define SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512_AVX10_1_AVX10_2(features,intersector) \
+  ISA_EXPAND_7(features,intersector, DEFAULT,SSE42,AVX,AVX2,AVX512,AVX10_1,AVX10_2)
+#define SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512_AVX10_1_AVX10_2_APX(features,intersector) \
+  ISA_EXPAND_8(features,intersector, DEFAULT,SSE42,AVX,AVX2,AVX512,AVX10_1,AVX10_2,APX)
+#define SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512_AVX10_1_AVX10_2_APX(features,intersector) \
+  ISA_EXPAND_7(features,intersector, DEFAULT,AVX,AVX2,AVX512,AVX10_1,AVX10_2,APX)
+#define SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512_AVX10_1_AVX10_2_APX(features,intersector) \
+  INIT_EXPAND_7(features,intersector, SSE42,AVX,AVX2,AVX512,AVX10_1,AVX10_2,APX)
+#define SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_AVX10_1_AVX10_2_APX(features,intersector) \
+  INIT_EXPAND_6(features,intersector, AVX,AVX2,AVX512,AVX10_1,AVX10_2,APX)
+
+// Micro helpers for 1-ISA initializers
+#define INIT_EXPAND_1(f,i, A) \
+  INIT_SYMBOL(f,i); SELECT_SYMBOL_##A(f,i)
+
 #define SELECT_SYMBOL_SSE42_AVX_AVX2(features,intersector) \
-  SELECT_SYMBOL_SSE42(features,intersector);               \
-  SELECT_SYMBOL_AVX(features,intersector);                 \
+  SELECT_SYMBOL_SSE42(features,intersector);         \
+  SELECT_SYMBOL_AVX(features,intersector);           \
   SELECT_SYMBOL_AVX2(features,intersector);
 
   struct VerifyMultiTargetLinking {
