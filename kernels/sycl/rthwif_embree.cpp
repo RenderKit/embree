@@ -382,11 +382,11 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
   if (gtype == Geometry::GTY_TRIANGLE_MESH && (feature_mask & RTC_FEATURE_FLAG_TRIANGLE) && (feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR))
   {
-    const TriangleMesh* geom = (const TriangleMesh*)context->scene->get(geomID);
-    const TriangleMesh::Triangle triangle = geom->triangle(primID);
-    Vec3fa v0 = geom->vertex(triangle.v[0], ray.time());
-    Vec3fa v1 = geom->vertex(triangle.v[1], ray.time());
-    Vec3fa v2 = geom->vertex(triangle.v[2], ray.time());
+    const TriangleMesh* triangle_mesh = (const TriangleMesh*) geom;
+    const TriangleMesh::Triangle triangle = triangle_mesh->triangle(primID);
+    Vec3fa v0 = triangle_mesh->vertex(triangle.v[0], ray.time());
+    Vec3fa v1 = triangle_mesh->vertex(triangle.v[1], ray.time());
+    Vec3fa v2 = triangle_mesh->vertex(triangle.v[2], ray.time());
     return TriangleIntersector().intersect(ray,v0,v1,v2,Intersect1Epilog1_HWIF<Ray>(ray, context, geomID, primID, filter));
   } else
 #endif
@@ -394,12 +394,12 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
 #if defined(EMBREE_GEOMETRY_QUAD)
   if (gtype == Geometry::GTY_QUAD_MESH && (feature_mask & RTC_FEATURE_FLAG_QUAD) && (feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR))
   {
-    const QuadMesh* geom = context->scene->get<QuadMesh>(geomID);
-    const QuadMesh::Quad quad = geom->quad(primID);
-    Vec3fa v0 = geom->vertex(quad.v[0], ray.time());
-    Vec3fa v1 = geom->vertex(quad.v[1], ray.time());
-    Vec3fa v2 = geom->vertex(quad.v[2], ray.time());
-    Vec3fa v3 = geom->vertex(quad.v[3], ray.time());
+    const QuadMesh* quad_mesh = (const QuadMesh*) geom;
+    const QuadMesh::Quad quad = quad_mesh->quad(primID);
+    Vec3fa v0 = quad_mesh->vertex(quad.v[0], ray.time());
+    Vec3fa v1 = quad_mesh->vertex(quad.v[1], ray.time());
+    Vec3fa v2 = quad_mesh->vertex(quad.v[2], ray.time());
+    Vec3fa v3 = quad_mesh->vertex(quad.v[3], ray.time());
     bool ishit0 = TriangleIntersector().intersect(ray,v0,v1,v3,Intersect1Epilog1_HWIF<Ray>(ray, context, geomID, primID, filter));
     bool ishit1 = TriangleIntersector().intersect(ray,v2,v3,v1,[&](float &u, float &v, Vec3f& Ng) { u = 1.f - u; v = 1.f - v; }, Intersect1Epilog1_HWIF<Ray>(ray, context, geomID, primID, filter));
     return ishit0 || ishit1;
@@ -409,7 +409,7 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
 #if defined(EMBREE_GEOMETRY_GRID)
   if (gtype == Geometry::GTY_GRID_MESH && (feature_mask & RTC_FEATURE_FLAG_GRID))
   {
-    const GridMesh* mesh = context->scene->get<GridMesh>(geomID);
+    const GridMesh* mesh = (const GridMesh*) geom;
     const GridMesh::PrimID_XY c = mesh->quadID_to_primID_xy[primID];
     const GridMesh::Grid& g = mesh->grid(c.primID);
 
@@ -438,26 +438,26 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
   if (gtype == Geometry::GTY_SPHERE_POINT && (feature_mask & RTC_FEATURE_FLAG_SPHERE_POINT))
   {
     isa::CurvePrecalculations1 pre(ray,context->scene);
-    const Points* geom = context->scene->get<Points>(geomID);
-    const Vec3ff xyzr = geom->vertex_safe(primID, ray.time());
+    const Points* points = (const Points*) geom;
+    const Vec3ff xyzr = points->vertex_safe(primID, ray.time());
     const Vec4f vr(xyzr.x,xyzr.y,xyzr.z,xyzr.w);
     return isa::SphereIntersector1<1>::intersect(true, ray, pre, vr, Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
   }
   else if (gtype == Geometry::GTY_DISC_POINT && (feature_mask & RTC_FEATURE_FLAG_DISC_POINT))
   {
     isa::CurvePrecalculations1 pre(ray,context->scene);
-    const Points* geom = context->scene->get<Points>(geomID);
-    const Vec3ff xyzr = geom->vertex_safe(primID, ray.time());
+    const Points* points = (const Points*) geom;
+    const Vec3ff xyzr = points->vertex_safe(primID, ray.time());
     const Vec4f vr(xyzr.x,xyzr.y,xyzr.z,xyzr.w);
     return isa::DiscIntersector1<1>::intersect(true, ray, nullptr, nullptr, pre, vr, Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
   }
   else if (gtype == Geometry::GTY_ORIENTED_DISC_POINT && (feature_mask & RTC_FEATURE_FLAG_ORIENTED_DISC_POINT))
   {
     isa::CurvePrecalculations1 pre(ray,context->scene);
-    const Points* geom = context->scene->get<Points>(geomID);
-    const Vec3ff xyzr = geom->vertex_safe(primID, ray.time());
+    const Points* points = (const Points*) geom;
+    const Vec3ff xyzr = points->vertex_safe(primID, ray.time());
     const Vec4f vr(xyzr.x,xyzr.y,xyzr.z,xyzr.w);
-    const Vec3f n = geom->normal_safe(primID, ray.time());
+    const Vec3f n = points->normal_safe(primID, ray.time());
     return isa::DiscIntersector1<1>::intersect(true, ray, nullptr, nullptr, pre, vr, n, Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
   } else
     
@@ -470,22 +470,22 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
     isa::CurvePrecalculations1 pre(ray,context->scene);
     if (gtype == Geometry::GTY_FLAT_LINEAR_CURVE && (feature_mask & RTC_FEATURE_FLAG_FLAT_LINEAR_CURVE))
     {
-      LineSegments* geom = context->scene->get<LineSegments>(geomID);
-      Vec3ff v0, v1; geom->gather_safe(v0,v1,geom->segment(primID),ray.time(), feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR);
-      return isa::FlatLinearCurveIntersector1<1>::intersect(true,ray,context,geom,pre,v0,v1,Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
+      LineSegments* line_segments = (LineSegments*) geom;
+      Vec3ff v0, v1; line_segments->gather_safe(v0,v1,line_segments->segment(primID),ray.time(), feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR);
+      return isa::FlatLinearCurveIntersector1<1>::intersect(true,ray,context,line_segments,pre,v0,v1,Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
     }
     else if (gtype == Geometry::GTY_ROUND_LINEAR_CURVE && (feature_mask & RTC_FEATURE_FLAG_ROUND_LINEAR_CURVE))
     {
-      LineSegments* geom = context->scene->get<LineSegments>(geomID);
-      Vec3ff v0,v1,v2,v3; geom->gather_safe(v0,v1,v2,v3,primID,geom->segment(primID),ray.time(), feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR);
-      return isa::RoundLinearCurveIntersector1<1>().intersect(true,ray,context,geom,pre,v0,v1,v2,v3,Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
+      LineSegments* line_segments = (LineSegments*) geom;
+      Vec3ff v0,v1,v2,v3; line_segments->gather_safe(v0,v1,v2,v3,primID,line_segments->segment(primID),ray.time(), feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR);
+      return isa::RoundLinearCurveIntersector1<1>().intersect(true,ray,context,line_segments,pre,v0,v1,v2,v3,Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
     }
     else if (gtype == Geometry::GTY_CONE_LINEAR_CURVE && (feature_mask & RTC_FEATURE_FLAG_CONE_LINEAR_CURVE))
     {
-      LineSegments* geom = context->scene->get<LineSegments>(geomID);
+      LineSegments* line_segments = (LineSegments*) geom;
       Vec3ff v0 = zero, v1 = zero; bool cL = false, cR = false;
-      geom->gather_safe(v0,v1,cL,cR,primID,geom->segment(primID),ray.time(), feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR);
-      return isa::ConeCurveIntersector1<1>().intersect(true,ray,context,geom,pre,v0,v1,cL,cR,Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
+      line_segments->gather_safe(v0,v1,cL,cR,primID,line_segments->segment(primID),ray.time(), feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR);
+      return isa::ConeCurveIntersector1<1>().intersect(true,ray,context,line_segments,pre,v0,v1,cL,cR,Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
     }
     else
     {
