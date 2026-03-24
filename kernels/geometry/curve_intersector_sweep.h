@@ -246,8 +246,8 @@ namespace embree
         const vboolx valid_inner = cylinder_inner.intersect(org,dir,tc_inner,u_inner0,Ng_inner0,u_inner1,Ng_inner1);
         
         /* at the unstable area we subdivide deeper */
-        const vboolx unstable0 = (!valid_inner) | (abs(dot(Vec3vfx(Vec3fa(ray.dir)),Ng_inner0)) < 0.3f);
-        const vboolx unstable1 = (!valid_inner) | (abs(dot(Vec3vfx(Vec3fa(ray.dir)),Ng_inner1)) < 0.3f);
+        const vboolx unstable0 = (!valid_inner) | (abs(dot(Vec3vfx(dir),Ng_inner0)) < 0.3f);
+        const vboolx unstable1 = (!valid_inner) | (abs(dot(Vec3vfx(dir),Ng_inner1)) < 0.3f);
       
         /* subtract the inner interval from the current hit interval */
         BBox<vfloatx> tp0, tp1;
@@ -348,8 +348,7 @@ namespace embree
         const Vec3ff dQ2 = abs(3.0f*(P3-P2) - W);
         const Vec3ff max_dQ = max(dQ0,dQ1,dQ2);
         const float m = max(max_dQ.x,max_dQ.y,max_dQ.z); //,max_dQ.w);
-        const float l = length(Vec3f(W));
-        const bool well_behaved = m < 0.2f*l;
+        const bool well_behaved = m*m < 0.04f*dot(Vec3f(W),Vec3f(W));
 
         if (!well_behaved && stack.depth < max_depth) {
           stack.push();
@@ -415,8 +414,8 @@ namespace embree
         }
 
         /* at the unstable area we subdivide deeper */
-        const bool unstable0 = valid0 && ((!valid_inner) | (abs(dot(Vec3fa(ray.dir),Ng_inner0)) < 0.3f));
-        const bool unstable1 = valid1 && ((!valid_inner) | (abs(dot(Vec3fa(ray.dir),Ng_inner1)) < 0.3f));
+        const bool unstable0 = valid0 && ((!valid_inner) | (abs(dot(dir,Ng_inner0)) < 0.3f));
+        const bool unstable1 = valid1 && ((!valid_inner) | (abs(dot(dir,Ng_inner1)) < 0.3f));
     
         if ((unstable0 | unstable1) && (stack.depth < max_depth)) {
            stack.push();
