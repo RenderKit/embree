@@ -489,58 +489,54 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
     }
     else
     {
-      CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
+      CurveGeometry* curve_geometry = (CurveGeometry*) geom;
       if (stype == Geometry::GTY_SUBTYPE_ORIENTED_CURVE && (feature_mask & RTC_FEATURE_FLAG_NORMAL_ORIENTED_CURVES))
       {
         using Intersector = isa::OrientedCurve1Intersector1<CubicBezierCurve,8,1>;
         using Curve = isa::TensorLinearCubicBezierSurface3fa;
-        if (geom->numTimeSegments() > 0 && (feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR))
+        if (curve_geometry->numTimeSegments() > 0 && (feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR))
         {
-          Curve curve;
-          if (basis == Geometry::GTY_BASIS_HERMITE && (feature_mask & RTC_FEATURE_FLAG_NORMAL_ORIENTED_HERMITE_CURVE)) {
-            curve = geom->getNormalOrientedHermiteCurveSafe<HermiteCurveT<Vec3ff>, HermiteCurveT<Vec3fa>, Curve>(context,ray.org,primID,ray.time());
-          }
-          else if (basis == Geometry::GTY_BASIS_BSPLINE && (feature_mask & RTC_FEATURE_FLAG_NORMAL_ORIENTED_BSPLINE_CURVE)) {
-            curve = geom->getNormalOrientedCurveSafe<BSplineCurveT<Vec3ff>, BSplineCurveT<Vec3fa>, Curve>(context,ray.org,primID,ray.time());
-          }
-          else if (basis == Geometry::GTY_BASIS_CATMULL_ROM && (feature_mask & RTC_FEATURE_FLAG_NORMAL_ORIENTED_CATMULL_ROM_CURVE)) {
-            curve = geom->getNormalOrientedCurveSafe<CatmullRomCurveT<Vec3ff>, CatmullRomCurveT<Vec3fa>, Curve>(context,ray.org,primID,ray.time());
-          }
-          else {
-            curve = geom->getNormalOrientedCurveSafe<Intersector::SourceCurve3ff, Intersector::SourceCurve3fa, Curve>(context,ray.org,primID,ray.time());
-          }
-          return Intersector().intersect(pre,ray,context,geom,primID,curve,Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
+          if (basis == Geometry::GTY_BASIS_HERMITE && (feature_mask & RTC_FEATURE_FLAG_NORMAL_ORIENTED_HERMITE_CURVE))
+            return Intersector().intersect(pre,ray,context,curve_geometry,primID,curve_geometry->getNormalOrientedHermiteCurveSafe<HermiteCurveT<Vec3ff>, HermiteCurveT<Vec3fa>, Curve>(context,ray.org,primID,ray.time()),Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
+          else if (basis == Geometry::GTY_BASIS_BSPLINE && (feature_mask & RTC_FEATURE_FLAG_NORMAL_ORIENTED_BSPLINE_CURVE))
+            return Intersector().intersect(pre,ray,context,curve_geometry,primID,curve_geometry->getNormalOrientedCurveSafe<BSplineCurveT<Vec3ff>, BSplineCurveT<Vec3fa>, Curve>(context,ray.org,primID,ray.time()),Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
+          else if (basis == Geometry::GTY_BASIS_CATMULL_ROM && (feature_mask & RTC_FEATURE_FLAG_NORMAL_ORIENTED_CATMULL_ROM_CURVE))
+            return Intersector().intersect(pre,ray,context,curve_geometry,primID,curve_geometry->getNormalOrientedCurveSafe<CatmullRomCurveT<Vec3ff>, CatmullRomCurveT<Vec3fa>, Curve>(context,ray.org,primID,ray.time()),Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
+          else
+            return Intersector().intersect(pre,ray,context,curve_geometry,primID,curve_geometry->getNormalOrientedCurveSafe<Intersector::SourceCurve3ff, Intersector::SourceCurve3fa, Curve>(context,ray.org,primID,ray.time()),Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
         }
         else
         {
+          const unsigned curve_index = curve_geometry->curve(primID);
           Vec3ff v0,v1,v2,v3;
           Vec3fa n0,n1,n2,n3;
           if (basis == Geometry::GTY_BASIS_HERMITE && (feature_mask & RTC_FEATURE_FLAG_NORMAL_ORIENTED_HERMITE_CURVE))
-            geom->gather_hermite_safe(v0,v1,n0,n1,v2,v3,n2,n3,geom->curve(primID),ray.time());
+            curve_geometry->gather_hermite_safe(v0,v1,n0,n1,v2,v3,n2,n3,curve_index,ray.time());
           else
-            geom->gather_safe(v0,v1,v2,v3,n0,n1,n2,n3,geom->curve(primID),ray.time(), feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR);
+            curve_geometry->gather_safe(v0,v1,v2,v3,n0,n1,n2,n3,curve_index,ray.time(), feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR);
           isa::convert_to_bezier(gtype, v0,v1,v2,v3, n0,n1,n2,n3);
-          return Intersector().intersect(pre,ray,context,geom,primID,v0,v1,v2,v3,n0,n1,n2,n3,Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
+          return Intersector().intersect(pre,ray,context,curve_geometry,primID,v0,v1,v2,v3,n0,n1,n2,n3,Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
         }
       }
       else if (feature_mask & (RTC_FEATURE_FLAG_FLAT_CURVES | RTC_FEATURE_FLAG_ROUND_CURVES)) {
+        const unsigned curve_index = curve_geometry->curve(primID);
         Vec3ff v0,v1,v2,v3;
         if (basis == Geometry::GTY_BASIS_HERMITE && (feature_mask & (RTC_FEATURE_FLAG_ROUND_HERMITE_CURVE | RTC_FEATURE_FLAG_FLAT_HERMITE_CURVE)))
-          geom->gather_hermite_safe(v0,v1,v2,v3,geom->curve(primID),ray.time());
+          curve_geometry->gather_hermite_safe(v0,v1,v2,v3,curve_index,ray.time());
         else
-          geom->gather_safe(v0,v1,v2,v3,geom->curve(primID),ray.time(), feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR);
+          curve_geometry->gather_safe(v0,v1,v2,v3,curve_index,ray.time(), feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR);
         
         isa::convert_to_bezier(gtype, v0,v1,v2,v3);
 
         if (stype == Geometry::GTY_SUBTYPE_FLAT_CURVE && (feature_mask & RTC_FEATURE_FLAG_FLAT_CURVES))
         {
           isa::RibbonCurve1Intersector1<CubicBezierCurve,1> intersector;
-          return intersector.intersect(pre,ray,context,geom,primID,v0,v1,v2,v3,Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
+          return intersector.intersect(pre,ray,context,curve_geometry,primID,v0,v1,v2,v3,Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
         }
         else if (stype == Geometry::GTY_SUBTYPE_ROUND_CURVE && (feature_mask & RTC_FEATURE_FLAG_ROUND_CURVES))
         {
           isa::SweepCurve1Intersector1<CubicBezierCurve> intersector;
-          return intersector.intersect(pre,ray,context,geom,primID,v0,v1,v2,v3,Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
+          return intersector.intersect(pre,ray,context,curve_geometry,primID,v0,v1,v2,v3,Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
         }
         return false;
       }
