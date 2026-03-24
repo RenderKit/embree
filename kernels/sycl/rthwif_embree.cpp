@@ -736,7 +736,8 @@ SYCL_EXTERNAL __attribute__((always_inline)) void rtcIntersectRTHW(sycl::global_
     unsigned int geomID = intel_get_hit_geometry_id(query, intel_hit_type_committed_hit);
 
     unsigned int primID = ray.primID;
-    if (intel_get_hit_candidate(query, intel_hit_type_committed_hit) == intel_candidate_type_triangle) {
+    const intel_candidate_type_t committed_candidate = intel_get_hit_candidate(query, intel_hit_type_committed_hit);
+    if (committed_candidate == intel_candidate_type_triangle) {
       primID = intel_get_hit_triangle_primitive_id(query, intel_hit_type_committed_hit);
       uv = intel_get_hit_barycentrics (query, intel_hit_type_committed_hit);
     }
@@ -768,7 +769,7 @@ SYCL_EXTERNAL __attribute__((always_inline)) void rtcIntersectRTHW(sycl::global_
 #endif
 
     /* calculate geometry normal for hardware accelerated triangles */
-    if (intel_get_hit_candidate(query, intel_hit_type_committed_hit) == intel_candidate_type_triangle)
+    if (committed_candidate == intel_candidate_type_triangle)
       ray.Ng = intel_get_hit_triangle_normal(query, intel_hit_type_committed_hit);
 
     rayhit_i->hit.Ng_x = ray.Ng.x;
