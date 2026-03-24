@@ -374,7 +374,6 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
   }
 #endif
 
-  isa::CurvePrecalculations1 pre(ray,context->scene);
   
   const Geometry::GType gtype MAYBE_UNUSED = geom->getType();
   const Geometry::GType stype MAYBE_UNUSED = (Geometry::GType)(gtype & Geometry::GTY_SUBTYPE_MASK);
@@ -436,9 +435,9 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
 #endif
 
 #if defined(EMBREE_GEOMETRY_POINT)
-  
   if (gtype == Geometry::GTY_SPHERE_POINT && (feature_mask & RTC_FEATURE_FLAG_SPHERE_POINT))
   {
+    isa::CurvePrecalculations1 pre(ray,context->scene);
     const Points* geom = context->scene->get<Points>(geomID);
     const Vec3ff xyzr = geom->vertex_safe(primID, ray.time());
     const Vec4f vr(xyzr.x,xyzr.y,xyzr.z,xyzr.w);
@@ -446,6 +445,7 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
   }
   else if (gtype == Geometry::GTY_DISC_POINT && (feature_mask & RTC_FEATURE_FLAG_DISC_POINT))
   {
+    isa::CurvePrecalculations1 pre(ray,context->scene);
     const Points* geom = context->scene->get<Points>(geomID);
     const Vec3ff xyzr = geom->vertex_safe(primID, ray.time());
     const Vec4f vr(xyzr.x,xyzr.y,xyzr.z,xyzr.w);
@@ -453,6 +453,7 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
   }
   else if (gtype == Geometry::GTY_ORIENTED_DISC_POINT && (feature_mask & RTC_FEATURE_FLAG_ORIENTED_DISC_POINT))
   {
+    isa::CurvePrecalculations1 pre(ray,context->scene);
     const Points* geom = context->scene->get<Points>(geomID);
     const Vec3ff xyzr = geom->vertex_safe(primID, ray.time());
     const Vec4f vr(xyzr.x,xyzr.y,xyzr.z,xyzr.w);
@@ -466,6 +467,7 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
 
   if (geom->getTypeMask() & Geometry::MTY_CURVES)
   {
+    isa::CurvePrecalculations1 pre(ray,context->scene);
     if (gtype == Geometry::GTY_FLAT_LINEAR_CURVE && (feature_mask & RTC_FEATURE_FLAG_FLAT_LINEAR_CURVE))
     {
       LineSegments* geom = context->scene->get<LineSegments>(geomID);
@@ -605,8 +607,6 @@ __forceinline void trav_loop(intel_ray_query_t& query, Ray& ray, Scene* scene, s
     const unsigned int bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit );
     const float3 org = intel_get_ray_origin   ( query, bvh_level );
     const float3 dir = intel_get_ray_direction( query, bvh_level );
-    const float t = intel_get_hit_distance(query, intel_hit_type_potential_hit);
-    const float2 uv = intel_get_hit_barycentrics (query, intel_hit_type_potential_hit);
     const unsigned int geomID = intel_get_hit_geometry_id(query, intel_hit_type_potential_hit);
     const unsigned int primID = intel_get_hit_primitive_id(query, intel_hit_type_potential_hit);
 
@@ -650,6 +650,8 @@ __forceinline void trav_loop(intel_ray_query_t& query, Ray& ray, Scene* scene, s
       }
       else // if (candidate == TRIANGLE)
       {
+        const float t = intel_get_hit_distance(query, intel_hit_type_potential_hit);
+        const float2 uv = intel_get_hit_barycentrics (query, intel_hit_type_potential_hit);
         ray.tfar = t;
         Vec3f Ng = intel_get_hit_triangle_normal(query, intel_hit_type_potential_hit);
         Hit hit(context->user,geomID,primID,Vec2f(uv.x(),uv.y()),Ng);
