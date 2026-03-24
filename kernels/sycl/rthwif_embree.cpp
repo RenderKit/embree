@@ -469,20 +469,20 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
     if (gtype == Geometry::GTY_FLAT_LINEAR_CURVE && (feature_mask & RTC_FEATURE_FLAG_FLAT_LINEAR_CURVE))
     {
       LineSegments* geom = context->scene->get<LineSegments>(geomID);
-      Vec3ff v0, v1; geom->gather_safe(v0,v1,geom->segment(primID),ray.time());
+      Vec3ff v0, v1; geom->gather_safe(v0,v1,geom->segment(primID),ray.time(), feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR);
       return isa::FlatLinearCurveIntersector1<1>::intersect(true,ray,context,geom,pre,v0,v1,Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
     }
     else if (gtype == Geometry::GTY_ROUND_LINEAR_CURVE && (feature_mask & RTC_FEATURE_FLAG_ROUND_LINEAR_CURVE))
     {
       LineSegments* geom = context->scene->get<LineSegments>(geomID);
-      Vec3ff v0,v1,v2,v3; geom->gather_safe(v0,v1,v2,v3,primID,geom->segment(primID),ray.time());
+      Vec3ff v0,v1,v2,v3; geom->gather_safe(v0,v1,v2,v3,primID,geom->segment(primID),ray.time(), feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR);
       return isa::RoundLinearCurveIntersector1<1>().intersect(true,ray,context,geom,pre,v0,v1,v2,v3,Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
     }
     else if (gtype == Geometry::GTY_CONE_LINEAR_CURVE && (feature_mask & RTC_FEATURE_FLAG_CONE_LINEAR_CURVE))
     {
       LineSegments* geom = context->scene->get<LineSegments>(geomID);
       Vec3ff v0 = zero, v1 = zero; bool cL = false, cR = false;
-      geom->gather_safe(v0,v1,cL,cR,primID,geom->segment(primID),ray.time());
+      geom->gather_safe(v0,v1,cL,cR,primID,geom->segment(primID),ray.time(), feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR);
       return isa::ConeCurveIntersector1<1>().intersect(true,ray,context,geom,pre,v0,v1,cL,cR,Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
     }
     else
@@ -516,7 +516,7 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
           if (basis == Geometry::GTY_BASIS_HERMITE && (feature_mask & RTC_FEATURE_FLAG_NORMAL_ORIENTED_HERMITE_CURVE))
             geom->gather_hermite_safe(v0,v1,n0,n1,v2,v3,n2,n3,geom->curve(primID),ray.time());
           else
-            geom->gather_safe(v0,v1,v2,v3,n0,n1,n2,n3,geom->curve(primID),ray.time());
+            geom->gather_safe(v0,v1,v2,v3,n0,n1,n2,n3,geom->curve(primID),ray.time(), feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR);
           isa::convert_to_bezier(gtype, v0,v1,v2,v3, n0,n1,n2,n3);
           return Intersector().intersect(pre,ray,context,geom,primID,v0,v1,v2,v3,n0,n1,n2,n3,Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
         }
@@ -526,7 +526,7 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
         if (basis == Geometry::GTY_BASIS_HERMITE && (feature_mask & (RTC_FEATURE_FLAG_ROUND_HERMITE_CURVE | RTC_FEATURE_FLAG_FLAT_HERMITE_CURVE)))
           geom->gather_hermite_safe(v0,v1,v2,v3,geom->curve(primID),ray.time());
         else
-          geom->gather_safe(v0,v1,v2,v3,geom->curve(primID),ray.time());
+          geom->gather_safe(v0,v1,v2,v3,geom->curve(primID),ray.time(), feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR);
         
         isa::convert_to_bezier(gtype, v0,v1,v2,v3);
 
