@@ -384,9 +384,10 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
   {
     const TriangleMesh* triangle_mesh = (const TriangleMesh*) geom;
     const TriangleMesh::Triangle triangle = triangle_mesh->triangle(primID);
-    Vec3fa v0 = triangle_mesh->vertex(triangle.v[0], ray.time());
-    Vec3fa v1 = triangle_mesh->vertex(triangle.v[1], ray.time());
-    Vec3fa v2 = triangle_mesh->vertex(triangle.v[2], ray.time());
+    float ftime; const size_t itime = triangle_mesh->timeSegment(ray.time(), ftime);
+    const Vec3fa v0 = lerp(triangle_mesh->vertex(triangle.v[0], itime+0), triangle_mesh->vertex(triangle.v[0], itime+1), ftime);
+    const Vec3fa v1 = lerp(triangle_mesh->vertex(triangle.v[1], itime+0), triangle_mesh->vertex(triangle.v[1], itime+1), ftime);
+    const Vec3fa v2 = lerp(triangle_mesh->vertex(triangle.v[2], itime+0), triangle_mesh->vertex(triangle.v[2], itime+1), ftime);
     return TriangleIntersector().intersect(ray,v0,v1,v2,Intersect1Epilog1_HWIF<Ray>(ray, context, geomID, primID, filter));
   } else
 #endif
@@ -396,10 +397,11 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
   {
     const QuadMesh* quad_mesh = (const QuadMesh*) geom;
     const QuadMesh::Quad quad = quad_mesh->quad(primID);
-    Vec3fa v0 = quad_mesh->vertex(quad.v[0], ray.time());
-    Vec3fa v1 = quad_mesh->vertex(quad.v[1], ray.time());
-    Vec3fa v2 = quad_mesh->vertex(quad.v[2], ray.time());
-    Vec3fa v3 = quad_mesh->vertex(quad.v[3], ray.time());
+    float ftime; const size_t itime = quad_mesh->timeSegment(ray.time(), ftime);
+    const Vec3fa v0 = lerp(quad_mesh->vertex(quad.v[0], itime+0), quad_mesh->vertex(quad.v[0], itime+1), ftime);
+    const Vec3fa v1 = lerp(quad_mesh->vertex(quad.v[1], itime+0), quad_mesh->vertex(quad.v[1], itime+1), ftime);
+    const Vec3fa v2 = lerp(quad_mesh->vertex(quad.v[2], itime+0), quad_mesh->vertex(quad.v[2], itime+1), ftime);
+    const Vec3fa v3 = lerp(quad_mesh->vertex(quad.v[3], itime+0), quad_mesh->vertex(quad.v[3], itime+1), ftime);
     bool ishit0 = TriangleIntersector().intersect(ray,v0,v1,v3,Intersect1Epilog1_HWIF<Ray>(ray, context, geomID, primID, filter));
     bool ishit1 = TriangleIntersector().intersect(ray,v2,v3,v1,[&](float &u, float &v, Vec3f& Ng) { u = 1.f - u; v = 1.f - v; }, Intersect1Epilog1_HWIF<Ray>(ray, context, geomID, primID, filter));
     return ishit0 || ishit1;
