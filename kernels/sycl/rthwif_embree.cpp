@@ -602,13 +602,9 @@ __forceinline void trav_loop(intel_ray_query_t& query, Ray& ray, Scene* scene, s
   Scenes scenes(scene);
   while (!intel_is_traversal_done(query))
   {
-    intel_candidate_type_t candidate = intel_get_hit_candidate(query, intel_hit_type_potential_hit);
-
     const unsigned int bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit );
     const float3 org = intel_get_ray_origin   ( query, bvh_level );
     const float3 dir = intel_get_ray_direction( query, bvh_level );
-    const unsigned int geomID = intel_get_hit_geometry_id(query, intel_hit_type_potential_hit);
-    const unsigned int primID = intel_get_hit_primitive_id(query, intel_hit_type_potential_hit);
 
     ray.org = Vec3ff(org.x(), org.y(), org.z(), ray.tnear());
     ray.dir = Vec3ff(dir.x(), dir.y(), dir.z(), ray.time ());
@@ -634,6 +630,7 @@ __forceinline void trav_loop(intel_ray_query_t& query, Ray& ray, Scene* scene, s
 
 #endif
     context->scene = scene;
+    const unsigned int geomID = intel_get_hit_geometry_id(query, intel_hit_type_potential_hit);
     Geometry* geom = scene->get(geomID);
 
     /* perform ray masking */
@@ -641,6 +638,8 @@ __forceinline void trav_loop(intel_ray_query_t& query, Ray& ray, Scene* scene, s
     if (ray.mask & geom->mask)
 #endif
     {
+      const unsigned int primID = intel_get_hit_primitive_id(query, intel_hit_type_potential_hit);
+      const intel_candidate_type_t candidate = intel_get_hit_candidate(query, intel_hit_type_potential_hit);
       if (candidate == intel_candidate_type_procedural)
       {
         if (intersect_primitive(query,ray,scenes,geom,context,geomID,primID,feature_mask))
