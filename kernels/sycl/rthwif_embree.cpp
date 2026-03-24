@@ -596,15 +596,16 @@ template<typename Ray>
 __forceinline void trav_loop(intel_ray_query_t& query, Ray& ray, Scene* scene, sycl::private_ptr<RayQueryContext> context, const RTCFeatureFlags feature_mask)
 {
   Scenes scenes(scene);
+  const float tnear = ray.tnear();
+  const float time  = ray.time();
   while (!intel_is_traversal_done(query))
   {
     const unsigned int bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit );
     const float3 org = intel_get_ray_origin   ( query, bvh_level );
     const float3 dir = intel_get_ray_direction( query, bvh_level );
 
-    ray.org = Vec3ff(org.x(), org.y(), org.z(), ray.tnear());
-    ray.dir = Vec3ff(dir.x(), dir.y(), dir.z(), ray.time ());
-    ray.tfar = intel_get_hit_distance(query, intel_hit_type_committed_hit);
+    ray.org = Vec3ff(org.x(), org.y(), org.z(), tnear);
+    ray.dir = Vec3ff(dir.x(), dir.y(), dir.z(), time);
 
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
     context->user->instStackSize = bvh_level;
@@ -638,6 +639,7 @@ __forceinline void trav_loop(intel_ray_query_t& query, Ray& ray, Scene* scene, s
       const intel_candidate_type_t candidate = intel_get_hit_candidate(query, intel_hit_type_potential_hit);
       if (candidate == intel_candidate_type_procedural)
       {
+        ray.tfar = intel_get_hit_distance(query, intel_hit_type_committed_hit);
         if (intersect_primitive(query,ray,scenes,geom,context,geomID,primID,feature_mask))
           if (commit_potential_hit (query, ray))
             break; // shadow rays break at first hit
