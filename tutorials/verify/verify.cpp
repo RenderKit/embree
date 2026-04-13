@@ -7074,15 +7074,16 @@ namespace embree
     plot << "set title \"" << outFileName.name() << "\"" << std::endl; 
     plot << "set xlabel \"" + xlabel + "\"" << std::endl;
     if (f != 1.0f) plot << "set logscale x" << std::endl;
-    if (benchmarks.size())
+    if (benchmarks.size()) {
       plot << "set ylabel \"" << benchmarks[0]->unit << "\"" << std::endl;
-    plot << "set yrange [0:]" << std::endl;
+      plot << "set yrange [0:]" << std::endl;
 
-    plot << "plot \\" << std::endl;
-    for (size_t i=0; i<benchmarks.size(); i++) {
-      plot << "\"" << outFileName.name() << "." << benchmarks[i]->name << ".txt\" using 1:2 title \"" << benchmarks[i]->name << "\" with lines";
-      if (i != benchmarks.size()-1) plot << ",\\";
-      plot << std::endl;
+      plot << "plot \\" << std::endl;
+      for (size_t i=0; i<benchmarks.size(); i++) {
+        plot << "\"" << outFileName.name() << "." << benchmarks[i]->name << ".txt\" using 1:2 title \"" << benchmarks[i]->name << "\" with lines";
+        if (i != benchmarks.size()-1) plot << ",\\";
+        plot << std::endl;
+      }
     }
     plot << std::endl;
     plot.close();

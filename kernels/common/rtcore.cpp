@@ -1857,6 +1857,9 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     if (itemCount > 0xFFFFFFFFu)
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"buffer too large");
     
+    if (byteStride > 0xFFFFFFFFu)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"stride too large");
+  
     geometry->setBuffer(type, slot, format, buffer, byteOffset, byteStride, (unsigned int)itemCount);
     RTC_CATCH_END2(geometry);
   }
@@ -1870,6 +1873,9 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     
     if (itemCount > 0xFFFFFFFFu)
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"buffer too large");
+
+    if (byteStride > 0xFFFFFFFFu)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"stride too large");
 
     Ref<Buffer> buffer = new Buffer(geometry->device, itemCount*byteStride, (char*)ptr + byteOffset);
     geometry->setBuffer(type, slot, format, buffer, 0, byteStride, (unsigned int)itemCount);
@@ -1888,6 +1894,9 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     {
       if (itemCount > 0xFFFFFFFFu)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"buffer too large");
+
+      if (byteStride > 0xFFFFFFFFu)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"stride too large");
 
       if ((ptr == nullptr) || (dptr == nullptr))
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"host and device pointer may not be NULL pointers when using SYCL devices");
@@ -1916,6 +1925,9 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     if (itemCount > 0xFFFFFFFFu)
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"buffer too large");
     
+    if (byteStride > 0xFFFFFFFFu)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"stride too large");
+
     /* vertex buffers need to get overallocated slightly as elements are accessed using SSE loads */
     size_t bytes = itemCount*byteStride;
     if (type == RTC_BUFFER_TYPE_VERTEX || type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
@@ -1940,6 +1952,9 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     {
       if (itemCount > 0xFFFFFFFFu)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"buffer too large");
+
+      if (byteStride > 0xFFFFFFFFu)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"stride too large");
 
       /* vertex buffers need to get overallocated slightly as elements are accessed using SSE loads */
       size_t bytes = itemCount*byteStride;

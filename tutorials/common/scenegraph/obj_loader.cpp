@@ -199,7 +199,7 @@ namespace embree
           face.push_back(vtx);
           parseSepOpt(token);
         }
-        curGroup.push_back(face);
+        curGroup.emplace_back(face);
         continue;
       }
 
@@ -230,7 +230,7 @@ namespace embree
           hair[3*i+0].w = r;
           if (i != N) hair[3*i+1].w = r;
         }
-        curGroupHair.push_back(hair);
+        curGroupHair.emplace_back(hair);
       }
       
       /*! parse edge crease */
