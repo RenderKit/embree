@@ -4635,7 +4635,7 @@ namespace Catch {
                 TestSpec::PatternPtr pattern = std::make_shared<T>( token );
                 if( m_exclusion )
                     pattern = std::make_shared<TestSpec::ExcludedPattern>( pattern );
-                m_currentFilter.m_patterns.push_back( pattern );
+                m_currentFilter.m_patterns.emplace_back( pattern );
             }
             m_exclusion = false;
             m_mode = None;

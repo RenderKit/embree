@@ -431,20 +431,20 @@ namespace embree
 
     registerOption("ambientlight", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3f L = cin->getVec3f();
-        futures.push_back([=, this]() { scene->add(new SceneGraph::LightNodeImpl<SceneGraph::AmbientLight>(SceneGraph::AmbientLight(L))); });
+        futures.push_back([this, L]() { scene->add(new SceneGraph::LightNodeImpl<SceneGraph::AmbientLight>(SceneGraph::AmbientLight(L))); });
       }, "--ambientlight r g b: adds an ambient light with intensity rgb");
     registerOptionAlias("ambientlight","ambient");
 
     registerOption("pointlight", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3f P = cin->getVec3f();
         const Vec3f I = cin->getVec3f();
-        futures.push_back([=, this]() { scene->add(new SceneGraph::LightNodeImpl<SceneGraph::PointLight>(SceneGraph::PointLight(P,I))); });
+        futures.push_back([this, P, I]() { scene->add(new SceneGraph::LightNodeImpl<SceneGraph::PointLight>(SceneGraph::PointLight(P,I))); });
       }, "--pointlight x y z r g b: adds a point light at position xyz with intensity rgb");
 
     registerOption("directionallight", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3f D = cin->getVec3f();
         const Vec3f E = cin->getVec3f();
-        futures.push_back([=, this]() { scene->add(new SceneGraph::LightNodeImpl<SceneGraph::DirectionalLight>(SceneGraph::DirectionalLight(D,E))); });
+        futures.push_back([this, D, E]() { scene->add(new SceneGraph::LightNodeImpl<SceneGraph::DirectionalLight>(SceneGraph::DirectionalLight(D,E))); });
       }, "--directionallight x y z r g b: adds a directional light with direction xyz and intensity rgb");
     registerOptionAlias("directionallight","dirlight");
 
@@ -452,7 +452,7 @@ namespace embree
         const Vec3f D = cin->getVec3f();
         const Vec3f L = cin->getVec3f();
         const float halfAngle = cin->getFloat();
-        futures.push_back([=, this]() { scene->add(new SceneGraph::LightNodeImpl<SceneGraph::DistantLight>(SceneGraph::DistantLight(D,L,halfAngle))); });
+        futures.push_back([this, D, L, halfAngle]() { scene->add(new SceneGraph::LightNodeImpl<SceneGraph::DistantLight>(SceneGraph::DistantLight(D,L,halfAngle))); });
       }, "--distantlight x y z r g b a: adds a distant light with direction xyz, intensity rgb, and opening angle a");
 
     registerOption("triangle-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -461,7 +461,7 @@ namespace embree
         const Vec3f dy = cin->getVec3f();
         const size_t width = cin->getInt();
         const size_t height = cin->getInt();
-        futures.push_back([=, this]() { scene->add(SceneGraph::createTrianglePlane(p0,dx,dy,width,height,new OBJMaterial)); });
+        futures.push_back([this, p0, dx, dy, width, height]() { scene->add(SceneGraph::createTrianglePlane(p0,dx,dy,width,height,new OBJMaterial)); });
       }, "--triangle-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height: adds a plane build of triangles originated at p0 and spanned by the vectors dx and dy with a tessellation width/height.");
 
     registerOption("quad-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -470,7 +470,7 @@ namespace embree
         const Vec3f dy = cin->getVec3f();
         const size_t width = cin->getInt();
         const size_t height = cin->getInt();
-        futures.push_back([=, this]() { scene->add(SceneGraph::createQuadPlane(p0,dx,dy,width,height,new OBJMaterial)); });
+        futures.push_back([this, p0, dx, dy, width, height]() { scene->add(SceneGraph::createQuadPlane(p0,dx,dy,width,height,new OBJMaterial)); });
       }, "--quad-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height: adds a plane build of quadrilaterals originated at p0 and spanned by the vectors dx and dy with a tessellation width/height.");
 
     registerOption("grid-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -479,7 +479,7 @@ namespace embree
         const Vec3f dy = cin->getVec3f();
         const size_t width = cin->getInt();
         const size_t height = cin->getInt();
-        futures.push_back([=, this]() { scene->add(SceneGraph::createGridPlane(p0,dx,dy,width,height,new OBJMaterial)); });
+        futures.push_back([this, p0, dx, dy, width, height]() { scene->add(SceneGraph::createGridPlane(p0,dx,dy,width,height,new OBJMaterial)); });
       }, "--grid-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height: adds a plane using a grid mesh build. The plane is originated at p0 and spanned by the vectors dx and dy with a tessellation width/height.");
 
     registerOption("subdiv-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -489,7 +489,7 @@ namespace embree
         const size_t width = cin->getInt();
         const size_t height = cin->getInt();
         const float tessellationRate = cin->getFloat();
-        futures.push_back([=, this]() { scene->add(SceneGraph::createSubdivPlane(p0,dx,dy,width,height,tessellationRate,new OBJMaterial)); });
+        futures.push_back([this, p0, dx, dy, width, height, tessellationRate]() { scene->add(SceneGraph::createSubdivPlane(p0,dx,dy,width,height,tessellationRate,new OBJMaterial)); });
       }, "--subdiv-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height tessellationRate: adds a plane build as a Catmull Clark subdivision surface originated at p0 and spanned by the vectors dx and dy. The plane consists of widt x height many patches, and each patch has the specified tessellation rate.");
 
     registerOption("hair-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -499,7 +499,7 @@ namespace embree
         const float len = cin->getFloat();
         const float r = cin->getFloat();
         const size_t N = cin->getInt();
-        futures.push_back([=, this]() { scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,SceneGraph::FLAT_CURVE,new OBJMaterial)); });
+        futures.push_back([this, p0, dx, dy, len, r, N]() { scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,SceneGraph::FLAT_CURVE,new OBJMaterial)); });
       }, "--hair-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z length radius num: adds a hair plane originated at p0 and spanned by the vectors dx and dy. num hairs are generated with specified length and radius.");
 
     registerOption("curve-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -509,34 +509,34 @@ namespace embree
         const float len = cin->getFloat();
         const float r = cin->getFloat();
         const size_t N = cin->getInt();
-        futures.push_back([=, this]() { scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,SceneGraph::ROUND_CURVE,new OBJMaterial)); });
+        futures.push_back([this, p0, dx, dy, len, r, N]() { scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,SceneGraph::ROUND_CURVE,new OBJMaterial)); });
       }, "--curve-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z length radius: adds a plane build of bezier curves originated at p0 and spanned by the vectors dx and dy. num curves are generated with specified length and radius.");
 
      registerOption("sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
          const Vec3f p = cin->getVec3f();
         const float  r = cin->getFloat();
-        futures.push_back([=, this]() { scene->add(SceneGraph::createSphere(p, r, new OBJMaterial)); });
+        futures.push_back([this, p, r]() { scene->add(SceneGraph::createSphere(p, r, new OBJMaterial)); });
       }, "--sphere p.x p.y p.z r: adds a sphere at position p with radius r");
      
     registerOption("triangle-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3f p = cin->getVec3f();
         const float  r = cin->getFloat();
         const size_t numPhi = cin->getInt();
-        futures.push_back([=, this]() { scene->add(SceneGraph::createTriangleSphere(p,r,numPhi,new OBJMaterial)); });
+        futures.push_back([this, p, r, numPhi]() { scene->add(SceneGraph::createTriangleSphere(p,r,numPhi,new OBJMaterial)); });
       }, "--triangle-sphere p.x p.y p.z r numPhi: adds a sphere at position p with radius r and tessellation numPhi build of triangles.");
 
     registerOption("quad-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3f p = cin->getVec3f();
         const float  r = cin->getFloat();
         const size_t numPhi = cin->getInt();
-        futures.push_back([=, this]() { scene->add(SceneGraph::createQuadSphere(p,r,numPhi,new OBJMaterial)); });
+        futures.push_back([this, p, r, numPhi]() { scene->add(SceneGraph::createQuadSphere(p,r,numPhi,new OBJMaterial)); });
       }, "--quad-sphere p.x p.y p.z r numPhi: adds a sphere at position p with radius r and tessellation numPhi build of quadrilaterals.");
 
     registerOption("grid-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3f p = cin->getVec3f();
         const float  r = cin->getFloat();
         const size_t N = cin->getInt();
-        futures.push_back([=, this]() { scene->add(SceneGraph::createGridSphere(p,r,N,new OBJMaterial)); });
+        futures.push_back([this, p, r, N]() { scene->add(SceneGraph::createGridSphere(p,r,N,new OBJMaterial)); });
       }, "--grid-sphere p.x p.y p.z r N: adds a grid sphere at position p with radius r using a cube topology and N*N quads at each face.");
 
     registerOption("triangle-sphere-mblur", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -544,7 +544,7 @@ namespace embree
         const Vec3f dp = cin->getVec3f();
         const float  r = cin->getFloat();
         const size_t numPhi = cin->getInt();
-        futures.push_back([=, this]() {
+        futures.push_back([this, p, dp, r, numPhi]() {
           Ref<SceneGraph::Node> mesh = SceneGraph::createTriangleSphere(p,r,numPhi,new OBJMaterial);
           mesh->set_motion_vector(dp); 
           scene->add(mesh);
@@ -556,7 +556,7 @@ namespace embree
         const Vec3f dp = cin->getVec3f();
         const float  r = cin->getFloat();
         const size_t numPhi = cin->getInt();
-        futures.push_back([=, this]() {
+        futures.push_back([this, p, dp, r, numPhi]() {
           Ref<SceneGraph::Node> mesh = SceneGraph::createQuadSphere(p,r,numPhi,new OBJMaterial);
           mesh->set_motion_vector(dp); 
           scene->add(mesh);
@@ -568,7 +568,7 @@ namespace embree
         const float  r = cin->getFloat();
         const size_t numPhi = cin->getInt();
         const float tessellationRate = cin->getFloat();
-        futures.push_back([=, this]() { scene->add(SceneGraph::createSubdivSphere(p,r,numPhi,tessellationRate,new OBJMaterial)); });
+        futures.push_back([this, p, r, numPhi, tessellationRate]() { scene->add(SceneGraph::createSubdivSphere(p,r,numPhi,tessellationRate,new OBJMaterial)); });
       }, "--subdiv-sphere p.x p.y p.z r numPhi: adds a sphere at position p with radius r build of Catmull Clark subdivision surfaces. The sphere consists of numPhi x numPhi many patches and each path has the specified tessellation rate.");
 
     registerOption("point-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -576,7 +576,7 @@ namespace embree
         const float  r = cin->getFloat();
         const float pointR = cin->getFloat();
         const size_t numPhi = cin->getInt();
-        futures.push_back([=, this]() { scene->add(SceneGraph::createPointSphere(p, r, pointR, numPhi, SceneGraph::SPHERE, new OBJMaterial)); });
+        futures.push_back([this, p, r, pointR, numPhi]() { scene->add(SceneGraph::createPointSphere(p, r, pointR, numPhi, SceneGraph::SPHERE, new OBJMaterial)); });
       }, "--point-sphere p.x p.y p.z r pointR numPhi: adds a sphere at position p with radius r and tessellation numPhi build of spheres.");
 
      registerOption("point-sphere-mblur", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -585,7 +585,7 @@ namespace embree
         const float  r = cin->getFloat();
         const float pointR = cin->getFloat();
         const size_t numPhi = cin->getInt();
-        futures.push_back([=, this]() { scene->add(SceneGraph::createPointSphere(p, r, pointR, numPhi, SceneGraph::SPHERE, new OBJMaterial)->set_motion_vector(dp)); });
+        futures.push_back([this, p, dp, r, pointR, numPhi]() { scene->add(SceneGraph::createPointSphere(p, r, pointR, numPhi, SceneGraph::SPHERE, new OBJMaterial)->set_motion_vector(dp)); });
       }, "--point-sphere p.x p.y p.z d.x d.y d.z r pointR numPhi: adds a sphere at position p, motion vector d, with radius r and tessellation numPhi build of spheres.");
 
     registerOption("disc-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -593,7 +593,7 @@ namespace embree
         const float  r = cin->getFloat();
         const float pointR = cin->getFloat();
         const size_t numPhi = cin->getInt();
-        futures.push_back([=, this]() { scene->add(SceneGraph::createPointSphere(p, r, pointR, numPhi, SceneGraph::DISC, new OBJMaterial)); });
+        futures.push_back([this, p, r, pointR, numPhi]() { scene->add(SceneGraph::createPointSphere(p, r, pointR, numPhi, SceneGraph::DISC, new OBJMaterial)); });
       }, "--disc-sphere p.x p.y p.z r pointR numPhi: adds a sphere at position p with radius r and tessellation numPhi build of discs.");
 
     registerOption("oriented-disc-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -601,7 +601,7 @@ namespace embree
         const float  r = cin->getFloat();
         const float pointR = cin->getFloat();
         const size_t numPhi = cin->getInt();
-        futures.push_back([=, this]() { scene->add(SceneGraph::createPointSphere(p, r, pointR, numPhi, SceneGraph::ORIENTED_DISC, new OBJMaterial)); });
+        futures.push_back([this, p, r, pointR, numPhi]() { scene->add(SceneGraph::createPointSphere(p, r, pointR, numPhi, SceneGraph::ORIENTED_DISC, new OBJMaterial)); });
       }, "--oriented-disc-sphere p.x p.y p.z r pointR numPhi: adds a sphere at position p with radius r and tessellation numPhi build of oriented discs.");
 
     registerOption("print-cameras", [this] (Ref<ParseStream> cin, const FileName& path) {
