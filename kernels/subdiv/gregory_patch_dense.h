@@ -47,38 +47,49 @@ namespace embree
       f_m[1][0] = Vec3fa( matrix[3][0].w, matrix[3][1].w, matrix[3][2].w );      
     }
 
+    __forceinline void extract_matrix(Vec3fa_4x4 out) const
+    {
+      for (size_t y=0; y<4; ++y)
+        for (size_t x=0; x<4; ++x)
+          out[y][x] = Vec3fa(matrix[y][x]);
+    }
+
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
       __aligned(64) Vec3fa f_m[2][2]; extract_f_m(f_m);
-      return GregoryPatch3fa::eval(*(Vec3fa_4x4*)&matrix,f_m,uu,vv);
+      __aligned(64) Vec3fa_4x4 patch; extract_matrix(patch);
+      return GregoryPatch3fa::eval(patch,f_m,uu,vv);
     }
 
     __forceinline Vec3fa normal(const float uu, const float vv) const
     {
       __aligned(64) Vec3fa f_m[2][2]; extract_f_m(f_m);
-      return GregoryPatch3fa::normal(*(Vec3fa_4x4*)&matrix,f_m,uu,vv);
+      __aligned(64) Vec3fa_4x4 patch; extract_matrix(patch);
+      return GregoryPatch3fa::normal(patch,f_m,uu,vv);
     }
 
     template<class T>
       __forceinline Vec3<T> eval(const T &uu, const T &vv) const 
     {
+      __aligned(64) Vec3fa_4x4 patch; extract_matrix(patch);
       Vec3<T> f_m[2][2];
       f_m[0][0] = Vec3<T>( matrix[0][0].w, matrix[0][1].w, matrix[0][2].w );
       f_m[0][1] = Vec3<T>( matrix[1][0].w, matrix[1][1].w, matrix[1][2].w );
       f_m[1][1] = Vec3<T>( matrix[2][0].w, matrix[2][1].w, matrix[2][2].w );
       f_m[1][0] = Vec3<T>( matrix[3][0].w, matrix[3][1].w, matrix[3][2].w );
-      return GregoryPatch3fa::eval_t(*(Vec3fa_4x4*)&matrix,f_m,uu,vv);
+      return GregoryPatch3fa::eval_t(patch,f_m,uu,vv);
     }
     
     template<class T>
       __forceinline Vec3<T> normal(const T &uu, const T &vv) const 
     {
+      __aligned(64) Vec3fa_4x4 patch; extract_matrix(patch);
       Vec3<T> f_m[2][2];
       f_m[0][0] = Vec3<T>( matrix[0][0].w, matrix[0][1].w, matrix[0][2].w );
       f_m[0][1] = Vec3<T>( matrix[1][0].w, matrix[1][1].w, matrix[1][2].w );
       f_m[1][1] = Vec3<T>( matrix[2][0].w, matrix[2][1].w, matrix[2][2].w );
       f_m[1][0] = Vec3<T>( matrix[3][0].w, matrix[3][1].w, matrix[3][2].w );
-      return GregoryPatch3fa::normal_t(*(Vec3fa_4x4*)&matrix,f_m,uu,vv);
+      return GregoryPatch3fa::normal_t(patch,f_m,uu,vv);
     }
 
     __forceinline void eval(const float u, const float v, 
@@ -86,17 +97,18 @@ namespace embree
                             const float dscale = 1.0f) const
     {
       __aligned(64) Vec3fa f_m[2][2]; extract_f_m(f_m);
+      __aligned(64) Vec3fa_4x4 patch; extract_matrix(patch);
       if (P) {
-        *P    = GregoryPatch3fa::eval(*(Vec3fa_4x4*)&matrix,f_m,u,v); 
+        *P    = GregoryPatch3fa::eval(patch,f_m,u,v); 
       }
       if (dPdu) {
-        assert(dPdu); *dPdu = GregoryPatch3fa::eval_du(*(Vec3fa_4x4*)&matrix,f_m,u,v)*dscale; 
-        assert(dPdv); *dPdv = GregoryPatch3fa::eval_dv(*(Vec3fa_4x4*)&matrix,f_m,u,v)*dscale; 
+        assert(dPdu); *dPdu = GregoryPatch3fa::eval_du(patch,f_m,u,v)*dscale; 
+        assert(dPdv); *dPdv = GregoryPatch3fa::eval_dv(patch,f_m,u,v)*dscale; 
       }
       if (ddPdudu) {
-        assert(ddPdudu); *ddPdudu = GregoryPatch3fa::eval_dudu(*(Vec3fa_4x4*)&matrix,f_m,u,v)*sqr(dscale); 
-        assert(ddPdvdv); *ddPdvdv = GregoryPatch3fa::eval_dvdv(*(Vec3fa_4x4*)&matrix,f_m,u,v)*sqr(dscale); 
-        assert(ddPdudv); *ddPdudv = GregoryPatch3fa::eval_dudv(*(Vec3fa_4x4*)&matrix,f_m,u,v)*sqr(dscale); 
+        assert(ddPdudu); *ddPdudu = GregoryPatch3fa::eval_dudu(patch,f_m,u,v)*sqr(dscale); 
+        assert(ddPdvdv); *ddPdvdv = GregoryPatch3fa::eval_dvdv(patch,f_m,u,v)*sqr(dscale); 
+        assert(ddPdudv); *ddPdudv = GregoryPatch3fa::eval_dudv(patch,f_m,u,v)*sqr(dscale); 
       }
     }
 

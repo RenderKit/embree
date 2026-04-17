@@ -1,5 +1,6 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
+#include <cstring>
 
 #include "bvh_intersector1.h"
 #include "node_intersector1.h"
@@ -26,6 +27,19 @@
 
 namespace embree
 {
+  __forceinline float stackDistToFloat(const unsigned dist)
+  {
+    float out;
+    std::memcpy(&out, &dist, sizeof(out));
+    return out;
+  }
+
+  __forceinline unsigned floatToStackDist(const float dist)
+  {
+    unsigned out;
+    std::memcpy(&out, &dist, sizeof(out));
+    return out;
+  }
   namespace isa
   {
     template<int N, int types, bool robust, typename PrimitiveIntersector1>
@@ -76,7 +90,7 @@ namespace embree
         NodeRef cur = NodeRef(stackPtr->ptr);
 
         /* if popped node is too far, pop next one */
-        if (unlikely(*(float*)&stackPtr->dist > ray.tfar))
+        if (unlikely(stackDistToFloat(stackPtr->dist) > ray.tfar))
           continue;
 
         /* downtraversal loop */
@@ -246,7 +260,7 @@ namespace embree
           NodeRef cur = NodeRef(stackPtr->ptr);
 
           /* if popped node is too far, pop next one */
-          if (unlikely(*(float*)&stackPtr->dist > cull_radius))
+          if (unlikely(stackDistToFloat(stackPtr->dist) > cull_radius))
             continue;
 
           /* downtraversal loop */

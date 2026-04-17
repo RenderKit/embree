@@ -5,6 +5,7 @@
 #include "../../include/embree4/rtcore.h"
 RTC_NAMESPACE_USE
 #include "../common/math/random_sampler.h"
+#include <cstring>
 
 namespace embree
 {
@@ -239,32 +240,34 @@ namespace embree
     return rh;
   }
 
-  __forceinline bool neq_ray_special (const RTCRayHit& ray0, const RTCRayHit& ray1)
-  {
-    if (*(int*)&ray0.ray.org_x != *(int*)&ray1.ray.org_x) return true;
-    if (*(int*)&ray0.ray.org_y != *(int*)&ray1.ray.org_y) return true;
-    if (*(int*)&ray0.ray.org_z != *(int*)&ray1.ray.org_z) return true;
-    if (*(int*)&ray0.ray.dir_x != *(int*)&ray1.ray.dir_x) return true;
-    if (*(int*)&ray0.ray.dir_y != *(int*)&ray1.ray.dir_y) return true;
-    if (*(int*)&ray0.ray.dir_z != *(int*)&ray1.ray.dir_z) return true;
-    if (*(int*)&ray0.ray.tnear  != *(int*)&ray1.ray.tnear ) return true;
-    if (*(int*)&ray0.ray.tfar   != *(int*)&ray1.ray.tfar  ) return true;
-    if (*(int*)&ray0.ray.time   != *(int*)&ray1.ray.time  ) return true;
-    if (*(int*)&ray0.ray.mask   != *(int*)&ray1.ray.mask  ) return true;
-    if (*(int*)&ray0.ray.id     != *(int*)&ray1.ray.id    ) return true;
-    if (*(int*)&ray0.hit.u      != *(int*)&ray1.hit.u     ) return true;
-    if (*(int*)&ray0.hit.v      != *(int*)&ray1.hit.v     ) return true;
-    if (*(int*)&ray0.hit.instID != *(int*)&ray1.hit.instID) return true;
-#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
-    if (*(int*)&ray0.hit.instPrimID != *(int*)&ray1.hit.instPrimID) return true;
-#endif
-    if (*(int*)&ray0.hit.geomID != *(int*)&ray1.hit.geomID) return true;
-    if (*(int*)&ray0.hit.primID != *(int*)&ray1.hit.primID) return true;
-    if (*(int*)&ray0.hit.Ng_x  != *(int*)&ray1.hit.Ng_x ) return true;
-    if (*(int*)&ray0.hit.Ng_y  != *(int*)&ray1.hit.Ng_y ) return true;
-    if (*(int*)&ray0.hit.Ng_z  != *(int*)&ray1.hit.Ng_z ) return true;
-    return false;
-  }
+    __forceinline bool neq_ray_special (const RTCRayHit& ray0, const RTCRayHit& ray1)
+    {
+      auto as_int = [](float x) { int i; std::memcpy(&i, &x, sizeof(i)); return i; };
+
+      if (as_int(ray0.ray.org_x) != as_int(ray1.ray.org_x)) return true;
+      if (as_int(ray0.ray.org_y) != as_int(ray1.ray.org_y)) return true;
+      if (as_int(ray0.ray.org_z) != as_int(ray1.ray.org_z)) return true;
+      if (as_int(ray0.ray.dir_x) != as_int(ray1.ray.dir_x)) return true;
+      if (as_int(ray0.ray.dir_y) != as_int(ray1.ray.dir_y)) return true;
+      if (as_int(ray0.ray.dir_z) != as_int(ray1.ray.dir_z)) return true;
+      if (as_int(ray0.ray.tnear) != as_int(ray1.ray.tnear)) return true;
+      if (as_int(ray0.ray.tfar) != as_int(ray1.ray.tfar)) return true;
+      if (as_int(ray0.ray.time) != as_int(ray1.ray.time)) return true;
+      if (ray0.ray.mask != ray1.ray.mask) return true;
+      if (ray0.ray.id != ray1.ray.id) return true;
+      if (as_int(ray0.hit.u) != as_int(ray1.hit.u)) return true;
+      if (as_int(ray0.hit.v) != as_int(ray1.hit.v)) return true;
+      if (ray0.hit.instID[0] != ray1.hit.instID[0]) return true;
+  #if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+      if (ray0.hit.instPrimID[0] != ray1.hit.instPrimID[0]) return true;
+  #endif
+      if (ray0.hit.geomID != ray1.hit.geomID) return true;
+      if (ray0.hit.primID != ray1.hit.primID) return true;
+      if (as_int(ray0.hit.Ng_x) != as_int(ray1.hit.Ng_x)) return true;
+      if (as_int(ray0.hit.Ng_y) != as_int(ray1.hit.Ng_y)) return true;
+      if (as_int(ray0.hit.Ng_z) != as_int(ray1.hit.Ng_z)) return true;
+      return false;
+    }
 
   /* Outputs ray to stream */
   __forceinline embree_ostream operator<<(embree_ostream cout, const RTCRayHit& rh)

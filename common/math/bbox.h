@@ -255,18 +255,18 @@ namespace embree
   {
     BBox<Vec3<vfloat4>> dest;
     
-    transpose((vfloat4&)bounds[0].lower,
-              (vfloat4&)bounds[1].lower,
-              (vfloat4&)bounds[2].lower,
-              (vfloat4&)bounds[3].lower,
+    transpose(static_cast<vfloat4>(bounds[0].lower),
+              static_cast<vfloat4>(bounds[1].lower),
+              static_cast<vfloat4>(bounds[2].lower),
+              static_cast<vfloat4>(bounds[3].lower),
               dest.lower.x,
               dest.lower.y,
               dest.lower.z);
     
-    transpose((vfloat4&)bounds[0].upper,
-              (vfloat4&)bounds[1].upper,
-              (vfloat4&)bounds[2].upper,
-              (vfloat4&)bounds[3].upper,
+    transpose(static_cast<vfloat4>(bounds[0].upper),
+              static_cast<vfloat4>(bounds[1].upper),
+              static_cast<vfloat4>(bounds[2].upper),
+              static_cast<vfloat4>(bounds[3].upper),
               dest.upper.x,
               dest.upper.y,
               dest.upper.z);
@@ -280,26 +280,26 @@ namespace embree
   {
     BBox<Vec3<vfloat8>> dest;
     
-    transpose((vfloat4&)bounds[0].lower,
-              (vfloat4&)bounds[1].lower,
-              (vfloat4&)bounds[2].lower,
-              (vfloat4&)bounds[3].lower,
-              (vfloat4&)bounds[4].lower,
-              (vfloat4&)bounds[5].lower,
-              (vfloat4&)bounds[6].lower,
-              (vfloat4&)bounds[7].lower,
+    transpose(static_cast<vfloat4>(bounds[0].lower),
+              static_cast<vfloat4>(bounds[1].lower),
+              static_cast<vfloat4>(bounds[2].lower),
+              static_cast<vfloat4>(bounds[3].lower),
+              static_cast<vfloat4>(bounds[4].lower),
+              static_cast<vfloat4>(bounds[5].lower),
+              static_cast<vfloat4>(bounds[6].lower),
+              static_cast<vfloat4>(bounds[7].lower),
               dest.lower.x,
               dest.lower.y,
               dest.lower.z);
     
-    transpose((vfloat4&)bounds[0].upper,
-              (vfloat4&)bounds[1].upper,
-              (vfloat4&)bounds[2].upper,
-              (vfloat4&)bounds[3].upper,
-              (vfloat4&)bounds[4].upper,
-              (vfloat4&)bounds[5].upper,
-              (vfloat4&)bounds[6].upper,
-              (vfloat4&)bounds[7].upper,
+    transpose(static_cast<vfloat4>(bounds[0].upper),
+              static_cast<vfloat4>(bounds[1].upper),
+              static_cast<vfloat4>(bounds[2].upper),
+              static_cast<vfloat4>(bounds[3].upper),
+              static_cast<vfloat4>(bounds[4].upper),
+              static_cast<vfloat4>(bounds[5].upper),
+              static_cast<vfloat4>(bounds[6].upper),
+              static_cast<vfloat4>(bounds[7].upper),
               dest.upper.x,
               dest.upper.y,
               dest.upper.z);

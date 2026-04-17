@@ -1,5 +1,6 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
+#include <cstring>
 
 #include "bvh_intersector_hybrid.h"
 #include "bvh_traverser1.h"
@@ -32,6 +33,19 @@
 
 namespace embree
 {
+  __forceinline float stackDistToFloat(const unsigned dist)
+  {
+    float out;
+    std::memcpy(&out, &dist, sizeof(out));
+    return out;
+  }
+
+  __forceinline unsigned floatToStackDist(const float dist)
+  {
+    unsigned out;
+    std::memcpy(&out, &dist, sizeof(out));
+    return out;
+  }
   namespace isa
   {
     template<int N, int K, int types, bool robust, typename PrimitiveIntersectorK, bool single>
@@ -64,7 +78,7 @@ namespace embree
         NodeRef cur = NodeRef(stackPtr->ptr);
 
         /* if popped node is too far, pop next one */
-        if (unlikely(*(float*)&stackPtr->dist > ray.tfar[k]))
+        if (unlikely(stackDistToFloat(stackPtr->dist) > ray.tfar[k]))
           continue;
 
         /* downtraversal loop */
@@ -428,7 +442,7 @@ namespace embree
           NodeRef cur = NodeRef(stackPtr->ptr);
 
           /* cull node if behind closest hit point */
-          vfloat<K> curDist = *(float*)&stackPtr->dist;
+          vfloat<K> curDist = stackDistToFloat(stackPtr->dist);
           const vbool<K> active = curDist < tray.tfar;
           if (unlikely(none(active))) continue;
 
@@ -467,7 +481,7 @@ namespace embree
                   if (likely(cur != BVH::emptyNode)) {
                     num_child_hits++;
                     stackPtr->ptr = cur;
-                    *(float*)&stackPtr->dist = toScalar(curDist);
+                    stackPtr->dist = floatToStackDist(toScalar(curDist));
                     stackPtr++;
                   }
                   curDist = childDist;
@@ -477,7 +491,7 @@ namespace embree
                 else {
                   num_child_hits++;
                   stackPtr->ptr = child;
-                  *(float*)&stackPtr->dist = toScalar(childDist);
+                  stackPtr->dist = floatToStackDist(toScalar(childDist));
                   stackPtr++;
                 }                
               }

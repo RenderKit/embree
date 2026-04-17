@@ -3,6 +3,7 @@
 
 #pragma once
 
+
 #include "../geometry/primitive.h"
 #include "bspline_patch.h"
 #include "bezier_patch.h"
@@ -17,6 +18,31 @@
 
 namespace embree
 {
+  namespace internal {
+    template<typename T> __forceinline T* launder_ptr(T* ptr) {
+  #if defined(__has_builtin)
+  #if __has_builtin(__builtin_launder)
+      return __builtin_launder(ptr);
+  #else
+      return ptr;
+  #endif
+  #else
+      return ptr;
+  #endif
+    }
+
+    template<typename T> __forceinline const T* launder_ptr(const T* ptr) {
+  #if defined(__has_builtin)
+  #if __has_builtin(__builtin_launder)
+      return __builtin_launder(ptr);
+  #else
+      return ptr;
+  #endif
+  #else
+      return ptr;
+  #endif
+    }
+  }
   struct __aligned(64) SubdivPatch1Base
   {
   public:
@@ -107,19 +133,37 @@ namespace embree
     unsigned short grid_size_simd_blocks;
     unsigned int time_;
 
-    struct PatchHalfEdge {
-      const HalfEdge* edge;
-      unsigned subPatch;
-    };
+      struct PatchHalfEdge {
+        const HalfEdge* edge;
+        unsigned subPatch;
+      };
 
-    Vec3fa patch_v[4][4];
+      template<typename Patch>
+      __forceinline const Patch* patch() const {
+        return internal::launder_ptr(reinterpret_cast<const Patch*>(patch_v));
+      }
 
-    const HalfEdge *edge() const { return ((PatchHalfEdge*)patch_v)->edge; }
-    unsigned time() const { return time_; }
-    unsigned subPatch() const { return ((PatchHalfEdge*)patch_v)->subPatch; }
+      template<typename Patch>
+      __forceinline Patch* patch() {
+        return internal::launder_ptr(reinterpret_cast<Patch*>(patch_v));
+      }
 
-    void set_edge(const HalfEdge *h) const { ((PatchHalfEdge*)patch_v)->edge = h; }
-    void set_subPatch(const unsigned s) const { ((PatchHalfEdge*)patch_v)->subPatch = s; }
+      __forceinline const PatchHalfEdge* patchHalfEdge() const {
+        return internal::launder_ptr(reinterpret_cast<const PatchHalfEdge*>(patch_v));
+      }
+
+      __forceinline PatchHalfEdge* patchHalfEdge() {
+        return internal::launder_ptr(reinterpret_cast<PatchHalfEdge*>(patch_v));
+      }
+
+      Vec3fa patch_v[4][4];
+
+      const HalfEdge *edge() const { return patchHalfEdge()->edge; }
+      unsigned time() const { return time_; }
+      unsigned subPatch() const { return patchHalfEdge()->subPatch; }
+
+      void set_edge(const HalfEdge *h) const { const_cast<SubdivPatch1Base*>(this)->patchHalfEdge()->edge = h; }
+      void set_subPatch(const unsigned s) const { const_cast<SubdivPatch1Base*>(this)->patchHalfEdge()->subPatch = s; }
   };
 
   namespace isa

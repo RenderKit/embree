@@ -10,26 +10,26 @@ namespace embree
     Vec3fa patchEval(const SubdivPatch1Base& patch, const float uu, const float vv) 
     {
       if (likely(patch.type == SubdivPatch1Base::BEZIER_PATCH))
-        return ((BezierPatch3fa*)patch.patch_v)->eval(uu,vv);
+        return patch.patch<BezierPatch3fa>()->eval(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::BSPLINE_PATCH))
-        return ((BSplinePatch3fa*)patch.patch_v)->eval(uu,vv);
+        return patch.patch<BSplinePatch3fa>()->eval(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::GREGORY_PATCH))
-        return ((DenseGregoryPatch3fa*)patch.patch_v)->eval(uu,vv);
+        return patch.patch<DenseGregoryPatch3fa>()->eval(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::BILINEAR_PATCH))
-        return ((BilinearPatch3fa*)patch.patch_v)->eval(uu,vv);
+        return patch.patch<BilinearPatch3fa>()->eval(uu,vv);
       return Vec3fa( zero );
     }
 
     Vec3fa patchNormal(const SubdivPatch1Base& patch, const float uu, const float vv) 
     {
       if (likely(patch.type == SubdivPatch1Base::BEZIER_PATCH))
-        return ((BezierPatch3fa*)patch.patch_v)->normal(uu,vv);
+        return patch.patch<BezierPatch3fa>()->normal(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::BSPLINE_PATCH))
-        return ((BSplinePatch3fa*)patch.patch_v)->normal(uu,vv);
+        return patch.patch<BSplinePatch3fa>()->normal(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::GREGORY_PATCH))
-        return ((DenseGregoryPatch3fa*)patch.patch_v)->normal(uu,vv);
+        return patch.patch<DenseGregoryPatch3fa>()->normal(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::BILINEAR_PATCH))
-        return ((BilinearPatch3fa*)patch.patch_v)->normal(uu,vv);
+        return patch.patch<BilinearPatch3fa>()->normal(uu,vv);
       return Vec3fa( zero );
     }
 
@@ -37,13 +37,13 @@ namespace embree
       Vec3<simdf> patchEval(const SubdivPatch1Base& patch, const simdf& uu, const simdf& vv) 
     {
       if (likely(patch.type == SubdivPatch1Base::BEZIER_PATCH))
-        return ((BezierPatch3fa*)patch.patch_v)->eval(uu,vv);
+        return patch.patch<BezierPatch3fa>()->eval(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::BSPLINE_PATCH))
-        return ((BSplinePatch3fa*)patch.patch_v)->eval(uu,vv);
+        return patch.patch<BSplinePatch3fa>()->eval(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::GREGORY_PATCH))
-        return ((DenseGregoryPatch3fa*)patch.patch_v)->eval(uu,vv);
+        return patch.patch<DenseGregoryPatch3fa>()->eval(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::BILINEAR_PATCH))
-        return ((BilinearPatch3fa*)patch.patch_v)->eval(uu,vv);
+        return patch.patch<BilinearPatch3fa>()->eval(uu,vv);
       return Vec3<simdf>( zero );
     }
 
@@ -51,13 +51,13 @@ namespace embree
       Vec3<simdf> patchNormal(const SubdivPatch1Base& patch, const simdf& uu, const simdf& vv) 
     {
       if (likely(patch.type == SubdivPatch1Base::BEZIER_PATCH))
-        return ((BezierPatch3fa*)patch.patch_v)->normal(uu,vv);
+        return patch.patch<BezierPatch3fa>()->normal(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::BSPLINE_PATCH))
-        return ((BSplinePatch3fa*)patch.patch_v)->normal(uu,vv);
+        return patch.patch<BSplinePatch3fa>()->normal(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::GREGORY_PATCH))
-        return ((DenseGregoryPatch3fa*)patch.patch_v)->normal(uu,vv);
+        return patch.patch<DenseGregoryPatch3fa>()->normal(uu,vv);
       else if (likely(patch.type == SubdivPatch1Base::BILINEAR_PATCH))
-        return ((BilinearPatch3fa*)patch.patch_v)->normal(uu,vv);
+        return patch.patch<BilinearPatch3fa>()->normal(uu,vv);
       return Vec3<simdf>( zero );
     }
 
