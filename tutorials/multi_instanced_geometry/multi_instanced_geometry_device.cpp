@@ -200,7 +200,7 @@ inline unsigned int packRGB8(const Vec3fa& color)
  * Splat a color into the framebuffer.
  */
 void splat(const TutorialData& data,
-           int* pixels,
+           unsigned* pixels,
            const unsigned int width,
            unsigned int x,
            unsigned int y,
@@ -217,7 +217,7 @@ void splat(const TutorialData& data,
 }
 
 void renderPixelStandard(const TutorialData& data, int x, int y,
-                         int* pixels,
+                         unsigned* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
@@ -252,7 +252,7 @@ void renderPixelStandard(const TutorialData& data, int x, int y,
 /*
  * Render a single tile.
  */
-void renderTileNormal(int* pixels,
+void renderTileNormal(unsigned* pixels,
                       const unsigned int width,
                       const unsigned int height,
                       const float time,
@@ -277,7 +277,7 @@ void renderTileNormal(int* pixels,
 /*
  * A task that renders a single screen tile.
  */
-void renderTileTask (int taskIndex, int threadIndex, int* pixels,
+void renderTileTask (int taskIndex, int threadIndex, unsigned* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
@@ -301,7 +301,7 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
 /* 
  * Called by the C++ code for initialization. 
  */
-extern "C" void device_init(char* cfg)
+extern "C" void device_init(const char* cfg)
 {
   TutorialData_Constructor(&g_data);
   g_scene = g_data.g_scene = initializeScene(g_data, g_device);
@@ -309,7 +309,7 @@ extern "C" void device_init(char* cfg)
 }
 
 
-extern "C" void renderFrameStandard(int* pixels,
+extern "C" void renderFrameStandard(unsigned* pixels,
                                 const unsigned int width,
                                 const unsigned int height,
                                 const float time,
@@ -347,7 +347,7 @@ extern "C" void renderFrameStandard(int* pixels,
 /* 
  * Called by the C++ code to render. 
  */
-extern "C" void device_render(int* pixels,
+extern "C" void device_render(unsigned* pixels,
                           const unsigned int width,
                           const unsigned int height,
                           const float time,
@@ -392,7 +392,7 @@ extern "C" void device_cleanup ()
  */
 void renderTileStandard(int taskIndex,
                         int threadIndex,
-                        int* pixels,
+                        unsigned* pixels,
                         const unsigned int width,
                         const unsigned int height,
                         const float time,

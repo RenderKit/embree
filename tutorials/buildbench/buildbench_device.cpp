@@ -631,11 +631,11 @@ namespace embree {
 #endif
   }
 
-  extern "C" void device_init (char* cfg)
+  extern "C" void device_init (const char* cfg)
   {
   }
 
-  void renderFrameStandard (int* pixels,
+  void renderFrameStandard (unsigned* pixels,
                             const unsigned int width,
                             const unsigned int height,
                             const float time,
@@ -644,7 +644,7 @@ namespace embree {
   }
   
   /* called by the C++ code to render */
-  extern "C" void device_render (int* pixels,
+  extern "C" void device_render (unsigned* pixels,
                                  const unsigned int width,
                                  const unsigned int height,
                                  const float time,
@@ -655,7 +655,7 @@ namespace embree {
   /* renders a single screen tile */
   void renderTileStandard(int taskIndex,
                           int threadIndex,
-                          int* pixels,
+                          unsigned* pixels,
                           const unsigned int width,
                           const unsigned int height,
                           const float time,

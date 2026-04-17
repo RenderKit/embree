@@ -52,7 +52,7 @@ void DebugShaderData_Constructor(DebugShaderData* This)
   void renderTile##Name(int taskIndex,                  \
                         int threadIndex,                \
                         const DebugShaderData& data,    \
-                        int* pixels,            \
+                        unsigned* pixels,            \
                         const unsigned int width,       \
                         const unsigned int height,      \
                         const float time,               \
@@ -81,7 +81,7 @@ void DebugShaderData_Constructor(DebugShaderData* This)
   }                                                                     \
                                                                         \
   task void renderTileTask##Name(const DebugShaderData& data,   \
-                                 int* pixels,           \
+                                 unsigned* pixels,           \
                                  const unsigned int width,      \
                                  const unsigned int height,     \
                                  const float time,              \
@@ -92,7 +92,7 @@ void DebugShaderData_Constructor(DebugShaderData* This)
     renderTile##Name(taskIndex,threadIndex,data,pixels,width,height,time,camera,numTilesX,numTilesY); \
   }                                                                     \
                                                                         \
-  extern "C" void renderFrame##Name (int* pixels,                  \
+  extern "C" void renderFrame##Name (unsigned* pixels,                  \
                           const unsigned int width,             \
                           const unsigned int height,            \
                           const float time,                     \
@@ -109,7 +109,7 @@ void DebugShaderData_Constructor(DebugShaderData* This)
   void renderTile##Name(int taskIndex,                  \
                         int threadIndex,                \
                         const DebugShaderData& data,            \
-                        int* pixels,            \
+                        unsigned* pixels,            \
                         const unsigned int width,       \
                         const unsigned int height,      \
                         const float time,               \
@@ -139,7 +139,7 @@ void DebugShaderData_Constructor(DebugShaderData* This)
                                                                         \
   void renderTileTask##Name(int taskIndex, int threadIndex,             \
                             const DebugShaderData& data,                \
-                            int* pixels,                \
+                            unsigned* pixels,                \
                             const unsigned int width,           \
                             const unsigned int height,          \
                             const float time,                   \
@@ -150,7 +150,7 @@ void DebugShaderData_Constructor(DebugShaderData* This)
     renderTile##Name(taskIndex,threadIndex,data,pixels,width,height,time,camera,numTilesX,numTilesY); \
   }                                                                     \
                                                                         \
-  extern "C" void renderFrame##Name (int* pixels,                  \
+  extern "C" void renderFrame##Name (unsigned* pixels,                  \
                           const unsigned int width,             \
                           const unsigned int height,            \
                           const float time,                     \
@@ -168,7 +168,7 @@ void DebugShaderData_Constructor(DebugShaderData* This)
   }
 
 #define RENDER_FRAME_FUNCTION_SYCL(Name)                                \
-  extern "C" void renderFrame##Name (int* pixels,       \
+  extern "C" void renderFrame##Name (unsigned* pixels,       \
                           const unsigned int width,             \
                           const unsigned int height,            \
                           const float time,                     \

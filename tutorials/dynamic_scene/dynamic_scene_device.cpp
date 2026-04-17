@@ -112,7 +112,7 @@ unsigned int addGroundPlane (RTCScene scene_i)
 }
 
 /* called by the C++ code for initialization */
-extern "C" void device_init (char* cfg)
+extern "C" void device_init (const char* cfg)
 {
   TutorialData_Constructor(&data);
   
@@ -169,7 +169,7 @@ void animateSphere (int taskIndex, int threadIndex, Vertex* vertices,
 /* task that renders a single screen tile */
 void renderPixelStandard(const TutorialData& data,
                          int x, int y, 
-                         int* pixels,
+                         unsigned* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
@@ -219,7 +219,7 @@ void renderPixelStandard(const TutorialData& data,
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex,
                         int threadIndex,
-                        int* pixels,
+                        unsigned* pixels,
                         const unsigned int width,
                         const unsigned int height,
                         const float time,
@@ -241,7 +241,7 @@ void renderTileStandard(int taskIndex,
 }
 
 /* task that renders a single screen tile */
-void renderTileTask (int taskIndex, int threadIndex, int* pixels,
+void renderTileTask (int taskIndex, int threadIndex, unsigned* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
@@ -276,7 +276,7 @@ void animateSphere (int id, float time)
   rtcCommitGeometry(geom);
 }
 
-extern "C" void renderFrameStandard (int* pixels,
+extern "C" void renderFrameStandard (unsigned* pixels,
                           const unsigned int width,
                           const unsigned int height,
                           const float time,
@@ -313,7 +313,7 @@ extern "C" void renderFrameStandard (int* pixels,
 }
 
 /* called by the C++ code to render */
-extern "C" void device_render (int* pixels,
+extern "C" void device_render (unsigned* pixels,
                            const unsigned int width,
                            const unsigned int height,
                            const float time,

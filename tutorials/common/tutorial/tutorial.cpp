@@ -39,10 +39,10 @@ namespace embree
   sycl::queue* global_gpu_queue = nullptr;
 #endif
 
-  extern "C" void renderFrameStandard(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameStandard(unsigned* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
     
   /* access to debug shader render frame functions */
-  typedef void (* renderFrameFunc)(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  typedef void (* renderFrameFunc)(unsigned* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
   renderFrameFunc renderFrame = renderFrameStandard;
     
   extern "C"
@@ -1041,7 +1041,7 @@ namespace embree
   void TutorialApplication::render(unsigned* pixels, const unsigned width, const unsigned height, const float time, const ISPCCamera& camera)
   {
     device_render(pixels,width,height,time,camera);
-    renderFrame((int*)pixels,width,height,time,camera);
+    renderFrame(pixels,width,height,time,camera);
   }
   
   void TutorialApplication::run(int argc, char** argv)

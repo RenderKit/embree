@@ -209,7 +209,7 @@ Sphere* createAnalyticalSpheres (RTCScene scene, unsigned int N)
 }
 
 /* called by the C++ code for initialization */
-extern "C" void device_init (char* cfg)
+extern "C" void device_init (const char* cfg)
 {
   sphereIntersectFuncPtr = GET_FUNCTION_POINTER(sphereIntersectFunc);
   
@@ -328,7 +328,7 @@ Vec3fa renderPixelStandard(const TutorialData& data,
 
 void renderPixelStandard(const TutorialData& data,
                          int x, int y,
-                         int* pixels,
+                         unsigned* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
@@ -348,7 +348,7 @@ void renderPixelStandard(const TutorialData& data,
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex,
                         int threadIndex,
-                        int* pixels,
+                        unsigned* pixels,
                         const unsigned int width,
                         const unsigned int height,
                         const float time,
@@ -371,7 +371,7 @@ void renderTileStandard(int taskIndex,
 }
 
 /* task that renders a single screen tile */
-void renderTileTask (int taskIndex, int threadIndex, int* pixels,
+void renderTileTask (int taskIndex, int threadIndex, unsigned* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
@@ -382,7 +382,7 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
   renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
-extern "C" void renderFrameStandard (int* pixels,
+extern "C" void renderFrameStandard (unsigned* pixels,
                           const unsigned int width,
                           const unsigned int height,
                           const float time,
@@ -419,7 +419,7 @@ extern "C" void renderFrameStandard (int* pixels,
 
 
 /* called by the C++ code to render */
-extern "C" void device_render (int* pixels,
+extern "C" void device_render (unsigned* pixels,
                            const unsigned int width,
                            const unsigned int height,
                            const float time,

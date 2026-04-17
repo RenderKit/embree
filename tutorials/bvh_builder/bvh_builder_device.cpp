@@ -88,7 +88,7 @@ namespace embree
     }
   };
 
-  void build(RTCBuildQuality quality, avector<RTCBuildPrimitive>& prims_i, char* cfg, size_t extraSpace = 0)
+  void build(RTCBuildQuality quality, avector<RTCBuildPrimitive>& prims_i, const char* cfg, size_t extraSpace = 0)
   {
     rtcSetDeviceMemoryMonitorFunction(g_device,memoryMonitor,nullptr);
 
@@ -139,7 +139,7 @@ namespace embree
   }
 
   /* called by the C++ code for initialization */
-  extern "C" void device_init (char* cfg)
+  extern "C" void device_init (const char* cfg)
   {
     /* create random bounding boxes */
     const size_t N = 2300000;
@@ -176,7 +176,7 @@ namespace embree
     build(RTC_BUILD_QUALITY_HIGH,prims,cfg,extraSpace);
   }
 
-  void renderFrameStandard (int* pixels,
+  void renderFrameStandard (unsigned* pixels,
                           const unsigned int width,
                           const unsigned int height,
                           const float time,
@@ -185,7 +185,7 @@ namespace embree
   }
   
   /* called by the C++ code to render */
-  extern "C" void device_render (int* pixels,
+  extern "C" void device_render (unsigned* pixels,
                                  const int width,
                                  const int height,
                                  const float time,

@@ -393,7 +393,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex,
                         int threadIndex,
-                        int* pixels,
+                        unsigned* pixels,
                         const unsigned int width,
                         const unsigned int height,
                         const float time,
@@ -422,7 +422,7 @@ void renderTileStandard(int taskIndex,
 }
 
 /* task that renders a single screen tile */
-void renderTileTask (int taskIndex, int threadIndex, int* pixels,
+void renderTileTask (int taskIndex, int threadIndex, unsigned* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
@@ -434,7 +434,7 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
 }
 
 /* called by the C++ code for initialization */
-extern "C" void device_init (char* cfg)
+extern "C" void device_init (const char* cfg)
 {
 
   g_scene = rtcNewScene(g_device);
@@ -449,7 +449,7 @@ extern "C" void device_init (char* cfg)
   rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
 }
 
-extern "C" void renderFrameStandard (int* pixels,
+extern "C" void renderFrameStandard (unsigned* pixels,
                           const unsigned int width,
                           const unsigned int height,
                           const float time,
@@ -466,7 +466,7 @@ extern "C" void renderFrameStandard (int* pixels,
 }
 
 /* called by the C++ code to render */
-extern "C" void device_render (int* pixels,
+extern "C" void device_render (unsigned* pixels,
                            const unsigned int width,
                            const unsigned int height,
                            const float time,

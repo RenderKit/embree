@@ -150,7 +150,7 @@ void createPoints (TutorialData& data)
 }
 
 /* called by the C++ code for initialization */
-extern "C" void device_init (char* cfg)
+extern "C" void device_init (const char* cfg)
 {
   /* create scene */
   TutorialData_Constructor(&data);
@@ -174,7 +174,7 @@ extern "C" void device_init (char* cfg)
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex,
                         int threadIndex,
-                        int* pixels,
+                        unsigned* pixels,
                         const unsigned int width,
                         const unsigned int height,
                         const float time,
@@ -214,7 +214,7 @@ void renderTileStandard(int taskIndex,
 }
 
 /* task that renders a single screen tile */
-void renderTileTask (int taskIndex, int threadIndex, int* pixels,
+void renderTileTask (int taskIndex, int threadIndex, unsigned* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
@@ -225,7 +225,7 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
   renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
-void splat_color(int* pixels, 
+void splat_color(unsigned* pixels, 
                  unsigned int width, 
                  unsigned int height, 
                  int kernel_size,
@@ -257,7 +257,7 @@ void rebuild_bvh()
   rtcCommitScene(data.scene);
 }
 
-extern "C" void renderFrameStandard (int* pixels,
+extern "C" void renderFrameStandard (unsigned* pixels,
                           const unsigned int width,
                           const unsigned int height,
                           const float time,
@@ -266,7 +266,7 @@ extern "C" void renderFrameStandard (int* pixels,
 }
 
 /* called by the C++ code to render */
-extern "C" void device_render (int* pixels,
+extern "C" void device_render (unsigned* pixels,
                            const unsigned int width,
                            const unsigned int height,
                            const float time,

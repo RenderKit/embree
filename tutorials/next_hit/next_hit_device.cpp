@@ -403,7 +403,7 @@ Vec3ff renderPixelStandard(const TutorialData& data, float x, float y,
 
 void renderPixelStandard(const TutorialData& data,
                          int x, int y, 
-                         int* pixels,
+                         unsigned* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
@@ -424,7 +424,7 @@ void renderPixelStandard(const TutorialData& data,
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex,
                         int threadIndex,
-                        int* pixels,
+                        unsigned* pixels,
                         const unsigned int width,
                         const unsigned int height,
                         const float time,
@@ -447,7 +447,7 @@ void renderTileStandard(int taskIndex,
 }
 
 /* task that renders a single screen tile */
-void renderTileTask (int taskIndex, int threadIndex, int* pixels,
+void renderTileTask (int taskIndex, int threadIndex, unsigned* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
@@ -464,7 +464,7 @@ extern "C" void device_init (const char* cfg)
   TutorialData_Constructor(&data);
 }
 
-extern "C" void renderFrameStandard (int* pixels,
+extern "C" void renderFrameStandard (unsigned* pixels,
                           const unsigned int width,
                           const unsigned int height,
                           const float time,

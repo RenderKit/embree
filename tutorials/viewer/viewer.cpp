@@ -23,12 +23,12 @@ namespace embree
   extern "C" bool g_changed;
   extern "C" Shader shader = SHADER_DEFAULT;
 
-  typedef void (* renderFrameFunc)(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  typedef void (* renderFrameFunc)(unsigned* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
   extern renderFrameFunc renderFrame;
   
-  extern "C" void renderFrameStandard(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  extern "C" void renderFrameDebugShader(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  extern "C" void renderFrameAOShader(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameStandard(unsigned* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameDebugShader(unsigned* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameAOShader(unsigned* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
 
   struct Tutorial : public SceneLoadingTutorialApplication
   {

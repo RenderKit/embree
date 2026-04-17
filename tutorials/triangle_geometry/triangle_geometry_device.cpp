@@ -95,7 +95,7 @@ unsigned int addGroundPlane (RTCScene scene_i)
 }
 
 /* called by the C++ code for initialization */
-extern "C" void device_init (char* cfg)
+extern "C" void device_init (const char* cfg)
 { 
   /* create scene */
   TutorialData_Constructor(&data);
@@ -117,7 +117,7 @@ extern "C" void device_init (char* cfg)
 /* task that renders a single screen tile */
 void renderPixelStandard(const TutorialData& data,
                          int x, int y, 
-                         int* pixels,
+                         unsigned* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
@@ -164,7 +164,7 @@ void renderPixelStandard(const TutorialData& data,
 }
 
 /* task that renders a single screen tile */
-void renderTileTask (int taskIndex, int threadIndex, int* pixels,
+void renderTileTask (int taskIndex, int threadIndex, unsigned* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
@@ -186,7 +186,7 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
 }
 
 /* called by the C++ code to render */
-extern "C" void renderFrameStandard (int* pixels,
+extern "C" void renderFrameStandard (unsigned* pixels,
                           const unsigned int width,
                           const unsigned int height,
                           const float time,
@@ -221,7 +221,7 @@ extern "C" void renderFrameStandard (int* pixels,
 }
 
 /* called by the C++ code to render */
-extern "C" void device_render (int* pixels,
+extern "C" void device_render (unsigned* pixels,
                            const unsigned int width,
                            const unsigned int height,
                            const float time,

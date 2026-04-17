@@ -95,7 +95,7 @@ inline Vec3fa faceforward( const Vec3fa& N, const Vec3fa& I, const Vec3fa& Ng ) 
 extern "C" void device_key_pressed_default(int key);
 extern "C" void (* key_pressed_handler)(int key);
 
-extern "C" void renderFrameStandard(int* pixels,
+extern "C" void renderFrameStandard(unsigned* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
