@@ -318,11 +318,19 @@ namespace embree
   __forceinline vllong8 vreduce_add4(vllong8 x) { x = vreduce_add2(x); return x + shuffle<2,3,0,1>(x); }
   __forceinline vllong8 vreduce_add (vllong8 x) { x = vreduce_add4(x); return x + shuffle4<1,0>(x); }
 
+#if defined(__AVX10_2__)
+  __forceinline long long reduce_min(const vllong8& v) { return _mm512_reduce_min_epi64(v); }
+  __forceinline long long reduce_max(const vllong8& v) { return _mm512_reduce_max_epi64(v); }
+  __forceinline long long reduce_and(const vllong8& v) { return _mm512_reduce_and_epi64(v); }
+  __forceinline long long reduce_or (const vllong8& v) { return _mm512_reduce_or_epi64(v);  }
+  __forceinline long long reduce_add(const vllong8& v) { return _mm512_reduce_add_epi64(v); }
+#else
   __forceinline long long reduce_min(const vllong8& v) { return toScalar(vreduce_min(v)); }
   __forceinline long long reduce_max(const vllong8& v) { return toScalar(vreduce_max(v)); }
   __forceinline long long reduce_and(const vllong8& v) { return toScalar(vreduce_and(v)); }
   __forceinline long long reduce_or (const vllong8& v) { return toScalar(vreduce_or (v)); }
   __forceinline long long reduce_add(const vllong8& v) { return toScalar(vreduce_add(v)); }
+#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations

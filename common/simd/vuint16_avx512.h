@@ -362,11 +362,19 @@ namespace embree
   __forceinline vuint16 vreduce_add8(vuint16 x) { x = vreduce_add4(x); return x + shuffle4<1,0,3,2>(x); }
   __forceinline vuint16 vreduce_add (vuint16 x) { x = vreduce_add8(x); return x + shuffle4<2,3,0,1>(x); }
 
+#if defined(__AVX10_2__)
+  __forceinline unsigned int reduce_min(const vuint16& v) { return _mm512_reduce_min_epu32(v); }
+  __forceinline unsigned int reduce_max(const vuint16& v) { return _mm512_reduce_max_epu32(v); }
+  __forceinline unsigned int reduce_and(const vuint16& v) { return (unsigned int)_mm512_reduce_and_epi32(v); }
+  __forceinline unsigned int reduce_or (const vuint16& v) { return (unsigned int)_mm512_reduce_or_epi32(v);  }
+  __forceinline unsigned int reduce_add(const vuint16& v) { return (unsigned int)_mm512_reduce_add_epi32(v); }
+#else
   __forceinline unsigned int reduce_min(const vuint16& v) { return toScalar(vreduce_min(v)); }
   __forceinline unsigned int reduce_max(const vuint16& v) { return toScalar(vreduce_max(v)); }
   __forceinline unsigned int reduce_and(const vuint16& v) { return toScalar(vreduce_and(v)); }
   __forceinline unsigned int reduce_or (const vuint16& v) { return toScalar(vreduce_or (v)); }
   __forceinline unsigned int reduce_add(const vuint16& v) { return toScalar(vreduce_add(v)); }
+#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations
