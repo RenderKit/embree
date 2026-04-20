@@ -6249,12 +6249,6 @@ namespace embree
 #if defined(EMBREE_TARGET_AVX512)
     if (hasISA(AVX512)) isas.push_back(AVX512);
 #endif
-#if defined(EMBREE_TARGET_AVX10_1)
-    if (hasISA(AVX10_1)) isas.push_back(AVX10_1);
-#endif
-#if defined(EMBREE_TARGET_AVX10_2)
-    if (hasISA(AVX10_2)) isas.push_back(AVX10_2);
-#endif
 #if defined(EMBREE_TARGET_APX)
     if (hasISA(APX)) isas.push_back(APX);
 #endif

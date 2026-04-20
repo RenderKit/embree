@@ -14,12 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-if defined(__APX_F__)
+// Require APX and 10.2 if both are available, otherwise require the highest available ISA
+#if define((__APX_F__) && defined(__AVX10_2__)
 char const *info_isa = "ISA" ":" "APX"
-#elif defined(__AVX10_2__)
-char const *info_isa = "ISA" ":" "AVX10.2"
-#elif defined(__AVX10_1__)
-char const *info_isa = "ISA" ":" "AVX10.1"
 #elif \
   defined(__AVX512F__) &&  defined(__AVX512CD__) && \
   defined(__AVX512DQ__) && defined(__AVX512BW__) && defined(__AVX512VL__)

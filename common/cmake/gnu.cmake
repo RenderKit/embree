@@ -18,11 +18,7 @@ ELSE ()
   _SET_IF_EMPTY(FLAGS_AVX   "-mavx")
   _SET_IF_EMPTY(FLAGS_AVX2  "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
   _SET_IF_EMPTY(FLAGS_AVX512 "-march=skylake-avx512")
-  _SET_IF_EMPTY(FLAGS_AVX10_1 "${FLAGS_AVX2} -mavx10.1")
-  _SET_IF_EMPTY(FLAGS_AVX10_2 "${FLAGS_AVX2} -mavx10.2")
-  # Keep APX target codegen aligned with AVX10.2 to avoid assembler issues
-  # with vector instructions when forcing additional APX flags.
-  _SET_IF_EMPTY(FLAGS_APX "${FLAGS_AVX10_2} -mapxf")
+  _SET_IF_EMPTY(FLAGS_APX    "-march=novalake")
 ENDIF ()
 
 OPTION(EMBREE_IGNORE_CMAKE_CXX_FLAGS "When enabled Embree ignores default CMAKE_CXX_FLAGS." ON)

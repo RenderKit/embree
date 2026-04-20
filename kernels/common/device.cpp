@@ -159,12 +159,6 @@ namespace embree
 #if defined(EMBREE_TARGET_AVX512)
     v += "AVX512 ";
 #endif
-#if defined(EMBREE_TARGET_AVX10_1)
-  v += "AVX10.1 ";
-#endif
-#if defined(EMBREE_TARGET_AVX10_2)
-  v += "AVX10.2 ";
-#endif
 #if defined(EMBREE_TARGET_APX)
   v += "APX ";
 #endif

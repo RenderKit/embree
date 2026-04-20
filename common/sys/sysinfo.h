@@ -17,18 +17,10 @@
 /* define isa namespace and ISA bitvector */
 /* Allow build system to override via -Disa=... -DISA=... on the command line */
 #if !defined(isa)
-#if defined(__APX_F__) || defined(__APX__)
+#if defined(__APX_F__) && defined(__AVX10_2__)
 #  define isa apx
 #  define ISA APX
 #  define ISA_STR "APX"
-#elif defined(__AVX10_2__)
-#  define isa avx10_2
-#  define ISA AVX10_2
-#  define ISA_STR "AVX10.2"
-#elif defined(__AVX10_1__)
-#  define isa avx10_1
-#  define ISA AVX10_1
-#  define ISA_STR "AVX10.1"
 #elif defined (__AVX512VL__)
 #  define isa avx512
 #  define ISA AVX512

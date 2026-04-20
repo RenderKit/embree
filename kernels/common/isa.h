@@ -18,8 +18,6 @@ namespace embree
   namespace avx    { extern type name(); }                           \
   namespace avx2   { extern type name(); }                           \
   namespace avx512 { extern type name(); }                           \
-  namespace avx10_1 { extern type name(); }                          \
-  namespace avx10_2 { extern type name(); }                          \
   namespace apx { extern type name(); }                              \
   void name##_error2() { throw_RTCError(RTC_ERROR_UNKNOWN,"internal error in ISA selection for " TOSTRING(name)); } \
   type name##_error() { return type(name##_error2); }                   \
@@ -31,8 +29,6 @@ namespace embree
   namespace avx    { extern type symbol(args); }                       \
   namespace avx2   { extern type symbol(args); }                       \
   namespace avx512 { extern type symbol(args); }                       \
-  namespace avx10_1 { extern type symbol(args); }                      \
-  namespace avx10_2 { extern type symbol(args); }                      \
   namespace apx { extern type symbol(args); }                          \
   inline type symbol##_error(args) { throw_RTCError(RTC_ERROR_UNSUPPORTED_CPU,"function " TOSTRING(symbol) " not supported by your CPU"); } \
   typedef type (*symbol##Ty)(args);                                       \
@@ -98,25 +94,6 @@ namespace embree
 #define SELECT_SYMBOL_AVX512(features,intersector)
 #endif
 
-#if defined(EMBREE_TARGET_AVX10_1)
-#if !defined(EMBREE_TARGET_SIMD16)
-#define EMBREE_TARGET_SIMD16
-#endif
-#define SELECT_SYMBOL_AVX10_1(features,intersector) \
-  if ((features & AVX10_1) == AVX10_1) intersector = avx10_1::intersector;
-#else
-#define SELECT_SYMBOL_AVX10_1(features,intersector)
-#endif
-
-#if defined(EMBREE_TARGET_AVX10_2)
-#if !defined(EMBREE_TARGET_SIMD16)
-#define EMBREE_TARGET_SIMD16
-#endif
-#define SELECT_SYMBOL_AVX10_2(features,intersector) \
-  if ((features & AVX10_2) == AVX10_2) intersector = avx10_2::intersector;
-#else
-#define SELECT_SYMBOL_AVX10_2(features,intersector)
-#endif
 
 #if defined(EMBREE_TARGET_APX)
 #if !defined(EMBREE_TARGET_SIMD16)
@@ -205,111 +182,26 @@ namespace embree
 #define SELECT_SYMBOL_INIT_AVX512(features,intersector) \
   INIT_EXPAND_1(features,intersector, AVX512)
 
-// AVX10_1 combinations
-#define SELECT_SYMBOL_DEFAULT_AVX10_1(features,intersector) \
-  ISA_EXPAND_2(features,intersector, DEFAULT,AVX10_1)
-#define SELECT_SYMBOL_DEFAULT_AVX_AVX10_1(features,intersector) \
-  ISA_EXPAND_3(features,intersector, DEFAULT,AVX,AVX10_1)
-#define SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX10_1(features,intersector) \
-  ISA_EXPAND_4(features,intersector, DEFAULT,AVX,AVX2,AVX10_1)
-#define SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512_AVX10_1(features,intersector) \
-  ISA_EXPAND_5(features,intersector, DEFAULT,AVX,AVX2,AVX512,AVX10_1)
-#define SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512_AVX10_1(features,intersector) \
-  ISA_EXPAND_6(features,intersector, DEFAULT,SSE42,AVX,AVX2,AVX512,AVX10_1)
-
-// AVX10_2 combinations
-#define SELECT_SYMBOL_DEFAULT_AVX10_2(features,intersector) \
-  ISA_EXPAND_2(features,intersector, DEFAULT,AVX10_2)
-#define SELECT_SYMBOL_DEFAULT_AVX_AVX10_2(features,intersector) \
-  ISA_EXPAND_3(features,intersector, DEFAULT,AVX,AVX10_2)
-#define SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX10_2(features,intersector) \
-  ISA_EXPAND_4(features,intersector, DEFAULT,AVX,AVX2,AVX10_2)
-#define SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512_AVX10_2(features,intersector) \
-  ISA_EXPAND_5(features,intersector, DEFAULT,AVX,AVX2,AVX512,AVX10_2)
-#define SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512_AVX10_2(features,intersector) \
-  ISA_EXPAND_6(features,intersector, DEFAULT,SSE42,AVX,AVX2,AVX512,AVX10_2)
-
-// APX combinations
-#define SELECT_SYMBOL_DEFAULT_APX(features,intersector) \
-  ISA_EXPAND_2(features,intersector, DEFAULT,APX)
-#define SELECT_SYMBOL_DEFAULT_AVX_APX(features,intersector) \
-  ISA_EXPAND_3(features,intersector, DEFAULT,AVX,APX)
-#define SELECT_SYMBOL_DEFAULT_AVX_AVX2_APX(features,intersector) \
-  ISA_EXPAND_4(features,intersector, DEFAULT,AVX,AVX2,APX)
+// Canonical AVX512/APX combinations
+#define SELECT_SYMBOL_DEFAULT_AVX512(features,intersector) \
+  ISA_EXPAND_2(features,intersector, DEFAULT,AVX512)
+#define SELECT_SYMBOL_DEFAULT_AVX512_APX(features,intersector) \
+  ISA_EXPAND_3(features,intersector, DEFAULT,AVX512,APX)
+#define SELECT_SYMBOL_DEFAULT_AVX_AVX512_APX(features,intersector) \
+  ISA_EXPAND_4(features,intersector, DEFAULT,AVX,AVX512,APX)
 #define SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512_APX(features,intersector) \
   ISA_EXPAND_5(features,intersector, DEFAULT,AVX,AVX2,AVX512,APX)
 #define SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512_APX(features,intersector) \
   ISA_EXPAND_6(features,intersector, DEFAULT,SSE42,AVX,AVX2,AVX512,APX)
-
-// INIT_AVX10_1 combinations
-#define SELECT_SYMBOL_INIT_AVX10_1(features,intersector) \
-  INIT_EXPAND_1(features,intersector, AVX10_1)
-#define SELECT_SYMBOL_INIT_AVX_AVX10_1(features,intersector) \
-  INIT_EXPAND_2(features,intersector, AVX,AVX10_1)
-#define SELECT_SYMBOL_INIT_AVX_AVX2_AVX10_1(features,intersector) \
-  INIT_EXPAND_3(features,intersector, AVX,AVX2,AVX10_1)
-#define SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_AVX10_1(features,intersector) \
-  INIT_EXPAND_4(features,intersector, AVX,AVX2,AVX512,AVX10_1)
-#define SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512_AVX10_1(features,intersector) \
-  INIT_EXPAND_5(features,intersector, SSE42,AVX,AVX2,AVX512,AVX10_1)
-
-// INIT_AVX10_2 combinations
-#define SELECT_SYMBOL_INIT_AVX10_2(features,intersector) \
-  INIT_EXPAND_1(features,intersector, AVX10_2)
-#define SELECT_SYMBOL_INIT_AVX_AVX10_2(features,intersector) \
-  INIT_EXPAND_2(features,intersector, AVX,AVX10_2)
-#define SELECT_SYMBOL_INIT_AVX_AVX2_AVX10_2(features,intersector) \
-  INIT_EXPAND_3(features,intersector, AVX,AVX2,AVX10_2)
-#define SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_AVX10_2(features,intersector) \
-  INIT_EXPAND_4(features,intersector, AVX,AVX2,AVX512,AVX10_2)
-#define SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512_AVX10_2(features,intersector) \
-  INIT_EXPAND_5(features,intersector, SSE42,AVX,AVX2,AVX512,AVX10_2)
-
-// INIT_APX combinations
-#define SELECT_SYMBOL_INIT_APX(features,intersector) \
-  INIT_EXPAND_1(features,intersector, APX)
-#define SELECT_SYMBOL_INIT_AVX_APX(features,intersector) \
-  INIT_EXPAND_2(features,intersector, AVX,APX)
-#define SELECT_SYMBOL_INIT_AVX_AVX2_APX(features,intersector) \
-  INIT_EXPAND_3(features,intersector, AVX,AVX2,APX)
+#define SELECT_SYMBOL_INIT_AVX512_APX(features,intersector) \
+  INIT_EXPAND_2(features,intersector, AVX512,APX)
+#define SELECT_SYMBOL_INIT_AVX_AVX512_APX(features,intersector) \
+  INIT_EXPAND_3(features,intersector, AVX,AVX512,APX)
 #define SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_APX(features,intersector) \
   INIT_EXPAND_4(features,intersector, AVX,AVX2,AVX512,APX)
-#define SELECT_SYMBOL_INIT_AVX512_AVX10_1_AVX10_2_APX(features,intersector) \
-  INIT_EXPAND_4(features,intersector, AVX512,AVX10_1,AVX10_2,APX)
 #define SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512_APX(features,intersector) \
   INIT_EXPAND_5(features,intersector, SSE42,AVX,AVX2,AVX512,APX)
 
-// AVX10_1 + AVX10_2 combinations
-#define SELECT_SYMBOL_DEFAULT_AVX10_1_AVX10_2(features,intersector) \
-  ISA_EXPAND_3(features,intersector, DEFAULT,AVX10_1,AVX10_2)
-#define SELECT_SYMBOL_DEFAULT_AVX_AVX10_1_AVX10_2(features,intersector) \
-  ISA_EXPAND_4(features,intersector, DEFAULT,AVX,AVX10_1,AVX10_2)
-#define SELECT_SYMBOL_INIT_AVX10_1_AVX10_2(features,intersector) \
-  INIT_EXPAND_2(features,intersector, AVX10_1,AVX10_2)
-#define SELECT_SYMBOL_INIT_AVX_AVX10_1_AVX10_2(features,intersector) \
-  INIT_EXPAND_3(features,intersector, AVX,AVX10_1,AVX10_2)
-
-// AVX10_1 + AVX10_2 + APX combinations
-#define SELECT_SYMBOL_DEFAULT_AVX10_1_AVX10_2_APX(features,intersector) \
-  ISA_EXPAND_4(features,intersector, DEFAULT,AVX10_1,AVX10_2,APX)
-#define SELECT_SYMBOL_DEFAULT_AVX_AVX10_1_AVX10_2_APX(features,intersector) \
-  ISA_EXPAND_5(features,intersector, DEFAULT,AVX,AVX10_1,AVX10_2,APX)
-#define SELECT_SYMBOL_INIT_AVX10_1_AVX10_2_APX(features,intersector) \
-  INIT_EXPAND_3(features,intersector, AVX10_1,AVX10_2,APX)
-#define SELECT_SYMBOL_INIT_AVX_AVX10_1_AVX10_2_APX(features,intersector) \
-  INIT_EXPAND_4(features,intersector, AVX,AVX10_1,AVX10_2,APX)
-
-// Full chains: DEFAULT_AVX_AVX2_AVX512_AVX10_1_AVX10_2_APX and SSE42 variants
-#define SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512_AVX10_1_AVX10_2(features,intersector) \
-  ISA_EXPAND_7(features,intersector, DEFAULT,SSE42,AVX,AVX2,AVX512,AVX10_1,AVX10_2)
-#define SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512_AVX10_1_AVX10_2_APX(features,intersector) \
-  ISA_EXPAND_8(features,intersector, DEFAULT,SSE42,AVX,AVX2,AVX512,AVX10_1,AVX10_2,APX)
-#define SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512_AVX10_1_AVX10_2_APX(features,intersector) \
-  ISA_EXPAND_7(features,intersector, DEFAULT,AVX,AVX2,AVX512,AVX10_1,AVX10_2,APX)
-#define SELECT_SYMBOL_INIT_SSE42_AVX_AVX2_AVX512_AVX10_1_AVX10_2_APX(features,intersector) \
-  INIT_EXPAND_7(features,intersector, SSE42,AVX,AVX2,AVX512,AVX10_1,AVX10_2,APX)
-#define SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_AVX10_1_AVX10_2_APX(features,intersector) \
-  INIT_EXPAND_6(features,intersector, AVX,AVX2,AVX512,AVX10_1,AVX10_2,APX)
 
 // Micro helpers for 1-ISA initializers
 #define INIT_EXPAND_1(f,i, A) \
@@ -331,7 +223,5 @@ namespace embree
   namespace avx    { int64_t getISA(); };
   namespace avx2   { int64_t getISA(); };
   namespace avx512 { int64_t getISA(); };
-  namespace avx10_1 { int64_t getISA(); };
-  namespace avx10_2 { int64_t getISA(); };
   namespace apx { int64_t getISA(); };
 }

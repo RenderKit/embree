@@ -100,8 +100,6 @@ namespace embree
         "  avxi: select AVXI codepath\n"
         "  avx2: select AVX2 codepath\n"
         "  avx512: select AVX512 codepath\n"
-        "  avx10.1: select AVX10.1 codepath\n"
-        "  avx10.2: select AVX10.2 codepath\n"
         "  apx: select APX codepath\n");
     } 
   }

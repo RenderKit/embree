@@ -495,8 +495,6 @@ namespace embree
     if (isa == AVX) return "AVX";
     if (isa == AVX2) return "AVX2";
     if (isa == AVX512) return "AVX512";
-    if (isa == AVX10_1) return "AVX10.1";
-    if (isa == AVX10_2) return "AVX10.2";
     if (isa == APX) return "APX";
 
     if (isa == NEON) return "NEON";
@@ -522,9 +520,6 @@ namespace embree
     if (hasISA(features,AVX2)) v += "AVX2 ";
     if (hasISA(features,AVX512)) v += "AVX512 ";
     if (hasISA(features, CPU_FEATURE_APX)) v += "APX ";
-    if (hasISA(features, CPU_FEATURE_AVX10_1)) v += "AVX10.1 ";
-    if (hasISA(features, CPU_FEATURE_AVX10_2)) v += "AVX10.2 ";
-
     if (hasISA(features,NEON)) v += "NEON ";
     if (hasISA(features,NEON_2X)) v += "2xNEON ";
     return v;

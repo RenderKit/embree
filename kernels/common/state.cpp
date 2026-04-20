@@ -191,12 +191,6 @@ namespace embree
 #if defined (EMBREE_TARGET_AVX512)
     assert(avx512::getISA() <= AVX512);
 #endif
-#if defined (EMBREE_TARGET_AVX10_1)
-  assert(avx10_1::getISA() <= AVX10_1);
-#endif
-#if defined (EMBREE_TARGET_AVX10_2)
-  assert(avx10_2::getISA() <= AVX10_2);
-#endif
 #if defined (EMBREE_TARGET_APX)
   assert(apx::getISA() <= APX);
 #endif
@@ -255,8 +249,8 @@ namespace embree
     else if (isa == "avxi") return AVXI;
     else if (isa == "avx2") return AVX2;
     else if (isa == "avx512") return AVX512;
-    else if (isa == "avx10.1") return AVX10_1;
-    else if (isa == "avx10.2") return AVX10_2;
+    else if (isa == "avx10.1") return AVX512;
+    else if (isa == "avx10.2") return APX;
     else if (isa == "apx") return APX;
     else return SSE2;
   }
