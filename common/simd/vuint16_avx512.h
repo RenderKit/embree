@@ -190,7 +190,7 @@ namespace embree
   __forceinline vuint16 operator -(const vuint16& a, unsigned int   b) { return a - vuint16(b); }
   __forceinline vuint16 operator -(unsigned int   a, const vuint16& b) { return vuint16(a) - b; }
 
-  __forceinline vuint16 operator *(const vuint16& a, const vuint16& b) { return _mm512_mul_epu32(a, b); }
+  __forceinline vuint16 operator *(const vuint16& a, const vuint16& b) { return _mm512_mullo_epi32(a, b); }
   __forceinline vuint16 operator *(const vuint16& a, unsigned int   b) { return a * vuint16(b); }
   __forceinline vuint16 operator *(unsigned int   a, const vuint16& b) { return vuint16(a) * b; }
 
