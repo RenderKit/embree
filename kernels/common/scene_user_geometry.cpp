@@ -41,7 +41,6 @@ namespace embree
 
   void UserGeometry::convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const {
     std::memcpy(data_host + offset, (void*)this, sizeof(UserGeometry));
-    offset += sizeof(Instance);
   }
 
 #endif
