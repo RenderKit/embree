@@ -208,10 +208,10 @@ namespace embree
     struct Intersectors 
     {
       Intersectors() 
-      : ptr(nullptr), leafIntersector(nullptr), collider(nullptr), intersector1(nullptr), intersector4(nullptr), intersector8(nullptr), intersector16(nullptr) {}
+      : ptr(nullptr), leafIntersector(nullptr), collider(nullptr), intersector1(nullptr), intersector4(nullptr), intersector4_filter(nullptr), intersector4_nofilter(nullptr), intersector8(nullptr), intersector8_filter(nullptr), intersector8_nofilter(nullptr), intersector16(nullptr), intersector16_filter(nullptr), intersector16_nofilter(nullptr) {}
 
       Intersectors (ErrorFunc error) 
-      : ptr(nullptr), leafIntersector(nullptr), collider(error), intersector1(error), intersector4(error), intersector8(error), intersector16(error) {}
+      : ptr(nullptr), leafIntersector(nullptr), collider(error), intersector1(error), intersector4(error), intersector4_filter(error), intersector4_nofilter(error), intersector8(error), intersector8_filter(error), intersector8_nofilter(error), intersector16(error), intersector16_filter(error), intersector16_nofilter(error) {}
 
       void print(size_t ident) 
       {

@@ -17,7 +17,8 @@ namespace embree
       struct BinMapping
       {
       public:
-        __forceinline BinMapping() {}
+        __forceinline BinMapping()
+          : num(0), ofs(vfloat4(0.0f)), scale(vfloat4(0.0f)) {}
         
         /*! calculates the mapping */
         __forceinline BinMapping(size_t N, const BBox3fa& centBounds) 
@@ -128,7 +129,7 @@ namespace embree
           : sah(inf), dim(-1), pos(0), data(0) {}
 
         __forceinline BinSplit(float sah, unsigned data, int dim = 0, float fpos = 0)
-          : sah(sah), dim(dim), fpos(fpos), data(data) {}
+          : sah(sah), dim(dim), fpos(fpos), data(data), mapping() {}
         
         /*! constructs specified split */
         __forceinline BinSplit(float sah, int dim, int pos, const BinMapping<BINS>& mapping)
