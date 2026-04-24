@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <cstddef>
+
 #define CACHELINE_SIZE 64
 
 #if !defined(PAGE_SIZE)
