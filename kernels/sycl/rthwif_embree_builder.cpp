@@ -45,7 +45,7 @@ namespace embree
     }
   };
 
-  void* zeRTASInitExp(sycl::device device, sycl::context context)
+  void* zeRTASInit(sycl::device device, sycl::context context)
   {
     if (ZeWrapper::init() != ZE_RESULT_SUCCESS)
       return nullptr;
@@ -114,10 +114,10 @@ namespace embree
     {
       //std::cout << extensions[i].name << " version " << extensions[i].version << std::endl;
       
-      if (strncmp("ZE_extension_raytracing",extensions[i].name,sizeof(extensions[i].name)) == 0)
+      if (strncmp(ZE_RAYTRACING_EXT_NAME,extensions[i].name,sizeof(extensions[i].name)) == 0)
         ze_extension_ray_tracing = true;
       
-      if (strncmp("ZE_extension_rtas",extensions[i].name,sizeof(extensions[i].name)) == 0)
+      if (strncmp(ZE_RTAS_EXT_NAME,extensions[i].name,sizeof(extensions[i].name)) == 0)
         ze_rtas_builder = true;
     }
     if (!ze_extension_ray_tracing)

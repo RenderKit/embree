@@ -704,7 +704,7 @@ namespace embree
       std::cout << std::endl;
     }
     
-    dispatchGlobalsPtr = zeRTASInitExp(gpu_device, gpu_context);
+    dispatchGlobalsPtr = zeRTASInit(gpu_device, gpu_context);
   }
 
   DeviceGPU::~DeviceGPU()
