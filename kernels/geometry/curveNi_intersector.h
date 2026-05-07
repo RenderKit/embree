@@ -27,12 +27,8 @@ namespace embree
       {
         const size_t N = prim.N;
 #if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
-        /* offset (12 B) and scale (4 B) live in 16 contiguous bytes; loading
-           them as 4 adjacent floats lets the SYCL/IGC compiler emit a single
-           coalesced 16-byte load instead of one Vec3f load + one scalar load. */
-        const float* offset_scale = (const float*)prim.offset(N);
-        const Vec3fa offset(offset_scale[0], offset_scale[1], offset_scale[2]);
-        const float scale = offset_scale[3];
+        const Vec3fa offset = *prim.offset(N);
+        const float scale  = *prim.scale(N);
 #else
         const vfloat4 offset_scale = vfloat4::loadu(prim.offset(N));
         const Vec3fa offset = Vec3fa(offset_scale);
@@ -313,10 +309,8 @@ namespace embree
       {
         const size_t N = prim.N;
 #if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
-        /* see CurveNiIntersector1::intersect for rationale of this 4xfloat load */
-        const float* offset_scale = (const float*)prim.offset(N);
-        const Vec3fa offset(offset_scale[0], offset_scale[1], offset_scale[2]);
-        const float scale = offset_scale[3];
+        const Vec3fa offset = *prim.offset(N);
+        const float scale  = *prim.scale(N);
 #else
         const vfloat4 offset_scale = vfloat4::loadu(prim.offset(N));
         const Vec3fa offset = Vec3fa(offset_scale);
