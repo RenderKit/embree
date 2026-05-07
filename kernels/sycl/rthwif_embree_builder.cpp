@@ -172,10 +172,32 @@ namespace embree
     return pvc;
   }
 
+  static bool hasDriverExtension(ze_driver_handle_t hDriver, const char* extensionName)
+  {
+    uint32_t count = 0;
+    ze_result_t result = ZeWrapper::zeDriverGetExtensionProperties(hDriver, &count, nullptr);
+    if (result != ZE_RESULT_SUCCESS)
+      return false;
+
+    std::vector<ze_driver_extension_properties_t> extensions(count);
+    result = ZeWrapper::zeDriverGetExtensionProperties(hDriver, &count, extensions.data());
+    if (result != ZE_RESULT_SUCCESS)
+      return false;
+
+    for (uint32_t i = 0; i < count; i++)
+    {
+      if (strncmp(extensionName, extensions[i].name, sizeof(extensions[i].name)) == 0)
+        return true;
+    }
+    return false;
+  }
+
   void* rthwifAllocAccelBuffer(Device* embree_device, size_t bytes, sycl::device device, sycl::context context, sycl::usm::alloc alloc_type)
   {
     ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
     ze_device_handle_t  hDevice  = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
+    sycl::platform platform = device.get_platform();
+    ze_driver_handle_t hDriver = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(platform);
 
     ze_rtas_device_ext_properties_t rtasProp = { ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXT_PROPERTIES };
     ze_device_properties_t devProp = { ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES, &rtasProp };
@@ -193,9 +215,11 @@ namespace embree
     relaxed.pNext = &rt_desc;
     relaxed.flags = ZE_RELAXED_ALLOCATION_LIMITS_EXP_FLAG_MAX_SIZE;
 
+    const bool hasRelaxedAllocationLimits = hasDriverExtension(hDriver, ZE_RELAXED_ALLOCATION_LIMITS_EXP_NAME);
+
     ze_memory_compression_hints_ext_desc_t compressed;
     compressed.stype = ZE_STRUCTURE_TYPE_MEMORY_COMPRESSION_HINTS_EXT_DESC;
-    compressed.pNext = &relaxed;
+    compressed.pNext = hasRelaxedAllocationLimits ? (void*) &relaxed : (void*) &rt_desc;
     compressed.flags = ZE_MEMORY_COMPRESSION_HINTS_EXT_FLAG_UNCOMPRESSED;
 
     ze_device_mem_alloc_desc_t device_desc;
