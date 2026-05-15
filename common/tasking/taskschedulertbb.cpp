@@ -45,7 +45,7 @@ namespace embree
 #endif
 
     /* now either keep default settings or configure number of threads */
-    if (numThreads == std::numeric_limits<size_t>::max()) {
+    if (numThreads == (std::numeric_limits<size_t>::max)()) { // parentheses defeat Windows max() macro
       numThreads = threadCount();
     }
     else {
