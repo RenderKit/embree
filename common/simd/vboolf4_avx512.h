@@ -44,7 +44,7 @@ namespace embree
     __forceinline __mmask8 packedMask8() const { return v; }
 
     /* return packed 16 bits mask */
-    __forceinline __mmask8 packedMask16() const { return (__mmask16)v; }
+    __forceinline __mmask16 packedMask16() const { return (__mmask16)v; }
 
     /* return int8 mask */
     __forceinline __m128i mask8() const {

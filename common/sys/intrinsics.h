@@ -91,7 +91,7 @@ namespace embree
   
 #if defined(__X86_64__) || defined (__aarch64__) || defined(_M_ARM64)
   __forceinline size_t bsf(size_t v) {
-#if defined(__AVX2__) 
+#if defined(__AVX2__) && !defined(_M_ARM64)
     return _tzcnt_u64(v);
 #else
     unsigned long r = 0; _BitScanForward64(&r,v); return r;
@@ -140,7 +140,7 @@ namespace embree
   
 #if defined(__X86_64__) || defined (__aarch64__) || defined(_M_ARM64)
   __forceinline size_t bsr(size_t v) {
-#if defined(__AVX2__) 
+#if defined(__AVX2__) && !defined(_M_ARM64)
     return 63 -_lzcnt_u64(v);
 #else
     unsigned long r = 0; _BitScanReverse64(&r, v); return r;
@@ -531,7 +531,7 @@ namespace embree
   __forceinline void prefetchL2EX(const void* ptr) {
     prefetchEX(ptr);
   }
-#if defined(__AVX2__) && !defined(__aarch64__)
+#if defined(__AVX2__) && !defined(__aarch64__) && !defined(_M_ARM64)
    __forceinline unsigned int pext(unsigned int a, unsigned int b) { return _pext_u32(a, b); }
    __forceinline unsigned int pdep(unsigned int a, unsigned int b) { return _pdep_u32(a, b); }
 #if defined(__X86_64__)

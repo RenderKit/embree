@@ -175,7 +175,7 @@ namespace embree
      * functions */
 #if defined(DEBUG)
 #if defined(EMBREE_TARGET_SSE2)
-#if !defined(__ARM_NEON) || !defined(_M_ARM64)
+#if !defined(__ARM_NEON)
     assert(sse2::getISA() <= SSE2);
 #endif
 #endif
