@@ -57,6 +57,11 @@
 #define __X86_ASM__
 #endif
 
+/* normalize ARM64 platform macro */
+#if defined(_M_ARM64) || defined(_M_ARM64EC)
+#define __aarch64__
+#endif
+
 /* detect 64 bit platform */
 #if defined(__X86_64__) || defined(__aarch64__)
 #define __64BIT__
