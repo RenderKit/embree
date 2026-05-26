@@ -114,3 +114,22 @@ jobs:
           cmake --build .
           cd embree/build
           ctest
+
+  windows-11-arm:
+    runs-on: windows-11-arm
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build and Run
+        shell: pwsh
+        run: |
+          $opts  = "-DBUILD_TESTING=ON"
+          $opts += " -DEMBREE_TUTORIALS=OFF"
+          $opts += " -DEMBREE_ISPC_SUPPORT=OFF"
+          $opts += " -DEMBREE_TESTING_INTENSITY=2"
+          $opts += " -DCMAKE_BUILD_TYPE=Release"
+
+          cmake -S superbuild -B build -D BUILD_TBB_FROM_SOURCE=ON -D EMBREE_EXTRA_OPTIONS="$opts"
+          cmake --build build --config Release
+          ctest --test-dir build/embree/build -C Release --output-on-failure
