@@ -127,6 +127,7 @@ jobs:
           $opts  = "-DBUILD_TESTING=ON"
           $opts += " -DEMBREE_TUTORIALS=ON"
           $opts += " -DEMBREE_ISPC_SUPPORT=OFF"
+          $opts += " -DEMBREE_TASKING_SYSTEM=INTERNAL"
           $opts += " -DEMBREE_TESTING_INTENSITY=2"
           $opts += " -DCMAKE_BUILD_TYPE=Release"
 
