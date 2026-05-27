@@ -130,6 +130,6 @@ jobs:
           $opts += " -DEMBREE_TASKING_SYSTEM=INTERNAL"
           $opts += " -DEMBREE_TESTING_INTENSITY=2"
 
-          cmake -B build -G "Visual Studio 17 2022" -A ARM64 -T ClangCL $opts.Split(" ") .
+          cmake -B build -G "Visual Studio 17 2022" -A ARM64 $opts.Split(" ") .
           cmake --build build --config Release
           ctest --test-dir build -C Release --output-on-failure
