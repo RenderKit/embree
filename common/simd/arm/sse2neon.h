@@ -81,7 +81,11 @@
 #define _sse2neon_likely(x) __builtin_expect(!!(x), 1)
 #define _sse2neon_unlikely(x) __builtin_expect(!!(x), 0)
 #else /* non-GNU / non-clang compilers */
+#if defined(_MSC_VER)
+#pragma message("Macro name collisions may happen with unsupported compiler.")
+#else
 #warning "Macro name collisions may happen with unsupported compiler."
+#endif
 #ifndef FORCE_INLINE
 #define FORCE_INLINE static inline
 #endif
