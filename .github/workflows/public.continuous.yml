@@ -131,6 +131,6 @@ jobs:
           $opts += " -DEMBREE_TESTING_INTENSITY=2"
           $opts += " -DCMAKE_BUILD_TYPE=Release"
 
-          cmake -B build -G "Ninja" -D EMBREE_EXTRA_OPTIONS="$opts" .
+          cmake -B build -G "Ninja" $opts.Split(" ") .
           cmake --build build --config Release
-          ctest --test-dir build/embree/build -C Release --output-on-failure
+          ctest --test-dir build -C Release --output-on-failure
