@@ -130,6 +130,6 @@ jobs:
           $opts += " -DEMBREE_TESTING_INTENSITY=2"
           $opts += " -DCMAKE_BUILD_TYPE=Release"
 
-          cmake -S superbuild -B build -D BUILD_TBB_FROM_SOURCE=ON -D EMBREE_EXTRA_OPTIONS="$opts"
+          cmake -S superbuild -B build -G "Ninja Multi-Config" -D BUILD_TBB_FROM_SOURCE=ON -D EMBREE_EXTRA_OPTIONS="$opts"
           cmake --build build --config Release
           ctest --test-dir build/embree/build -C Release --output-on-failure
