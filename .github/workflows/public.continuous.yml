@@ -129,8 +129,7 @@ jobs:
           $opts += " -DEMBREE_ISPC_SUPPORT=OFF"
           $opts += " -DEMBREE_TASKING_SYSTEM=INTERNAL"
           $opts += " -DEMBREE_TESTING_INTENSITY=2"
-          $opts += " -DCMAKE_BUILD_TYPE=Release"
 
-          cmake -B build -G "Ninja" $opts.Split(" ") .
+          cmake -B build -G "Visual Studio 17 2022" -A ARM64 $opts.Split(" ") .
           cmake --build build --config Release
           ctest --test-dir build -C Release --output-on-failure
