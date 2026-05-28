@@ -214,8 +214,13 @@ namespace embree
     relaxed.stype = ZE_STRUCTURE_TYPE_RELAXED_ALLOCATION_LIMITS_EXP_DESC;
     relaxed.pNext = &rt_desc;
     relaxed.flags = ZE_RELAXED_ALLOCATION_LIMITS_EXP_FLAG_MAX_SIZE;
-
-    const bool hasRelaxedAllocationLimits = hasDriverExtension(hDriver, ZE_RELAXED_ALLOCATION_LIMITS_EXP_NAME);
+    
+    bool hasRelaxedAllocationLimits = false;
+    if (embree_device) {
+      DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(embree_device);
+      if (gpu_device)
+        hasRelaxedAllocationLimits = gpu_device->relaxedAllocationLimitsSupported();
+    }
 
     ze_memory_compression_hints_ext_desc_t compressed;
     compressed.stype = ZE_STRUCTURE_TYPE_MEMORY_COMPRESSION_HINTS_EXT_DESC;

@@ -665,8 +665,12 @@ namespace embree
     bool ze_rtas_builder = false;
     for (uint32_t i=0; i<extensions.size(); i++)
     {
-      if (strncmp("ZE_extension_rtas",extensions[i].name,sizeof(extensions[i].name)) == 0)
+      if (strncmp("ZE_extension_rtas",extensions[i].name,sizeof(extensions[i].name)) == 0) {
         ze_rtas_builder = true;
+      }
+      if (strncmp("ZE_experimental_relaxed_allocation_limits", extensions[i].name, sizeof(extensions[i].name)) == 0) {
+        hasRelaxedAllocationLimits = true;
+      }
     }
     if (!ze_rtas_builder)
       throw_RTCError(RTC_ERROR_LEVEL_ZERO_RAYTRACING_SUPPORT_MISSING, "ZE_extension_rtas extension not found. Please install a recent driver. On Linux, make sure that the package intel-level-zero-gpu-raytracing is installed");
