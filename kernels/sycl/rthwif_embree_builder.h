@@ -17,11 +17,13 @@ namespace embree
 
   void rthwifFreeAccelBuffer(Device* embree_device, void* ptr, size_t bytes, sycl::context context);
 
-  void* zeRTASInitExp(sycl::device device, sycl::context context);
+  void* zeRTASInit(sycl::device device, sycl::context context);
 
   void rthwifCleanup(Device* embree_device, void* dispatchGlobalsPtr, sycl::context context);
 
   int rthwifIsSYCLDeviceSupported(const sycl::device& sycl_device);
+
+  const bool isPVC(const ze_device_handle_t hDevice);
 
   /*! allocator that performs BVH memory allocations */
   template <typename T>

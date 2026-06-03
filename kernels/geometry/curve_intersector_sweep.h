@@ -82,10 +82,16 @@ namespace embree
         const Vec3fa dRdu = /*dQdu*/-dPdu;
         const Vec3fa dRdt = dQdt;//-dPdt;
 
-        const Vec3fa T = normalize(dPdu);
+        /* share a single rsqrt(dot(dPdu,dPdu)) between the normalize() and the
+           1/length(dPdu) needed for cos_err. Saves one transcendental per
+           Jacobian iteration (important on Xe iGPUs where sqrt/rsqrt are
+           ~14-20 cycle latency and there is no ILP to hide them). */
+        const float dPdu2 = dot(dPdu,dPdu);
+        const float rcp_len_dPdu = rsqrt(dPdu2);
+        const Vec3fa T = dPdu * rcp_len_dPdu;
         const Vec3fa dTdu = dnormalize(dPdu,ddPdu);
         //const Vec3fa dTdt = zero;
-        const float cos_err = P_err/length(dPdu);
+        const float cos_err = P_err * rcp_len_dPdu;
 
         /* Error estimate for dot(R,T):
 
@@ -348,8 +354,10 @@ namespace embree
         const Vec3ff dQ2 = abs(3.0f*(P3-P2) - W);
         const Vec3ff max_dQ = max(dQ0,dQ1,dQ2);
         const float m = max(max_dQ.x,max_dQ.y,max_dQ.z); //,max_dQ.w);
-        const float l = length(Vec3f(W));
-        const bool well_behaved = m < 0.2f*l;
+        /* compare squared values to avoid the sqrt in length(W); m is
+           non-negative since computed from abs() above, so this is exact. */
+        const float l2 = dot(Vec3f(W),Vec3f(W));
+        const bool well_behaved = m*m < (0.2f*0.2f)*l2;
 
         if (!well_behaved && stack.depth < max_depth) {
           stack.push();
