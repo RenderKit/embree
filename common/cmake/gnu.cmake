@@ -33,8 +33,12 @@ IF (EMBREE_ARM)
 ENDIF (EMBREE_ARM)
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")                       # enables most warnings
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra")                    # enables extra warnings
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wformat -Wformat-security")  # enables string format vulnerability warnings
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-class-memaccess")        # disables clearing an object of type ‘XXX’ with no trivial copy-assignment; use assignment or value-initialization instead
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-class-memaccess")        # disables clearing an object of type
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter")      # disables warnings for unused function parameters
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cast-function-type")    # disables warnings for intentional function pointer casts
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-copy")       # disables deprecated copy warnings from explicit operator= ‘XXX’ with no trivial copy-assignment; use assignment or value-initialization instead
 
 # these prevent compile to optimize away security checks
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-overflow")            # assume that signed overflow occurs
