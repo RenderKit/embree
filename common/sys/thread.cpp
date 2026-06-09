@@ -228,7 +228,7 @@ namespace embree
       {
         if (!CPU_ISSET(i,&set)) continue;
 
-        if (j == ID) {
+        if (size_t(j) == ID) {
           ID = i;
           break;
         }
