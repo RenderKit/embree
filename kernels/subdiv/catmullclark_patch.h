@@ -535,14 +535,14 @@ namespace embree
       const Vertex b03 = ring[i1].getLimitVertex();
       const Vertex b33 = ring[i2].getLimitVertex();
       
-      const Vertex b01 = madd(1.0/3.0f,t0_p,b00);
-      const Vertex b11 = madd(1.0/3.0f,t0_m,b00);
+      const Vertex b01 = madd(1.0f/3.0f,t0_p,b00);
+      const Vertex b11 = madd(1.0f/3.0f,t0_m,b00);
       
-      //const Vertex b13 = madd(1.0/3.0f,t1_p,b03);
-      const Vertex b02 = madd(1.0/3.0f,t1_m,b03);
+      //const Vertex b13 = madd(1.0f/3.0f,t1_p,b03);
+      const Vertex b02 = madd(1.0f/3.0f,t1_m,b03);
           
-      const Vertex b22 = madd(1.0/3.0f,t2_p,b33);
-      const Vertex b23 = madd(1.0/3.0f,t2_m,b33);
+      const Vertex b22 = madd(1.0f/3.0f,t2_p,b33);
+      const Vertex b23 = madd(1.0f/3.0f,t2_m,b33);
           
       new (&curves[0]) BezierCurve(b00,b01,b02,b03);
       new (&curves[1]) BezierCurve(b33,b22,b11,b00);

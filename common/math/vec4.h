@@ -16,7 +16,7 @@ namespace embree
   {
     enum { N = 4 };    
     union {
-      struct { T x, y, z, w; };
+      __extension__ struct { T x, y, z, w; };
 #if !(defined(__WIN32__) && _MSC_VER == 1800) // workaround for older VS 2013 compiler
       T components[N];
 #endif

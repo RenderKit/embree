@@ -26,7 +26,7 @@ namespace embree
     enum  { size = 8 };       // number of SIMD elements
     union {                   // data
       __m256 v;
-      struct { __m128 vl,vh; };
+      __extension__ struct { __m128 vl,vh; };
       int i[8];
     };  
 

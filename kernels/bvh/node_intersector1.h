@@ -424,7 +424,7 @@ namespace embree
     //////////////////////////////////////////////////////////////////////////////////////
 
     template<int N, bool robust>
-      __forceinline size_t intersectNode(const typename BVHN<N>::AABBNode* node, const TravRay<N,robust>& ray, vfloat<N>& dist);
+      size_t intersectNode(const typename BVHN<N>::AABBNode* node, const TravRay<N,robust>& ray, vfloat<N>& dist);
 
     template<>
       __forceinline size_t intersectNode<4>(const typename BVH4::AABBNode* node, const TravRay<4,false>& ray, vfloat4& dist)
@@ -730,7 +730,7 @@ namespace embree
     //////////////////////////////////////////////////////////////////////////////////////
 
     template<int N, bool robust>
-      __forceinline size_t intersectNode(const typename BVHN<N>::QuantizedBaseNode* node, const TravRay<N,robust>& ray, vfloat<N>& dist);
+      size_t intersectNode(const typename BVHN<N>::QuantizedBaseNode* node, const TravRay<N,robust>& ray, vfloat<N>& dist);
 
     template<>
       __forceinline size_t intersectNode<4>(const typename BVH4::QuantizedBaseNode* node, const TravRay<4,false>& ray, vfloat4& dist)

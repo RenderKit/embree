@@ -114,7 +114,7 @@ namespace embree
     numThreads = 0;
     numUserThreads = 0;
 
-#if TASKING_INTERNAL
+#ifdef TASKING_INTERNAL
     set_affinity = true;
 #else
     set_affinity = false;

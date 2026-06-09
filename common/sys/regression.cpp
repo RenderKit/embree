@@ -9,7 +9,7 @@ namespace embree
    * we cannot have the regression_tests variable as global static
    * variable due to issues with static variable initialization
    * order. */
-  std::vector<RegressionTest*>& get_regression_tests()
+  static std::vector<RegressionTest*>& get_regression_tests()
   {
     static std::vector<RegressionTest*> regression_tests;
     return regression_tests;

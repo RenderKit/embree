@@ -10,7 +10,7 @@ namespace embree
 {
 #define DEFINE_SYMBOL2(type,name)               \
   typedef type (*name##Func)();                 \
-  name##Func name;
+  name##Func name
   
 #define DECLARE_SYMBOL2(type,name)                                       \
   namespace sse2   { extern type name(); }                           \
@@ -33,7 +33,7 @@ namespace embree
   
 #define DEFINE_ISA_FUNCTION(type,symbol,args)   \
   typedef type (*symbol##Func)(args);           \
-  symbol##Func symbol;
+  symbol##Func symbol
   
 #define ZERO_SYMBOL(features,intersector)                      \
   intersector = intersector##_zero;

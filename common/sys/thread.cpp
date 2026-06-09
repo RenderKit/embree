@@ -173,7 +173,7 @@ namespace embree
   static std::vector<size_t> threadIDs;
   
   /* changes thread ID mapping such that we first fill up all thread on one core */
-  size_t mapThreadID(size_t threadID)
+  static size_t mapThreadID(size_t threadID)
   {
     Lock<MutexSys> lock(mutex);
     

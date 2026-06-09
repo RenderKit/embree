@@ -53,7 +53,7 @@ namespace embree
       struct __aligned(8) BuildPrim
       {
         union {
-          struct {
+          __extension__ struct {
             unsigned int code;     //!< morton code
             unsigned int index;    //!< i'th primitive
           };
@@ -184,7 +184,7 @@ namespace embree
 
         class BuilderT : private Settings
       {
-        ALIGNED_CLASS_(16);
+        ALIGNED_CLASS_(16)
 
       public:
 
