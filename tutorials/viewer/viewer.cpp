@@ -15,18 +15,17 @@
 
 namespace embree
 {
-  extern "C" float g_min_width = 0.0f;
+  extern "C" { float g_min_width = 0.0f; }
   extern "C" float g_min_width_max_radius_scale;
-  extern "C" bool g_use_scene_features = true;
-  extern "C" RTCFeatureFlags g_feature_mask = RTC_FEATURE_FLAG_ALL;
+  extern "C" { bool g_use_scene_features = true; }
+  extern "C" { RTCFeatureFlags g_feature_mask = RTC_FEATURE_FLAG_ALL; }
   extern "C" float scale;
   extern "C" bool g_changed;
-  extern "C" Shader shader = SHADER_DEFAULT;
+  extern "C" { Shader shader = SHADER_DEFAULT; }
 
   typedef void (* renderFrameFunc)(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
   extern renderFrameFunc renderFrame;
   
-  extern "C" void renderFrameStandard(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
   extern "C" void renderFrameDebugShader(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
   extern "C" void renderFrameAOShader(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
 

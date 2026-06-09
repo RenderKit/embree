@@ -39,8 +39,6 @@ namespace embree
   sycl::queue* global_gpu_queue = nullptr;
 #endif
 
-  extern "C" void renderFrameStandard(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-    
   /* access to debug shader render frame functions */
   typedef void (* renderFrameFunc)(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
   renderFrameFunc renderFrame = renderFrameStandard;

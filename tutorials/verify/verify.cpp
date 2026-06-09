@@ -125,7 +125,7 @@ namespace embree
 
   struct Sphere
   {
-    ALIGNED_CLASS_(16);
+    ALIGNED_CLASS_(16)
   public:
     Sphere () : pos(zero), r(zero) {}
     Sphere (const Vec3fa& pos, float r) : pos(pos), r(r) {}
@@ -4960,6 +4960,7 @@ namespace embree
     std::pair<int,Ref<SceneGraph::Node>> geom[numSlots];
     int types[numSlots];
     RTCBuildQuality quality[numSlots];
+    (void)quality;
     Sphere spheres[numSlots];
     size_t numVertices[numSlots];
     for (size_t i=0; i<numSlots; i++)  {
@@ -5101,6 +5102,7 @@ namespace embree
               quality[index] = RTC_BUILD_QUALITY_MEDIUM;
               break;
             }
+            [[fallthrough]];
           case 19:
             if (rtcGetDeviceProperty(thread->device, RTC_DEVICE_PROPERTY_USER_GEOMETRY_SUPPORTED))
             {
@@ -5109,6 +5111,7 @@ namespace embree
               quality[index] = RTC_BUILD_QUALITY_REFIT;
               break;
             }
+            [[fallthrough]];
           case 20:
             if (rtcGetDeviceProperty(thread->device, RTC_DEVICE_PROPERTY_USER_GEOMETRY_SUPPORTED))
             {
@@ -5117,7 +5120,7 @@ namespace embree
               quality[index] = RTC_BUILD_QUALITY_LOW;
               break;
             }
-
+            [[fallthrough]];
           case 24:
             geom[index] = task->scene->addHair(task->sampler, RTC_BUILD_QUALITY_MEDIUM, pos, 1.0f, 2.0f, numTriangles);
             quality[index] = RTC_BUILD_QUALITY_MEDIUM;

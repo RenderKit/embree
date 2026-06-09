@@ -5,7 +5,7 @@
 
 namespace embree {
 
-#if EMBREE_SYCL_TUTORIAL
+#if defined(EMBREE_SYCL_TUTORIAL) && EMBREE_SYCL_TUTORIAL
 #define USE_ARGUMENT_CALLBACKS 1
 #else
 #define USE_ARGUMENT_CALLBACKS 0
