@@ -150,7 +150,7 @@ namespace embree
     return sycl_device.get_info<sycl::info::device::max_compute_units>();
   }
 
-  const bool isPVC(const ze_device_handle_t hDevice)
+  bool isPVC(const ze_device_handle_t hDevice)
   {
     ze_device_properties_t device_props{ ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES };
     ze_result_t status = ZeWrapper::zeDeviceGetProperties(hDevice, &device_props);
@@ -172,32 +172,10 @@ namespace embree
     return pvc;
   }
 
-  static bool hasDriverExtension(ze_driver_handle_t hDriver, const char* extensionName)
-  {
-    uint32_t count = 0;
-    ze_result_t result = ZeWrapper::zeDriverGetExtensionProperties(hDriver, &count, nullptr);
-    if (result != ZE_RESULT_SUCCESS)
-      return false;
-
-    std::vector<ze_driver_extension_properties_t> extensions(count);
-    result = ZeWrapper::zeDriverGetExtensionProperties(hDriver, &count, extensions.data());
-    if (result != ZE_RESULT_SUCCESS)
-      return false;
-
-    for (uint32_t i = 0; i < count; i++)
-    {
-      if (strncmp(extensionName, extensions[i].name, sizeof(extensions[i].name)) == 0)
-        return true;
-    }
-    return false;
-  }
-
   void* rthwifAllocAccelBuffer(Device* embree_device, size_t bytes, sycl::device device, sycl::context context, sycl::usm::alloc alloc_type)
   {
     ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
     ze_device_handle_t  hDevice  = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
-    sycl::platform platform = device.get_platform();
-    ze_driver_handle_t hDriver = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(platform);
 
     ze_rtas_device_ext_properties_t rtasProp = { ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXT_PROPERTIES };
     ze_device_properties_t devProp = { ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES, &rtasProp };

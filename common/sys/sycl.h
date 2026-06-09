@@ -192,19 +192,19 @@ namespace embree
 #endif
   }
   
-  __forceinline const uint32_t get_sub_group_local_id() {
+  __forceinline uint32_t get_sub_group_local_id() {
     return this_sub_group().get_local_id()[0];
   }
 
-  __forceinline const uint32_t get_sub_group_size() {
+  __forceinline uint32_t get_sub_group_size() {
     return this_sub_group().get_max_local_range().size();
   }
 
-  __forceinline const uint32_t get_sub_group_id() {
+  __forceinline uint32_t get_sub_group_id() {
     return this_sub_group().get_group_id()[0];
   }
   
-  __forceinline const uint32_t get_num_sub_groups() {
+  __forceinline uint32_t get_num_sub_groups() {
     return this_sub_group().get_group_range().size();
   }
   
