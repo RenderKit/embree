@@ -131,7 +131,7 @@ namespace embree
 
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSAH");
 
-#if PROFILE
+#ifdef PROFILE
         profile(2,PROFILE_RUNS,numPrimitives,[&] (ProfileTimer& timer) {
 #endif
 
@@ -170,7 +170,7 @@ namespace embree
             bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
             bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));
 
-#if PROFILE
+#ifdef PROFILE
           });
 #endif
 
@@ -237,7 +237,7 @@ namespace embree
 
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::QBVH" + toString(N) + "BuilderSAH");
 
-#if PROFILE
+#ifdef PROFILE
         profile(2,PROFILE_RUNS,numPrimitives,[&] (ProfileTimer& timer) {
 #endif
             /* create primref array */
@@ -258,7 +258,7 @@ namespace embree
             NodeRef root = BVHNBuilderQuantizedVirtual<N>::build(&bvh->alloc,CreateLeafQuantized<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
             bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
             //bvh->layoutLargeNodes(pinfo.size()*0.005f); // FIXME: COPY LAYOUT FOR LARGE NODES !!!
-#if PROFILE
+#ifdef PROFILE
           });
 #endif
 

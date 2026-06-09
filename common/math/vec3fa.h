@@ -26,7 +26,7 @@ namespace embree
     enum { N = 3 };
     union {
       __m128 m128;
-      struct { float x,y,z; };
+      __extension__ struct { float x,y,z; };
     };
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -429,7 +429,7 @@ namespace embree
     enum { N = 3 };
     union {
       __m128 m128;
-      struct { float x,y,z; union { int a; unsigned u; float w; }; };
+      __extension__ struct { float x,y,z; union { int a; unsigned u; float w; }; };
     };
 
     ////////////////////////////////////////////////////////////////////////////////

@@ -46,7 +46,7 @@ namespace embree
 
         class BuilderT
         {
-          ALIGNED_CLASS_(16);
+          ALIGNED_CLASS_(16)
           friend struct BVHBuilderHair;
 
           typedef FastAllocator::CachedAllocator Allocator;

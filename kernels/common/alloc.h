@@ -33,7 +33,7 @@ namespace embree
     /*! Per thread structure holding the current memory block. */
     struct __aligned(64) ThreadLocal
     {
-      ALIGNED_CLASS_(64);
+      ALIGNED_CLASS_(64)
     public:
 
       /*! Constructor for usage with ThreadLocalData */
@@ -121,7 +121,7 @@ namespace embree
     /*! Two thread local structures. */
     struct __aligned(64) ThreadLocal2
     {
-      ALIGNED_CLASS_(64);
+      ALIGNED_CLASS_(64)
     public:
 
       __forceinline ThreadLocal2()

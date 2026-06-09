@@ -256,7 +256,7 @@ namespace embree
 #endif
 
 #if defined(__X86_ASM__)
-  __noinline int64_t get_xcr0() 
+  static __noinline int64_t get_xcr0() 
   {
 #if defined (__WIN32__) && !defined (__MINGW32__) && defined(_XCR_XFEATURE_ENABLED_MASK)
     int64_t xcr0 = 0; // int64_t is workaround for compiler bug under VS2013, Win32
@@ -293,7 +293,7 @@ namespace embree
     int cpuid_leaf_7[4] = { 0,0,0,0 };
     int cpuid_leaf_e1[4] = { 0,0,0,0 };
     if (nIds >= 1) __cpuid (cpuid_leaf_1,0x00000001);
-#if _WIN32
+#ifdef _WIN32
 #if _MSC_VER && (_MSC_FULL_VER < 160040219)
 #else
     if (nIds >= 7) __cpuidex(cpuid_leaf_7,0x00000007,0);
@@ -434,7 +434,7 @@ namespace embree
     return "UNKNOWN";
   }
 
-  bool hasISA(int features, int isa) {
+  static bool hasISA(int features, int isa) {
     return (features & isa) == isa;
   }
   

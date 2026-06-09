@@ -343,7 +343,7 @@ __forceinline float nmsub ( const float a, const float b, const float c) { retur
   template<> __forceinline float  random() { return rand()/float(RAND_MAX); }
   template<> __forceinline double random() { return rand()/double(RAND_MAX); }
 
-#if _WIN32
+#ifdef _WIN32
   __forceinline double drand48() {
     return double(rand())/double(RAND_MAX);
   }
