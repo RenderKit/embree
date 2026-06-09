@@ -5,7 +5,7 @@
 
 namespace embree {
 
-#if EMBREE_SYCL_TUTORIAL
+#if defined(EMBREE_SYCL_TUTORIAL) && EMBREE_SYCL_TUTORIAL
 #define USE_ARGUMENT_CALLBACKS 1
 #else
 #define USE_ARGUMENT_CALLBACKS 0
@@ -60,8 +60,7 @@ void renderPixelStandard(const TutorialData& data,
   InitIntersectionContext(&context);
 
   /* initialize ray */
-  Ray primary;
-  init_Ray(primary,Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
+  Ray primary(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
   float primary_transparency = 0.0f;
 
   while (true)

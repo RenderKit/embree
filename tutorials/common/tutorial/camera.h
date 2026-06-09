@@ -131,7 +131,7 @@ namespace embree
   typedef Camera::ISPCCamera ISPCCamera;
 }
 
-#if __SYCL_COMPILER_VERSION >= 20210801
+#if defined(__SYCL_COMPILER_VERSION) && __SYCL_COMPILER_VERSION >= 20210801
 namespace sycl {
   template<> struct is_device_copyable<embree::Camera::ISPCCamera> : std::true_type {};
   template<> struct is_device_copyable<const embree::Camera::ISPCCamera> : std::true_type {};

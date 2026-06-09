@@ -42,7 +42,7 @@ namespace embree
   
   struct TaskArena
   {
-#if USE_TASK_ARENA
+#if defined(USE_TASK_ARENA) && USE_TASK_ARENA
     std::unique_ptr<tbb::task_arena> arena;
 #endif
   };
@@ -379,7 +379,7 @@ namespace embree
     /* create task scheduler */
     size_t maxNumThreads = getMaxNumThreads();
     TaskScheduler::create(maxNumThreads,State::set_affinity,State::start_threads);
-#if USE_TASK_ARENA
+#if defined(USE_TASK_ARENA) && USE_TASK_ARENA
     const size_t nThreads = min(maxNumThreads,TaskScheduler::threadCount());
     const size_t uThreads = min(max(numUserThreads,(size_t)1),nThreads);
     arena->arena = make_unique(new tbb::task_arena((int)nThreads,(unsigned int)uThreads));
@@ -400,14 +400,14 @@ namespace embree
       size_t maxNumThreads = getMaxNumThreads();
       TaskScheduler::create(maxNumThreads,State::set_affinity,State::start_threads);
     }
-#if USE_TASK_ARENA
+#if defined(USE_TASK_ARENA) && USE_TASK_ARENA
     arena->arena.reset();
 #endif
   }
 
   void Device::execute(bool join, const std::function<void()>& func)
   {
-#if USE_TASK_ARENA
+#if defined(USE_TASK_ARENA) && USE_TASK_ARENA
     if (join) {
       arena->arena->execute(func);
     }
