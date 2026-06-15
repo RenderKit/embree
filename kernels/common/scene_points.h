@@ -247,7 +247,7 @@ namespace embree
     
     __forceinline float projectedPrimitiveArea(const size_t i) const {
       const float R = radius(i);
-      return 1 + 2*M_PI*R*R;
+      return 1.0f + 2.0f*float(M_PI)*R*R;
     }
 
    public:

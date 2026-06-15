@@ -88,7 +88,23 @@ ELSE()
 
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") 
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")                       # enables most warnings
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra")                    # enables extra warnings
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wpedantic")                 # enables pedantic warnings
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wformat -Wformat-security")  # enables string format vulnerability warnings
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter")      # disables warnings for unused function parameters
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cast-function-type")    # disables warnings for intentional function pointer casts
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-copy")       # disables deprecated copy warnings
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wundef")                     # warn about undefined preprocessor identifiers
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wshadow")                   # warn about shadowed variables
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wfloat-equal")              # warn about floating point equality checks
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cast-align")            # disable: intentional aligned loads in SIMD code
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-float-equal")            # disable: intentional exact-zero checks in normalize_safe
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-shadow")                 # disable: pervasive in vector class constructors
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-nested-anon-types")      # disable: anonymous types in unions for SIMD
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-gnu-anonymous-struct")   # disable: anonymous structs in unions for SIMD
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")           # disable: int/size_t comparisons in template code
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-c++17-attribute-extensions")  # disable: [[fallthrough]] etc in C++11 mode
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")                    # treat all warnings as errors
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsigned-char")               # treat char as signed on all processors, including ARM
   IF (NOT APPLE)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIE")                     # enables support for more secure position independent execution

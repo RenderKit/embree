@@ -108,7 +108,7 @@ int TutorialBenchmark::main(int argc, char** argv, std::string name)
 
   CommandLine commandLine(argc, argv);
 
-#if USE_GOOGLE_BENCHMARK
+#ifdef USE_GOOGLE_BENCHMARK
   if (!params.legacy && params.minTimeOrIterations > 0)
     commandLine.add({"--benchmark_min_time=" + std::to_string(params.minTimeOrIterations)});
   if (!params.legacy && params.repetitions > 0)

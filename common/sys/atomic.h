@@ -25,9 +25,7 @@ namespace embree
     atomic (const T& a)
       : std::atomic<T>(a) {}
 
-    atomic (const atomic<T>& a) {
-      this->store(a.load());
-    }
+    atomic (const atomic<T>& a) : std::atomic<T>(a.load()) {}
 
     atomic& operator=(const atomic<T>& other) {
       this->store(other.load());

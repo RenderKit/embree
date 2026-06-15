@@ -117,7 +117,7 @@ namespace embree
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderMBlurSAH");
 
-#if PROFILE
+#ifdef PROFILE
         profile(2,PROFILE_RUNS,numPrimitives,[&] (ProfileTimer& timer) {
 #endif
 
@@ -129,7 +129,7 @@ namespace embree
               else*/
               buildMultiSegment(numPrimitives);
 
-#if PROFILE
+#ifdef PROFILE
           });
 #endif
 

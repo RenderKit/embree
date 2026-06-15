@@ -184,7 +184,7 @@ namespace embree
 
         class BuilderT : private Settings
       {
-        ALIGNED_CLASS_(16);
+        ALIGNED_CLASS_(16)
 
       public:
 

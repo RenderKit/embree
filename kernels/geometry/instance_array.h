@@ -39,7 +39,7 @@ namespace embree
     {}
 
     __forceinline bool valid() const { 
-      return primID_ != -1;
+      return primID_ != ~0u;
     }
 
     void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
