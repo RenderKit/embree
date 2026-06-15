@@ -24,7 +24,7 @@ namespace embree
     
     union {
       __m128 m128;
-      __extension__ struct { int x,y,z; };
+      struct { int x,y,z; };
     };
 
     typedef int Scalar;

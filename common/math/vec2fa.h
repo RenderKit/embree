@@ -26,7 +26,7 @@ namespace embree
     enum { N = 2 };
     union {
       __m128 m128;
-      __extension__ struct { float x,y,az,aw; };
+      struct { float x,y,az,aw; };
     };
 
     ////////////////////////////////////////////////////////////////////////////////

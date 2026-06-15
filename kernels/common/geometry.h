@@ -656,7 +656,7 @@ namespace embree
     unsigned int mask;             //!< for masking out geometry
     unsigned int modCounter_ = 1; //!< counter for every modification - used to rebuild scenes when geo is modified
 
-    __extension__ struct {
+    struct {
       GType gtype : 8;                //!< geometry type
       GSubType gsubtype : 8;          //!< geometry subtype
       RTCBuildQuality quality : 3;    //!< build quality for geometry

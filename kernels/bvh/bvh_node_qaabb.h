@@ -118,7 +118,7 @@ namespace embree
 #endif
     
     union {
-      __extension__ struct {
+      struct {
         T lower_x[N]; //!< 8bit discretized X dimension of lower bounds of all N children
         T upper_x[N]; //!< 8bit discretized X dimension of upper bounds of all N children
         T lower_y[N]; //!< 8bit discretized Y dimension of lower bounds of all N children

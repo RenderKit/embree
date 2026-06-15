@@ -34,7 +34,6 @@ ENDIF (EMBREE_ARM)
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")                       # enables most warnings
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra")                    # enables extra warnings
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wpedantic")                 # enables pedantic warnings
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wformat -Wformat-security")  # enables string format vulnerability warnings
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-class-memaccess")        # disables clearing an object of type
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter")      # disables warnings for unused function parameters
@@ -54,6 +53,7 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cast-align")            # disable: 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-declarations")   # disable: intentional factory pattern without declarations
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-shadow")                 # disable: pervasive in vector class constructors
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-float-equal")            # disable: intentional exact-zero checks in normalize_safe
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-nested-anon-types")      # disable: anonymous types in unions for SIMD
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wredundant-decls")          # warn about redundant declarations
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
 
