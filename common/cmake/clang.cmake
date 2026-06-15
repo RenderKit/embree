@@ -101,6 +101,7 @@ ELSE()
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-float-equal")            # disable: intentional exact-zero checks in normalize_safe
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-shadow")                 # disable: pervasive in vector class constructors
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-nested-anon-types")      # disable: anonymous types in unions for SIMD
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-gnu-anonymous-struct")   # disable: anonymous structs in unions for SIMD
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")           # disable: int/size_t comparisons in template code
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-c++17-attribute-extensions")  # disable: [[fallthrough]] etc in C++11 mode
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")                    # treat all warnings as errors

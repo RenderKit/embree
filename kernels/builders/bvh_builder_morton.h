@@ -53,7 +53,7 @@ namespace embree
       struct __aligned(8) BuildPrim
       {
         union {
-          __extension__ struct {
+          struct {
             unsigned int code;     //!< morton code
             unsigned int index;    //!< i'th primitive
           };

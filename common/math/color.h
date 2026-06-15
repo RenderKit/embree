@@ -23,7 +23,7 @@ namespace embree
   {
     union {
       __m128 m128;
-      __extension__ struct { float r,g,b,a; };
+      struct { float r,g,b,a; };
     };
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -91,7 +91,7 @@ namespace embree
   {
     union {
       __m128 m128;
-      __extension__ struct { float r,g,b; };
+      struct { float r,g,b; };
     };
 
     ////////////////////////////////////////////////////////////////////////////////
