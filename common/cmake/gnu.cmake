@@ -48,7 +48,9 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wrestrict")                  # warn abo
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wshift-overflow=2")         # warn about undefined shift behavior
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Walloc-size-larger-than=9223372036854775807")  # warn about allocation exceeding max object size
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wstringop-overflow")        # warn about buffer overflow in string operations
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Warith-conversion")         # warn about implicit arithmetic conversions
+IF (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "10.0")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Warith-conversion")       # warn about implicit arithmetic conversions (GCC 10+)
+ENDIF()
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cast-align")            # disable: intentional aligned loads in SIMD code
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-declarations")   # disable: intentional factory pattern without declarations
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-shadow")                 # disable: pervasive in vector class constructors
