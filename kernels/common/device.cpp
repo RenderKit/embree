@@ -368,13 +368,13 @@ namespace embree
 #endif
   }
 
-  void Device::initTaskingSystem(size_t numThreads) 
+  void Device::initTaskingSystem(size_t requestedNumThreads) 
   {
     Lock<MutexSys> lock(g_mutex);
-    if (numThreads == 0) 
+    if (requestedNumThreads == 0) 
       g_num_threads_map[this] = std::numeric_limits<size_t>::max();
     else 
-      g_num_threads_map[this] = numThreads;
+      g_num_threads_map[this] = requestedNumThreads;
 
     /* create task scheduler */
     size_t maxNumThreads = getMaxNumThreads();

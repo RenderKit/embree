@@ -80,7 +80,7 @@ namespace embree
       static size_t getBVHBytes(const GridRange& range, const size_t nodeBytes, const size_t leafBytes);
 
       /*! returns the size of the temporal BVH over the time range BVHs */
-      static size_t getTemporalBVHBytes(const range<int> time_range, const size_t nodeBytes);
+      static size_t getTemporalBVHBytes(const range<int> trange, const size_t nodeBytes);
 
       /*! calculates bounding box of grid range */
       __forceinline BBox3fa calculateBounds(size_t time, const GridRange& range) const
@@ -113,13 +113,13 @@ namespace embree
       std::pair<BVH4::NodeRef,BBox3fa> buildBVH(const GridRange& range, size_t& allocator);
 
       /*! Evaluates grid over patch and builds MSMBlur BVH4 tree over the grid. */
-      std::pair<BVH4::NodeRef,LBBox3fa> buildMSMBlurBVH(const range<int> time_range, BBox3fa* bounds_o);
+      std::pair<BVH4::NodeRef,LBBox3fa> buildMSMBlurBVH(const range<int> trange, BBox3fa* bounds_o);
       
       /*! Create MBlur BVH4 tree over grid. */
       std::pair<BVH4::NodeRef,LBBox3fa> buildMBlurBVH(size_t time, const GridRange& range, size_t& allocator);
 
       /*! Create MSMBlur BVH4 tree over grid. */
-      std::pair<BVH4::NodeRef,LBBox3fa> buildMSMBlurBVH(const range<int> time_range, size_t& allocator, BBox3fa* bounds_o);
+      std::pair<BVH4::NodeRef,LBBox3fa> buildMSMBlurBVH(const range<int> trange, size_t& allocator, BBox3fa* bounds_o);
 
       template<typename Loader>
         struct MapUV

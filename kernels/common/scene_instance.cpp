@@ -136,9 +136,9 @@ namespace embree
       return getLocal2World(time);
   }
 
-  void Instance::setMask (unsigned mask)
+  void Instance::setMask (unsigned newMask)
   {
-    this->mask = mask;
+    this->mask = newMask;
     Geometry::update();
   }
 
@@ -339,11 +339,11 @@ namespace embree
   {
     LBBox3fa lbbox = empty;
     /* normalize global time_range_in to local geom_time_range */
-    const BBox1f time_range((time_range_in.lower-geom_time_range.lower)/geom_time_range.size(),
-                            (time_range_in.upper-geom_time_range.lower)/geom_time_range.size());
+    const BBox1f local_time_range((time_range_in.lower-geom_time_range.lower)/geom_time_range.size(),
+                                  (time_range_in.upper-geom_time_range.lower)/geom_time_range.size());
 
-    const float lower = time_range.lower*geom_time_segments;
-    const float upper = time_range.upper*geom_time_segments;
+    const float lower = local_time_range.lower*geom_time_segments;
+    const float upper = local_time_range.upper*geom_time_segments;
     const float ilowerf = floor(lower);
     const float iupperf = ceil(upper);
     const float ilowerfc = max(0.0f,ilowerf);
@@ -358,8 +358,8 @@ namespace embree
 
     if (iupper_iter-ilower_iter == 1)
     {
-      const float f0 = (ilowerc / geom_time_segments - time_range.lower) / time_range.size();
-      const float f1 = (iupperc / geom_time_segments - time_range.lower) / time_range.size();
+      const float f0 = (ilowerc / geom_time_segments - local_time_range.lower) / local_time_range.size();
+      const float f1 = (iupperc / geom_time_segments - local_time_range.lower) / local_time_range.size();
 
       lbbox.bounds0 = bounds(ilowerc, iupperc, max(0.0f,lower-ilowerfc));
       lbbox.bounds1 = bounds(iupperc, ilowerc, max(0.0f,iupperfc-upper));
@@ -378,7 +378,7 @@ namespace embree
 
       for (int i = ilower_iter+1; i < iupper_iter; i++)
       {
-        const float f = (float(i) / geom_time_segments - time_range.lower) / time_range.size();
+        const float f = (float(i) / geom_time_segments - local_time_range.lower) / local_time_range.size();
         const BBox3fa bt = lerp(b0, b1, f);
         const BBox3fa bi = bounds(0, i);
         const Vec3fa dlower = min(bi.lower-bt.lower, Vec3fa(zero));
@@ -391,8 +391,8 @@ namespace embree
       for (int i = max(1, ilower_iter+1); i <= min((int)fnumTimeSegments, iupper_iter); i++)
       {
         // compute local times for local itimes
-        const float f0 = ((i-1) / geom_time_segments - time_range.lower) / time_range.size();
-        const float f1 = ((i  ) / geom_time_segments - time_range.lower) / time_range.size();
+        const float f0 = ((i-1) / geom_time_segments - local_time_range.lower) / local_time_range.size();
+        const float f1 = ((i  ) / geom_time_segments - local_time_range.lower) / local_time_range.size();
         const float tmin = (i == max(1, ilower_iter+1))                           ?       max(0.f, lower-ilowerfc) : 0.f;
         const float tmax = (i == max(1, min((int)fnumTimeSegments, iupper_iter))) ? 1.f - max(0.f, iupperfc-upper) : 1.f;
         const BBox3fa d = boundSegment(i-1, getObjectBounds(i-1), getObjectBounds(i),

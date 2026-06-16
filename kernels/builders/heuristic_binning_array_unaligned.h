@@ -27,7 +27,7 @@ namespace embree
         const LinearSpace3fa computeAlignedSpace(const range<size_t>& set)
         {
           Vec3fa axis(0,0,1);
-          uint64_t bestGeomPrimID = -1;
+          uint64_t bestGeomPrimID = (uint64_t)-1;
 
           /*! find curve with minimum ID that defines valid direction */
           for (size_t i=set.begin(); i<set.end(); i++)
@@ -197,10 +197,10 @@ namespace embree
         UnalignedHeuristicArrayBinningMB(Scene* scene)
         : scene(scene) {}
 
-        const LinearSpace3fa computeAlignedSpaceMB(Scene* scene, const SetMB& set)
+        const LinearSpace3fa computeAlignedSpaceMB(Scene* pScene, const SetMB& set)
         {
           Vec3fa axis0(0,0,1);
-          uint64_t bestGeomPrimID = -1;
+          uint64_t bestGeomPrimID = (uint64_t)-1;
 
           /*! find curve with minimum ID that defines valid direction */
           for (size_t i=set.begin(); i<set.end(); i++)
@@ -211,7 +211,7 @@ namespace embree
             const uint64_t geomprimID = prim.ID64();
             if (geomprimID >= bestGeomPrimID) continue;
             
-            const Geometry* mesh = scene->get(geomID);
+            const Geometry* mesh = pScene->get(geomID);
             const range<int> tbounds = mesh->timeSegmentRange(set.time_range);
             if (tbounds.size() == 0) continue;
 
@@ -300,3 +300,4 @@ namespace embree
       };
   }
 }
+

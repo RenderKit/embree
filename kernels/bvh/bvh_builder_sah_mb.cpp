@@ -229,7 +229,7 @@ namespace embree
       __forceinline GridRecalculatePrimRef (Scene* scene, const SubGridBuildData * const sgrids)
         : scene(scene), sgrids(sgrids) {}
 
-        __forceinline PrimRefMB operator() (const PrimRefMB& prim, const BBox1f time_range) const
+        __forceinline PrimRefMB operator() (const PrimRefMB& prim, const BBox1f trange) const
         {
           const unsigned int geomID  = prim.geomID();
           const GridMesh* mesh = scene->get<GridMesh>(geomID);
@@ -238,13 +238,13 @@ namespace embree
           const unsigned int primID = subgrid.primID;
           const size_t x = subgrid.x();
           const size_t y = subgrid.y();
-          const LBBox3fa lbounds = mesh->linearBounds(mesh->grid(primID),x,y,time_range);
+          const LBBox3fa lbounds = mesh->linearBounds(mesh->grid(primID),x,y,trange);
           const unsigned num_time_segments = mesh->numTimeSegments();
-          const range<int> tbounds = mesh->timeSegmentRange(time_range);
+          const range<int> tbounds = mesh->timeSegmentRange(trange);
           return PrimRefMB (lbounds, tbounds.size(), mesh->time_range, num_time_segments, geomID, buildID);
         }
 
-        __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range) const {
+        __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f trange) const {
           const unsigned int geomID  = prim.geomID();
           const GridMesh* mesh = scene->get<GridMesh>(geomID);
           const unsigned int buildID = prim.primID();
@@ -252,7 +252,7 @@ namespace embree
           const unsigned int primID = subgrid.primID;
           const size_t x = subgrid.x();
           const size_t y = subgrid.y();
-          return mesh->linearBounds(mesh->grid(primID),x,y,time_range);
+          return mesh->linearBounds(mesh->grid(primID),x,y,trange);
         }
 
     };
@@ -312,9 +312,9 @@ namespace embree
             x[pos] = sgrid_bd.sx;
             y[pos] = sgrid_bd.sy;
             primID[pos] = sgrid_bd.primID;
-            const size_t x = sgrid_bd.x();
-            const size_t y = sgrid_bd.y();
-            LBBox3fa newBounds = mesh->linearBounds(mesh->grid(sgrid_bd.primID),x,y,current.prims.time_range);
+            const size_t sx = sgrid_bd.x();
+            const size_t sy = sgrid_bd.y();
+            LBBox3fa newBounds = mesh->linearBounds(mesh->grid(sgrid_bd.primID),sx,sy,current.prims.time_range);
             allBounds.extend(newBounds);
             bounds0[pos] = newBounds.bounds0;
             bounds1[pos] = newBounds.bounds1;
@@ -489,11 +489,11 @@ namespace embree
         return pinfo;
       }
 
-      PrimInfoMB createPrimRefArrayMSMBlurGrid(Scene* scene, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1 = BBox1f(0.0f,1.0f))
+      PrimInfoMB createPrimRefArrayMSMBlurGrid(Scene* pScene, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1 = BBox1f(0.0f,1.0f))
       {
         /* first run to get #primitives */
         ParallelForForPrefixSumState<PrimInfoMB> pstate;
-        Scene::Iterator<GridMesh,true> iter(scene);
+        Scene::Iterator<GridMesh,true> iter(pScene);
 
         pstate.init(iter,size_t(1024));
         /* iterate over all meshes in the scene */

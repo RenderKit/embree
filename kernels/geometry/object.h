@@ -62,25 +62,25 @@ namespace embree
     }
 
     /*! fill triangle from triangle list */
-    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t i, Scene* scene, const BBox1f time_range)
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t i, Scene* scene, const BBox1f trange)
     {
       const PrimRefMB& prim = prims[i]; i++;
       const unsigned geomID = prim.geomID();
       const unsigned primID = prim.primID();
       new (this) Object(geomID, primID);
       AccelSet* accel = (AccelSet*) scene->get(geomID);
-      return accel->linearBounds(primID,time_range);
+      return accel->linearBounds(primID,trange);
     }
 
      /*! fill triangle from triangle list */
-    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& i, size_t end, Scene* scene, const BBox1f time_range)
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& i, size_t end, Scene* scene, const BBox1f trange)
     {
       const PrimRefMB& prim = prims[i]; i++;
       const unsigned geomID = prim.geomID();
       const unsigned primID = prim.primID();
       new (this) Object(geomID, primID);
       AccelSet* accel = (AccelSet*) scene->get(geomID);
-      return accel->linearBounds(primID,time_range);
+      return accel->linearBounds(primID,trange);
     }
 
     /* Updates the primitive */

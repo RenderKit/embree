@@ -82,10 +82,11 @@ namespace embree
                                      const Vertex& v10, const Vertex& v11, const Vertex& v12, 
                                      const Vertex& v20, const Vertex& v21, const Vertex& v22)
       {
-        const bool MAYBE_UNUSED has_back1 = edge0.has_opposite_back(1);
-        const bool has_back0 = edge0.has_opposite_back(0);
-        const bool has_front1 = edge0.has_opposite_front(1);
+        const bool MAYBE_UNUSED has_back1  = edge0.has_opposite_back(1);
+        const bool               has_back0  = edge0.has_opposite_back(0);
+        const bool               has_front1 = edge0.has_opposite_front(1);
         const bool MAYBE_UNUSED has_front2 = edge0.has_opposite_front(2);
+        (void)has_back1; (void)has_front2;
         
         if (likely(has_back0)) {
           if (likely(has_front1)) { assert(has_back1 && has_front2); v00 = edge0.back(3); }
@@ -357,21 +358,21 @@ namespace embree
         return cross(eval_du(uu,vv),eval_dv(uu,vv));
       }
 
-      void eval(const float u, const float v, 
+      void eval(const float u, const float vv, 
                 Vertex* P, Vertex* dPdu, Vertex* dPdv, Vertex* ddPdudu, Vertex* ddPdvdv, Vertex* ddPdudv, 
                 const float dscale = 1.0f) const
       {
         if (P) {
-          *P = eval(u,v); 
+          *P = eval(u,vv); 
         }
         if (dPdu) {
-          assert(dPdu); *dPdu = eval_du(u,v)*dscale; 
-          assert(dPdv); *dPdv = eval_dv(u,v)*dscale; 
+          assert(dPdu); *dPdu = eval_du(u,vv)*dscale; 
+          assert(dPdv); *dPdv = eval_dv(u,vv)*dscale; 
         }
         if (ddPdudu) {
-          assert(ddPdudu); *ddPdudu = eval_dudu(u,v)*sqr(dscale); 
-          assert(ddPdvdv); *ddPdvdv = eval_dvdv(u,v)*sqr(dscale); 
-          assert(ddPdudv); *ddPdudv = eval_dudv(u,v)*sqr(dscale); 
+          assert(ddPdudu); *ddPdudu = eval_dudu(u,vv)*sqr(dscale); 
+          assert(ddPdvdv); *ddPdvdv = eval_dvdv(u,vv)*sqr(dscale); 
+          assert(ddPdudv); *ddPdudv = eval_dudv(u,vv)*sqr(dscale); 
         }
       }
 

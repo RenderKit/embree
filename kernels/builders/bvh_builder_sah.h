@@ -164,7 +164,7 @@ namespace embree
             do {
 
               /* find best child with largest bounding box area */
-              size_t bestChild = -1;
+              size_t bestChild = (size_t)-1;
               size_t bestSize = 0;
               for (size_t i=0; i<numChildren; i++)
               {
@@ -271,8 +271,8 @@ namespace embree
               BuildRecord& brecord = children[bestChild];
               BuildRecord lrecord(current.depth+1);
               BuildRecord rrecord(current.depth+1);
-              auto split = heuristic.find(brecord.prims,cfg.logBlockSize);
-              heuristic.split(split,brecord.prims,lrecord.prims,rrecord.prims);
+              auto innerSplit = heuristic.find(brecord.prims,cfg.logBlockSize);
+              heuristic.split(innerSplit,brecord.prims,lrecord.prims,rrecord.prims);
               children[bestChild  ] = lrecord;
               children[numChildren] = rrecord;
               numChildren++;

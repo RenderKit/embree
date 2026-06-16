@@ -247,20 +247,20 @@ namespace embree
   }
 
   /* calculate overlapping time segment range */
-  __forceinline range<int> getTimeSegmentRange(const BBox1f& time_range, float numTimeSegments)
+  __forceinline range<int> getTimeSegmentRange(const BBox1f& trange, float numTimeSegments)
   {
     const float round_up   = 1.0f+2.0f*float(ulp); // corrects inaccuracies to precisely match time step
     const float round_down = 1.0f-2.0f*float(ulp);
-    const int itime_lower = (int)max(floor(round_up  *time_range.lower*numTimeSegments), 0.0f);
-    const int itime_upper = (int)min(ceil (round_down*time_range.upper*numTimeSegments), numTimeSegments);
+    const int itime_lower = (int)max(floor(round_up  *trange.lower*numTimeSegments), 0.0f);
+    const int itime_upper = (int)min(ceil (round_down*trange.upper*numTimeSegments), numTimeSegments);
     return make_range(itime_lower, itime_upper);
   }
 
   /* calculate overlapping time segment range */
-  __forceinline range<int> getTimeSegmentRange(const BBox1f& range, BBox1f time_range, float numTimeSegments)
+  __forceinline range<int> getTimeSegmentRange(const BBox1f& range, BBox1f trange, float numTimeSegments)
   {
-    const float lower = (range.lower-time_range.lower)/time_range.size();
-    const float upper = (range.upper-time_range.lower)/time_range.size();
+    const float lower = (range.lower-trange.lower)/trange.size();
+    const float upper = (range.upper-trange.lower)/trange.size();
     return getTimeSegmentRange(BBox1f(lower,upper),numTimeSegments);
   }
 }

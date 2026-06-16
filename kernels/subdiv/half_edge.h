@@ -47,7 +47,7 @@ namespace embree
     };
 
     HalfEdge () 
-      : vtx_index(-1), next_half_edge_ofs(0), prev_half_edge_ofs(0), opposite_half_edge_ofs(0), edge_crease_weight(0), 
+      : vtx_index((unsigned int)-1), next_half_edge_ofs(0), prev_half_edge_ofs(0), opposite_half_edge_ofs(0), edge_crease_weight(0), 
       vertex_crease_weight(0), edge_level(0), patch_type(COMPLEX_PATCH), vertex_type(REGULAR_VERTEX)
     {
       static_assert(sizeof(HalfEdge) == 32, "invalid half edge size");
@@ -313,8 +313,8 @@ namespace embree
       if (!isvalid(v)) return false;
       size_t n = 1;
       for (const HalfEdge* p = next(); p!=this; p=p->next(), n++) {
-        const Vec3fa v = vertices[p->getStartVertexIndex()];
-        if (!isvalid(v)) return false;
+        const Vec3fa edge_v = vertices[p->getStartVertexIndex()];
+        if (!isvalid(edge_v)) return false;
       }
       if (n < 2) return false;
       N += n-2;

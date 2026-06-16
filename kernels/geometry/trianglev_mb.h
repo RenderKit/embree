@@ -46,7 +46,7 @@ namespace embree
       : v0(a0), v1(b0), v2(c0), dv0(a1-a0), dv1(b1-b0), dv2(c1-c0), geomIDs(geomIDs), primIDs(primIDs) {}
 
     /* Returns a mask that tells which triangles are valid */
-    __forceinline vbool<M> valid() const { return geomIDs != vuint<M>(-1); }
+    __forceinline vbool<M> valid() const { return geomIDs != vuint<M>((unsigned int)-1); }
 
     /* Returns if the specified triangle is valid */
     __forceinline bool valid(const size_t i) const { assert(i<M); return geomIDs[i] != -1; }
@@ -140,9 +140,9 @@ namespace embree
     }
 
     /* Fill triangle from triangle list */
-    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f trange)
     {
-      vuint<M> vgeomID = -1, vprimID = -1;
+      vuint<M> vgeomID = (unsigned int)-1, vprimID = (unsigned int)-1;
       Vec3vf<M> va0 = zero, vb0 = zero, vc0 = zero;
       Vec3vf<M> va1 = zero, vb1 = zero, vc1 = zero;
 
@@ -153,11 +153,11 @@ namespace embree
         const unsigned geomID = prim.geomID();
         const unsigned primID = prim.primID();
         const TriangleMesh* const mesh = scene->get<TriangleMesh>(geomID);
-        const range<int> itime_range = mesh->timeSegmentRange(time_range);
+        const range<int> itime_range = mesh->timeSegmentRange(trange);
         assert(itime_range.size() == 1);
         const int ilower = itime_range.begin();
         const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-        allBounds.extend(mesh->linearBounds(primID, time_range));
+        allBounds.extend(mesh->linearBounds(primID, trange));
         const Vec3fa& a0 = mesh->vertex(tri.v[0],size_t(ilower+0));
         const Vec3fa& a1 = mesh->vertex(tri.v[0],size_t(ilower+1));
         const Vec3fa& b0 = mesh->vertex(tri.v[1],size_t(ilower+0));

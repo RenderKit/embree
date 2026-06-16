@@ -208,7 +208,8 @@ namespace embree
         stack_near[0] = inf;
         stack_node[1] = bvh->root;
         stack_near[1] = tray.tnear;
-        NodeRef* stackEnd MAYBE_UNUSED = stack_node+stackSizeChunk;
+        NodeRef* stackEnd = stack_node+stackSizeChunk;
+        (void)stackEnd;
         NodeRef* __restrict__ sptr_node = stack_node + 2;
         vfloat<K>* __restrict__ sptr_near = stack_near + 2;
 
@@ -642,7 +643,7 @@ namespace embree
       tray.tfar  = select(valid, org_ray_tfar , vfloat<K>(neg_inf));
 
       vbool<K> terminated = !valid;
-      const vfloat<K> inf = vfloat<K>(pos_inf);
+      const vfloat<K> inf_val = vfloat<K>(pos_inf);
 
       /* determine switch threshold based on flags */
       const size_t switchThreshold = (context->user && context->isCoherent()) ? 2 : switchThresholdIncoherent;
@@ -651,10 +652,11 @@ namespace embree
       vfloat<K> stack_near[stackSizeChunk];
       NodeRef stack_node[stackSizeChunk];
       stack_node[0] = BVH::invalidNode;
-      stack_near[0] = inf;
+      stack_near[0] = inf_val;
       stack_node[1] = bvh->root;
       stack_near[1] = tray.tnear;
-      NodeRef* stackEnd MAYBE_UNUSED = stack_node+stackSizeChunk;
+      NodeRef* stackEnd = stack_node+stackSizeChunk;
+      (void)stackEnd;
       NodeRef* __restrict__ sptr_node = stack_node + 2;
       vfloat<K>* __restrict__ sptr_near = stack_near + 2;
 
@@ -724,7 +726,7 @@ namespace embree
             {
               assert(sptr_node < stackEnd);
               assert(child != BVH::emptyNode);
-              const vfloat<K> childDist = select(lhit, lnearP, inf);
+              const vfloat<K> childDist = select(lhit, lnearP, inf_val);
 
               /* push 'cur' node onto stack and continue with hit child */
               if (likely(cur != BVH::emptyNode)) {

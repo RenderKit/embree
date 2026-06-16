@@ -124,12 +124,12 @@ namespace embree
       return allBounds;
     }
 
-    __forceinline LBBox3fa linearBounds(const Scene* const scene, const BBox1f time_range)
+    __forceinline LBBox3fa linearBounds(const Scene* const scene, const BBox1f trange)
     {
       LBBox3fa allBounds = empty;
       for (size_t i = 0; i < M && valid(i); i++) {
         const Points* geom = scene->get<Points>(geomID((unsigned int)i));
-        allBounds.extend(geom->linearBounds(primID(i), time_range));
+        allBounds.extend(geom->linearBounds(primID(i), trange));
       }
       return allBounds;
     }
@@ -143,13 +143,13 @@ namespace embree
       vuint<M> v0;
       const PrimRefT* prim = &prims[begin];
 
-      int numPrimitives = 0;
+      int primCount = 0;
       for (size_t i = 0; i < M; i++) {
         if (begin < end) {
           geomID[i] = prim->geomID();
           primID[i] = prim->primID();
           begin++;
-          numPrimitives++;
+          primCount++;
         } else {
           assert(i);
           if (i > 0) {
@@ -160,7 +160,7 @@ namespace embree
         if (begin < end)
           prim = &prims[begin];  // FIXME: remove this line
       }
-      new (this) PointMi(geomID, primID, gty, numPrimitives);  // FIXME: use non temporal store
+      new (this) PointMi(geomID, primID, gty, primCount);  // FIXME: use non temporal store
     }
 
     template<typename BVH, typename Allocator>
@@ -186,10 +186,10 @@ namespace embree
     }
 
     __forceinline LBBox3fa fillMB(
-        const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
+        const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f trange)
     {
       fill(prims, begin, end, scene);
-      return linearBounds(scene, time_range);
+      return linearBounds(scene, trange);
     }
 
     template<typename BVH, typename SetMB, typename Allocator>

@@ -16,11 +16,11 @@ namespace embree
 
     ProfileTimer (const size_t numSkip) : i(0), j(0), maxJ(0), numSkip(numSkip), t0(0)
     {
-      for (size_t i=0; i<N; i++) names[i] = nullptr;
-      for (size_t i=0; i<N; i++) dt_fst[i] = 0.0;
-      for (size_t i=0; i<N; i++) dt_min[i] = pos_inf;
-      for (size_t i=0; i<N; i++) dt_avg[i] = 0.0;
-      for (size_t i=0; i<N; i++) dt_max[i] = neg_inf;
+      for (size_t n=0; n<N; n++) names[n] = nullptr;
+      for (size_t n=0; n<N; n++) dt_fst[n] = 0.0;
+      for (size_t n=0; n<N; n++) dt_min[n] = pos_inf;
+      for (size_t n=0; n<N; n++) dt_avg[n] = 0.0;
+      for (size_t n=0; n<N; n++) dt_max[n] = neg_inf;
     }
     
     __forceinline void begin() 
@@ -77,14 +77,14 @@ namespace embree
         dt_avg[k] /= double(i-numSkip);
 
       printf("  profile [M/s]:\n");
-      for (size_t j=0; j<maxJ; j++)
+      for (size_t k=0; k<maxJ; k++)
         printf("%20s:  fst = %7.2f M/s, min = %7.2f M/s, avg = %7.2f M/s, max = %7.2f M/s\n",
-               names[j],numElements/dt_fst[j]*1E-6,numElements/dt_max[j]*1E-6,numElements/dt_avg[j]*1E-6,numElements/dt_min[j]*1E-6);
+               names[k],numElements/dt_fst[k]*1E-6,numElements/dt_max[k]*1E-6,numElements/dt_avg[k]*1E-6,numElements/dt_min[k]*1E-6);
 
       printf("  profile [ms]:\n");
-      for (size_t j=0; j<maxJ; j++) 
+      for (size_t k=0; k<maxJ; k++) 
         printf("%20s:  fst = %7.2f ms, min = %7.2f ms, avg = %7.2f ms, max = %7.2fms\n",
-               names[j],1000.0*dt_fst[j],1000.0*dt_min[j],1000.0*dt_avg[j],1000.0*dt_max[j]);
+               names[k],1000.0*dt_fst[k],1000.0*dt_min[k],1000.0*dt_avg[k],1000.0*dt_max[k]);
     }
 
     void print() 
@@ -94,9 +94,9 @@ namespace embree
       for (size_t k=0; k<N; k++) 
         dt_avg[k] /= double(i-numSkip);
 
-      for (size_t j=0; j<maxJ; j++) {
+      for (size_t k=0; k<maxJ; k++) {
         printf("%20s:  fst = %7.2f ms, min = %7.2f ms, avg = %7.2f ms, max = %7.2fms\n",
-               names[j],1000.0*dt_fst[j],1000.0*dt_min[j],1000.0*dt_avg[j],1000.0*dt_max[j]);
+               names[k],1000.0*dt_fst[k],1000.0*dt_min[k],1000.0*dt_avg[k],1000.0*dt_max[k]);
       }
     }
 

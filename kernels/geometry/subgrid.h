@@ -274,7 +274,7 @@ namespace embree
           return allBounds;
         }
 
-        __forceinline LBBox3fa linearBounds(const Scene *const scene, const BBox1f time_range)
+        __forceinline LBBox3fa linearBounds(const Scene *const scene, const BBox1f trange)
         {
           LBBox3fa allBounds = empty;
           FATAL("not implemented yet");

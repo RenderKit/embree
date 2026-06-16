@@ -82,15 +82,15 @@ namespace embree
       return bytes;
     }
 
-    size_t GridSOA::getTemporalBVHBytes(const range<int> time_range, const size_t nodeBytes)
+    size_t GridSOA::getTemporalBVHBytes(const range<int> trange, const size_t nodeBytes)
     {
-      if (time_range.size() <= 1)
+      if (trange.size() <= 1)
         return 0;
 
       size_t bytes = nodeBytes;
       for (int i=0; i<4; i++) {
-        const int begin = time_range.begin() + (i+0)*time_range.size()/4;
-        const int end   = time_range.begin() + (i+1)*time_range.size()/4;
+        const int begin = trange.begin() + (i+0)*trange.size()/4;
+        const int end   = trange.begin() + (i+1)*trange.size()/4;
         bytes += getTemporalBVHBytes(make_range(begin,end),nodeBytes);
       }
       return bytes;
@@ -187,12 +187,12 @@ namespace embree
       }
     }
 
-    std::pair<BVH4::NodeRef,LBBox3fa> GridSOA::buildMSMBlurBVH(const range<int> time_range, size_t& allocator, BBox3fa* bounds_o)
+    std::pair<BVH4::NodeRef,LBBox3fa> GridSOA::buildMSMBlurBVH(const range<int> trange, size_t& allocator, BBox3fa* bounds_o)
     {
-      assert(time_range.size() > 0);
-      if (time_range.size() == 1) 
+      assert(trange.size() > 0);
+      if (trange.size() == 1)
       {
-        size_t t = time_range.begin();
+        size_t t = trange.begin();
         GridRange range(0,width-1,0,height-1);
         std::pair<BVH4::NodeRef,LBBox3fa> root_bounds = buildMBlurBVH(t,range,allocator);
         root(t) = root_bounds.first;
@@ -208,8 +208,8 @@ namespace embree
 
       for (int i=0, j=0; i<4; i++) 
       {
-        const int begin = time_range.begin() + (i+0)*time_range.size()/4;
-        const int end   = time_range.begin() + (i+1)*time_range.size()/4;
+        const int begin = trange.begin() + (i+0)*trange.size()/4;
+        const int end   = trange.begin() + (i+1)*trange.size()/4;
         if (end-begin <= 0) continue;
         std::pair<BVH4::NodeRef,LBBox3fa> node_bounds = buildMSMBlurBVH(make_range(begin,end),allocator,bounds_o);
         const float t0 = float(begin)/float(time_steps-1);
@@ -222,14 +222,14 @@ namespace embree
         j++;
       }
 
-      const LBBox3fa lbounds = LBBox3fa([&] ( int i ) { return bounds_o[i]; }, time_range, time_steps-1);
+      const LBBox3fa lbounds = LBBox3fa([&] ( int i ) { return bounds_o[i]; }, trange, time_steps-1);
       return std::make_pair(BVH4::encodeNode(node),lbounds);
     }
 
-    std::pair<BVH4::NodeRef,LBBox3fa> GridSOA::buildMSMBlurBVH(const range<int> time_range, BBox3fa* bounds_o)
+    std::pair<BVH4::NodeRef,LBBox3fa> GridSOA::buildMSMBlurBVH(const range<int> trange, BBox3fa* bounds_o)
     {
       size_t allocator = 0;
-      std::pair<BVH4::NodeRef,LBBox3fa> root = buildMSMBlurBVH(time_range,allocator,bounds_o);
+      std::pair<BVH4::NodeRef,LBBox3fa> root = buildMSMBlurBVH(trange,allocator,bounds_o);
       assert(allocator == gridOffset);
       return root;
     }

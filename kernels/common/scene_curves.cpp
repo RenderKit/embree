@@ -29,16 +29,16 @@ namespace embree
     resizeBuffers(numTimeSteps);
   }
   
-  void CurveGeometry::setMask (unsigned mask) 
+  void CurveGeometry::setMask (unsigned newMask) 
   {
-    this->mask = mask; 
+    this->mask = newMask; 
     Geometry::update();
   }
 
-  void CurveGeometry::setNumTimeSteps (unsigned int numTimeSteps)
+  void CurveGeometry::setNumTimeSteps (unsigned int newNumTimeSteps)
   {
-    resizeBuffers(numTimeSteps);
-    Geometry::setNumTimeSteps(numTimeSteps);
+    resizeBuffers(newNumTimeSteps);
+    Geometry::setNumTimeSteps(newNumTimeSteps);
   }
   
   void CurveGeometry::setVertexAttributeCount (unsigned int N)
@@ -487,12 +487,12 @@ namespace embree
         return frame(axisz);
       }
 
-      LinearSpace3fa computeAlignedSpaceMB(const size_t primID, const BBox1f time_range) const
+      LinearSpace3fa computeAlignedSpaceMB(const size_t primID, const BBox1f trange) const
       {
         Vec3fa axisz(0,0,1);
         Vec3fa axisy(0,1,0);
 
-        const range<int> tbounds = this->timeSegmentRange(time_range);
+        const range<int> tbounds = this->timeSegmentRange(trange);
         if (tbounds.size() == 0) return frame(axisz);
         
         const size_t t = (tbounds.begin()+tbounds.end())/2;
@@ -596,10 +596,10 @@ namespace embree
         return pinfo;
       }
 
-      PrimInfo createPrimRefArrayMB(PrimRef* prims, const BBox1f& time_range, const range<size_t>& r, size_t k, unsigned int geomID) const
+      PrimInfo createPrimRefArrayMB(PrimRef* prims, const BBox1f& trange, const range<size_t>& r, size_t k, unsigned int geomID) const
       {
         PrimInfo pinfo(empty);
-        const BBox1f t0t1 = BBox1f::intersect(this->time_range, time_range);
+        const BBox1f t0t1 = BBox1f::intersect(this->time_range, trange);
         if (t0t1.empty()) return pinfo;
         
         for (size_t j=r.begin(); j<r.end(); j++)
@@ -640,16 +640,16 @@ namespace embree
         return bounds(ofs,scale,r_scale0,space,i,itime);
       }
 
-      LBBox3fa vlinearBounds(size_t primID, const BBox1f& time_range) const {
-        return linearBounds(primID,time_range);
+      LBBox3fa vlinearBounds(size_t primID, const BBox1f& trange) const {
+        return linearBounds(primID,trange);
       }
       
-      LBBox3fa vlinearBounds(const LinearSpace3fa& space, size_t primID, const BBox1f& time_range) const {
-        return linearBounds(space,primID,time_range);
+      LBBox3fa vlinearBounds(const LinearSpace3fa& space, size_t primID, const BBox1f& trange) const {
+        return linearBounds(space,primID,trange);
       }
 
-      LBBox3fa vlinearBounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t primID, const BBox1f& time_range) const {
-        return linearBounds(ofs,scale,r_scale0,space,primID,time_range);
+      LBBox3fa vlinearBounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t primID, const BBox1f& trange) const {
+        return linearBounds(ofs,scale,r_scale0,space,primID,trange);
       }
     };
 

@@ -41,13 +41,13 @@ namespace embree
 
     /* Construction from vertices and IDs */
     __forceinline LineMi(const vuint<M>& v0, unsigned short leftExists, unsigned short rightExists, const vuint<M>& geomIDs, const vuint<M>& primIDs, Geometry::GType gtype)
-      : gtype((unsigned char)gtype), m((unsigned char)popcnt(vuint<M>(primIDs) != vuint<M>(-1))), sharedGeomID(geomIDs[0]), leftExists (leftExists), rightExists(rightExists), v0(v0), primIDs(primIDs)
+      : gtype((unsigned char)gtype), m((unsigned char)popcnt(vuint<M>(primIDs) != vuint<M>((unsigned int)-1))), sharedGeomID(geomIDs[0]), leftExists (leftExists), rightExists(rightExists), v0(v0), primIDs(primIDs)
     {
       assert(all(vuint<M>(geomID()) == geomIDs));
     }
 
     /* Returns a mask that tells which line segments are valid */
-    __forceinline vbool<M> valid() const { return primIDs != vuint<M>(-1); }
+    __forceinline vbool<M> valid() const { return primIDs != vuint<M>((unsigned)-1); }
 
     /* Returns if the specified line segment is valid */
     __forceinline bool valid(const size_t i) const { assert(i<M); return primIDs[i] != -1; }
@@ -156,13 +156,13 @@ namespace embree
       return allBounds;
     }
 
-    __forceinline LBBox3fa linearBounds(const Scene *const scene, const BBox1f time_range) 
+    __forceinline LBBox3fa linearBounds(const Scene *const scene, const BBox1f trange)
     {
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<M && valid(i); i++)
       {
         const LineSegments* geom = scene->get<LineSegments>(geomID((unsigned int)i));
-        allBounds.extend(geom->linearBounds(primID(i), time_range));
+        allBounds.extend(geom->linearBounds(primID(i), trange));
       }
       return allBounds;
     }
@@ -173,9 +173,9 @@ namespace embree
     {
       Geometry::GType gty = scene->get(prims[begin].geomID())->getType();
       vuint<M> geomID, primID;
-      vuint<M> v0;
-      unsigned short leftExists = 0;
-      unsigned short rightExists = 0;
+      vuint<M> lv0;
+      unsigned short lLeftExists = 0;
+      unsigned short lRightExists = 0;
       const PrimRefT* prim = &prims[begin];
 
       for (size_t i=0; i<M; i++)
@@ -184,21 +184,21 @@ namespace embree
         if (begin<end) {
           geomID[i] = prim->geomID();
           primID[i] = prim->primID();
-          v0[i] = geom->segment(prim->primID());
-          leftExists |= geom->segmentLeftExists(primID[i]) << i;
-          rightExists |= geom->segmentRightExists(primID[i]) << i;         
+          lv0[i] = geom->segment(prim->primID());
+          lLeftExists |= geom->segmentLeftExists(primID[i]) << i;
+          lRightExists |= geom->segmentRightExists(primID[i]) << i;
           begin++;
         } else {
           assert(i);
           if (i>0) {
             geomID[i] = geomID[i-1];
-            primID[i] = -1;
-            v0[i] = v0[i-1];
+            primID[i] = (unsigned int)-1;
+            lv0[i] = lv0[i-1];
           }
         }
         if (begin<end) prim = &prims[begin]; // FIXME: remove this line
       }
-      new (this) LineMi(v0,leftExists,rightExists,geomID,primID,gty); // FIXME: use non temporal store
+      new (this) LineMi(lv0,lLeftExists,lRightExists,geomID,primID,gty); // FIXME: use non temporal store
     }
 
      template<typename BVH, typename Allocator>
@@ -220,10 +220,10 @@ namespace embree
       return linearBounds(scene,itime);
     }
 
-    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f trange)
     {
       fill(prims,begin,end,scene);
-      return linearBounds(scene,time_range);
+      return linearBounds(scene,trange);
     }
 
       template<typename BVH, typename SetMB, typename Allocator>

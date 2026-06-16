@@ -269,10 +269,10 @@ namespace embree
       /* run test */ 
       for (size_t i=0; i<1000; i++)
       {
-        for (size_t i=0; i<numThreads; i++) threadResults[i] = 0;
+        for (size_t t=0; t<numThreads; t++) threadResults[t] = 0;
         barrier.wait();
         barrier.wait();
-        for (size_t i=0; i<numThreads; i++) numFailed += threadResults[i] != i;
+        for (size_t t=0; t<numThreads; t++) numFailed += threadResults[t] != t;
       }
 
       /* destroy threads */

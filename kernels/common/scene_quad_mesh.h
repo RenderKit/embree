@@ -310,8 +310,8 @@ namespace embree
       QuadMeshISA (Device* device)
         : QuadMesh(device) {}
 
-      LBBox3fa vlinearBounds(size_t primID, const BBox1f& time_range) const {
-        return linearBounds(primID,time_range);
+      LBBox3fa vlinearBounds(size_t primID, const BBox1f& trange) const {
+        return linearBounds(primID,trange);
       }
 
       PrimInfo createPrimRefArray(PrimRef* prims, const range<size_t>& r, size_t k, unsigned int geomID) const
@@ -342,10 +342,10 @@ namespace embree
         return pinfo;
       }
 
-      PrimInfo createPrimRefArrayMB(PrimRef* prims, const BBox1f& time_range, const range<size_t>& r, size_t k, unsigned int geomID) const
+      PrimInfo createPrimRefArrayMB(PrimRef* prims, const BBox1f& trange, const range<size_t>& r, size_t k, unsigned int geomID) const
       {
         PrimInfo pinfo(empty);
-        const BBox1f t0t1 = BBox1f::intersect(getTimeRange(), time_range);
+        const BBox1f t0t1 = BBox1f::intersect(getTimeRange(), trange);
         if (t0t1.empty()) return pinfo;
                 
         for (size_t j = r.begin(); j < r.end(); j++) {

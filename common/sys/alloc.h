@@ -169,7 +169,7 @@ namespace embree
         else
         {
           if (size_t(nextID)+1 > max_id)
-            return -1;
+            return (T)-1;
           
           return nextID++;
         }
@@ -203,8 +203,9 @@ namespace embree
       void deallocate( T id ) 
       {
         assert(id < nextID);
-        MAYBE_UNUSED auto done = IDs.insert(id).second;
+        auto done = IDs.insert(id).second;
         assert(done);
+        (void)done;
       }
 
     private:

@@ -17,13 +17,13 @@ namespace embree
     else                   counts.numMBUserGeometries += numPrimitives;
   }
   
-  void UserGeometry::setMask (unsigned mask) 
+  void UserGeometry::setMask (unsigned newMask) 
   {
-    this->mask = mask; 
+    this->mask = newMask; 
     Geometry::update();
   }
 
-  void UserGeometry::setBoundsFunction (RTCBoundsFunction bounds, void* userPtr) {
+  void UserGeometry::setBoundsFunction (RTCBoundsFunction bounds, void* /*userPtr*/) {
     this->boundsFunc = bounds;
   }
 

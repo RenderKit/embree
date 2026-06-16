@@ -66,7 +66,7 @@ namespace embree
     static const size_t byteNodeAlignment = 4*N;
 
     /*! highest address bit is used as barrier for some algorithms */
-    static const size_t barrier_mask = (1LL << (8*sizeof(size_t)-1));
+    static const size_t barrier_mask = (size_t(1) << (8*sizeof(size_t)-1));
 
     /*! Masks the bits that store the number of items per leaf. */
     static const size_t align_mask = byteAlignment-1;

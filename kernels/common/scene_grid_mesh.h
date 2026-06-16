@@ -123,12 +123,12 @@ namespace embree
         const vfloat<N> Q0 = select(left,p0,p2);
         const vfloat<N> Q1 = select(left,p1,p3);
         const vfloat<N> Q2 = select(left,p3,p1);
-        const vfloat<N> U  = select(left,u,vfloat<N>(1.0f)-u);
-        const vfloat<N> V  = select(left,v,vfloat<N>(1.0f)-v);
-        const vfloat<N> W  = 1.0f-U-V;
+        const vfloat<N> baryU  = select(left,u,vfloat<N>(1.0f)-u);
+        const vfloat<N> baryV  = select(left,v,vfloat<N>(1.0f)-v);
+        const vfloat<N> W  = 1.0f-baryU-baryV;
         
         if (P) {
-          mem<vfloat<N>>::storeu(valid,P+i,madd(W,Q0,madd(U,Q1,V*Q2)));
+          mem<vfloat<N>>::storeu(valid,P+i,madd(W,Q0,madd(baryU,Q1,baryV*Q2)));
         }
         if (dPdu) { 
           assert(dPdu); mem<vfloat<N>>::storeu(valid,dPdu+i,select(left,Q1-Q0,Q0-Q1)*rcp_grid_width);
@@ -386,12 +386,12 @@ namespace embree
       GridMeshISA (Device* device)
         : GridMesh(device) {}
 
-      LBBox3fa vlinearBounds(size_t buildID, const BBox1f& time_range, const SubGridBuildData * const sgrids) const override {
+      LBBox3fa vlinearBounds(size_t buildID, const BBox1f& trange, const SubGridBuildData * const sgrids) const override {
         const SubGridBuildData &subgrid = sgrids[buildID];                      
         const unsigned int primID = subgrid.primID;
         const size_t x = subgrid.x();
         const size_t y = subgrid.y();
-        return linearBounds(grid(primID),x,y,time_range);
+        return linearBounds(grid(primID),x,y,trange);
       }
 
 #if defined(EMBREE_SYCL_SUPPORT)
@@ -436,9 +436,9 @@ namespace embree
       }
 
 #if defined(EMBREE_SYCL_SUPPORT)
-      PrimInfo createPrimRefArrayMB(PrimRef* prims, const BBox1f& time_range, const range<size_t>& r, size_t k, unsigned int geomID) const override
+      PrimInfo createPrimRefArrayMB(PrimRef* prims, const BBox1f& trange, const range<size_t>& r, size_t k, unsigned int geomID) const override
       {
-        const BBox1f t0t1 = BBox1f::intersect(getTimeRange(), time_range);
+        const BBox1f t0t1 = BBox1f::intersect(getTimeRange(), trange);
         PrimInfo pinfo(empty);
         for (size_t j=r.begin(); j<r.end(); j++)
         {

@@ -36,7 +36,7 @@ namespace embree
         
     __forceinline vfloat() {}
     __forceinline vfloat(const vfloat16& t) { v = t; }
-    __forceinline vfloat16& operator =(const vfloat16& f) { v = f.v; return *this; }
+    __forceinline vfloat16& operator =(const vfloat16& rhs) { v = rhs.v; return *this; }
 
     __forceinline vfloat(const __m512& t) { v = t; }
     __forceinline operator __m512() const { return v; }

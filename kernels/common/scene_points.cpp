@@ -15,18 +15,18 @@ namespace embree
       normals.resize(numTimeSteps);
   }
 
-  void Points::setMask(unsigned mask)
+  void Points::setMask(unsigned newMask)
   {
-    this->mask = mask;
+    this->mask = newMask;
     Geometry::update();
   }
 
-  void Points::setNumTimeSteps(unsigned int numTimeSteps)
+  void Points::setNumTimeSteps(unsigned int newNumTimeSteps)
   {
-    vertices.resize(numTimeSteps);
+    vertices.resize(newNumTimeSteps);
     if (getType() == GTY_ORIENTED_DISC_POINT)
-      normals.resize(numTimeSteps);
-    Geometry::setNumTimeSteps(numTimeSteps);
+      normals.resize(newNumTimeSteps);
+    Geometry::setNumTimeSteps(newNumTimeSteps);
   }
 
   void Points::setVertexAttributeCount(unsigned int N)

@@ -52,7 +52,7 @@ namespace embree
 #endif
 
     /* Returns a mask that tells which quads are valid */
-    __forceinline vbool<M> valid() const { return primIDs != vuint<M>(-1); }
+    __forceinline vbool<M> valid() const { return primIDs != vuint<M>((unsigned int)-1); }
 
     /* Returns if the specified quad is valid */
     __forceinline bool valid(const size_t i) const { assert(i<M); return primIDs[i] != -1; }
@@ -97,13 +97,13 @@ namespace embree
       return allBounds;
     }
 
-    __forceinline LBBox3fa linearBounds(const Scene *const scene, const BBox1f time_range)
+    __forceinline LBBox3fa linearBounds(const Scene *const scene, const BBox1f trange)
     {
       LBBox3fa allBounds = empty;
       for (size_t i=0; i<M && valid(i); i++)
       {
         const QuadMesh* mesh = scene->get<QuadMesh>(geomID(i));
-        allBounds.extend(mesh->linearBounds(primID(i), time_range));
+        allBounds.extend(mesh->linearBounds(primID(i), trange));
       }
       return allBounds;
     }
@@ -112,7 +112,7 @@ namespace embree
     template<typename PrimRefT>
     __forceinline void fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene)
     {
-      vuint<M> geomID = -1, primID = -1;
+      vuint<M> geomID = (unsigned int)-1, primID = (unsigned int)-1;
       const PrimRefT* prim = &prims[begin];
       vuint<M> v0 = zero, v1 = zero, v2 = zero, v3 = zero;
 
@@ -135,7 +135,7 @@ namespace embree
           assert(i);
           if (likely(i > 0)) {
             geomID[i] = geomID[0]; // always valid geomIDs
-            primID[i] = -1;        // indicates invalid data
+            primID[i] = (unsigned int)-1;        // indicates invalid data
             v0[i] = v0[0];
             v1[i] = v0[0];
             v2[i] = v0[0];
@@ -153,10 +153,10 @@ namespace embree
       return linearBounds(scene, itime);
     }
 
-    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f trange)
     {
       fill(prims, begin, end, scene);
-      return linearBounds(scene, time_range);
+      return linearBounds(scene, trange);
     }
 
     friend embree_ostream operator<<(embree_ostream cout, const QuadMi& quad) {

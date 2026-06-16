@@ -395,6 +395,7 @@ namespace embree
           splitPrimitive(prims[primrefID],splitprims,grid,subPrims,numSubPrims);
 
           const unsigned int numSubPrimsExpected MAYBE_UNUSED = preSplitItem0[j].data >> 16;
+          (void)numSubPrimsExpected;
           assert(numSubPrims-1 == numSubPrimsExpected);
           
           const size_t newID = numPrimitives + primOffset1[j-center];

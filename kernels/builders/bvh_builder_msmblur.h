@@ -459,7 +459,7 @@ namespace embree
 
             do {
               /* find best child with largest bounding box area */
-              size_t bestChild = -1;
+              size_t bestChild = (size_t)-1;
               size_t bestSize = 0;
               for (size_t i=0; i<children.size(); i++)
               {
@@ -572,10 +572,10 @@ namespace embree
               BuildRecord& brecord = children[bestChild];
               BuildRecord lrecord(current.depth+1);
               BuildRecord rrecord(current.depth+1);
-              Split csplit = find(brecord.prims);
-              std::unique_ptr<mvector<PrimRefMB>> new_vector = split(csplit,brecord.prims,lrecord.prims,rrecord.prims);
-              hasTimeSplits |= new_vector != nullptr;
-              children.split(bestChild,lrecord,rrecord,std::move(new_vector));
+              Split brecord_split = find(brecord.prims);
+              std::unique_ptr<mvector<PrimRefMB>> brecord_new_vector = split(brecord_split,brecord.prims,lrecord.prims,rrecord.prims);
+              hasTimeSplits |= brecord_new_vector != nullptr;
+              children.split(bestChild,lrecord,rrecord,std::move(brecord_new_vector));
             }
 
             /* detect time_ranges that have shrunken */

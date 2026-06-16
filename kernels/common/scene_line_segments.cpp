@@ -14,18 +14,18 @@ namespace embree
     vertices.resize(numTimeSteps);
   }
 
-  void LineSegments::setMask (unsigned mask)
+  void LineSegments::setMask (unsigned newMask)
   {
-    this->mask = mask;
+    this->mask = newMask;
     Geometry::update();
   }
 
-  void LineSegments::setNumTimeSteps (unsigned int numTimeSteps)
+  void LineSegments::setNumTimeSteps (unsigned int newNumTimeSteps)
   {
-    vertices.resize(numTimeSteps);
+    vertices.resize(newNumTimeSteps);
     if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
-      normals.resize(numTimeSteps);
-    Geometry::setNumTimeSteps(numTimeSteps);
+      normals.resize(newNumTimeSteps);
+    Geometry::setNumTimeSteps(newNumTimeSteps);
   }
 
   void LineSegments::setVertexAttributeCount (unsigned int N)

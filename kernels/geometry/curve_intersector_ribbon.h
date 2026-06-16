@@ -30,9 +30,9 @@ namespace embree
         vt = T;
       }
       
-      __forceinline Vec2f uv (const size_t i) const { return Vec2f(vu[i],vv[i]); }
-      __forceinline float t  (const size_t i) const { return vt[i]; }
-      __forceinline Vec3fa Ng(const size_t i) const { return curve3D.eval_du(vu[i]); }
+      __forceinline Vec2f uv (const size_t idx) const { return Vec2f(vu[idx],vv[idx]); }
+      __forceinline float t  (const size_t idx) const { return vt[idx]; }
+      __forceinline Vec3fa Ng(const size_t idx) const { return curve3D.eval_du(vu[idx]); }
 
       __forceinline Vec2vf<M> uv() const { return Vec2vf<M>(vu,vv); }
       __forceinline vfloat<M> t () const { return vt; }

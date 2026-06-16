@@ -585,7 +585,6 @@ RTC_NAMESPACE_BEGIN;
 
     bool changed = false;
     PointQuery16* query16 = (PointQuery16*)query;
-    PointQuery query1; 
     for (size_t i=0; i<16; i++) {
       if (!valid[i]) continue;
       PointQuery query1; query16->get(i,query1);
@@ -2132,7 +2131,7 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     RTC_TRACE(rtcGetGeometryFirstHalfEdge);
     return geometry->getFirstHalfEdge(faceID);
     RTC_CATCH_END2(geometry);
-    return -1;
+    return (unsigned int)-1;
   }
 
   RTC_API unsigned int rtcGetGeometryFace(RTCGeometry hgeometry, unsigned int edgeID)
@@ -2142,7 +2141,7 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     RTC_TRACE(rtcGetGeometryFace);
     return geometry->getFace(edgeID);
     RTC_CATCH_END2(geometry);
-    return -1;
+    return (unsigned int)-1;
   }
 
   RTC_API unsigned int rtcGetGeometryNextHalfEdge(RTCGeometry hgeometry, unsigned int edgeID)
@@ -2152,7 +2151,7 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     RTC_TRACE(rtcGetGeometryNextHalfEdge);
     return geometry->getNextHalfEdge(edgeID);
     RTC_CATCH_END2(geometry);
-    return -1;
+    return (unsigned int)-1;
   }
 
   RTC_API unsigned int rtcGetGeometryPreviousHalfEdge(RTCGeometry hgeometry, unsigned int edgeID)
@@ -2162,7 +2161,7 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     RTC_TRACE(rtcGetGeometryPreviousHalfEdge);
     return geometry->getPreviousHalfEdge(edgeID);
     RTC_CATCH_END2(geometry);
-    return -1;
+    return (unsigned int)-1;
   }
 
   RTC_API unsigned int rtcGetGeometryOppositeHalfEdge(RTCGeometry hgeometry, unsigned int topologyID, unsigned int edgeID)
@@ -2172,7 +2171,7 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     RTC_TRACE(rtcGetGeometryOppositeHalfEdge);
     return geometry->getOppositeHalfEdge(topologyID,edgeID);
     RTC_CATCH_END2(geometry);
-    return -1;
+    return (unsigned int)-1;
   }
 
   RTC_API void rtcSetGeometryOccludedFunction (RTCGeometry hgeometry, RTCOccludedFunctionN occluded) 
@@ -2261,7 +2260,7 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"inputs are from different devices");
     return scene->bind(RTC_INVALID_GEOMETRY_ID,geometry);
     RTC_CATCH_END2(scene);
-    return -1;
+    return (unsigned int)-1;
   }
 
   RTC_API void rtcAttachGeometryByID (RTCScene hscene, RTCGeometry hgeometry, unsigned int geomID)

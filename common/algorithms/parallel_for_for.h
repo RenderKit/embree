@@ -41,22 +41,22 @@ namespace embree
     __forceinline void init ( const size_t numArrays, const SizeFunc& getSize, const size_t minStepSize )
     {
       /* first calculate total number of elements */
-      size_t N = 0;
+      size_t num = 0;
       for (size_t i=0; i<numArrays; i++) {
-	N += getSize(i);
+	num += getSize(i);
       }
-      this->N = N;
+      this->N = num;
 
       /* calculate number of tasks to use */
       const size_t numThreads = TaskScheduler::threadCount();
-      const size_t numBlocks  = (N+minStepSize-1)/minStepSize;
+      const size_t numBlocks  = (num+minStepSize-1)/minStepSize;
       taskCount = max(size_t(1),min(numThreads,numBlocks,size_t(ParallelForForState::MAX_TASKS)));
       
       /* calculate start (i,j) for each task */
       size_t taskIndex = 0;
       i0[taskIndex] = 0;
       j0[taskIndex] = 0;
-      size_t k0 = (++taskIndex)*N/taskCount;
+      size_t k0 = (++taskIndex)*num/taskCount;
       for (size_t i=0, k=0; taskIndex < taskCount; i++) 
       {
 	assert(i<numArrays);
@@ -66,7 +66,7 @@ namespace embree
 	  i0[taskIndex] = i;
 	  j0[taskIndex] = j += k0-k;
 	  k=k0;
-	  k0 = (++taskIndex)*N/taskCount;
+	  k0 = (++taskIndex)*num/taskCount;
 	}
 	k+=M-j;
       }

@@ -14,16 +14,16 @@ namespace embree
     vertices.resize(numTimeSteps);
   }
 
-  void TriangleMesh::setMask (unsigned mask) 
+  void TriangleMesh::setMask (unsigned newMask) 
   {
-    this->mask = mask; 
+    this->mask = newMask; 
     Geometry::update();
   }
 
-  void TriangleMesh::setNumTimeSteps (unsigned int numTimeSteps)
+  void TriangleMesh::setNumTimeSteps (unsigned int newNumTimeSteps)
   {
-    vertices.resize(numTimeSteps);
-    Geometry::setNumTimeSteps(numTimeSteps);
+    vertices.resize(newNumTimeSteps);
+    Geometry::setNumTimeSteps(newNumTimeSteps);
   }
 
   void TriangleMesh::setVertexAttributeCount (unsigned int N)

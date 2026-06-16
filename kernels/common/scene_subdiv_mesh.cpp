@@ -57,9 +57,9 @@ namespace embree
     else                   counts.numMBSubdivPatches += numPrimitives;
   }
 
-  void SubdivMesh::setMask (unsigned mask) 
+  void SubdivMesh::setMask (unsigned newMask) 
   {
-    this->mask = mask; 
+    this->mask = newMask; 
     Geometry::update();
   }
 
@@ -87,11 +87,11 @@ namespace embree
     }
   }
 
-  void SubdivMesh::setNumTimeSteps (unsigned int numTimeSteps)
+  void SubdivMesh::setNumTimeSteps (unsigned int newNumTimeSteps)
   {
-    vertices.resize(numTimeSteps);
-    vertex_buffer_tags.resize(numTimeSteps);
-    Geometry::setNumTimeSteps(numTimeSteps);
+    vertices.resize(newNumTimeSteps);
+    vertex_buffer_tags.resize(newNumTimeSteps);
+    Geometry::setNumTimeSteps(newNumTimeSteps);
   }
 
   void SubdivMesh::setVertexAttributeCount (unsigned int N)
@@ -422,7 +422,7 @@ namespace embree
     const size_t blockSize = 4096;
     const size_t numEdges = mesh->numEdges();
     const size_t numFaces = mesh->numFaces();
-    const size_t numHalfEdges = mesh->numHalfEdges;
+    const size_t halfEdgeCount = mesh->numHalfEdges;
 
     /* allocate temporary array */
     halfEdges0.resize(numEdges);
@@ -470,10 +470,10 @@ namespace embree
     });
 
     /* sort half edges to find adjacent edges */
-    radix_sort_u64(halfEdges1.data(),halfEdges0.data(),numHalfEdges);
+    radix_sort_u64(halfEdges1.data(),halfEdges0.data(),halfEdgeCount);
 
     /* link all adjacent pairs of edges */
-    parallel_for( size_t(0), numHalfEdges, blockSize, [&](const range<size_t>& r) 
+    parallel_for( size_t(0), halfEdgeCount, blockSize, [&](const range<size_t>& r) 
     {
       /* skip if start of adjacent edges was not in our range */
       size_t e=r.begin();
@@ -487,7 +487,7 @@ namespace embree
       {
 	const uint64_t key = halfEdges1[e].key;
 	if (key == std::numeric_limits<uint64_t>::max()) break;
-	size_t N=1; while (e+N<numHalfEdges && halfEdges1[e+N].key == key) N++;
+	size_t N=1; while (e+N<halfEdgeCount && halfEdges1[e+N].key == key) N++;
 
         /* border edges are identified by not having an opposite edge set */
 	if (N == 1) {

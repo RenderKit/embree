@@ -18,16 +18,16 @@ namespace embree
   class Buffer : public RefCount
   {
   private:
-    char* alloc(void* ptr_in, bool &shared, EmbreeMemoryType memoryType)
+    char* alloc(void* ptr_in, bool &isShared, EmbreeMemoryType memoryType)
     {
       if (ptr_in)
       {
-        shared = true;
+        isShared = true;
         return (char*)ptr_in;
       }
       else
       {
-        shared = false;
+        isShared = false;
         device->memoryMonitor(this->bytes(), false);
         size_t b = (this->bytes()+15) & ssize_t(-16);
         return (char*)device->malloc(b,16,memoryType);
@@ -359,7 +359,10 @@ namespace embree
     __forceinline void checkPadding16() const
     {
       if (ptr_ofs && num)
-        volatile int MAYBE_UNUSED w = *((int*)getPtr(size()-1)+3); // FIXME: is failing hard avoidable?
+      {
+        volatile int w = *((int*)getPtr(size()-1)+3); // FIXME: is failing hard avoidable?
+        (void)w;
+      }
     }
 
   public:

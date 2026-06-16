@@ -190,7 +190,7 @@ namespace embree
       : i(0), j(0), charNumber(0), name(std::shared_ptr<std::string>(new std::string(name)))
     {
       if (argc > 0) {
-	for (size_t i=0; argv[0][i] && i<1024; i++) charNumber++;
+	for (size_t ci=0; argv[0][ci] && ci<1024; ci++) charNumber++;
 	charNumber++;
       }
       for (ssize_t k=1; k<argc; k++) args.push_back(argv[k]);

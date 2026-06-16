@@ -174,13 +174,13 @@ namespace embree
         else
         {
           /* find minimum start vertex */
-          const unsigned index0 = p->getStartVertexIndex();
-          if (index0 < min_vertex_index) { min_vertex_index = index0; min_vertex_index_face = i>>1; }
+          const unsigned borderIndex0 = p->getStartVertexIndex();
+          if (borderIndex0 < min_vertex_index) { min_vertex_index = borderIndex0; min_vertex_index_face = i>>1; }
 
           /*! mark first border edge and store dummy vertex for face between the two border edges */
           border_index = i;
           crease_weight[i/2] = inf; 
-          ring[i++] = Vertex_t::loadu(vertices+index0*stride);
+          ring[i++] = Vertex_t::loadu(vertices+borderIndex0*stride);
           ring[i++] = vtx; // dummy vertex
           	  
           /*! goto other side of border */
@@ -620,8 +620,8 @@ namespace embree
         else
         {
           /* find minimum start vertex */
-          unsigned vertex_index = p->getStartVertexIndex();
-          if (vertex_index < min_vertex_index) { min_vertex_index = vertex_index; min_vertex_index_face = f; min_vertex_index_vertex = e; }
+          unsigned border_vertex_index = p->getStartVertexIndex();
+          if (border_vertex_index < min_vertex_index) { min_vertex_index = border_vertex_index; min_vertex_index_face = f; min_vertex_index_vertex = e; }
 
           /*! mark first border edge and store dummy vertex for face between the two border edges */
           border_face = f;

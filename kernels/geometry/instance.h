@@ -32,8 +32,8 @@ namespace embree
 
   public:
 
-    InstancePrimitive (const Instance* instance, unsigned int instID) 
-    : instance(instance) 
+    InstancePrimitive (const Instance* inst, unsigned int instID)
+    : instance(inst)
     , instID_(instID)
     {}
 
@@ -42,8 +42,8 @@ namespace embree
       assert(end-i == 1);
       const PrimRef& prim = prims[i]; i++;
       const unsigned int geomID = prim.geomID();
-      const Instance* instance = scene->get<Instance>(geomID);
-      new (this) InstancePrimitive(instance, geomID);
+      const Instance* inst = scene->get<Instance>(geomID);
+      new (this) InstancePrimitive(inst, geomID);
     }
 
     __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& i, size_t end, Scene* scene, size_t itime)
@@ -51,24 +51,24 @@ namespace embree
       assert(end-i == 1);
       const PrimRef& prim = prims[i]; i++;
       const unsigned int geomID = prim.geomID();
-      const Instance* instance = scene->get<Instance>(geomID);
-      new (this) InstancePrimitive(instance,geomID);
-      return instance->linearBounds(0,itime);
+      const Instance* inst = scene->get<Instance>(geomID);
+      new (this) InstancePrimitive(inst,geomID);
+      return inst->linearBounds(0,itime);
     }
 
-    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& i, size_t end, Scene* scene, const BBox1f time_range)
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& i, size_t end, Scene* scene, const BBox1f trange)
     {
       assert(end-i == 1);
       const PrimRefMB& prim = prims[i]; i++;
       const unsigned int geomID = prim.geomID();
-      const Instance* instance = scene->get<Instance>(geomID);
-      new (this) InstancePrimitive(instance,geomID);
-      return instance->linearBounds(0,time_range);
+      const Instance* inst = scene->get<Instance>(geomID);
+      new (this) InstancePrimitive(inst,geomID);
+      return inst->linearBounds(0,trange);
     }
 
     /* Updates the primitive */
-    __forceinline BBox3fa update(Instance* instance) {
-      return instance->bounds(0);
+    __forceinline BBox3fa update(Instance* inst) {
+      return inst->bounds(0);
     }
 
   public:
