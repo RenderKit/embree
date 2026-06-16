@@ -103,7 +103,7 @@ extern "C" void device_init (char* cfg)
 }
 
 /* task that renders a single screen tile */
-void renderPixelStandard(const TutorialData& data,
+void renderPixelStandard(const TutorialData& td,
                           int x, int y, 
                           int* pixels,
                           const unsigned int width,
@@ -119,7 +119,7 @@ void renderPixelStandard(const TutorialData& data,
   rtcInitIntersectArguments(&iargs);
   iargs.feature_mask = (RTCFeatureFlags)(FEATURE_MASK);
   
-  rtcTraversableIntersect1(data.g_traversable,RTCRayHit_(ray),&iargs);
+  rtcTraversableIntersect1(td.g_traversable,RTCRayHit_(ray),&iargs);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -127,7 +127,7 @@ void renderPixelStandard(const TutorialData& data,
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
   {
     /* interpolate diffuse color */
-    Vec3fa diffuse = data.point_colors[ray.geomID ? ray.primID : 0];
+    Vec3fa diffuse = td.point_colors[ray.geomID ? ray.primID : 0];
 
     /* calculate smooth shading normal */
     Vec3fa Ng = normalize(ray.Ng);
@@ -142,7 +142,7 @@ void renderPixelStandard(const TutorialData& data,
     rtcInitOccludedArguments(&sargs);
     sargs.feature_mask = (RTCFeatureFlags)(FEATURE_MASK);
   
-    rtcTraversableOccluded1(data.g_traversable,RTCRay_(shadow),&sargs);
+    rtcTraversableOccluded1(td.g_traversable,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

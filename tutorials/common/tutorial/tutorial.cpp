@@ -661,16 +661,16 @@ namespace embree
     rtcSetDeviceProperty(nullptr,(RTCDeviceProperty)parm,val);
   }
 
-  void TutorialApplication::resize(unsigned width, unsigned height)
+  void TutorialApplication::resize(unsigned newWidth, unsigned newHeight)
   {
-    if (width == this->width && height == this->height && pixels)
+    if (newWidth == this->width && newHeight == this->height && pixels)
       return;
 
-    this->width = width;
-    this->height = height;
+    this->width = newWidth;
+    this->height = newHeight;
       
     if (pixels) alignedUSMFree(pixels);
-    pixels = (unsigned*) alignedUSMMalloc(width*height*sizeof(unsigned),64,EmbreeUSMMode::DEVICE_READ_WRITE);
+    pixels = (unsigned*) alignedUSMMalloc(newWidth*newHeight*sizeof(unsigned),64,EmbreeUSMMode::DEVICE_READ_WRITE);
   }
 
   void TutorialApplication::set_scene (TutorialScene* in)
@@ -701,16 +701,16 @@ namespace embree
     TutorialApplication::instance->reshapeFunc(window,width,height);
   }
 
-  void TutorialApplication::setCallbackFunctions(GLFWwindow* window)
+  void TutorialApplication::setCallbackFunctions(GLFWwindow* callbackWindow)
   {
-    glfwSetKeyCallback(window,embree::keyboardFunc);
-    glfwSetCursorPosCallback(window,embree::motionFunc);
-    glfwSetMouseButtonCallback(window,embree::clickFunc);
-    glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
-    glfwSetScrollCallback(window, ImGui_ImplGlfw_ScrollCallback);
-    glfwSetWindowSizeCallback(window,embree::reshapeFunc);
-    glfwSetWindowFocusCallback(window, ImGui_ImplGlfw_WindowFocusCallback);
-    glfwSetCursorEnterCallback(window, ImGui_ImplGlfw_CursorEnterCallback);
+    glfwSetKeyCallback(callbackWindow,embree::keyboardFunc);
+    glfwSetCursorPosCallback(callbackWindow,embree::motionFunc);
+    glfwSetMouseButtonCallback(callbackWindow,embree::clickFunc);
+    glfwSetCharCallback(callbackWindow, ImGui_ImplGlfw_CharCallback);
+    glfwSetScrollCallback(callbackWindow, ImGui_ImplGlfw_ScrollCallback);
+    glfwSetWindowSizeCallback(callbackWindow,embree::reshapeFunc);
+    glfwSetWindowFocusCallback(callbackWindow, ImGui_ImplGlfw_WindowFocusCallback);
+    glfwSetCursorEnterCallback(callbackWindow, ImGui_ImplGlfw_CursorEnterCallback);
     glfwSetMonitorCallback(ImGui_ImplGlfw_MonitorCallback);
   }
 
@@ -722,16 +722,16 @@ namespace embree
     glfwWindowHint(GLFW_GREEN_BITS,mode->greenBits);
     glfwWindowHint(GLFW_BLUE_BITS,mode->blueBits);
     glfwWindowHint(GLFW_REFRESH_RATE,mode->refreshRate);
-    GLFWwindow* window = glfwCreateWindow(mode->width,mode->height,tutorialName.c_str(),monitor,nullptr);
+    GLFWwindow* newWindow = glfwCreateWindow(mode->width,mode->height,tutorialName.c_str(),monitor,nullptr);
     resize(mode->width,mode->height);
-    return window;
+    return newWindow;
   }
 
-  GLFWwindow* TutorialApplication::createStandardWindow(int width, int height)
+  GLFWwindow* TutorialApplication::createStandardWindow(int winWidth, int winHeight)
   {
-    GLFWwindow* window = glfwCreateWindow(width,height,tutorialName.c_str(),nullptr,nullptr);
-    resize(width,height);
-    return window;
+    GLFWwindow* newWindow = glfwCreateWindow(winWidth,winHeight,tutorialName.c_str(),nullptr,nullptr);
+    resize(winWidth,winHeight);
+    return newWindow;
   }
 
   /* called when a key is pressed */
@@ -820,13 +820,13 @@ namespace embree
     }
   }
     
-  void TutorialApplication::clickFunc(GLFWwindow* window, int button, int action, int mods)
+  void TutorialApplication::clickFunc(GLFWwindow* clickWindow, int button, int action, int mods)
   {
-    ImGui_ImplGlfw_MouseButtonCallback(window,button,action,mods);
+    ImGui_ImplGlfw_MouseButtonCallback(clickWindow,button,action,mods);
     if (ImGui::GetIO().WantCaptureMouse) return;
   
     double x,y;
-    glfwGetCursorPos(window,&x,&y);
+    glfwGetCursorPos(clickWindow,&x,&y);
     
     if (action == GLFW_RELEASE)
     {
@@ -860,9 +860,9 @@ namespace embree
     }
   }
 
-  void TutorialApplication::motionFunc(GLFWwindow* window, double x, double y)
+  void TutorialApplication::motionFunc(GLFWwindow* motionWindow, double x, double y)
   {
-    ImGui_ImplGlfw_CursorPosCallback(window, x, y);
+    ImGui_ImplGlfw_CursorPosCallback(motionWindow, x, y);
     if (ImGui::GetIO().WantCaptureMouse) return;
   
     float dClickX = float(clickX - x), dClickY = float(clickY - y);
@@ -982,13 +982,13 @@ namespace embree
     } 
   }
 
-  void TutorialApplication::reshapeFunc(GLFWwindow* window, int, int)
+  void TutorialApplication::reshapeFunc(GLFWwindow* reshapeWindow, int, int)
   {
-    int width,height;
-    glfwGetFramebufferSize(window, &width, &height);
-    resize(width,height);
-    glViewport(0, 0, width, height);
-    this->width = width; this->height = height;
+    int newWidth,newHeight;
+    glfwGetFramebufferSize(reshapeWindow, &newWidth, &newHeight);
+    resize(newWidth,newHeight);
+    glViewport(0, 0, newWidth, newHeight);
+    this->width = newWidth; this->height = newHeight;
   }
 
   void TutorialApplication::renderInteractive()
@@ -1036,10 +1036,10 @@ namespace embree
 
 #endif
   
-  void TutorialApplication::render(unsigned* pixels, const unsigned width, const unsigned height, const float time, const ISPCCamera& camera)
+  void TutorialApplication::render(unsigned* renderPixels, const unsigned renderWidth, const unsigned renderHeight, const float time, const ISPCCamera& renderCamera)
   {
-    device_render(pixels,width,height,time,camera);
-    renderFrame((int*)pixels,width,height,time,camera);
+    device_render(renderPixels,renderWidth,renderHeight,time,renderCamera);
+    renderFrame((int*)renderPixels,renderWidth,renderHeight,time,renderCamera);
   }
   
   void TutorialApplication::run(int argc, char** argv)

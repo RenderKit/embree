@@ -27,7 +27,7 @@ extern "C" bool device_pick(const float x,
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
+  ray.mask = (unsigned int)-1;
   ray.time() = g_debug;
 
   /* intersect ray with scene */
@@ -106,8 +106,8 @@ float getTextureTexel1f(const Texture* texture, float s, float t)
   else if (texture->format == Texture::RGBA8)
   {
     const int offset = (iv * texture->width + iu) * 4;
-    unsigned char * t = (unsigned char*)texture->data;
-    return t[offset+0]*(1.0f/255.0f);
+    unsigned char * texData = (unsigned char*)texture->data;
+    return texData[offset+0]*(1.0f/255.0f);
   }
   return 0.0f;
 }
@@ -124,10 +124,10 @@ Vec3fa getTextureTexel3f(const Texture* texture, float s, float t)
   if (texture->format == Texture::RGBA8)
   {
     const int offset = (iv * texture->width + iu) * 4;
-    unsigned char * t = (unsigned char*)texture->data;
-    const unsigned char  r = t[offset+0];
-    const unsigned char  g = t[offset+1];
-    const unsigned char  b = t[offset+2];
+    unsigned char * texData = (unsigned char*)texture->data;
+    const unsigned char  r = texData[offset+0];
+    const unsigned char  g = texData[offset+1];
+    const unsigned char  b = texData[offset+2];
     return Vec3fa(  (float)r * 1.0f/255.0f, (float)g * 1.0f/255.0f, (float)b * 1.0f/255.0f );
   }
   return Vec3fa(0.0f,0.0f,0.0f);

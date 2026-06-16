@@ -140,7 +140,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceIntersectFunc(const RTCIntersectFuncti
   xray.tnear = ray_tnear;
   xray.tfar  = ray_tfar;
   xray.time = 0.0f;
-  xray.mask = -1;
+  xray.mask = 0xFFFFFFFFu;
   xray.id = 0;
   xray.flags = 0;
   
@@ -194,7 +194,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceOccludedFunc(const RTCOccludedFunction
   xray.tnear = ray_tnear;
   xray.tfar  = ray_tfar;
   xray.time = 0.0f;
-  xray.mask = -1;
+  xray.mask = 0xFFFFFFFFu;
   xray.id = 0;
   xray.flags = 0;
   
@@ -741,7 +741,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(const TutorialData& data,
+Vec3fa renderPixelStandard(const TutorialData& td,
                           float x, float y, const ISPCCamera& camera,
                           RayStats& stats)
 {
@@ -762,7 +762,7 @@ Vec3fa renderPixelStandard(const TutorialData& data,
 #endif
   iargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
   
-  rtcTraversableIntersect1(data.g_traversable,RTCRayHit_(ray),&iargs);
+  rtcTraversableIntersect1(td.g_traversable,RTCRayHit_(ray),&iargs);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -773,15 +773,15 @@ Vec3fa renderPixelStandard(const TutorialData& data,
     Vec3fa Ns = ray.Ng;
 
     if (ray.instID[0] != RTC_INVALID_GEOMETRY_ID) {
-      Ns = xfmVector(data.g_instance[ray.instID[0]]->normal2world,Vec3fa(Ns));
+      Ns = xfmVector(td.g_instance[ray.instID[0]]->normal2world,Vec3fa(Ns));
     }
     Ns = face_forward(ray.dir,normalize(Ns));
 
     /* calculate diffuse color of geometries */
     Vec3fa diffuse = Vec3fa(0.0f);
-    if      (ray.instID[0] ==  0) diffuse = data.colors[4*ray.instID[0]+ray.primID];
-    else if (ray.instID[0] == -1) diffuse = data.colors[4*4+ray.primID];
-    else                          diffuse = data.colors[4*ray.instID[0]+ray.geomID];
+    if      (ray.instID[0] ==  0) diffuse = td.colors[4*ray.instID[0]+ray.primID];
+    else if (ray.instID[0] == -1) diffuse = td.colors[4*4+ray.primID];
+    else                          diffuse = td.colors[4*ray.instID[0]+ray.geomID];
     color = color + diffuse*0.5f;
 
     /* initialize shadow ray */
@@ -799,7 +799,7 @@ Vec3fa renderPixelStandard(const TutorialData& data,
 #endif
     sargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
     
-    rtcTraversableOccluded1(data.g_traversable,RTCRay_(shadow),&sargs);
+    rtcTraversableOccluded1(td.g_traversable,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -809,7 +809,7 @@ Vec3fa renderPixelStandard(const TutorialData& data,
   return color;
 }
 
-void renderPixelStandard(const TutorialData& data,
+void renderPixelStandard(const TutorialData& td,
                          int x, int y, 
                          int* pixels,
                          const unsigned int width,
@@ -817,7 +817,7 @@ void renderPixelStandard(const TutorialData& data,
                          const float time,
                          const ISPCCamera& camera, RayStats& stats)
 {
-  Vec3fa color = renderPixelStandard(data,x,y,camera,stats);
+  Vec3fa color = renderPixelStandard(td,x,y,camera,stats);
   
   /* write color to framebuffer */
   unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));

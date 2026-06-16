@@ -12,8 +12,16 @@
 //Or, if your project uses `stb_image[_write].h`, use their
 //zlib implementation:
 #define TINYEXR_USE_STB_ZLIB 1
+#ifdef _MSC_VER
+#  pragma warning(push)
+#  pragma warning(disable: 4245)  // tinyexr: signed/unsigned mismatch in return statements
+#  pragma warning(disable: 4702)  // tinyexr: unreachable code
+#endif
 #define TINYEXR_IMPLEMENTATION
 #include "tinyexr.h"
+#ifdef _MSC_VER
+#  pragma warning(pop)
+#endif
 
 namespace embree
 {

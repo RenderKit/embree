@@ -23,19 +23,19 @@ namespace embree {
 RTCScene  g_scene  = nullptr;
 TutorialData data;
 
-Vec3fa interpolate_linear(const TutorialData& data, unsigned int primID, float u)
+Vec3fa interpolate_linear(const TutorialData& tutorialData, unsigned int primID, float u)
 {
-  const Vec3fa c0 = ((Vec3fa*) data.hair_vertex_colors)[primID+1];
-  const Vec3fa c1 = ((Vec3fa*) data.hair_vertex_colors)[primID+2];
+  const Vec3fa c0 = ((Vec3fa*) tutorialData.hair_vertex_colors)[primID+1];
+  const Vec3fa c1 = ((Vec3fa*) tutorialData.hair_vertex_colors)[primID+2];
   return Vec3fa(c0*(1.0f-u) + c1*u);
 }
 
-Vec3fa interpolate_bspline(const TutorialData& data, unsigned int primID, float u)
+Vec3fa interpolate_bspline(const TutorialData& tutorialData, unsigned int primID, float u)
 {
-  const Vec3fa c0 = ((Vec3fa*) data.hair_vertex_colors)[primID+0];
-  const Vec3fa c1 = ((Vec3fa*) data.hair_vertex_colors)[primID+1];
-  const Vec3fa c2 = ((Vec3fa*) data.hair_vertex_colors)[primID+2];
-  const Vec3fa c3 = ((Vec3fa*) data.hair_vertex_colors)[primID+3];
+  const Vec3fa c0 = ((Vec3fa*) tutorialData.hair_vertex_colors)[primID+0];
+  const Vec3fa c1 = ((Vec3fa*) tutorialData.hair_vertex_colors)[primID+1];
+  const Vec3fa c2 = ((Vec3fa*) tutorialData.hair_vertex_colors)[primID+2];
+  const Vec3fa c3 = ((Vec3fa*) tutorialData.hair_vertex_colors)[primID+3];
   const float t  = u;
   const float s  = 1.0f - u;
   const float n0 = s*s*s;
@@ -45,12 +45,12 @@ Vec3fa interpolate_bspline(const TutorialData& data, unsigned int primID, float 
   return Vec3fa((1.0f/6.0f)*(n0*c0 + n1*c1 + n2*c2 + n3*c3));
 }
 
-Vec3fa interpolate_catmull_rom(const TutorialData& data, unsigned int primID, float u)
+Vec3fa interpolate_catmull_rom(const TutorialData& tutorialData, unsigned int primID, float u)
 {
-  const Vec3fa c0 = ((Vec3fa*) data.hair_vertex_colors)[primID+0];
-  const Vec3fa c1 = ((Vec3fa*) data.hair_vertex_colors)[primID+1];
-  const Vec3fa c2 = ((Vec3fa*) data.hair_vertex_colors)[primID+2];
-  const Vec3fa c3 = ((Vec3fa*) data.hair_vertex_colors)[primID+3];
+  const Vec3fa c0 = ((Vec3fa*) tutorialData.hair_vertex_colors)[primID+0];
+  const Vec3fa c1 = ((Vec3fa*) tutorialData.hair_vertex_colors)[primID+1];
+  const Vec3fa c2 = ((Vec3fa*) tutorialData.hair_vertex_colors)[primID+2];
+  const Vec3fa c3 = ((Vec3fa*) tutorialData.hair_vertex_colors)[primID+3];
   const float t  = u;
   const float s  = 1.0f - u;
   const float n0 = - t * s * s;
@@ -144,7 +144,7 @@ extern "C" void device_init (char* cfg)
 }
 
 /* task that renders a single screen tile */
-void renderPixelStandard(const TutorialData& data,
+void renderPixelStandard(const TutorialData& tutorialData,
                          int x, int y, 
                          int* pixels,
                          const unsigned int width,
@@ -159,7 +159,7 @@ void renderPixelStandard(const TutorialData& data,
   RTCIntersectArguments iargs;
   rtcInitIntersectArguments(&iargs);
   iargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
-  rtcTraversableIntersect1(data.g_traversable,RTCRayHit_(ray),&iargs);
+  rtcTraversableIntersect1(tutorialData.g_traversable,RTCRayHit_(ray),&iargs);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -171,9 +171,9 @@ void renderPixelStandard(const TutorialData& data,
     if (ray.geomID > 0)
     {
       switch (ray.geomID) {
-      case 1: case 2: case 6: diffuse = interpolate_linear(data,ray.primID,ray.u); break;
-      case 3: case 4: case 5: diffuse = interpolate_bspline(data,ray.primID,ray.u); break;
-      case 7: case 8: case 9: diffuse = interpolate_catmull_rom(data,ray.primID,ray.u); break;
+      case 1: case 2: case 6: diffuse = interpolate_linear(tutorialData,ray.primID,ray.u); break;
+      case 3: case 4: case 5: diffuse = interpolate_bspline(tutorialData,ray.primID,ray.u); break;
+      case 7: case 8: case 9: diffuse = interpolate_catmull_rom(tutorialData,ray.primID,ray.u); break;
       }
 
       diffuse = 0.5f*diffuse;
@@ -191,7 +191,7 @@ void renderPixelStandard(const TutorialData& data,
     RTCOccludedArguments sargs;
     rtcInitOccludedArguments(&sargs);
     sargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
-    rtcTraversableOccluded1(data.g_traversable,RTCRay_(shadow),&sargs);
+    rtcTraversableOccluded1(tutorialData.g_traversable,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

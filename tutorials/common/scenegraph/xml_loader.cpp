@@ -1414,7 +1414,7 @@ namespace embree
       uint32_t rand_int = 1234;
       uint32_t a = 1103515245;
       uint32_t c = 12345;
-      uint32_t m = 1 << 31;
+      uint32_t m = 1u << 31;
       auto rand_float = [&rand_int, &a, &c, &m]() {
         rand_int = (a * rand_int + c) % m;
         return rand_int / float(m);
@@ -1438,9 +1438,9 @@ namespace embree
       Vec3fa last = Vec3fa(sin(phi) * cos(theta), cos(phi), sin(phi) * sin(theta));
 
       for (int i = 0; i < N; i++) {
-          float theta = 2.0f * float(pi) * rand_float();
-          float phi = acos(1 - 2 * rand_float());
-          Vec3fa d = Vec3fa(sin(phi) * cos(theta), cos(phi), sin(phi) * sin(theta));
+          float innerTheta = 2.0f * float(pi) * rand_float();
+          float innerPhi = acos(1 - 2 * rand_float());
+          Vec3fa d = Vec3fa(sin(innerPhi) * cos(innerTheta), cos(innerPhi), sin(innerPhi) * sin(innerTheta));
 
           Vec3fa p = normalize(cross(d, last));
           last = p;
@@ -1558,15 +1558,15 @@ namespace embree
     avector<AffineSpace3ff> spaces(time_steps);
     size_t j = 0;
     for (size_t i=0; i<time_steps; i++) {
-      AffineSpace3ff space;
+      AffineSpace3ff innerSpace;
       if (xml->children[i]->name == "AffineSpace") {
-        space = (AffineSpace3ff) load<AffineSpace3fa>(xml->children[i]);
-        spaces[j++] = space;
+        innerSpace = (AffineSpace3ff) load<AffineSpace3fa>(xml->children[i]);
+        spaces[j++] = innerSpace;
       }
       else if (xml->children[i]->name == "Quaternion") {
-        space = loadQuaternion(xml->children[i]);
+        innerSpace = loadQuaternion(xml->children[i]);
         quaternion = true;
-        spaces[j++] = space;
+        spaces[j++] = innerSpace;
       }
       else {
         THROW_RUNTIME_ERROR(xml->loc.str()+": unknown transformation representation");

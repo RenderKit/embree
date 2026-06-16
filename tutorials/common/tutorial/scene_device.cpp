@@ -181,14 +181,14 @@ namespace embree
 
   void ISPCScene::updateLight(const Ref<SceneGraph::LightNode>& in, Light* out)
   {
-    if (auto light = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::AmbientLight>>())
-      updateLight(light->light, out);
-    else if (auto light = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::DirectionalLight>>())
-      updateLight(light->light, out);
-    else if (auto light = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::DistantLight>>())
-      updateLight(light->light, out);
-    else if (auto light = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::PointLight>>())
-      updateLight(light->light, out);
+    if (auto ambientLightNode = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::AmbientLight>>())
+      updateLight(ambientLightNode->light, out);
+    else if (auto dirLightNode = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::DirectionalLight>>())
+      updateLight(dirLightNode->light, out);
+    else if (auto distLightNode = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::DistantLight>>())
+      updateLight(distLightNode->light, out);
+    else if (auto pointLightNode = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::PointLight>>())
+      updateLight(pointLightNode->light, out);
   }
 
   void ISPCScene::commit()
@@ -426,13 +426,13 @@ namespace embree
     numNormals = unsigned(in->numNormals());
     numTexCoords = unsigned(in->texcoords.size());
     geom.materialID = scene_in->materialID(in->material);
-    size_t numEdges = in->position_indices.size();
-    size_t numFaces = in->verticesPerFace.size();
-    subdivlevel = new float[numEdges];
-    face_offsets = new unsigned[numFaces];
-    for (size_t i=0; i<numEdges; i++) subdivlevel[i] = 1.0f;
+    size_t localNumEdges = in->position_indices.size();
+    size_t localNumFaces = in->verticesPerFace.size();
+    subdivlevel = new float[localNumEdges];
+    face_offsets = new unsigned[localNumFaces];
+    for (size_t i=0; i<localNumEdges; i++) subdivlevel[i] = 1.0f;
     int offset = 0;
-    for (size_t i=0; i<numFaces; i++)
+    for (size_t i=0; i<localNumFaces; i++)
     {
       face_offsets[i] = offset;
       offset+=verticesPerFace[i];
@@ -882,23 +882,23 @@ namespace embree
       return (ISPCGeometry*) in->geometry;
     else if (Ref<SceneGraph::TriangleMeshNode> mesh = in.dynamicCast<SceneGraph::TriangleMeshNode>())
       geom = (ISPCGeometry*) new ISPCTriangleMesh(device,scene,mesh);
-    else if (Ref<SceneGraph::QuadMeshNode> mesh = in.dynamicCast<SceneGraph::QuadMeshNode>())
-      geom = (ISPCGeometry*) new ISPCQuadMesh(device,scene,mesh);
-    else if (Ref<SceneGraph::SubdivMeshNode> mesh = in.dynamicCast<SceneGraph::SubdivMeshNode>())
-      geom = (ISPCGeometry*) new ISPCSubdivMesh(device,scene,mesh);
-    else if (Ref<SceneGraph::HairSetNode> mesh = in.dynamicCast<SceneGraph::HairSetNode>())
-      geom = (ISPCGeometry*) new ISPCHairSet(device,scene,mesh->type,mesh);
-    else if (Ref<SceneGraph::GridMeshNode> mesh = in.dynamicCast<SceneGraph::GridMeshNode>())
-      geom = (ISPCGeometry*) new ISPCGridMesh(device,scene,mesh); 
-    else if (Ref<SceneGraph::TransformNode> mesh = in.dynamicCast<SceneGraph::TransformNode>())
-      geom = (ISPCGeometry*) new ISPCInstance(device,scene,mesh);
-    else if (Ref<SceneGraph::MultiTransformNode> mesh = in.dynamicCast<SceneGraph::MultiTransformNode>()) {
-      geom = (ISPCGeometry*) new ISPCInstanceArray(device,scene,mesh);
+    else if (Ref<SceneGraph::QuadMeshNode> mesh2 = in.dynamicCast<SceneGraph::QuadMeshNode>())
+      geom = (ISPCGeometry*) new ISPCQuadMesh(device,scene,mesh2);
+    else if (Ref<SceneGraph::SubdivMeshNode> mesh3 = in.dynamicCast<SceneGraph::SubdivMeshNode>())
+      geom = (ISPCGeometry*) new ISPCSubdivMesh(device,scene,mesh3);
+    else if (Ref<SceneGraph::HairSetNode> mesh4 = in.dynamicCast<SceneGraph::HairSetNode>())
+      geom = (ISPCGeometry*) new ISPCHairSet(device,scene,mesh4->type,mesh4);
+    else if (Ref<SceneGraph::GridMeshNode> mesh5 = in.dynamicCast<SceneGraph::GridMeshNode>())
+      geom = (ISPCGeometry*) new ISPCGridMesh(device,scene,mesh5); 
+    else if (Ref<SceneGraph::TransformNode> mesh6 = in.dynamicCast<SceneGraph::TransformNode>())
+      geom = (ISPCGeometry*) new ISPCInstance(device,scene,mesh6);
+    else if (Ref<SceneGraph::MultiTransformNode> mesh7 = in.dynamicCast<SceneGraph::MultiTransformNode>()) {
+      geom = (ISPCGeometry*) new ISPCInstanceArray(device,scene,mesh7);
     }
-    else if (Ref<SceneGraph::GroupNode> mesh = in.dynamicCast<SceneGraph::GroupNode>())
-      geom = (ISPCGeometry*) new ISPCGroup(device,scene,mesh);
-    else if (Ref<SceneGraph::PointSetNode> mesh = in.dynamicCast<SceneGraph::PointSetNode>())
-      geom = (ISPCGeometry*) new ISPCPointSet(device,scene, mesh->type, mesh);
+    else if (Ref<SceneGraph::GroupNode> mesh8 = in.dynamicCast<SceneGraph::GroupNode>())
+      geom = (ISPCGeometry*) new ISPCGroup(device,scene,mesh8);
+    else if (Ref<SceneGraph::PointSetNode> mesh9 = in.dynamicCast<SceneGraph::PointSetNode>())
+      geom = (ISPCGeometry*) new ISPCPointSet(device,scene, mesh9->type, mesh9);
     else
       THROW_RUNTIME_ERROR("unknown geometry type");
 

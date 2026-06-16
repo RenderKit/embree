@@ -101,10 +101,10 @@ namespace embree
     struct Node : public RefCount
     {
       Node (bool closed = false)
-        : indegree(0), closed(closed), hasLightOrCamera(false), id(-1), geometry(nullptr) {}
+        : indegree(0), closed(closed), hasLightOrCamera(false), id((unsigned int)-1), geometry(nullptr) {}
 
       Node (const std::string& name) 
-        : name(name), indegree(0), closed(false), id(-1), geometry(nullptr) {}
+        : name(name), indegree(0), closed(false), id((unsigned int)-1), geometry(nullptr) {}
 
       ~Node() {
         if (opaque_geometry_destruction)
@@ -1083,8 +1083,8 @@ namespace embree
           normals(transformMSMBlurNormalBuffer(imesh->normals,spaces)),
           texcoords(imesh->texcoords), triangles(imesh->triangles), material(imesh->material) {}
       
-      virtual void setMaterial(Ref<MaterialNode> material) {
-        this->material = material;
+      virtual void setMaterial(Ref<MaterialNode> newMaterial) {
+        this->material = newMaterial;
       }
 
       virtual BBox3fa bounds() const
@@ -1170,8 +1170,8 @@ namespace embree
           normals(transformMSMBlurNormalBuffer(imesh->normals,spaces)),
           texcoords(imesh->texcoords), quads(imesh->quads), material(imesh->material) {}
    
-      virtual void setMaterial(Ref<MaterialNode> material) {
-        this->material = material;
+      virtual void setMaterial(Ref<MaterialNode> newMaterial) {
+        this->material = newMaterial;
       }
 
       virtual BBox3fa bounds() const
@@ -1277,8 +1277,8 @@ namespace embree
         }
       }
       
-      virtual void setMaterial(Ref<MaterialNode> material) {
-        this->material = material;
+      virtual void setMaterial(Ref<MaterialNode> newMaterial) {
+        this->material = newMaterial;
       }
 
       virtual BBox3fa bounds() const
@@ -1394,8 +1394,8 @@ namespace embree
         dnormals(transformMSMBlurVectorVec3faBuffer(imesh->dnormals,spaces)),
         hairs(imesh->hairs), flags(imesh->flags), material(imesh->material), tessellation_rate(imesh->tessellation_rate) {}
 
-      virtual void setMaterial(Ref<MaterialNode> material) {
-        this->material = material;
+      virtual void setMaterial(Ref<MaterialNode> newMaterial) {
+        this->material = newMaterial;
       }
 
       virtual BBox3fa bounds() const
@@ -1485,8 +1485,8 @@ namespace embree
           normals(transformMSMBlurNormalBuffer(imesh->normals,spaces)),
         material(imesh->material) {}
 
-      virtual void setMaterial(Ref<MaterialNode> material) {
-        this->material = material;
+      virtual void setMaterial(Ref<MaterialNode> newMaterial) {
+        this->material = newMaterial;
       }
 
       virtual BBox3fa bounds() const
@@ -1579,8 +1579,8 @@ namespace embree
           positions(transformMSMBlurVec3faBuffer(imesh->positions,spaces)),
         grids(imesh->grids), material(imesh->material) {}
    
-      virtual void setMaterial(Ref<MaterialNode> material) {
-        this->material = material;
+      virtual void setMaterial(Ref<MaterialNode> newMaterial) {
+        this->material = newMaterial;
       }
 
       virtual BBox3fa bounds() const
@@ -1657,4 +1657,5 @@ namespace embree
 }
 
 #include "materials.h"
+
 

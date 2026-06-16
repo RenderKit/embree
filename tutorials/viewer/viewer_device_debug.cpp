@@ -221,7 +221,7 @@ Vec3fa renderPixelDebugShader(const DebugShaderData& data, float x, float y, con
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
+  ray.mask = 0xFFFFFFFFu;
   ray.time() = data.debug;
 
   /* intersect ray with scene */
@@ -328,7 +328,7 @@ Vec3fa renderPixelAOShader(const DebugShaderData& data, float x, float y, const 
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
+  ray.mask = 0xFFFFFFFFu;
   ray.time() = data.debug;
 
   /* intersect ray with scene */
@@ -366,14 +366,14 @@ Vec3fa renderPixelAOShader(const DebugShaderData& data, float x, float y, const 
     shadow.tfar = inf;
     shadow.geomID = RTC_INVALID_GEOMETRY_ID;
     shadow.primID = RTC_INVALID_GEOMETRY_ID;
-    shadow.mask = -1;
+    shadow.mask = 0xFFFFFFFFu;
     shadow.time() = data.debug;
 
     /* trace shadow ray */
-    RTCOccludedArguments args;
-    rtcInitOccludedArguments(&args);
-    args.feature_mask = feature_mask;
-    rtcTraversableOccluded1(data.traversable,RTCRay_(shadow),&args);
+    RTCOccludedArguments occ_args;
+    rtcInitOccludedArguments(&occ_args);
+    occ_args.feature_mask = feature_mask;
+    rtcTraversableOccluded1(data.traversable,RTCRay_(shadow),&occ_args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

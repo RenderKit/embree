@@ -19,7 +19,7 @@ namespace embree
   }
 
   Texture::Texture () 
-    : width(-1), height(-1), format(INVALID), bytesPerTexel(0), width_mask(0), height_mask(0), data(nullptr) {}
+    : width((unsigned int)-1), height((unsigned int)-1), format(INVALID), bytesPerTexel(0), width_mask(0), height_mask(0), data(nullptr) {}
   
   Texture::Texture(Ref<Image> img, const std::string &&fileName)
     : width(unsigned(img->width)), height(unsigned(img->height)), format(RGBA8), bytesPerTexel(4), width_mask(0), height_mask(0), data(nullptr), fileName(fileName)

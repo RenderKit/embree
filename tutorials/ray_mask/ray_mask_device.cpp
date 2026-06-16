@@ -123,7 +123,7 @@ extern "C" void device_init (char* cfg)
 }
 
 /* task that renders a single screen tile */
-void renderPixelStandard(const TutorialData& data,
+void renderPixelStandard(const TutorialData& td,
                          int x, int y, 
                          int* pixels,
                          const unsigned int width,
@@ -133,34 +133,34 @@ void renderPixelStandard(const TutorialData& data,
 {
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
-  if (data.enable_ray_mask)
+  if (td.enable_ray_mask)
     ray.mask = MASK_PV_SV + MASK_PV_SI;
 
   /* intersect ray with scene */
   RTCIntersectArguments iargs;
   rtcInitIntersectArguments(&iargs);
   iargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
-  rtcTraversableIntersect1(data.g_traversable,RTCRayHit_(ray),&iargs);
+  rtcTraversableIntersect1(td.g_traversable,RTCRayHit_(ray),&iargs);
   RayStats_addRay(stats);
 
   /* shade pixels */
   Vec3fa color = Vec3fa(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
   {
-    Vec3fa diffuse = data.face_colors[ray.primID];
+    Vec3fa diffuse = td.face_colors[ray.primID];
     color = color + diffuse*0.5f;
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
 
     /* initialize shadow ray */
     Ray shadow(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
-    if (data.enable_ray_mask)
+    if (td.enable_ray_mask)
       shadow.mask = MASK_PV_SV + MASK_PI_SV;
 
     /* trace shadow ray */
     RTCOccludedArguments sargs;
     rtcInitOccludedArguments(&sargs);
     sargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
-    rtcTraversableOccluded1(data.g_traversable,RTCRay_(shadow),&sargs);
+    rtcTraversableOccluded1(td.g_traversable,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

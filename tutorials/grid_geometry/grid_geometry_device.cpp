@@ -358,9 +358,9 @@ void createGridGeometry (GridMesh& gmesh)
             float v = (float)y / (SUB_GRID_RESOLUTION_Y-1);
 
             /* encode UVs */
-            const int h = (i >> 2) & 3, l = i & 3;
+            const int h_uv = (i >> 2) & 3, l = i & 3;
             const float U = 2.0f*l + 0.5f + u;
-            const float V = 2.0f*h + 0.5f + v;
+            const float V = 2.0f*h_uv + 0.5f + v;
 
             /* evaluate subdiv surface and displace points */
             Vec3fa P,dPdu,dPdv;
@@ -414,7 +414,7 @@ void createGridGeometry (GridMesh& gmesh)
       /* find start of ring */
       bool first = true;
       int startEdge = h+i;
-      while (first || startEdge != h+i)
+      while (first || startEdge != int(h+i))
       {
         first = false;
         int oedge = rtcGetGeometryOppositeHalfEdge(geomSubdiv,0,startEdge);
@@ -555,7 +555,7 @@ Vec3fa mylerp(float f, const Vec3fa& a, const Vec3fa& b) { // FIXME: use lerpr, 
 }
 
 /* task that renders a single screen tile */
-void renderPixelStandard(const TutorialData& data,
+void renderPixelStandard(const TutorialData& tutorialData,
                          int x, int y, 
                          int* pixels,
                          const unsigned int width,
@@ -570,7 +570,7 @@ void renderPixelStandard(const TutorialData& data,
   RTCIntersectArguments iargs;
   rtcInitIntersectArguments(&iargs);
   iargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
-  rtcTraversableIntersect1(data.g_traversable,RTCRayHit_(ray),&iargs);
+  rtcTraversableIntersect1(tutorialData.g_traversable,RTCRayHit_(ray),&iargs);
   RayStats_addRay(stats);
   
   /* shade pixels */
@@ -584,20 +584,20 @@ void renderPixelStandard(const TutorialData& data,
 
     if (ray.geomID == 1)
     {
-      unsigned int startVertexID = data.gmesh.egrids[ray.primID].startVertexID;
-      int width = data.gmesh.egrids[ray.primID].width;
-      int height = data.gmesh.egrids[ray.primID].height;
-      unsigned int stride = data.gmesh.egrids[ray.primID].stride;
-      float U = ray.u*(width-1);
-      float V = ray.v*(height-1);
-      int x = min((int)floor(U),width -2);
-      int y = min((int)floor(V),height-2);
-      float u = U-x;
-      float v = V-y;
-      Vec3fa N00 = data.gmesh.normals[startVertexID+(y+0)*stride+(x+0)];
-      Vec3fa N01 = data.gmesh.normals[startVertexID+(y+0)*stride+(x+1)];
-      Vec3fa N10 = data.gmesh.normals[startVertexID+(y+1)*stride+(x+0)];
-      Vec3fa N11 = data.gmesh.normals[startVertexID+(y+1)*stride+(x+1)];
+      unsigned int startVertexID = tutorialData.gmesh.egrids[ray.primID].startVertexID;
+      int gridWidth = tutorialData.gmesh.egrids[ray.primID].width;
+      int gridHeight = tutorialData.gmesh.egrids[ray.primID].height;
+      unsigned int stride = tutorialData.gmesh.egrids[ray.primID].stride;
+      float U = ray.u*(gridWidth-1);
+      float V = ray.v*(gridHeight-1);
+      int gridX = min((int)floor(U),gridWidth -2);
+      int gridY = min((int)floor(V),gridHeight-2);
+      float u = U-gridX;
+      float v = V-gridY;
+      Vec3fa N00 = tutorialData.gmesh.normals[startVertexID+(gridY+0)*stride+(gridX+0)];
+      Vec3fa N01 = tutorialData.gmesh.normals[startVertexID+(gridY+0)*stride+(gridX+1)];
+      Vec3fa N10 = tutorialData.gmesh.normals[startVertexID+(gridY+1)*stride+(gridX+0)];
+      Vec3fa N11 = tutorialData.gmesh.normals[startVertexID+(gridY+1)*stride+(gridX+1)];
       Vec3fa N0 = mylerp(u,N00,N01);
       Vec3fa N1 = mylerp(u,N10,N11);
       Ng = normalize(mylerp(v,N0,N1));
@@ -611,7 +611,7 @@ void renderPixelStandard(const TutorialData& data,
     RTCOccludedArguments sargs;
     rtcInitOccludedArguments(&sargs);
     sargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
-    rtcTraversableOccluded1(data.g_traversable,RTCRay_(shadow),&sargs);
+    rtcTraversableOccluded1(tutorialData.g_traversable,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

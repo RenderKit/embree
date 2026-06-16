@@ -159,10 +159,10 @@ AffineSpace3fa calculate_interpolated_space (ISPCInstanceArray* instanceArray, u
 
 typedef ISPCInstanceArray* ISPCInstanceArrayPtr;
 
-unsigned int postIntersect(const TutorialData& data, const Ray& ray, DifferentialGeometry& dg)
+unsigned int postIntersect(const TutorialData& td, const Ray& ray, DifferentialGeometry& dg)
 {
   AffineSpace3fa local2world = AffineSpace3fa::scale(Vec3fa(1));
-  ISPCGeometry** geometries = data.ispc_scene->geometries;
+  ISPCGeometry** geometries = td.ispc_scene->geometries;
   
   for (int i=0; i<RTC_MAX_INSTANCE_LEVEL_COUNT; i++)
   {
@@ -201,7 +201,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 }
 
 /* task that renders a single screen tile */
-void renderPixelStandard(const TutorialData& data,
+void renderPixelStandard(const TutorialData& td,
                          int x, int y, 
                          int* pixels,
                          const unsigned int width,
@@ -216,19 +216,19 @@ void renderPixelStandard(const TutorialData& data,
   RandomSampler_init(sampler, (int)x, (int)y, 0);
 
   /* initialize ray */
-  float ray_time = data.motion_blur ? RandomSampler_get1D(sampler) : time;
+  float ray_time = td.motion_blur ? RandomSampler_get1D(sampler) : time;
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, ray_time);
 
   /* intersect ray with scene */
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
-  args.flags = data.iflags_coherent;
+  args.flags = td.iflags_coherent;
 #if RTC_MIN_WIDTH
-  args.minWidthDistanceFactor = 0.5f*data.min_width/width;
+  args.minWidthDistanceFactor = 0.5f*td.min_width/width;
 #endif
   args.feature_mask = feature_mask;
   
-  rtcTraversableIntersect1(data.traversable,RTCRayHit_(ray),&args);
+  rtcTraversableIntersect1(td.traversable,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade background black */
@@ -251,24 +251,24 @@ void renderPixelStandard(const TutorialData& data,
   dg.Ns = ray.Ng;
 
 #if 0
-  if (data.use_smooth_normals)
+  if (td.use_smooth_normals)
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
       Vec3fa dPdu,dPdv;
       auto geomID = ray.geomID; {
-        rtcInterpolate1(rtcGetGeometry(data.scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,nullptr,&dPdu.x,&dPdv.x,3);
+        rtcInterpolate1(rtcGetGeometry(td.scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,nullptr,&dPdu.x,&dPdv.x,3);
       }
       dg.Ns = cross(dPdv,dPdu);
     }
 #endif
 
-  int materialID = postIntersect(data,ray,dg);
+  int materialID = postIntersect(td,ray,dg);
   dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
   dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
 
   /* shade */
-  if (data.ispc_scene->materials[materialID]->type == MATERIAL_OBJ) {
-    ISPCOBJMaterial* material = (ISPCOBJMaterial*) data.ispc_scene->materials[materialID];
+  if (td.ispc_scene->materials[materialID]->type == MATERIAL_OBJ) {
+    ISPCOBJMaterial* material = (ISPCOBJMaterial*) td.ispc_scene->materials[materialID];
     color = Vec3fa(material->Kd);
   }
 

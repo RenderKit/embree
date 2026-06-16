@@ -166,7 +166,7 @@ extern "C" void device_init (char* cfg)
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera& camera, RayStats& stats)
+Vec3fa renderPixel(const TutorialData& tutorialData, float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
@@ -176,7 +176,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
   rtcInitIntersectArguments(&iargs);
   iargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
   
-  rtcTraversableIntersect1(data.g_traversable,RTCRayHit_(ray),&iargs);
+  rtcTraversableIntersect1(tutorialData.g_traversable,RTCRayHit_(ray),&iargs);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -188,16 +188,16 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
     if (ray.instID[0] != RTC_INVALID_GEOMETRY_ID)
     {
       AffineSpace3fa xfm;
-      rtcGetGeometryTransformFromTraversable(data.g_traversable,ray.instID[0],0.0f,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&xfm);
+      rtcGetGeometryTransformFromTraversable(tutorialData.g_traversable,ray.instID[0],0.0f,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&xfm);
       Ns = xfmNormal(xfm,Ns);
-      //Ns = xfmVector(data.normal_xfm[ray.instID[0]],Ns);
+      //Ns = xfmVector(tutorialData.normal_xfm[ray.instID[0]],Ns);
     }
     Ns = normalize(Ns);
 
     /* calculate diffuse color of geometries */
     Vec3fa diffuse = Vec3fa(1,1,1);
     if (ray.instID[0] != RTC_INVALID_GEOMETRY_ID)
-      diffuse = data.colors[4*ray.instID[0]+ray.geomID];
+      diffuse = tutorialData.colors[4*ray.instID[0]+ray.geomID];
     color = color + diffuse*0.5;
 
     /* initialize shadow ray */
@@ -209,7 +209,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
     rtcInitOccludedArguments(&sargs);
     sargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
     
-    rtcTraversableOccluded1(data.g_traversable,RTCRay_(shadow),&sargs);
+    rtcTraversableOccluded1(tutorialData.g_traversable,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -219,7 +219,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
   return color;
 }
 
-void renderPixelStandard(const TutorialData& data,
+void renderPixelStandard(const TutorialData& tutorialData,
                          int x, int y, 
                          int* pixels,
                          const unsigned int width,
@@ -228,7 +228,7 @@ void renderPixelStandard(const TutorialData& data,
                          const ISPCCamera& camera, RayStats& stats)
 {
   /* calculate pixel color */
-  Vec3fa color = renderPixel(data, (float)x,(float)y,camera, stats);
+  Vec3fa color = renderPixel(tutorialData, (float)x,(float)y,camera, stats);
   
   /* write color to framebuffer */
   unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));

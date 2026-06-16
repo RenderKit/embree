@@ -156,11 +156,11 @@ namespace embree
                 mylerp(v,mylerp(u,g001,g101),mylerp(u,g011,g111)));
   }
   
-  Vec3fa noise3D(const Vec3fa& p)
+  Vec3fa noise3D(const Vec3fa& pos)
   {
-    float x = noise(p.x+128.0f);
-    float y = noise(p.y+64.0f);
-    float z = noise(p.z+192.0f);
+    float x = noise(pos.x+128.0f);
+    float y = noise(pos.y+64.0f);
+    float z = noise(pos.z+192.0f);
     return Vec3fa(x,y,z);
   }  
 }

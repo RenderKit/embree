@@ -25,7 +25,7 @@ enum BuildBenchType {
   ALL = 511
 };
 
-static MAYBE_UNUSED BuildBenchType getBuildBenchType(std::string const& str)
+inline BuildBenchType getBuildBenchType(std::string const& str)
 {
   if      (str == "update_dynamic_deformable")         return BuildBenchType::UPDATE_DYNAMIC_DEFORMABLE;
   else if (str == "update_dynamic_dynamic")            return BuildBenchType::UPDATE_DYNAMIC_DYNAMIC;
@@ -39,7 +39,7 @@ static MAYBE_UNUSED BuildBenchType getBuildBenchType(std::string const& str)
   return BuildBenchType::ALL;
 }
 
-static MAYBE_UNUSED std::string getBuildBenchTypeString(BuildBenchType type)
+inline std::string getBuildBenchTypeString(BuildBenchType type)
 {
   if      (type == BuildBenchType::UPDATE_DYNAMIC_DEFORMABLE)         return "update_dynamic_deformable";
   else if (type == BuildBenchType::UPDATE_DYNAMIC_DYNAMIC)            return "update_dynamic_dynamic";

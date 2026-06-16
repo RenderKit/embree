@@ -496,8 +496,8 @@ namespace embree {
     double time = 0.0;
     const size_t numThreads = g_num_user_threads;
 
-    Helper helper;
-    helper.barrier.init(numThreads);
+    Helper helper_state;
+    helper_state.barrier.init(numThreads);
 
     std::vector<std::thread> threads;
     threads.reserve(numThreads);
@@ -505,18 +505,18 @@ namespace embree {
     /* ramp up threads */
     setAffinity(0); 
     for (size_t i=1; i<numThreads; i++) 
-      threads.push_back(std::thread(&Helper::perform_work, &helper, i));
+      threads.push_back(std::thread(&Helper::perform_work, &helper_state, i));
     
     for (size_t i=0; i<benchmark_iterations+params.skipIterations; i++)
     {
-      helper.scene = createScene(RTC_SCENE_FLAG_NONE,qflags);
-      convertScene(helper.scene,scene_in,quality);
+      helper_state.scene = createScene(RTC_SCENE_FLAG_NONE,qflags);
+      convertScene(helper_state.scene,scene_in,quality);
 
       double t0 = getSeconds();
       
-      helper.barrier.wait();
-      rtcJoinCommitScene(helper.scene);
-      helper.barrier.wait();
+      helper_state.barrier.wait();
+      rtcJoinCommitScene(helper_state.scene);
+      helper_state.barrier.wait();
       
       double t1 = getSeconds();
 
@@ -532,12 +532,12 @@ namespace embree {
                   << time/iterations << " s, "
                   << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
       }
-      rtcReleaseScene(helper.scene);
+      rtcReleaseScene(helper_state.scene);
     }
 
     /* terminate task loop */
-    helper.term = true;
-    helper.barrier.wait();
+    helper_state.term = true;
+    helper_state.barrier.wait();
     for (auto& thread: threads)
       thread.join();
 
@@ -579,8 +579,8 @@ namespace embree {
     const size_t objects = getNumObjects(ispc_scene);
     const size_t numThreads = g_num_user_threads;
 
-    Helper helper;
-    helper.barrier.init(numThreads);
+    Helper helper_state;
+    helper_state.barrier.init(numThreads);
 
     std::vector<std::thread> threads;
     threads.reserve(numThreads);
@@ -588,40 +588,40 @@ namespace embree {
     /* ramp up threads */
     setAffinity(0); 
     for (size_t i=1; i<numThreads; i++) 
-      threads.push_back(std::thread(&Helper::perform_work, &helper, i));
+      threads.push_back(std::thread(&Helper::perform_work, &helper_state, i));
     
     // warm-up
     for (int i = 0; i < params.minTimeOrIterations; ++i) {
-      helper.scene = createScene(RTC_SCENE_FLAG_NONE,qflags);
-      convertScene(helper.scene,ispc_scene,quality);
-      helper.barrier.wait();
-      rtcJoinCommitScene(helper.scene);
-      helper.barrier.wait();
-      rtcReleaseScene(helper.scene);
+      helper_state.scene = createScene(RTC_SCENE_FLAG_NONE,qflags);
+      convertScene(helper_state.scene,ispc_scene,quality);
+      helper_state.barrier.wait();
+      rtcJoinCommitScene(helper_state.scene);
+      helper_state.barrier.wait();
+      rtcReleaseScene(helper_state.scene);
     }
 
     for (auto _ : *state.state) {
       state.state->PauseTiming();
 
-      helper.scene = createScene(RTC_SCENE_FLAG_NONE,qflags);
-      convertScene(helper.scene,ispc_scene,quality);
+      helper_state.scene = createScene(RTC_SCENE_FLAG_NONE,qflags);
+      convertScene(helper_state.scene,ispc_scene,quality);
 
       state.state->ResumeTiming();
       
-      helper.barrier.wait();
-      rtcJoinCommitScene(helper.scene);
-      helper.barrier.wait();
+      helper_state.barrier.wait();
+      rtcJoinCommitScene(helper_state.scene);
+      helper_state.barrier.wait();
       
       state.state->PauseTiming();
 
-      rtcReleaseScene(helper.scene);
+      rtcReleaseScene(helper_state.scene);
       
       state.state->ResumeTiming();
     }
 
     /* terminate task loop */
-    helper.term = true;
-    helper.barrier.wait();
+    helper_state.term = true;
+    helper_state.barrier.wait();
     for (auto& thread: threads)
       thread.join();
 

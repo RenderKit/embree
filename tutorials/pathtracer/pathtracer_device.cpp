@@ -1105,7 +1105,7 @@ inline Vec3fa derivBSpline(const ISPCHairSet* mesh, const unsigned int primID, c
   return Vec3fa(n0*p00 + n1*p01 + n2*p02 + n3*p03);
 }
 
-void postIntersectGeometry(const TutorialData& data, const Ray& ray, DifferentialGeometry& dg, ISPCGeometry* geometry, int& materialID)
+void postIntersectGeometry(const TutorialData& tutorialData, const Ray& ray, DifferentialGeometry& dg, ISPCGeometry* geometry, int& materialID)
 {
   if (geometry->type == TRIANGLE_MESH)
   {
@@ -1121,10 +1121,10 @@ void postIntersectGeometry(const TutorialData& data, const Ray& ray, Differentia
     
     if (mesh->texcoords)
     {
-      ISPCTriangle* tri = &mesh->triangles[dg.primID];
-      const Vec2f st0 = mesh->texcoords[tri->v0];
-      const Vec2f st1 = mesh->texcoords[tri->v1];
-      const Vec2f st2 = mesh->texcoords[tri->v2];
+      ISPCTriangle* tex_tri = &mesh->triangles[dg.primID];
+      const Vec2f st0 = mesh->texcoords[tex_tri->v0];
+      const Vec2f st1 = mesh->texcoords[tex_tri->v1];
+      const Vec2f st2 = mesh->texcoords[tex_tri->v2];
       const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
       const Vec2f st = w*st0 + u*st1 + v*st2;
       dg.u = st.x;
@@ -1134,26 +1134,26 @@ void postIntersectGeometry(const TutorialData& data, const Ray& ray, Differentia
     {
       if (mesh->numTimeSteps == 1)
       {
-        ISPCTriangle* tri = &mesh->triangles[dg.primID];
-        const Vec3fa n0 = Vec3fa(mesh->normals[0][tri->v0]);
-        const Vec3fa n1 = Vec3fa(mesh->normals[0][tri->v1]);
-        const Vec3fa n2 = Vec3fa(mesh->normals[0][tri->v2]);
+        ISPCTriangle* normal_tri = &mesh->triangles[dg.primID];
+        const Vec3fa n0 = Vec3fa(mesh->normals[0][normal_tri->v0]);
+        const Vec3fa n1 = Vec3fa(mesh->normals[0][normal_tri->v1]);
+        const Vec3fa n2 = Vec3fa(mesh->normals[0][normal_tri->v2]);
         const float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
         dg.Ns = w*n0 + u*n1 + v*n2;
       }
       else
       {
-        ISPCTriangle* tri = &mesh->triangles[dg.primID];
+        ISPCTriangle* tri_mb = &mesh->triangles[dg.primID];
         float f = mesh->numTimeSteps*ray.time();
         int itime = clamp((int)floor(f),0,(int)mesh->numTimeSteps-2);
         float t1 = f-itime;
         float t0 = 1.0f-t1;
-        const Vec3fa a0 = Vec3fa(mesh->normals[itime+0][tri->v0]);
-        const Vec3fa a1 = Vec3fa(mesh->normals[itime+0][tri->v1]);
-        const Vec3fa a2 = Vec3fa(mesh->normals[itime+0][tri->v2]);
-        const Vec3fa b0 = Vec3fa(mesh->normals[itime+1][tri->v0]);
-        const Vec3fa b1 = Vec3fa(mesh->normals[itime+1][tri->v1]);
-        const Vec3fa b2 = Vec3fa(mesh->normals[itime+1][tri->v2]);
+        const Vec3fa a0 = Vec3fa(mesh->normals[itime+0][tri_mb->v0]);
+        const Vec3fa a1 = Vec3fa(mesh->normals[itime+0][tri_mb->v1]);
+        const Vec3fa a2 = Vec3fa(mesh->normals[itime+0][tri_mb->v2]);
+        const Vec3fa b0 = Vec3fa(mesh->normals[itime+1][tri_mb->v0]);
+        const Vec3fa b1 = Vec3fa(mesh->normals[itime+1][tri_mb->v1]);
+        const Vec3fa b2 = Vec3fa(mesh->normals[itime+1][tri_mb->v2]);
         const Vec3fa n0 = t0*a0 + t1*b0;
         const Vec3fa n1 = t0*a1 + t1*b1;
         const Vec3fa n2 = t0*a2 + t1*b2;
@@ -1177,11 +1177,11 @@ void postIntersectGeometry(const TutorialData& data, const Ray& ray, Differentia
     
     if (mesh->texcoords)
     {
-      ISPCQuad* quad = &mesh->quads[dg.primID];
-      const Vec2f st0 = mesh->texcoords[quad->v0];
-      const Vec2f st1 = mesh->texcoords[quad->v1];
-      const Vec2f st2 = mesh->texcoords[quad->v2];
-      const Vec2f st3 = mesh->texcoords[quad->v3];
+      ISPCQuad* tex_quad = &mesh->quads[dg.primID];
+      const Vec2f st0 = mesh->texcoords[tex_quad->v0];
+      const Vec2f st1 = mesh->texcoords[tex_quad->v1];
+      const Vec2f st2 = mesh->texcoords[tex_quad->v2];
+      const Vec2f st3 = mesh->texcoords[tex_quad->v3];
       if (ray.u+ray.v < 1.0f) {
         const float u = ray.u, v = ray.v; const float w = 1.0f-u-v;
         const Vec2f st = w*st0 + u*st1 + v*st3;
@@ -1198,11 +1198,11 @@ void postIntersectGeometry(const TutorialData& data, const Ray& ray, Differentia
     {
       if (mesh->numTimeSteps == 1)
       {
-        ISPCQuad* quad = &mesh->quads[dg.primID];
-        const Vec3fa n0 = Vec3fa(mesh->normals[0][quad->v0]);
-        const Vec3fa n1 = Vec3fa(mesh->normals[0][quad->v1]);
-        const Vec3fa n2 = Vec3fa(mesh->normals[0][quad->v2]);
-        const Vec3fa n3 = Vec3fa(mesh->normals[0][quad->v3]);
+        ISPCQuad* quad_norm = &mesh->quads[dg.primID];
+        const Vec3fa n0 = Vec3fa(mesh->normals[0][quad_norm->v0]);
+        const Vec3fa n1 = Vec3fa(mesh->normals[0][quad_norm->v1]);
+        const Vec3fa n2 = Vec3fa(mesh->normals[0][quad_norm->v2]);
+        const Vec3fa n3 = Vec3fa(mesh->normals[0][quad_norm->v3]);
         if (ray.u+ray.v < 1.0f) {
           const float u = ray.u, v = ray.v; const float w = 1.0f-u-v;
           dg.Ns = w*n0 + u*n1 + v*n3;
@@ -1213,19 +1213,19 @@ void postIntersectGeometry(const TutorialData& data, const Ray& ray, Differentia
       }
       else
       {
-        ISPCQuad* quad = &mesh->quads[dg.primID];
+        ISPCQuad* quad_mb = &mesh->quads[dg.primID];
         float f = mesh->numTimeSteps*ray.time();
         int itime = clamp((int)floor(f),0,(int)mesh->numTimeSteps-2);
         float t1 = f-itime;
         float t0 = 1.0f-t1;
-        const Vec3fa a0 = Vec3fa(mesh->normals[itime+0][quad->v0]);
-        const Vec3fa a1 = Vec3fa(mesh->normals[itime+0][quad->v1]);
-        const Vec3fa a2 = Vec3fa(mesh->normals[itime+0][quad->v2]);
-        const Vec3fa a3 = Vec3fa(mesh->normals[itime+0][quad->v3]);
-        const Vec3fa b0 = Vec3fa(mesh->normals[itime+1][quad->v0]);
-        const Vec3fa b1 = Vec3fa(mesh->normals[itime+1][quad->v1]);
-        const Vec3fa b2 = Vec3fa(mesh->normals[itime+1][quad->v2]);
-        const Vec3fa b3 = Vec3fa(mesh->normals[itime+1][quad->v3]);
+        const Vec3fa a0 = Vec3fa(mesh->normals[itime+0][quad_mb->v0]);
+        const Vec3fa a1 = Vec3fa(mesh->normals[itime+0][quad_mb->v1]);
+        const Vec3fa a2 = Vec3fa(mesh->normals[itime+0][quad_mb->v2]);
+        const Vec3fa a3 = Vec3fa(mesh->normals[itime+0][quad_mb->v3]);
+        const Vec3fa b0 = Vec3fa(mesh->normals[itime+1][quad_mb->v0]);
+        const Vec3fa b1 = Vec3fa(mesh->normals[itime+1][quad_mb->v1]);
+        const Vec3fa b2 = Vec3fa(mesh->normals[itime+1][quad_mb->v2]);
+        const Vec3fa b3 = Vec3fa(mesh->normals[itime+1][quad_mb->v3]);
         const Vec3fa n0 = t0*a0 + t1*b0;
         const Vec3fa n1 = t0*a1 + t1*b1;
         const Vec3fa n2 = t0*a2 + t1*b2;
@@ -1246,7 +1246,7 @@ void postIntersectGeometry(const TutorialData& data, const Ray& ray, Differentia
     ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
     materialID = mesh->geom.materialID;
 
-    if (data.use_smooth_normals)
+    if (tutorialData.use_smooth_normals)
     {
       Vec3fa dPdu,dPdv;
       rtcInterpolate1(mesh->geom.geometry,dg.primID,dg.u,dg.v,RTC_BUFFER_TYPE_VERTEX,0,nullptr,&dPdu.x,&dPdv.x,3);
@@ -1355,16 +1355,16 @@ AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime
 
 typedef ISPCInstance* ISPCInstancePtr;
 
-inline int postIntersect(const TutorialData& data, const Ray& ray, DifferentialGeometry& dg)
+inline int postIntersect(const TutorialData& tutorialData, const Ray& ray, DifferentialGeometry& dg)
 {
   dg.eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
    
   AffineSpace3fa local2world = AffineSpace3fa::scale(Vec3fa(1));
-  ISPCGeometry** geometries = data.ispc_scene->geometries;
+  ISPCGeometry** geometries = tutorialData.ispc_scene->geometries;
   
-  for (int i=0; i<RTC_MAX_INSTANCE_LEVEL_COUNT; i++)
+  for (int j=0; j<RTC_MAX_INSTANCE_LEVEL_COUNT; j++)
   {
-    const unsigned int instID = dg.instIDs[i];
+    const unsigned int instID = dg.instIDs[j];
     if (instID == -1) break;
 
     ISPCInstance* instance = (ISPCInstancePtr) geometries[instID];
@@ -1377,7 +1377,7 @@ inline int postIntersect(const TutorialData& data, const Ray& ray, DifferentialG
   int materialID = 0;
   ISPCGeometry* geom = geometries[dg.geomID];
   auto g = geom; {
-    postIntersectGeometry(data,ray,dg,g,materialID);
+    postIntersectGeometry(tutorialData,ray,dg,g,materialID);
   }
   dg.Ng = xfmVector(local2world,dg.Ng);
   dg.Ns = xfmVector(local2world,dg.Ns);
@@ -1405,7 +1405,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilterHair(const RTCFilterFunctionNAr
 {
   RayQueryContext* context = (RayQueryContext*) args->context;
   TutorialData* pdata = (TutorialData*) context->tutorialData;
-  TutorialData& data = *pdata;
+  TutorialData& tutorialDataRef = *pdata;
   Vec3fa* transparency = (Vec3fa*) context->userRayExt;
   if (!transparency) return;
   
@@ -1423,11 +1423,11 @@ RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilterHair(const RTCFilterFunctionNAr
   Vec3fa Kt = Vec3fa(0.0f);
   auto geomID = hit_geomID;
   {
-    ISPCGeometry* geometry = data.ispc_scene->geometries[geomID];
+    ISPCGeometry* geometry = tutorialDataRef.ispc_scene->geometries[geomID];
     if (geometry->type == CURVES)
     {
       int materialID = ((ISPCHairSet*)geometry)->geom.materialID;
-      ISPCMaterial* material = data.ispc_scene->materials[materialID];
+      ISPCMaterial* material = tutorialDataRef.ispc_scene->materials[materialID];
       switch (material->type) {
       case MATERIAL_HAIR: Kt = Vec3fa(((ISPCHairMaterial*)material)->Kt); break;
       default: break;
@@ -1445,7 +1445,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void contextFilterFunction(const RTCFilterFunctionN
 {
   RayQueryContext* context = (RayQueryContext*) args->context;
   TutorialData* pdata = (TutorialData*) context->tutorialData;
-  TutorialData& data = *pdata;
+  TutorialData& tutorialData = *pdata;
   int* valid_i = args->valid;
 
   bool valid = *((int*) valid_i);
@@ -1455,7 +1455,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void contextFilterFunction(const RTCFilterFunctionN
   if (potential_hit->instID[0] == -1)
   {
     unsigned int geomID = potential_hit->geomID;
-    ISPCGeometry* geometry = data.ispc_scene->geometries[geomID];
+    ISPCGeometry* geometry = tutorialData.ispc_scene->geometries[geomID];
     
     if (geometry->type == SUBDIV_MESH ||
         geometry->type == TRIANGLE_MESH ||
@@ -1471,7 +1471,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void contextFilterFunction(const RTCFilterFunctionN
   }
 }
 
-Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSampler& sampler, const ISPCCamera& camera, RayStats& stats, const RTCFeatureFlags features)
+Vec3fa renderPixelFunction(const TutorialData& tutorialData, float x, float y, RandomSampler& sampler, const ISPCCamera& camera, RayStats& stats, const RTCFeatureFlags features)
 {
   /* radiance accumulator and weight */
   Vec3fa L = Vec3fa(0.0f);
@@ -1486,7 +1486,7 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
   DifferentialGeometry dg;
  
   /* iterative path tracer loop */
-  for (int i=0; i<data.max_path_length; i++)
+  for (int i=0; i<tutorialData.max_path_length; i++)
   {
     /* terminate if contribution too low */
     if (max(Lw.x,max(Lw.y,Lw.z)) < 0.01f)
@@ -1495,18 +1495,18 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
     /* intersect ray with scene */
     RayQueryContext context;
     InitIntersectionContext(&context);
-    context.tutorialData = (void*) &data;
+    context.tutorialData = (void*) &tutorialData;
     
     RTCIntersectArguments args;
     rtcInitIntersectArguments(&args);
     args.context = &context.context;
-    args.flags = (i == 0) ? data.iflags_coherent : data.iflags_incoherent;
+    args.flags = (i == 0) ? tutorialData.iflags_coherent : tutorialData.iflags_incoherent;
     args.feature_mask = features;
 #if USE_ARGUMENT_CALLBACKS && ENABLE_FILTER_FUNCTION
     args.filter = nullptr;
 #endif
   
-    rtcTraversableIntersect1(data.traversable,RTCRayHit_(ray),&args);
+    rtcTraversableIntersect1(tutorialData.traversable,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
     const Vec3fa wo = neg(ray.dir);
 
@@ -1516,9 +1516,9 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
       //L = L + Lw*Vec3fa(1.0f);
 
       /* iterate over all lights */
-      for (unsigned int i=0; i<data.ispc_scene->numLights; i++)
+      for (unsigned int j=0; j<tutorialData.ispc_scene->numLights; j++)
       {
-        const Light* l = data.ispc_scene->lights[i];
+        const Light* l = tutorialData.ispc_scene->lights[j];
         //Light_EvalRes le = l->eval(l,dg,ray.dir);
         Light_EvalRes le = Lights_eval(l,dg,ray.dir);
         L = L + Lw*le.value;
@@ -1530,8 +1530,8 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
     Vec3fa Ns = normalize(ray.Ng);
 
     /* compute differential geometry */
-    for (int i=0; i<RTC_MAX_INSTANCE_LEVEL_COUNT; i++)
-      dg.instIDs[i] = ray.instID[i];
+    for (int j=0; j<RTC_MAX_INSTANCE_LEVEL_COUNT; j++)
+      dg.instIDs[j] = ray.instID[j];
     
     dg.geomID = ray.geomID;
     dg.primID = ray.primID;
@@ -1540,7 +1540,7 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
     dg.P  = ray.org+ray.tfar*ray.dir;
     dg.Ng = ray.Ng;
     dg.Ns = Ns;
-    int materialID = postIntersect(data,ray,dg);
+    int materialID = postIntersect(tutorialData,ray,dg);
     dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
     dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
 
@@ -1552,8 +1552,8 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
 
     /* calculate BRDF */
     BRDF brdf;
-    int numMaterials = data.ispc_scene->numMaterials;
-    ISPCMaterial** material_array = &data.ispc_scene->materials[0];
+    int numMaterials = tutorialData.ispc_scene->numMaterials;
+    ISPCMaterial** material_array = &tutorialData.ispc_scene->materials[0];
     Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
 
     /* sample BRDF at hit point */
@@ -1561,9 +1561,9 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
     c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, RandomSampler_get2D(sampler));
 
     /* iterate over lights */
-    for (unsigned int i=0; i<data.ispc_scene->numLights; i++)
+    for (unsigned int j=0; j<tutorialData.ispc_scene->numLights; j++)
     {
-      const Light* l = data.ispc_scene->lights[i];
+      const Light* l = tutorialData.ispc_scene->lights[j];
       //Light_SampleRes ls = l->sample(l,dg,RandomSampler_get2D(sampler));
       Light_SampleRes ls = Lights_sample(l,dg,RandomSampler_get2D(sampler));
       if (ls.pdf <= 0.0f) continue;
@@ -1574,12 +1574,12 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
       RTCOccludedArguments sargs;
       rtcInitOccludedArguments(&sargs);
       sargs.context = &context.context;
-      sargs.flags = data.iflags_incoherent;
+      sargs.flags = tutorialData.iflags_incoherent;
       sargs.feature_mask = features;
 #if USE_ARGUMENT_CALLBACKS && ENABLE_FILTER_FUNCTION
       sargs.filter = contextFilterFunction;
 #endif
-      rtcTraversableOccluded1(data.traversable,RTCRay_(shadow),&sargs);
+      rtcTraversableOccluded1(tutorialData.traversable,RTCRay_(shadow),&sargs);
       RayStats_addShadowRay(stats);
 #if !ENABLE_FILTER_FUNCTION
       if (shadow.tfar > 0.0f)
@@ -1602,7 +1602,7 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
 }
 
 /* task that renders a single screen tile */
-void renderPixelStandard(const TutorialData& data,
+void renderPixelStandard(const TutorialData& tutorialData,
                          int x, int y,
                          int* pixels,
                          const unsigned int width,
@@ -1616,19 +1616,19 @@ void renderPixelStandard(const TutorialData& data,
 
   Vec3fa L = Vec3fa(0.0f);
 
-  for (int i=0; i<data.spp; i++)
+  for (int i=0; i<tutorialData.spp; i++)
   {
-    RandomSampler_init(sampler, x, y, data.accu_count*data.spp+i);
+    RandomSampler_init(sampler, x, y, tutorialData.accu_count*tutorialData.spp+i);
 
     /* calculate pixel color */
     float fx = x + RandomSampler_get1D(sampler);
     float fy = y + RandomSampler_get1D(sampler);
-    L = L + renderPixelFunction(data,fx,fy,sampler,camera,stats,features);
+    L = L + renderPixelFunction(tutorialData,fx,fy,sampler,camera,stats,features);
   }
-  L = L/(float)data.spp;
+  L = L/(float)tutorialData.spp;
 
   /* write color to framebuffer */
-  Vec3ff accu_color = data.accu[y*width+x] + Vec3ff(L.x,L.y,L.z,1.0f); data.accu[y*width+x] = accu_color;
+  Vec3ff accu_color = tutorialData.accu[y*width+x] + Vec3ff(L.x,L.y,L.z,1.0f); tutorialData.accu[y*width+x] = accu_color;
   float f = rcp(max(0.001f,accu_color.w));
   unsigned int r = (unsigned int) (255.01f * clamp(accu_color.x*f,0.0f,1.0f));
   unsigned int g = (unsigned int) (255.01f * clamp(accu_color.y*f,0.0f,1.0f));

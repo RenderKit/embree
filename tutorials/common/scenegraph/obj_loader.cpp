@@ -17,7 +17,7 @@ namespace embree
   struct Crease {
     float w;
     unsigned int a, b;
-    Crease() : w(0), a(-1), b(-1) {};
+    Crease() : w(0), a((unsigned int)-1), b((unsigned int)-1) {};
     Crease(float w, unsigned int a, unsigned int b) : w(w), a(a), b(b) {};
   };
 
@@ -225,7 +225,7 @@ namespace embree
         for (unsigned int i=0; i<N+1; i++)
         {
           float r = getFloat(token);
-          MAYBE_UNUSED float t = (float)getInt(token);
+          (void)(float)getInt(token);
           if (i != 0) hair[3*i-1].w = r;
           hair[3*i+0].w = r;
           if (i != N) hair[3*i+1].w = r;
@@ -497,30 +497,30 @@ namespace embree
   /*! All indices are converted to C-style (from 0). Missing entries are assigned -1. */
   Vertex OBJLoader::getUInt3(const char*& token)
   {
-    Vertex v(-1);
-    v.v = fix_v(atoi(token));
+    Vertex vert((unsigned int)-1);
+    vert.v = fix_v(atoi(token));
     token += strcspn(token, "/ \t\r");
-    if (token[0] != '/') return(v);
+    if (token[0] != '/') return(vert);
     token++;
 
     // it is i//n
     if (token[0] == '/') {
       token++;
-      v.vn = fix_vn(atoi(token));
+      vert.vn = fix_vn(atoi(token));
       token += strcspn(token, " \t\r");
-      return(v);
+      return(vert);
     }
 
     // it is i/t/n or i/t
-    v.vt = fix_vt(atoi(token));
+    vert.vt = fix_vt(atoi(token));
     token += strcspn(token, "/ \t\r");
-    if (token[0] != '/') return(v);
+    if (token[0] != '/') return(vert);
     token++;
 
     // it is i/t/n
-    v.vn = fix_vn(atoi(token));
+    vert.vn = fix_vn(atoi(token));
     token += strcspn(token, " \t\r");
-    return(v);
+    return(vert);
   }
 
   uint32_t OBJLoader::getVertex(std::map<Vertex,uint32_t>& vertexMap, Ref<SceneGraph::TriangleMeshNode> mesh, const Vertex& i)
@@ -597,7 +597,7 @@ namespace embree
         const std::vector<Vertex>& face = curGroup[j];
         
         /* triangulate the face with a triangle fan */
-        Vertex i0 = face[0], i1 = Vertex(-1), i2 = face[1];
+        Vertex i0 = face[0], i1 = Vertex((unsigned int)-1), i2 = face[1];
         for (size_t k=2; k < face.size(); k++) 
         {
           i1 = i2; i2 = face[k];
