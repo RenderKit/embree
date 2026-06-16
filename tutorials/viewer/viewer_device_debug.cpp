@@ -19,7 +19,7 @@ extern "C" bool g_changed;
 extern "C" float g_debug;
 
 #if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION)
-static const sycl::specialization_id<RTCFeatureFlags> spec_feature_mask;
+inline const sycl::specialization_id<RTCFeatureFlags> spec_feature_mask;
 #endif
 
 extern "C" RTCFeatureFlags g_feature_mask;

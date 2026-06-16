@@ -17,7 +17,7 @@ RTCScene g_scene = nullptr;
 TutorialData data;
 
 #if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION) && defined(USE_SPECIALIZATION_CONSTANTS)
-static const sycl::specialization_id<RTCFeatureFlags> spec_feature_mask;
+inline const sycl::specialization_id<RTCFeatureFlags> spec_feature_mask;
 #endif
 
 RTCFeatureFlags g_feature_mask;
