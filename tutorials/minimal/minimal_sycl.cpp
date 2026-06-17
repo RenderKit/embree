@@ -29,7 +29,7 @@
 RTC_NAMESPACE_USE
 #endif
 
-const sycl::specialization_id<RTCFeatureFlags> feature_mask;
+inline const sycl::specialization_id<RTCFeatureFlags> feature_mask;
 const RTCFeatureFlags required_features = RTC_FEATURE_FLAG_TRIANGLE;
 
 struct Result {
