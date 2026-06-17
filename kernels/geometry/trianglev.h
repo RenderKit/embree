@@ -111,7 +111,7 @@ namespace embree
         lv1.x[i] = p1.x; lv1.y[i] = p1.y; lv1.z[i] = p1.z;
         lv2.x[i] = p2.x; lv2.y[i] = p2.y; lv2.z[i] = p2.z;
       }
-      TriangleMv::store_nt(this,TriangleMv(v0,v1,v2,vgeomID,vprimID));
+      TriangleMv::store_nt(this,TriangleMv(lv0,lv1,lv2,vgeomID,vprimID));
     }
 
     /* Updates the primitive */
