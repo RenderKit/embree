@@ -248,7 +248,7 @@ namespace embree
   static const int CPU_FEATURE_BIT_AVX512ER = 1 << 27;    // AVX512ER (exponential and reciprocal instructions)
   static const int CPU_FEATURE_BIT_AVX512CD = 1 << 28;    // AVX512CD (conflict detection instructions)
   static const int CPU_FEATURE_BIT_AVX512BW = 1 << 30;    // AVX512BW (byte and word instructions)
-  static const int CPU_FEATURE_BIT_AVX512VL = 1 << 31;    // AVX512VL (vector length extensions)
+  static const int CPU_FEATURE_BIT_AVX512VL = (int)(1u << 31);    // AVX512VL (vector length extensions)
   static const int CPU_FEATURE_BIT_AVX512IFMA = 1 << 21;  // AVX512IFMA (integer fused multiple-add instructions)
   
   /* cpuid[eax=7,ecx=0].ecx */
