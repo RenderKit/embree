@@ -47,7 +47,6 @@ IF (EMBREE_SYCL_SUPPORT)
   
   SET(CMAKE_CXX_FLAGS_SYCL "-fsycl -fsycl-unnamed-lambda -Xclang -fsycl-allow-func-ptr")
   SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -Wno-mismatched-tags -Wno-pessimizing-move -Wno-reorder -Wno-unneeded-internal-declaration -Wno-delete-non-abstract-non-virtual-dtor -Wno-dangling-field -Wno-unknown-pragmas -Wno-logical-op-parentheses")
-  SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -Wno-deprecated-declarations") # suppress deprecation warnings from SYCL runtime headers in the device pass
   
   IF (SYCL_ONEAPI_ICX AND WIN32)
     SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} /debug:none")    # FIXME: debug information generation takes forever in SYCL
@@ -145,10 +144,19 @@ IF (EMBREE_SYCL_SUPPORT)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-pessimizing-move") # disabled: warning: moving a temporary object prevents copy elision [-Wpessimizing-move]
 
   IF (SYCL_ONEAPI_ICX AND WIN32)
-    IF (${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 2024.0)
-      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I\"${SYCL_COMPILER_DIR}/../opt/compiler/include/sycl\" -I\"${SYCL_COMPILER_DIR}/../opt/compiler/include/sycl/sycl\"")       # disable warning from SYCL header
+    IF (SYCL_COMPILER_NAME STREQUAL "icx-cl")
+      # icx-cl is MSVC-compatible: use -imsvc (clang-cl equivalent of -isystem)
+      IF (${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 2024.0)
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -imsvc \"${SYCL_COMPILER_DIR}/../opt/compiler/include/sycl\" -imsvc \"${SYCL_COMPILER_DIR}/../opt/compiler/include/sycl/sycl\"")       # treat Intel SYCL runtime headers as system headers (suppresses their internal warnings)
+      ENDIF()
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -imsvc \"${SYCL_COMPILER_DIR}/../include/sycl\" -imsvc \"${SYCL_COMPILER_DIR}/../include/\"")       # treat Intel SYCL runtime headers as system headers (suppresses their internal warnings)
+    ELSE()
+      # icx/icpx on Windows: GCC-compatible frontend, use -isystem
+      IF (${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 2024.0)
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem \"${SYCL_COMPILER_DIR}/../opt/compiler/include/sycl\" -isystem \"${SYCL_COMPILER_DIR}/../opt/compiler/include/sycl/sycl\"")       # treat Intel SYCL runtime headers as system headers (suppresses their internal warnings)
+      ENDIF()
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem \"${SYCL_COMPILER_DIR}/../include/sycl\" -isystem \"${SYCL_COMPILER_DIR}/../include/\"")       # treat Intel SYCL runtime headers as system headers (suppresses their internal warnings)
     ENDIF()
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I\"${SYCL_COMPILER_DIR}/../include/sycl\" -I\"${SYCL_COMPILER_DIR}/../include/\"")       # disable warning from SYCL header
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qstd=c++17")
   ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
