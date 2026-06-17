@@ -780,7 +780,7 @@ Vec3fa renderPixelStandard(const TutorialData& td,
     /* calculate diffuse color of geometries */
     Vec3fa diffuse = Vec3fa(0.0f);
     if      (ray.instID[0] ==  0) diffuse = td.colors[4*ray.instID[0]+ray.primID];
-    else if (ray.instID[0] == -1) diffuse = td.colors[4*4+ray.primID];
+    else if (ray.instID[0] == RTC_INVALID_GEOMETRY_ID) diffuse = td.colors[4*4+ray.primID];
     else                          diffuse = td.colors[4*ray.instID[0]+ray.geomID];
     color = color + diffuse*0.5f;
 
