@@ -124,7 +124,7 @@ namespace embree
     {
       BBox3fa bounds = empty;
       vuint<M> vgeomID = (unsigned int)-1, vprimID = (unsigned int)-1;
-      Vec3vf<M> lv0 = zero, lv1 = zero, lv2 = zero;
+      Vec3vf<M> lv0 = zero, lv1 = zero, lv2 = zero, lv3 = zero;
 	
       for (size_t i=0; i<M; i++)
       {
@@ -142,9 +142,9 @@ namespace embree
         lv0.x[i] = p0.x; lv0.y[i] = p0.y; lv0.z[i] = p0.z;
         lv1.x[i] = p1.x; lv1.y[i] = p1.y; lv1.z[i] = p1.z;
         lv2.x[i] = p2.x; lv2.y[i] = p2.y; lv2.z[i] = p2.z;
-        v3.x[i] = p3.x; v3.y[i] = p3.y; v3.z[i] = p3.z;
+        lv3.x[i] = p3.x; lv3.y[i] = p3.y; lv3.z[i] = p3.z;
       }
-      new (this) QuadMv(lv0,lv1,lv2,v3,vgeomID,vprimID);
+      new (this) QuadMv(lv0,lv1,lv2,lv3,vgeomID,vprimID);
       return bounds;
     }
    
