@@ -1405,7 +1405,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(geometry);
   }
 
-  AffineSpace3fa loadTransform(RTCFormat format, const float* xfm)
+  static AffineSpace3fa loadTransform(RTCFormat format, const float* xfm)
   {
     AffineSpace3fa space = one;
     switch (format)

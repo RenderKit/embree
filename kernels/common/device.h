@@ -209,7 +209,8 @@ namespace embree
         
     unsigned int gpu_maxWorkGroupSize;
     unsigned int gpu_maxComputeUnits;
-
+    bool hasRelaxedAllocationLimits = false;
+ 
   public:
     void* dispatchGlobalsPtr = nullptr;
 
@@ -218,6 +219,8 @@ namespace embree
     inline sycl::context &getGPUContext() { return gpu_context; }    
 
     inline unsigned int getGPUMaxWorkGroupSize() { return gpu_maxWorkGroupSize; }
+    inline bool relaxedAllocationLimitsSupported() const { return hasRelaxedAllocationLimits; }
+
 
     void init_rthw_level_zero();
     void init_rthw_opencl();
