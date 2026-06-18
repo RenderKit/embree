@@ -50,30 +50,16 @@ MACRO(APPLY_COMMON_COMPILER_FLAGS)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_FORTIFY_SOURCE=2")         # perform extra security checks for some standard library calls
 ENDMACRO()
 
-# Stack protector configuration
+# Stack protector configuration (Unix-only)
 MACRO(CONFIGURE_STACK_PROTECTOR)
-  IF (EMBREE_STACK_PROTECTOR)
-    IF (WIN32 AND SYCL_ONEAPI_ICX)
-      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GS")           # protects against return address overrides
-    ELSEIF (NOT WIN32)
-      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector") # protects against return address overrides
-    ELSEIF (WIN32)
-      SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /GS")          # protects against return address overrides
-    ENDIF()
-  ELSEIF (WIN32)
-    SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /GS-")          # do not protect against return address overrides
+  IF (EMBREE_STACK_PROTECTOR AND NOT WIN32)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector") # protects against return address overrides
   ENDIF()
 ENDMACRO()
 
 MACRO(DISABLE_STACK_PROTECTOR_FOR_FILE file)
-  IF (EMBREE_STACK_PROTECTOR)
-    IF (SYCL_ONEAPI_ICX AND WIN32)
-      SET_SOURCE_FILES_PROPERTIES(${file} PROPERTIES COMPILE_FLAGS "/GS-")
-    ELSEIF (NOT WIN32)
-      SET_SOURCE_FILES_PROPERTIES(${file} PROPERTIES COMPILE_FLAGS "-fno-stack-protector")
-    ELSEIF (WIN32)
-      SET_SOURCE_FILES_PROPERTIES(${file} PROPERTIES COMPILE_FLAGS "/GS-")
-    ENDIF()
+  IF (EMBREE_STACK_PROTECTOR AND NOT WIN32)
+    SET_SOURCE_FILES_PROPERTIES(${file} PROPERTIES COMPILE_FLAGS "-fno-stack-protector")
   ENDIF()
 ENDMACRO()
 

@@ -179,7 +179,17 @@ IF(SYCL_ONEAPI_ICX)
   ENDIF()
 ENDIF()
 
-CONFIGURE_STACK_PROTECTOR()
+# Stack protector configuration (Windows ICX-specific handling)
+IF (WIN32 AND SYCL_ONEAPI_ICX)
+  IF (EMBREE_STACK_PROTECTOR)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GS")           # protects against return address overrides
+  ELSE()
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GS-")          # do not protect against return address overrides
+  ENDIF()
+ELSE()
+  # Use shared stack protector macro for Unix and other platforms
+  CONFIGURE_STACK_PROTECTOR()
+ENDIF()
 
 IF (SYCL_ONEAPI_ICX AND WIN32)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fp:precise")   # makes dpcpp compiler compatible with clang++
