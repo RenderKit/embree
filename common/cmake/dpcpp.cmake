@@ -1,34 +1,7 @@
 ## Copyright 2009-2022 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
-MACRO(_SET_IF_EMPTY VAR VALUE)
-  IF(NOT ${VAR})
-    SET(${VAR} "${VALUE}")
-  ENDIF()
-ENDMACRO()
-
-IF (EMBREE_ARM)
-  IF ("x86_64" IN_LIST CMAKE_OSX_ARCHITECTURES)
-    # set ARM an x86 flags for macOS universal binary build
-    SET(FLAGS_SSE2 "-D__SSE__ -D__SSE2__ -msse -msse2 -mno-sse4.2")
-    SET(FLAGS_SSE42 "-D__SSE4_2__  -D__SSE4_1__ -msse4.2")
-    SET(FLAGS_AVX "-D__AVX__ -D__SSE4_2__  -D__SSE4_1__  -D__BMI__ -D__BMI2__ -D__LZCNT__ -mavx")
-    SET(FLAGS_AVX2 "-D__AVX2__ -D__AVX__ -D__SSE4_2__  -D__SSE4_1__  -D__BMI__ -D__BMI2__ -D__LZCNT__ -mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
-    _SET_IF_EMPTY(FLAGS_AVX512 "-march=skx")
-  ELSE ()
-    SET(FLAGS_SSE2 "-D__SSE__ -D__SSE2__")
-    SET(FLAGS_SSE42 "-D__SSE4_2__  -D__SSE4_1__")
-    SET(FLAGS_AVX "-D__AVX__ -D__SSE4_2__  -D__SSE4_1__  -D__BMI__ -D__BMI2__ -D__LZCNT__")
-    SET(FLAGS_AVX2 "-D__AVX2__ -D__AVX__ -D__SSE4_2__  -D__SSE4_1__  -D__BMI__ -D__BMI2__ -D__LZCNT__")
-  ENDIF ()
-ELSE ()
-  # for `thread` keyword
-  _SET_IF_EMPTY(FLAGS_SSE2  "-msse -msse2 -mno-sse4.2")
-  _SET_IF_EMPTY(FLAGS_SSE42 "-msse4.2")
-  _SET_IF_EMPTY(FLAGS_AVX   "-mavx")
-  _SET_IF_EMPTY(FLAGS_AVX2  "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
-  _SET_IF_EMPTY(FLAGS_AVX512 "-march=skx")
-ENDIF ()
+INCLUDE(compiler_base)
 
 IF (NOT WIN32)
   OPTION(EMBREE_IGNORE_CMAKE_CXX_FLAGS "When enabled Embree ignores default CMAKE_CXX_FLAGS." ON)
@@ -206,22 +179,7 @@ IF(SYCL_ONEAPI_ICX)
   ENDIF()
 ENDIF()
 
-IF (EMBREE_STACK_PROTECTOR)
-  IF (SYCL_ONEAPI_ICX AND WIN32)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GS")           # protects against return address overrides
-  ELSE()
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector") # protects against return address overrides
-  ENDIF()
-ENDIF()
-MACRO(DISABLE_STACK_PROTECTOR_FOR_FILE file)
-  IF (EMBREE_STACK_PROTECTOR)
-    IF (SYCL_ONEAPI_ICX AND WIN32)
-      SET_SOURCE_FILES_PROPERTIES(${file} PROPERTIES COMPILE_FLAGS "/GS-")
-    ELSE()
-      SET_SOURCE_FILES_PROPERTIES(${file} PROPERTIES COMPILE_FLAGS "-fno-stack-protector")
-    ENDIF()
-  ENDIF()
-ENDMACRO()
+CONFIGURE_STACK_PROTECTOR()
 
 IF (SYCL_ONEAPI_ICX AND WIN32)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fp:precise")   # makes dpcpp compiler compatible with clang++
