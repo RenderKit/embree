@@ -17,7 +17,7 @@ namespace embree
 
   void rthwifFreeAccelBuffer(Device* embree_device, void* ptr, size_t bytes, sycl::context context);
 
-  void* zeRTASInitExp(sycl::device device, sycl::context context);
+  void* zeRTASInit(sycl::device device, sycl::context context);
 
   void rthwifCleanup(Device* embree_device, void* dispatchGlobalsPtr, sycl::context context);
 
