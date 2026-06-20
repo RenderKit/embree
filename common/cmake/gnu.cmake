@@ -3,6 +3,25 @@
 
 INCLUDE(compiler_base)
 
+MACRO(_SET_IF_EMPTY VAR VALUE)
+  IF(NOT ${VAR})
+    SET(${VAR} "${VALUE}")
+  ENDIF()
+ENDMACRO()
+
+IF (EMBREE_ARM)
+  SET(FLAGS_SSE2 "-D__SSE__ -D__SSE2__")
+  SET(FLAGS_SSE42 "-D__SSE4_2__  -D__SSE4_1__")
+  SET(FLAGS_AVX "-D__AVX__ -D__SSE4_2__  -D__SSE4_1__  -D__BMI__ -D__BMI2__ -D__LZCNT__")
+  SET(FLAGS_AVX2 "-D__AVX2__ -D__AVX__ -D__SSE4_2__  -D__SSE4_1__  -D__BMI__ -D__BMI2__ -D__LZCNT__")
+ELSE ()
+  _SET_IF_EMPTY(FLAGS_SSE2  "-msse2")
+  _SET_IF_EMPTY(FLAGS_SSE42 "-msse4.2")
+  _SET_IF_EMPTY(FLAGS_AVX   "-mavx")
+  _SET_IF_EMPTY(FLAGS_AVX2  "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
+  _SET_IF_EMPTY(FLAGS_AVX512 "-march=skylake-avx512")
+ENDIF ()
+
 OPTION(EMBREE_IGNORE_CMAKE_CXX_FLAGS "When enabled Embree ignores default CMAKE_CXX_FLAGS." ON)
 IF (EMBREE_IGNORE_CMAKE_CXX_FLAGS)
   SET(CMAKE_CXX_FLAGS "")
@@ -36,6 +55,5 @@ IF (NOT APPLE)
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -z noexecstack")           # we do not need an executable stack
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -z relro -z now")          # re-arranges data sections to increase security
   ENDIF ()
+  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie")                       # enables position independent execution for executable
 ENDIF()
-
-SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie")                     # enables position independent execution for executable
