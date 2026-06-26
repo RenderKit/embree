@@ -249,8 +249,6 @@ namespace embree
     else if (isa == "avxi") return AVXI;
     else if (isa == "avx2") return AVX2;
     else if (isa == "avx512") return AVX512;
-    else if (isa == "avx10.1") return AVX512;
-    else if (isa == "avx10.2") return APX;
     else if (isa == "apx") return APX;
     else return SSE2;
   }
