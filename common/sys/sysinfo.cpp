@@ -519,7 +519,7 @@ namespace embree
     if (hasISA(features,AVXI)) v += "AVXI ";
     if (hasISA(features,AVX2)) v += "AVX2 ";
     if (hasISA(features,AVX512)) v += "AVX512 ";
-    if (hasISA(features, CPU_FEATURE_APX)) v += "APX ";
+    if (hasISA(features,APX)) v += "APX ";
     if (hasISA(features,NEON)) v += "NEON ";
     if (hasISA(features,NEON_2X)) v += "2xNEON ";
     return v;
