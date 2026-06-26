@@ -15,8 +15,7 @@
 #include "platform.h"
 
 /* define isa namespace and ISA bitvector */
-/* Allow build system to override via -Disa=... -DISA=... on the command line */
-#if !defined(isa)
+/* We treat APX as superset of AVX10.2. We don't have support for APX without those extensions. */
 #if defined(__APX_F__) && defined(__AVX10_2__)
 #  define isa apx
 #  define ISA APX
@@ -69,7 +68,6 @@
 #else
 #error Unknown ISA
 #endif
-#endif /* !defined(isa) */
 
 namespace embree
 {
