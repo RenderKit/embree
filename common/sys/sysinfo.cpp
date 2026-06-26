@@ -134,7 +134,6 @@ namespace embree
     uint32_t DisplayFamily_DisplayModel = (DisplayFamily << 8) + (DisplayModel << 0);
 
     // Data from Intel® 64 and IA-32 Architectures, Volume 4, Chapter 2, Table 2-1 (CPUID Signature Values of DisplayFamily_DisplayModel)
-    if (DisplayFamily_DisplayModel == 0x1301) return CPU::DIAMOND_RAPIDS;
     if (DisplayFamily_DisplayModel == 0x06AF) return CPU::SIERRA_FOREST;
     if (DisplayFamily_DisplayModel == 0x06AD) return CPU::GRANITE_RAPIDS;
     if (DisplayFamily_DisplayModel == 0x06AE) return CPU::GRANITE_RAPIDS;
