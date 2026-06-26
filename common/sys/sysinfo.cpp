@@ -289,7 +289,7 @@ namespace embree
   /* cpuid[eax=7,ecx=1].edx */
   static const int CPU_FEATURE_BIT_APX = 1 << 21;         // APX (Advanced Performance Extensions)
   
-  /* cpuid[eax=7,ecx=1].ecx */
+  /* cpuid[eax=7,ecx=1].edx */
   static const int CPU_FEATURE_BIT_AVX10 = 1 << 19;       // AVX-10 (256-bit and 512-bit vector instructions)
 
   /* cpuid[eax=0x24,ecx=0].ebx */
