@@ -127,9 +127,6 @@ namespace embree
 
   __forceinline vdouble8 operator +(const vdouble8& a) { return a; }
   __forceinline vdouble8 operator -(const vdouble8& a) { return _mm512_sub_pd(_mm512_setzero_pd(), a); }
-#if defined(__AVX10_2__)
-  __forceinline vdouble8 abs(const vdouble8& a) { return _mm512_abs_pd(a); }
-#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
@@ -169,16 +166,6 @@ namespace embree
   __forceinline vdouble8 sra (const vdouble8& a, const unsigned int b) { return  _mm512_castsi512_pd(_mm512_srai_epi64(_mm512_castpd_si512(a), b)); }
   __forceinline vdouble8 srl (const vdouble8& a, const unsigned int b) { return  _mm512_castsi512_pd(_mm512_srli_epi64(_mm512_castpd_si512(a), b)); }
 
-#if defined(__AVX10_2__)
-  // VMINMAXPD: imm8=0x00 -> min, suppress NaN; imm8=0x01 -> max, suppress NaN
-  __forceinline vdouble8 min(const vdouble8& a, const vdouble8& b) { return _mm512_minmax_pd(a, b, 0x00); }
-  __forceinline vdouble8 min(const vdouble8& a, double          b) { return _mm512_minmax_pd(a, vdouble8(b), 0x00); }
-  __forceinline vdouble8 min(double          a, const vdouble8& b) { return _mm512_minmax_pd(vdouble8(a), b, 0x00); }
-
-  __forceinline vdouble8 max(const vdouble8& a, const vdouble8& b) { return _mm512_minmax_pd(a, b, 0x01); }
-  __forceinline vdouble8 max(const vdouble8& a, double          b) { return _mm512_minmax_pd(a, vdouble8(b), 0x01); }
-  __forceinline vdouble8 max(double          a, const vdouble8& b) { return _mm512_minmax_pd(vdouble8(a), b, 0x01); }
-#else
   __forceinline vdouble8 min(const vdouble8& a, const vdouble8& b) { return _mm512_min_pd(a, b); }
   __forceinline vdouble8 min(const vdouble8& a, double          b) { return min(a,vdouble8(b)); }
   __forceinline vdouble8 min(double          a, const vdouble8& b) { return min(vdouble8(a),b); }
@@ -186,7 +173,6 @@ namespace embree
   __forceinline vdouble8 max(const vdouble8& a, const vdouble8& b) { return _mm512_max_pd(a, b); }
   __forceinline vdouble8 max(const vdouble8& a, double          b) { return max(a,vdouble8(b)); }
   __forceinline vdouble8 max(double          a, const vdouble8& b) { return max(vdouble8(a),b); }
-#endif
 
   __forceinline vdouble8 mask_add(const vboold8& mask, vdouble8& c, const vdouble8& a, const vdouble8& b) { return _mm512_mask_add_pd(c,mask,a,b); }
   __forceinline vdouble8 mask_sub(const vboold8& mask, vdouble8& c, const vdouble8& a, const vdouble8& b) { return _mm512_mask_sub_pd(c,mask,a,b); }
@@ -327,15 +313,9 @@ namespace embree
   __forceinline vdouble8 vreduce_max4(vdouble8 x) { x = vreduce_max2(x); return max(x, shuffle<2,3,0,1>(x)); }
   __forceinline vdouble8 vreduce_max (vdouble8 x) { x = vreduce_max4(x); return max(x, shuffle4<1,0>(x)); }
 
-#if defined(__AVX10_2__)
-  __forceinline double reduce_add(const vdouble8& v) { return _mm512_reduce_add_pd(v); }
-  __forceinline double reduce_min(const vdouble8& v) { return _mm512_reduce_min_pd(v); }
-  __forceinline double reduce_max(const vdouble8& v) { return _mm512_reduce_max_pd(v); }
-#else
   __forceinline double reduce_add(const vdouble8& v) { return toScalar(vreduce_add(v)); }
   __forceinline double reduce_min(const vdouble8& v) { return toScalar(vreduce_min(v)); }
   __forceinline double reduce_max(const vdouble8& v) { return toScalar(vreduce_max(v)); }
-#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Memory load and store operations

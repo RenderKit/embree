@@ -174,11 +174,7 @@ namespace embree
   __forceinline vfloat16 operator +(const vfloat16& a) { return a; }
   __forceinline vfloat16 operator -(const vfloat16& a) { return _mm512_mul_ps(a,vfloat16(-1)); }
 
-#if defined(__AVX10_2__)
-  __forceinline vfloat16 abs    (const vfloat16& a) { return _mm512_abs_ps(a); }
-#else
   __forceinline vfloat16 abs    (const vfloat16& a) { return _mm512_castsi512_ps(_mm512_and_epi32(_mm512_castps_si512(a),_mm512_set1_epi32(0x7FFFFFFF))); }
-#endif
   __forceinline vfloat16 signmsk(const vfloat16& a) { return _mm512_castsi512_ps(_mm512_and_epi32(_mm512_castps_si512(a),_mm512_set1_epi32(0x80000000))); }
 
   __forceinline vfloat16 rcp(const vfloat16& a)
@@ -223,16 +219,6 @@ namespace embree
     return  _mm512_castsi512_ps(_mm512_xor_epi32(_mm512_castps_si512(a),_mm512_castps_si512(b))); 
   }
   
-#if defined(__AVX10_2__)
-  // VMINMAXPS: imm8=0x00 -> min, suppress NaN; imm8=0x01 -> max, suppress NaN
-  __forceinline vfloat16 min(const vfloat16& a, const vfloat16& b) { return _mm512_minmax_ps(a, b, 0x00); }
-  __forceinline vfloat16 min(const vfloat16& a, float           b) { return _mm512_minmax_ps(a, vfloat16(b), 0x00); }
-  __forceinline vfloat16 min(const float&    a, const vfloat16& b) { return _mm512_minmax_ps(vfloat16(a), b, 0x00); }
-
-  __forceinline vfloat16 max(const vfloat16& a, const vfloat16& b) { return _mm512_minmax_ps(a, b, 0x01); }
-  __forceinline vfloat16 max(const vfloat16& a, float           b) { return _mm512_minmax_ps(a, vfloat16(b), 0x01); }
-  __forceinline vfloat16 max(const float&    a, const vfloat16& b) { return _mm512_minmax_ps(vfloat16(a), b, 0x01); }
-#else
   __forceinline vfloat16 min(const vfloat16& a, const vfloat16& b) { return _mm512_min_ps(a,b);  }
   __forceinline vfloat16 min(const vfloat16& a, float           b) { return _mm512_min_ps(a,vfloat16(b)); }
   __forceinline vfloat16 min(const float&    a, const vfloat16& b) { return _mm512_min_ps(vfloat16(a),b); }
@@ -240,7 +226,6 @@ namespace embree
   __forceinline vfloat16 max(const vfloat16& a, const vfloat16& b) { return _mm512_max_ps(a,b); }
   __forceinline vfloat16 max(const vfloat16& a, float           b) { return _mm512_max_ps(a,vfloat16(b)); }
   __forceinline vfloat16 max(const float&    a, const vfloat16& b) { return _mm512_max_ps(vfloat16(a),b); }
-#endif
 
   __forceinline vfloat16 mini(const vfloat16& a, const vfloat16& b) {
     const vint16 ai = _mm512_castps_si512(a);
@@ -523,30 +508,16 @@ namespace embree
   __forceinline vfloat16 vreduce_max8(vfloat16 x) { x = vreduce_max4(x); return max(x, shuffle4<1,0,3,2>(x)); }
   __forceinline vfloat16 vreduce_max (vfloat16 x) { x = vreduce_max8(x); return max(x, shuffle4<2,3,0,1>(x)); }
 
-#if defined(__AVX10_2__)
-  __forceinline float reduce_add(const vfloat16& v) { return _mm512_reduce_add_ps(v); }
-  __forceinline float reduce_min(const vfloat16& v) { return _mm512_reduce_min_ps(v); }
-  __forceinline float reduce_max(const vfloat16& v) { return _mm512_reduce_max_ps(v); }
-#else
   __forceinline float reduce_add(const vfloat16& v) { return toScalar(vreduce_add(v)); }
   __forceinline float reduce_min(const vfloat16& v) { return toScalar(vreduce_min(v)); }
   __forceinline float reduce_max(const vfloat16& v) { return toScalar(vreduce_max(v)); }
-#endif
  
-  __forceinline size_t select_min(const vfloat16& v) {
-#if defined(__AVX10_2__)
-    return bsf(_cvtmask16_u32(_mm512_cmp_epi32_mask(_mm512_castps_si512(v),_mm512_castps_si512(vreduce_min(v)),_MM_CMPINT_EQ)));
-#else
+  __forceinline size_t select_min(const vfloat16& v) { 
     return bsf(_mm512_kmov(_mm512_cmp_epi32_mask(_mm512_castps_si512(v),_mm512_castps_si512(vreduce_min(v)),_MM_CMPINT_EQ)));
-#endif
   }
 
-  __forceinline size_t select_max(const vfloat16& v) {
-#if defined(__AVX10_2__)
-    return bsf(_cvtmask16_u32(_mm512_cmp_epi32_mask(_mm512_castps_si512(v),_mm512_castps_si512(vreduce_max(v)),_MM_CMPINT_EQ)));
-#else
+  __forceinline size_t select_max(const vfloat16& v) { 
     return bsf(_mm512_kmov(_mm512_cmp_epi32_mask(_mm512_castps_si512(v),_mm512_castps_si512(vreduce_max(v)),_MM_CMPINT_EQ)));
-#endif
   }
 
   __forceinline size_t select_min(const vboolf16& valid, const vfloat16& v) 

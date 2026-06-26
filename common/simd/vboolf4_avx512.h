@@ -76,29 +76,17 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-#if defined(__AVX10_2__)
-  __forceinline vboolf4 operator !(const vboolf4& a) { return _kandn_mask8(a, (__mmask8)0xf); }
-#else
   __forceinline vboolf4 operator !(const vboolf4& a) { return _mm512_kandn(a, 0xf); }
-#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-#if defined(__AVX10_2__)
-  __forceinline vboolf4 operator &(const vboolf4& a, const vboolf4& b) { return _kand_mask8(a, b); }
-  __forceinline vboolf4 operator |(const vboolf4& a, const vboolf4& b) { return _kor_mask8(a, b); }
-  __forceinline vboolf4 operator ^(const vboolf4& a, const vboolf4& b) { return _kxor_mask8(a, b); }
-
-  __forceinline vboolf4 andn(const vboolf4& a, const vboolf4& b) { return _kandn_mask8(b, a); }
-#else
   __forceinline vboolf4 operator &(const vboolf4& a, const vboolf4& b) { return _mm512_kand(a, b); }
   __forceinline vboolf4 operator |(const vboolf4& a, const vboolf4& b) { return _mm512_kor(a, b); }
   __forceinline vboolf4 operator ^(const vboolf4& a, const vboolf4& b) { return _mm512_kxor(a, b); }
 
   __forceinline vboolf4 andn(const vboolf4& a, const vboolf4& b) { return _mm512_kandn(b, a); }
-#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
@@ -112,45 +100,26 @@ namespace embree
   /// Comparison Operators + Select
   ////////////////////////////////////////////////////////////////////////////////
 
-#if defined(__AVX10_2__)
-  __forceinline vboolf4 operator !=(const vboolf4& a, const vboolf4& b) { return _kxor_mask8(a, b); }
-  __forceinline vboolf4 operator ==(const vboolf4& a, const vboolf4& b) { return _kand_mask8(_kxnor_mask8(a, b), (__mmask8)0xf); }
-
-  __forceinline vboolf4 select(const vboolf4& s, const vboolf4& a, const vboolf4& b) {
-    return _kor_mask8(_kand_mask8(s, a), _kandn_mask8(s, b));
-  }
-#else
   __forceinline vboolf4 operator !=(const vboolf4& a, const vboolf4& b) { return _mm512_kxor(a, b); }
   __forceinline vboolf4 operator ==(const vboolf4& a, const vboolf4& b) { return _mm512_kand(_mm512_kxnor(a, b), 0xf); }
 
   __forceinline vboolf4 select(const vboolf4& s, const vboolf4& a, const vboolf4& b) {
     return _mm512_kor(_mm512_kand(s, a), _mm512_kandn(s, b));
   }
-#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reduction Operations
   ////////////////////////////////////////////////////////////////////////////////
 
-#if defined(__AVX10_2__)
-  __forceinline int all (const vboolf4& a) { return a.v == 0xf; }
-  __forceinline int any (const vboolf4& a) { return _kortestz_mask8_u8(a, a) == 0; }
-  __forceinline int none(const vboolf4& a) { return _kortestz_mask8_u8(a, a) != 0; }
-#else
   __forceinline int all (const vboolf4& a) { return a.v == 0xf; }
   __forceinline int any (const vboolf4& a) { return _mm512_kortestz(a, a) == 0; }
   __forceinline int none(const vboolf4& a) { return _mm512_kortestz(a, a) != 0; }
-#endif
 
   __forceinline int all (const vboolf4& valid, const vboolf4& b) { return all((!valid) | b); }
   __forceinline int any (const vboolf4& valid, const vboolf4& b) { return any(valid & b); }
   __forceinline int none(const vboolf4& valid, const vboolf4& b) { return none(valid & b); }
 
-#if defined(__AVX10_2__)
-  __forceinline size_t movemask(const vboolf4& a) { return _cvtmask8_u32(a); }
-#else
   __forceinline size_t movemask(const vboolf4& a) { return _mm512_kmov(a); }
-#endif
   __forceinline size_t popcnt  (const vboolf4& a) { return popcnt(a.v); }
 
   ////////////////////////////////////////////////////////////////////////////////
