@@ -292,6 +292,9 @@ namespace embree
   
   /* cpuid[eax=7,ecx=1].ecx */
   static const int CPU_FEATURE_BIT_AVX10 = 1 << 19;       // AVX-10 (256-bit and 512-bit vector instructions)
+
+  /* cpuid[eax=0x24,ecx=0].ebx */
+  static const int CPU_FEATURE_BIT_AVX10_512VL = 1 << 18; // AVX-10 supports 512-bit vectors
 #endif
 
 #if defined(__X86_ASM__)
@@ -403,9 +406,13 @@ namespace embree
 #else
     __cpuid_count(cpuid_leaf_24_0, 0x00000024, 0);
 #endif
-      int avx10_version = cpuid_leaf_24_0[EBX] & 0xff;
-      if (avx10_version >= 1) cpu_features |= CPU_FEATURE_AVX10_1;
-      if (avx10_version >= 2) cpu_features |= CPU_FEATURE_AVX10_2;
+      // enable AVX-10 features only if AVX-512VL is supported and ZMM registers are enabled
+      const int avx10_version = cpuid_leaf_24_0[EBX] & 0xff;
+      const bool avx10_512vl = (cpuid_leaf_24_0[EBX] & CPU_FEATURE_BIT_AVX10_512VL) != 0;
+      if (avx10_512vl && zmm_enabled) {
+        if (avx10_version >= 1) cpu_features |= CPU_FEATURE_AVX10_1;
+        if (avx10_version >= 2) cpu_features |= CPU_FEATURE_AVX10_2;
+      }
     }
 
 #if defined(__MACOSX__)
