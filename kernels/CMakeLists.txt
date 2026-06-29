@@ -216,6 +216,7 @@ embree_files(EMBREE_LIBRARY_FILES_APX ${APX})
 #message("AVX: ${EMBREE_LIBRARY_FILES_AVX}")
 #message("AVX2: ${EMBREE_LIBRARY_FILES_AVX2}")
 #message("AVX512: ${EMBREE_LIBRARY_FILES_AVX512}")
+#message("APX: ${EMBREE_LIBRARY_FILES_APX}")
 
 # replaces all .cpp files with a dummy file that includes that .cpp file
 # this is to work around an ICC name mangling issue related to lambda functions under windows
