@@ -420,7 +420,7 @@ namespace embree
     __forceinline const Vec3fa operator [](size_t i) const
     {
       assert(i<num);
-      return Vec3fa(vfloat4::loadu((float*)(ptr_ofs + i*stride)).m128());
+      return Vec3fa(vfloat4::loadu((float*)(ptr_ofs + i*stride)));
     }
     
     /*! writes the i'th element */

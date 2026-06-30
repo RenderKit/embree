@@ -22,8 +22,8 @@ namespace embree
       const vint<M> syM(sy + stepY);
       const float inv_resX = rcp((float)((int)g.resX-1));
       const float inv_resY = rcp((float)((int)g.resY-1));          
-      hit.U = (hit.U + vfloat<M>(sxM.vec_float()) * hit.UVW) * inv_resX;
-      hit.V = (hit.V + vfloat<M>(syM.vec_float()) * hit.UVW) * inv_resY;
+      hit.U = (hit.U + vfloat<M>(sxM) * hit.UVW) * inv_resX;
+      hit.V = (hit.V + vfloat<M>(syM) * hit.UVW) * inv_resY;
     }
     
     template<int M, bool filter>

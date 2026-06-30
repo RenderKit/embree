@@ -80,13 +80,13 @@ namespace embree
         }
 #else
         foreach2(lx0,lx1,ly0,ly1,[&](const vboolx& valid, const vintx& ix, const vintx& iy) {
-            const vfloatx lu = select(ix == swidth -1, vfloatx(1.0f), (vfloatx(ix.vec_float())-srange.lower.x)*scale_x);
-            const vfloatx lv = select(iy == sheight-1, vfloatx(1.0f), (vfloatx(iy.vec_float())-srange.lower.y)*scale_y);
+            const vfloatx lu = select(ix == swidth -1, vfloatx(1.0f), (vfloatx(ix)-srange.lower.x)*scale_x);
+            const vfloatx lv = select(iy == sheight-1, vfloatx(1.0f), (vfloatx(iy)-srange.lower.y)*scale_y);
             const Vec3vfx p = patch->patch.eval(lu,lv);
             Vec3vfx n = zero;
             if (unlikely(Nx != nullptr)) n = normalize_safe(patch->patch.normal(lu,lv));
-            const vfloatx u = vfloatx(ix.vec_float())*rcp_swidth;
-            const vfloatx v = vfloatx(iy.vec_float())*rcp_sheight;
+            const vfloatx u = vfloatx(ix)*rcp_swidth;
+            const vfloatx v = vfloatx(iy)*rcp_sheight;
             const vintx ofs = (iy-y0)*dwidth+(ix-x0);
             if (likely(all(valid)) && all(iy==iy[0])) {
               const unsigned ofs2 = ofs[0];

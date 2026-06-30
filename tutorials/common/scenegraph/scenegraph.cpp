@@ -700,10 +700,10 @@ namespace embree
       const vfloat4 v1 = vfloat4::loadu(&positions[idx+1]);
       const vfloat4 v2 = vfloat4::loadu(&positions[idx+2]);
       const vfloat4 v3 = vfloat4::loadu(&positions[idx+3]);
-      positions_o[4*i+0] = Vec3ff(((1.0f/6.0f)*v0 + (2.0f/3.0f)*v1 + (1.0f/6.0f)*v2).m128());
-      positions_o[4*i+1] = Vec3ff(((2.0f/3.0f)*v1 + (1.0f/3.0f)*v2).m128());
-      positions_o[4*i+2] = Vec3ff(((1.0f/3.0f)*v1 + (2.0f/3.0f)*v2).m128());
-      positions_o[4*i+3] = Vec3ff(((1.0f/6.0f)*v1 + (2.0f/3.0f)*v2 + (1.0f/6.0f)*v3).m128());
+      positions_o[4*i+0] = Vec3ff(((1.0f/6.0f)*v0 + (2.0f/3.0f)*v1 + (1.0f/6.0f)*v2));
+      positions_o[4*i+1] = Vec3ff(((2.0f/3.0f)*v1 + (1.0f/3.0f)*v2));
+      positions_o[4*i+2] = Vec3ff(((1.0f/3.0f)*v1 + (2.0f/3.0f)*v2));
+      positions_o[4*i+3] = Vec3ff(((1.0f/6.0f)*v1 + (2.0f/3.0f)*v2 + (1.0f/6.0f)*v3));
     }
     return positions_o;
   }
@@ -719,10 +719,10 @@ namespace embree
       vfloat4 v1 = vfloat4::loadu(&positions[idx+1]);
       vfloat4 v2 = vfloat4::loadu(&positions[idx+2]);
       vfloat4 v3 = vfloat4::loadu(&positions[idx+3]);
-      positions_o[4*i+0] = Vec3ff(( 6.0f*v0 - 7.0f*v1 + 2.0f*v2).m128());
-      positions_o[4*i+1] = Vec3ff(( 2.0f*v1 - 1.0f*v2).m128());
-      positions_o[4*i+2] = Vec3ff((-1.0f*v1 + 2.0f*v2).m128());
-      positions_o[4*i+3] = Vec3ff(( 2.0f*v1 - 7.0f*v2 + 6.0f*v3).m128());
+      positions_o[4*i+0] = Vec3ff(( 6.0f*v0 - 7.0f*v1 + 2.0f*v2));
+      positions_o[4*i+1] = Vec3ff(( 2.0f*v1 - 1.0f*v2));
+      positions_o[4*i+2] = Vec3ff((-1.0f*v1 + 2.0f*v2));
+      positions_o[4*i+3] = Vec3ff(( 2.0f*v1 - 7.0f*v2 + 6.0f*v3));
     }
     return positions_o;
   }
@@ -739,10 +739,10 @@ namespace embree
       vfloat4 v1 = vfloat4::loadu(&positions[idx+1]);
       vfloat4 v2 = vfloat4::loadu(&positions[idx+2]);
       vfloat4 v3 = vfloat4::loadu(&positions[idx+3]);
-      positions_o[2*i+0] = Vec3ff(v0.m128());
-      positions_o[2*i+1] = Vec3ff(v3.m128());
-      tangents_o[2*i+0] = Vec3ff((3.0f*(v1-v0)).m128());
-      tangents_o[2*i+1] = Vec3ff((3.0f*(v3-v2)).m128());
+      positions_o[2*i+0] = Vec3ff(v0);
+      positions_o[2*i+1] = Vec3ff(v3);
+      tangents_o[2*i+0] = Vec3ff((3.0f*(v1-v0)));
+      tangents_o[2*i+1] = Vec3ff((3.0f*(v3-v2)));
     }
     return std::make_pair(positions_o,tangents_o);
   }
@@ -814,7 +814,7 @@ namespace embree
 
     for (ssize_t i=ipos, j=opos; i<ipos+4 && j<(ssize_t)out[0].size(); i++, j++) {
       for (size_t k=0; k<in.size(); k++) {
-        if (any(abs((vfloat4)in[k][i].v-(vfloat4)out[k][j].v) > 0.01f*(vfloat4)max(abs(in[k][i]),abs(out[k][j])).v))
+        if (any(abs((vfloat4)in[k][i].m128-(vfloat4)out[k][j].m128) > 0.01f*(vfloat4)max(abs(in[k][i]),abs(out[k][j])).m128))
           return false;
       }
     }

@@ -88,7 +88,7 @@ namespace embree
           const vfloat4 lower = (vfloat4)box.lower;
           const vfloat4 upper = (vfloat4)box.upper;
           const vfloat4 centroid = lower+upper;
-          return vint4(((centroid-base)*scale).m128i());
+          return vint4((centroid-base)*scale);
         }
 
         __forceinline unsigned int code (const BBox3fa& box) const

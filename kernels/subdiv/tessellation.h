@@ -112,8 +112,8 @@ namespace embree
     const vint8 grid_u_segments = vint8(swidth)-1;
     const vint8 grid_v_segments = vint8(sheight)-1;
     
-    const vfloat8 inv_grid_u_segments = rcp(vfloat8(grid_u_segments.m256()));
-    const vfloat8 inv_grid_v_segments = rcp(vfloat8(grid_v_segments.m256()));
+    const vfloat8 inv_grid_u_segments = rcp(vfloat8(grid_u_segments));
+    const vfloat8 inv_grid_v_segments = rcp(vfloat8(grid_v_segments));
     
     unsigned int index = 0;
     vint8 v_i( zero );
@@ -126,8 +126,8 @@ namespace embree
       for (unsigned int x=0;x<grid_u_res;x+=8, u_i += 8)
       {
         const vbool8 m_u = u_i < grid_u_segments;
-	const vfloat8 u = select(m_u, vfloat8((x0+u_i).m256()) * inv_grid_u_segments, 1.0f);
-	const vfloat8 v = select(m_v, vfloat8((y0+v_i).m256()) * inv_grid_v_segments, 1.0f);
+	const vfloat8 u = select(m_u, vfloat8((x0+u_i)) * inv_grid_u_segments, 1.0f);
+	const vfloat8 v = select(m_v, vfloat8((y0+v_i)) * inv_grid_v_segments, 1.0f);
 	vfloat8::storeu(&u_array[index + x],u);
 	vfloat8::storeu(&v_array[index + x],v);	   
       }

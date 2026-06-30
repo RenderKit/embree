@@ -39,11 +39,11 @@ namespace embree
     __forceinline vuint8& operator =(const vuint8& a) { v = a.v; return *this; }
 
     __forceinline vuint(__m256i a) : v(a) {}
-    __forceinline const __m256i& m256i() const { return v; }
-    __forceinline __m256i& m256i()       { return v; }
+    __forceinline operator const __m256i&() const { return v; }
+    __forceinline operator       __m256i&()       { return v; }
 
-    __forceinline explicit vuint(const vuint4& a) : v(_mm256_insertf128_si256(_mm256_castsi128_si256(a.m128i()),a.m128i(),1)) {}
-    __forceinline vuint(const vuint4& a, const vuint4& b) : v(_mm256_insertf128_si256(_mm256_castsi128_si256(a.m128i()),b.m128i(),1)) {}
+    __forceinline explicit vuint(const vuint4& a) : v(_mm256_insertf128_si256(_mm256_castsi128_si256(a),a,1)) {}
+    __forceinline vuint(const vuint4& a, const vuint4& b) : v(_mm256_insertf128_si256(_mm256_castsi128_si256(a),b,1)) {}
     __forceinline vuint(const __m128i& a, const __m128i& b) : vl(a), vh(b) {}
  
     __forceinline explicit vuint(const unsigned int* a) : v(_mm256_castps_si256(_mm256_loadu_ps((const float*)a))) {}
@@ -71,17 +71,17 @@ namespace embree
     static __forceinline vuint8 load (const void* a) { return _mm256_castps_si256(_mm256_load_ps((float*)a)); }
     static __forceinline vuint8 loadu(const void* a) { return _mm256_castps_si256(_mm256_loadu_ps((float*)a)); }
 
-    static __forceinline vuint8 load (const vboolf8& mask, const void* a) { return _mm256_castps_si256(_mm256_maskload_ps((float*)a,mask.mask32())); }
-    static __forceinline vuint8 loadu(const vboolf8& mask, const void* a) { return _mm256_castps_si256(_mm256_maskload_ps((float*)a,mask.mask32())); }
+    static __forceinline vuint8 load (const vboolf8& mask, const void* a) { return _mm256_castps_si256(_mm256_maskload_ps((float*)a,(__m256i)mask)); }
+    static __forceinline vuint8 loadu(const vboolf8& mask, const void* a) { return _mm256_castps_si256(_mm256_maskload_ps((float*)a,(__m256i)mask)); }
 
-    static __forceinline void store (void* ptr, const vuint8& f) { _mm256_store_ps((float*)ptr,_mm256_castsi256_ps(f.m256i())); }
-    static __forceinline void storeu(void* ptr, const vuint8& f) { _mm256_storeu_ps((float*)ptr,_mm256_castsi256_ps(f.m256i())); }
+    static __forceinline void store (void* ptr, const vuint8& f) { _mm256_store_ps((float*)ptr,_mm256_castsi256_ps(f)); }
+    static __forceinline void storeu(void* ptr, const vuint8& f) { _mm256_storeu_ps((float*)ptr,_mm256_castsi256_ps(f)); }
     
-    static __forceinline void store (const vboolf8& mask, void* ptr, const vuint8& f) { _mm256_maskstore_ps((float*)ptr,_mm256_castps_si256(mask.m256()),_mm256_castsi256_ps(f.m256i())); }
-    static __forceinline void storeu(const vboolf8& mask, void* ptr, const vuint8& f) { _mm256_maskstore_ps((float*)ptr,_mm256_castps_si256(mask.m256()),_mm256_castsi256_ps(f.m256i())); }
+    static __forceinline void store (const vboolf8& mask, void* ptr, const vuint8& f) { _mm256_maskstore_ps((float*)ptr,_mm256_castps_si256(mask.v),_mm256_castsi256_ps(f)); }
+    static __forceinline void storeu(const vboolf8& mask, void* ptr, const vuint8& f) { _mm256_maskstore_ps((float*)ptr,_mm256_castps_si256(mask.v),_mm256_castsi256_ps(f)); }
 
     static __forceinline void store_nt(void* ptr, const vuint8& v) {
-      _mm256_stream_ps((float*)ptr,_mm256_castsi256_ps(v.m256i()));
+      _mm256_stream_ps((float*)ptr,_mm256_castsi256_ps(v));
     }
 
     static __forceinline vuint8 load(const unsigned char* ptr) {
@@ -188,7 +188,7 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vboolf8 asBool(const vuint8& a) { return _mm256_castsi256_ps(a.m256i()); }
+  __forceinline vboolf8 asBool(const vuint8& a) { return _mm256_castsi256_ps(a); }
 
   __forceinline vuint8 operator +(const vuint8& a) { return a; }
 
@@ -208,15 +208,15 @@ namespace embree
   //__forceinline vuint8 operator *(const vuint8& a, unsigned int          b) { return a * vuint8(b); }
   //__forceinline vuint8 operator *(unsigned int          a, const vuint8& b) { return vuint8(a) * b; }
 
-  __forceinline vuint8 operator &(const vuint8& a, const vuint8& b) { return _mm256_castps_si256(_mm256_and_ps(_mm256_castsi256_ps(a.m256i()), _mm256_castsi256_ps(b.m256i()))); }
+  __forceinline vuint8 operator &(const vuint8& a, const vuint8& b) { return _mm256_castps_si256(_mm256_and_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b))); }
   __forceinline vuint8 operator &(const vuint8& a, unsigned int          b) { return a & vuint8(b); }
   __forceinline vuint8 operator &(unsigned int          a, const vuint8& b) { return vuint8(a) & b; }
 
-  __forceinline vuint8 operator |(const vuint8& a, const vuint8& b) { return _mm256_castps_si256(_mm256_or_ps (_mm256_castsi256_ps(a.m256i()), _mm256_castsi256_ps(b.m256i()))); }
+  __forceinline vuint8 operator |(const vuint8& a, const vuint8& b) { return _mm256_castps_si256(_mm256_or_ps (_mm256_castsi256_ps(a), _mm256_castsi256_ps(b))); }
   __forceinline vuint8 operator |(const vuint8& a, unsigned int          b) { return a | vuint8(b); }
   __forceinline vuint8 operator |(unsigned int          a, const vuint8& b) { return vuint8(a) | b; }
 
-  __forceinline vuint8 operator ^(const vuint8& a, const vuint8& b) { return _mm256_castps_si256(_mm256_xor_ps(_mm256_castsi256_ps(a.m256i()), _mm256_castsi256_ps(b.m256i()))); }
+  __forceinline vuint8 operator ^(const vuint8& a, const vuint8& b) { return _mm256_castps_si256(_mm256_xor_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b))); }
   __forceinline vuint8 operator ^(const vuint8& a, unsigned int          b) { return a ^ vuint8(b); }
   __forceinline vuint8 operator ^(unsigned int          a, const vuint8& b) { return vuint8(a) ^ b; }
 
@@ -295,7 +295,7 @@ namespace embree
   __forceinline vboolf8 ne(const vboolf8& mask, const vuint8& a, const vuint8& b) { return mask & (a != b); }
 
   __forceinline vuint8 select(const vboolf8& m, const vuint8& t, const vuint8& f) {
-    return _mm256_castps_si256(_mm256_blendv_ps(_mm256_castsi256_ps(f.m256i()), _mm256_castsi256_ps(t.m256i()), m.m256())); 
+    return _mm256_castps_si256(_mm256_blendv_ps(_mm256_castsi256_ps(f), _mm256_castsi256_ps(t), m)); 
   }
 
 
@@ -303,43 +303,43 @@ namespace embree
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vuint8 unpacklo(const vuint8& a, const vuint8& b) { return _mm256_castps_si256(_mm256_unpacklo_ps(_mm256_castsi256_ps(a.m256i()), _mm256_castsi256_ps(b.m256i()))); }
-  __forceinline vuint8 unpackhi(const vuint8& a, const vuint8& b) { return _mm256_castps_si256(_mm256_unpackhi_ps(_mm256_castsi256_ps(a.m256i()), _mm256_castsi256_ps(b.m256i()))); }
+  __forceinline vuint8 unpacklo(const vuint8& a, const vuint8& b) { return _mm256_castps_si256(_mm256_unpacklo_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b))); }
+  __forceinline vuint8 unpackhi(const vuint8& a, const vuint8& b) { return _mm256_castps_si256(_mm256_unpackhi_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b))); }
 
   template<int i>
   __forceinline vuint8 shuffle(const vuint8& v) {
-    return _mm256_castps_si256(_mm256_permute_ps(_mm256_castsi256_ps(v.m256i()), _MM_SHUFFLE(i, i, i, i)));
+    return _mm256_castps_si256(_mm256_permute_ps(_mm256_castsi256_ps(v), _MM_SHUFFLE(i, i, i, i)));
   }
 
   template<int i0, int i1>
   __forceinline vuint8 shuffle4(const vuint8& v) {
-    return _mm256_permute2f128_si256(v.m256i(), v.m256i(), (i1 << 4) | (i0 << 0));
+    return _mm256_permute2f128_si256(v, v, (i1 << 4) | (i0 << 0));
   }
 
   template<int i0, int i1>
   __forceinline vuint8 shuffle4(const vuint8& a, const vuint8& b) {
-    return _mm256_permute2f128_si256(a.m256i(), b.m256i(), (i1 << 4) | (i0 << 0));
+    return _mm256_permute2f128_si256(a, b, (i1 << 4) | (i0 << 0));
   }
 
   template<int i0, int i1, int i2, int i3>
   __forceinline vuint8 shuffle(const vuint8& v) {
-    return _mm256_castps_si256(_mm256_permute_ps(_mm256_castsi256_ps(v.m256i()), _MM_SHUFFLE(i3, i2, i1, i0)));
+    return _mm256_castps_si256(_mm256_permute_ps(_mm256_castsi256_ps(v), _MM_SHUFFLE(i3, i2, i1, i0)));
   }
 
   template<int i0, int i1, int i2, int i3>
   __forceinline vuint8 shuffle(const vuint8& a, const vuint8& b) {
-    return _mm256_castps_si256(_mm256_shuffle_ps(_mm256_castsi256_ps(a.m256i()), _mm256_castsi256_ps(b.m256i()), _MM_SHUFFLE(i3, i2, i1, i0)));
+    return _mm256_castps_si256(_mm256_shuffle_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b), _MM_SHUFFLE(i3, i2, i1, i0)));
   }
 
-  template<> __forceinline vuint8 shuffle<0, 0, 2, 2>(const vuint8& v) { return _mm256_castps_si256(_mm256_moveldup_ps(_mm256_castsi256_ps(v.m256i()))); }
-  template<> __forceinline vuint8 shuffle<1, 1, 3, 3>(const vuint8& v) { return _mm256_castps_si256(_mm256_movehdup_ps(_mm256_castsi256_ps(v.m256i()))); }
-  template<> __forceinline vuint8 shuffle<0, 1, 0, 1>(const vuint8& v) { return _mm256_castps_si256(_mm256_castpd_ps(_mm256_movedup_pd(_mm256_castps_pd(_mm256_castsi256_ps(v.m256i()))))); }
+  template<> __forceinline vuint8 shuffle<0, 0, 2, 2>(const vuint8& v) { return _mm256_castps_si256(_mm256_moveldup_ps(_mm256_castsi256_ps(v))); }
+  template<> __forceinline vuint8 shuffle<1, 1, 3, 3>(const vuint8& v) { return _mm256_castps_si256(_mm256_movehdup_ps(_mm256_castsi256_ps(v))); }
+  template<> __forceinline vuint8 shuffle<0, 1, 0, 1>(const vuint8& v) { return _mm256_castps_si256(_mm256_castpd_ps(_mm256_movedup_pd(_mm256_castps_pd(_mm256_castsi256_ps(v))))); }
 
-  template<int i> __forceinline vuint8 insert4(const vuint8& a, const vuint4& b) { return _mm256_insertf128_si256(a.m256i(), b.m128i(), i); }
-  template<int i> __forceinline vuint4 extract4(const vuint8& a) { return _mm256_extractf128_si256(a.m256i(), i); }
-  template<> __forceinline vuint4 extract4<0>(const vuint8& a) { return _mm256_castsi256_si128(a.m256i()); }
+  template<int i> __forceinline vuint8 insert4(const vuint8& a, const vuint4& b) { return _mm256_insertf128_si256(a, b, i); }
+  template<int i> __forceinline vuint4 extract4(const vuint8& a) { return _mm256_extractf128_si256(a, i); }
+  template<> __forceinline vuint4 extract4<0>(const vuint8& a) { return _mm256_castsi256_si128(a); }
 
-  __forceinline int toScalar(const vuint8& v) { return _mm_cvtsi128_si32(_mm256_castsi256_si128(v.m256i())); }
+  __forceinline int toScalar(const vuint8& v) { return _mm_cvtsi128_si32(_mm256_castsi256_si128(v)); }
 
 
   ////////////////////////////////////////////////////////////////////////////////
