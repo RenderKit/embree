@@ -16,7 +16,7 @@
 
 /* define isa namespace and ISA bitvector */
 /* We treat APX as superset of AVX10.2. We don't have support for APX without those extensions. */
-#if defined(__APX_F__) && defined(__AVX10_VER__) && (__AVX10_VER__ >= 2)
+#if defined(__APX_F__) && ((defined(__AVX10_VER__) && (__AVX10_VER__ >= 2)) || defined(__AVX10_2__))
 #  define isa apx
 #  define ISA APX
 #  define ISA_STR "APX"
