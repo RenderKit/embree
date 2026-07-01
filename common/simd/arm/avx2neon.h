@@ -689,7 +689,7 @@ __m256i _mm256_setr_epi64x (int64_t e0, int64_t e1, int64_t e2, int64_t e3)
 AVX2NEON_ABI
 __m256i _mm256_set_epi8 (char e31, char e30, char e29, char e28, char e27, char e26, char e25, char e24, char e23, char e22, char e21, char e20, char e19, char e18, char e17, char e16, char e15, char e14, char e13, char e12, char e11, char e10, char e9, char e8, char e7, char e6, char e5, char e4, char e3, char e2, char e1, char e0)
 {
-#if(_M_ARM64)
+#if defined(_M_ARM64)
     char lo_arr[16] = {e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,e10,e11,e12,e13,e14,e15};
     char hi_arr[16] = {e16,e17,e18,e19,e20,e21,e22,e23,e24,e25,e26,e27,e28,e29,e30,e31};
     int8x16_t lo;
@@ -710,7 +710,7 @@ __m256i _mm256_set_epi8 (char e31, char e30, char e29, char e28, char e27, char 
 AVX2NEON_ABI
 __m256i _mm256_setr_epi8 (char e0, char e1, char e2, char e3, char e4, char e5, char e6, char e7, char e8, char e9, char e10, char e11, char e12, char e13, char e14, char e15, char e16, char e17, char e18, char e19, char e20, char e21, char e22, char e23, char e24, char e25, char e26, char e27, char e28, char e29, char e30, char e31)
 {
-#if(_M_ARM64)
+#if defined(_M_ARM64)
     char lo_arr[16] = {e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,e10,e11,e12,e13,e14,e15};
     char hi_arr[16] = {e16,e17,e18,e19,e20,e21,e22,e23,e24,e25,e26,e27,e28,e29,e30,e31};
     int8x16_t lo;
@@ -732,7 +732,7 @@ __m256i _mm256_setr_epi8 (char e0, char e1, char e2, char e3, char e4, char e5, 
 AVX2NEON_ABI
 __m256i _mm256_set_epi16 (short e15, short e14, short e13, short e12, short e11, short e10, short e9, short e8, short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0)
 {
-#if(_M_ARM64)
+#if defined(_M_ARM64)
     short lo_arr[8] = {e0,e1,e2,e3,e4,e5,e6,e7};
     short hi_arr[8] = {e8,e9,e10,e11,e12,e13,e14,e15};
     int16x8_t lo;
@@ -753,7 +753,7 @@ __m256i _mm256_set_epi16 (short e15, short e14, short e13, short e12, short e11,
 AVX2NEON_ABI
 __m256i _mm256_setr_epi16 (short e0, short e1, short e2, short e3, short e4, short e5, short e6, short e7, short e8, short e9, short e10, short e11, short e12, short e13, short e14, short e15)
 {
-#if(_M_ARM64)
+#if defined(_M_ARM64)
     short lo_arr[8] = {e0,e1,e2,e3,e4,e5,e6,e7};
     short hi_arr[8] = {e8,e9,e10,e11,e12,e13,e14,e15};
     int16x8_t lo;
