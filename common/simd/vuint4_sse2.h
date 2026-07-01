@@ -179,9 +179,9 @@ namespace embree
 #if defined(__AVX512VL__)
       return _mm_mask_blend_epi32(m, (__m128i)f, (__m128i)t);
 #elif defined(__SSE4_1__)
-      return _mm_castps_si128(_mm_blendv_ps(_mm_castsi128_ps(f), _mm_castsi128_ps(t), (__m128)m)); 
+      return _mm_castps_si128(_mm_blendv_ps(_mm_castsi128_ps(f), _mm_castsi128_ps(t), (__m128)m));
 #else
-      return _mm_or_si128(_mm_and_si128((__m128i)m, t), _mm_andnot_si128((__m128i)m, f)); 
+      return _mm_or_si128(_mm_and_si128((__m128i)m, t), _mm_andnot_si128((__m128i)m, f));
 #endif
     }
   };
