@@ -473,7 +473,7 @@ namespace embree
     __forceinline Vec3fx( const Vec3fa& other, const unsigned a1) { m128 = other.m128; u = a1; }
     __forceinline Vec3fx( const Vec3fa& other, const float    w1) {
 #if defined (__aarch64__)
-      m128 = other.m128; v[3] = w1;
+      m128 = other.m128; m128[3] = w1;
 #elif defined(_M_ARM64)
       m128 = other.m128; m128.n128_f32[3] = w1;
 #elif defined (__SSE4_1__)
