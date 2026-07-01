@@ -879,7 +879,8 @@ double _mm256_permute4x64_pd_select(__m256d a, const int imm8)
 AVX2NEON_ABI
 __m256d _mm256_permute4x64_pd (__m256d a, const int imm8)
 {
-    float64x2_t lo,hi;
+    float64x2_t lo = vdupq_n_f64(0.0);
+    float64x2_t hi = vdupq_n_f64(0.0);
     lo = vsetq_lane_f64(_mm256_permute4x64_pd_select(a,imm8 >> 0), lo, 0);
     lo = vsetq_lane_f64(_mm256_permute4x64_pd_select(a,imm8 >> 2), lo, 1);
     hi = vsetq_lane_f64(_mm256_permute4x64_pd_select(a,imm8 >> 4), hi, 0);
