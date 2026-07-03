@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "arm/simd_wrapper_types.h"
 #include "../math/emath.h"
 
 #define vboolf vboolf_impl
@@ -25,8 +26,8 @@ namespace embree
     typedef vint4   Int;
     typedef vfloat4 Float;
 
-    enum  { size = 4 };             // number of SIMD elements
-    union { __m128i v; int i[4]; }; // data
+    enum  { size = 4 };                    // number of SIMD elements
+    union { __m128i_wrapper v; int i[4]; }; // data
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constructors, Assignment & Cast Operators
@@ -37,8 +38,8 @@ namespace embree
     __forceinline vint4& operator =(const vint4& a) { v = a.v; return *this; }
 
     __forceinline vint(__m128i a) : v(a) {}
-    __forceinline operator const __m128i&() const { return v; }
-    __forceinline operator       __m128i&()       { return v; }
+    __forceinline operator const __m128i&() const { return v.data; }
+    __forceinline operator       __m128i&()       { return v.data; }
 
     __forceinline vint(int a) : v(_mm_set1_epi32(a)) {}
     __forceinline vint(int a, int b, int c, int d) : v(_mm_set_epi32(d, c, b, a)) {}
@@ -504,7 +505,7 @@ namespace embree
   }
 #elif defined(_M_ARM64)
   __forceinline size_t toSizeT(const vint4& v) {
-    return v.v.n128_u64[0];
+    return v.v.data.n128_u64[0];
   }
 #else
 __forceinline size_t toSizeT(const vint4& v) { 

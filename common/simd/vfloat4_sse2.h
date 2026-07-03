@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "arm/simd_wrapper_types.h"
+
 #define vboolf vboolf_impl
 #define vboold vboold_impl
 #define vint vint_impl
@@ -23,8 +25,8 @@ namespace embree
     typedef vint4   Int;
     typedef vfloat4 Float;
     
-    enum  { size = 4 };                        // number of SIMD elements
-    union { __m128 v; float f[4]; int i[4]; }; // data
+    enum  { size = 4 };                                 // number of SIMD elements
+    union { __m128_wrapper v; float f[4]; int i[4]; };  // data
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constructors, Assignment & Cast Operators
@@ -37,8 +39,8 @@ namespace embree
     __forceinline vfloat4& operator =(const vfloat4& other) { v = other.v; return *this; }
 
     __forceinline vfloat(__m128 a) : v(a) {}
-    __forceinline operator const __m128&() const { return v; }
-    __forceinline operator       __m128&()       { return v; }
+    __forceinline operator const __m128&() const { return v.data; }
+    __forceinline operator       __m128&()       { return v.data; }
 
     __forceinline vfloat(float a) : v(_mm_set1_ps(a)) {}
     __forceinline vfloat(float a, float b, float c, float d) : v(_mm_set_ps(d, c, b, a)) {}
@@ -277,7 +279,7 @@ namespace embree
   __forceinline vint4   asInt  (const vfloat4& a) { return _mm_castps_si128(a); }
   __forceinline vuint4  asUInt (const vfloat4& a) { return _mm_castps_si128(a); }
 
-  __forceinline vint4   toInt  (const vfloat4& a) { return vint4(a); }
+  __forceinline vint4   toInt  (const vfloat4& a) { return vint4(_mm_cvtps_epi32((__m128)a)); }
   __forceinline vfloat4 toFloat(const vint4&   a) { return vfloat4(a); }
 
   __forceinline vfloat4 operator +(const vfloat4& a) { return a; }
