@@ -36,9 +36,9 @@ namespace embree
 
     __forceinline vboolf(__m128 input) : v(input) {}
     __forceinline operator const __m128&() const { return v; }
-    #if !defined(__EMSCRIPTEN__) && !defined(_M_ARM64)
-    __forceinline explicit operator const __m128i() const { return _mm_castps_si128(v); }
-    __forceinline explicit operator const __m128d() const { return _mm_castps_pd(v); }
+    #if !defined(__EMSCRIPTEN__)
+    __forceinline const __m128i m128i() const { return _mm_castps_si128(v); }
+    __forceinline const __m128d m128d() const { return _mm_castps_pd(v); }
     #endif
 
     __forceinline vboolf(bool a)
@@ -99,7 +99,7 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
   
   __forceinline vboolf4 operator !=(const vboolf4& a, const vboolf4& b) { return _mm_xor_ps(a, b); }
-  __forceinline vboolf4 operator ==(const vboolf4& a, const vboolf4& b) { return _mm_castsi128_ps(_mm_cmpeq_epi32((__m128i)a, (__m128i)b)); }
+  __forceinline vboolf4 operator ==(const vboolf4& a, const vboolf4& b) { return _mm_castsi128_ps(_mm_cmpeq_epi32(a.m128i(), b.m128i())); }
   
   __forceinline vboolf4 select(const vboolf4& m, const vboolf4& t, const vboolf4& f) {
 #if defined(__aarch64__) || defined(_M_ARM64) || defined(__SSE4_1__)
@@ -143,7 +143,7 @@ namespace embree
 #else
   template<int i0, int i1, int i2, int i3>
   __forceinline vboolf4 shuffle(const vboolf4& v) {
-    return _mm_castsi128_ps(_mm_shuffle_epi32((__m128i)v, _MM_SHUFFLE(i3, i2, i1, i0)));
+    return _mm_castsi128_ps(_mm_shuffle_epi32(v.m128i(), _MM_SHUFFLE(i3, i2, i1, i0)));
   }
 
   template<int i0, int i1, int i2, int i3>
@@ -160,7 +160,7 @@ namespace embree
 #if defined(__SSE3__)
   template<> __forceinline vboolf4 shuffle<0, 0, 2, 2>(const vboolf4& v) { return _mm_moveldup_ps(v); }
   template<> __forceinline vboolf4 shuffle<1, 1, 3, 3>(const vboolf4& v) { return _mm_movehdup_ps(v); }
-  template<> __forceinline vboolf4 shuffle<0, 1, 0, 1>(const vboolf4& v) { return _mm_castpd_ps(_mm_movedup_pd((__m128d)v)); }
+  template<> __forceinline vboolf4 shuffle<0, 1, 0, 1>(const vboolf4& v) { return _mm_castpd_ps(_mm_movedup_pd(v.m128d())); }
 #endif
 
 #if defined(__SSE4_1__) && !defined(__aarch64__) && !defined(_M_ARM64)

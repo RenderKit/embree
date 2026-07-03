@@ -94,14 +94,14 @@ namespace embree
     static __forceinline void store (const vboolf4& mask, void* ptr, const vint4& v) { _mm_mask_store_epi32 (ptr,mask,v); }
     static __forceinline void storeu(const vboolf4& mask, void* ptr, const vint4& v) { _mm_mask_storeu_epi32(ptr,mask,v); }
 #elif defined(__AVX__)
-    static __forceinline vint4 load (const vbool4& mask, const void* a) { return _mm_castps_si128(_mm_maskload_ps((float*)a,(__m128i)mask)); }
-    static __forceinline vint4 loadu(const vbool4& mask, const void* a) { return _mm_castps_si128(_mm_maskload_ps((float*)a,(__m128i)mask)); }
+    static __forceinline vint4 load (const vbool4& mask, const void* a) { return _mm_castps_si128(_mm_maskload_ps((float*)a,mask.m128i())); }
+    static __forceinline vint4 loadu(const vbool4& mask, const void* a) { return _mm_castps_si128(_mm_maskload_ps((float*)a,mask.m128i())); }
 
-    static __forceinline void store (const vboolf4& mask, void* ptr, const vint4& i) { _mm_maskstore_ps((float*)ptr,(__m128i)mask,_mm_castsi128_ps(i)); }
-    static __forceinline void storeu(const vboolf4& mask, void* ptr, const vint4& i) { _mm_maskstore_ps((float*)ptr,(__m128i)mask,_mm_castsi128_ps(i)); }
+    static __forceinline void store (const vboolf4& mask, void* ptr, const vint4& i) { _mm_maskstore_ps((float*)ptr,mask.m128i(),_mm_castsi128_ps(i)); }
+    static __forceinline void storeu(const vboolf4& mask, void* ptr, const vint4& i) { _mm_maskstore_ps((float*)ptr,mask.m128i(),_mm_castsi128_ps(i)); }
 #else
-    static __forceinline vint4 load (const vbool4& mask, const void* a) { return _mm_and_si128(_mm_load_si128 ((__m128i*)a),(__m128i)mask); }
-    static __forceinline vint4 loadu(const vbool4& mask, const void* a) { return _mm_and_si128(_mm_loadu_si128((__m128i*)a),(__m128i)mask); }
+    static __forceinline vint4 load (const vbool4& mask, const void* a) { return _mm_and_si128(_mm_load_si128 ((__m128i*)a),mask.m128i()); }
+    static __forceinline vint4 loadu(const vbool4& mask, const void* a) { return _mm_and_si128(_mm_loadu_si128((__m128i*)a),mask.m128i()); }
 
     static __forceinline void store (const vboolf4& mask, void* ptr, const vint4& i) { store (ptr,select(mask,i,load (ptr))); }
     static __forceinline void storeu(const vboolf4& mask, void* ptr, const vint4& i) { storeu(ptr,select(mask,i,loadu(ptr))); }
@@ -208,7 +208,7 @@ namespace embree
 #if defined(__AVX512VL__)
       return _mm_mmask_i32gather_epi32(r, mask, index, ptr, scale);
 #elif defined(__AVX2__) && !defined(__aarch64__) && !defined(_M_ARM64)
-      return _mm_mask_i32gather_epi32(r, ptr, index, (__m128i)mask, scale);
+      return _mm_mask_i32gather_epi32(r, ptr, index, mask.m128i(), scale);
 #else
       if (likely(mask[0])) r[0] = *(int*)(((char*)ptr)+scale*index[0]);
       if (likely(mask[1])) r[1] = *(int*)(((char*)ptr)+scale*index[1]);
@@ -263,7 +263,7 @@ namespace embree
 #elif defined(__SSE4_1__)
       return _mm_castps_si128(_mm_blendv_ps(_mm_castsi128_ps(f), _mm_castsi128_ps(t), (__m128)m));
 #else
-      return _mm_or_si128(_mm_and_si128((__m128i)m, t), _mm_andnot_si128((__m128i)m, f));
+      return _mm_or_si128(_mm_and_si128(m.m128i(), t), _mm_andnot_si128(m.m128i(), f));
 #endif
     }
   };
