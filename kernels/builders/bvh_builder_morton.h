@@ -32,12 +32,17 @@ namespace embree
           if (RTC_BUILD_ARGUMENTS_HAS(settings,minLeafSize       )) minLeafSize     = settings.minLeafSize;
           if (RTC_BUILD_ARGUMENTS_HAS(settings,maxLeafSize       )) maxLeafSize     = settings.maxLeafSize;
 
+          if (branchingFactor > MAX_BRANCHING_FACTOR)
+            branchingFactor = MAX_BRANCHING_FACTOR;
+
           minLeafSize = min(minLeafSize,maxLeafSize);
         }
 
         Settings (size_t branchingFactor, size_t maxDepth, size_t minLeafSize, size_t maxLeafSize, size_t singleThreadThreshold)
         : branchingFactor(branchingFactor), maxDepth(maxDepth), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), singleThreadThreshold(singleThreadThreshold)
         {
+          if (branchingFactor > MAX_BRANCHING_FACTOR)
+            branchingFactor = MAX_BRANCHING_FACTOR;
           minLeafSize = min(minLeafSize,maxLeafSize);
         }
 

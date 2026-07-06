@@ -4,10 +4,13 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <embree4/rtcore.h>
+#include <embree4/rtcore_builder.h>
 
 #include <limits>
 #include <cassert>
+#include <cstring>
 #include <iostream>
+#include <vector>
 
 
 struct Hit
@@ -17,6 +20,56 @@ struct Hit
   unsigned int primID = RTC_INVALID_GEOMETRY_ID;
   float tfar = std::numeric_limits<float>::infinity();
 };
+
+struct BuildTestNodeHeader
+{
+  unsigned int childCount;
+};
+
+static bool buildProgress(void* /*userPtr*/, double /*f*/)
+{
+  return true;
+}
+
+static void* createNode(RTCThreadLocalAllocator alloc, unsigned int childCount, void* /*userPtr*/)
+{
+  const size_t bytes =
+      sizeof(BuildTestNodeHeader) +
+      sizeof(void*) * childCount +
+      sizeof(RTCBounds) * childCount;
+
+  char* p = (char*) rtcThreadLocalAlloc(alloc, bytes, 16);
+  std::memset(p, 0, bytes);
+  ((BuildTestNodeHeader*)p)->childCount = childCount;
+  return p;
+}
+
+static void setNodeChildren(void* nodePtr, void** children, unsigned int childCount, void* /*userPtr*/)
+{
+  BuildTestNodeHeader* h = (BuildTestNodeHeader*) nodePtr;
+  void** out = (void**) (h + 1);
+  for (unsigned int i = 0; i < childCount; ++i) out[i] = children[i];
+}
+
+static void setNodeBounds(void* nodePtr, const RTCBounds** bounds, unsigned int childCount, void* /*userPtr*/)
+{
+  BuildTestNodeHeader* h = (BuildTestNodeHeader*) nodePtr;
+  void** childBase = (void**) (h + 1);
+  RTCBounds* out = (RTCBounds*) (childBase + h->childCount);
+  for (unsigned int i = 0; i < childCount; ++i) out[i] = *bounds[i];
+}
+
+static void* createLeaf(RTCThreadLocalAllocator alloc,
+                        const RTCBuildPrimitive* prims,
+                        size_t primCount,
+                        void* /*userPtr*/)
+{
+  const size_t bytes = sizeof(size_t) + primCount * sizeof(RTCBuildPrimitive);
+  char* p = (char*) rtcThreadLocalAlloc(alloc, bytes, 16);
+  *((size_t*)p) = primCount;
+  std::memcpy(p + sizeof(size_t), prims, primCount * sizeof(RTCBuildPrimitive));
+  return p;
+}
 
 inline Hit castRay(RTCScene scene, 
                     float ox, float oy, float oz,
@@ -106,3 +159,50 @@ TEST_CASE("Minimal test", "[minimal]")
   REQUIRE(true);
 }
 
+TEST_CASE("Morton builder clamps oversized branching factor", "[bvh-builder]")
+{
+  RTCDevice device = rtcNewDevice(nullptr);
+  RTCBVH bvh = rtcNewBVH(device);
+
+  const size_t primitiveCount = 1024;
+  std::vector<RTCBuildPrimitive> prims(primitiveCount);
+  for (size_t i = 0; i < primitiveCount; ++i)
+  {
+    const float x = float(i % 32);
+    const float y = float((i / 32) % 32);
+
+    RTCBuildPrimitive p{};
+    p.lower_x = x * 2.0f;
+    p.lower_y = y * 2.0f;
+    p.lower_z = 0.0f;
+    p.upper_x = p.lower_x + 0.5f;
+    p.upper_y = p.lower_y + 0.5f;
+    p.upper_z = 0.5f;
+    p.geomID = 0;
+    p.primID = (unsigned int)i;
+    prims[i] = p;
+  }
+
+  RTCBuildArguments args = rtcDefaultBuildArguments();
+  args.byteSize = sizeof(args);
+  args.buildQuality = RTC_BUILD_QUALITY_LOW;
+  args.maxBranchingFactor = 64;
+  args.maxDepth = 1024;
+  args.minLeafSize = 1;
+  args.maxLeafSize = 1;
+  args.bvh = bvh;
+  args.primitives = prims.data();
+  args.primitiveCount = prims.size();
+  args.primitiveArrayCapacity = prims.size();
+  args.createNode = createNode;
+  args.setNodeChildren = setNodeChildren;
+  args.setNodeBounds = setNodeBounds;
+  args.createLeaf = createLeaf;
+  args.buildProgress = buildProgress;
+
+  void* root = rtcBuildBVH(&args);
+  REQUIRE(root != nullptr);
+
+  rtcReleaseBVH(bvh);
+  rtcReleaseDevice(device);
+}
