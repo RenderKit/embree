@@ -26,10 +26,10 @@ namespace embree {
         {
           //std::cout << extensions[i].name << " version " << extensions[i].version << std::endl;
 
-          if (strncmp("ZE_extension_raytracing",extensions[i].name,sizeof(extensions[i].name)) == 0)
+          if (strncmp(ZE_RAYTRACING_EXT_NAME ,extensions[i].name,sizeof(extensions[i].name)) == 0)
             has_raytracing = true;
 
-          if (has_raytracing && strncmp("ZE_experimental_rtas_builder",extensions[i].name,sizeof(extensions[i].name)) == 0) {
+          if (has_raytracing && strncmp(ZE_RTAS_EXT_NAME, extensions[i].name,sizeof(extensions[i].name)) == 0) {
             ze_result_t result_rtas_builder = ZeWrapper::initRTASBuilder(hDriver);
             if (result_rtas_builder == ZE_RESULT_ERROR_DEPENDENCY_UNAVAILABLE) {
               return;
