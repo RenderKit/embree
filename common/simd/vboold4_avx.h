@@ -39,9 +39,9 @@ namespace embree
     __forceinline vboold(__m256d a) : v(a) {}
     __forceinline vboold(__m256i a) : v(_mm256_castsi256_pd(a)) {}
 
-    __forceinline operator const __m256() const { return _mm256_castpd_ps(v); }
-    __forceinline operator const __m256i() const { return _mm256_castpd_si256(v); }
-    __forceinline operator const __m256d() const { return v; }
+    __forceinline __m256 m256() const { return _mm256_castpd_ps(v); }
+    __forceinline __m256d m256d() const { return v; }
+    __forceinline __m256i mask32() const { return _mm256_castpd_si256(v); }
 
     __forceinline vboold(int a)
     {
@@ -62,7 +62,7 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     __forceinline vboold(FalseTy) : v(_mm256_setzero_pd()) {}
-#if !defined(__aarch64__)
+#if !defined(__aarch64__) && !defined(_M_ARM64)
     __forceinline vboold(TrueTy)  : v(_mm256_cmp_pd(_mm256_setzero_pd(), _mm256_setzero_pd(), _CMP_EQ_OQ)) {}
 #else
     __forceinline vboold(TrueTy)  : v(_mm256_cmpeq_pd(_mm256_setzero_pd(), _mm256_setzero_pd())) {}
@@ -80,17 +80,17 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vboold4 operator !(const vboold4& a) { return _mm256_xor_pd(a, vboold4(embree::True)); }
+  __forceinline vboold4 operator !(const vboold4& a) { return _mm256_xor_pd(a.m256d(), vboold4(embree::True).m256d()); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vboold4 operator &(const vboold4& a, const vboold4& b) { return _mm256_and_pd(a, b); }
-  __forceinline vboold4 operator |(const vboold4& a, const vboold4& b) { return _mm256_or_pd (a, b); }
-  __forceinline vboold4 operator ^(const vboold4& a, const vboold4& b) { return _mm256_xor_pd(a, b); }
+  __forceinline vboold4 operator &(const vboold4& a, const vboold4& b) { return _mm256_and_pd(a.m256d(), b.m256d()); }
+  __forceinline vboold4 operator |(const vboold4& a, const vboold4& b) { return _mm256_or_pd (a.m256d(), b.m256d()); }
+  __forceinline vboold4 operator ^(const vboold4& a, const vboold4& b) { return _mm256_xor_pd(a.m256d(), b.m256d()); }
 
-  __forceinline vboold4 andn(const vboold4& a, const vboold4& b) { return _mm256_andnot_pd(b, a); }
+  __forceinline vboold4 andn(const vboold4& a, const vboold4& b) { return _mm256_andnot_pd(b.m256d(), a.m256d()); }
 
   __forceinline vboold4& operator &=(vboold4& a, const vboold4& b) { return a = a & b; }
   __forceinline vboold4& operator |=(vboold4& a, const vboold4& b) { return a = a | b; }
@@ -100,31 +100,31 @@ namespace embree
   /// Comparison Operators + Select
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vboold4 operator !=(const vboold4& a, const vboold4& b) { return _mm256_xor_pd(a, b); }
-  __forceinline vboold4 operator ==(const vboold4& a, const vboold4& b) { return _mm256_xor_pd(_mm256_xor_pd(a,b),vboold4(embree::True)); }
+  __forceinline vboold4 operator !=(const vboold4& a, const vboold4& b) { return _mm256_xor_pd(a.m256d(), b.m256d()); }
+  __forceinline vboold4 operator ==(const vboold4& a, const vboold4& b) { return _mm256_xor_pd(_mm256_xor_pd(a.m256d(),b.m256d()),vboold4(embree::True).m256d()); }
 
   __forceinline vboold4 select(const vboold4& mask, const vboold4& t, const vboold4& f) {
-    return _mm256_blendv_pd(f, t, mask); 
+    return _mm256_blendv_pd(f.m256d(), t.m256d(), mask.m256d()); 
   }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-#if !defined(__aarch64__)
-  __forceinline vboold4 unpacklo(const vboold4& a, const vboold4& b) { return _mm256_unpacklo_pd(a, b); }
-  __forceinline vboold4 unpackhi(const vboold4& a, const vboold4& b) { return _mm256_unpackhi_pd(a, b); }
+#if !defined(__aarch64__) && !defined(_M_ARM64)
+  __forceinline vboold4 unpacklo(const vboold4& a, const vboold4& b) { return _mm256_unpacklo_pd(a.m256d(), b.m256d()); }
+  __forceinline vboold4 unpackhi(const vboold4& a, const vboold4& b) { return _mm256_unpackhi_pd(a.m256d(), b.m256d()); }
 #endif
 
 #if defined(__AVX2__)
   template<int i0, int i1, int i2, int i3>
   __forceinline vboold4 shuffle(const vboold4& v) {
-    return _mm256_permute4x64_pd(v, _MM_SHUFFLE(i3, i2, i1, i0));
+    return _mm256_permute4x64_pd(v.m256d(), _MM_SHUFFLE(i3, i2, i1, i0));
   }
 
   template<int i>
   __forceinline vboold4 shuffle(const vboold4& v) {
-    return _mm256_permute4x64_pd(v, _MM_SHUFFLE(i, i, i, i));
+    return _mm256_permute4x64_pd(v.m256d(), _MM_SHUFFLE(i, i, i, i));
   }
 #endif
 
@@ -133,19 +133,19 @@ namespace embree
   /// Reduction Operations
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline bool reduce_and(const vboold4& a) { return _mm256_movemask_pd(a) == (unsigned int)0xf; }
-  __forceinline bool reduce_or (const vboold4& a) { return !_mm256_testz_pd(a,a); }
+  __forceinline bool reduce_and(const vboold4& a) { return _mm256_movemask_pd(a.m256d()) == (unsigned int)0xf; }
+  __forceinline bool reduce_or (const vboold4& a) { return !_mm256_testz_pd(a.m256d(),a.m256d()); }
 
-  __forceinline bool all (const vboold4& a) { return _mm256_movemask_pd(a) == (unsigned int)0xf; }
-  __forceinline bool any (const vboold4& a) { return !_mm256_testz_pd(a,a); }
-  __forceinline bool none(const vboold4& a) { return _mm256_testz_pd(a,a) != 0; }
+  __forceinline bool all (const vboold4& a) { return _mm256_movemask_pd(a.m256d()) == (unsigned int)0xf; }
+  __forceinline bool any (const vboold4& a) { return !_mm256_testz_pd(a.m256d(),a.m256d()); }
+  __forceinline bool none(const vboold4& a) { return _mm256_testz_pd(a.m256d(),a.m256d()) != 0; }
 
   __forceinline bool all (const vboold4& valid, const vboold4& b) { return all((!valid) | b); }
   __forceinline bool any (const vboold4& valid, const vboold4& b) { return any(valid & b); }
   __forceinline bool none(const vboold4& valid, const vboold4& b) { return none(valid & b); }
 
-  __forceinline unsigned int movemask(const vboold4& a) { return _mm256_movemask_pd(a); }
-  __forceinline size_t       popcnt  (const vboold4& a) { return popcnt((size_t)_mm256_movemask_pd(a)); }
+  __forceinline unsigned int movemask(const vboold4& a) { return _mm256_movemask_pd(a.m256d()); }
+  __forceinline size_t       popcnt  (const vboold4& a) { return popcnt((size_t)_mm256_movemask_pd(a.m256d())); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Get/Set Functions

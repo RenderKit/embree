@@ -24,22 +24,22 @@ namespace embree
     {
       const vint<N> dist_shift = align_shift_right<N-1>(dist,dist);
       const vboolf<N> m_geq = d >= dist;
-      const vboolf<N> m_geq_shift = m_geq << 1;
+      const vboolf<N> m_geq_shift = m_geq.v << 1;
       dist = select(m_geq,d,dist);
       dist = select(m_geq_shift,dist_shift,dist);
     }
 
     template<int N>
     __forceinline void isort_quick_update(vint<N> &dist, const vint<N> &d) {
-      dist = align_shift_right<N-1>(dist,permute(d,vint<N>(zero)));
+      dist = align_shift_right<N-1>(dist,permute(d,vint<N>(zero).vec_int()));
     }
 
     __forceinline size_t permuteExtract(const vint8& index, const vllong4& n0, const vllong4& n1) {
-      return toScalar(permutex2var((__m256i)index,n0,n1));
+      return toScalar(permutex2var((__m256i)index.m256i(),n0,n1));
     }
 
     __forceinline float permuteExtract(const vint8& index, const vfloat8& n) {
-      return toScalar(permute(n,index));
+      return toScalar(permute(n,index.m256i()));
     }
 
 #endif
@@ -287,7 +287,7 @@ namespace embree
           distance_i = align_shift_right<1>(distance_i,distance_i);
           cur = permuteExtract(distance_i,n0,n1);
           BVH::prefetch(cur,types);
-          const vint8 new_dist(permute(distance_i,vint8(zero)));
+          const vint8 new_dist(permute(distance_i,vint8(zero).m256i()));
           mask &= mask-1;
           isort_update<8>(dist,new_dist);
 

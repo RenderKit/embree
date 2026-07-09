@@ -53,8 +53,8 @@ namespace embree
       __forceinline BBox<Vec2fa> bounds() const
       {
         const BBox<vfloat4> b = LR.bounds();
-        const BBox<Vec2fa> bl(Vec2fa(b.lower),Vec2fa(b.upper));
-        const BBox<Vec2fa> br(Vec2fa(shuffle<2,3,2,3>(b.lower)),Vec2fa(shuffle<2,3,2,3>(b.upper)));
+        const BBox<Vec2fa> bl(Vec2fa(b.lower.m128()),Vec2fa(b.upper.m128()));
+        const BBox<Vec2fa> br(Vec2fa(shuffle<2,3,2,3>(b.lower).m128()),Vec2fa(shuffle<2,3,2,3>(b.upper).m128()));
         return merge(bl,br);
       }
     };
@@ -280,18 +280,18 @@ namespace embree
         : LR(shuffle<0,1,0,1>(vfloat4(L.v0),vfloat4(R.v0)),shuffle<0,1,0,1>(vfloat4(L.v1),vfloat4(R.v1)),shuffle<0,1,0,1>(vfloat4(L.v2),vfloat4(R.v2)),shuffle<0,1,0,1>(vfloat4(L.v3),vfloat4(R.v3))) {}
       
       __forceinline CubicBezierCurve<Vec2fa> getL() const {
-        return CubicBezierCurve<Vec2fa>(Vec2fa(LR.v0),Vec2fa(LR.v1),Vec2fa(LR.v2),Vec2fa(LR.v3));
+        return CubicBezierCurve<Vec2fa>(Vec2fa(LR.v0.m128()),Vec2fa(LR.v1.m128()),Vec2fa(LR.v2.m128()),Vec2fa(LR.v3.m128()));
       }
       
       __forceinline CubicBezierCurve<Vec2fa> getR() const {
-        return CubicBezierCurve<Vec2fa>(Vec2fa(shuffle<2,3,2,3>(LR.v0)),Vec2fa(shuffle<2,3,2,3>(LR.v1)),Vec2fa(shuffle<2,3,2,3>(LR.v2)),Vec2fa(shuffle<2,3,2,3>(LR.v3)));
+        return CubicBezierCurve<Vec2fa>(Vec2fa(shuffle<2,3,2,3>(LR.v0).m128()),Vec2fa(shuffle<2,3,2,3>(LR.v1).m128()),Vec2fa(shuffle<2,3,2,3>(LR.v2).m128()),Vec2fa(shuffle<2,3,2,3>(LR.v3).m128()));
       }
       
       __forceinline BBox<Vec2fa> bounds() const
       {
         const BBox<vfloat4> b = LR.bounds();
-        const BBox<Vec2fa> bl(Vec2fa(b.lower),Vec2fa(b.upper));
-        const BBox<Vec2fa> br(Vec2fa(shuffle<2,3,2,3>(b.lower)),Vec2fa(shuffle<2,3,2,3>(b.upper)));
+        const BBox<Vec2fa> bl(Vec2fa(b.lower.m128()),Vec2fa(b.upper.m128()));
+        const BBox<Vec2fa> br(Vec2fa(shuffle<2,3,2,3>(b.lower).m128()),Vec2fa(shuffle<2,3,2,3>(b.upper).m128()));
         return merge(bl,br);
       }
       
@@ -363,27 +363,27 @@ namespace embree
       __forceinline Vec2fa eval(const float u, const float v) const
       {
         const vfloat4 p = LR.eval(u);
-        return Vec2fa(lerp(shuffle<0,1,0,1>(p),shuffle<2,3,2,3>(p),v));
+        return Vec2fa(lerp(shuffle<0,1,0,1>(p),shuffle<2,3,2,3>(p),v).m128());
       }
       
       __forceinline Vec2fa eval_du(const float u, const float v) const
       {
         const vfloat4 dpdu = LR.eval_dt(u);
-        return Vec2fa(lerp(shuffle<0,1,0,1>(dpdu),shuffle<2,3,2,3>(dpdu),v));
+        return Vec2fa(lerp(shuffle<0,1,0,1>(dpdu),shuffle<2,3,2,3>(dpdu),v).m128());
       }
       
       __forceinline Vec2fa eval_dv(const float u, const float v) const
       {
         const vfloat4 p = LR.eval(u);
-        return Vec2fa(shuffle<2,3,2,3>(p)-shuffle<0,1,0,1>(p));
+        return Vec2fa((shuffle<2,3,2,3>(p)-shuffle<0,1,0,1>(p)).m128());
       }
       
       __forceinline void eval(const float u, const float v, Vec2fa& p, Vec2fa& dpdu, Vec2fa& dpdv) const
       {
         vfloat4 p0, dp0du; LR.eval(u,p0,dp0du);
-        p = Vec2fa(lerp(shuffle<0,1,0,1>(p0),shuffle<2,3,2,3>(p0),v));
-        dpdu = Vec2fa(lerp(shuffle<0,1,0,1>(dp0du),shuffle<2,3,2,3>(dp0du),v));
-        dpdv = Vec2fa(shuffle<2,3,2,3>(p0)-shuffle<0,1,0,1>(p0));
+        p = Vec2fa(lerp(shuffle<0,1,0,1>(p0),shuffle<2,3,2,3>(p0),v).m128());
+        dpdu = Vec2fa(lerp(shuffle<0,1,0,1>(dp0du),shuffle<2,3,2,3>(dp0du),v).m128());
+        dpdv = Vec2fa((shuffle<2,3,2,3>(p0)-shuffle<0,1,0,1>(p0)).m128());
       }
       
       __forceinline TensorLinearQuadraticBezierSurface<Vec2fa> derivative_u() const {

@@ -35,13 +35,16 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
         
     __forceinline vfloat() {}
-    __forceinline vfloat(const vfloat16& t) { v = t; }
+    __forceinline vfloat(const vfloat16& t) { v = t.v; }
     __forceinline vfloat16& operator =(const vfloat16& f) { v = f.v; return *this; }
 
     __forceinline vfloat(const __m512& t) { v = t; }
-    __forceinline operator __m512() const { return v; }
-    __forceinline operator __m256() const { return _mm512_castps512_ps256(v); }
-    __forceinline operator __m128() const { return _mm512_castps512_ps128(v); }
+    __forceinline __m512 m512() const { return v; }
+    __forceinline __m256 m256() const { return _mm512_castps512_ps256(v); }
+    __forceinline __m128 m128() const { return _mm512_castps512_ps128(v); }
+
+    __forceinline __m512i m512i() const { return _mm512_cvtps_epi32(v); }
+    __forceinline __m512i vec_int() const { return m512i(); }
 
     __forceinline vfloat(float f) {
       v = _mm512_set1_ps(f);
@@ -52,31 +55,31 @@ namespace embree
     }
 
     __forceinline vfloat(const vfloat4& i) {
-      v = _mm512_broadcast_f32x4(i);
+      v = _mm512_broadcast_f32x4(i.m128());
     }
 
     __forceinline vfloat(const vfloat4& a, const vfloat4& b, const vfloat4& c, const vfloat4& d) {
-      v = _mm512_castps128_ps512(a);
-      v = _mm512_insertf32x4(v, b, 1);
-      v = _mm512_insertf32x4(v, c, 2);
-      v = _mm512_insertf32x4(v, d, 3);
+      v = _mm512_castps128_ps512(a.m128());
+      v = _mm512_insertf32x4(v, b.m128(), 1);
+      v = _mm512_insertf32x4(v, c.m128(), 2);
+      v = _mm512_insertf32x4(v, d.m128(), 3);
     }
 
     __forceinline vfloat(const vboolf16& mask, const vfloat4& a, const vfloat4& b) {
-      v = _mm512_broadcast_f32x4(a);
-      v = _mm512_mask_broadcast_f32x4(v,mask,b);
+      v = _mm512_broadcast_f32x4(a.m128());
+      v = _mm512_mask_broadcast_f32x4(v,mask.packedMask16(),b.m128());
     }
 
     __forceinline vfloat(const vfloat8& i) {
-      v = _mm512_castpd_ps(_mm512_broadcast_f64x4(_mm256_castps_pd(i)));
+      v = _mm512_castpd_ps(_mm512_broadcast_f64x4(_mm256_castps_pd(i.m256())));
     }
 
     __forceinline vfloat(const vfloat8& a, const vfloat8& b) {
-      v = _mm512_castps256_ps512(a);
+      v = _mm512_castps256_ps512(a.m256());
 #if defined(__AVX512DQ__)
-      v = _mm512_insertf32x8(v, b, 1);
+      v = _mm512_insertf32x8(v, b.m256(), 1);
 #else
-      v = _mm512_castpd_ps(_mm512_insertf64x4(_mm512_castps_pd(v), _mm256_castps_pd(b), 1));
+      v = _mm512_castpd_ps(_mm512_insertf64x4(_mm512_castps_pd(v), _mm256_castps_pd(b.m256()), 1));
 #endif
     }
 
@@ -88,11 +91,11 @@ namespace embree
       }*/
     
     __forceinline explicit vfloat(const vint16& a) {
-      v = _mm512_cvtepi32_ps(a);
+      v = _mm512_cvtepi32_ps(a.m512i());
     }
 
     __forceinline explicit vfloat(const vuint16& a) {
-      v = _mm512_cvtepu32_ps(a);
+      v = _mm512_cvtepu32_ps(a.m512i());
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -114,17 +117,17 @@ namespace embree
     static __forceinline vfloat16 load (const void* ptr) { return _mm512_load_ps((float*)ptr);  }
     static __forceinline vfloat16 loadu(const void* ptr) { return _mm512_loadu_ps((float*)ptr); }
 
-    static __forceinline vfloat16 load (const vboolf16& mask, const void* ptr) { return _mm512_mask_load_ps (_mm512_setzero_ps(),mask,(float*)ptr); }
-    static __forceinline vfloat16 loadu(const vboolf16& mask, const void* ptr) { return _mm512_mask_loadu_ps(_mm512_setzero_ps(),mask,(float*)ptr); }
+    static __forceinline vfloat16 load (const vboolf16& mask, const void* ptr) { return _mm512_mask_load_ps (_mm512_setzero_ps(),mask.packedMask16(),(float*)ptr); }
+    static __forceinline vfloat16 loadu(const vboolf16& mask, const void* ptr) { return _mm512_mask_loadu_ps(_mm512_setzero_ps(),mask.packedMask16(),(float*)ptr); }
 
-    static __forceinline void store (void* ptr, const vfloat16& v) { _mm512_store_ps ((float*)ptr,v); }
-    static __forceinline void storeu(void* ptr, const vfloat16& v) { _mm512_storeu_ps((float*)ptr,v); }
+    static __forceinline void store (void* ptr, const vfloat16& v) { _mm512_store_ps ((float*)ptr,v.m512()); }
+    static __forceinline void storeu(void* ptr, const vfloat16& v) { _mm512_storeu_ps((float*)ptr,v.m512()); }
 
-    static __forceinline void store (const vboolf16& mask, void* ptr, const vfloat16& v) { _mm512_mask_store_ps ((float*)ptr,mask,v); }
-    static __forceinline void storeu(const vboolf16& mask, void* ptr, const vfloat16& v) { _mm512_mask_storeu_ps((float*)ptr,mask,v); }
+    static __forceinline void store (const vboolf16& mask, void* ptr, const vfloat16& v) { _mm512_mask_store_ps ((float*)ptr,mask.packedMask16(),v.m512()); }
+    static __forceinline void storeu(const vboolf16& mask, void* ptr, const vfloat16& v) { _mm512_mask_storeu_ps((float*)ptr,mask.packedMask16(),v.m512()); }
 
     static __forceinline void store_nt(void* __restrict__ ptr, const vfloat16& a) {
-      _mm512_stream_ps((float*)ptr,a);
+      _mm512_stream_ps((float*)ptr,a.m512());
     }
 
     static __forceinline vfloat16 broadcast(const float* f) {
@@ -133,23 +136,23 @@ namespace embree
 
     template<int scale = 4>
     static __forceinline vfloat16 gather(const float* ptr, const vint16& index) {
-      return _mm512_i32gather_ps(index, ptr, scale);
+      return _mm512_i32gather_ps(index.m512i(), ptr, scale);
     }
 
     template<int scale = 4>
     static __forceinline vfloat16 gather(const vboolf16& mask, const float* ptr, const vint16& index) {
       vfloat16 r = zero;
-      return _mm512_mask_i32gather_ps(r, mask, index, ptr, scale);
+      return _mm512_mask_i32gather_ps(r.m512(), mask.packedMask16(), index.m512i(), ptr, scale);
     }
 
     template<int scale = 4>
     static __forceinline void scatter(float* ptr, const vint16& index, const vfloat16& v) {
-      _mm512_i32scatter_ps(ptr, index, v, scale);
+      _mm512_i32scatter_ps(ptr, index.m512i(), v.m512(), scale);
     }
 
     template<int scale = 4>
     static __forceinline void scatter(const vboolf16& mask, float* ptr, const vint16& index, const vfloat16& v) {
-      _mm512_mask_i32scatter_ps(ptr, mask, index, v, scale);
+      _mm512_mask_i32scatter_ps(ptr, mask.packedMask16(), index.m512i(), v.m512(), scale);
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -164,91 +167,91 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat16 asFloat(const vint16&   a) { return _mm512_castsi512_ps(a); }
-  __forceinline vint16   asInt  (const vfloat16& a) { return _mm512_castps_si512(a); }
-  __forceinline vuint16  asUInt (const vfloat16& a) { return _mm512_castps_si512(a); }
+  __forceinline vfloat16 asFloat(const vint16&   a) { return _mm512_castsi512_ps(a.m512i()); }
+  __forceinline vint16   asInt  (const vfloat16& a) { return _mm512_castps_si512(a.m512()); }
+  __forceinline vuint16  asUInt (const vfloat16& a) { return _mm512_castps_si512(a.m512()); }
 
-  __forceinline vint16   toInt  (const vfloat16& a) { return vint16(a); }
-  __forceinline vfloat16 toFloat(const vint16&   a) { return vfloat16(a); }
+  __forceinline vint16   toInt  (const vfloat16& a) { return vint16(a.m512i()); }
+  __forceinline vfloat16 toFloat(const vint16&   a) { return vfloat16(a.m512()); }
 
   __forceinline vfloat16 operator +(const vfloat16& a) { return a; }
-  __forceinline vfloat16 operator -(const vfloat16& a) { return _mm512_mul_ps(a,vfloat16(-1)); }
+  __forceinline vfloat16 operator -(const vfloat16& a) { return _mm512_mul_ps(a.m512(),vfloat16(-1).m512()); }
 
-  __forceinline vfloat16 abs    (const vfloat16& a) { return _mm512_castsi512_ps(_mm512_and_epi32(_mm512_castps_si512(a),_mm512_set1_epi32(0x7FFFFFFF))); }
-  __forceinline vfloat16 signmsk(const vfloat16& a) { return _mm512_castsi512_ps(_mm512_and_epi32(_mm512_castps_si512(a),_mm512_set1_epi32(0x80000000))); }
+  __forceinline vfloat16 abs    (const vfloat16& a) { return _mm512_castsi512_ps(_mm512_and_epi32(_mm512_castps_si512(a.m512()),_mm512_set1_epi32(0x7FFFFFFF))); }
+  __forceinline vfloat16 signmsk(const vfloat16& a) { return _mm512_castsi512_ps(_mm512_and_epi32(_mm512_castps_si512(a.m512()),_mm512_set1_epi32(0x80000000))); }
 
   __forceinline vfloat16 rcp(const vfloat16& a)
   {
-    const vfloat16 r = _mm512_rcp14_ps(a);
-    return _mm512_fmadd_ps(r, _mm512_fnmadd_ps(a, r, vfloat16(1.0)), r);  // computes r + r * (1 - a*r)
+    const vfloat16 r = _mm512_rcp14_ps(a.m512());
+    return _mm512_fmadd_ps(r.m512(), _mm512_fnmadd_ps(a.m512(), r.m512(), vfloat16(1.0).m512()), r.m512());  // computes r + r * (1 - a*r)
   }
 
-  __forceinline vfloat16 sqr (const vfloat16& a) { return _mm512_mul_ps(a,a); }
-  __forceinline vfloat16 sqrt(const vfloat16& a) { return _mm512_sqrt_ps(a); }
+  __forceinline vfloat16 sqr (const vfloat16& a) { return _mm512_mul_ps(a.m512(),a.m512()); }
+  __forceinline vfloat16 sqrt(const vfloat16& a) { return _mm512_sqrt_ps(a.m512()); }
 
   __forceinline vfloat16 rsqrt(const vfloat16& a)
   {
-    const vfloat16 r = _mm512_rsqrt14_ps(a);
-    return _mm512_fmadd_ps(_mm512_set1_ps(1.5f), r,
-                           _mm512_mul_ps(_mm512_mul_ps(_mm512_mul_ps(a, _mm512_set1_ps(-0.5f)), r), _mm512_mul_ps(r, r))); 
+    const vfloat16 r = _mm512_rsqrt14_ps(a.m512());
+    return _mm512_fmadd_ps(_mm512_set1_ps(1.5f), r.m512(),
+                           _mm512_mul_ps(_mm512_mul_ps(_mm512_mul_ps(a.m512(), _mm512_set1_ps(-0.5f)), r.m512()), _mm512_mul_ps(r.m512(), r.m512()))); 
   }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat16 operator +(const vfloat16& a, const vfloat16& b) { return _mm512_add_ps(a, b); }
+  __forceinline vfloat16 operator +(const vfloat16& a, const vfloat16& b) { return _mm512_add_ps(a.m512(), b.m512()); }
   __forceinline vfloat16 operator +(const vfloat16& a, float           b) { return a + vfloat16(b); }
   __forceinline vfloat16 operator +(float           a, const vfloat16& b) { return vfloat16(a) + b; }
 
-  __forceinline vfloat16 operator -(const vfloat16& a, const vfloat16& b) { return _mm512_sub_ps(a, b); }
+  __forceinline vfloat16 operator -(const vfloat16& a, const vfloat16& b) { return _mm512_sub_ps(a.m512(), b.m512()); }
   __forceinline vfloat16 operator -(const vfloat16& a, float           b) { return a - vfloat16(b); }
   __forceinline vfloat16 operator -(float           a, const vfloat16& b) { return vfloat16(a) - b; }
 
-  __forceinline vfloat16 operator *(const vfloat16& a, const vfloat16& b) { return _mm512_mul_ps(a, b); }
+  __forceinline vfloat16 operator *(const vfloat16& a, const vfloat16& b) { return _mm512_mul_ps(a.m512(), b.m512()); }
   __forceinline vfloat16 operator *(const vfloat16& a, float           b) { return a * vfloat16(b); }
   __forceinline vfloat16 operator *(float           a, const vfloat16& b) { return vfloat16(a) * b; }
 
-  __forceinline vfloat16 operator /(const vfloat16& a, const vfloat16& b) { return _mm512_div_ps(a,b); }
+  __forceinline vfloat16 operator /(const vfloat16& a, const vfloat16& b) { return _mm512_div_ps(a.m512(),b.m512()); }
   __forceinline vfloat16 operator /(const vfloat16& a, float           b) { return a/vfloat16(b); }
   __forceinline vfloat16 operator /(float           a, const vfloat16& b) { return vfloat16(a)/b; }
   
-  __forceinline vfloat16 operator &(const vfloat16& a, const vfloat16& b) { return _mm512_and_ps(a,b); }
-  __forceinline vfloat16 operator |(const vfloat16& a, const vfloat16& b) { return _mm512_or_ps(a,b); }
+  __forceinline vfloat16 operator &(const vfloat16& a, const vfloat16& b) { return _mm512_and_ps(a.m512(),b.m512()); }
+  __forceinline vfloat16 operator |(const vfloat16& a, const vfloat16& b) { return _mm512_or_ps(a.m512(),b.m512()); }
   __forceinline vfloat16 operator ^(const vfloat16& a, const vfloat16& b) {
-    return  _mm512_castsi512_ps(_mm512_xor_epi32(_mm512_castps_si512(a),_mm512_castps_si512(b))); 
+    return  _mm512_castsi512_ps(_mm512_xor_epi32(_mm512_castps_si512(a.m512()),_mm512_castps_si512(b.m512()))); 
   }
   
-  __forceinline vfloat16 min(const vfloat16& a, const vfloat16& b) { return _mm512_min_ps(a,b);  }
-  __forceinline vfloat16 min(const vfloat16& a, float           b) { return _mm512_min_ps(a,vfloat16(b)); }
-  __forceinline vfloat16 min(const float&    a, const vfloat16& b) { return _mm512_min_ps(vfloat16(a),b); }
+  __forceinline vfloat16 min(const vfloat16& a, const vfloat16& b) { return _mm512_min_ps(a.m512(),b.m512());  }
+  __forceinline vfloat16 min(const vfloat16& a, float           b) { return _mm512_min_ps(a.m512(),vfloat16(b).m512()); }
+  __forceinline vfloat16 min(const float&    a, const vfloat16& b) { return _mm512_min_ps(vfloat16(a).m512(),b.m512()); }
 
-  __forceinline vfloat16 max(const vfloat16& a, const vfloat16& b) { return _mm512_max_ps(a,b); }
-  __forceinline vfloat16 max(const vfloat16& a, float           b) { return _mm512_max_ps(a,vfloat16(b)); }
-  __forceinline vfloat16 max(const float&    a, const vfloat16& b) { return _mm512_max_ps(vfloat16(a),b); }
+  __forceinline vfloat16 max(const vfloat16& a, const vfloat16& b) { return _mm512_max_ps(a.m512(),b.m512()); }
+  __forceinline vfloat16 max(const vfloat16& a, float           b) { return _mm512_max_ps(a.m512(),vfloat16(b).m512()); }
+  __forceinline vfloat16 max(const float&    a, const vfloat16& b) { return _mm512_max_ps(vfloat16(a).m512(),b.m512()); }
 
   __forceinline vfloat16 mini(const vfloat16& a, const vfloat16& b) {
-    const vint16 ai = _mm512_castps_si512(a);
-    const vint16 bi = _mm512_castps_si512(b);
-    const vint16 ci = _mm512_min_epi32(ai,bi);
-    return _mm512_castsi512_ps(ci);
+    const vint16 ai = _mm512_castps_si512(a.m512());
+    const vint16 bi = _mm512_castps_si512(b.m512());
+    const vint16 ci = _mm512_min_epi32(ai.m512i(),bi.m512i());
+    return _mm512_castsi512_ps(ci.m512i());
   }
 
   __forceinline vfloat16 maxi(const vfloat16& a, const vfloat16& b) {
-    const vint16 ai = _mm512_castps_si512(a);
-    const vint16 bi = _mm512_castps_si512(b);
-    const vint16 ci = _mm512_max_epi32(ai,bi);
-    return _mm512_castsi512_ps(ci);
+    const vint16 ai = _mm512_castps_si512(a.m512());
+    const vint16 bi = _mm512_castps_si512(b.m512());
+    const vint16 ci = _mm512_max_epi32(ai.m512i(),bi.m512i());
+    return _mm512_castsi512_ps(ci.m512i());
   }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Ternary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat16 madd (const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_fmadd_ps(a,b,c); }
-  __forceinline vfloat16 msub (const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_fmsub_ps(a,b,c); }
-  __forceinline vfloat16 nmadd(const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_fnmadd_ps(a,b,c); }
-  __forceinline vfloat16 nmsub(const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_fnmsub_ps(a,b,c); }
+  __forceinline vfloat16 madd (const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_fmadd_ps(a.m512(),b.m512(),c.m512()); }
+  __forceinline vfloat16 msub (const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_fmsub_ps(a.m512(),b.m512(),c.m512()); }
+  __forceinline vfloat16 nmadd(const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_fnmadd_ps(a.m512(),b.m512(),c.m512()); }
+  __forceinline vfloat16 nmsub(const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_fnmsub_ps(a.m512(),b.m512(),c.m512()); }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
@@ -270,46 +273,46 @@ namespace embree
   /// Comparison Operators + Select
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vboolf16 operator ==(const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_EQ); }
+  __forceinline vboolf16 operator ==(const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a.m512(),b.m512(),_MM_CMPINT_EQ); }
   __forceinline vboolf16 operator ==(const vfloat16& a, float           b) { return a == vfloat16(b); }
   __forceinline vboolf16 operator ==(float           a, const vfloat16& b) { return vfloat16(a) == b; }
 
-  __forceinline vboolf16 operator !=(const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_NE); }
+  __forceinline vboolf16 operator !=(const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a.m512(),b.m512(),_MM_CMPINT_NE); }
   __forceinline vboolf16 operator !=(const vfloat16& a, float           b) { return a != vfloat16(b); }
   __forceinline vboolf16 operator !=(float           a, const vfloat16& b) { return vfloat16(a) != b; }
 
-  __forceinline vboolf16 operator < (const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_LT); }
+  __forceinline vboolf16 operator < (const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a.m512(),b.m512(),_MM_CMPINT_LT); }
   __forceinline vboolf16 operator < (const vfloat16& a, float           b) { return a <  vfloat16(b); }
   __forceinline vboolf16 operator < (float           a, const vfloat16& b) { return vfloat16(a) <  b; }
 
-  __forceinline vboolf16 operator >=(const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_GE); }
+  __forceinline vboolf16 operator >=(const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a.m512(),b.m512(),_MM_CMPINT_GE); }
   __forceinline vboolf16 operator >=(const vfloat16& a, float           b) { return a >= vfloat16(b); }
   __forceinline vboolf16 operator >=(float           a, const vfloat16& b) { return vfloat16(a) >= b; }
 
-  __forceinline vboolf16 operator > (const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_GT); }
+  __forceinline vboolf16 operator > (const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a.m512(),b.m512(),_MM_CMPINT_GT); }
   __forceinline vboolf16 operator > (const vfloat16& a, float           b) { return a >  vfloat16(b); }
   __forceinline vboolf16 operator > (float           a, const vfloat16& b) { return vfloat16(a) >  b; }
 
-  __forceinline vboolf16 operator <=(const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_LE); }
+  __forceinline vboolf16 operator <=(const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a.m512(),b.m512(),_MM_CMPINT_LE); }
   __forceinline vboolf16 operator <=(const vfloat16& a, float           b) { return a <= vfloat16(b); }
   __forceinline vboolf16 operator <=(float           a, const vfloat16& b) { return vfloat16(a) <= b; }
 
-  __forceinline vboolf16 eq(const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_EQ); }
-  __forceinline vboolf16 ne(const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_NE); }
-  __forceinline vboolf16 lt(const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_LT); }
-  __forceinline vboolf16 ge(const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_GE); }
-  __forceinline vboolf16 gt(const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_GT); }
-  __forceinline vboolf16 le(const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a,b,_MM_CMPINT_LE); }
+  __forceinline vboolf16 eq(const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a.m512(),b.m512(),_MM_CMPINT_EQ); }
+  __forceinline vboolf16 ne(const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a.m512(),b.m512(),_MM_CMPINT_NE); }
+  __forceinline vboolf16 lt(const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a.m512(),b.m512(),_MM_CMPINT_LT); }
+  __forceinline vboolf16 ge(const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a.m512(),b.m512(),_MM_CMPINT_GE); }
+  __forceinline vboolf16 gt(const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a.m512(),b.m512(),_MM_CMPINT_GT); }
+  __forceinline vboolf16 le(const vfloat16& a, const vfloat16& b) { return _mm512_cmp_ps_mask(a.m512(),b.m512(),_MM_CMPINT_LE); }
 
-  __forceinline vboolf16 eq(const vboolf16& mask, const vfloat16& a, const vfloat16& b) { return _mm512_mask_cmp_ps_mask(mask,a,b,_MM_CMPINT_EQ); }
-  __forceinline vboolf16 ne(const vboolf16& mask, const vfloat16& a, const vfloat16& b) { return _mm512_mask_cmp_ps_mask(mask,a,b,_MM_CMPINT_NE); }
-  __forceinline vboolf16 lt(const vboolf16& mask, const vfloat16& a, const vfloat16& b) { return _mm512_mask_cmp_ps_mask(mask,a,b,_MM_CMPINT_LT); }
-  __forceinline vboolf16 ge(const vboolf16& mask, const vfloat16& a, const vfloat16& b) { return _mm512_mask_cmp_ps_mask(mask,a,b,_MM_CMPINT_GE); }
-  __forceinline vboolf16 gt(const vboolf16& mask, const vfloat16& a, const vfloat16& b) { return _mm512_mask_cmp_ps_mask(mask,a,b,_MM_CMPINT_GT); }
-  __forceinline vboolf16 le(const vboolf16& mask, const vfloat16& a, const vfloat16& b) { return _mm512_mask_cmp_ps_mask(mask,a,b,_MM_CMPINT_LE); }
+  __forceinline vboolf16 eq(const vboolf16& mask, const vfloat16& a, const vfloat16& b) { return _mm512_mask_cmp_ps_mask(mask.packedMask16(),a.m512(),b.m512(),_MM_CMPINT_EQ); }
+  __forceinline vboolf16 ne(const vboolf16& mask, const vfloat16& a, const vfloat16& b) { return _mm512_mask_cmp_ps_mask(mask.packedMask16(),a.m512(),b.m512(),_MM_CMPINT_NE); }
+  __forceinline vboolf16 lt(const vboolf16& mask, const vfloat16& a, const vfloat16& b) { return _mm512_mask_cmp_ps_mask(mask.packedMask16(),a.m512(),b.m512(),_MM_CMPINT_LT); }
+  __forceinline vboolf16 ge(const vboolf16& mask, const vfloat16& a, const vfloat16& b) { return _mm512_mask_cmp_ps_mask(mask.packedMask16(),a.m512(),b.m512(),_MM_CMPINT_GE); }
+  __forceinline vboolf16 gt(const vboolf16& mask, const vfloat16& a, const vfloat16& b) { return _mm512_mask_cmp_ps_mask(mask.packedMask16(),a.m512(),b.m512(),_MM_CMPINT_GT); }
+  __forceinline vboolf16 le(const vboolf16& mask, const vfloat16& a, const vfloat16& b) { return _mm512_mask_cmp_ps_mask(mask.packedMask16(),a.m512(),b.m512(),_MM_CMPINT_LE); }
   
   __forceinline vfloat16 select(const vboolf16& s, const vfloat16& t, const vfloat16& f) {
-    return _mm512_mask_blend_ps(s, f, t);
+    return _mm512_mask_blend_ps(s.packedMask16(), f.m512(), t.m512());
   }
 
   __forceinline vfloat16 lerp(const vfloat16& a, const vfloat16& b, const vfloat16& t) {
@@ -332,55 +335,55 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
   
   __forceinline vfloat16 floor(const vfloat16& a) {
-    return _mm512_floor_ps(a);
+    return _mm512_floor_ps(a.m512());
   }
   __forceinline vfloat16 ceil (const vfloat16& a) {
-    return _mm512_ceil_ps(a);
+    return _mm512_ceil_ps(a.m512());
   }
   __forceinline vfloat16 round (const vfloat16& a) {
-    return _mm512_roundscale_ps(a, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
+    return _mm512_roundscale_ps(a.m512(), _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
   }
   __forceinline vint16 floori (const vfloat16& a) {
-    return _mm512_cvt_roundps_epi32(a, _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC);
+    return _mm512_cvt_roundps_epi32(a.m512(), _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC);
   }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat16 unpacklo(const vfloat16& a, const vfloat16& b) { return _mm512_unpacklo_ps(a, b); }
-  __forceinline vfloat16 unpackhi(const vfloat16& a, const vfloat16& b) { return _mm512_unpackhi_ps(a, b); }
+  __forceinline vfloat16 unpacklo(const vfloat16& a, const vfloat16& b) { return _mm512_unpacklo_ps(a.m512(), b.m512()); }
+  __forceinline vfloat16 unpackhi(const vfloat16& a, const vfloat16& b) { return _mm512_unpackhi_ps(a.m512(), b.m512()); }
 
   template<int i>
   __forceinline vfloat16 shuffle(const vfloat16& v) {
-    return _mm512_permute_ps(v, _MM_SHUFFLE(i, i, i, i));
+    return _mm512_permute_ps(v.m512(), _MM_SHUFFLE(i, i, i, i));
   }
 
   template<int i0, int i1, int i2, int i3>
   __forceinline vfloat16 shuffle(const vfloat16& v) {
-    return _mm512_permute_ps(v, _MM_SHUFFLE(i3, i2, i1, i0));
+    return _mm512_permute_ps(v.m512(), _MM_SHUFFLE(i3, i2, i1, i0));
   }
 
   template<int i>
   __forceinline vfloat16 shuffle4(const vfloat16& v) {
-    return _mm512_shuffle_f32x4(v, v ,_MM_SHUFFLE(i, i, i, i));
+    return _mm512_shuffle_f32x4(v.m512(), v.m512() ,_MM_SHUFFLE(i, i, i, i));
   }
 
   template<int i0, int i1, int i2, int i3>
   __forceinline vfloat16 shuffle4(const vfloat16& v) {
-    return _mm512_shuffle_f32x4(v, v, _MM_SHUFFLE(i3, i2, i1, i0));
+    return _mm512_shuffle_f32x4(v.m512(), v.m512(), _MM_SHUFFLE(i3, i2, i1, i0));
   }
 
   __forceinline vfloat16 interleave4_even(const vfloat16& a, const vfloat16& b) {
-    return _mm512_castsi512_ps(_mm512_mask_permutex_epi64(_mm512_castps_si512(a), mm512_int2mask(0xcc), _mm512_castps_si512(b), (_MM_PERM_ENUM)0x4e));
+    return _mm512_castsi512_ps(_mm512_mask_permutex_epi64(_mm512_castps_si512(a.m512()), mm512_int2mask(0xcc), _mm512_castps_si512(b.m512()), (_MM_PERM_ENUM)0x4e));
   }
 
   __forceinline vfloat16 interleave4_odd(const vfloat16& a, const vfloat16& b) {
-    return _mm512_castsi512_ps(_mm512_mask_permutex_epi64(_mm512_castps_si512(b), mm512_int2mask(0x33), _mm512_castps_si512(a), (_MM_PERM_ENUM)0x4e));
+    return _mm512_castsi512_ps(_mm512_mask_permutex_epi64(_mm512_castps_si512(b.m512()), mm512_int2mask(0x33), _mm512_castps_si512(a.m512()), (_MM_PERM_ENUM)0x4e));
   }
 
   __forceinline vfloat16 permute(vfloat16 v, __m512i index) {
-    return _mm512_castsi512_ps(_mm512_permutexvar_epi32(index, _mm512_castps_si512(v)));
+    return _mm512_castsi512_ps(_mm512_permutexvar_epi32(index, _mm512_castps_si512(v.m512())));
   }
 
   __forceinline vfloat16 reverse(const vfloat16& v) {
@@ -389,12 +392,12 @@ namespace embree
 
   template<int i>
   __forceinline vfloat16 align_shift_right(const vfloat16& a, const vfloat16& b) {
-    return _mm512_castsi512_ps(_mm512_alignr_epi32(_mm512_castps_si512(a),_mm512_castps_si512(b),i)); 
+    return _mm512_castsi512_ps(_mm512_alignr_epi32(_mm512_castps_si512(a.m512()),_mm512_castps_si512(b.m512()),i)); 
   };
 
   template<int i>
   __forceinline vfloat16 mask_align_shift_right(const vboolf16& mask, vfloat16& c, const vfloat16& a, const vfloat16& b) {
-    return _mm512_castsi512_ps(_mm512_mask_alignr_epi32(_mm512_castps_si512(c),mask,_mm512_castps_si512(a),_mm512_castps_si512(b),i)); 
+    return _mm512_castsi512_ps(_mm512_mask_alignr_epi32(_mm512_castps_si512(c.m512()),mask.packedMask16(),_mm512_castps_si512(a.m512()),_mm512_castps_si512(b.m512()),i)); 
   };
  
   __forceinline vfloat16 shift_left_1(const vfloat16& a) {
@@ -406,27 +409,27 @@ namespace embree
     return align_shift_right<1>(zero,x);
   }
 
-  __forceinline float toScalar(const vfloat16& v) { return mm512_cvtss_f32(v); }
+  __forceinline float toScalar(const vfloat16& v) { return mm512_cvtss_f32(v.m512()); }
 
 
-  template<int i> __forceinline vfloat16 insert4(const vfloat16& a, const vfloat4& b) { return _mm512_insertf32x4(a, b, i); }
+  template<int i> __forceinline vfloat16 insert4(const vfloat16& a, const vfloat4& b) { return _mm512_insertf32x4(a.m512(), b.m128(), i); }
 
   template<int N, int i>
   vfloat<N> extractN(const vfloat16& v);
 
-  template<> __forceinline vfloat4 extractN<4,0>(const vfloat16& v) { return _mm512_castps512_ps128(v);    }
-  template<> __forceinline vfloat4 extractN<4,1>(const vfloat16& v) { return _mm512_extractf32x4_ps(v, 1); }
-  template<> __forceinline vfloat4 extractN<4,2>(const vfloat16& v) { return _mm512_extractf32x4_ps(v, 2); }
-  template<> __forceinline vfloat4 extractN<4,3>(const vfloat16& v) { return _mm512_extractf32x4_ps(v, 3); }
+  template<> __forceinline vfloat4 extractN<4,0>(const vfloat16& v) { return _mm512_castps512_ps128(v.m512());    }
+  template<> __forceinline vfloat4 extractN<4,1>(const vfloat16& v) { return _mm512_extractf32x4_ps(v.m512(), 1); }
+  template<> __forceinline vfloat4 extractN<4,2>(const vfloat16& v) { return _mm512_extractf32x4_ps(v.m512(), 2); }
+  template<> __forceinline vfloat4 extractN<4,3>(const vfloat16& v) { return _mm512_extractf32x4_ps(v.m512(), 3); }
 
-  template<> __forceinline vfloat8 extractN<8,0>(const vfloat16& v) { return _mm512_castps512_ps256(v);    }
-  template<> __forceinline vfloat8 extractN<8,1>(const vfloat16& v) { return _mm512_extractf32x8_ps(v, 1); }
+  template<> __forceinline vfloat8 extractN<8,0>(const vfloat16& v) { return _mm512_castps512_ps256(v.m512());    }
+  template<> __forceinline vfloat8 extractN<8,1>(const vfloat16& v) { return _mm512_extractf32x8_ps(v.m512(), 1); }
 
-  template<int i> __forceinline vfloat4 extract4   (const vfloat16& v) { return _mm512_extractf32x4_ps(v, i); }
-  template<>      __forceinline vfloat4 extract4<0>(const vfloat16& v) { return _mm512_castps512_ps128(v);    }
+  template<int i> __forceinline vfloat4 extract4   (const vfloat16& v) { return _mm512_extractf32x4_ps(v.m512(), i); }
+  template<>      __forceinline vfloat4 extract4<0>(const vfloat16& v) { return _mm512_castps512_ps128(v.m512());    }
 
-  template<int i> __forceinline vfloat8 extract8   (const vfloat16& v) { return _mm512_extractf32x8_ps(v, i); }
-  template<>      __forceinline vfloat8 extract8<0>(const vfloat16& v) { return _mm512_castps512_ps256(v);    }
+  template<int i> __forceinline vfloat8 extract8   (const vfloat16& v) { return _mm512_extractf32x8_ps(v.m512(), i); }
+  template<>      __forceinline vfloat8 extract8<0>(const vfloat16& v) { return _mm512_castps512_ps256(v.m512());    }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Transpose
@@ -513,11 +516,11 @@ namespace embree
   __forceinline float reduce_max(const vfloat16& v) { return toScalar(vreduce_max(v)); }
  
   __forceinline size_t select_min(const vfloat16& v) { 
-    return bsf(_mm512_kmov(_mm512_cmp_epi32_mask(_mm512_castps_si512(v),_mm512_castps_si512(vreduce_min(v)),_MM_CMPINT_EQ)));
+    return bsf(_mm512_kmov(_mm512_cmp_epi32_mask(_mm512_castps_si512(v.m512()),_mm512_castps_si512(vreduce_min(v).m512()),_MM_CMPINT_EQ)));
   }
 
   __forceinline size_t select_max(const vfloat16& v) { 
-    return bsf(_mm512_kmov(_mm512_cmp_epi32_mask(_mm512_castps_si512(v),_mm512_castps_si512(vreduce_max(v)),_MM_CMPINT_EQ)));
+    return bsf(_mm512_kmov(_mm512_cmp_epi32_mask(_mm512_castps_si512(v.m512()),_mm512_castps_si512(vreduce_max(v).m512()),_MM_CMPINT_EQ)));
   }
 
   __forceinline size_t select_min(const vboolf16& valid, const vfloat16& v) 

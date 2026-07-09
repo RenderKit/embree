@@ -36,8 +36,7 @@ namespace embree
     __forceinline vllong4& operator =(const vllong4& f) { v = f.v; return *this; }
 
     __forceinline vllong(const __m256i& t) { v = t; }
-    __forceinline operator __m256i() const { return v; }
-    __forceinline operator __m256d() const { return _mm256_castsi256_pd(v); }
+    __forceinline __m256i m256i() const { return v; }
 
 
     __forceinline vllong(long long i) {
@@ -63,7 +62,7 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     static __forceinline void store_nt(void* __restrict__ ptr, const vllong4& a) {
-      _mm256_stream_ps((float*)ptr,_mm256_castsi256_ps(a));
+      _mm256_stream_ps((float*)ptr,_mm256_castsi256_ps(a.m256i()));
     }
 
     static __forceinline vllong4 loadu(const void* addr)
@@ -80,26 +79,26 @@ namespace embree
     }
 
     static __forceinline void store(void* ptr, const vllong4& v) {
-      _mm256_store_si256((__m256i*)ptr,v);
+      _mm256_store_si256((__m256i*)ptr,v.m256i());
     }
 
     static __forceinline void storeu(void* ptr, const vllong4& v) {
-      _mm256_storeu_si256((__m256i*)ptr,v);
+      _mm256_storeu_si256((__m256i*)ptr,v.m256i());
     }
 
     static __forceinline void storeu(const vboold4& mask, long long* ptr, const vllong4& f) {
 #if defined(__AVX512VL__)
-      _mm256_mask_storeu_epi64(ptr,mask,f);
+      _mm256_mask_storeu_epi64(ptr,mask.packedMask8(),f.m256i());
 #else
-      _mm256_maskstore_pd((double*)ptr,mask,_mm256_castsi256_pd(f));
+      _mm256_maskstore_pd((double*)ptr,mask.mask32(),_mm256_castsi256_pd(f.m256i()));
 #endif
     }
 
     static __forceinline void store(const vboold4& mask, void* ptr, const vllong4& f) {
 #if defined(__AVX512VL__)
-      _mm256_mask_store_epi64(ptr,mask,f);
+      _mm256_mask_store_epi64(ptr,mask.packedMask8(),f.m256i());
 #else
-      _mm256_maskstore_pd((double*)ptr,mask,_mm256_castsi256_pd(f));
+      _mm256_maskstore_pd((double*)ptr,mask.mask32(),_mm256_castsi256_pd(f.m256i()));
 #endif
     }
 
@@ -118,9 +117,9 @@ namespace embree
   
   __forceinline vllong4 select(const vboold4& m, const vllong4& t, const vllong4& f) {
   #if defined(__AVX512VL__)
-    return _mm256_mask_blend_epi64(m, f, t);
+    return _mm256_mask_blend_epi64(m.packedMask8(), f.m256i(), t.m256i());
   #else
-    return _mm256_castpd_si256(_mm256_blendv_pd(_mm256_castsi256_pd(f), _mm256_castsi256_pd(t), m));
+    return _mm256_castpd_si256(_mm256_blendv_pd(_mm256_castsi256_pd(f.m256i()), _mm256_castsi256_pd(t.m256i()), m.m256d()));
   #endif
   }
 
@@ -129,51 +128,51 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX512VL__)
-  __forceinline vboold4 asBool(const vllong4& a) { return _mm256_movepi64_mask(a); }
+  __forceinline vboold4 asBool(const vllong4& a) { return _mm256_movepi64_mask(a.m256i()); }
 #else
-  __forceinline vboold4 asBool(const vllong4& a) { return _mm256_castsi256_pd(a); }
+  __forceinline vboold4 asBool(const vllong4& a) { return _mm256_castsi256_pd(a.m256i()); }
 #endif
 
   __forceinline vllong4 operator +(const vllong4& a) { return a; }
-  __forceinline vllong4 operator -(const vllong4& a) { return _mm256_sub_epi64(_mm256_setzero_si256(), a); }
+  __forceinline vllong4 operator -(const vllong4& a) { return _mm256_sub_epi64(_mm256_setzero_si256(), a.m256i()); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vllong4 operator +(const vllong4& a, const vllong4& b) { return _mm256_add_epi64(a, b); }
+  __forceinline vllong4 operator +(const vllong4& a, const vllong4& b) { return _mm256_add_epi64(a.m256i(), b.m256i()); }
   __forceinline vllong4 operator +(const vllong4& a, long long      b) { return a + vllong4(b); }
   __forceinline vllong4 operator +(long long      a, const vllong4& b) { return vllong4(a) + b; }
 
-  __forceinline vllong4 operator -(const vllong4& a, const vllong4& b) { return _mm256_sub_epi64(a, b); }
+  __forceinline vllong4 operator -(const vllong4& a, const vllong4& b) { return _mm256_sub_epi64(a.m256i(), b.m256i()); }
   __forceinline vllong4 operator -(const vllong4& a, long long      b) { return a - vllong4(b); }
   __forceinline vllong4 operator -(long long      a, const vllong4& b) { return vllong4(a) - b; }
 
   /* only low 32bit part */
-  __forceinline vllong4 operator *(const vllong4& a, const vllong4& b) { return _mm256_mul_epi32(a, b); }
+  __forceinline vllong4 operator *(const vllong4& a, const vllong4& b) { return _mm256_mul_epi32(a.m256i(), b.m256i()); }
   __forceinline vllong4 operator *(const vllong4& a, long long      b) { return a * vllong4(b); }
   __forceinline vllong4 operator *(long long      a, const vllong4& b) { return vllong4(a) * b; }
 
-  __forceinline vllong4 operator &(const vllong4& a, const vllong4& b) { return _mm256_and_si256(a, b); }
+  __forceinline vllong4 operator &(const vllong4& a, const vllong4& b) { return _mm256_and_si256(a.m256i(), b.m256i()); }
   __forceinline vllong4 operator &(const vllong4& a, long long      b) { return a & vllong4(b); }
   __forceinline vllong4 operator &(long long      a, const vllong4& b) { return vllong4(a) & b; }
 
-  __forceinline vllong4 operator |(const vllong4& a, const vllong4& b) { return _mm256_or_si256(a, b); }
+  __forceinline vllong4 operator |(const vllong4& a, const vllong4& b) { return _mm256_or_si256(a.m256i(), b.m256i()); }
   __forceinline vllong4 operator |(const vllong4& a, long long      b) { return a | vllong4(b); }
   __forceinline vllong4 operator |(long long      a, const vllong4& b) { return vllong4(a) | b; }
 
-  __forceinline vllong4 operator ^(const vllong4& a, const vllong4& b) { return _mm256_xor_si256(a, b); }
+  __forceinline vllong4 operator ^(const vllong4& a, const vllong4& b) { return _mm256_xor_si256(a.m256i(), b.m256i()); }
   __forceinline vllong4 operator ^(const vllong4& a, long long      b) { return a ^ vllong4(b); }
   __forceinline vllong4 operator ^(long long      a, const vllong4& b) { return vllong4(a) ^ b; }
 
-  __forceinline vllong4 operator <<(const vllong4& a, long long n) { return _mm256_slli_epi64(a, (int)n); }
+  __forceinline vllong4 operator <<(const vllong4& a, long long n) { return _mm256_slli_epi64(a.m256i(), (int)n); }
   //__forceinline vllong4 operator >>(const vllong4& a, long long n) { return _mm256_srai_epi64(a, n); }
 
-  __forceinline vllong4 operator <<(const vllong4& a, const vllong4& n) { return _mm256_sllv_epi64(a, n); }
+  __forceinline vllong4 operator <<(const vllong4& a, const vllong4& n) { return _mm256_sllv_epi64(a.m256i(), n.m256i()); }
   //__forceinline vllong4 operator >>(const vllong4& a, const vllong4& n) { return _mm256_srav_epi64(a, n); }
   //__forceinline vllong4 sra(const vllong4& a, long long b) { return _mm256_srai_epi64(a, b); }
 
-  __forceinline vllong4 srl(const vllong4& a, long long b) { return _mm256_srli_epi64(a, (int)b); }
+  __forceinline vllong4 srl(const vllong4& a, long long b) { return _mm256_srli_epi64(a.m256i(), (int)b); }
   
   //__forceinline vllong4 min(const vllong4& a, const vllong4& b) { return _mm256_min_epi64(a, b); }
   //__forceinline vllong4 min(const vllong4& a, long long      b) { return min(a,vllong4(b)); }
@@ -184,8 +183,8 @@ namespace embree
   //__forceinline vllong4 max(long long      a, const vllong4& b) { return max(vllong4(a),b); }
 
 #if defined(__AVX512VL__)
-  __forceinline vllong4 mask_and(const vboold4& m, const vllong4& c, const vllong4& a, const vllong4& b) { return _mm256_mask_and_epi64(c,m,a,b); }
-  __forceinline vllong4 mask_or (const vboold4& m, const vllong4& c, const vllong4& a, const vllong4& b) { return _mm256_mask_or_epi64(c,m,a,b); }
+  __forceinline vllong4 mask_and(const vboold4& m, const vllong4& c, const vllong4& a, const vllong4& b) { return _mm256_mask_and_epi64(c.m256i(),m.packedMask8(),a.m256i(),b.m256i()); }
+  __forceinline vllong4 mask_or (const vboold4& m, const vllong4& c, const vllong4& a, const vllong4& b) { return _mm256_mask_or_epi64(c.m256i(),m.packedMask8(),a.m256i(),b.m256i()); }
 #else
   __forceinline vllong4 mask_and(const vboold4& m, const vllong4& c, const vllong4& a, const vllong4& b) { return select(m, a & b, c); }
   __forceinline vllong4 mask_or (const vboold4& m, const vllong4& c, const vllong4& a, const vllong4& b) { return select(m, a | b, c); }
@@ -218,17 +217,17 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX512VL__)
-  __forceinline vboold4 operator ==(const vllong4& a, const vllong4& b) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_EQ); }
-  __forceinline vboold4 operator !=(const vllong4& a, const vllong4& b) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_NE); }
-  __forceinline vboold4 operator < (const vllong4& a, const vllong4& b) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_LT); }
-  __forceinline vboold4 operator >=(const vllong4& a, const vllong4& b) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_GE); }
-  __forceinline vboold4 operator > (const vllong4& a, const vllong4& b) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_GT); }
-  __forceinline vboold4 operator <=(const vllong4& a, const vllong4& b) { return _mm256_cmp_epi64_mask(a,b,_MM_CMPINT_LE); }
+  __forceinline vboold4 operator ==(const vllong4& a, const vllong4& b) { return _mm256_cmp_epi64_mask(a.m256i(),b.m256i(),_MM_CMPINT_EQ); }
+  __forceinline vboold4 operator !=(const vllong4& a, const vllong4& b) { return _mm256_cmp_epi64_mask(a.m256i(),b.m256i(),_MM_CMPINT_NE); }
+  __forceinline vboold4 operator < (const vllong4& a, const vllong4& b) { return _mm256_cmp_epi64_mask(a.m256i(),b.m256i(),_MM_CMPINT_LT); }
+  __forceinline vboold4 operator >=(const vllong4& a, const vllong4& b) { return _mm256_cmp_epi64_mask(a.m256i(),b.m256i(),_MM_CMPINT_GE); }
+  __forceinline vboold4 operator > (const vllong4& a, const vllong4& b) { return _mm256_cmp_epi64_mask(a.m256i(),b.m256i(),_MM_CMPINT_GT); }
+  __forceinline vboold4 operator <=(const vllong4& a, const vllong4& b) { return _mm256_cmp_epi64_mask(a.m256i(),b.m256i(),_MM_CMPINT_LE); }
 #else
-  __forceinline vboold4 operator ==(const vllong4& a, const vllong4& b) { return _mm256_cmpeq_epi64(a,b); }
+  __forceinline vboold4 operator ==(const vllong4& a, const vllong4& b) { return _mm256_cmpeq_epi64(a.m256i(),b.m256i()); }
   __forceinline vboold4 operator !=(const vllong4& a, const vllong4& b) { return !(a == b); }
-  __forceinline vboold4 operator > (const vllong4& a, const vllong4& b) { return _mm256_cmpgt_epi64(a,b); }
-  __forceinline vboold4 operator < (const vllong4& a, const vllong4& b) { return _mm256_cmpgt_epi64(b,a); }
+  __forceinline vboold4 operator > (const vllong4& a, const vllong4& b) { return _mm256_cmpgt_epi64(a.m256i(),b.m256i()); }
+  __forceinline vboold4 operator < (const vllong4& a, const vllong4& b) { return _mm256_cmpgt_epi64(b.m256i(),a.m256i()); }
   __forceinline vboold4 operator >=(const vllong4& a, const vllong4& b) { return !(a < b); }
   __forceinline vboold4 operator <=(const vllong4& a, const vllong4& b) { return !(a > b); }
 #endif
@@ -259,12 +258,12 @@ namespace embree
   __forceinline vboold4 le(const vllong4& a, const vllong4& b) { return a <= b; }
 
 #if defined(__AVX512VL__)
-  __forceinline vboold4 eq(const vboold4& mask, const vllong4& a, const vllong4& b) { return _mm256_mask_cmp_epi64_mask(mask, a, b, _MM_CMPINT_EQ); }
-  __forceinline vboold4 ne(const vboold4& mask, const vllong4& a, const vllong4& b) { return _mm256_mask_cmp_epi64_mask(mask, a, b, _MM_CMPINT_NE); }
-  __forceinline vboold4 lt(const vboold4& mask, const vllong4& a, const vllong4& b) { return _mm256_mask_cmp_epi64_mask(mask, a, b, _MM_CMPINT_LT); }
-  __forceinline vboold4 ge(const vboold4& mask, const vllong4& a, const vllong4& b) { return _mm256_mask_cmp_epi64_mask(mask, a, b, _MM_CMPINT_GE); }
-  __forceinline vboold4 gt(const vboold4& mask, const vllong4& a, const vllong4& b) { return _mm256_mask_cmp_epi64_mask(mask, a, b, _MM_CMPINT_GT); }
-  __forceinline vboold4 le(const vboold4& mask, const vllong4& a, const vllong4& b) { return _mm256_mask_cmp_epi64_mask(mask, a, b, _MM_CMPINT_LE); }
+  __forceinline vboold4 eq(const vboold4& mask, const vllong4& a, const vllong4& b) { return _mm256_mask_cmp_epi64_mask(mask.packedMask8(), a.m256i(), b.m256i(), _MM_CMPINT_EQ); }
+  __forceinline vboold4 ne(const vboold4& mask, const vllong4& a, const vllong4& b) { return _mm256_mask_cmp_epi64_mask(mask.packedMask8(), a.m256i(), b.m256i(), _MM_CMPINT_NE); }
+  __forceinline vboold4 lt(const vboold4& mask, const vllong4& a, const vllong4& b) { return _mm256_mask_cmp_epi64_mask(mask.packedMask8(), a.m256i(), b.m256i(), _MM_CMPINT_LT); }
+  __forceinline vboold4 ge(const vboold4& mask, const vllong4& a, const vllong4& b) { return _mm256_mask_cmp_epi64_mask(mask.packedMask8(), a.m256i(), b.m256i(), _MM_CMPINT_GE); }
+  __forceinline vboold4 gt(const vboold4& mask, const vllong4& a, const vllong4& b) { return _mm256_mask_cmp_epi64_mask(mask.packedMask8(), a.m256i(), b.m256i(), _MM_CMPINT_GT); }
+  __forceinline vboold4 le(const vboold4& mask, const vllong4& a, const vllong4& b) { return _mm256_mask_cmp_epi64_mask(mask.packedMask8(), a.m256i(), b.m256i(), _MM_CMPINT_LE); }
 #else
   __forceinline vboold4 eq(const vboold4& mask, const vllong4& a, const vllong4& b) { return mask & (a == b); }
   __forceinline vboold4 ne(const vboold4& mask, const vllong4& a, const vllong4& b) { return mask & (a != b); }
@@ -280,7 +279,7 @@ namespace embree
 
   template<int i0, int i1>
   __forceinline vllong4 shuffle(const vllong4& v) {
-    return _mm256_castpd_si256(_mm256_permute_pd(_mm256_castsi256_pd(v), (i1 << 3) | (i0 << 2) | (i1 << 1) | i0));
+    return _mm256_castpd_si256(_mm256_permute_pd(_mm256_castsi256_pd(v.m256i()), (i1 << 3) | (i0 << 2) | (i1 << 1) | i0));
   }
 
   template<int i>
@@ -290,25 +289,25 @@ namespace embree
 
   template<int i0, int i1>
   __forceinline vllong4 shuffle2(const vllong4& v) {
-    return _mm256_castpd_si256(_mm256_permute2f128_pd(_mm256_castsi256_pd(v), _mm256_castsi256_pd(v), (i1 << 4) | i0));
+    return _mm256_castpd_si256(_mm256_permute2f128_pd(_mm256_castsi256_pd(v.m256i()), _mm256_castsi256_pd(v.m256i()), (i1 << 4) | i0));
   }
 
   __forceinline long long toScalar(const vllong4& v) {
-    return _mm_cvtsi128_si64(_mm256_castsi256_si128(v));
+    return _mm_cvtsi128_si64(_mm256_castsi256_si128(v.m256i()));
   }
 
 #if defined(__AVX512VL__)
   __forceinline vllong4 permute(const vllong4& a, const __m256i& index) {
     // workaround for GCC 7.x
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined(__clang__)
-    return _mm256_permutex2var_epi64(a,index,a);
+    return _mm256_permutex2var_epi64(a.m256i(),index,a.m256i());
 #else
-    return _mm256_permutexvar_epi64(index,a);
+    return _mm256_permutexvar_epi64(index,a.m256i());
 #endif
   }
 
   __forceinline vllong4 permutex2var(const vllong4& index, const vllong4& a, const vllong4& b) {
-    return _mm256_permutex2var_epi64(a,index,b);
+    return _mm256_permutex2var_epi64(a.m256i(),index.m256i(),b.m256i());
   }
 
 #endif

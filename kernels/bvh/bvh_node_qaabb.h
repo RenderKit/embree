@@ -55,12 +55,12 @@ namespace embree
       if (decode_scale == 0.0f) decode_scale = 2.0f*FLT_MIN; // result may have been flushed to zero
       assert(madd(decode_scale,float(MAX_QUAN),minF) >= maxF);
       const float encode_scale = diff > 0 ? (float(MAX_QUAN) / diff) : 0.0f;
-      vint<N> ilower = max(vint<N>(floor((lower - vfloat<N>(minF))*vfloat<N>(encode_scale))),MIN_QUAN);
-      vint<N> iupper = min(vint<N>(ceil ((upper - vfloat<N>(minF))*vfloat<N>(encode_scale))),MAX_QUAN);
+      vint<N> ilower = max(vint<N>(floor((lower - vfloat<N>(minF))*vfloat<N>(encode_scale)).vec_int()),MIN_QUAN);
+      vint<N> iupper = min(vint<N>(ceil ((upper - vfloat<N>(minF))*vfloat<N>(encode_scale)).vec_int()),MAX_QUAN);
       
       /* lower/upper correction */
-      vbool<N> m_lower_correction = (madd(vfloat<N>(ilower),decode_scale,minF)) > lower;
-      vbool<N> m_upper_correction = (madd(vfloat<N>(iupper),decode_scale,minF)) < upper;
+      vbool<N> m_lower_correction = (madd(vfloat<N>(ilower.vec_float()),decode_scale,minF)) > lower;
+      vbool<N> m_upper_correction = (madd(vfloat<N>(iupper.vec_float()),decode_scale,minF)) < upper;
       ilower = max(select(m_lower_correction,ilower-1,ilower),MIN_QUAN);
       iupper = min(select(m_upper_correction,iupper+1,iupper),MAX_QUAN);
       
@@ -75,8 +75,8 @@ namespace embree
       scale = decode_scale;
       
 #if defined(DEBUG)
-      vfloat<N> extract_lower( vint<N>::loadu(lower_quant) );
-      vfloat<N> extract_upper( vint<N>::loadu(upper_quant) );
+      vfloat<N> extract_lower( vint<N>::loadu(lower_quant).vec_float() );
+      vfloat<N> extract_upper( vint<N>::loadu(upper_quant).vec_float() );
       vfloat<N> final_extract_lower = madd(extract_lower,decode_scale,minF);
       vfloat<N> final_extract_upper = madd(extract_upper,decode_scale,minF);
       assert( (movemask(final_extract_lower <= lower ) & movemask(m_valid)) == movemask(m_valid));
@@ -96,20 +96,20 @@ namespace embree
 #if defined(__AVX512F__) // KNL
     __forceinline vbool16 validMask16() const { return le(0xff,vint<16>::loadu(lower_x),vint<16>::loadu(upper_x)); }
 #endif
-    __forceinline vfloat<N> dequantizeLowerX() const { return madd(vfloat<N>(vint<N>::loadu(lower_x)),scale.x,vfloat<N>(start.x)); }
+    __forceinline vfloat<N> dequantizeLowerX() const { return madd(vfloat<N>(vint<N>::loadu(lower_x).vec_float()),scale.x,vfloat<N>(start.x)); }
     
-    __forceinline vfloat<N> dequantizeUpperX() const { return madd(vfloat<N>(vint<N>::loadu(upper_x)),scale.x,vfloat<N>(start.x)); }
+    __forceinline vfloat<N> dequantizeUpperX() const { return madd(vfloat<N>(vint<N>::loadu(upper_x).vec_float()),scale.x,vfloat<N>(start.x)); }
     
-    __forceinline vfloat<N> dequantizeLowerY() const { return madd(vfloat<N>(vint<N>::loadu(lower_y)),scale.y,vfloat<N>(start.y)); }
+    __forceinline vfloat<N> dequantizeLowerY() const { return madd(vfloat<N>(vint<N>::loadu(lower_y).vec_float()),scale.y,vfloat<N>(start.y)); }
     
-    __forceinline vfloat<N> dequantizeUpperY() const { return madd(vfloat<N>(vint<N>::loadu(upper_y)),scale.y,vfloat<N>(start.y)); }
+    __forceinline vfloat<N> dequantizeUpperY() const { return madd(vfloat<N>(vint<N>::loadu(upper_y).vec_float()),scale.y,vfloat<N>(start.y)); }
     
-    __forceinline vfloat<N> dequantizeLowerZ() const { return madd(vfloat<N>(vint<N>::loadu(lower_z)),scale.z,vfloat<N>(start.z)); }
+    __forceinline vfloat<N> dequantizeLowerZ() const { return madd(vfloat<N>(vint<N>::loadu(lower_z).vec_float()),scale.z,vfloat<N>(start.z)); }
     
-    __forceinline vfloat<N> dequantizeUpperZ() const { return madd(vfloat<N>(vint<N>::loadu(upper_z)),scale.z,vfloat<N>(start.z)); }
+    __forceinline vfloat<N> dequantizeUpperZ() const { return madd(vfloat<N>(vint<N>::loadu(upper_z).vec_float()),scale.z,vfloat<N>(start.z)); }
     
     template <int M>
-      __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::loadu(all_planes+offset)); }
+      __forceinline vfloat<M> dequantize(const size_t offset) const { return vfloat<M>(vint<M>::loadu(all_planes+offset).vec_float()); }
     
 #if defined(__AVX512F__)
     __forceinline vfloat16 dequantizeLowerUpperX(const vint16 &p) const { return madd(vfloat16(permute(vint<16>::loadu(lower_x),p)),scale.x,vfloat16(start.x)); }

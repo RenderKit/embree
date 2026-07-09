@@ -149,7 +149,7 @@ namespace embree
   }
 
   bool State::checkISASupport() {
-#if defined(__ARM_NEON)
+#if defined(__ARM_NEON) || defined(_M_ARM64)
     /*
      * NEON CPU type is a mixture of NEON and SSE2
      */
