@@ -7,6 +7,12 @@ MACRO(_SET_IF_EMPTY VAR VALUE)
   ENDIF()
 ENDMACRO()
 
+# Detect ARM64 for Windows
+IF(WIN32 AND (CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64|aarch64|arm64"))
+  SET(EMBREE_ARM TRUE)
+  MESSAGE(STATUS "Detected Windows ARM64 build")
+ENDIF()
+
 IF (EMBREE_ARM)
   IF ("x86_64" IN_LIST CMAKE_OSX_ARCHITECTURES)
     # set ARM an x86 flags for macOS universal binary build
@@ -16,12 +22,15 @@ IF (EMBREE_ARM)
     SET(FLAGS_AVX2 "-D__AVX2__ -D__AVX__ -D__SSE4_2__  -D__SSE4_1__  -D__BMI__ -D__BMI2__ -D__LZCNT__ -mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
     _SET_IF_EMPTY(FLAGS_AVX512 "-march=skx")
   ELSE ()
-    SET(FLAGS_SSE2 "-D__SSE__ -D__SSE2__")
-    SET(FLAGS_SSE42 "-D__SSE4_2__  -D__SSE4_1__")
-    SET(FLAGS_AVX "-D__AVX__ -D__SSE4_2__  -D__SSE4_1__  -D__BMI__ -D__BMI2__ -D__LZCNT__")
-    SET(FLAGS_AVX2 "-D__AVX2__ -D__AVX__ -D__SSE4_2__  -D__SSE4_1__  -D__BMI__ -D__BMI2__ -D__LZCNT__")
+    # Pure ARM build - no x86 flags
+    SET(FLAGS_SSE2 "")
+    SET(FLAGS_SSE42 "")
+    SET(FLAGS_AVX "")
+    SET(FLAGS_AVX2 "")
+    SET(FLAGS_AVX512 "")
   ENDIF ()
 ELSE ()
+  # x86/x64 build - set SSE/AVX flags
   # for `thread` keyword
   _SET_IF_EMPTY(FLAGS_SSE2  "-msse -msse2 -mno-sse4.2")
   _SET_IF_EMPTY(FLAGS_SSE42 "-msse4.2")
@@ -36,7 +45,12 @@ IF (WIN32)
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /EHsc")        # catch C++ exceptions only and extern "C" functions never throw a C++ exception
 #  SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /MP")          # compile source files in parallel
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /GR")          # enable runtime type information (on by default)
-  SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} -Xclang -fcxx-exceptions") # enable C++ exceptions in Clang
+
+  # Only add Clang-specific exception flags if not using MSVC
+  IF(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} -Xclang -fcxx-exceptions") # enable C++ exceptions in Clang
+  ENDIF()
+
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /w")          # disable all warnings
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /Gy")          # package individual functions
   IF (EMBREE_STACK_PROTECTOR)

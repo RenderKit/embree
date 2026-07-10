@@ -3,6 +3,13 @@
 
 #pragma once
 
+// Prevent Windows from defining min/max macros that conflict with std::numeric_limits
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#endif
+
 #if !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS
 #endif
