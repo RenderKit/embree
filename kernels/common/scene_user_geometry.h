@@ -46,6 +46,31 @@ namespace embree
       this->boundsFunc = bounds;
       Geometry::update();
     }
+
+    virtual Vec3fa computeDirection(unsigned int primID) const override {
+      return Vec3fa(1.0f, 0.0f, 0.0f);
+    }
+
+    virtual Vec3fa computeDirection(unsigned int primID, size_t time) const override {
+      return Vec3fa(1.0f, 0.0f, 0.0f);
+    }
+
+    virtual BBox3fa vbounds(size_t primID) const override {
+      return bounds(primID);
+    }
+
+    virtual BBox3fa vbounds(const LinearSpace3fa& space, size_t primID) const override {
+      return xfmBounds(space, bounds(primID));
+    }
+
+    virtual LBBox3fa vlinearBounds(size_t primID, const BBox1f& time_range) const override {
+      return linearBounds(primID, time_range);
+    }
+
+    virtual LBBox3fa vlinearBounds(const LinearSpace3fa& space, size_t primID, const BBox1f& time_range) const override {
+      const LBBox3fa lb = linearBounds(primID, time_range);
+      return LBBox3fa(xfmBounds(space, lb.bounds0), xfmBounds(space, lb.bounds1));
+    }
   };
 
   namespace isa
