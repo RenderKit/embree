@@ -210,6 +210,8 @@ namespace embree
   DECLARE_ISA_FUNCTION(Builder*,BVH4OBBCurve4iMBBuilder_OBB,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH4Curve8iBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH4OBBCurve8iMBBuilder_OBB,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4OBBVirtualBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4OBBVirtualMBBuilder_OBB,void* COMMA Scene* COMMA size_t);
 
   DECLARE_ISA_FUNCTION(Builder*,BVH4Triangle4SceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH4Triangle4vSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
@@ -273,6 +275,8 @@ namespace embree
     IF_ENABLED_CURVES_OR_POINTS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4OBBCurve4iMBBuilder_OBB));
     IF_ENABLED_CURVES_OR_POINTS(SELECT_SYMBOL_INIT_AVX(features,BVH4Curve8iBuilder_OBB_New));
     IF_ENABLED_CURVES_OR_POINTS(SELECT_SYMBOL_INIT_AVX(features,BVH4OBBCurve8iMBBuilder_OBB));
+    IF_ENABLED_USER(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4OBBVirtualBuilder_OBB_New));
+    IF_ENABLED_USER(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4OBBVirtualMBBuilder_OBB));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4SceneBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Triangle4vSceneBuilderSAH));
@@ -1208,6 +1212,7 @@ namespace embree
     }
     else if (scene->device->object_builder == "sah") builder = BVH4VirtualSceneBuilderSAH(accel,scene,0);
     else if (scene->device->object_builder == "dynamic") builder = BVH4BuilderTwoLevelVirtualSAH(accel,scene,false);
+    else if (scene->device->object_builder == "sah_obb") builder = BVH4OBBVirtualBuilder_OBB_New(accel,scene,0);
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->object_builder+" for BVH4<Object>");
 
     return new AccelInstance(accel,builder,intersectors);
@@ -1217,7 +1222,25 @@ namespace embree
   {
     BVH4* accel = new BVH4(Object::type,scene);
     Accel::Intersectors intersectors = BVH4UserGeometryMBIntersectors(accel);
-    Builder* builder = BVH4VirtualMBSceneBuilderSAH(accel,scene,0);
+    Builder* builder = nullptr;
+    if (scene->device->object_builder == "sah_obb") builder = BVH4OBBVirtualMBBuilder_OBB(accel,scene,0);
+    else                                             builder = BVH4VirtualMBSceneBuilderSAH(accel,scene,0);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4Factory::BVH4UserGeometryOBB(Scene* scene)
+  {
+    BVH4* accel = new BVH4(Object::type,scene);
+    Accel::Intersectors intersectors = BVH4UserGeometryIntersectors(accel);
+    Builder* builder = BVH4OBBVirtualBuilder_OBB_New(accel,scene,0);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH4Factory::BVH4UserGeometryOBBMB(Scene* scene)
+  {
+    BVH4* accel = new BVH4(Object::type,scene);
+    Accel::Intersectors intersectors = BVH4UserGeometryMBIntersectors(accel);
+    Builder* builder = BVH4OBBVirtualMBBuilder_OBB(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -1236,7 +1259,7 @@ namespace embree
       case BuildVariant::HIGH_QUALITY: assert(false); break;
       }
     }
-    else if (scene->device->object_builder == "sah") builder = BVH4InstanceSceneBuilderSAH(accel,scene,gtype);
+    else if (scene->device->object_builder == "sah" || scene->device->object_builder == "sah_obb") builder = BVH4InstanceSceneBuilderSAH(accel,scene,gtype);
     else if (scene->device->object_builder == "dynamic") builder = BVH4BuilderTwoLevelInstanceSAH(accel,scene,gtype,false);
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->object_builder+" for BVH4<Object>");
 
@@ -1266,7 +1289,7 @@ namespace embree
       case BuildVariant::HIGH_QUALITY: assert(false); break;
       }
     }
-    else if (scene->device->object_builder == "sah") { builder = BVH4InstanceArraySceneBuilderSAH(accel,scene,gtype); }
+    else if (scene->device->object_builder == "sah" || scene->device->object_builder == "sah_obb") { builder = BVH4InstanceArraySceneBuilderSAH(accel,scene,gtype); }
     else if (scene->device->object_builder == "dynamic") { builder = BVH4BuilderTwoLevelInstanceArraySAH(accel,scene,gtype,false); }
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->object_builder+" for BVH4<Object>");
 

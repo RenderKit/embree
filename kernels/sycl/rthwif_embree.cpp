@@ -362,7 +362,8 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
   }
 
 #if defined(EMBREE_GEOMETRY_USER)
-  if ((feature_mask & RTC_FEATURE_FLAG_USER_GEOMETRY) && (geom->getType() == Geometry::GTY_USER_GEOMETRY)) {
+  if ((feature_mask & RTC_FEATURE_FLAG_USER_GEOMETRY) &&
+      (geom->getType() == Geometry::GTY_USER_GEOMETRY || geom->getType() == Geometry::GTY_USER_GEOMETRY_ORIENTED)) {
     return intersect_user_geometry(query,ray,(UserGeometry*)geom, scenes, context, geomID, primID);
   }
 #endif

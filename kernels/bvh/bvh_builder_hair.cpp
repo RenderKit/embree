@@ -4,17 +4,22 @@
 #include "../builders/bvh_builder_hair.h"
 #include "../builders/primrefgen.h"
 
+#include "../geometry/object.h"
+
+#if defined(EMBREE_GEOMETRY_CURVE) || defined(EMBREE_GEOMETRY_POINT)
 #include "../geometry/pointi.h"
 #include "../geometry/linei.h"
 #include "../geometry/curveNi.h"
 #include "../geometry/curveNv.h"
+#endif
 
-#if defined(EMBREE_GEOMETRY_CURVE) || defined(EMBREE_GEOMETRY_POINT)
+#if defined(EMBREE_GEOMETRY_CURVE) || defined(EMBREE_GEOMETRY_POINT) || defined(EMBREE_GEOMETRY_USER)
 
 namespace embree
 {
   namespace isa
   {
+#if defined(EMBREE_GEOMETRY_CURVE) || defined(EMBREE_GEOMETRY_POINT)
     template<int N, typename CurvePrimitive, typename LinePrimitive, typename PointPrimitive>
     struct BVHNHairBuilderSAH : public Builder
     {
@@ -124,6 +129,116 @@ namespace embree
 #if defined(__AVX__)
     Builder* BVH8Curve8vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<8,Curve8v,Line8i,Point8i>((BVH8*)bvh,scene); }
     Builder* BVH4Curve8iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Curve8i,Line8i,Point8i>((BVH4*)bvh,scene); }
+#endif
+#endif
+
+#if defined(EMBREE_GEOMETRY_USER)
+    template<int N, typename Primitive, Geometry::GTypeMask gtype>
+    struct BVHNUnalignedBuilderSAH : public Builder
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+
+      BVH* bvh;
+      Scene* scene;
+      mvector<PrimRef> prims;
+      BVHBuilderHair::Settings settings;
+
+      BVHNUnalignedBuilderSAH(BVH* bvh, Scene* scene)
+        : bvh(bvh), scene(scene), prims(scene->device, 0) {}
+
+      void build()
+      {
+        if (settings.finished_range_threshold != size_t(inf))
+          bvh->alloc.unshare(prims);
+
+        const size_t numPrimitives = scene->getNumPrimitives(gtype, false);
+        if (numPrimitives == 0) {
+          bvh->clear();
+          prims.clear();
+          return;
+        }
+
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "OBBBuilderSAH");
+
+        prims.resize(numPrimitives);
+        const PrimInfo pinfo = createPrimRefArray(scene, gtype, false, numPrimitives, prims, scene->progressInterface);
+
+        const size_t node_bytes = pinfo.size() * sizeof(typename BVH::OBBNode) / (4 * N);
+        const size_t leaf_bytes = size_t(1.2f * Primitive::blocks(pinfo.size()) * sizeof(Primitive));
+        bvh->alloc.init_estimate(node_bytes + leaf_bytes);
+
+        settings.branchingFactor = N;
+        settings.maxDepth = BVH::maxBuildDepthLeaf;
+        settings.logBlockSize = bsf(Primitive::max_size());
+        settings.minLeafSize = Primitive::max_size();
+        settings.maxLeafSize = Primitive::max_size();
+        settings.finished_range_threshold = numPrimitives / 1000;
+        if (settings.finished_range_threshold < 1000)
+          settings.finished_range_threshold = inf;
+
+        auto createLeaf = [&] (const PrimRef* primrefs, const range<size_t>& set, const FastAllocator::CachedAllocator& alloc) -> NodeRef {
+          if (set.size() == 0)
+            return BVH::emptyNode;
+
+          const size_t items = Primitive::blocks(set.size());
+          size_t start = set.begin();
+          Primitive* accel = (Primitive*) alloc.malloc1(items * sizeof(Primitive), BVH::byteAlignment);
+          NodeRef node = BVH::encodeLeaf((char*) accel, items);
+          for (size_t i = 0; i < items; i++)
+            accel[i].fill(primrefs, start, set.end(), bvh->scene);
+          return node;
+        };
+
+        auto reportFinishedRange = [&] (const range<size_t>& range) -> void {
+          PrimRef* begin = prims.data() + range.begin();
+          PrimRef* end = prims.data() + range.end();
+          size_t bytes = (size_t) end - (size_t) begin;
+          bvh->alloc.addBlock(begin, bytes);
+        };
+
+        NodeRef root = BVHBuilderHair::build<NodeRef>(
+          typename BVH::CreateAlloc(bvh),
+          typename BVH::AABBNode::Create(),
+          typename BVH::AABBNode::Set(),
+          typename BVH::OBBNode::Create(),
+          typename BVH::OBBNode::Set(),
+          createLeaf,
+          scene->progressInterface,
+          reportFinishedRange,
+          scene,
+          prims.data(),
+          pinfo,
+          settings);
+
+        bvh->set(root, LBBox3fa(pinfo.geomBounds), pinfo.size());
+
+        if (settings.finished_range_threshold != size_t(inf))
+          bvh->alloc.share(prims);
+
+        if (scene->isStaticAccel())
+          prims.clear();
+
+        bvh->cleanup();
+        bvh->postBuild(t0);
+      }
+
+      void clear() {
+        prims.clear();
+      }
+    };
+
+    Builder* BVH4OBBVirtualBuilder_OBB_New(void* bvh, Scene* scene, size_t mode)
+    {
+      return new BVHNUnalignedBuilderSAH<4, Object, (Geometry::GTypeMask)(Geometry::MTY_USER_GEOMETRY | Geometry::MTY_USER_GEOMETRY_ORIENTED)>((BVH4*) bvh, scene);
+    }
+
+#if defined(__AVX__)
+    Builder* BVH8OBBVirtualBuilder_OBB_New(void* bvh, Scene* scene, size_t mode)
+    {
+      return new BVHNUnalignedBuilderSAH<8, Object, (Geometry::GTypeMask)(Geometry::MTY_USER_GEOMETRY | Geometry::MTY_USER_GEOMETRY_ORIENTED)>((BVH8*) bvh, scene);
+    }
+#endif
 #endif
 
   }

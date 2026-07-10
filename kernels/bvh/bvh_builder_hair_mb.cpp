@@ -4,16 +4,21 @@
 #include "../builders/bvh_builder_msmblur_hair.h"
 #include "../builders/primrefgen.h"
 
+#include "../geometry/object.h"
+
+#if defined(EMBREE_GEOMETRY_CURVE) || defined(EMBREE_GEOMETRY_POINT)
 #include "../geometry/pointi.h"
 #include "../geometry/linei.h"
 #include "../geometry/curveNi_mb.h"
+#endif
 
-#if defined(EMBREE_GEOMETRY_CURVE) || defined(EMBREE_GEOMETRY_POINT)
+#if defined(EMBREE_GEOMETRY_CURVE) || defined(EMBREE_GEOMETRY_POINT) || defined(EMBREE_GEOMETRY_USER)
 
 namespace embree
 {
   namespace isa
   {
+#if defined(EMBREE_GEOMETRY_CURVE) || defined(EMBREE_GEOMETRY_POINT)
     /* FIXME: add fast path for single-segment motion blur */
     template<int N, typename CurvePrimitive, typename LinePrimitive, typename PointPrimitive>
     struct BVHNHairMBlurBuilderSAH : public Builder
@@ -105,6 +110,97 @@ namespace embree
 #if defined(__AVX__)
     Builder* BVH4OBBCurve8iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<4,Curve8iMB,Line8i,Point8i>((BVH4*)bvh,scene); }
     Builder* BVH8OBBCurve8iMBBuilder_OBB (void* bvh, Scene* scene, size_t mode) { return new BVHNHairMBlurBuilderSAH<8,Curve8iMB,Line8i,Point8i>((BVH8*)bvh,scene); }
+#endif
+#endif
+
+#if defined(EMBREE_GEOMETRY_USER)
+    template<int N, typename Primitive, Geometry::GTypeMask gtype>
+    struct BVHNUnalignedMBlurBuilderSAH : public Builder
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::NodeRecordMB4D NodeRecordMB4D;
+
+      BVH* bvh;
+      Scene* scene;
+
+      BVHNUnalignedMBlurBuilderSAH(BVH* bvh, Scene* scene)
+        : bvh(bvh), scene(scene) {}
+
+      void build()
+      {
+        const size_t numPrimitives = scene->getNumPrimitives(gtype, true);
+        if (numPrimitives == 0) {
+          bvh->set(BVH::emptyNode, empty, 0);
+          return;
+        }
+
+        double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "OBBMBlurBuilderSAH");
+
+        mvector<PrimRefMB> prims0(scene->device, numPrimitives);
+        const PrimInfoMB pinfo = createPrimRefArrayMSMBlur(scene, gtype, numPrimitives, prims0, bvh->scene->progressInterface);
+
+        const size_t node_bytes = pinfo.num_time_segments * sizeof(typename BVH::AABBNodeMB) / (4 * N);
+        const size_t leaf_bytes = size_t(1.2f * Primitive::blocks(numPrimitives) * sizeof(Primitive));
+        bvh->alloc.init_estimate(node_bytes + leaf_bytes);
+
+        BVHBuilderHairMSMBlur::Settings settings;
+        settings.branchingFactor = N;
+        settings.maxDepth = BVH::maxBuildDepthLeaf;
+        settings.logBlockSize = bsf(Primitive::max_size());
+        settings.minLeafSize = Primitive::max_size();
+        settings.maxLeafSize = Primitive::max_size();
+
+        auto createLeaf = [&] (const SetMB& prims, const FastAllocator::CachedAllocator& alloc) -> NodeRecordMB4D {
+          if (prims.size() == 0)
+            return NodeRecordMB4D(BVH::emptyNode, empty, empty);
+
+          const size_t items = Primitive::blocks(prims.size());
+          size_t start = prims.begin();
+          Primitive* accel = (Primitive*) alloc.malloc1(items * sizeof(Primitive), BVH::byteAlignment);
+          NodeRef node = BVH::encodeLeaf((char*) accel, items);
+
+          LBBox3fa allBounds = empty;
+          for (size_t i = 0; i < items; i++)
+            allBounds.extend(accel[i].fillMB(prims.prims->data(), start, prims.end(), bvh->scene, prims.time_range));
+
+          return NodeRecordMB4D(node, allBounds, prims.time_range);
+        };
+
+        auto root = BVHBuilderHairMSMBlur::build<NodeRef>(
+          scene,
+          prims0,
+          pinfo,
+          VirtualRecalculatePrimRef(scene),
+          typename BVH::CreateAlloc(bvh),
+          typename BVH::AABBNodeMB4D::Create(),
+          typename BVH::AABBNodeMB4D::Set(),
+          typename BVH::OBBNodeMB::Create(),
+          typename BVH::OBBNodeMB::Set(),
+          createLeaf,
+          bvh->scene->progressInterface,
+          settings);
+
+        bvh->set(root.ref, root.lbounds, pinfo.num_time_segments);
+        bvh->cleanup();
+        bvh->postBuild(t0);
+      }
+
+      void clear() {
+      }
+    };
+
+    Builder* BVH4OBBVirtualMBBuilder_OBB(void* bvh, Scene* scene, size_t mode)
+    {
+      return new BVHNUnalignedMBlurBuilderSAH<4, Object, (Geometry::GTypeMask)(Geometry::MTY_USER_GEOMETRY | Geometry::MTY_USER_GEOMETRY_ORIENTED)>((BVH4*) bvh, scene);
+    }
+
+#if defined(__AVX__)
+    Builder* BVH8OBBVirtualMBBuilder_OBB(void* bvh, Scene* scene, size_t mode)
+    {
+      return new BVHNUnalignedMBlurBuilderSAH<8, Object, (Geometry::GTypeMask)(Geometry::MTY_USER_GEOMETRY | Geometry::MTY_USER_GEOMETRY_ORIENTED)>((BVH8*) bvh, scene);
+    }
+#endif
 #endif
 
   }

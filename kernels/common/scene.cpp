@@ -535,6 +535,45 @@ namespace embree
 #endif
   }
 
+  void Scene::createUserGeometryOBBAccel()
+  {
+#if defined(EMBREE_GEOMETRY_USER)
+    if (device->object_accel == "default")
+    {
+#if defined (EMBREE_TARGET_SIMD8)
+      if (device->canUseAVX() && !isCompactAccel())
+        accels_add(device->bvh8_factory->BVH8UserGeometryOBB(this));
+      else
+#endif
+        accels_add(device->bvh4_factory->BVH4UserGeometryOBB(this));
+    }
+    else if (device->object_accel == "bvh4.object") accels_add(device->bvh4_factory->BVH4UserGeometryOBB(this));
+#if defined (EMBREE_TARGET_SIMD8)
+    else if (device->object_accel == "bvh8.object") accels_add(device->bvh8_factory->BVH8UserGeometryOBB(this));
+#endif
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown user geometry accel "+device->object_accel);
+#endif
+  }
+
+  void Scene::createUserGeometryOBBMBAccel()
+  {
+#if defined(EMBREE_GEOMETRY_USER)
+    if (device->object_accel_mb == "default") {
+#if defined (EMBREE_TARGET_SIMD8)
+      if (device->canUseAVX() && !isCompactAccel())
+        accels_add(device->bvh8_factory->BVH8UserGeometryOBBMB(this));
+      else
+#endif
+        accels_add(device->bvh4_factory->BVH4UserGeometryOBBMB(this));
+    }
+    else if (device->object_accel_mb == "bvh4.object") accels_add(device->bvh4_factory->BVH4UserGeometryOBBMB(this));
+#if defined (EMBREE_TARGET_SIMD8)
+    else if (device->object_accel_mb == "bvh8.object") accels_add(device->bvh8_factory->BVH8UserGeometryOBBMB(this));
+#endif
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown user geometry mblur accel "+device->object_accel_mb);
+#endif
+  }
+
   void Scene::createInstanceAccel()
   {
 #if defined(EMBREE_GEOMETRY_INSTANCE)
@@ -784,8 +823,27 @@ namespace embree
       if (getNumPrimitives(SubdivMesh::geom_type,true)) createSubdivMBAccel();
       if (getNumPrimitives(Geometry::MTY_CURVES,false)) createHairAccel();
       if (getNumPrimitives(Geometry::MTY_CURVES,true)) createHairMBAccel();
-      if (getNumPrimitives(UserGeometry::geom_type,false)) createUserGeometryAccel();
-      if (getNumPrimitives(UserGeometry::geom_type,true)) createUserGeometryMBAccel();
+      const bool hasOrientedUserGeometry = [&]() {
+        for (const auto& geom : geometries)
+          if (geom && geom->isEnabled() && (geom->getTypeMask() & Geometry::MTY_USER_GEOMETRY_ORIENTED))
+            return true;
+        return false;
+      }();
+      const bool hasOrientedUserGeometryMB = [&]() {
+        for (const auto& geom : geometries)
+          if (geom && geom->isEnabled() && (geom->getTypeMask() & Geometry::MTY_USER_GEOMETRY_ORIENTED) && geom->hasMotionBlur())
+            return true;
+        return false;
+      }();
+
+      if (getNumPrimitives(UserGeometry::geom_type,false) || hasOrientedUserGeometry) {
+        if (hasOrientedUserGeometry) createUserGeometryOBBAccel();
+        else                        createUserGeometryAccel();
+      }
+      if (getNumPrimitives(UserGeometry::geom_type,true) || hasOrientedUserGeometryMB) {
+        if (hasOrientedUserGeometryMB) createUserGeometryOBBMBAccel();
+        else                        createUserGeometryMBAccel();
+      }
       if (getNumPrimitives(Geometry::MTY_INSTANCE_CHEAP,false)) createInstanceAccel();
       if (getNumPrimitives(Geometry::MTY_INSTANCE_CHEAP,true)) createInstanceMBAccel();
       if (getNumPrimitives(Geometry::MTY_INSTANCE_EXPENSIVE,false)) createInstanceExpensiveAccel();

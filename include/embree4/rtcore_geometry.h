@@ -48,6 +48,7 @@ enum RTCGeometryType
   RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE  = 60, // flat normal-oriented Catmull-Rom curves
 
   RTC_GEOMETRY_TYPE_USER     = 120, // user-defined geometry
+  RTC_GEOMETRY_TYPE_USER_ORIENTED = 123, // user-defined geometry using oriented bounds callback (OOBB path)
   RTC_GEOMETRY_TYPE_INSTANCE = 121,  // scene instance
   RTC_GEOMETRY_TYPE_INSTANCE_ARRAY = 122,  // scene instance array
 };
@@ -214,6 +215,9 @@ RTC_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry geometry, unsigned int
 
 /* Sets the bounding callback function to calculate bounding boxes for user primitives. */
 RTC_API void rtcSetGeometryBoundsFunction(RTCGeometry geometry, RTCBoundsFunction bounds, void* userPtr);
+
+/* Sets the oriented bounding callback function for oriented user primitives. */
+RTC_API void rtcSetGeometryOrientedBoundsFunction(RTCGeometry geometry, RTCBoundsFunction bounds, void* userPtr);
 
 /* Set the intersect callback function of a user geometry. */
 RTC_API void rtcSetGeometryIntersectFunction(RTCGeometry geometry, RTCIntersectFunctionN intersect);

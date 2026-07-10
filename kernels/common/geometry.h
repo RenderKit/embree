@@ -163,6 +163,7 @@ namespace embree
       GTY_SPHERE_POINT = 25,
       GTY_DISC_POINT = 26,
       GTY_ORIENTED_DISC_POINT = 27,
+      GTY_USER_GEOMETRY_ORIENTED = 28,
       
       GTY_USER_GEOMETRY = 29,
       GTY_INSTANCE_CHEAP = 30,
@@ -223,6 +224,7 @@ namespace embree
       MTY_SPHERE_POINT = 1ul << GTY_SPHERE_POINT,
       MTY_DISC_POINT = 1ul << GTY_DISC_POINT,
       MTY_ORIENTED_DISC_POINT = 1ul << GTY_ORIENTED_DISC_POINT,
+      MTY_USER_GEOMETRY_ORIENTED = 1ul << GTY_USER_GEOMETRY_ORIENTED,
 
       MTY_POINTS = MTY_SPHERE_POINT | MTY_DISC_POINT | MTY_ORIENTED_DISC_POINT,
 
@@ -233,6 +235,7 @@ namespace embree
       MTY_GRID_MESH = 1ul << GTY_GRID_MESH,
       MTY_SUBDIV_MESH = 1ul << GTY_SUBDIV_MESH,
       MTY_USER_GEOMETRY = 1ul << GTY_USER_GEOMETRY,
+      MTY_ALL_USER_GEOMETRY = MTY_USER_GEOMETRY | MTY_USER_GEOMETRY_ORIENTED,
 
       MTY_INSTANCE_CHEAP = 1ul << GTY_INSTANCE_CHEAP,
       MTY_INSTANCE_EXPENSIVE = 1ul << GTY_INSTANCE_EXPENSIVE,
@@ -521,6 +524,11 @@ namespace embree
     /*! Set bounds function. */
     virtual void setBoundsFunction (RTCBoundsFunction bounds, void* userPtr) { 
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
+    /*! Set oriented bounds function (for OOBB user geometries). */
+    virtual void setOrientedBoundsFunction (RTCBoundsFunction bounds, void* userPtr) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry");
     }
 
     /*! Set intersect function for ray packets of size N. */

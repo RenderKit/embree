@@ -35,6 +35,8 @@ namespace embree
 
     Accel* BVH8UserGeometry(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC);
     Accel* BVH8UserGeometryMB(Scene* scene);
+    Accel* BVH8UserGeometryOBB(Scene* scene);
+    Accel* BVH8UserGeometryOBBMB(Scene* scene);
 
     Accel* BVH8Instance(Scene* scene, bool isExpensive, BuildVariant bvariant = BuildVariant::STATIC);
     Accel* BVH8InstanceMB(Scene* scene, bool isExpensive);
@@ -239,6 +241,8 @@ namespace embree
   private:
     DEFINE_ISA_FUNCTION(Builder*,BVH8Curve8vBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
     DEFINE_ISA_FUNCTION(Builder*,BVH8OBBCurve8iMBBuilder_OBB,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8OBBVirtualBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8OBBVirtualMBBuilder_OBB,void* COMMA Scene* COMMA size_t);
  
     DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4SceneBuilderSAH,void* COMMA Scene* COMMA size_t);
     DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4vSceneBuilderSAH,void* COMMA Scene* COMMA size_t);

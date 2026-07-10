@@ -187,6 +187,8 @@ namespace embree
 
   DECLARE_ISA_FUNCTION(Builder*,BVH8Curve8vBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH8OBBCurve8iMBBuilder_OBB,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH8OBBVirtualBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH8OBBVirtualMBBuilder_OBB,void* COMMA Scene* COMMA size_t);
 
   DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4SceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4vSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
@@ -236,6 +238,8 @@ namespace embree
   {
     IF_ENABLED_CURVES_OR_POINTS(SELECT_SYMBOL_INIT_AVX(features,BVH8Curve8vBuilder_OBB_New));
     IF_ENABLED_CURVES_OR_POINTS(SELECT_SYMBOL_INIT_AVX(features,BVH8OBBCurve8iMBBuilder_OBB));
+    IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX(features,BVH8OBBVirtualBuilder_OBB_New));
+    IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX(features,BVH8OBBVirtualMBBuilder_OBB));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle4SceneBuilderSAH));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX(features,BVH8Triangle4vSceneBuilderSAH));
@@ -1048,6 +1052,7 @@ namespace embree
     }
     else if (scene->device->object_builder == "sah") builder = BVH8VirtualSceneBuilderSAH(accel,scene,0);
     else if (scene->device->object_builder == "dynamic") builder = BVH8BuilderTwoLevelVirtualSAH(accel,scene,false);
+    else if (scene->device->object_builder == "sah_obb") builder = BVH8OBBVirtualBuilder_OBB_New(accel,scene,0);
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->object_builder+" for BVH8<Object>");
 
     return new AccelInstance(accel,builder,intersectors);
@@ -1057,7 +1062,25 @@ namespace embree
   {
     BVH8* accel = new BVH8(Object::type,scene);
     Accel::Intersectors intersectors = BVH8UserGeometryMBIntersectors(accel);
-    Builder* builder = BVH8VirtualMBSceneBuilderSAH(accel,scene,0);
+    Builder* builder = nullptr;
+    if (scene->device->object_builder == "sah_obb") builder = BVH8OBBVirtualMBBuilder_OBB(accel,scene,0);
+    else                                             builder = BVH8VirtualMBSceneBuilderSAH(accel,scene,0);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH8Factory::BVH8UserGeometryOBB(Scene* scene)
+  {
+    BVH8* accel = new BVH8(Object::type,scene);
+    Accel::Intersectors intersectors = BVH8UserGeometryIntersectors(accel);
+    Builder* builder = BVH8OBBVirtualBuilder_OBB_New(accel,scene,0);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH8Factory::BVH8UserGeometryOBBMB(Scene* scene)
+  {
+    BVH8* accel = new BVH8(Object::type,scene);
+    Accel::Intersectors intersectors = BVH8UserGeometryMBIntersectors(accel);
+    Builder* builder = BVH8OBBVirtualMBBuilder_OBB(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
 
@@ -1076,7 +1099,7 @@ namespace embree
       case BuildVariant::HIGH_QUALITY: assert(false); break;
       }
     }
-    else if (scene->device->object_builder == "sah") builder = BVH8InstanceSceneBuilderSAH(accel,scene,gtype);
+    else if (scene->device->object_builder == "sah" || scene->device->object_builder == "sah_obb") builder = BVH8InstanceSceneBuilderSAH(accel,scene,gtype);
     else if (scene->device->object_builder == "dynamic") builder = BVH8BuilderTwoLevelInstanceSAH(accel,scene,gtype,false);
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->object_builder+" for BVH8<Object>");
 
@@ -1098,7 +1121,7 @@ namespace embree
       case BuildVariant::HIGH_QUALITY: assert(false); break;
       }
     }
-    else if (scene->device->object_builder == "sah") builder = BVH8InstanceArraySceneBuilderSAH(accel,scene,gtype);
+    else if (scene->device->object_builder == "sah" || scene->device->object_builder == "sah_obb") builder = BVH8InstanceArraySceneBuilderSAH(accel,scene,gtype);
     else if (scene->device->object_builder == "dynamic") builder = BVH8BuilderTwoLevelInstanceArraySAH(accel,scene,gtype,false);
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->object_builder+" for BVH8<Object>");
 

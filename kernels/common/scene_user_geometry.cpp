@@ -8,8 +8,8 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
-  UserGeometry::UserGeometry (Device* device, unsigned int items, unsigned int numTimeSteps) 
-    : AccelSet(device,Geometry::GTY_USER_GEOMETRY,items,numTimeSteps) {}
+  UserGeometry::UserGeometry (Device* device, unsigned int items, unsigned int numTimeSteps, Geometry::GType gtype) 
+    : AccelSet(device,gtype,items,numTimeSteps) {}
 
   void UserGeometry::addElementsToCount (GeometryCounts & counts) const
   {
@@ -25,6 +25,13 @@ namespace embree
 
   void UserGeometry::setBoundsFunction (RTCBoundsFunction bounds, void* userPtr) {
     this->boundsFunc = bounds;
+    Geometry::update();
+  }
+
+  void UserGeometry::setOrientedBoundsFunction (RTCBoundsFunction bounds, void* userPtr) {
+    (void)bounds;
+    (void)userPtr;
+    throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation only supported for oriented user geometries");
   }
 
   void UserGeometry::setIntersectFunctionN (RTCIntersectFunctionN intersect) {
@@ -50,6 +57,10 @@ namespace embree
   {
     UserGeometry* createUserGeometry(Device* device) {
       return new UserGeometryISA(device);
+    }
+
+    UserGeometry* createOrientedUserGeometry(Device* device) {
+      return new OrientedUserGeometryISA(device);
     }
   }
 }

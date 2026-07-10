@@ -166,6 +166,8 @@ namespace embree
     void createSubdivMBAccel();
     void createUserGeometryAccel();
     void createUserGeometryMBAccel();
+    void createUserGeometryOBBAccel();
+    void createUserGeometryOBBMBAccel();
     void createInstanceAccel();
     void createInstanceMBAccel();
     void createInstanceExpensiveAccel();
@@ -415,7 +417,7 @@ namespace embree
       if (mask & Geometry::MTY_SUBDIV_MESH)
         count += mblur ? world.numMBSubdivPatches : world.numSubdivPatches;
       
-      if (mask & Geometry::MTY_USER_GEOMETRY)
+      if (mask & Geometry::MTY_ALL_USER_GEOMETRY)
         count += mblur ? world.numMBUserGeometries : world.numUserGeometries;
       
       if (mask & Geometry::MTY_INSTANCE_CHEAP)

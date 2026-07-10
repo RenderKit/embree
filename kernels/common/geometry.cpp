@@ -36,7 +36,7 @@ namespace embree
     "sphere",
     "disc",
     "oriented_disc",
-    "",
+    "usergeom_oriented",
     "usergeom",
     "instance_cheap",
     "instance_expensive",
@@ -141,7 +141,7 @@ namespace embree
   
   void Geometry::setIntersectionFilterFunctionN (RTCFilterFunctionN filter) 
   {
-    if (!(getTypeMask() & (MTY_TRIANGLE_MESH | MTY_QUAD_MESH | MTY_CURVES | MTY_SUBDIV_MESH | MTY_USER_GEOMETRY | MTY_GRID_MESH)))
+    if (!(getTypeMask() & (MTY_TRIANGLE_MESH | MTY_QUAD_MESH | MTY_CURVES | MTY_SUBDIV_MESH | MTY_ALL_USER_GEOMETRY | MTY_GRID_MESH)))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     intersectionFilterN = filter;
@@ -149,7 +149,7 @@ namespace embree
 
   void Geometry::setOcclusionFilterFunctionN (RTCFilterFunctionN filter) 
   {
-    if (!(getTypeMask() & (MTY_TRIANGLE_MESH | MTY_QUAD_MESH | MTY_CURVES | MTY_SUBDIV_MESH | MTY_USER_GEOMETRY | MTY_GRID_MESH)))
+    if (!(getTypeMask() & (MTY_TRIANGLE_MESH | MTY_QUAD_MESH | MTY_CURVES | MTY_SUBDIV_MESH | MTY_ALL_USER_GEOMETRY | MTY_GRID_MESH)))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
     occlusionFilterN = filter;

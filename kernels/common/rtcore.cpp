@@ -457,8 +457,8 @@ RTC_NAMESPACE_BEGIN;
     if (scene0->isModified()) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene got not committed");
     if (scene1->isModified()) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene got not committed");
     if (scene0->device != scene1->device) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scenes are from different devices");
-    auto nUserPrims0 = scene0->getNumPrimitives (Geometry::MTY_USER_GEOMETRY, false);
-    auto nUserPrims1 = scene1->getNumPrimitives (Geometry::MTY_USER_GEOMETRY, false);
+    auto nUserPrims0 = scene0->getNumPrimitives (Geometry::MTY_ALL_USER_GEOMETRY, false);
+    auto nUserPrims1 = scene1->getNumPrimitives (Geometry::MTY_ALL_USER_GEOMETRY, false);
     if (scene0->numPrimitives() != nUserPrims0 && scene1->numPrimitives() != nUserPrims1) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scenes must only contain user geometries with a single timestep");
 #endif
     scene0->intersectors.collide(scene0,scene1,callback,userPtr);
@@ -1676,6 +1676,18 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
 #endif
     }
 
+        case RTC_GEOMETRY_TYPE_USER_ORIENTED:
+        {
+    #if defined(EMBREE_GEOMETRY_USER)
+      createOrientedUserGeometryTy createOrientedUserGeometry = nullptr;
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(device->enabled_cpu_features,createOrientedUserGeometry);
+      Geometry* geom = createOrientedUserGeometry(device);
+      return (RTCGeometry) geom->refInc();
+    #else
+      throw_RTCError(RTC_ERROR_UNKNOWN,"RTC_GEOMETRY_TYPE_USER_ORIENTED is not supported");
+    #endif
+        }
+
     case RTC_GEOMETRY_TYPE_INSTANCE:
     {
 #if defined(EMBREE_GEOMETRY_INSTANCE)
@@ -1727,7 +1739,8 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     RTC_TRACE(rtcSetGeometryUserPrimitiveCount);
     RTC_VERIFY_HANDLE(hgeometry);
     
-    if (unlikely(geometry->getType() != Geometry::GTY_USER_GEOMETRY))
+    if (unlikely(geometry->getType() != Geometry::GTY_USER_GEOMETRY &&
+                 geometry->getType() != Geometry::GTY_USER_GEOMETRY_ORIENTED))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation only allowed for user geometries"); 
 
     geometry->setNumPrimitives(userPrimitiveCount);
@@ -2092,6 +2105,16 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     RTC_TRACE(rtcSetGeometryBoundsFunction);
     RTC_VERIFY_HANDLE(hgeometry);
     geometry->setBoundsFunction(bounds,userPtr);
+    RTC_CATCH_END2(geometry);
+  }
+
+  RTC_API void rtcSetGeometryOrientedBoundsFunction (RTCGeometry hgeometry, RTCBoundsFunction bounds, void* userPtr)
+  {
+    Geometry* geometry = (Geometry*) hgeometry;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcSetGeometryOrientedBoundsFunction);
+    RTC_VERIFY_HANDLE(hgeometry);
+    geometry->setOrientedBoundsFunction(bounds,userPtr);
     RTC_CATCH_END2(geometry);
   }
 
