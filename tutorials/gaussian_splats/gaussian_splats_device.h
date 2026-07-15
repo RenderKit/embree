@@ -7,7 +7,7 @@
 
 namespace embree {
 
-#define NUM_SPLATS 1024
+static constexpr unsigned int DEFAULT_NUM_SPLATS = 1024;
 
 struct GaussianSplat
 {
@@ -26,14 +26,26 @@ struct TutorialData
   RTCTraversable g_traversable;
   GaussianSplat* splats;
   Vec3fa* colors;
+  unsigned int splatCount;
 };
 
 inline void TutorialData_Constructor(TutorialData* This)
 {
   This->g_scene = nullptr;
   This->g_traversable = nullptr;
-  This->splats = (GaussianSplat*) alignedUSMMalloc(NUM_SPLATS * sizeof(GaussianSplat), 16);
-  This->colors = (Vec3fa*) alignedUSMMalloc(NUM_SPLATS * sizeof(Vec3fa), 16);
+  This->splats = nullptr;
+  This->colors = nullptr;
+  This->splatCount = 0;
+}
+
+inline void TutorialData_ResizeSplats(TutorialData* This, unsigned int splatCount)
+{
+  alignedUSMFree(This->splats);
+  alignedUSMFree(This->colors);
+
+  This->splats = (GaussianSplat*) alignedUSMMalloc(splatCount * sizeof(GaussianSplat), 16);
+  This->colors = (Vec3fa*) alignedUSMMalloc(splatCount * sizeof(Vec3fa), 16);
+  This->splatCount = splatCount;
 }
 
 inline void TutorialData_Destructor(TutorialData* This)

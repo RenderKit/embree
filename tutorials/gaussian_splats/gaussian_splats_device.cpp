@@ -2,6 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "gaussian_splats_device.h"
+#include <algorithm>
+#include <cstdint>
+#include <fstream>
+#include <sstream>
+#include <unordered_map>
+#include <vector>
 
 namespace embree {
 
@@ -11,6 +17,355 @@ namespace embree {
 
 RTCScene g_scene = nullptr;
 TutorialData data;
+std::string g_plyFilePath;
+
+void gaussian_splats_set_ply_file(const std::string& filePath)
+{
+  g_plyFilePath = filePath;
+}
+
+namespace
+{
+  enum class PlyFormat { ASCII, BINARY_BIG_ENDIAN, BINARY_LITTLE_ENDIAN };
+
+  enum class PlyType
+  {
+    CHAR,
+    UCHAR,
+    SHORT,
+    USHORT,
+    INT,
+    UINT,
+    FLOAT,
+    DOUBLE
+  };
+
+  struct PlyProperty
+  {
+    std::string name;
+    bool isList;
+    PlyType type;
+    PlyType listCountType;
+    PlyType listDataType;
+  };
+
+  struct PlyElement
+  {
+    std::string name;
+    size_t count;
+    std::vector<PlyProperty> properties;
+  };
+
+  static PlyType plyTypeFromString(const std::string& typeName)
+  {
+    if (typeName == "char" || typeName == "int8") return PlyType::CHAR;
+    if (typeName == "uchar" || typeName == "uint8") return PlyType::UCHAR;
+    if (typeName == "short" || typeName == "int16") return PlyType::SHORT;
+    if (typeName == "ushort" || typeName == "uint16") return PlyType::USHORT;
+    if (typeName == "int" || typeName == "int32") return PlyType::INT;
+    if (typeName == "uint" || typeName == "uint32") return PlyType::UINT;
+    if (typeName == "float" || typeName == "float32") return PlyType::FLOAT;
+    if (typeName == "double" || typeName == "float64") return PlyType::DOUBLE;
+    throw std::runtime_error("unsupported PLY property type: " + typeName);
+  }
+
+  template<typename T>
+  static T readBinaryValue(std::ifstream& stream, const PlyFormat format)
+  {
+    T value {};
+    stream.read((char*) &value, sizeof(T));
+    if (!stream) throw std::runtime_error("failed reading PLY binary data");
+
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+    const bool needsSwap = format == PlyFormat::BINARY_LITTLE_ENDIAN;
+#else
+    const bool needsSwap = format == PlyFormat::BINARY_BIG_ENDIAN;
+#endif
+
+    if (needsSwap) {
+      unsigned char* bytes = (unsigned char*) &value;
+      for (size_t i = 0; i < sizeof(T) / 2; ++i)
+        std::swap(bytes[i], bytes[sizeof(T) - 1 - i]);
+    }
+
+    return value;
+  }
+
+  static double readPlyScalar(std::ifstream& stream, const PlyFormat format, const PlyType type)
+  {
+    if (format == PlyFormat::ASCII) {
+      std::string token;
+      stream >> token;
+      if (!stream) throw std::runtime_error("failed reading PLY ASCII data");
+      return std::stod(token);
+    }
+
+    switch (type) {
+    case PlyType::CHAR:   return (double) readBinaryValue<int8_t>(stream, format);
+    case PlyType::UCHAR:  return (double) readBinaryValue<uint8_t>(stream, format);
+    case PlyType::SHORT:  return (double) readBinaryValue<int16_t>(stream, format);
+    case PlyType::USHORT: return (double) readBinaryValue<uint16_t>(stream, format);
+    case PlyType::INT:    return (double) readBinaryValue<int32_t>(stream, format);
+    case PlyType::UINT:   return (double) readBinaryValue<uint32_t>(stream, format);
+    case PlyType::FLOAT:  return (double) readBinaryValue<float>(stream, format);
+    case PlyType::DOUBLE: return (double) readBinaryValue<double>(stream, format);
+    }
+
+    return 0.0;
+  }
+
+  static bool hasProperty(const std::unordered_map<std::string, float>& values, const std::string& name)
+  {
+    return values.find(name) != values.end();
+  }
+
+  static float getProperty(const std::unordered_map<std::string, float>& values, const std::string& name, float defaultValue)
+  {
+    const auto it = values.find(name);
+    return it == values.end() ? defaultValue : it->second;
+  }
+
+  static void basisFromNormal(const Vec3fa& normal, Vec3fa& axisU, Vec3fa& axisV)
+  {
+    Vec3fa n = normal;
+    if (dot(n, n) < 1.0e-10f)
+      n = Vec3fa(0.0f, 0.0f, 1.0f);
+    n = normalize(n);
+
+    const Vec3fa helper = abs(n.z) < 0.999f ? Vec3fa(0.0f, 0.0f, 1.0f) : Vec3fa(0.0f, 1.0f, 0.0f);
+    axisU = normalize(cross(helper, n));
+    axisV = normalize(cross(n, axisU));
+  }
+
+  static float decodeOpacity(float opacity)
+  {
+    if (opacity < 0.0f || opacity > 1.0f)
+      opacity = 1.0f / (1.0f + exp(-opacity));
+    return clamp(opacity, 0.01f, 1.0f);
+  }
+
+  static Vec3fa decodeColor(const std::unordered_map<std::string, float>& values)
+  {
+    if (hasProperty(values, "r") && hasProperty(values, "g") && hasProperty(values, "b")) {
+      float r = getProperty(values, "r", 0.0f);
+      float g = getProperty(values, "g", 0.0f);
+      float b = getProperty(values, "b", 0.0f);
+      const float maxValue = max(r, max(g, b));
+      if (maxValue > 1.0f) {
+        r *= 1.0f / 255.0f;
+        g *= 1.0f / 255.0f;
+        b *= 1.0f / 255.0f;
+      }
+      return Vec3fa(clamp(r, 0.0f, 1.0f), clamp(g, 0.0f, 1.0f), clamp(b, 0.0f, 1.0f));
+    }
+
+    if (hasProperty(values, "red") && hasProperty(values, "green") && hasProperty(values, "blue")) {
+      const float r = getProperty(values, "red", 0.0f) * (1.0f / 255.0f);
+      const float g = getProperty(values, "green", 0.0f) * (1.0f / 255.0f);
+      const float b = getProperty(values, "blue", 0.0f) * (1.0f / 255.0f);
+      return Vec3fa(clamp(r, 0.0f, 1.0f), clamp(g, 0.0f, 1.0f), clamp(b, 0.0f, 1.0f));
+    }
+
+    if (hasProperty(values, "f_dc_0") && hasProperty(values, "f_dc_1") && hasProperty(values, "f_dc_2")) {
+      const float c0 = 0.28209479177387814f;
+      const float r = 0.5f + c0 * getProperty(values, "f_dc_0", 0.0f);
+      const float g = 0.5f + c0 * getProperty(values, "f_dc_1", 0.0f);
+      const float b = 0.5f + c0 * getProperty(values, "f_dc_2", 0.0f);
+      return Vec3fa(clamp(r, 0.0f, 1.0f), clamp(g, 0.0f, 1.0f), clamp(b, 0.0f, 1.0f));
+    }
+
+    return Vec3fa(0.8f, 0.8f, 0.8f);
+  }
+
+  static Vec2f decodeSigma(const std::unordered_map<std::string, float>& values)
+  {
+    if (hasProperty(values, "scale_0")) {
+      const float sigmaU = exp(getProperty(values, "scale_0", -2.0f));
+      const float sigmaV = exp(getProperty(values, "scale_1", getProperty(values, "scale_0", -2.0f)));
+      return Vec2f(max(0.001f, sigmaU), max(0.001f, sigmaV));
+    }
+
+    const float sx = hasProperty(values, "scale_x") ? abs(getProperty(values, "scale_x", 0.1f)) : 0.1f;
+    const float sy = hasProperty(values, "scale_y") ? abs(getProperty(values, "scale_y", sx)) : sx;
+    return Vec2f(max(0.001f, sx), max(0.001f, sy));
+  }
+
+  static void loadGaussianSplatsFromPly(const std::string& filePath)
+  {
+    std::ifstream stream(filePath.c_str(), std::ios::in | std::ios::binary);
+    if (!stream.is_open())
+      throw std::runtime_error("cannot open PLY file: " + filePath);
+
+    std::string line;
+    std::getline(stream, line);
+    if (line != "ply")
+      throw std::runtime_error("invalid PLY signature in file: " + filePath);
+
+    PlyFormat format = PlyFormat::ASCII;
+    std::vector<PlyElement> elements;
+    PlyElement* currentElement = nullptr;
+
+    while (std::getline(stream, line))
+    {
+      if (line == "end_header")
+        break;
+      if (line.empty() || line[0] == '#')
+        continue;
+
+      std::stringstream headerLine(line);
+      std::string tag;
+      headerLine >> tag;
+
+      if (tag == "comment") {
+        continue;
+      } else if (tag == "format") {
+        std::string formatName;
+        std::string version;
+        headerLine >> formatName >> version;
+        if (version != "1.0")
+          throw std::runtime_error("unsupported PLY version: " + version);
+        if (formatName == "ascii") format = PlyFormat::ASCII;
+        else if (formatName == "binary_big_endian") format = PlyFormat::BINARY_BIG_ENDIAN;
+        else if (formatName == "binary_little_endian") format = PlyFormat::BINARY_LITTLE_ENDIAN;
+        else throw std::runtime_error("unsupported PLY format: " + formatName);
+      } else if (tag == "element") {
+        PlyElement element;
+        headerLine >> element.name >> element.count;
+        elements.push_back(element);
+        currentElement = &elements.back();
+      } else if (tag == "property") {
+        if (!currentElement)
+          throw std::runtime_error("PLY property declared before any element");
+        std::string typeName;
+        headerLine >> typeName;
+        PlyProperty property {};
+        property.isList = false;
+        if (typeName == "list") {
+          std::string countTypeName, dataTypeName;
+          headerLine >> countTypeName >> dataTypeName >> property.name;
+          property.isList = true;
+          property.listCountType = plyTypeFromString(countTypeName);
+          property.listDataType = plyTypeFromString(dataTypeName);
+          property.type = property.listDataType;
+        } else {
+          headerLine >> property.name;
+          property.type = plyTypeFromString(typeName);
+          property.listCountType = PlyType::UCHAR;
+          property.listDataType = PlyType::UCHAR;
+        }
+        currentElement->properties.push_back(property);
+      }
+    }
+
+    std::vector<GaussianSplat> splats;
+    std::vector<Vec3fa> colors;
+
+    for (const PlyElement& element : elements)
+    {
+      const bool isVertex = element.name == "vertex";
+      if (isVertex) {
+        splats.reserve(element.count);
+        colors.reserve(element.count);
+      }
+
+      for (size_t i = 0; i < element.count; ++i)
+      {
+        std::unordered_map<std::string, float> values;
+
+        for (const PlyProperty& property : element.properties)
+        {
+          if (property.isList) {
+            const size_t count = (size_t) readPlyScalar(stream, format, property.listCountType);
+            for (size_t j = 0; j < count; ++j)
+              (void) readPlyScalar(stream, format, property.listDataType);
+          } else {
+            const float value = (float) readPlyScalar(stream, format, property.type);
+            if (isVertex)
+              values[property.name] = value;
+          }
+        }
+
+        if (!isVertex)
+          continue;
+
+        if (!hasProperty(values, "x") || !hasProperty(values, "y") || !hasProperty(values, "z"))
+          throw std::runtime_error("PLY vertex element must provide x, y, z properties");
+
+        GaussianSplat splat {};
+        splat.center = Vec3fa(getProperty(values, "x", 0.0f),
+                              getProperty(values, "y", 0.0f),
+                              getProperty(values, "z", 0.0f));
+
+        const Vec3fa normal(getProperty(values, "nx", 0.0f),
+                            getProperty(values, "ny", 0.0f),
+                            getProperty(values, "nz", 1.0f));
+        basisFromNormal(normal, splat.axisU, splat.axisV);
+
+        const Vec2f sigma = decodeSigma(values);
+        splat.sigmaU = sigma.x;
+        splat.sigmaV = sigma.y;
+        splat.opacity = decodeOpacity(getProperty(values, "opacity", 1.0f));
+        splat.colorID = (unsigned int) splats.size();
+        splats.push_back(splat);
+        colors.push_back(decodeColor(values));
+      }
+    }
+
+    if (splats.empty())
+      throw std::runtime_error("PLY file does not contain any vertex data: " + filePath);
+
+    TutorialData_ResizeSplats(&data, (unsigned int) splats.size());
+    for (unsigned int i = 0; i < data.splatCount; ++i) {
+      data.splats[i] = splats[i];
+      data.colors[i] = colors[i];
+    }
+  }
+
+  static void generateRandomGaussianSplats()
+  {
+    TutorialData_ResizeSplats(&data, DEFAULT_NUM_SPLATS);
+
+    RandomSampler rng;
+    RandomSampler_init(rng, 1337);
+
+    for (unsigned int i = 0; i < data.splatCount; ++i)
+    {
+      const float px = 8.0f * RandomSampler_get1D(rng) - 4.0f;
+      const float py = 2.5f * RandomSampler_get1D(rng) - 0.5f;
+      const float pz = 8.0f * RandomSampler_get1D(rng) - 4.0f;
+
+      Vec3fa axisU(RandomSampler_get1D(rng) * 2.0f - 1.0f,
+                   RandomSampler_get1D(rng) * 2.0f - 1.0f,
+                   RandomSampler_get1D(rng) * 2.0f - 1.0f);
+      axisU = normalize(axisU);
+
+      Vec3fa tangent(RandomSampler_get1D(rng) * 2.0f - 1.0f,
+                     RandomSampler_get1D(rng) * 2.0f - 1.0f,
+                     RandomSampler_get1D(rng) * 2.0f - 1.0f);
+      tangent = normalize(tangent);
+
+      Vec3fa axisV = normalize(cross(axisU, tangent));
+      if (dot(axisV, axisV) < 1.0e-6f) {
+        axisV = normalize(cross(axisU, Vec3fa(0.0f, 1.0f, 0.0f)));
+        if (dot(axisV, axisV) < 1.0e-6f)
+          axisV = normalize(cross(axisU, Vec3fa(1.0f, 0.0f, 0.0f)));
+      }
+
+      data.splats[i].center = Vec3fa(px, py, pz);
+      data.splats[i].axisU = axisU;
+      data.splats[i].axisV = axisV;
+      data.splats[i].sigmaU = 0.06f + 0.18f * RandomSampler_get1D(rng);
+      data.splats[i].sigmaV = 0.06f + 0.18f * RandomSampler_get1D(rng);
+      data.splats[i].opacity = 0.25f + 0.75f * RandomSampler_get1D(rng);
+      data.splats[i].colorID = i;
+
+      const float cr = 0.2f + 0.8f * RandomSampler_get1D(rng);
+      const float cg = 0.2f + 0.8f * RandomSampler_get1D(rng);
+      const float cb = 0.2f + 0.8f * RandomSampler_get1D(rng);
+      data.colors[i] = Vec3fa(cr, cg, cb);
+    }
+  }
+}
 
 void splatBoundsFunc(const RTCBoundsFunctionArguments* args)
 {
@@ -142,48 +497,14 @@ unsigned int addGroundPlane(RTCScene scene)
 
 void addGaussianSplats(RTCScene scene)
 {
-  RandomSampler rng;
-  RandomSampler_init(rng, 1337);
-
-  for (unsigned int i = 0; i < NUM_SPLATS; ++i)
-  {
-    const float px = 8.0f * RandomSampler_get1D(rng) - 4.0f;
-    const float py = 2.5f * RandomSampler_get1D(rng) - 0.5f;
-    const float pz = 8.0f * RandomSampler_get1D(rng) - 4.0f;
-
-    Vec3fa axisU(RandomSampler_get1D(rng) * 2.0f - 1.0f,
-                 RandomSampler_get1D(rng) * 2.0f - 1.0f,
-                 RandomSampler_get1D(rng) * 2.0f - 1.0f);
-    axisU = normalize(axisU);
-
-    Vec3fa tangent(RandomSampler_get1D(rng) * 2.0f - 1.0f,
-                   RandomSampler_get1D(rng) * 2.0f - 1.0f,
-                   RandomSampler_get1D(rng) * 2.0f - 1.0f);
-    tangent = normalize(tangent);
-
-    Vec3fa axisV = normalize(cross(axisU, tangent));
-    if (dot(axisV, axisV) < 1.0e-6f) {
-      axisV = normalize(cross(axisU, Vec3fa(0.0f, 1.0f, 0.0f)));
-      if (dot(axisV, axisV) < 1.0e-6f)
-        axisV = normalize(cross(axisU, Vec3fa(1.0f, 0.0f, 0.0f)));
-    }
-
-    data.splats[i].center = Vec3fa(px, py, pz);
-    data.splats[i].axisU = axisU;
-    data.splats[i].axisV = axisV;
-    data.splats[i].sigmaU = 0.06f + 0.18f * RandomSampler_get1D(rng);
-    data.splats[i].sigmaV = 0.06f + 0.18f * RandomSampler_get1D(rng);
-    data.splats[i].opacity = 0.25f + 0.75f * RandomSampler_get1D(rng);
-    data.splats[i].colorID = i;
-
-    const float cr = 0.2f + 0.8f * RandomSampler_get1D(rng);
-    const float cg = 0.2f + 0.8f * RandomSampler_get1D(rng);
-    const float cb = 0.2f + 0.8f * RandomSampler_get1D(rng);
-    data.colors[i] = Vec3fa(cr, cg, cb);
+  if (g_plyFilePath.empty()) {
+    generateRandomGaussianSplats();
+  } else {
+    loadGaussianSplatsFromPly(g_plyFilePath);
   }
 
   RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER_ORIENTED);
-  rtcSetGeometryUserPrimitiveCount(geom, NUM_SPLATS);
+  rtcSetGeometryUserPrimitiveCount(geom, data.splatCount);
   rtcSetGeometryUserData(geom, data.splats);
   rtcSetGeometryOrientedBoundsFunction(geom, splatBoundsFunc, nullptr);
   rtcSetGeometryIntersectFunction(geom, splatIntersectFunc);
@@ -282,8 +603,9 @@ extern "C" void renderFrameStandard(int* pixels,
   });
 }
 
-extern "C" void device_init(char* cfg)
+extern "C" void device_init(const char* cfg)
 {
+  _unused(cfg);
   TutorialData_Constructor(&data);
   g_scene = data.g_scene = rtcNewScene(g_device);
 

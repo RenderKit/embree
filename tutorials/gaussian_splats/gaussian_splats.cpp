@@ -9,6 +9,8 @@
 
 namespace embree
 {
+  void gaussian_splats_set_ply_file(const std::string& filePath);
+
   struct Tutorial : public TutorialApplication
   {
     Tutorial()
@@ -16,6 +18,10 @@ namespace embree
     {
       camera.from = Vec3fa(0.0f, 2.5f, 10.0f);
       camera.to   = Vec3fa(0.0f, 0.5f, 0.0f);
+
+      registerOption("ply", [] (Ref<ParseStream> cin, const FileName& path) {
+        gaussian_splats_set_ply_file((path + cin->getFileName()).str());
+      }, "--ply <filename>: loads gaussian splats from a PLY file");
     }
   };
 }
