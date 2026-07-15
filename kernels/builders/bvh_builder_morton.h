@@ -38,8 +38,8 @@ namespace embree
           minLeafSize = min(minLeafSize,maxLeafSize);
         }
 
-        Settings (size_t branchingFactor, size_t maxDepth, size_t minLeafSize, size_t maxLeafSize, size_t singleThreadThreshold)
-        : branchingFactor(branchingFactor), maxDepth(maxDepth), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), singleThreadThreshold(singleThreadThreshold)
+        Settings (size_t branchingFactor_, size_t maxDepth_, size_t minLeafSize_, size_t maxLeafSize_, size_t singleThreadThreshold_)
+        : branchingFactor(branchingFactor_), maxDepth(maxDepth_), minLeafSize(minLeafSize_), maxLeafSize(maxLeafSize_), singleThreadThreshold(singleThreadThreshold_)
         {
           if (branchingFactor > MAX_BRANCHING_FACTOR)
             branchingFactor = MAX_BRANCHING_FACTOR;
