@@ -1,62 +1,74 @@
-// Copyright 2009-2021 Intel Corporation
+// Copyright 2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #include <embree4/rtcore.h>
 #include <embree4/rtcore_builder.h>
 
+#include <cassert>
 #include <cstring>
 #include <iostream>
 #include <limits>
 #include <vector>
 
-struct BuildTestNodeHeader
+constexpr unsigned int max_branching_factor = 8;
+
+struct Node
 {
-  unsigned int childCount;
+  Node()
+  {
+    for (unsigned int i = 0; i < max_branching_factor; ++i)
+      children[i] = nullptr;
+  }
+  virtual ~Node() = default;
+  Node *children[max_branching_factor];
 };
 
-static bool buildProgress(void* /*userPtr*/, double /*f*/)
+static bool buildProgress(void * /*userPtr*/, double /*f*/)
 {
   return true;
 }
 
-static void* createNode(RTCThreadLocalAllocator alloc, unsigned int childCount, void* /*userPtr*/)
+bool memoryMonitor(void * /*userPtr*/, ssize_t /*bytes*/, bool /*post*/)
 {
-  const size_t bytes =
-      sizeof(BuildTestNodeHeader) +
-      sizeof(void*) * childCount +
-      sizeof(RTCBounds) * childCount;
-
-  char* p = (char*) rtcThreadLocalAlloc(alloc, bytes, 16);
-  std::memset(p, 0, bytes);
-  ((BuildTestNodeHeader*)p)->childCount = childCount;
-  return p;
+  return true;
 }
 
-static void setNodeChildren(void* nodePtr, void** children, unsigned int childCount, void* /*userPtr*/)
+static void *createNode(RTCThreadLocalAllocator alloc, unsigned int childCount, void * /*userPtr*/)
 {
-  BuildTestNodeHeader* h = (BuildTestNodeHeader*) nodePtr;
-  void** out = (void**) (h + 1);
-  for (unsigned int i = 0; i < childCount; ++i) out[i] = children[i];
+  assert(childCount <= max_branching_factor);
+  if (childCount > max_branching_factor)
+    return nullptr;
+
+  Node *node = (Node *)rtcThreadLocalAlloc(alloc, sizeof(Node), 16);
+  new (node) Node();
+  return node;
 }
 
-static void setNodeBounds(void* nodePtr, const RTCBounds** bounds, unsigned int childCount, void* /*userPtr*/)
+static void setNodeChildren(void *nodePtr, void **children, unsigned int childCount, void * /*userPtr*/)
 {
-  BuildTestNodeHeader* h = (BuildTestNodeHeader*) nodePtr;
-  void** childBase = (void**) (h + 1);
-  RTCBounds* out = (RTCBounds*) (childBase + h->childCount);
-  for (unsigned int i = 0; i < childCount; ++i) out[i] = *bounds[i];
+  assert(childCount <= max_branching_factor);
+  if (childCount > max_branching_factor)
+    return;
+  Node *node = (Node *)nodePtr;
+  for (unsigned int i = 0; i < childCount; ++i)
+    node->children[i] = (Node *)children[i];
 }
 
-static void* createLeaf(RTCThreadLocalAllocator alloc,
-                        const RTCBuildPrimitive* prims,
+static void setNodeBounds(void *nodePtr, const RTCBounds **bounds, unsigned int childCount, void * /*userPtr*/)
+{
+  assert(childCount <= max_branching_factor);
+  /* deliberately empty in regression test */
+}
+
+static void *createLeaf(RTCThreadLocalAllocator alloc,
+                        const RTCBuildPrimitive *prims,
                         size_t primCount,
-                        void* /*userPtr*/)
+                        void * /*userPtr*/)
 {
-  const size_t bytes = sizeof(size_t) + primCount * sizeof(RTCBuildPrimitive);
-  char* p = (char*) rtcThreadLocalAlloc(alloc, bytes, 16);
-  *((size_t*)p) = primCount;
-  std::memcpy(p + sizeof(size_t), prims, primCount * sizeof(RTCBuildPrimitive));
-  return p;
+
+  Node *node = (Node *)rtcThreadLocalAlloc(alloc, sizeof(Node), 16);
+  new (node) Node();
+  return node;
 }
 
 static std::vector<RTCBuildPrimitive> makeGridPrimitives(size_t primitiveCount)
@@ -113,7 +125,7 @@ static bool runCase(unsigned int maxBranchingFactor)
   args.createLeaf = createLeaf;
   args.buildProgress = buildProgress;
 
-  void* root = rtcBuildBVH(&args);
+  void *root = rtcBuildBVH(&args);
 
   rtcReleaseBVH(bvh);
   rtcReleaseDevice(device);
@@ -122,6 +134,8 @@ static bool runCase(unsigned int maxBranchingFactor)
 
 int main()
 {
+  /* In the failure case, this test should assert or result in a segfault from stack overflow. */
+
   bool okOversized = runCase(64);
   bool okExtreme = runCase(std::numeric_limits<unsigned int>::max());
 
@@ -130,5 +144,6 @@ int main()
   if (!okExtreme)
     std::cerr << "Morton clamp regression failed for maxBranchingFactor=UINT_MAX\n";
 
+  std::cout << "Morton clamp regression test completed.\n";
   return (okOversized && okExtreme) ? 0 : 1;
 }
