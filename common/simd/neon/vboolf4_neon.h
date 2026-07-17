@@ -156,8 +156,8 @@ namespace embree
 
   __forceinline size_t movemask(const vboolf4& a) {
     uint32x4_t shifted = vshrq_n_u32(vreinterpretq_u32_f32(a.v), 31);
-    static const uint32x4_t bits = {0, 1, 2, 3};
-    uint32x4_t masked = vandq_u32(shifted, bits);
+    static const uint32x4_t bits = {1, 2, 4, 8};
+    uint32x4_t masked = vmulq_u32(shifted, bits);
     return vaddvq_u32(masked);
   }
 

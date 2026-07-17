@@ -79,8 +79,7 @@ namespace embree
       uint8x8_t t0 = vld1_u8(ptr);
       uint16x8_t t1 = vmovl_u8(t0);
       r.vl = vreinterpretq_s32_u32(vmovl_u16(vget_low_u16(t1)));
-      t1 = vmovl_u8(vld1_u8(ptr + 8));
-      r.vh = vreinterpretq_s32_u32(vmovl_u16(vget_low_u16(t1)));
+      r.vh = vreinterpretq_s32_u32(vmovl_u16(vget_high_u16(t1)));
       return r;
     }
     static __forceinline vint8 loadu(const unsigned char* ptr) { return load(ptr); }
