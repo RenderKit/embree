@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "neon_base.h"
+
 #define vboolf vboolf_impl
 #define vboold vboold_impl
 #define vint vint_impl
@@ -24,16 +26,16 @@ namespace embree
     typedef vfloat4 Float;
 
     enum  { size = 4 };
-    union { __m128 v; float f[4]; int i[4]; };
+    union { float32x4_t v; float f[4]; int i[4]; };
 
     // Constructors & Assignment
     __forceinline vfloat() {}
     __forceinline vfloat(const vfloat4& other) { v = other.v; }
     __forceinline vfloat4& operator =(const vfloat4& other) { v = other.v; return *this; }
 
-    __forceinline vfloat(__m128 a) : v(a) {}
-    __forceinline operator const __m128&() const { return v; }
-    __forceinline operator       __m128&()       { return v; }
+    __forceinline vfloat(float32x4_t a) : v(a) {}
+    __forceinline operator const float32x4_t&() const { return v; }
+    __forceinline operator       float32x4_t&()       { return v; }
 
     __forceinline vfloat(float a) : v(vdupq_n_f32(a)) {}
     __forceinline vfloat(float a, float b, float c, float d) {

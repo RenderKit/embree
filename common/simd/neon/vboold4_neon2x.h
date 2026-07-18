@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "neon_base.h"
+
 #define vboolf vboolf_impl
 #define vboold vboold_impl
 #define vint vint_impl
@@ -23,8 +25,7 @@ namespace embree
 
     enum  { size = 4 };
     union {
-      __m256d v;
-      struct { __m128d vl,vh; };
+      struct { float64x2_t vl, vh; } v;
       long long i[4];
     };
 
@@ -36,36 +37,31 @@ namespace embree
     __forceinline vboold(const vboold4& a) { v = a.v; }
     __forceinline vboold4& operator =(const vboold4& a) { v = a.v; return *this; }
 
-    __forceinline vboold(__m256d a) : v(a) {}
-    __forceinline vboold(__m256i a) : v(_mm256_castsi256_pd(a)) {}
-
-    __forceinline operator const __m256() const { return _mm256_castpd_ps(v); }
-    __forceinline operator const __m256i() const { return _mm256_castpd_si256(v); }
-    __forceinline operator const __m256d() const { return v; }
+    __forceinline vboold(const float64x2_t& a_lo, const float64x2_t& a_hi) { v.vl = a_lo; v.vh = a_hi; }
 
     __forceinline vboold(int a)
     {
       assert(a >= 0 && a <= 255);
-      vl = mm_lookupmask_pd[a & 0x3];
-      vh = mm_lookupmask_pd[a >> 2];
+      v.vl = neon_lookupmask_pd(a & 0x3);
+      v.vh = neon_lookupmask_pd(a >> 2);
     }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline vboold(FalseTy) : v(_mm256_setzero_pd()) {}
+    __forceinline vboold(FalseTy) { v.vl = vdupq_n_f64(0.0); v.vh = vdupq_n_f64(0.0); }
     __forceinline vboold(TrueTy) {
       uint64x2_t ones = vreinterpretq_u64_s32(vmvnq_s32(vdupq_n_s32(0)));
-      v.lo = vreinterpretq_f64_u64(ones);
-      v.hi = vreinterpretq_f64_u64(ones);
+      v.vl = vreinterpretq_f64_u64(ones);
+      v.vh = vreinterpretq_f64_u64(ones);
     }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline bool       operator [](size_t index) const { assert(index < 4); return (_mm256_movemask_pd(v) >> index) & 1; }
+    __forceinline bool       operator [](size_t index) const { assert(index < 4); return ((neon_movemask_pd(v.vl) | (neon_movemask_pd(v.vh) << 2)) >> index) & 1; }
     __forceinline long long& operator [](size_t index)       { assert(index < 4); return i[index]; }
   };
 
@@ -75,8 +71,8 @@ namespace embree
 
   __forceinline vboold4 operator !(const vboold4& a) {
     vboold4 r;
-    r.v.lo = vreinterpretq_f64_u32(vmvnq_u32(vreinterpretq_u32_f64(a.v.lo)));
-    r.v.hi = vreinterpretq_f64_u32(vmvnq_u32(vreinterpretq_u32_f64(a.v.hi)));
+    r.v.vl = vreinterpretq_f64_u32(vmvnq_u32(vreinterpretq_u32_f64(a.v.vl)));
+    r.v.vh = vreinterpretq_f64_u32(vmvnq_u32(vreinterpretq_u32_f64(a.v.vh)));
     return r;
   }
 
@@ -86,27 +82,27 @@ namespace embree
 
   __forceinline vboold4 operator &(const vboold4& a, const vboold4& b) {
     vboold4 r;
-    r.v.lo = vreinterpretq_f64_u64(vandq_u64(vreinterpretq_u64_f64(a.v.lo), vreinterpretq_u64_f64(b.v.lo)));
-    r.v.hi = vreinterpretq_f64_u64(vandq_u64(vreinterpretq_u64_f64(a.v.hi), vreinterpretq_u64_f64(b.v.hi)));
+    r.v.vl = vreinterpretq_f64_u64(vandq_u64(vreinterpretq_u64_f64(a.v.vl), vreinterpretq_u64_f64(b.v.vl)));
+    r.v.vh = vreinterpretq_f64_u64(vandq_u64(vreinterpretq_u64_f64(a.v.vh), vreinterpretq_u64_f64(b.v.vh)));
     return r;
   }
   __forceinline vboold4 operator |(const vboold4& a, const vboold4& b) {
     vboold4 r;
-    r.v.lo = vreinterpretq_f64_u64(vorrq_u64(vreinterpretq_u64_f64(a.v.lo), vreinterpretq_u64_f64(b.v.lo)));
-    r.v.hi = vreinterpretq_f64_u64(vorrq_u64(vreinterpretq_u64_f64(a.v.hi), vreinterpretq_u64_f64(b.v.hi)));
+    r.v.vl = vreinterpretq_f64_u64(vorrq_u64(vreinterpretq_u64_f64(a.v.vl), vreinterpretq_u64_f64(b.v.vl)));
+    r.v.vh = vreinterpretq_f64_u64(vorrq_u64(vreinterpretq_u64_f64(a.v.vh), vreinterpretq_u64_f64(b.v.vh)));
     return r;
   }
   __forceinline vboold4 operator ^(const vboold4& a, const vboold4& b) {
     vboold4 r;
-    r.v.lo = vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(a.v.lo), vreinterpretq_u64_f64(b.v.lo)));
-    r.v.hi = vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(a.v.hi), vreinterpretq_u64_f64(b.v.hi)));
+    r.v.vl = vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(a.v.vl), vreinterpretq_u64_f64(b.v.vl)));
+    r.v.vh = vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(a.v.vh), vreinterpretq_u64_f64(b.v.vh)));
     return r;
   }
 
   __forceinline vboold4 andn(const vboold4& a, const vboold4& b) {
     vboold4 r;
-    r.v.lo = vreinterpretq_f64_u64(vbicq_u64(vreinterpretq_u64_f64(a.v.lo), vreinterpretq_u64_f64(b.v.lo)));
-    r.v.hi = vreinterpretq_f64_u64(vbicq_u64(vreinterpretq_u64_f64(a.v.hi), vreinterpretq_u64_f64(b.v.hi)));
+    r.v.vl = vreinterpretq_f64_u64(vbicq_u64(vreinterpretq_u64_f64(a.v.vl), vreinterpretq_u64_f64(b.v.vl)));
+    r.v.vh = vreinterpretq_f64_u64(vbicq_u64(vreinterpretq_u64_f64(a.v.vh), vreinterpretq_u64_f64(b.v.vh)));
     return r;
   }
 
@@ -120,23 +116,23 @@ namespace embree
 
   __forceinline vboold4 operator !=(const vboold4& a, const vboold4& b) {
     vboold4 r;
-    r.v.lo = vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(a.v.lo), vreinterpretq_u64_f64(b.v.lo)));
-    r.v.hi = vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(a.v.hi), vreinterpretq_u64_f64(b.v.hi)));
+    r.v.vl = vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(a.v.vl), vreinterpretq_u64_f64(b.v.vl)));
+    r.v.vh = vreinterpretq_f64_u64(veorq_u64(vreinterpretq_u64_f64(a.v.vh), vreinterpretq_u64_f64(b.v.vh)));
     return r;
   }
   __forceinline vboold4 operator ==(const vboold4& a, const vboold4& b) {
     vboold4 r;
-    uint64x2_t xor_lo = veorq_u64(vreinterpretq_u64_f64(a.v.lo), vreinterpretq_u64_f64(b.v.lo));
-    uint64x2_t xor_hi = veorq_u64(vreinterpretq_u64_f64(a.v.hi), vreinterpretq_u64_f64(b.v.hi));
-    r.v.lo = vreinterpretq_f64_u32(vmvnq_u32(vreinterpretq_u32_u64(xor_lo)));
-    r.v.hi = vreinterpretq_f64_u32(vmvnq_u32(vreinterpretq_u32_u64(xor_hi)));
+    uint64x2_t xor_lo = veorq_u64(vreinterpretq_u64_f64(a.v.vl), vreinterpretq_u64_f64(b.v.vl));
+    uint64x2_t xor_hi = veorq_u64(vreinterpretq_u64_f64(a.v.vh), vreinterpretq_u64_f64(b.v.vh));
+    r.v.vl = vreinterpretq_f64_u32(vmvnq_u32(vreinterpretq_u32_u64(xor_lo)));
+    r.v.vh = vreinterpretq_f64_u32(vmvnq_u32(vreinterpretq_u32_u64(xor_hi)));
     return r;
   }
 
   __forceinline vboold4 select(const vboold4& mask, const vboold4& t, const vboold4& f) {
     vboold4 r;
-    r.v.lo = vreinterpretq_f64_u64(vbslq_u64(vreinterpretq_u64_f64(mask.v.lo), vreinterpretq_u64_f64(t.v.lo), vreinterpretq_u64_f64(f.v.lo)));
-    r.v.hi = vreinterpretq_f64_u64(vbslq_u64(vreinterpretq_u64_f64(mask.v.hi), vreinterpretq_u64_f64(t.v.hi), vreinterpretq_u64_f64(f.v.hi)));
+    r.v.vl = vreinterpretq_f64_u64(vbslq_u64(vreinterpretq_u64_f64(mask.v.vl), vreinterpretq_u64_f64(t.v.vl), vreinterpretq_u64_f64(f.v.vl)));
+    r.v.vh = vreinterpretq_f64_u64(vbslq_u64(vreinterpretq_u64_f64(mask.v.vh), vreinterpretq_u64_f64(t.v.vh), vreinterpretq_u64_f64(f.v.vh)));
     return r;
   }
 
@@ -146,44 +142,52 @@ namespace embree
 
   __forceinline vboold4 unpacklo(const vboold4& a, const vboold4& b) {
     vboold4 r;
-    r.v.lo = vreinterpretq_f64_u64(vzip1q_u64(vreinterpretq_u64_f64(a.v.lo), vreinterpretq_u64_f64(b.v.lo)));
-    r.v.hi = vreinterpretq_f64_u64(vzip1q_u64(vreinterpretq_u64_f64(a.v.hi), vreinterpretq_u64_f64(b.v.hi)));
+    r.v.vl = vreinterpretq_f64_u64(vzip1q_u64(vreinterpretq_u64_f64(a.v.vl), vreinterpretq_u64_f64(b.v.vl)));
+    r.v.vh = vreinterpretq_f64_u64(vzip1q_u64(vreinterpretq_u64_f64(a.v.vh), vreinterpretq_u64_f64(b.v.vh)));
     return r;
   }
   __forceinline vboold4 unpackhi(const vboold4& a, const vboold4& b) {
     vboold4 r;
-    r.v.lo = vreinterpretq_f64_u64(vzip2q_u64(vreinterpretq_u64_f64(a.v.lo), vreinterpretq_u64_f64(b.v.lo)));
-    r.v.hi = vreinterpretq_f64_u64(vzip2q_u64(vreinterpretq_u64_f64(a.v.hi), vreinterpretq_u64_f64(b.v.hi)));
+    r.v.vl = vreinterpretq_f64_u64(vzip2q_u64(vreinterpretq_u64_f64(a.v.vl), vreinterpretq_u64_f64(b.v.vl)));
+    r.v.vh = vreinterpretq_f64_u64(vzip2q_u64(vreinterpretq_u64_f64(a.v.vh), vreinterpretq_u64_f64(b.v.vh)));
     return r;
   }
 
   template<int i0, int i1, int i2, int i3>
   __forceinline vboold4 shuffle(const vboold4& v) {
-    return _mm256_permute4x64_pd(v, _MM_SHUFFLE(i3, i2, i1, i0));
+    float64x2_t src[4] = { v.v.vl, v.v.vl, v.v.vh, v.v.vh };
+    double r0 = vgetq_lane_f64(src[i0], i0 & 1);
+    double r1 = vgetq_lane_f64(src[i1], i1 & 1);
+    double r2 = vgetq_lane_f64(src[i2], i2 & 1);
+    double r3 = vgetq_lane_f64(src[i3], i3 & 1);
+    vboold4 r;
+    r.v.vl = vcombine_f64(vcreate_f64(*(const uint64_t*)&r0), vcreate_f64(*(const uint64_t*)&r1));
+    r.v.vh = vcombine_f64(vcreate_f64(*(const uint64_t*)&r2), vcreate_f64(*(const uint64_t*)&r3));
+    return r;
   }
 
   template<int i>
   __forceinline vboold4 shuffle(const vboold4& v) {
-    return _mm256_permute4x64_pd(v, _MM_SHUFFLE(i, i, i, i));
+    return shuffle<i, i, i, i>(v);
   }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reduction Operations
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline bool reduce_and(const vboold4& a) { return _mm256_movemask_pd(a) == (unsigned int)0xf; }
-  __forceinline bool reduce_or (const vboold4& a) { return !_mm256_testz_pd(a,a); }
+  __forceinline unsigned int movemask(const vboold4& a) { return neon_movemask_pd(a.v.vl) | (neon_movemask_pd(a.v.vh) << 2); }
+  __forceinline bool reduce_and(const vboold4& a) { return movemask(a) == 0xf; }
+  __forceinline bool reduce_or (const vboold4& a) { return movemask(a) != 0; }
 
-  __forceinline bool all (const vboold4& a) { return _mm256_movemask_pd(a) == (unsigned int)0xf; }
-  __forceinline bool any (const vboold4& a) { return !_mm256_testz_pd(a,a); }
-  __forceinline bool none(const vboold4& a) { return _mm256_testz_pd(a,a) != 0; }
+  __forceinline bool all (const vboold4& a) { return movemask(a) == 0xf; }
+  __forceinline bool any (const vboold4& a) { return movemask(a) != 0; }
+  __forceinline bool none(const vboold4& a) { return movemask(a) == 0; }
 
   __forceinline bool all (const vboold4& valid, const vboold4& b) { return all((!valid) | b); }
   __forceinline bool any (const vboold4& valid, const vboold4& b) { return any(valid & b); }
   __forceinline bool none(const vboold4& valid, const vboold4& b) { return none(valid & b); }
 
-  __forceinline unsigned int movemask(const vboold4& a) { return _mm256_movemask_pd(a); }
-  __forceinline size_t       popcnt  (const vboold4& a) { return popcnt((size_t)_mm256_movemask_pd(a)); }
+  __forceinline size_t popcnt(const vboold4& a) { return popcnt((size_t)movemask(a)); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Get/Set Functions

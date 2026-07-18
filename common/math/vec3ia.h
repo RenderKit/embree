@@ -36,6 +36,9 @@ namespace embree
 
     __forceinline Vec3ia( ) {}
     __forceinline Vec3ia( const __m128i a ) : m128(a) {}
+#if defined(__aarch64__)
+    __forceinline Vec3ia( const int32x4_t a ) : m128(vreinterpretq_s64_s32(a)) {}
+#endif
     __forceinline Vec3ia( const Vec3ia& other ) : m128(other.m128) {}
     __forceinline Vec3ia& operator =(const Vec3ia& other) { m128 = other.m128; return *this; }
 

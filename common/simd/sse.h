@@ -11,11 +11,7 @@
 
 namespace embree 
 {
-#if defined(__aarch64__)
-  __forceinline __m128 blendv_ps(__m128 f, __m128 t, __m128 mask) { 
-    return vbslq_f32(vreinterpretq_u32_f32(mask), t, f);
-  }
-#elif defined(__SSE4_1__)
+#if defined(__SSE4_1__)
   __forceinline __m128 blendv_ps(__m128 f, __m128 t, __m128 mask) { 
     return _mm_blendv_ps(f,t,mask);
   }
@@ -30,10 +26,8 @@ namespace embree
 }
 
 #if defined(__aarch64__)
-#include "neon/vboolf4_neon.h"
-#include "neon/vint4_neon.h"
-#include "neon/vuint4_neon.h"
-#include "neon/vfloat4_neon.h"
+#include "arm/sse2neon.h"
+#include "neon.h"
 #elif defined(__AVX512VL__)
 #include "vboolf4_avx512.h"
 #include "vint4_sse2.h"

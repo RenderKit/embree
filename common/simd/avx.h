@@ -6,13 +6,7 @@
 #include "sse.h"
 
 #if defined(__aarch64__)
-#include "neon/vboolf8_neon2x.h"
-#include "neon/vboold4_neon2x.h"
-#include "neon/vint8_neon2x.h"
-#include "neon/vuint8_neon2x.h"
-#include "neon/vllong4_neon2x.h"
-#include "neon/vfloat8_neon2x.h"
-#include "neon/vdouble4_neon2x.h"
+#include "neon2x.h"
 #else
 #if defined(__AVX512VL__)
 #include "vboolf8_avx512.h"

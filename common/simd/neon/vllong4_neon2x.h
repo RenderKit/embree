@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "neon_base.h"
+
 #define vboolf vboolf_impl
 #define vboold vboold_impl
 #define vint vint_impl
@@ -23,7 +25,7 @@ namespace embree
 
     enum  { size = 4 };
     union {
-      __m256i v;
+      struct { int32x4_t lo, hi; } v;
       long long i[4];
     };
 
@@ -35,9 +37,7 @@ namespace embree
     __forceinline vllong(const vllong4& t) { v = t.v; }
     __forceinline vllong4& operator =(const vllong4& f) { v = f.v; return *this; }
 
-    __forceinline vllong(const __m256i& t) { v = t; }
-    __forceinline operator __m256i() const { return v; }
-    __forceinline operator __m256d() const { return _mm256_castsi256_pd(v); }
+    __forceinline vllong(const int32x4_t& a_lo, const int32x4_t& a_hi) { v.lo = a_lo; v.hi = a_hi; }
 
     __forceinline vllong(long long a) {
       int64x2_t t = vdupq_n_s64(a);
@@ -119,16 +119,16 @@ namespace embree
     static __forceinline void storeu(const vboold4& mask, long long* ptr, const vllong4& f) {
       vllong4 tmp = loadu(ptr);
       vllong4 r;
-      r.v.lo = vreinterpretq_s32_s64(vbslq_s64(vreinterpretq_s64_f64(mask.v.lo), vreinterpretq_s64_s32(f.v.lo), vreinterpretq_s64_s32(tmp.v.lo)));
-      r.v.hi = vreinterpretq_s32_s64(vbslq_s64(vreinterpretq_s64_f64(mask.v.hi), vreinterpretq_s64_s32(f.v.hi), vreinterpretq_s64_s32(tmp.v.hi)));
+      r.v.lo = vreinterpretq_s32_s64(vbslq_s64(vreinterpretq_s64_f64(mask.v.vl), vreinterpretq_s64_s32(f.v.lo), vreinterpretq_s64_s32(tmp.v.lo)));
+      r.v.hi = vreinterpretq_s32_s64(vbslq_s64(vreinterpretq_s64_f64(mask.v.vh), vreinterpretq_s64_s32(f.v.hi), vreinterpretq_s64_s32(tmp.v.hi)));
       storeu(ptr, r);
     }
 
     static __forceinline void store(const vboold4& mask, void* ptr, const vllong4& f) {
       vllong4 tmp = loadu(ptr);
       vllong4 r;
-      r.v.lo = vreinterpretq_s32_s64(vbslq_s64(vreinterpretq_s64_f64(mask.v.lo), vreinterpretq_s64_s32(f.v.lo), vreinterpretq_s64_s32(tmp.v.lo)));
-      r.v.hi = vreinterpretq_s32_s64(vbslq_s64(vreinterpretq_s64_f64(mask.v.hi), vreinterpretq_s64_s32(f.v.hi), vreinterpretq_s64_s32(tmp.v.hi)));
+      r.v.lo = vreinterpretq_s32_s64(vbslq_s64(vreinterpretq_s64_f64(mask.v.vl), vreinterpretq_s64_s32(f.v.lo), vreinterpretq_s64_s32(tmp.v.lo)));
+      r.v.hi = vreinterpretq_s32_s64(vbslq_s64(vreinterpretq_s64_f64(mask.v.vh), vreinterpretq_s64_s32(f.v.hi), vreinterpretq_s64_s32(tmp.v.hi)));
       store(ptr, r);
     }
 
@@ -146,8 +146,8 @@ namespace embree
 
   __forceinline vllong4 select(const vboold4& m, const vllong4& t, const vllong4& f) {
     vllong4 r;
-    uint64x2_t mask_lo = vreinterpretq_u64_f64(m.v.lo);
-    uint64x2_t mask_hi = vreinterpretq_u64_f64(m.v.hi);
+    uint64x2_t mask_lo = vreinterpretq_u64_f64(m.v.vl);
+    uint64x2_t mask_hi = vreinterpretq_u64_f64(m.v.vh);
     r.v.lo = vreinterpretq_s32_s64(vbslq_s64(mask_lo, vreinterpretq_s64_s32(t.v.lo), vreinterpretq_s64_s32(f.v.lo)));
     r.v.hi = vreinterpretq_s32_s64(vbslq_s64(mask_hi, vreinterpretq_s64_s32(t.v.hi), vreinterpretq_s64_s32(f.v.hi)));
     return r;
@@ -159,8 +159,8 @@ namespace embree
 
   __forceinline vboold4 asBool(const vllong4& a) {
     vboold4 r;
-    r.v.lo = vreinterpretq_f64_s64(vshrq_n_s64(vreinterpretq_s64_s32(a.v.lo), 63));
-    r.v.hi = vreinterpretq_f64_s64(vshrq_n_s64(vreinterpretq_s64_s32(a.v.hi), 63));
+    r.v.vl = vreinterpretq_f64_s64(vshrq_n_s64(vreinterpretq_s64_s32(a.v.lo), 63));
+    r.v.vh = vreinterpretq_f64_s64(vshrq_n_s64(vreinterpretq_s64_s32(a.v.hi), 63));
     return r;
   }
 
@@ -284,15 +284,15 @@ namespace embree
 
   __forceinline vboold4 operator ==(const vllong4& a, const vllong4& b) {
     vboold4 r;
-    r.v.lo = vreinterpretq_f64_u64(vceqq_s64(vreinterpretq_s64_s32(a.v.lo), vreinterpretq_s64_s32(b.v.lo)));
-    r.v.hi = vreinterpretq_f64_u64(vceqq_s64(vreinterpretq_s64_s32(a.v.hi), vreinterpretq_s64_s32(b.v.hi)));
+    r.v.vl = vreinterpretq_f64_u64(vceqq_s64(vreinterpretq_s64_s32(a.v.lo), vreinterpretq_s64_s32(b.v.lo)));
+    r.v.vh = vreinterpretq_f64_u64(vceqq_s64(vreinterpretq_s64_s32(a.v.hi), vreinterpretq_s64_s32(b.v.hi)));
     return r;
   }
   __forceinline vboold4 operator !=(const vllong4& a, const vllong4& b) { return !(a == b); }
   __forceinline vboold4 operator > (const vllong4& a, const vllong4& b) {
     vboold4 r;
-    r.v.lo = vreinterpretq_f64_u64(vcgtq_s64(vreinterpretq_s64_s32(a.v.lo), vreinterpretq_s64_s32(b.v.lo)));
-    r.v.hi = vreinterpretq_f64_u64(vcgtq_s64(vreinterpretq_s64_s32(a.v.hi), vreinterpretq_s64_s32(b.v.hi)));
+    r.v.vl = vreinterpretq_f64_u64(vcgtq_s64(vreinterpretq_s64_s32(a.v.lo), vreinterpretq_s64_s32(b.v.lo)));
+    r.v.vh = vreinterpretq_f64_u64(vcgtq_s64(vreinterpretq_s64_s32(a.v.hi), vreinterpretq_s64_s32(b.v.hi)));
     return r;
   }
   __forceinline vboold4 operator < (const vllong4& a, const vllong4& b) { return b > a; }

@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "neon_base.h"
+
 #define vboolf vboolf_impl
 #define vboold vboold_impl
 #define vint vint_impl
@@ -24,19 +26,17 @@ namespace embree
     typedef vfloat8 Float;
 
     enum  { size = 8 };
-    union { __m256 v; float f[8]; int i[8]; };
+    union { struct { float32x4_t lo, hi; } v; float f[8]; int i[8]; };
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constructors, Assignment & Cast Operators
     ////////////////////////////////////////////////////////////////////////////////
 
     __forceinline vfloat() {}
-    __forceinline vfloat(const vfloat8& other) { v = other.v; }
-    __forceinline vfloat8& operator =(const vfloat8& other) { v = other.v; return *this; }
+    __forceinline vfloat(const vfloat8& other) { v.lo = other.v.lo; v.hi = other.v.hi; }
+    __forceinline vfloat8& operator =(const vfloat8& other) { v.lo = other.v.lo; v.hi = other.v.hi; return *this; }
 
-    __forceinline vfloat(__m256 a) : v(a) {}
-    __forceinline operator const __m256&() const { return v; }
-    __forceinline operator       __m256&()       { return v; }
+    __forceinline vfloat(float32x4_t a_lo, float32x4_t a_hi) { v.lo = a_lo; v.hi = a_hi; }
 
     __forceinline explicit vfloat(const vfloat4& a) { v.lo = a.v; v.hi = a.v; }
     __forceinline vfloat(const vfloat4& a, const vfloat4& b) { v.lo = a.v; v.hi = b.v; }
@@ -59,9 +59,14 @@ namespace embree
       v.lo = vld1q_f32(lo); v.hi = vld1q_f32(hi);
     }
 
-    __forceinline explicit vfloat(__m256i a) {
-      v.lo = vcvtq_f32_s32(a.lo);
-      v.hi = vcvtq_f32_s32(a.hi);
+    __forceinline explicit vfloat(int32x4_t a_lo, int32x4_t a_hi) {
+      v.lo = vcvtq_f32_s32(a_lo);
+      v.hi = vcvtq_f32_s32(a_hi);
+    }
+
+    __forceinline explicit vfloat(const vint8& a) {
+      v.lo = vcvtq_f32_s32(a.v.vl);
+      v.hi = vcvtq_f32_s32(a.v.vh);
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -142,8 +147,8 @@ namespace embree
       vfloat8 r;
       float32x4_t tlo = vld1q_f32((const float*)ptr);
       float32x4_t thi = vld1q_f32((const float*)ptr + 4);
-      r.v.lo = vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(mask.vl), vreinterpretq_u32_f32(tlo)));
-      r.v.hi = vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(mask.vh), vreinterpretq_u32_f32(thi)));
+      r.v.lo = vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(mask.v.vl), vreinterpretq_u32_f32(tlo)));
+      r.v.hi = vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(mask.v.vh), vreinterpretq_u32_f32(thi)));
       return r;
     }
     static __forceinline vfloat8 loadu(const vboolf8& mask, const void* ptr) {
@@ -153,15 +158,15 @@ namespace embree
     static __forceinline void store (const vboolf8& mask, void* ptr, const vfloat8& v_arg) {
       vfloat8 old = load(ptr);
       vfloat8 r;
-      r.v.lo = vreinterpretq_f32_u32(vbslq_u32(vreinterpretq_u32_f32(mask.vl), vreinterpretq_u32_f32(v_arg.v.lo), vreinterpretq_u32_f32(old.v.lo)));
-      r.v.hi = vreinterpretq_f32_u32(vbslq_u32(vreinterpretq_u32_f32(mask.vh), vreinterpretq_u32_f32(v_arg.v.hi), vreinterpretq_u32_f32(old.v.hi)));
+      r.v.lo = vreinterpretq_f32_u32(vbslq_u32(vreinterpretq_u32_f32(mask.v.vl), vreinterpretq_u32_f32(v_arg.v.lo), vreinterpretq_u32_f32(old.v.lo)));
+      r.v.hi = vreinterpretq_f32_u32(vbslq_u32(vreinterpretq_u32_f32(mask.v.vh), vreinterpretq_u32_f32(v_arg.v.hi), vreinterpretq_u32_f32(old.v.hi)));
       store(ptr, r);
     }
     static __forceinline void storeu(const vboolf8& mask, void* ptr, const vfloat8& v_arg) {
       vfloat8 old = loadu(ptr);
       vfloat8 r;
-      r.v.lo = vreinterpretq_f32_u32(vbslq_u32(vreinterpretq_u32_f32(mask.vl), vreinterpretq_u32_f32(v_arg.v.lo), vreinterpretq_u32_f32(old.v.lo)));
-      r.v.hi = vreinterpretq_f32_u32(vbslq_u32(vreinterpretq_u32_f32(mask.vh), vreinterpretq_u32_f32(v_arg.v.hi), vreinterpretq_u32_f32(old.v.hi)));
+      r.v.lo = vreinterpretq_f32_u32(vbslq_u32(vreinterpretq_u32_f32(mask.v.vl), vreinterpretq_u32_f32(v_arg.v.lo), vreinterpretq_u32_f32(old.v.lo)));
+      r.v.hi = vreinterpretq_f32_u32(vbslq_u32(vreinterpretq_u32_f32(mask.v.vh), vreinterpretq_u32_f32(v_arg.v.hi), vreinterpretq_u32_f32(old.v.hi)));
       storeu(ptr, r);
     }
 
@@ -172,7 +177,7 @@ namespace embree
       return r;
     }
 
-    static __forceinline void store_nt(void* ptr, const vfloat8& v) {
+    static __forceinline void store_NT(void* ptr, const vfloat8& v) {
       vst1q_f32((float*)ptr, v.v.lo);
       vst1q_f32((float*)ptr + 4, v.v.hi);
     }
@@ -245,19 +250,19 @@ namespace embree
 
   __forceinline vfloat8 asFloat(const vint8& a) {
     vfloat8 r;
-    r.v.lo = vreinterpretq_f32_s32(a.vl);
-    r.v.hi = vreinterpretq_f32_s32(a.vh);
+    r.v.lo = vreinterpretq_f32_s32(a.v.vl);
+    r.v.hi = vreinterpretq_f32_s32(a.v.vh);
     return r;
   }
   __forceinline vint8 asInt(const vfloat8& a) {
     vint8 r;
-    r.vl = vreinterpretq_s32_f32(a.v.lo);
-    r.vh = vreinterpretq_s32_f32(a.v.hi);
+    r.v.vl = vreinterpretq_s32_f32(a.v.lo);
+    r.v.vh = vreinterpretq_s32_f32(a.v.hi);
     return r;
   }
 
-  __forceinline vint8   toInt  (const vfloat8& a) { return vint8(a); }
-  __forceinline vfloat8 toFloat(const vint8&   a) { return vfloat8(a); }
+  __forceinline vint8   toInt  (const vfloat8& a) { return vint8(vreinterpretq_s32_f32(a.v.lo), vreinterpretq_s32_f32(a.v.hi)); }
+  __forceinline vfloat8 toFloat(const vint8&   a) { return vfloat8(vcvtq_f32_s32(a.v.vl), vcvtq_f32_s32(a.v.vh)); }
 
   __forceinline vfloat8 operator +(const vfloat8& a) { return a; }
   __forceinline vfloat8 operator -(const vfloat8& a) {
@@ -389,8 +394,8 @@ namespace embree
   }
   __forceinline vfloat8 operator ^(const vfloat8& a, const vint8& b) {
     vfloat8 r;
-    r.v.lo = vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(a.v.lo), vreinterpretq_u32_s32(b.vl)));
-    r.v.hi = vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(a.v.hi), vreinterpretq_u32_s32(b.vh)));
+    r.v.lo = vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(a.v.lo), vreinterpretq_u32_s32(b.v.vl)));
+    r.v.hi = vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(a.v.hi), vreinterpretq_u32_s32(b.v.vh)));
     return r;
   }
 
@@ -491,45 +496,45 @@ namespace embree
 
   static __forceinline vboolf8 operator ==(const vfloat8& a, const vfloat8& b) {
     vboolf8 r;
-    r.vl = vreinterpretq_f32_u32(vceqq_f32(a.v.lo, b.v.lo));
-    r.vh = vreinterpretq_f32_u32(vceqq_f32(a.v.hi, b.v.hi));
+    r.v.vl = vreinterpretq_f32_u32(vceqq_f32(a.v.lo, b.v.lo));
+    r.v.vh = vreinterpretq_f32_u32(vceqq_f32(a.v.hi, b.v.hi));
     return r;
   }
   static __forceinline vboolf8 operator !=(const vfloat8& a, const vfloat8& b) {
     vboolf8 r;
-    r.vl = vreinterpretq_f32_u32(vmvnq_u32(vceqq_f32(a.v.lo, b.v.lo)));
-    r.vh = vreinterpretq_f32_u32(vmvnq_u32(vceqq_f32(a.v.hi, b.v.hi)));
+    r.v.vl = vreinterpretq_f32_u32(vmvnq_u32(vceqq_f32(a.v.lo, b.v.lo)));
+    r.v.vh = vreinterpretq_f32_u32(vmvnq_u32(vceqq_f32(a.v.hi, b.v.hi)));
     return r;
   }
   static __forceinline vboolf8 operator <(const vfloat8& a, const vfloat8& b) {
     vboolf8 r;
-    r.vl = vreinterpretq_f32_u32(vcltq_f32(a.v.lo, b.v.lo));
-    r.vh = vreinterpretq_f32_u32(vcltq_f32(a.v.hi, b.v.hi));
+    r.v.vl = vreinterpretq_f32_u32(vcltq_f32(a.v.lo, b.v.lo));
+    r.v.vh = vreinterpretq_f32_u32(vcltq_f32(a.v.hi, b.v.hi));
     return r;
   }
   static __forceinline vboolf8 operator >=(const vfloat8& a, const vfloat8& b) {
     vboolf8 r;
-    r.vl = vreinterpretq_f32_u32(vcgeq_f32(a.v.lo, b.v.lo));
-    r.vh = vreinterpretq_f32_u32(vcgeq_f32(a.v.hi, b.v.hi));
+    r.v.vl = vreinterpretq_f32_u32(vcgeq_f32(a.v.lo, b.v.lo));
+    r.v.vh = vreinterpretq_f32_u32(vcgeq_f32(a.v.hi, b.v.hi));
     return r;
   }
   static __forceinline vboolf8 operator >(const vfloat8& a, const vfloat8& b) {
     vboolf8 r;
-    r.vl = vreinterpretq_f32_u32(vcgtq_f32(a.v.lo, b.v.lo));
-    r.vh = vreinterpretq_f32_u32(vcgtq_f32(a.v.hi, b.v.hi));
+    r.v.vl = vreinterpretq_f32_u32(vcgtq_f32(a.v.lo, b.v.lo));
+    r.v.vh = vreinterpretq_f32_u32(vcgtq_f32(a.v.hi, b.v.hi));
     return r;
   }
   static __forceinline vboolf8 operator <=(const vfloat8& a, const vfloat8& b) {
     vboolf8 r;
-    r.vl = vreinterpretq_f32_u32(vcleq_f32(a.v.lo, b.v.lo));
-    r.vh = vreinterpretq_f32_u32(vcleq_f32(a.v.hi, b.v.hi));
+    r.v.vl = vreinterpretq_f32_u32(vcleq_f32(a.v.lo, b.v.lo));
+    r.v.vh = vreinterpretq_f32_u32(vcleq_f32(a.v.hi, b.v.hi));
     return r;
   }
 
   static __forceinline vfloat8 select(const vboolf8& m, const vfloat8& t, const vfloat8& f) {
     vfloat8 r;
-    r.v.lo = vbslq_f32(vreinterpretq_u32_f32(m.vl), t.v.lo, f.v.lo);
-    r.v.hi = vbslq_f32(vreinterpretq_u32_f32(m.vh), t.v.hi, f.v.hi);
+    r.v.lo = vbslq_f32(vreinterpretq_u32_f32(m.v.vl), t.v.lo, f.v.lo);
+    r.v.hi = vbslq_f32(vreinterpretq_u32_f32(m.v.vh), t.v.hi, f.v.hi);
     return r;
   }
 
@@ -636,27 +641,32 @@ namespace embree
 
   template<int i>
   __forceinline vfloat8 shuffle(const vfloat8& v) {
-    return _mm256_permute_ps(v, _MM_SHUFFLE(i, i, i, i));
+    float32x4x2_t val = neon_permute_ps<i>(v.v.lo, v.v.hi);
+    return vfloat8(val.val[0], val.val[1]);
   }
 
   template<int i0, int i1>
   __forceinline vfloat8 shuffle4(const vfloat8& v) {
-    return _mm256_permute2f128_ps(v, v, (i1 << 4) | (i0 << 0));
+    float32x4x2_t val = neon_permute2f128_ps<i0,i1>(v.v.lo, v.v.hi);
+    return vfloat8(val.val[0], val.val[1]);
   }
 
   template<int i0, int i1>
   __forceinline vfloat8 shuffle4(const vfloat8& a, const vfloat8& b) {
-    return _mm256_permute2f128_ps(a, b, (i1 << 4) | (i0 << 0));
+    float32x4x2_t val = neon_permute2f128_ps<i0,i1>(a.v.lo, a.v.hi, b.v.lo, b.v.hi);
+    return vfloat8(val.val[0], val.val[1]);
   }
 
   template<int i0, int i1, int i2, int i3>
   __forceinline vfloat8 shuffle(const vfloat8& v) {
-    return _mm256_permute_ps(v, _MM_SHUFFLE(i3, i2, i1, i0));
+    float32x4x2_t val = neon_permute_ps<i0,i1,i2,i3>(v.v.lo, v.v.hi);
+    return vfloat8(val.val[0], val.val[1]);
   }
 
   template<int i0, int i1, int i2, int i3>
   __forceinline vfloat8 shuffle(const vfloat8& a, const vfloat8& b) {
-    return _mm256_shuffle_ps(a, b, _MM_SHUFFLE(i3, i2, i1, i0));
+    float32x4x2_t val = neon_shuffle_ps<i0,i1,i2,i3>(a.v.lo, a.v.hi, b.v.lo, b.v.hi);
+    return vfloat8(val.val[0], val.val[1]);
   }
 
   __forceinline vfloat8 broadcast(const float* ptr) {
@@ -684,11 +694,16 @@ namespace embree
   static __forceinline vfloat8 shift_right_1(const vfloat8& x) {
     const vfloat8 t0 = shuffle<1,2,3,0>(x);
     const vfloat8 t1 = shuffle4<1,0>(t0);
-    return _mm256_blend_ps(t0,t1,0x88);
+    vfloat8 r;
+    r.v.lo = t0.v.lo;
+    r.v.hi = vsetq_lane_f32(vgetq_lane_f32(t1.v.hi, 3), t0.v.hi, 3);
+    return r;
   }
 
   __forceinline vint8 floori(const vfloat8& a) {
-    return vint8(floor(a));
+    float32x4_t floored_lo = vrndmq_f32(a.v.lo);
+    float32x4_t floored_hi = vrndmq_f32(a.v.hi);
+    return vint8(vcvtq_s32_f32(floored_lo), vcvtq_s32_f32(floored_hi));
   }
 
   ////////////////////////////////////////////////////////////////////////////////

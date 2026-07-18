@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "neon_base.h"
+
 #define vboolf vboolf_impl
 #define vboold vboold_impl
 #define vint vint_impl
@@ -24,7 +26,7 @@ namespace embree
     typedef vfloat4 Float;
 
     enum  { size = 4 };
-    union { __m128 v; int i[4]; };
+    union { float32x4_t v; int i[4]; };
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constructors, Assignment & Cast Operators
@@ -34,10 +36,10 @@ namespace embree
     __forceinline vboolf(const vboolf4& other) { v = other.v; }
     __forceinline vboolf4& operator =(const vboolf4& other) { v = other.v; return *this; }
 
-    __forceinline vboolf(__m128 input) : v(input) {}
-    __forceinline operator const __m128&() const { return v; }
-    __forceinline operator const __m128i() const { return vreinterpretq_s32_f32(v); }
-    __forceinline operator const __m128d() const { return vreinterpretq_f64_f32(v); }
+    __forceinline vboolf(float32x4_t input) : v(input) {}
+    __forceinline operator const float32x4_t&() const { return v; }
+    __forceinline operator const int32x4_t() const { return vreinterpretq_s32_f32(v); }
+    __forceinline operator const float64x2_t() const { return vreinterpretq_f64_f32(v); }
 
     __forceinline vboolf(bool a) : v(vreinterpretq_f32_u32(vdupq_n_u32(a ? 0xFFFFFFFF : 0))) {}
     __forceinline vboolf(bool a, bool b) {
@@ -51,10 +53,10 @@ namespace embree
       uint32_t lanes[4] = { a ? 0xFFFFFFFF : 0, b ? 0xFFFFFFFF : 0, c ? 0xFFFFFFFF : 0, d ? 0xFFFFFFFF : 0 };
       v = vreinterpretq_f32_u32(vld1q_u32(lanes));
     }
-    __forceinline vboolf(int mask) { assert(mask >= 0 && mask < 16); v = mm_lookupmask_ps[mask]; }
-    __forceinline vboolf(unsigned int mask) { assert(mask < 16); v = mm_lookupmask_ps[mask]; }
+    __forceinline vboolf(int mask) { assert(mask >= 0 && mask < 16); v = neon_lookupmask_ps(mask); }
+    __forceinline vboolf(unsigned int mask) { assert(mask < 16); v = neon_lookupmask_ps(mask); }
 
-    __forceinline __m128i mask32() const { return vreinterpretq_s32_f32(v); }
+    __forceinline int32x4_t mask32() const { return vreinterpretq_s32_f32(v); }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants

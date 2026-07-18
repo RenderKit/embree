@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "neon_base.h"
 #include "../../math/emath.h"
 
 #define vboolf vboolf_impl
@@ -26,16 +27,15 @@ namespace embree
     typedef vfloat4 Float;
 
     enum  { size = 4 };
-    union { __m128i v; int i[4]; };
+    union { int32x4_t v; int i[4]; };
 
     // Constructors & Assignment
     __forceinline vint() {}
     __forceinline vint(const vint4& a) { v = a.v; }
     __forceinline vint4& operator =(const vint4& a) { v = a.v; return *this; }
 
-    __forceinline vint(__m128i a) : v(a) {}
-    __forceinline operator const __m128i&() const { return v; }
-    __forceinline operator       __m128i&()       { return v; }
+    __forceinline vint(int32x4_t a) : v(a) {}
+    __forceinline operator const int32x4_t&() const { return v; }
 
     __forceinline vint(int a) : v(vdupq_n_s32(a)) {}
     __forceinline vint(int a, int b, int c, int d) {
@@ -43,8 +43,11 @@ namespace embree
       v = vld1q_s32(lanes);
     }
 
-    __forceinline explicit vint(__m128 a) : v(vcvtq_s32_f32(a)) {}
+    __forceinline explicit vint(float32x4_t a) : v(vcvtq_s32_f32(a)) {}
     __forceinline explicit vint(const vboolf4& a) : v(vreinterpretq_s32_f32(a.v)) {}
+#if defined(__aarch64__)
+    __forceinline explicit vint(const __m128i& a) : v(vreinterpretq_s32_s64(a)) {}
+#endif
 
     __forceinline vint(long long a, long long b) {
       int32x2_t lo = vcreate_s32(a);

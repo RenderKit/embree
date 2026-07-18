@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../../math/emath.h"
+#include "neon_base.h"
 
 #define vboolf vboolf_impl
 #define vboold vboold_impl
@@ -27,8 +27,7 @@ namespace embree
 
     enum  { size = 8 };
     union {
-      __m256i v;
-      struct { __m128i vl, vh; };
+      struct { int32x4_t vl, vh; } v;
       int i[8];
     };
 
@@ -37,37 +36,54 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     __forceinline vint() {}
-    __forceinline vint(const vint8& a) { v = a.v; }
-    __forceinline vint8& operator =(const vint8& a) { v = a.v; return *this; }
+    __forceinline vint(const vint8& a) { v.vl = a.v.vl; v.vh = a.v.vh; }
+    __forceinline vint8& operator =(const vint8& a) { v.vl = a.v.vl; v.vh = a.v.vh; return *this; }
 
-    __forceinline vint(__m256i a) : v(a) {}
-    __forceinline operator const __m256i&() const { return v; }
-    __forceinline operator       __m256i&()       { return v; }
+    __forceinline explicit vint(const vint4& a) { v.vl = a.v; v.vh = a.v; }
+    __forceinline vint(const vint4& a, const vint4& b) { v.vl = a.v; v.vh = b.v; }
+    __forceinline vint(const int32x4_t& a, const int32x4_t& b) { v.vl = a; v.vh = b; }
 
-    __forceinline explicit vint(const vint4& a) : v(_mm256_insertf128_si256(_mm256_castsi128_si256(a),a,1)) {}
-    __forceinline vint(const vint4& a, const vint4& b) : v(_mm256_insertf128_si256(_mm256_castsi128_si256(a),b,1)) {}
-    __forceinline vint(const __m128i& a, const __m128i& b) : v(_mm256_insertf128_si256(_mm256_castsi128_si256(a),b,1)) {}
+    __forceinline explicit vint(const int* a) { v.vl = vld1q_s32(a); v.vh = vld1q_s32(a+4); }
+    __forceinline vint(int a) { v.vl = vdupq_n_s32(a); v.vh = vdupq_n_s32(a); }
+    __forceinline vint(int a, int b) {
+      int lo[4] = {a, b, a, b};
+      int hi[4] = {a, b, a, b};
+      v.vl = vld1q_s32(lo); v.vh = vld1q_s32(hi);
+    }
+    __forceinline vint(int a, int b, int c, int d) {
+      int lo[4] = {a, b, c, d};
+      v.vl = vld1q_s32(lo); v.vh = v.vl;
+    }
+    __forceinline vint(int a, int b, int c, int d, int e, int f, int g, int h) {
+      int lo[4] = {a, b, c, d};
+      int hi[4] = {e, f, g, h};
+      v.vl = vld1q_s32(lo); v.vh = vld1q_s32(hi);
+    }
 
-    __forceinline explicit vint(const int* a) : v(_mm256_castps_si256(_mm256_loadu_ps((const float*)a))) {}
-    __forceinline vint(int a) : v(_mm256_set1_epi32(a)) {}
-    __forceinline vint(int a, int b) : v(_mm256_set_epi32(b, a, b, a, b, a, b, a)) {}
-    __forceinline vint(int a, int b, int c, int d) : v(_mm256_set_epi32(d, c, b, a, d, c, b, a)) {}
-    __forceinline vint(int a, int b, int c, int d, int e, int f, int g, int h) : v(_mm256_set_epi32(h, g, f, e, d, c, b, a)) {}
-
-    __forceinline explicit vint(__m256 a) : v(_mm256_cvtps_epi32(a)) {}
-    __forceinline explicit vint(const vboolf8& a) : v(_mm256_castps_si256((__m256)a)) {}
+    __forceinline explicit vint(float32x4_t a_lo, float32x4_t a_hi) { v.vl = vcvtq_s32_f32(a_lo); v.vh = vcvtq_s32_f32(a_hi); }
+    __forceinline explicit vint(const vboolf8& a) { v.vl = vreinterpretq_s32_f32(a.v.vl); v.vh = vreinterpretq_s32_f32(a.v.vh); }
+    __forceinline vint(uint32x4_t a) { v.vl = vreinterpretq_s32_u32(a); v.vh = vdupq_n_s32(0); }
+    __forceinline vint(neon_uint32x8_t a) { v.vl = vreinterpretq_s32_u32(a.lo); v.vh = vreinterpretq_s32_u32(a.hi); }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
 
-    __forceinline vint(ZeroTy)        : v(_mm256_setzero_si256()) {}
-    __forceinline vint(OneTy)         : v(_mm256_set1_epi32(1)) {}
-    __forceinline vint(PosInfTy)      : v(_mm256_set1_epi32(pos_inf)) {}
-    __forceinline vint(NegInfTy)      : v(_mm256_set1_epi32(neg_inf)) {}
-    __forceinline vint(StepTy)        : v(_mm256_set_epi32(7, 6, 5, 4, 3, 2, 1, 0)) {}
-    __forceinline vint(ReverseStepTy) : v(_mm256_set_epi32(0, 1, 2, 3, 4, 5, 6, 7)) {}
-    __forceinline vint(UndefinedTy)   : v(_mm256_undefined_si256()) {}
+    __forceinline vint(ZeroTy)        { v.vl = vdupq_n_s32(0); v.vh = vdupq_n_s32(0); }
+    __forceinline vint(OneTy)         { v.vl = vdupq_n_s32(1); v.vh = vdupq_n_s32(1); }
+    __forceinline vint(PosInfTy)      { v.vl = vdupq_n_s32(pos_inf); v.vh = vdupq_n_s32(pos_inf); }
+    __forceinline vint(NegInfTy)      { v.vl = vdupq_n_s32(neg_inf); v.vh = vdupq_n_s32(neg_inf); }
+    __forceinline vint(StepTy) {
+      int lo[4] = {0, 1, 2, 3};
+      int hi[4] = {4, 5, 6, 7};
+      v.vl = vld1q_s32(lo); v.vh = vld1q_s32(hi);
+    }
+    __forceinline vint(ReverseStepTy) {
+      int lo[4] = {7, 6, 5, 4};
+      int hi[4] = {3, 2, 1, 0};
+      v.vl = vld1q_s32(lo); v.vh = vld1q_s32(hi);
+    }
+    __forceinline vint(UndefinedTy)   { v.vl = vdupq_n_s32(0); v.vh = vdupq_n_s32(0); }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Loads and Stores
@@ -78,8 +94,8 @@ namespace embree
       vint8 r;
       uint8x8_t t0 = vld1_u8(ptr);
       uint16x8_t t1 = vmovl_u8(t0);
-      r.vl = vreinterpretq_s32_u32(vmovl_u16(vget_low_u16(t1)));
-      r.vh = vreinterpretq_s32_u32(vmovl_u16(vget_high_u16(t1)));
+      r.v.vl = vreinterpretq_s32_u32(vmovl_u16(vget_low_u16(t1)));
+      r.v.vh = vreinterpretq_s32_u32(vmovl_u16(vget_high_u16(t1)));
       return r;
     }
     static __forceinline vint8 loadu(const unsigned char* ptr) { return load(ptr); }
@@ -87,8 +103,8 @@ namespace embree
     static __forceinline vint8 load(const unsigned short* ptr)
     {
       vint8 r;
-      r.vl = vreinterpretq_s32_u32(vmovl_u16(vld1_u16(ptr)));
-      r.vh = vreinterpretq_s32_u32(vmovl_u16(vld1_u16(ptr + 4)));
+      r.v.vl = vreinterpretq_s32_u32(vmovl_u16(vld1_u16(ptr)));
+      r.v.vh = vreinterpretq_s32_u32(vmovl_u16(vld1_u16(ptr + 4)));
       return r;
     }
     static __forceinline vint8 loadu(const unsigned short* ptr) { return load(ptr); }
@@ -96,28 +112,28 @@ namespace embree
     static __forceinline vint8 load(const void* ptr)
     {
       vint8 r;
-      r.vl = vld1q_s32((const int*)ptr);
-      r.vh = vld1q_s32((const int*)ptr + 4);
+      r.v.vl = vld1q_s32((const int*)ptr);
+      r.v.vh = vld1q_s32((const int*)ptr + 4);
       return r;
     }
     static __forceinline vint8 loadu(const void* ptr)
     {
       vint8 r;
-      r.vl = vld1q_s32((const int*)ptr);
-      r.vh = vld1q_s32((const int*)ptr + 4);
+      r.v.vl = vld1q_s32((const int*)ptr);
+      r.v.vh = vld1q_s32((const int*)ptr + 4);
       return r;
     }
 
     static __forceinline void store(void* ptr, const vint8& v)
     {
-      vst1q_s32((int*)ptr, v.vl);
-      vst1q_s32((int*)ptr + 4, v.vh);
+      vst1q_s32((int*)ptr, v.v.vl);
+      vst1q_s32((int*)ptr + 4, v.v.vh);
     }
 
     static __forceinline void storeu(void* ptr, const vint8& v)
     {
-      vst1q_s32((int*)ptr, v.vl);
-      vst1q_s32((int*)ptr + 4, v.vh);
+      vst1q_s32((int*)ptr, v.v.vl);
+      vst1q_s32((int*)ptr + 4, v.v.vh);
     }
 
     static __forceinline vint8 load(const vboolf8& mask, const void* ptr)
@@ -125,8 +141,8 @@ namespace embree
       vint8 r;
       int32x4_t vl = vld1q_s32((const int*)ptr);
       int32x4_t vh = vld1q_s32((const int*)ptr + 4);
-      r.vl = vreinterpretq_s32_u32(vandq_u32(vreinterpretq_u32_f32(mask.vl), vreinterpretq_u32_s32(vl)));
-      r.vh = vreinterpretq_s32_u32(vandq_u32(vreinterpretq_u32_f32(mask.vh), vreinterpretq_u32_s32(vh)));
+      r.v.vl = vreinterpretq_s32_u32(vandq_u32(vreinterpretq_u32_f32(mask.v.vl), vreinterpretq_u32_s32(vl)));
+      r.v.vh = vreinterpretq_s32_u32(vandq_u32(vreinterpretq_u32_f32(mask.v.vh), vreinterpretq_u32_s32(vh)));
       return r;
     }
     static __forceinline vint8 loadu(const vboolf8& mask, const void* ptr) { return load(mask, ptr); }
@@ -135,31 +151,31 @@ namespace embree
     {
       vint8 cur = load(ptr);
       vint8 r;
-      r.vl = vreinterpretq_s32_u32(vbslq_u32(vreinterpretq_u32_f32(mask.vl), vreinterpretq_u32_s32(v.vl), vreinterpretq_u32_s32(cur.vl)));
-      r.vh = vreinterpretq_s32_u32(vbslq_u32(vreinterpretq_u32_f32(mask.vh), vreinterpretq_u32_s32(v.vh), vreinterpretq_u32_s32(cur.vh)));
+      r.v.vl = vreinterpretq_s32_u32(vbslq_u32(vreinterpretq_u32_f32(mask.v.vl), vreinterpretq_u32_s32(v.v.vl), vreinterpretq_u32_s32(cur.v.vl)));
+      r.v.vh = vreinterpretq_s32_u32(vbslq_u32(vreinterpretq_u32_f32(mask.v.vh), vreinterpretq_u32_s32(v.v.vh), vreinterpretq_u32_s32(cur.v.vh)));
       store(ptr, r);
     }
     static __forceinline void storeu(const vboolf8& mask, void* ptr, const vint8& v)
     {
       vint8 cur = loadu(ptr);
       vint8 r;
-      r.vl = vreinterpretq_s32_u32(vbslq_u32(vreinterpretq_u32_f32(mask.vl), vreinterpretq_u32_s32(v.vl), vreinterpretq_u32_s32(cur.vl)));
-      r.vh = vreinterpretq_s32_u32(vbslq_u32(vreinterpretq_u32_f32(mask.vh), vreinterpretq_u32_s32(v.vh), vreinterpretq_u32_s32(cur.vh)));
+      r.v.vl = vreinterpretq_s32_u32(vbslq_u32(vreinterpretq_u32_f32(mask.v.vl), vreinterpretq_u32_s32(v.v.vl), vreinterpretq_u32_s32(cur.v.vl)));
+      r.v.vh = vreinterpretq_s32_u32(vbslq_u32(vreinterpretq_u32_f32(mask.v.vh), vreinterpretq_u32_s32(v.v.vh), vreinterpretq_u32_s32(cur.v.vh)));
       storeu(ptr, r);
     }
 
     static __forceinline vint8 load_nt(void* ptr)
     {
       vint8 r;
-      r.vl = vld1q_s32((const int*)ptr);
-      r.vh = vld1q_s32((const int*)ptr + 4);
+      r.v.vl = vld1q_s32((const int*)ptr);
+      r.v.vh = vld1q_s32((const int*)ptr + 4);
       return r;
     }
 
     static __forceinline void store_nt(void* ptr, const vint8& v)
     {
-      vst1q_s32((int*)ptr, v.vl);
-      vst1q_s32((int*)ptr + 4, v.vh);
+      vst1q_s32((int*)ptr, v.v.vl);
+      vst1q_s32((int*)ptr + 4, v.v.vh);
     }
 
     static __forceinline void store(unsigned char* ptr, const vint8& i)
@@ -212,8 +228,8 @@ namespace embree
     {
       vint8 r;
       int64x2_t b = vdupq_n_s64(a);
-      r.vl = vreinterpretq_s32_s64(b);
-      r.vh = vreinterpretq_s32_s64(b);
+      r.v.vl = vreinterpretq_s32_s64(b);
+      r.v.vh = vreinterpretq_s32_s64(b);
       return r;
     }
 
@@ -232,8 +248,8 @@ namespace embree
   static __forceinline vboolf8 asBool(const vint8& a)
   {
     vboolf8 r;
-    r.vl = vreinterpretq_f32_s32(a.vl);
-    r.vh = vreinterpretq_f32_s32(a.vh);
+    r.v.vl = vreinterpretq_f32_s32(a.v.vl);
+    r.v.vh = vreinterpretq_f32_s32(a.v.vh);
     return r;
   }
 
@@ -241,15 +257,15 @@ namespace embree
   __forceinline vint8 operator -(const vint8& a)
   {
     vint8 r;
-    r.vl = vnegq_s32(a.vl);
-    r.vh = vnegq_s32(a.vh);
+    r.v.vl = vnegq_s32(a.v.vl);
+    r.v.vh = vnegq_s32(a.v.vh);
     return r;
   }
   __forceinline vint8 abs(const vint8& a)
   {
     vint8 r;
-    r.vl = vabsq_s32(a.vl);
-    r.vh = vabsq_s32(a.vh);
+    r.v.vl = vabsq_s32(a.v.vl);
+    r.v.vh = vabsq_s32(a.v.vh);
     return r;
   }
 
@@ -260,8 +276,8 @@ namespace embree
   __forceinline vint8 operator +(const vint8& a, const vint8& b)
   {
     vint8 r;
-    r.vl = vaddq_s32(a.vl, b.vl);
-    r.vh = vaddq_s32(a.vh, b.vh);
+    r.v.vl = vaddq_s32(a.v.vl, b.v.vl);
+    r.v.vh = vaddq_s32(a.v.vh, b.v.vh);
     return r;
   }
   __forceinline vint8 operator +(const vint8& a, int          b) { return a + vint8(b); }
@@ -270,8 +286,8 @@ namespace embree
   __forceinline vint8 operator -(const vint8& a, const vint8& b)
   {
     vint8 r;
-    r.vl = vsubq_s32(a.vl, b.vl);
-    r.vh = vsubq_s32(a.vh, b.vh);
+    r.v.vl = vsubq_s32(a.v.vl, b.v.vl);
+    r.v.vh = vsubq_s32(a.v.vh, b.v.vh);
     return r;
   }
   __forceinline vint8 operator -(const vint8& a, int          b) { return a - vint8(b); }
@@ -280,8 +296,8 @@ namespace embree
   __forceinline vint8 operator *(const vint8& a, const vint8& b)
   {
     vint8 r;
-    r.vl = vmulq_s32(a.vl, b.vl);
-    r.vh = vmulq_s32(a.vh, b.vh);
+    r.v.vl = vmulq_s32(a.v.vl, b.v.vl);
+    r.v.vh = vmulq_s32(a.v.vh, b.v.vh);
     return r;
   }
   __forceinline vint8 operator *(const vint8& a, int          b) { return a * vint8(b); }
@@ -290,8 +306,8 @@ namespace embree
   __forceinline vint8 operator &(const vint8& a, const vint8& b)
   {
     vint8 r;
-    r.vl = vandq_s32(a.vl, b.vl);
-    r.vh = vandq_s32(a.vh, b.vh);
+    r.v.vl = vandq_s32(a.v.vl, b.v.vl);
+    r.v.vh = vandq_s32(a.v.vh, b.v.vh);
     return r;
   }
   __forceinline vint8 operator &(const vint8& a, int          b) { return a & vint8(b); }
@@ -300,8 +316,8 @@ namespace embree
   __forceinline vint8 operator |(const vint8& a, const vint8& b)
   {
     vint8 r;
-    r.vl = vorrq_s32(a.vl, b.vl);
-    r.vh = vorrq_s32(a.vh, b.vh);
+    r.v.vl = vorrq_s32(a.v.vl, b.v.vl);
+    r.v.vh = vorrq_s32(a.v.vh, b.v.vh);
     return r;
   }
   __forceinline vint8 operator |(const vint8& a, int          b) { return a | vint8(b); }
@@ -310,8 +326,8 @@ namespace embree
   __forceinline vint8 operator ^(const vint8& a, const vint8& b)
   {
     vint8 r;
-    r.vl = veorq_s32(a.vl, b.vl);
-    r.vh = veorq_s32(a.vh, b.vh);
+    r.v.vl = veorq_s32(a.v.vl, b.v.vl);
+    r.v.vh = veorq_s32(a.v.vh, b.v.vh);
     return r;
   }
   __forceinline vint8 operator ^(const vint8& a, int          b) { return a ^ vint8(b); }
@@ -320,82 +336,82 @@ namespace embree
   __forceinline vint8 operator <<(const vint8& a, int n)
   {
     vint8 r;
-    r.vl = vshlq_s32(a.vl, vdupq_n_s32(-(int32_t)n));
-    r.vh = vshlq_s32(a.vh, vdupq_n_s32(-(int32_t)n));
+    r.v.vl = vshlq_s32(a.v.vl, vdupq_n_s32(-(int32_t)n));
+    r.v.vh = vshlq_s32(a.v.vh, vdupq_n_s32(-(int32_t)n));
     return r;
   }
   __forceinline vint8 operator >>(const vint8& a, int n)
   {
     vint8 r;
-    r.vl = vshlq_s32(a.vl, vdupq_n_s32((int32_t)n));
-    r.vh = vshlq_s32(a.vh, vdupq_n_s32((int32_t)n));
+    r.v.vl = vshlq_s32(a.v.vl, vdupq_n_s32((int32_t)n));
+    r.v.vh = vshlq_s32(a.v.vh, vdupq_n_s32((int32_t)n));
     return r;
   }
 
   __forceinline vint8 operator <<(const vint8& a, const vint8& n)
   {
     vint8 r;
-    r.vl = vshlq_s32(a.vl, vnegq_s32(n.vl));
-    r.vh = vshlq_s32(a.vh, vnegq_s32(n.vh));
+    r.v.vl = vshlq_s32(a.v.vl, vnegq_s32(n.v.vl));
+    r.v.vh = vshlq_s32(a.v.vh, vnegq_s32(n.v.vh));
     return r;
   }
   __forceinline vint8 operator >>(const vint8& a, const vint8& n)
   {
     vint8 r;
-    r.vl = vshlq_s32(a.vl, n.vl);
-    r.vh = vshlq_s32(a.vh, n.vh);
+    r.v.vl = vshlq_s32(a.v.vl, n.v.vl);
+    r.v.vh = vshlq_s32(a.v.vh, n.v.vh);
     return r;
   }
 
   __forceinline vint8 sll(const vint8& a, int b)
   {
     vint8 r;
-    r.vl = vshlq_s32(a.vl, vdupq_n_s32(-(int32_t)b));
-    r.vh = vshlq_s32(a.vh, vdupq_n_s32(-(int32_t)b));
+    r.v.vl = vshlq_s32(a.v.vl, vdupq_n_s32(-(int32_t)b));
+    r.v.vh = vshlq_s32(a.v.vh, vdupq_n_s32(-(int32_t)b));
     return r;
   }
   __forceinline vint8 sra(const vint8& a, int b)
   {
     vint8 r;
-    r.vl = vshlq_s32(a.vl, vdupq_n_s32((int32_t)b));
-    r.vh = vshlq_s32(a.vh, vdupq_n_s32((int32_t)b));
+    r.v.vl = vshlq_s32(a.v.vl, vdupq_n_s32((int32_t)b));
+    r.v.vh = vshlq_s32(a.v.vh, vdupq_n_s32((int32_t)b));
     return r;
   }
   __forceinline vint8 srl(const vint8& a, int b)
   {
     vint8 r;
-    r.vl = vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.vl), vdupq_n_s32((int32_t)b)));
-    r.vh = vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.vh), vdupq_n_s32((int32_t)b)));
+    r.v.vl = vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.v.vl), vdupq_n_s32((int32_t)b)));
+    r.v.vh = vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.v.vh), vdupq_n_s32((int32_t)b)));
     return r;
   }
 
   __forceinline vint8 sll(const vint8& a, const vint8& b)
   {
     vint8 r;
-    r.vl = vshlq_s32(a.vl, vnegq_s32(b.vl));
-    r.vh = vshlq_s32(a.vh, vnegq_s32(b.vh));
+    r.v.vl = vshlq_s32(a.v.vl, vnegq_s32(b.v.vl));
+    r.v.vh = vshlq_s32(a.v.vh, vnegq_s32(b.v.vh));
     return r;
   }
   __forceinline vint8 sra(const vint8& a, const vint8& b)
   {
     vint8 r;
-    r.vl = vshlq_s32(a.vl, b.vl);
-    r.vh = vshlq_s32(a.vh, b.vh);
+    r.v.vl = vshlq_s32(a.v.vl, b.v.vl);
+    r.v.vh = vshlq_s32(a.v.vh, b.v.vh);
     return r;
   }
   __forceinline vint8 srl(const vint8& a, const vint8& b)
   {
     vint8 r;
-    r.vl = vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.vl), b.vl));
-    r.vh = vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.vh), b.vh));
+    r.v.vl = vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.v.vl), b.v.vl));
+    r.v.vh = vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.v.vh), b.v.vh));
     return r;
   }
 
   __forceinline vint8 min(const vint8& a, const vint8& b)
   {
     vint8 r;
-    r.vl = vminq_s32(a.vl, b.vl);
-    r.vh = vminq_s32(a.vh, b.vh);
+    r.v.vl = vminq_s32(a.v.vl, b.v.vl);
+    r.v.vh = vminq_s32(a.v.vh, b.v.vh);
     return r;
   }
   __forceinline vint8 min(const vint8& a, int          b) { return min(a,vint8(b)); }
@@ -404,8 +420,8 @@ namespace embree
   __forceinline vint8 max(const vint8& a, const vint8& b)
   {
     vint8 r;
-    r.vl = vmaxq_s32(a.vl, b.vl);
-    r.vh = vmaxq_s32(a.vh, b.vh);
+    r.v.vl = vmaxq_s32(a.v.vl, b.v.vl);
+    r.v.vh = vmaxq_s32(a.v.vh, b.v.vh);
     return r;
   }
   __forceinline vint8 max(const vint8& a, int          b) { return max(a,vint8(b)); }
@@ -414,15 +430,15 @@ namespace embree
   __forceinline vint8 umin(const vint8& a, const vint8& b)
   {
     vint8 r;
-    r.vl = vreinterpretq_s32_u32(vminq_u32(vreinterpretq_u32_s32(a.vl), vreinterpretq_u32_s32(b.vl)));
-    r.vh = vreinterpretq_s32_u32(vminq_u32(vreinterpretq_u32_s32(a.vh), vreinterpretq_u32_s32(b.vh)));
+    r.v.vl = vreinterpretq_s32_u32(vminq_u32(vreinterpretq_u32_s32(a.v.vl), vreinterpretq_u32_s32(b.v.vl)));
+    r.v.vh = vreinterpretq_s32_u32(vminq_u32(vreinterpretq_u32_s32(a.v.vh), vreinterpretq_u32_s32(b.v.vh)));
     return r;
   }
   __forceinline vint8 umax(const vint8& a, const vint8& b)
   {
     vint8 r;
-    r.vl = vreinterpretq_s32_u32(vmaxq_u32(vreinterpretq_u32_s32(a.vl), vreinterpretq_u32_s32(b.vl)));
-    r.vh = vreinterpretq_s32_u32(vmaxq_u32(vreinterpretq_u32_s32(a.vh), vreinterpretq_u32_s32(b.vh)));
+    r.v.vl = vreinterpretq_s32_u32(vmaxq_u32(vreinterpretq_u32_s32(a.v.vl), vreinterpretq_u32_s32(b.v.vl)));
+    r.v.vh = vreinterpretq_s32_u32(vmaxq_u32(vreinterpretq_u32_s32(a.v.vh), vreinterpretq_u32_s32(b.v.vh)));
     return r;
   }
 
@@ -455,24 +471,24 @@ namespace embree
   static __forceinline vboolf8 operator ==(const vint8& a, const vint8& b)
   {
     vboolf8 r;
-    r.vl = vreinterpretq_f32_u32(vceqq_s32(a.vl, b.vl));
-    r.vh = vreinterpretq_f32_u32(vceqq_s32(a.vh, b.vh));
+    r.v.vl = vreinterpretq_f32_u32(vceqq_s32(a.v.vl, b.v.vl));
+    r.v.vh = vreinterpretq_f32_u32(vceqq_s32(a.v.vh, b.v.vh));
     return r;
   }
   static __forceinline vboolf8 operator !=(const vint8& a, const vint8& b) { return !(a == b); }
   static __forceinline vboolf8 operator < (const vint8& a, const vint8& b)
   {
     vboolf8 r;
-    r.vl = vreinterpretq_f32_u32(vcltq_s32(a.vl, b.vl));
-    r.vh = vreinterpretq_f32_u32(vcltq_s32(a.vh, b.vh));
+    r.v.vl = vreinterpretq_f32_u32(vcltq_s32(a.v.vl, b.v.vl));
+    r.v.vh = vreinterpretq_f32_u32(vcltq_s32(a.v.vh, b.v.vh));
     return r;
   }
   static __forceinline vboolf8 operator >=(const vint8& a, const vint8& b) { return !(a <  b); }
   static __forceinline vboolf8 operator > (const vint8& a, const vint8& b)
   {
     vboolf8 r;
-    r.vl = vreinterpretq_f32_u32(vcgtq_s32(a.vl, b.vl));
-    r.vh = vreinterpretq_f32_u32(vcgtq_s32(a.vh, b.vh));
+    r.v.vl = vreinterpretq_f32_u32(vcgtq_s32(a.v.vl, b.v.vl));
+    r.v.vh = vreinterpretq_f32_u32(vcgtq_s32(a.v.vh, b.v.vh));
     return r;
   }
   static __forceinline vboolf8 operator <=(const vint8& a, const vint8& b) { return !(a >  b); }
@@ -480,12 +496,12 @@ namespace embree
   static __forceinline vint8 select(const vboolf8& m, const vint8& t, const vint8& f)
   {
     vint8 r;
-    r.vl = vreinterpretq_s32_u32(vbslq_u32(vreinterpretq_u32_f32(m.vl),
-                                             vreinterpretq_u32_s32(t.vl),
-                                             vreinterpretq_u32_s32(f.vl)));
-    r.vh = vreinterpretq_s32_u32(vbslq_u32(vreinterpretq_u32_f32(m.vh),
-                                             vreinterpretq_u32_s32(t.vh),
-                                             vreinterpretq_u32_s32(f.vh)));
+    r.v.vl = vreinterpretq_s32_u32(vbslq_u32(vreinterpretq_u32_f32(m.v.vl),
+                                             vreinterpretq_u32_s32(t.v.vl),
+                                             vreinterpretq_u32_s32(f.v.vl)));
+    r.v.vh = vreinterpretq_s32_u32(vbslq_u32(vreinterpretq_u32_f32(m.v.vh),
+                                             vreinterpretq_u32_s32(t.v.vh),
+                                             vreinterpretq_u32_s32(f.v.vh)));
     return r;
   }
 
@@ -534,85 +550,115 @@ namespace embree
   __forceinline vint8 unpacklo(const vint8& a, const vint8& b)
   {
     vint8 r;
-    r.vl = vreinterpretq_s32_u32(vzip1q_u32(vreinterpretq_u32_s32(a.vl), vreinterpretq_u32_s32(b.vl)));
-    r.vh = vreinterpretq_s32_u32(vzip1q_u32(vreinterpretq_u32_s32(a.vh), vreinterpretq_u32_s32(b.vh)));
+    r.v.vl = vreinterpretq_s32_u32(vzip1q_u32(vreinterpretq_u32_s32(a.v.vl), vreinterpretq_u32_s32(b.v.vl)));
+    r.v.vh = vreinterpretq_s32_u32(vzip1q_u32(vreinterpretq_u32_s32(a.v.vh), vreinterpretq_u32_s32(b.v.vh)));
     return r;
   }
   __forceinline vint8 unpackhi(const vint8& a, const vint8& b)
   {
     vint8 r;
-    r.vl = vreinterpretq_s32_u32(vzip2q_u32(vreinterpretq_u32_s32(a.vl), vreinterpretq_u32_s32(b.vl)));
-    r.vh = vreinterpretq_s32_u32(vzip2q_u32(vreinterpretq_u32_s32(a.vh), vreinterpretq_u32_s32(b.vh)));
+    r.v.vl = vreinterpretq_s32_u32(vzip2q_u32(vreinterpretq_u32_s32(a.v.vl), vreinterpretq_u32_s32(b.v.vl)));
+    r.v.vh = vreinterpretq_s32_u32(vzip2q_u32(vreinterpretq_u32_s32(a.v.vh), vreinterpretq_u32_s32(b.v.vh)));
     return r;
   }
 
   template<int i>
   __forceinline vint8 shuffle(const vint8& v)
   {
-    return _mm256_castps_si256(_mm256_permute_ps(_mm256_castsi256_ps(v), _MM_SHUFFLE(i, i, i, i)));
+    int32x4x2_t r = neon_permute_epi32<i,i,i,i>(v.v.vl, v.v.vh);
+    vint8 result;
+    result.v.vl = r.val[0];
+    result.v.vh = r.val[1];
+    return result;
   }
 
   template<int i0, int i1>
   __forceinline vint8 shuffle4(const vint8& v)
   {
-    return _mm256_permute2f128_si256(v, v, (i1 << 4) | (i0 << 0));
+    int32x4x2_t r = neon_permute2f128_si<i0,i1>(v.v.vl, v.v.vh);
+    vint8 result;
+    result.v.vl = r.val[0];
+    result.v.vh = r.val[1];
+    return result;
   }
 
   template<int i0, int i1>
   __forceinline vint8 shuffle4(const vint8& a, const vint8& b)
   {
-    return _mm256_permute2f128_si256(a, b, (i1 << 4) | (i0 << 0));
+    int32x4x2_t r = neon_permute2f128_si<i0,i1>(a.v.vl, a.v.vh, b.v.vl, b.v.vh);
+    vint8 result;
+    result.v.vl = r.val[0];
+    result.v.vh = r.val[1];
+    return result;
   }
 
   template<int i0, int i1, int i2, int i3>
   __forceinline vint8 shuffle(const vint8& v)
   {
-    return _mm256_castps_si256(_mm256_permute_ps(_mm256_castsi256_ps(v), _MM_SHUFFLE(i3, i2, i1, i0)));
+    int32x4x2_t r = neon_permute_epi32<i0,i1,i2,i3>(v.v.vl, v.v.vh);
+    vint8 result;
+    result.v.vl = r.val[0];
+    result.v.vh = r.val[1];
+    return result;
   }
 
   template<int i0, int i1, int i2, int i3>
   __forceinline vint8 shuffle(const vint8& a, const vint8& b)
   {
-    return _mm256_castps_si256(_mm256_shuffle_ps(_mm256_castsi256_ps(a), _mm256_castsi256_ps(b), _MM_SHUFFLE(i3, i2, i1, i0)));
+    int32x4x2_t r = neon_shuffle_epi32<i0,i1,i2,i3>(a.v.vl, a.v.vh, b.v.vl, b.v.vh);
+    vint8 result;
+    result.v.vl = r.val[0];
+    result.v.vh = r.val[1];
+    return result;
   }
 
-  template<> __forceinline vint8 shuffle<0, 0, 2, 2>(const vint8& v) { return _mm256_castps_si256(_mm256_moveldup_ps(_mm256_castsi256_ps(v))); }
-  template<> __forceinline vint8 shuffle<1, 1, 3, 3>(const vint8& v) { return _mm256_castps_si256(_mm256_movehdup_ps(_mm256_castsi256_ps(v))); }
-  template<> __forceinline vint8 shuffle<0, 1, 0, 1>(const vint8& v) { return _mm256_castps_si256(_mm256_castpd_ps(_mm256_movedup_pd(_mm256_castps_pd(_mm256_castsi256_ps(v))))); }
+  template<> __forceinline vint8 shuffle<0, 0, 2, 2>(const vint8& v)
+  {
+    float32x4x2_t r = neon_moveldup_ps(vreinterpretq_f32_s32(v.v.vl), vreinterpretq_f32_s32(v.v.vh));
+    vint8 result;
+    result.v.vl = vreinterpretq_s32_f32(r.val[0]);
+    result.v.vh = vreinterpretq_s32_f32(r.val[1]);
+    return result;
+  }
+  template<> __forceinline vint8 shuffle<1, 1, 3, 3>(const vint8& v)
+  {
+    float32x4x2_t r = neon_movehdup_ps(vreinterpretq_f32_s32(v.v.vl), vreinterpretq_f32_s32(v.v.vh));
+    vint8 result;
+    result.v.vl = vreinterpretq_s32_f32(r.val[0]);
+    result.v.vh = vreinterpretq_s32_f32(r.val[1]);
+    return result;
+  }
+  template<> __forceinline vint8 shuffle<0, 1, 0, 1>(const vint8& v)
+  {
+    float32x4x2_t r = neon_movedup_pd_as_ps(vreinterpretq_f32_s32(v.v.vl), vreinterpretq_f32_s32(v.v.vh));
+    vint8 result;
+    result.v.vl = vreinterpretq_s32_f32(r.val[0]);
+    result.v.vh = vreinterpretq_s32_f32(r.val[1]);
+    return result;
+  }
 
   __forceinline vint8 broadcast(const int* ptr)
   {
     vint8 r;
     int32x4_t b = vld1q_dup_s32(ptr);
-    r.vl = b;
-    r.vh = b;
+    r.v.vl = b;
+    r.v.vh = b;
     return r;
   }
 
-  template<int i> __forceinline vint8 insert4(const vint8& a, const vint4& b) { return _mm256_insertf128_si256(a, b, i); }
-  template<int i> __forceinline vint4 extract4(const vint8& a) { return _mm256_extractf128_si256(a, i); }
-  template<> __forceinline vint4 extract4<0>(const vint8& a) { return _mm256_castsi256_si128(a); }
-
-  __forceinline int toScalar(const vint8& v) { return vgetq_lane_s32(v.vl, 0); }
-
-#if !defined(__aarch64__)
-  __forceinline vint8 permute(const vint8& v, const __m256i& index) {
-    return _mm256_permutevar8x32_epi32(v, index);
+  template<int i> __forceinline vint8 insert4(const vint8& a, const vint4& b) {
+    vint8 r = a;
+    if (i == 0) r.v.vl = b.v; else r.v.vh = b.v;
+    return r;
   }
-
-  __forceinline vint8 shuffle(const vint8& v, const __m256i& index) {
-    return _mm256_castps_si256(_mm256_permutevar_ps(_mm256_castsi256_ps(v), index));
+  template<int i> __forceinline vint4 extract4(const vint8& a) {
+    vint4 r;
+    if (i == 0) r.v = a.v.vl; else r.v = a.v.vh;
+    return r;
   }
+  template<> __forceinline vint4 extract4<0>(const vint8& a) { vint4 r; r.v = a.v.vl; return r; }
 
-  template<int i>
-  static __forceinline vint8 align_shift_right(const vint8& a, const vint8& b) {
-#if defined(__AVX512VL__)
-    return _mm256_alignr_epi32(a, b, i);
-#else
-    return _mm256_alignr_epi8(a, b, 4*i);
-#endif
-  }
-#endif
+  __forceinline int toScalar(const vint8& v) { return vgetq_lane_s32(v.v.vl, 0); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
