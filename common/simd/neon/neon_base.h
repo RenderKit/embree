@@ -197,40 +197,27 @@ namespace embree
     return r;
   }
 
-  // moveldup equivalent: {a[0],a[0],a[2],a[2]} per lane
+  // moveldup equivalent: {a[0],a[0],a[2],a[2]} per lane — vtrn1q duplicates even-indexed lanes
   __forceinline float32x4x2_t neon_moveldup_ps(float32x4_t lo, float32x4_t hi) {
     float32x4x2_t r;
-    r.val[0] = vreinterpretq_f32_u32(vmovq_n_u32(vgetq_lane_u32(vreinterpretq_u32_f32(lo), 0)));
-    r.val[0] = vsetq_lane_f32(vgetq_lane_f32(lo, 0), r.val[0], 1);
-    r.val[0] = vreinterpretq_f32_u32(vsetq_lane_u32(vgetq_lane_u32(vreinterpretq_u32_f32(lo), 2), vreinterpretq_u32_f32(r.val[0]), 2));
-    r.val[0] = vsetq_lane_f32(vgetq_lane_f32(lo, 2), r.val[0], 3);
-    r.val[1] = vreinterpretq_f32_u32(vmovq_n_u32(vgetq_lane_u32(vreinterpretq_u32_f32(hi), 0)));
-    r.val[1] = vsetq_lane_f32(vgetq_lane_f32(hi, 0), r.val[1], 1);
-    r.val[1] = vreinterpretq_f32_u32(vsetq_lane_u32(vgetq_lane_u32(vreinterpretq_u32_f32(hi), 2), vreinterpretq_u32_f32(r.val[1]), 2));
-    r.val[1] = vsetq_lane_f32(vgetq_lane_f32(hi, 2), r.val[1], 3);
+    r.val[0] = vtrn1q_f32(lo, lo);
+    r.val[1] = vtrn1q_f32(hi, hi);
     return r;
   }
 
-  // movehdup equivalent: {a[1],a[1],a[3],a[3]} per lane
+  // movehdup equivalent: {a[1],a[1],a[3],a[3]} per lane — vtrn2q duplicates odd-indexed lanes
   __forceinline float32x4x2_t neon_movehdup_ps(float32x4_t lo, float32x4_t hi) {
     float32x4x2_t r;
-    r.val[0] = vreinterpretq_f32_u32(vmovq_n_u32(vgetq_lane_u32(vreinterpretq_u32_f32(lo), 1)));
-    r.val[0] = vsetq_lane_f32(vgetq_lane_f32(lo, 1), r.val[0], 1);
-    r.val[0] = vreinterpretq_f32_u32(vsetq_lane_u32(vgetq_lane_u32(vreinterpretq_u32_f32(lo), 3), vreinterpretq_u32_f32(r.val[0]), 2));
-    r.val[0] = vsetq_lane_f32(vgetq_lane_f32(lo, 3), r.val[0], 3);
-    r.val[1] = vreinterpretq_f32_u32(vmovq_n_u32(vgetq_lane_u32(vreinterpretq_u32_f32(hi), 1)));
-    r.val[1] = vsetq_lane_f32(vgetq_lane_f32(hi, 1), r.val[1], 1);
-    r.val[1] = vreinterpretq_f32_u32(vsetq_lane_u32(vgetq_lane_u32(vreinterpretq_u32_f32(hi), 3), vreinterpretq_u32_f32(r.val[1]), 2));
-    r.val[1] = vsetq_lane_f32(vgetq_lane_f32(hi, 3), r.val[1], 3);
+    r.val[0] = vtrn2q_f32(lo, lo);
+    r.val[1] = vtrn2q_f32(hi, hi);
     return r;
   }
 
-  // movelastdup equivalent: {a[0],a[1],a[0],a[1]} per lane (movedup_pd)
+  // movedup equivalent: {a[0],a[1],a[0],a[1]} per lane — duplicate low 64 bits
   __forceinline float32x4x2_t neon_movedup_pd_as_ps(float32x4_t lo, float32x4_t hi) {
     float32x4x2_t r;
-    r.val[0] = vreinterpretq_f32_u64(vmovq_n_u64(vgetq_lane_u64(vreinterpretq_u64_f32(lo), 0)));
-    r.val[1] = vreinterpretq_f64_f32(hi);
-    r.val[1] = vreinterpretq_f32_f64(vmovq_n_f64(vgetq_lane_f64(vreinterpretq_f64_f32(hi), 0)));
+    r.val[0] = vcombine_f32(vget_low_f32(lo), vget_low_f32(lo));
+    r.val[1] = vcombine_f32(vget_low_f32(hi), vget_low_f32(hi));
     return r;
   }
 

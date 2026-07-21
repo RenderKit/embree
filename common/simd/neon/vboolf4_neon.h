@@ -167,12 +167,15 @@ namespace embree
     return vaddvq_s32(vandq_s32(vreinterpretq_s32_f32(a.v), vdupq_n_s32(1)));
   }
 
-  __forceinline bool reduce_and(const vboolf4& a) { return movemask(a) == 0xf; }
-  __forceinline bool reduce_or (const vboolf4& a) { return movemask(a) != 0x0; }
-
-  __forceinline bool all (const vboolf4& b) { return movemask(b) == 0xf; }
-  __forceinline bool any (const vboolf4& b) { return movemask(b) != 0x0; }
-  __forceinline bool none(const vboolf4& b) { return movemask(b) == 0x0; }
+  __forceinline bool any (const vboolf4& a) {
+    return vaddvq_u32(vshrq_n_u32(vreinterpretq_u32_f32(a.v), 31)) != 0;
+  }
+  __forceinline bool none(const vboolf4& a) { return !any(a); }
+  __forceinline bool all (const vboolf4& a) {
+    return vaddvq_u32(vshrq_n_u32(vmvnq_u32(vreinterpretq_u32_f32(a.v)), 31)) == 0;
+  }
+  __forceinline bool reduce_or (const vboolf4& a) { return any(a); }
+  __forceinline bool reduce_and(const vboolf4& a) { return all(a); }
 
   __forceinline bool all (const vboolf4& valid, const vboolf4& b) { return all((!valid) | b); }
   __forceinline bool any (const vboolf4& valid, const vboolf4& b) { return any(valid & b); }

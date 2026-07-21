@@ -260,12 +260,17 @@ namespace embree
   /// Reduction Operations
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline bool reduce_and(const vboolf8& a) { return movemask(a) == 0xff; }
-  __forceinline bool reduce_or (const vboolf8& a) { return movemask(a) != 0; }
-
-  __forceinline bool all (const vboolf8& a) { return movemask(a) == 0xff; }
-  __forceinline bool any (const vboolf8& a) { return movemask(a) != 0; }
-  __forceinline bool none(const vboolf8& a) { return movemask(a) == 0; }
+  __forceinline bool any (const vboolf8& a) {
+    uint32x4_t combined = vorrq_u32(vreinterpretq_u32_f32(a.v.vl), vreinterpretq_u32_f32(a.v.vh));
+    return vaddvq_u32(vshrq_n_u32(combined, 31)) != 0;
+  }
+  __forceinline bool none(const vboolf8& a) { return !any(a); }
+  __forceinline bool all (const vboolf8& a) {
+    uint32x4_t combined = vorrq_u32(vmvnq_u32(vreinterpretq_u32_f32(a.v.vl)), vmvnq_u32(vreinterpretq_u32_f32(a.v.vh)));
+    return vaddvq_u32(vshrq_n_u32(combined, 31)) == 0;
+  }
+  __forceinline bool reduce_or (const vboolf8& a) { return any(a); }
+  __forceinline bool reduce_and(const vboolf8& a) { return all(a); }
 
   __forceinline bool all (const vboolf8& valid, const vboolf8& b) { return all((!valid) | b); }
   __forceinline bool any (const vboolf8& valid, const vboolf8& b) { return any(valid & b); }
