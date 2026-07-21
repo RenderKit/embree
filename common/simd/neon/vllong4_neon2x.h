@@ -233,7 +233,7 @@ namespace embree
 
   __forceinline vllong4 operator <<(const vllong4& a, long long n) {
     vllong4 r;
-    int64x2_t shift = vdupq_n_s64(-(int64_t)n);
+    int64x2_t shift = vdupq_n_s64((int64_t)n);
     r.v.lo = vreinterpretq_s32_s64(vshlq_s64(vreinterpretq_s64_s32(a.v.lo), shift));
     r.v.hi = vreinterpretq_s32_s64(vshlq_s64(vreinterpretq_s64_s32(a.v.hi), shift));
     return r;
@@ -241,14 +241,14 @@ namespace embree
 
   __forceinline vllong4 operator <<(const vllong4& a, const vllong4& n) {
     vllong4 r;
-    r.v.lo = vreinterpretq_s32_s64(vshlq_s64(vreinterpretq_s64_s32(a.v.lo), vnegq_s64(vreinterpretq_s64_s32(n.v.lo))));
-    r.v.hi = vreinterpretq_s32_s64(vshlq_s64(vreinterpretq_s64_s32(a.v.hi), vnegq_s64(vreinterpretq_s64_s32(n.v.hi))));
+    r.v.lo = vreinterpretq_s32_s64(vshlq_s64(vreinterpretq_s64_s32(a.v.lo), vreinterpretq_s64_s32(n.v.lo)));
+    r.v.hi = vreinterpretq_s32_s64(vshlq_s64(vreinterpretq_s64_s32(a.v.hi), vreinterpretq_s64_s32(n.v.hi)));
     return r;
   }
 
   __forceinline vllong4 srl(const vllong4& a, long long b) {
     vllong4 r;
-    int64x2_t shift = vdupq_n_s64((int64_t)b);
+    int64x2_t shift = vdupq_n_s64(-(int64_t)b);
     r.v.lo = vreinterpretq_s32_s64(vshlq_u64(vreinterpretq_u64_s32(a.v.lo), shift));
     r.v.hi = vreinterpretq_s32_s64(vshlq_u64(vreinterpretq_u64_s32(a.v.hi), shift));
     return r;

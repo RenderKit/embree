@@ -202,12 +202,12 @@ namespace embree
   __forceinline vint4 operator ^(const vint4& a, int b) { return a ^ vint4(b); }
   __forceinline vint4 operator ^(int a, const vint4& b) { return vint4(a) ^ b; }
 
-  __forceinline vint4 operator <<(const vint4& a, const int n) { return vshlq_s32(a.v, vdupq_n_s32(-(int32_t)n)); }
-  __forceinline vint4 operator >>(const vint4& a, const int n) { return vshlq_s32(a.v, vdupq_n_s32((int32_t)n)); }
+  __forceinline vint4 operator <<(const vint4& a, const int n) { return vshlq_s32(a.v, vdupq_n_s32((int32_t)n)); }
+  __forceinline vint4 operator >>(const vint4& a, const int n) { return vshlq_s32(a.v, vdupq_n_s32(-(int32_t)n)); }
 
-  __forceinline vint4 sll(const vint4& a, int b) { return vshlq_s32(a.v, vdupq_n_s32(-(int32_t)b)); }
-  __forceinline vint4 sra(const vint4& a, int b) { return vshlq_s32(a.v, vdupq_n_s32((int32_t)b)); }
-  __forceinline vint4 srl(const vint4& a, int b) { return vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.v), vdupq_n_s32((int32_t)b))); }
+  __forceinline vint4 sll(const vint4& a, int b) { return vshlq_s32(a.v, vdupq_n_s32((int32_t)b)); }
+  __forceinline vint4 sra(const vint4& a, int b) { return vshlq_s32(a.v, vdupq_n_s32(-(int32_t)b)); }
+  __forceinline vint4 srl(const vint4& a, int b) { return vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.v), vdupq_n_s32(-(int32_t)b))); }
 
   // Assignment Operators
   __forceinline vint4& operator +=(vint4& a, const vint4& b) { return a = a + b; }

@@ -158,20 +158,20 @@ namespace embree
   __forceinline vuint4 operator ^(unsigned int a, const vuint4& b) { return vuint4(a) ^ b; }
 
   __forceinline vuint4 operator <<(const vuint4& a, unsigned int n) {
-    return vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.v), vdupq_n_s32(-(int32_t)n)));
+    return vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.v), vdupq_n_s32((int32_t)n)));
   }
   __forceinline vuint4 operator >>(const vuint4& a, unsigned int n) {
-    return vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.v), vdupq_n_s32((int32_t)n)));
+    return vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.v), vdupq_n_s32(-(int32_t)n)));
   }
 
   __forceinline vuint4 sll(const vuint4& a, unsigned int b) {
-    return vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.v), vdupq_n_s32(-(int32_t)b)));
+    return vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.v), vdupq_n_s32((int32_t)b)));
   }
   __forceinline vuint4 sra(const vuint4& a, unsigned int b) {
-    return vshlq_s32(vreinterpretq_s32_u32(a.v), vdupq_n_s32((int32_t)b));
+    return vshlq_s32(vreinterpretq_s32_u32(a.v), vdupq_n_s32(-(int32_t)b));
   }
   __forceinline vuint4 srl(const vuint4& a, unsigned int b) {
-    return vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.v), vdupq_n_s32((int32_t)b)));
+    return vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.v), vdupq_n_s32(-(int32_t)b)));
   }
 
   // Assignment Operators

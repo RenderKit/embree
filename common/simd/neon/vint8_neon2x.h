@@ -336,74 +336,74 @@ namespace embree
   __forceinline vint8 operator <<(const vint8& a, int n)
   {
     vint8 r;
-    r.v.vl = vshlq_s32(a.v.vl, vdupq_n_s32(-(int32_t)n));
-    r.v.vh = vshlq_s32(a.v.vh, vdupq_n_s32(-(int32_t)n));
+    r.v.vl = vshlq_s32(a.v.vl, vdupq_n_s32((int32_t)n));
+    r.v.vh = vshlq_s32(a.v.vh, vdupq_n_s32((int32_t)n));
     return r;
   }
   __forceinline vint8 operator >>(const vint8& a, int n)
   {
     vint8 r;
-    r.v.vl = vshlq_s32(a.v.vl, vdupq_n_s32((int32_t)n));
-    r.v.vh = vshlq_s32(a.v.vh, vdupq_n_s32((int32_t)n));
+    r.v.vl = vshlq_s32(a.v.vl, vdupq_n_s32(-(int32_t)n));
+    r.v.vh = vshlq_s32(a.v.vh, vdupq_n_s32(-(int32_t)n));
     return r;
   }
 
   __forceinline vint8 operator <<(const vint8& a, const vint8& n)
   {
     vint8 r;
-    r.v.vl = vshlq_s32(a.v.vl, vnegq_s32(n.v.vl));
-    r.v.vh = vshlq_s32(a.v.vh, vnegq_s32(n.v.vh));
+    r.v.vl = vshlq_s32(a.v.vl, n.v.vl);
+    r.v.vh = vshlq_s32(a.v.vh, n.v.vh);
     return r;
   }
   __forceinline vint8 operator >>(const vint8& a, const vint8& n)
   {
     vint8 r;
-    r.v.vl = vshlq_s32(a.v.vl, n.v.vl);
-    r.v.vh = vshlq_s32(a.v.vh, n.v.vh);
+    r.v.vl = vshlq_s32(a.v.vl, vnegq_s32(n.v.vl));
+    r.v.vh = vshlq_s32(a.v.vh, vnegq_s32(n.v.vh));
     return r;
   }
 
   __forceinline vint8 sll(const vint8& a, int b)
   {
     vint8 r;
-    r.v.vl = vshlq_s32(a.v.vl, vdupq_n_s32(-(int32_t)b));
-    r.v.vh = vshlq_s32(a.v.vh, vdupq_n_s32(-(int32_t)b));
+    r.v.vl = vshlq_s32(a.v.vl, vdupq_n_s32((int32_t)b));
+    r.v.vh = vshlq_s32(a.v.vh, vdupq_n_s32((int32_t)b));
     return r;
   }
   __forceinline vint8 sra(const vint8& a, int b)
   {
     vint8 r;
-    r.v.vl = vshlq_s32(a.v.vl, vdupq_n_s32((int32_t)b));
-    r.v.vh = vshlq_s32(a.v.vh, vdupq_n_s32((int32_t)b));
+    r.v.vl = vshlq_s32(a.v.vl, vdupq_n_s32(-(int32_t)b));
+    r.v.vh = vshlq_s32(a.v.vh, vdupq_n_s32(-(int32_t)b));
     return r;
   }
   __forceinline vint8 srl(const vint8& a, int b)
   {
     vint8 r;
-    r.v.vl = vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.v.vl), vdupq_n_s32((int32_t)b)));
-    r.v.vh = vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.v.vh), vdupq_n_s32((int32_t)b)));
+    r.v.vl = vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.v.vl), vdupq_n_s32(-(int32_t)b)));
+    r.v.vh = vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.v.vh), vdupq_n_s32(-(int32_t)b)));
     return r;
   }
 
   __forceinline vint8 sll(const vint8& a, const vint8& b)
   {
     vint8 r;
-    r.v.vl = vshlq_s32(a.v.vl, vnegq_s32(b.v.vl));
-    r.v.vh = vshlq_s32(a.v.vh, vnegq_s32(b.v.vh));
+    r.v.vl = vshlq_s32(a.v.vl, b.v.vl);
+    r.v.vh = vshlq_s32(a.v.vh, b.v.vh);
     return r;
   }
   __forceinline vint8 sra(const vint8& a, const vint8& b)
   {
     vint8 r;
-    r.v.vl = vshlq_s32(a.v.vl, b.v.vl);
-    r.v.vh = vshlq_s32(a.v.vh, b.v.vh);
+    r.v.vl = vshlq_s32(a.v.vl, vnegq_s32(b.v.vl));
+    r.v.vh = vshlq_s32(a.v.vh, vnegq_s32(b.v.vh));
     return r;
   }
   __forceinline vint8 srl(const vint8& a, const vint8& b)
   {
     vint8 r;
-    r.v.vl = vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.v.vl), b.v.vl));
-    r.v.vh = vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.v.vh), b.v.vh));
+    r.v.vl = vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.v.vl), vnegq_s32(vreinterpretq_s32_u32(b.v.vl))));
+    r.v.vh = vreinterpretq_s32_u32(vshlq_u32(vreinterpretq_u32_s32(a.v.vh), vnegq_s32(vreinterpretq_s32_u32(b.v.vh))));
     return r;
   }
 
