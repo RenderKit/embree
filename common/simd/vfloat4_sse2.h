@@ -586,9 +586,9 @@ namespace embree
 #if defined(__aarch64__) || defined(_M_ARM64)
     return vcvtq_s32_f32(floor(a));
 #elif defined(__SSE4_1__)
-    return vint4(floor(a));
+    return toInt(floor(a));
 #else
-    return vint4((a-vfloat4(0.5f)));
+    return toInt(a-vfloat4(0.5f));
 #endif
   }
 
