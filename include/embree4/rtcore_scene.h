@@ -10,6 +10,9 @@ RTC_NAMESPACE_BEGIN
 /* Opaque traversable type */
 typedef struct RTCTraversableTy* RTCTraversable;
 
+/* Forward declaration for geometry */
+typedef struct RTCGeometryTy* RTCGeometry;
+
 /* Forward declarations for ray structures */
 struct RTCRayHit;
 struct RTCRayHit4;
