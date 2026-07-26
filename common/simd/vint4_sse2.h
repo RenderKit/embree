@@ -183,7 +183,7 @@ namespace embree
     }
     
     static __forceinline void store_nt(void* ptr, const vint4& v) {
-#if !defined(__aarch64__) || defined(_M_ARM64) && defined(__SSE4_1__)
+#if !defined(__aarch64__) && !defined(_M_ARM64) && defined(__SSE4_1__)
       _mm_stream_ps((float*)ptr, _mm_castsi128_ps(v));
 #else
       _mm_store_si128((__m128i*)ptr,v);
