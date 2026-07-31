@@ -21,6 +21,7 @@ struct TutorialData
   uniform int frameID;
   
   RTCScene g_scene;
+  RTCTraversable g_traversable;
   uniform Vec3f* uniform face_colors;
   uniform float g_time;
   
@@ -59,6 +60,7 @@ inline void TutorialData_Constructor(uniform TutorialData* uniform This)
 {
   This->frameID = 50;
   This->g_scene = NULL;
+  This->g_traversable = NULL;
   This->face_colors = uniform new uniform Vec3f[12];
   This->g_time = 0;
   This->g_accu = NULL;

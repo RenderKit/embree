@@ -29,6 +29,8 @@
 RTC_NAMESPACE_USE
 #include "../../kernels/config.h"
 
+#include "alloc/alloc.h"
+
 namespace embree
 {
 #if defined(EMBREE_SYCL_TUTORIAL) && defined(EMBREE_SYCL_SUPPORT)

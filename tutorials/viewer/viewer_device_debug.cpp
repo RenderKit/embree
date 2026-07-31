@@ -27,6 +27,7 @@ extern "C" RTCFeatureFlags g_feature_mask;
 struct DebugShaderData
 {
   RTCScene scene;
+  RTCTraversable traversable;
   ISPCScene* ispc_scene;
 
   /* intensity scaling for traversal cost visualization */
@@ -40,6 +41,7 @@ struct DebugShaderData
 void DebugShaderData_Constructor(DebugShaderData* This)
 {
   This->scene = g_scene;
+  This->traversable = rtcGetSceneTraversable(g_scene);
   This->ispc_scene = g_ispc_scene;
   This->scale = scale;
   This->debug = g_debug;
@@ -166,12 +168,12 @@ void DebugShaderData_Constructor(DebugShaderData* This)
   }
 
 #define RENDER_FRAME_FUNCTION_SYCL(Name)                                \
-extern "C" void renderFrame##Name (int* pixels,       \
-                                   const unsigned int width,    \
-                                   const unsigned int height,   \
-                                   const float time,            \
-                                   const ISPCCamera& camera)          \
-{                                                                       \
+  extern "C" void renderFrame##Name (int* pixels,       \
+                          const unsigned int width,             \
+                          const unsigned int height,            \
+                          const float time,                     \
+                          const ISPCCamera& camera)             \
+  {                                                                     \
     DebugShaderData data;                                               \
     DebugShaderData_Constructor(&data);                                 \
     sycl::event event;                                                  \
@@ -189,8 +191,8 @@ extern "C" void renderFrame##Name (int* pixels,       \
       unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f)); \
       unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f)); \
       pixels[y*width+x] = (b << 16) + (g << 8) + r;                   \
-   });                                     \
- });                                \
+    });                                     \
+  });                                \
   global_gpu_queue->wait_and_throw();\
   \
   const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();\
@@ -229,16 +231,16 @@ Vec3fa renderPixelDebugShader(const DebugShaderData& data, float x, float y, con
     RTCOccludedArguments args;
     rtcInitOccludedArguments(&args);
     args.feature_mask = feature_mask;
-    rtcOccluded1(data.scene,RTCRay_(ray),&args);
+    rtcTraversableOccluded1(data.traversable,RTCRay_(ray),&args);
   }
   else
   {
     RTCIntersectArguments args;
     rtcInitIntersectArguments(&args);
     args.feature_mask = feature_mask;
-    rtcIntersect1(data.scene,RTCRayHit_(ray),&args);
+    rtcTraversableIntersect1(data.traversable,RTCRayHit_(ray),&args);
   }
-  
+
   int64_t c1 = get_tsc();
   RayStats_addRay(stats);
 
@@ -265,7 +267,7 @@ Vec3fa renderPixelDebugShader(const DebugShaderData& data, float x, float y, con
 
   case SHADER_TEXCOORDS:
   case SHADER_TEXCOORDS_GRID:
-    
+
 #if !defined(__SYCL_DEVICE_ONLY__)
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
       return Vec3fa(0.0f,0.0f,1.0f);
@@ -333,7 +335,7 @@ Vec3fa renderPixelAOShader(const DebugShaderData& data, float x, float y, const 
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
   args.feature_mask = feature_mask;
-  rtcIntersect1(data.scene,RTCRayHit_(ray),&args);
+  rtcTraversableIntersect1(data.traversable,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -371,7 +373,7 @@ Vec3fa renderPixelAOShader(const DebugShaderData& data, float x, float y, const 
     RTCOccludedArguments args;
     rtcInitOccludedArguments(&args);
     args.feature_mask = feature_mask;
-    rtcOccluded1(data.scene,RTCRay_(shadow),&args);
+    rtcTraversableOccluded1(data.traversable,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

@@ -44,7 +44,7 @@ namespace embree
                          unsigned int num)
   {
     /* verify that all accesses are 4 bytes aligned */
-    if ((type != RTC_BUFFER_TYPE_FLAGS) && (((size_t(buffer->getPtr()) + offset) & 0x3) || (stride & 0x3)))
+    if ((type != RTC_BUFFER_TYPE_FLAGS) && (((size_t(buffer->getHostPtr()) + offset) & 0x3) || (stride & 0x3)))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION, "data must be 4 bytes aligned");
 
     if (type == RTC_BUFFER_TYPE_VERTEX) {
@@ -82,20 +82,20 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
   }
 
-  void* Points::getBuffer(RTCBufferType type, unsigned int slot)
+  void* Points::getBufferData(RTCBufferType type, unsigned int slot, BufferDataPointerType pointerType)
   {
     if (type == RTC_BUFFER_TYPE_VERTEX) {
       if (slot >= vertices.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return vertices[slot].getPtr();
+      return vertices[slot].getPtr(pointerType);
     } else if (type == RTC_BUFFER_TYPE_NORMAL) {
       if (slot >= normals.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return normals[slot].getPtr();
+      return normals[slot].getPtr(pointerType);
     } else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
       if (slot >= vertexAttribs.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return vertexAttribs[slot].getPtr();
+      return vertexAttribs[slot].getPtr(pointerType);
     } else {
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
       return nullptr;
@@ -130,14 +130,16 @@ namespace embree
   void Points::commit()
   {
     /* verify that stride of all time steps are identical */
-    for (unsigned int t = 0; t < numTimeSteps; t++)
+    for (unsigned int t = 0; t < numTimeSteps; t++) {
       if (vertices[t].getStride() != vertices[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "stride of vertex buffers have to be identical for each time step");
-
-    for (const auto& buffer : normals)
+      vertices[t].buffer->commitIfNeeded();
+    }
+    for (auto& buffer : normals) {
       if (buffer.getStride() != normals[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "stride of normal buffers have to be identical for each time step");
-
+      buffer.buffer->commitIfNeeded();
+    }
     vertices0 = vertices[0];
     if (getType() == GTY_ORIENTED_DISC_POINT)
       normals0 = normals[0];
@@ -190,6 +192,38 @@ namespace embree
     }
     return true;
   }
+
+  size_t Points::getGeometryDataDeviceByteSize() const {
+    size_t byte_size = sizeof(Points);
+    if (vertices.size() > 0)
+      byte_size += numTimeSteps * sizeof(BufferView<Vec3ff>);
+    if (normals.size() > 0)
+      byte_size += numTimeSteps * sizeof(BufferView<Vec3fa>);
+    return 16 * ((byte_size + 15) / 16);
+  }
+
+  void Points::convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const {
+    Points* points = (Points*)(data_host + offset);
+    std::memcpy(data_host + offset, (void*)this, sizeof(Points));
+    offset += sizeof(Points);
+    if (vertices.size() > 0) {
+      const size_t offsetVertices = offset;
+      for (size_t t = 0; t < numTimeSteps; ++t) {
+        std::memcpy(data_host + offset, &(vertices[t]), sizeof(BufferView<Vec3ff>));
+        offset += sizeof(BufferView<Vec3ff>);
+      }
+      points->vertices.setDataPtr((BufferView<Vec3ff>*)(data_device + offsetVertices));
+    }
+    if (normals.size() > 0) {
+      const size_t offsetNormals = offset;
+      for (size_t t = 0; t < numTimeSteps; ++t) {
+        std::memcpy(data_host + offset, &(normals[t]), sizeof(BufferView<Vec3fa>));
+        offset += sizeof(BufferView<Vec3fa>);
+      }
+      points->normals.setDataPtr((BufferView<Vec3fa>*)(data_device + offsetNormals));
+    }
+  }
+
 #endif
 
   namespace isa

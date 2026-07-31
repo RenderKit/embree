@@ -15,6 +15,7 @@ struct TutorialData
 
   /* scene data */
   RTCScene g_scene;
+  RTCTraversable g_traversable;
 
   uniform Vec3fa* uniform position;
   uniform Vec3fa* uniform colors;
@@ -28,6 +29,7 @@ void TutorialData_Constructor(uniform TutorialData* uniform This)
   This->numPhi = NUM_PHI;
   This->numTheta = NUM_THETA;
   This->g_scene  = NULL;
+  This->g_traversable  = NULL;
   This->position = uniform new uniform Vec3fa[NUM_SPHERES];
   This->colors = uniform new uniform Vec3fa[NUM_SPHERES+1];
   This->radius = uniform new uniform float[NUM_SPHERES];

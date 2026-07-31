@@ -23,6 +23,7 @@ struct TutorialData
   int frameID;
   
   RTCScene g_scene;
+  RTCTraversable g_traversable;
   Vec3fa* face_colors;
   float g_time;
   
@@ -61,6 +62,7 @@ inline void TutorialData_Constructor(TutorialData* This)
 {
   This->frameID = 50;
   This->g_scene = nullptr;
+  This->g_traversable = nullptr;
   This->face_colors = (Vec3fa*) alignedUSMMalloc((12)*sizeof(Vec3fa),16);
   This->g_time = 0;
   This->g_accu = nullptr;

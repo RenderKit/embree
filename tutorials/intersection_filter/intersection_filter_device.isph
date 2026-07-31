@@ -6,6 +6,7 @@
 struct TutorialData
 {
   RTCScene g_scene;
+  RTCTraversable g_traversable;
   uniform Vec3f* uniform colors;
 
   RTCFilterFunctionN intersectionFilter;
@@ -15,6 +16,7 @@ struct TutorialData
 inline void TutorialData_Constructor(uniform TutorialData* uniform This)
 {
   This->g_scene = NULL;
+  This->g_traversable = NULL;
   This->colors = NULL;
   This->intersectionFilter = NULL;
   This->occlusionFilter = NULL;

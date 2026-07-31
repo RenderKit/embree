@@ -87,6 +87,14 @@
       "hidden": true,
       "inherits": ["package", "windows"],
       "cacheVariables": {
+        "CMAKE_INSTALL_DATAROOTDIR": ""
+      }
+    },
+    {
+      "name": "package-windows-signed",
+      "hidden": true,
+      "inherits": ["package", "windows"],
+      "cacheVariables": {
         "CMAKE_INSTALL_DATAROOTDIR": "",
         "EMBREE_SIGN_FILE": "$env{SIGN_FILE_WINDOWS}"
       }
@@ -96,8 +104,7 @@
       "hidden": true,
       "inherits": ["package-static", "windows"],
       "cacheVariables": {
-        "CMAKE_INSTALL_DATAROOTDIR": "",
-        "EMBREE_SIGN_FILE": "$env{SIGN_FILE_WINDOWS}"
+        "CMAKE_INSTALL_DATAROOTDIR": ""
       }
     }
   ]

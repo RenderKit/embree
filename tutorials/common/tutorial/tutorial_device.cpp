@@ -10,13 +10,14 @@ namespace embree {
 
 /* the scene to render */
 extern RTCScene g_scene;
+extern RTCTraversable g_traversable;
 extern "C" float g_debug;
 
 /* returns the point seen through specified pixel */
 extern "C" bool device_pick(const float x,
-                                const float y,
-                                const ISPCCamera& camera,
-                                Vec3fa& hitPos)
+                            const float y,
+                            const ISPCCamera& camera,
+                            Vec3fa& hitPos)
 {
   /* initialize ray */
   Ray1 ray;
@@ -30,7 +31,11 @@ extern "C" bool device_pick(const float x,
   ray.time() = g_debug;
 
   /* intersect ray with scene */
+#if defined(__SYCL_DEVICE_ONLY__)
+  rtcTraversableIntersect1(g_traversable,RTCRayHit1_(ray));
+#else
   rtcIntersect1(g_scene,RTCRayHit1_(ray));
+#endif
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {

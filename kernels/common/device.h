@@ -38,7 +38,7 @@ namespace embree
       
       __forceinline pointer allocate( size_type n ) {
         assert(device);
-        return (pointer) device->malloc(n*sizeof(T),alignment);
+        return (pointer) device->malloc(n*sizeof(T),alignment,EmbreeMemoryType::MALLOC);
       }
       
       __forceinline void deallocate( pointer p, size_type n ) {
@@ -117,11 +117,22 @@ namespace embree
     /*! leave device by setting up some global state */
     virtual void leave() {}
 
-    /*! buffer allocation */
+    /*! buffer allocation - using USM shared */
     virtual void* malloc(size_t size, size_t align);
+
+    /*! buffer allocation */
+    virtual void* malloc(size_t size, size_t align, EmbreeMemoryType type);
 
     /*! buffer deallocation */
     virtual void free(void* ptr);
+
+    /*! returns true if device is of type DeviceGPU */
+    virtual bool is_gpu() const { return false; }
+
+    /*! returns true if device and host have shared memory system (e.g., integrated GPU) */
+    virtual bool has_unified_memory() const { return true; }
+
+    virtual EmbreeMemoryType get_memory_type(void* ptr) const { return EmbreeMemoryType::MALLOC; }
 
   private:
 
@@ -171,10 +182,26 @@ namespace embree
     virtual void enter() override;
     virtual void leave() override;
     virtual void* malloc(size_t size, size_t align) override;
+    virtual void* malloc(size_t size, size_t align, EmbreeMemoryType type) override;
     virtual void free(void* ptr) override;
 
     /* set SYCL device */
     void setSYCLDevice(const sycl::device sycl_device);
+
+    /*! returns true if device is of type DeviceGPU */
+    virtual bool is_gpu() const override { return true; }
+
+    /*! returns true if device and host have shared memory system (e.g., integrated GPU) */
+    virtual bool has_unified_memory() const override;
+
+    virtual EmbreeMemoryType get_memory_type(void* ptr) const override {
+      switch(sycl::get_pointer_type(ptr, gpu_context)) {
+        case sycl::usm::alloc::host: return EmbreeMemoryType::USM_HOST;
+        case sycl::usm::alloc::device: return EmbreeMemoryType::USM_DEVICE;
+        case sycl::usm::alloc::shared: return EmbreeMemoryType::USM_SHARED;
+        default: return EmbreeMemoryType::MALLOC;
+      }
+    }
 
   private:
     sycl::context gpu_context;

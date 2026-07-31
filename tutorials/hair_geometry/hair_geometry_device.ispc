@@ -232,7 +232,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilter(const RTCFilterFuncti
     valid_i[programIndex] = 0;
 }
 
-Vec3f occluded(RTCScene scene, uniform RayQueryContext* uniform context, Ray& ray)
+Vec3f occluded(RTCTraversable traversable, uniform RayQueryContext* uniform context, Ray& ray)
 {
   Vec3f transparency = make_Vec3f(1.0f);
   context->userRayExt = &transparency;
@@ -247,7 +247,7 @@ Vec3f occluded(RTCScene scene, uniform RayQueryContext* uniform context, Ray& ra
   args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
   args.filter = occlusionFilter;
   
-  rtcOccludedV(scene,RTCRay_(ray),&args);
+  rtcTraversableOccludedV(traversable,RTCRay_(ray),&args);
   context->userRayExt = NULL;
 
   if (ray.tfar < 0) return make_Vec3f(0.0f);
@@ -286,7 +286,7 @@ Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const unif
       return color;
 
     /* intersect ray with scene and gather all hits */
-    rtcIntersectV(data.scene,RTCRayHit_(ray),&args);
+    rtcTraversableIntersectV(data.traversable,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
 
     /* exit if we hit environment */
@@ -326,7 +326,7 @@ Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const unif
 
     /* sample directional light */
     Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(make_Vec3f(data.dirlight_direction)), eps, inf, time);
-    Vec3f T = occluded(data.scene,&context,shadow);
+    Vec3f T = occluded(data.traversable,&context,shadow);
     RayStats_addShadowRay(stats);
     Vec3f c = AnisotropicBlinn__eval(&brdf,neg(ray.dir),neg(make_Vec3f(data.dirlight_direction)));
     color = color + weight*c*T*make_Vec3f(data.dirlight_intensity);
@@ -416,6 +416,7 @@ export void device_init (uniform int8* uniform cfg)
   
   /* create scene */
   g_scene = data.scene = convertScene(data.ispc_scene);
+  data.traversable = rtcGetSceneTraversable(data.scene);
 }
 
 export void renderFrameStandard (uniform int* uniform pixels,

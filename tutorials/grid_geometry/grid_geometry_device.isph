@@ -18,13 +18,15 @@ struct TutorialData
 {
   /* scene data */
   RTCScene g_scene;
+  RTCTraversable g_traversable;
 
   uniform GridMesh gmesh;
 };
 
 void TutorialData_Constructor(uniform TutorialData* uniform This)
 {
-  This->g_scene  = NULL;
+  This->g_scene = NULL;
+  This->g_traversable = NULL;
   This->gmesh.geom = NULL;
   This->gmesh.geomNormals = NULL;
   This->gmesh.egrids = NULL;

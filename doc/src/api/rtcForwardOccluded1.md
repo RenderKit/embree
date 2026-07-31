@@ -16,7 +16,7 @@
       unsigned int instID
     );
 
-    void rtcForwardOccluded1(
+    void rtcForwardOccluded1Ex(
       const struct RTCOccludedFunctionNArguments* args,
       RTCScene scene,
       struct RTCRay* ray,

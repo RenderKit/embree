@@ -54,7 +54,7 @@ namespace embree
       : Image(width,height,name)
     {
       data = new T[width*height];
-      memset(data,0,width*height*sizeof(T));
+      memset((void*)data,0,width*height*sizeof(T));
     }
 
     /*! create image of constant color */

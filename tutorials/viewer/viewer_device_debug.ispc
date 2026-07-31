@@ -25,6 +25,7 @@ extern uniform RTCFeatureFlags g_feature_mask;
 struct DebugShaderData
 {
   RTCScene scene;
+  RTCTraversable traversable;
   ISPCScene* uniform ispc_scene;
 
   /* intensity scaling for traversal cost visualization */
@@ -38,6 +39,7 @@ struct DebugShaderData
 void DebugShaderData_Constructor(uniform DebugShaderData* uniform This)
 {
   This->scene = g_scene;
+  This->traversable = rtcGetSceneTraversable(g_scene);
   This->ispc_scene = g_ispc_scene;
   This->scale = scale;
   This->debug = g_debug;
@@ -227,14 +229,14 @@ Vec3f renderPixelDebugShader(const uniform DebugShaderData& data, float x, float
     uniform RTCOccludedArguments args;
     rtcInitOccludedArguments(&args);
     args.feature_mask = feature_mask;
-    rtcOccludedV(data.scene,RTCRay_(ray),&args);
+    rtcTraversableOccludedV(data.traversable,RTCRay_(ray),&args);
   }
   else
   {
     uniform RTCIntersectArguments args;
     rtcInitIntersectArguments(&args);
     args.feature_mask = feature_mask;
-    rtcIntersectV(data.scene,RTCRayHit_(ray),&args);
+    rtcTraversableIntersectV(data.traversable,RTCRayHit_(ray),&args);
   }
 
   uniform int64 c1 = get_tsc();
@@ -303,6 +305,9 @@ Vec3f renderPixelDebugShader(const uniform DebugShaderData& data, float x, float
   case SHADER_CYCLES:
     return make_Vec3f((uniform float)(c1-c0)*data.scale,0.0f,0.0f);
     
+  case SHADER_AO:
+    return make_Vec3f(0,0,0);
+
   case SHADER_DEFAULT:
     return make_Vec3f(0,0,0);
   }
@@ -328,7 +333,7 @@ Vec3f renderPixelAOShader(const uniform DebugShaderData& data, float x, float y,
   uniform RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
   args.feature_mask = feature_mask;
-  rtcIntersectV(data.scene,RTCRayHit_(ray),&args);
+  rtcTraversableIntersectV(data.traversable,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -366,7 +371,7 @@ Vec3f renderPixelAOShader(const uniform DebugShaderData& data, float x, float y,
     uniform RTCOccludedArguments args;
     rtcInitOccludedArguments(&args);
     args.feature_mask = feature_mask;
-    rtcOccludedV(data.scene,RTCRay_(shadow),&args);
+    rtcTraversableOccludedV(data.traversable,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -379,5 +384,10 @@ Vec3f renderPixelAOShader(const uniform DebugShaderData& data, float x, float y,
   return col * intensity;
 }
 
+#if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION)
+RENDER_FRAME_FUNCTION_SYCL(DebugShader)
+RENDER_FRAME_FUNCTION_SYCL(AOShader)
+#else
 RENDER_FRAME_FUNCTION_ISPC(DebugShader)
 RENDER_FRAME_FUNCTION_ISPC(AOShader)
+#endif

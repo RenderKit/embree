@@ -232,16 +232,12 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2025.0
       artifact-in: integrate-linux-GCC
       cmd: |
         module load cmake/3.25.3
         cmake --preset integrate-linux-gcc -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
         cmake --build build --config Release --target test_integration
-        
-
-
-
 
   integrate-linux-ICX:
     secrets: inherit
@@ -249,7 +245,7 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2025.0
       artifact-out: integrate-linux-ICX
       artifact-path: ./build/*.tar.gz
       cmd: |
@@ -277,7 +273,7 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2025.0
       artifact-in: integrate-linux-ICX
       cmd: |
         module load cmake/3.25.3
@@ -291,7 +287,7 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2025.0
       artifact-in: integrate-linux-ICX
       cmd: |
         module load cmake/3.25.3
@@ -348,7 +344,7 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2025.0
       artifact-in: integrate-static-linux-CLANG
       cmd: |
         module load cmake/3.25.3
@@ -408,15 +404,12 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2025.0
       artifact-in: integrate-static-linux-GCC
       cmd: |
         module load cmake/3.25.3
         cmake --preset integrate-static-linux-gcc -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
         cmake --build build --config Release --target test_integration
-
-
-
 
 
   integrate-static-linux-ICX:
@@ -425,7 +418,7 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2025.0
       artifact-out: integrate-static-linux-ICX
       artifact-path: ./build/*.tar.gz
       cmd: |
@@ -440,7 +433,7 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2025.0
       artifact-in: integrate-static-linux-ICX
       cmd: |
         module load cmake/3.25.3
@@ -454,7 +447,7 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2025.0
       artifact-in: integrate-static-linux-ICX
       cmd: |
         module load cmake/3.25.3
@@ -468,17 +461,13 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2025.0
       artifact-in: integrate-static-linux-ICX
       cmd: |
         module load cmake/3.25.3
         cmake --preset integrate-static-linux-icx -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
         cmake --build build --config Release --target test_integration
         
-
-
-
-
   integrate-linux-CLANG:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
@@ -525,7 +514,7 @@ jobs:
     with:
       image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      dpcpp-version: intel/2024.1.0
+      dpcpp-version: intel/2025.0
       artifact-in: integrate-linux-CLANG
       cmd: |
         module load cmake/3.25.3
@@ -543,10 +532,9 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/ubuntu:22.04
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: icx/compiler_ppkg-rel/20240110
+      image: embree/ubuntu:24.04
+      runs-on: '[ "Linux", "docker", "build" ]'
+      dpcpp-version: intel/2025.0
       artifact-out: integrate-sycl-linux-ICX
       artifact-path: ./build/*.tar.gz
       cmd: |
@@ -559,30 +547,24 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     needs: [ "integrate-sycl-linux-ICX" ]
     with:
-      image: embree/ubuntu:22.04
+      image: embree/ubuntu:24.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: icx/compiler_ppkg-rel/20240110
+      env-from-files: ./.github/workflows/gfx-ubuntu24-public.env
+      dpcpp-version: intel/2025.0
       artifact-in: integrate-sycl-linux-ICX
       cmd: |
         module load cmake/3.25.3
         cmake --preset integrate-sycl-linux-icx -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
         cmake --build build --config Release --target test_integration
         
-
-
-
-
   integrate-sycl-linux-DPCPP:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     with:
-      image: embree/ubuntu:22.04
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: intel-llvm/nightly-2023-09-22-rk
+      image: embree/ubuntu:24.04
+      runs-on: '[ "Linux", "docker", "build" ]'
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
       artifact-out: integrate-sycl-linux-DPCPP
       artifact-path: ./build/*.tar.gz
       cmd: |
@@ -590,21 +572,19 @@ jobs:
         cmake --preset integrate-sycl-linux-dpcpp -DCMAKE_BUILD_TYPE=Release
         cmake --build build --config Release --target build
 
-  istegrate-sycl-linux-DPCPP-test:
+  integrate-sycl-linux-DPCPP-test:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
     needs: [ "integrate-sycl-linux-DPCPP" ]
     with:
-      image: embree/ubuntu:22.04
+      image: embree/ubuntu:24.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
-      project: embree
-      env-from-files: ./.github/workflows/dpcpp-none.env ./.github/workflows/gfx-ubuntu22-public.env
-      dpcpp-version: icx/compiler_ppkg-rel/20240110
+      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-ubuntu24-public.env
       artifact-in: integrate-sycl-linux-DPCPP
       cmd: |
         module load cmake/3.25.3
-        cmake --preset integrate-sycl-linux-dpcpp -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-icx
+        cmake --preset integrate-sycl-linux-dpcpp -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-linux-clang
         cmake --build build --config Release --target test_integration
         
 
@@ -648,8 +628,6 @@ jobs:
         cmake --preset integrate-macos-gcc -DCMAKE_BUILD_TYPE=Release -DEMBREE_TESTING_INTEGRATION_PRESET=test-macos-clang
         cmake --build build --config Release --target test_integration
       
-
-
 
 
 #  TODO: cant find tbb/tbb.h ???

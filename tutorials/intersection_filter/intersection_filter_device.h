@@ -8,6 +8,7 @@ namespace embree {
 struct TutorialData
 {
   RTCScene g_scene;
+  RTCTraversable g_traversable;
   Vec3fa* colors;
 
   RTCFilterFunctionN intersectionFilter;
@@ -17,6 +18,7 @@ struct TutorialData
 inline void TutorialData_Constructor(TutorialData* This)
 {
   This->g_scene = nullptr;
+  This->g_traversable = nullptr;
   This->colors = nullptr;
   This->intersectionFilter = nullptr;
   This->occlusionFilter = nullptr;

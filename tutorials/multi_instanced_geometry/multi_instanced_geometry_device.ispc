@@ -231,7 +231,7 @@ void renderPixelStandard(const uniform TutorialData& data, int x, int y,
 
   RandomSampler sampler;
   Ray primaryRay = samplePrimaryRay(data, x, 0, y, 0, camera, sampler, stats);
-  rtcIntersectV(data.g_scene, RTCRayHit_(primaryRay),&iargs);
+  rtcTraversableIntersectV(data.g_traversable, RTCRayHit_(primaryRay), &iargs);
   
   Vec3f color = make_Vec3f(0.f);
   if (primaryRay.geomID != RTC_INVALID_GEOMETRY_ID)
@@ -240,7 +240,7 @@ void renderPixelStandard(const uniform TutorialData& data, int x, int y,
     Vec3f emission;
     sampleLightDirection(RandomSampler_get3D(sampler), lightDir, emission);
     Ray shadowRay = makeShadowRay(primaryRay, lightDir, stats);
-    rtcOccludedV(data.g_scene, RTCRay_(shadowRay), &sargs);
+    rtcTraversableOccludedV(data.g_traversable, RTCRay_(shadowRay), &sargs);
     color = shade(data, primaryRay, shadowRay, lightDir, emission);
   }
   
@@ -303,6 +303,7 @@ export void device_init(uniform int8* uniform cfg)
 {
   TutorialData_Constructor(&g_data);
   g_scene = g_data.g_scene = initializeScene(g_data, g_device);
+  g_data.g_traversable = rtcGetSceneTraversable(g_scene);
 }
 
 

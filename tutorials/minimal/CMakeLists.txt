@@ -27,7 +27,7 @@ ADD_EMBREE_GENERIC_CPP_TEST(minimal embree_minimal)
 IF (EMBREE_SYCL_SUPPORT)
   
   ADD_EXECUTABLE(embree_minimal_sycl minimal_sycl.cpp)
-  TARGET_LINK_LIBRARIES(embree_minimal_sycl embree ze_wrapper)
+  TARGET_LINK_LIBRARIES(embree_minimal_sycl embree ze_wrapper ${CMAKE_DL_LIBS})
   SET_PROPERTY(TARGET embree_minimal_sycl APPEND PROPERTY COMPILE_FLAGS "-fsycl -Xclang -fsycl-allow-func-ptr -fsycl-targets=spir64")
   SET_PROPERTY(TARGET embree_minimal_sycl APPEND PROPERTY LINK_FLAGS    "-fsycl -fsycl-targets=spir64")
   

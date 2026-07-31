@@ -18,6 +18,7 @@ struct TutorialData
 {  
   RTCScene g_scene;
   RTCScene g_scene0;
+  RTCTraversable g_traversable;
   Sphere* g_spheres;
   int g_spp;
   bool g_motion_blur;
@@ -49,6 +50,7 @@ inline void TutorialData_Constructor(TutorialData* This)
   This->g_scene = nullptr;
   This->g_scene0 = nullptr;
   This->g_spheres = nullptr;
+  This->g_traversable = nullptr;
   This->g_spp = 0;
   This->g_motion_blur = true;
   This->g_time = 0.f;

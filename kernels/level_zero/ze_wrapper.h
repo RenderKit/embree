@@ -27,18 +27,14 @@ typedef struct _ze_rtas_builder_build_op_debug_exp_desc_t
 
 struct ZeWrapper
 {
-  enum RTAS_BUILD_MODE {
-    AUTO = 0,       // try L0 implementation first and fallback to internal implementation
-    INTERNAL = 1,   // use internal RTAS build implementation
-    LEVEL_ZERO = 2, // use Level Zero provided RTAS build implementation
-  };
-
   ~ZeWrapper();
 
   static ze_result_t init();
-  static ze_result_t initRTASBuilder(ze_driver_handle_t hDriver, RTAS_BUILD_MODE rtas_build_mode = RTAS_BUILD_MODE::AUTO);
+  static ze_result_t initRTASBuilder(ze_driver_handle_t hDriver);
   
   static ze_result_t zeMemFree(ze_context_handle_t, void*);
+  static ze_result_t zeMemAllocHost(ze_context_handle_t, const ze_host_mem_alloc_desc_t*, size_t, size_t, void**);
+  static ze_result_t zeMemAllocDevice(ze_context_handle_t, const ze_device_mem_alloc_desc_t*, size_t, size_t, ze_device_handle_t, void**);
   static ze_result_t zeMemAllocShared(ze_context_handle_t, const ze_device_mem_alloc_desc_t*, const ze_host_mem_alloc_desc_t*, size_t, size_t, ze_device_handle_t, void**);
   static ze_result_t zeDriverGetExtensionProperties(ze_driver_handle_t, uint32_t*, ze_driver_extension_properties_t*);
   static ze_result_t zeDeviceGetProperties(ze_device_handle_t, ze_device_properties_t*);
@@ -64,6 +60,6 @@ struct ZeWrapper
   static ze_result_t zeRTASParallelOperationGetPropertiesExp( ze_rtas_parallel_operation_exp_handle_t hParallelOperation, ze_rtas_parallel_operation_exp_properties_t* pProperties );
   static ze_result_t zeRTASParallelOperationJoinExp( ze_rtas_parallel_operation_exp_handle_t hParallelOperation);
 
-  static RTAS_BUILD_MODE rtas_builder;
+  static bool rtas_builder_selected;
 };
 

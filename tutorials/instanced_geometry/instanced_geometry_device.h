@@ -13,6 +13,7 @@ struct TutorialData
   /* scene data */
   RTCScene g_scene;
   RTCScene g_scene1;
+  RTCTraversable g_traversable;
   
   AffineSpace3fa* instance_xfm;
   LinearSpace3fa* normal_xfm;
@@ -33,6 +34,7 @@ void TutorialData_Constructor(TutorialData* This)
 {
   This->g_scene  = nullptr;
   This->g_scene1 = nullptr;
+  This->g_traversable = nullptr;
   This->instance_xfm = (AffineSpace3fa*) alignedUSMMalloc((4)*sizeof(AffineSpace3fa),16);
   This->normal_xfm = (LinearSpace3fa*) alignedUSMMalloc((4)*sizeof(LinearSpace3fa),16);
   This->colors = (Vec3fa*) alignedUSMMalloc((4*4)*sizeof(Vec3fa),16);

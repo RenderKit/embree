@@ -234,7 +234,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilter(const RTCFilterFunctionNArgume
     valid_i[0] = 0;
 }
 
-Vec3fa occluded(RTCScene scene, RayQueryContext* context, Ray& ray)
+Vec3fa occluded(RTCTraversable traversable, RayQueryContext* context, Ray& ray)
 {
   Vec3fa transparency = Vec3fa(1.0f);
   context->userRayExt = &transparency;
@@ -249,8 +249,8 @@ Vec3fa occluded(RTCScene scene, RayQueryContext* context, Ray& ray)
   args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
   args.filter = occlusionFilter;
   
-  rtcOccluded1(scene,RTCRay_(ray),&args);
-  context->userRayExt = NULL;
+  rtcTraversableOccluded1(traversable,RTCRay_(ray),&args);
+  context->userRayExt = nullptr;
 
   if (ray.tfar < 0) return Vec3fa(0.0f);
   else              return transparency;
@@ -288,7 +288,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
       return color;
 
     /* intersect ray with scene and gather all hits */
-    rtcIntersect1(data.scene,RTCRayHit_(ray),&args);
+    rtcTraversableIntersect1(data.traversable,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
 
     /* exit if we hit environment */
@@ -328,7 +328,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
 
     /* sample directional light */
     Ray shadow(ray.org + ray.tfar*ray.dir, neg(Vec3fa(data.dirlight_direction)), eps, inf, time);
-    Vec3fa T = occluded(data.scene,&context,shadow);
+    Vec3fa T = occluded(data.traversable,&context,shadow);
     RayStats_addShadowRay(stats);
     Vec3fa c = AnisotropicBlinn__eval(&brdf,neg(ray.dir),neg(Vec3fa(data.dirlight_direction)));
     color = color + weight*c*T*Vec3fa(data.dirlight_intensity);
@@ -418,6 +418,7 @@ extern "C" void device_init (char* cfg)
   
   /* create scene */
   g_scene = data.scene = convertScene(data.ispc_scene);
+  data.traversable = rtcGetSceneTraversable(data.scene);
 }
 
 extern "C" void renderFrameStandard (int* pixels,
@@ -465,7 +466,7 @@ extern "C" void device_render (int* pixels,
 {
   /* create accumulator */
   if (data.accu_width != width || data.accu_height != height) {
-    data.accu = (Vec3ff*) alignedUSMMalloc((width*height)*sizeof(Vec3ff),16,EMBREE_USM_SHARED_DEVICE_READ_WRITE);
+    data.accu = (Vec3ff*) alignedUSMMalloc((width*height)*sizeof(Vec3ff),16,EmbreeUSMMode::DEVICE_READ_WRITE);
     data.accu_width = width;
     data.accu_height = height;
     for (unsigned int i=0; i<width*height; i++)

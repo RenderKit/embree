@@ -39,6 +39,7 @@ struct TutorialData
   
   /* scene data */
   RTCScene scene;
+  RTCTraversable traversable;
 };
 
 void TutorialData_Constructor(uniform TutorialData* uniform This)
@@ -63,6 +64,7 @@ void TutorialData_Constructor(uniform TutorialData* uniform This)
   This->use_smooth_normals = false;
         
   This->scene = NULL;
+  This->traversable = NULL;
 }
 
 void TutorialData_Destructor(uniform TutorialData* uniform This)

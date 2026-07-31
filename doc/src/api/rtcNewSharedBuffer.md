@@ -42,4 +42,4 @@ queried using `rtcGetDeviceError`.
 
 #### SEE ALSO
 
-[rtcRetainBuffer], [rtcReleaseBuffer]
+[rtcNewSharedBufferHostDevice], [rtcRetainBuffer], [rtcReleaseBuffer]

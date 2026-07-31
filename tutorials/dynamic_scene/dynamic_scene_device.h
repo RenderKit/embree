@@ -17,6 +17,7 @@ struct TutorialData
 
   /* scene data */
   RTCScene g_scene;
+  RTCTraversable g_traversable;
 
   Vec3fa* position;
   Vec3fa* colors;
@@ -30,6 +31,7 @@ void TutorialData_Constructor(TutorialData* This)
   This->numPhi = NUM_PHI;
   This->numTheta = NUM_THETA;
   This->g_scene  = nullptr;
+  This->g_traversable  = nullptr;
   This->position = (Vec3fa*) alignedUSMMalloc((NUM_SPHERES)*sizeof(Vec3fa),16);
   This->colors = (Vec3fa*) alignedUSMMalloc((NUM_SPHERES+1)*sizeof(Vec3fa),16);
   This->radius = (float*) alignedUSMMalloc((NUM_SPHERES)*sizeof(float),16);

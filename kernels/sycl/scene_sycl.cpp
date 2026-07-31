@@ -9,7 +9,9 @@
 #include "../common/scene.h"
 #include "../common/context.h"
 #include "../geometry/filter.h"
-#include "rthwif_embree.h"
+
+#include "../../common/algorithms/parallel_for.h"
+
 using namespace embree;
 
 #define DBG(x)
@@ -46,6 +48,9 @@ RTC_API_EXTERN_C bool prefetchUSMSharedOnGPU(RTCScene hscene)
   // we accumulate some nonsene data to prevent compiler
   // optimizing away the memory fetches in the GPU kernel
   size_t* result = sycl::malloc_shared<size_t>(num_workers, queue);
+  
+  size_t accelSize = scene->accelBuffer.getHWAccelSize();
+  char* accelPtr = scene->accelBuffer.getHWAccel(0);
 
   // Use num_workers GPU work items to iterate over all USM shared
   // allocations to trigger USM migration from CPU to GPU
@@ -89,13 +94,13 @@ RTC_API_EXTERN_C bool prefetchUSMSharedOnGPU(RTCScene hscene)
     {
       // iterate over BVH memory buffer in steps of 4KB
       // (page size on Intel Data Center Max GPUs)
-      const size_t accel_size = scene->hwaccel.size() / (1 << 12);
+      const size_t accel_size = accelSize / (1 << 12);
       const size_t num_iterations = (accel_size + num_workers - 1) / num_workers;
       for (size_t j = 0; j < num_iterations; ++j) {
         const size_t offset = (idx * num_iterations + j) * (1 << 12);
         if (offset >= accel_size)
           continue;
-        result[idx] += ((size_t)scene->hwaccel[offset] % 32);
+        result[idx] += ((size_t)accelPtr[offset]) % 32;
       }
     }
   });
@@ -112,6 +117,115 @@ RTC_API_EXTERN_C bool prefetchUSMSharedOnGPU(RTCScene hscene)
   return sum > 0;
 
   //RTC_CATCH_END2(scene);
+}
+
+void Scene::syncWithDevice()
+{
+  DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device);
+  if(!gpu_device) {
+    return;
+  }
+
+  sycl::queue queue = sycl::queue(gpu_device->getGPUDevice());
+  syncWithDevice(queue);
+  queue.wait_and_throw();
+}
+
+sycl::event Scene::syncWithDevice(sycl::queue queue)
+{
+#if !defined(__SYCL_DEVICE_ONLY__)
+  if(!device->is_gpu()) {
+    return sycl::event();
+  }
+
+  sycl::event event_accel_buffer_commit = accelBuffer.commit(queue);
+
+  const bool dynamic_scene = getSceneFlags() & RTC_SCENE_FLAG_DYNAMIC;
+
+  const bool num_geometries_changed = num_geometries != geometries.size();
+  num_geometries = geometries.size();
+
+  if (num_geometries_changed)
+  {
+    if (geometries_device) {
+      device->free(geometries_device);
+    }
+    geometries_device = (Geometry**)device->malloc(sizeof(Geometry*) * geometries.size(), 16, EmbreeMemoryType::USM_DEVICE);
+  }
+
+  if (num_geometries_changed || !dynamic_scene)
+  {
+    if (offsets) {
+      device->free(offsets);
+    }
+    offsets = (size_t*)device->malloc(geometries.size() * sizeof(size_t), 16, EmbreeMemoryType::MALLOC);
+
+    if (geometries_host) {
+      device->free(geometries_host);
+    }
+    geometries_host = (Geometry**)device->malloc(sizeof(Geometry*)*geometries.size(), 16, EmbreeMemoryType::MALLOC);
+  }
+
+  size_t geometry_data_byte_size_ = 0;
+  for (size_t i = 0; i < geometries.size(); ++i) {
+    Geometry* geom = geometries[i].ptr;
+    const size_t byte_size = geom? geom->getGeometryDataDeviceByteSize(): 0;
+    offsets[i] = geometry_data_byte_size_;
+    geometry_data_byte_size_ += byte_size;
+  }
+
+  const bool geometry_data_byte_size_changed = geometry_data_byte_size != geometry_data_byte_size_;
+  geometry_data_byte_size = geometry_data_byte_size_;
+
+  if (geometry_data_byte_size_changed)
+  {
+    if (geometry_data_device) {
+      device->free(geometry_data_device);
+    }
+    geometry_data_device = (char*)device->malloc(geometry_data_byte_size, 16, EmbreeMemoryType::USM_DEVICE);
+  }
+
+  if (geometry_data_byte_size_changed || !dynamic_scene)
+  {
+    if (geometry_data_host) {
+      device->free(geometry_data_host);
+    }
+    geometry_data_host = (char*)device->malloc(geometry_data_byte_size, 16, EmbreeMemoryType::MALLOC);
+  }
+
+  parallel_for(geometries.size(), [&] ( const size_t i ) {
+    if (geometries[i] && geometries[i]->isEnabled()) {
+      geometries[i]->convertToDeviceRepresentation(offsets[i], geometry_data_host, geometry_data_device);
+      geometries_host[i] = (Geometry*)(geometry_data_device + offsets[i]);
+    }
+    else {
+      geometries_host[i] = NULL;
+    }
+  });
+
+  sycl::event event_copy_geometry_data = queue.memcpy(geometry_data_device, geometry_data_host, geometry_data_byte_size);
+  sycl::event event_copy_geometries = queue.memcpy(geometries_device, geometries_host, sizeof(Geometry*) * geometries.size());
+
+  if (!dynamic_scene)
+  {
+    device->free(offsets);
+    event_copy_geometry_data.wait_and_throw();
+    device->free(geometry_data_host);
+    event_copy_geometries.wait_and_throw();
+    device->free(geometries_host);
+    offsets = nullptr;
+    geometry_data_host = nullptr;
+    geometries_host = nullptr;
+  }
+
+  if (!scene_device) {
+    scene_device = (Scene*) device->malloc(sizeof(Scene), 16, EmbreeMemoryType::USM_DEVICE);
+  }
+
+  return queue.memcpy(scene_device, (void*)this, sizeof(Scene), {event_accel_buffer_commit, event_copy_geometry_data, event_copy_geometries});
+#else
+  return sycl::event();
+#endif
 }
 
 #endif

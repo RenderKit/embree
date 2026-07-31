@@ -76,7 +76,7 @@ void renderPixelStandard(const TutorialData& data,
 #if USE_ARGUMENT_CALLBACKS
     iargs.filter = intersectionFilter;
 #endif
-    rtcIntersect1(data.g_scene,RTCRayHit_(primary),&iargs);
+    rtcTraversableIntersect1(data.g_traversable,RTCRayHit_(primary),&iargs);
     RayStats_addRay(stats);
 
     /* shade pixels */
@@ -103,7 +103,7 @@ void renderPixelStandard(const TutorialData& data,
 #if USE_ARGUMENT_CALLBACKS
     sargs.filter = occlusionFilter;
 #endif
-    rtcOccluded1(data.g_scene,RTCRay_(shadow),&sargs);
+    rtcTraversableOccluded1(data.g_traversable,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -269,7 +269,7 @@ unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scal
   }
   //rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, cube_tri_indices, 0, 3*sizeof(unsigned int), NUM_TRI_FACES);
   Vec3i* index = (Vec3i*)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, 3*sizeof(unsigned int), NUM_TRI_FACES);
-  memcpy(index, cube_tri_indices, 3*sizeof(unsigned int) * NUM_TRI_FACES);
+  memcpy((void*)index, cube_tri_indices, 3*sizeof(unsigned int) * NUM_TRI_FACES);
 
   /* create per-triangle color array */
   data.colors = (Vec3fa*) alignedUSMMalloc((12)*sizeof(Vec3fa),16);
@@ -380,6 +380,7 @@ extern "C" void device_init (char* cfg)
 
   /* commit changes to scene */
   rtcCommitScene (data.g_scene);
+  data.g_traversable = rtcGetSceneTraversable(data.g_scene);
 }
 
 /* task that renders a single screen tile */

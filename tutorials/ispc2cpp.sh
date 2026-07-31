@@ -59,7 +59,7 @@ sed -i.backup  's/foreach_tiled[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]
 
 sed -i.backup  's/foreach_unique[ ]*([ ]*\([[:alnum:]_]*\)[ ]*in[ ]*\([][[:alnum:]._]*\))/auto \1 = \2;/g' $2
 
-sed -i.backup  's/new[ ]*\([a-zA-Z0-9_]*\)[ ]*\[\([^]]*\)\]; \/\/ EMBREE_USM_SHARED_DEVICE_READ_WRITE/(\1\*) alignedUSMMalloc((\2)\*sizeof(\1),16,EMBREE_USM_SHARED_DEVICE_READ_WRITE);/g' $2
+sed -i.backup  's/new[ ]*\([a-zA-Z0-9_]*\)[ ]*\[\([^]]*\)\]; \/\/ EMBREE_USM_SHARED_DEVICE_READ_WRITE/(\1\*) alignedUSMMalloc((\2)\*sizeof(\1),16,EmbreeUSMMode::DEVICE_READ_WRITE);/g' $2
 sed -i.backup  's/new[ ]*\([a-zA-Z0-9_]*\)[ ]*\[\([^]]*\)\]/(\1\*) alignedUSMMalloc((\2)\*sizeof(\1),16)/g' $2
 sed -i.backup  's/delete[ ]*\[[ ]*\][ ]*\([a-zA-Z0-9_.\>\-]*\)/alignedUSMFree(\1)/g' $2
 
@@ -140,8 +140,14 @@ sed -i.backup  's/RTCRay1/RTCRay/g' $2
 sed -i.backup  's/rtcIntersectV/rtcIntersect1/g' $2
 sed -i.backup  's/rtcOccludedV/rtcOccluded1/g' $2
 
+sed -i.backup  's/rtcTraversableIntersectV/rtcTraversableIntersect1/g' $2
+sed -i.backup  's/rtcTraversableOccludedV/rtcTraversableOccluded1/g' $2
+
 sed -i.backup  's/rtcForwardIntersectV/rtcForwardIntersect1/g' $2
 sed -i.backup  's/rtcForwardOccludedV/rtcForwardOccluded1/g' $2
+
+sed -i.backup  's/rtcTraversableForwardIntersectV/rtcTraversableForwardIntersect1/g' $2
+sed -i.backup  's/rtcTraversableForwardOccludedV/rtcTraversableForwardOccluded1/g' $2
 
 sed -i.backup  's/rtcInterpolateV/rtcInterpolate/g' $2
 

@@ -15,6 +15,8 @@ global:
   _ZN???@EMBREE_API_NAMESPACE@???rtc*;
   _ZN6embree13TaskScheduler*;
   _ZN6embree?@EMBREE_API_NAMESPACE@13TaskScheduler*;
+  _Z??rtcCommitBufferWithQueue*;
+  _Z??rtcCommitSceneWithQueue*;
 local: 
   *;
 };

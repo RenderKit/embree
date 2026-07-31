@@ -37,7 +37,7 @@ namespace embree
   void LineSegments::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num)
   {
     /* verify that all accesses are 4 bytes aligned */
-    if ((type != RTC_BUFFER_TYPE_FLAGS) && (((size_t(buffer->getPtr()) + offset) & 0x3) || (stride & 0x3)))
+    if ((type != RTC_BUFFER_TYPE_FLAGS) && (((size_t(buffer->getHostPtr()) + offset) & 0x3) || (stride & 0x3)))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION, "data must be 4 bytes aligned");
 
     if (type == RTC_BUFFER_TYPE_VERTEX)
@@ -100,37 +100,37 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
   }
 
-  void* LineSegments::getBuffer(RTCBufferType type, unsigned int slot)
+  void* LineSegments::getBufferData(RTCBufferType type, unsigned int slot, BufferDataPointerType pointerType)
   {
     if (type == RTC_BUFFER_TYPE_INDEX)
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return segments.getPtr();
+      return segments.getPtr(pointerType);
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX)
     {
       if (slot >= vertices.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return vertices[slot].getPtr();
+      return vertices[slot].getPtr(pointerType);
     }
     else if (type == RTC_BUFFER_TYPE_NORMAL)
     {
       if (slot >= normals.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return normals[slot].getPtr();
+      return normals[slot].getPtr(pointerType);
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
       if (slot >= vertexAttribs.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return vertexAttribs[slot].getPtr();
+      return vertexAttribs[slot].getPtr(pointerType);
     }
     else if (type == RTC_BUFFER_TYPE_FLAGS) 
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return flags.getPtr();
+      return flags.getPtr(pointerType);
     }
     else
     {
@@ -190,13 +190,17 @@ namespace embree
   void LineSegments::commit() 
   {
     /* verify that stride of all time steps are identical */
-    for (unsigned int t=0; t<numTimeSteps; t++)
+    for (unsigned int t=0; t<numTimeSteps; t++) {
       if (vertices[t].getStride() != vertices[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
+      vertices[t].buffer->commitIfNeeded();
+    }
 
-    for (const auto& buffer : normals)
+    for (auto& buffer : normals) {
       if (buffer.getStride() != normals[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of normal buffers have to be identical for each time step");
+      buffer.buffer->commitIfNeeded();
+    }
 
     vertices0 = vertices[0];
     if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
@@ -209,7 +213,7 @@ namespace embree
     /* resize flags buffer if number of primitives changed */
     if (!flags.userData && (!flags.buffer || flags.size() != numPrimitives))
     {
-      Ref<Buffer> buffer = new Buffer(device, numPrimitives*sizeof(char));
+      Ref<Buffer> buffer = new Buffer(device, numPrimitives*sizeof(char), nullptr, nullptr);
       flags.set(buffer, 0, sizeof(char), numPrimitives, RTC_FORMAT_UCHAR);
       recompute_flags_buffer = true;
     }
@@ -224,6 +228,11 @@ namespace embree
         flags[i] |= hasRight * RTC_CURVE_FLAG_NEIGHBOR_RIGHT;
         hasLeft = hasRight;
       }
+      flags.buffer->commit();
+    }
+
+    if (recompute_flags_buffer) {
+      segments.buffer->commit();
     }
     segments.clearLocalModified();
 
@@ -269,6 +278,37 @@ namespace embree
 
   void LineSegments::interpolate(const RTCInterpolateArguments* const args) {
     interpolate_impl<4>(args);
+  }
+
+  size_t LineSegments::getGeometryDataDeviceByteSize() const {
+    size_t byte_size = sizeof(LineSegments);
+    if (vertices.size() > 0)
+      byte_size += numTimeSteps * sizeof(BufferView<Vec3ff>);
+    if (normals.size() > 0)
+      byte_size += numTimeSteps * sizeof(BufferView<Vec3fa>);
+    return 16 * ((byte_size + 15) / 16);
+  }
+
+  void LineSegments::convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const {
+    LineSegments* geom = (LineSegments*)(data_host + offset);
+    std::memcpy(data_host + offset, (void*)this, sizeof(LineSegments));
+    offset += sizeof(LineSegments);
+    if (vertices.size() > 0) {
+      const size_t offsetVertices = offset;
+      for (size_t t = 0; t < numTimeSteps; ++t) {
+        std::memcpy(data_host + offset, &(vertices[t]), sizeof(BufferView<Vec3ff>));
+        offset += sizeof(BufferView<Vec3ff>);
+      }
+      geom->vertices.setDataPtr((BufferView<Vec3ff>*)(data_device + offsetVertices));
+    }
+    if (normals.size() > 0) {
+      const size_t offsetNormals = offset;
+      for (size_t t = 0; t < numTimeSteps; ++t) {
+        std::memcpy(data_host + offset, &(normals[t]), sizeof(BufferView<Vec3fa>));
+        offset += sizeof(BufferView<Vec3fa>);
+      }
+      geom->normals.setDataPtr((BufferView<Vec3fa>*)(data_device + offsetNormals));
+    }
   }
 #endif
 

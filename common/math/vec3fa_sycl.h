@@ -614,4 +614,12 @@ namespace embree
 
   //__forceinline Vec3ia::Vec3ia( const Vec3fx& a )
   //  : x((int)a.x), y((int)a.y), z((int)a.z) {}
+
 }
+
+#if __SYCL_COMPILER_VERSION >= 20210801
+namespace sycl {
+  template<> struct is_device_copyable<embree::Vec3fa> : std::true_type {};
+  template<> struct is_device_copyable<const embree::Vec3fa> : std::true_type {};
+}
+#endif

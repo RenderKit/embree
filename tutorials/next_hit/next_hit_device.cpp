@@ -154,7 +154,7 @@ void single_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, Ra
   args.filter = gather_all_hits;
   args.feature_mask = feature_mask;
   args.flags = RTC_RAY_QUERY_FLAG_INVOKE_ARGUMENT_FILTER; // invoke filter for each geometry
-  rtcIntersect1(data.scene,RTCRayHit_(ray),&args);
+  rtcTraversableIntersect1(data.traversable,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* sort hits by extended order */
@@ -274,7 +274,7 @@ void multi_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, int
       if (context.hits.begin+i < data.max_total_hits)
         context.hits.hits[context.hits.begin+i] = HitList::Hit(false,neg_inf);
 
-    rtcIntersect1(data.scene,RTCRayHit_(ray),&args);
+    rtcTraversableIntersect1(data.traversable,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
 
     /* shade all hits */
@@ -535,13 +535,14 @@ extern "C" void device_render (unsigned* pixels,
   if (g_scene == nullptr) {
     g_scene = data.scene = convertScene(g_ispc_scene);
     rtcCommitScene (g_scene);
+    data.traversable = rtcGetSceneTraversable(data.scene);
   }
 
   /* create buffer to remember previous number of hits found */
   if (!data.num_prev_hits || data.num_prev_hits_width != width || data.num_prev_hits_height != height)
   {
     alignedUSMFree(data.num_prev_hits);
-    data.num_prev_hits = (int*) alignedUSMMalloc(width*height*sizeof(int),16,EMBREE_USM_SHARED_DEVICE_READ_WRITE);
+    data.num_prev_hits = (int*) alignedUSMMalloc(width*height*sizeof(int),16,EmbreeUSMMode::DEVICE_READ_WRITE);
     data.num_prev_hits_width = width;
     data.num_prev_hits_height = height;
     for (unsigned int i=0; i<width*height; i++)

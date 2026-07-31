@@ -1504,7 +1504,7 @@ Vec3f renderPixelFunction(const uniform TutorialData& data, float x, float y, Ra
     args.filter = NULL;
 #endif
   
-    rtcIntersectV(data.scene,RTCRayHit_(ray),&args);
+    rtcTraversableIntersectV(data.traversable,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
     const Vec3f wo = neg(ray.dir);
 
@@ -1577,7 +1577,7 @@ Vec3f renderPixelFunction(const uniform TutorialData& data, float x, float y, Ra
 #if USE_ARGUMENT_CALLBACKS && ENABLE_FILTER_FUNCTION
       sargs.filter = contextFilterFunction;
 #endif
-      rtcOccludedV(data.scene,RTCRay_(shadow),&sargs);
+      rtcTraversableOccludedV(data.traversable,RTCRay_(shadow),&sargs);
       RayStats_addShadowRay(stats);
 #if !ENABLE_FILTER_FUNCTION
       if (shadow.tfar > 0.0f)
@@ -1792,6 +1792,7 @@ export void device_render (uniform int* uniform pixels,
     data.scene = convertScene(data.ispc_scene);
     if (g_subdiv_mode) updateEdgeLevels(data.ispc_scene,camera.xfm.p);
     rtcCommitScene (data.scene);
+    data.traversable = rtcGetSceneTraversable(data.scene);
   }
 
   /* create accumulator */
@@ -1820,6 +1821,7 @@ export void device_render (uniform int* uniform pixels,
     if (g_subdiv_mode) {
       updateEdgeLevels(data.ispc_scene,camera.xfm.p);
       rtcCommitScene (data.scene);
+      data.traversable = rtcGetSceneTraversable(data.scene);
     }
   }
   else

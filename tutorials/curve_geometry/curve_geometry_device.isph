@@ -68,6 +68,7 @@ uniform int8 static_hair_flags_linear[NUM_CURVES] = {
 struct TutorialData
 {
   RTCScene g_scene;
+  RTCTraversable g_traversable;
   Vec4f* hair_vertices;
   Vec3fa* hair_normals;
   Vec3fa* hair_vertex_colors;
@@ -79,6 +80,7 @@ struct TutorialData
 inline void TutorialData_Constructor(uniform TutorialData* uniform This)
 {
   This->g_scene = NULL;
+  This->g_traversable = NULL;
   This->hair_vertices = uniform new uniform Vec4f[NUM_VERTICES];
   This->hair_normals = uniform new uniform Vec3fa[NUM_VERTICES];
   This->hair_vertex_colors = uniform new uniform Vec3fa[NUM_VERTICES];

@@ -113,6 +113,11 @@
 ```
 \pagebreak
 
+## rtcCommitSceneWithQueue
+``` {include=src/api/rtcCommitSceneWithQueue.md}
+```
+\pagebreak
+
 ## rtcJoinCommitScene
 ``` {include=src/api/rtcJoinCommitScene.md}
 ```
@@ -146,6 +151,11 @@
 
 ## rtcGetSceneLinearBounds
 ``` {include=src/api/rtcGetSceneLinearBounds.md}
+```
+\pagebreak
+
+## rtcGetSceneTraversable
+``` {include=src/api/rtcGetSceneTraversable.md}
 ```
 \pagebreak
 
@@ -269,8 +279,18 @@
 ```
 \pagebreak
 
+## rtcSetSharedGeometryBufferHostDevice
+``` {include=src/api/rtcSetSharedGeometryBufferHostDevice.md}
+```
+\pagebreak
+
 ## rtcSetNewGeometryBuffer
 ``` {include=src/api/rtcSetNewGeometryBuffer.md}
+```
+\pagebreak
+
+## rtcSetNewGeometryBufferHostDevice
+``` {include=src/api/rtcSetNewGeometryBufferHostDevice.md}
 ```
 \pagebreak
 
@@ -286,6 +306,11 @@
 
 ## rtcGetGeometryBufferData
 ``` {include=src/api/rtcGetGeometryBufferData.md}
+```
+\pagebreak
+
+## rtcGetGeometryBufferDataDevice
+``` {include=src/api/rtcGetGeometryBufferDataDevice.md}
 ```
 \pagebreak
 
@@ -331,6 +356,11 @@
 
 ## rtcGetGeometryUserDataFromScene
 ``` {include=src/api/rtcGetGeometryUserDataFromScene.md}
+```
+\pagebreak
+
+## rtcGetGeometryUserDataFromTraversable
+``` {include=src/api/rtcGetGeometryUserDataFromScenTraversable
 ```
 \pagebreak
 
@@ -400,6 +430,11 @@
 ```
 \pagebreak
 
+## rtcGetGeometryTransformFromTraversable
+``` {include=src/api/rtcGetGeometryTransformFromScenTraversable.md}
+```
+\pagebreak
+
 ## rtcSetGeometryTessellationRate
 ``` {include=src/api/rtcSetGeometryTessellationRate.md}
 ```
@@ -460,14 +495,23 @@
 ```
 \pagebreak
 
-
 ## rtcNewBuffer
 ``` {include=src/api/rtcNewBuffer.md}
 ```
 \pagebreak
 
+## rtcNewBufferHostDevice
+``` {include=src/api/rtcNewBufferHostDevice.md}
+```
+\pagebreak
+
 ## rtcNewSharedBuffer
 ``` {include=src/api/rtcNewSharedBuffer.md}
+```
+\pagebreak
+
+## rtcNewSharedBufferHostDevice
+``` {include=src/api/rtcNewSharedBufferHostDevice.md}
 ```
 \pagebreak
 
@@ -483,6 +527,21 @@
 
 ## rtcGetBufferData
 ``` {include=src/api/rtcGetBufferData.md}
+```
+\pagebreak
+
+## rtcGetBufferDataDevice
+``` {include=src/api/rtcGetBufferDataDevice.md}
+```
+\pagebreak
+
+## rtcCommitBuffer
+``` {include=src/api/rtcCommitBuffer.md}
+```
+\pagebreak
+
+## rtcCommitBufferWithQueue
+``` {include=src/api/rtcCommitBufferWithQueue.md}
 ```
 \pagebreak
 
@@ -541,8 +600,18 @@
 ```
 \pagebreak
 
+## rtcTraversableIntersect1
+``` {include=src/api/rtcTraversableIntersect1.md}
+```
+\pagebreak
+
 ## rtcOccluded1
 ``` {include=src/api/rtcOccluded1.md}
+```
+\pagebreak
+
+## rtcTraversableOccluded1
+``` {include=src/api/rtcTraversableOccluded1.md}
 ```
 \pagebreak
 
@@ -551,8 +620,18 @@
 ```
 \pagebreak
 
+## rtcTraversableIntersect4/8/16
+``` {include=src/api/rtcTraversableIntersect4.md}
+```
+\pagebreak
+
 ## rtcOccluded4/8/16
 ``` {include=src/api/rtcOccluded4.md}
+```
+\pagebreak
+
+## rtcTraversableOccluded4/8/16
+``` {include=src/api/rtcTraversableOccluded4.md}
 ```
 \pagebreak
 
@@ -561,8 +640,18 @@
 ```
 \pagebreak
 
+## rtcTraversableForwardIntersect1
+``` {include=src/api/rtcTraversableForwardIntersect1.md}
+```
+\pagebreak
+
 ## rtcForwardOccluded1
 ``` {include=src/api/rtcForwardOccluded1.md}
+```
+\pagebreak
+
+## rtcTraversableForwardOccluded1
+``` {include=src/api/rtcTraversableForwardOccluded1.md}
 ```
 \pagebreak
 
@@ -571,8 +660,18 @@
 ```
 \pagebreak
 
+## rtcTraversableForwardIntersect4/8/16
+``` {include=src/api/rtcTraversableForwardIntersect4.md}
+```
+\pagebreak
+
 ## rtcForwardOccluded4/8/16
 ``` {include=src/api/rtcForwardOccluded4.md}
+```
+\pagebreak
+
+## rtcTraversableForwardOccluded4/8/16
+``` {include=src/api/rtcTraversableForwardOccluded4.md}
 ```
 \pagebreak
 
@@ -583,6 +682,21 @@
 
 ## rtcPointQuery
 ``` {include=src/api/rtcPointQuery.md}
+```
+\pagebreak
+
+## rtcTraversablePointQuery
+``` {include=src/api/rtcTraversablePointQuery.md}
+```
+\pagebreak
+
+## rtcPointQuery4/8/16
+``` {include=src/api/rtcPointQuery4.md}
+```
+\pagebreak
+
+## rtcTraversablePointQuery4/8/16
+``` {include=src/api/rtcTraversablePointQuery4.md}
 ```
 \pagebreak
 

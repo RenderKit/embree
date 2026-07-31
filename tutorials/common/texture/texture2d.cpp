@@ -3,6 +3,8 @@
 
 #include "texture2d.h"
 
+#include "../alloc/alloc.h"
+
 namespace embree {
 
 

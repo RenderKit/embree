@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "alloc/alloc.h"
 #include "../../kernels/config.h"
 #include "../../common/sys/platform.h"
 #include "../../common/sys/sysinfo.h"

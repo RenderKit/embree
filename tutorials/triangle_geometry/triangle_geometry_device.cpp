@@ -100,7 +100,6 @@ extern "C" void device_init (char* cfg)
   /* create scene */
   TutorialData_Constructor(&data);
   g_scene = data.g_scene = rtcNewScene(g_device);
-  rtcSetSceneFlags(data.g_scene, RTC_SCENE_FLAG_PREFETCH_USM_SHARED_ON_GPU);
 
   /* add cube */
   addCube(data.g_scene);
@@ -110,6 +109,9 @@ extern "C" void device_init (char* cfg)
 
   /* commit changes to scene */
   rtcCommitScene (data.g_scene);
+
+  /* get traversable handle for the scene */
+  data.g_traversable = rtcGetSceneTraversable(data.g_scene);
 }
 
 /* task that renders a single screen tile */
@@ -128,7 +130,7 @@ void renderPixelStandard(const TutorialData& data,
   RTCIntersectArguments iargs;
   rtcInitIntersectArguments(&iargs);
   iargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
-  rtcIntersect1(data.g_scene,RTCRayHit_(ray),&iargs);
+  rtcTraversableIntersect1(data.g_traversable,RTCRayHit_(ray),&iargs);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -146,7 +148,7 @@ void renderPixelStandard(const TutorialData& data,
     RTCOccludedArguments sargs;
     rtcInitOccludedArguments(&sargs);
     sargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
-    rtcOccluded1(data.g_scene,RTCRay_(shadow),&sargs);
+    rtcTraversableOccluded1(data.g_traversable,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -190,7 +192,7 @@ extern "C" void renderFrameStandard (int* pixels,
                           const float time,
                           const ISPCCamera& camera)
 {
-#if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION) && !defined(EMBREE_SYCL_RT_SIMULATION)
+#if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION)
   TutorialData ldata = data;
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);

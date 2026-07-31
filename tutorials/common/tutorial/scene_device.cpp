@@ -57,14 +57,14 @@ namespace embree
   template<typename Ty>
   Ty* copyArrayToUSM(const avector<Ty>& in) {
     Ty* out = (Ty*)alignedUSMMalloc(in.size()*sizeof(Ty));
-    memcpy(out,in.data(),in.size()*sizeof(Ty));
+    memcpy((void*)out,in.data(),in.size()*sizeof(Ty));
     return out;
   }
 
   template<typename Ty>
   Ty* copyArrayToUSM(const std::vector<Ty>& in) {
     Ty* out = (Ty*)alignedUSMMalloc(in.size()*sizeof(Ty));
-    memcpy(out,in.data(),in.size()*sizeof(Ty));
+    memcpy((void*)out,in.data(),in.size()*sizeof(Ty));
     return out;
   }
 

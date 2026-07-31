@@ -79,10 +79,8 @@ IF (EMBREE_TUTORIALS_GLFW)
 ENDIF()
 
 ADD_SUBDIRECTORY(common)
-
 ADD_SUBDIRECTORY(embree_info)
 ADD_SUBDIRECTORY(minimal)
-
 ADD_SUBDIRECTORY(verify)
 ADD_SUBDIRECTORY(triangle_geometry)
 ADD_SUBDIRECTORY(dynamic_scene)
@@ -113,7 +111,7 @@ ADD_SUBDIRECTORY(next_hit)
 ADD_SUBDIRECTORY(multiscene_geometry)
 ADD_SUBDIRECTORY(ray_mask)
 ADD_SUBDIRECTORY(forest)
-
+ADD_SUBDIRECTORY(host_device_memory)
 ADD_SUBDIRECTORY(embree_tests)
 
 

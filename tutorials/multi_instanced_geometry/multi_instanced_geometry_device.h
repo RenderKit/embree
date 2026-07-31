@@ -20,6 +20,7 @@ struct InstanceLevels
 struct TutorialData
 {
   RTCScene g_scene;
+  RTCTraversable g_traversable;
   InstanceLevels g_instanceLevels;
 
   /* accumulation buffer */
@@ -50,7 +51,8 @@ extern "C" void cleanupScene(TutorialData& data);
 
 inline void TutorialData_Constructor(TutorialData* This)
 {
-  This->g_scene  = nullptr;
+  This->g_scene = nullptr;
+  This->g_traversable = nullptr;
   This->g_accu = nullptr;
   This->g_accu_width = 0;
   This->g_accu_height = 0;

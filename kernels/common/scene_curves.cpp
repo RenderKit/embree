@@ -50,7 +50,7 @@ namespace embree
   void CurveGeometry::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num)
   { 
     /* verify that all accesses are 4 bytes aligned */
-    if ((type != RTC_BUFFER_TYPE_FLAGS) && (((size_t(buffer->getPtr()) + offset) & 0x3) || (stride & 0x3)))
+    if ((type != RTC_BUFFER_TYPE_FLAGS) && (((size_t(buffer->getHostPtr()) + offset) & 0x3) || (stride & 0x3)))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION, "data must be 4 bytes aligned");
 
     if (type == RTC_BUFFER_TYPE_VERTEX)
@@ -140,49 +140,49 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
   }
 
-  void* CurveGeometry::getBuffer(RTCBufferType type, unsigned int slot)
+  void* CurveGeometry::getBufferData(RTCBufferType type, unsigned int slot, BufferDataPointerType pointerType)
   {
     if (type == RTC_BUFFER_TYPE_INDEX)
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return curves.getPtr();
+      return curves.getPtr(pointerType);
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX)
     {
       if (slot >= vertices.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return vertices[slot].getPtr();
+      return vertices[slot].getPtr(pointerType);
     }
     else if (type == RTC_BUFFER_TYPE_NORMAL)
     {
       if (slot >= normals.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return normals[slot].getPtr();
+      return normals[slot].getPtr(pointerType);
     }
     else if (type == RTC_BUFFER_TYPE_TANGENT)
     {
       if (slot >= tangents.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return tangents[slot].getPtr();
+      return tangents[slot].getPtr(pointerType);
     }
     else if (type == RTC_BUFFER_TYPE_NORMAL_DERIVATIVE)
     {
       if (slot >= dnormals.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return dnormals[slot].getPtr();
+      return dnormals[slot].getPtr(pointerType);
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
       if (slot >= vertexAttribs.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return vertexAttribs[slot].getPtr();
+      return vertexAttribs[slot].getPtr(pointerType);
     }
     else if (type == RTC_BUFFER_TYPE_FLAGS)
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      return flags.getPtr();
+      return flags.getPtr(pointerType);
     }
     else
     {
@@ -340,23 +340,28 @@ namespace embree
 
   void CurveGeometry::commit()
   {
+    if (curves) curves.buffer->commitIfNeeded();
     /* verify that stride of all time steps are identical */
-    for (const auto& buffer : vertices)
+    for (auto& buffer : vertices) {
       if (buffer.getStride() != vertices[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
-
-    for (const auto& buffer : normals)
+      if (buffer) buffer.buffer->commitIfNeeded();
+    }
+    for (auto& buffer : normals) {
       if (buffer.getStride() != normals[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of normal buffers have to be identical for each time step");
-
-    for (const auto& buffer : tangents)
+      if (buffer) buffer.buffer->commitIfNeeded();
+    }
+    for (auto& buffer : tangents) {
       if (buffer.getStride() != tangents[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of tangent buffers have to be identical for each time step");
-
-    for (const auto& buffer : dnormals)
+      if (buffer) buffer.buffer->commitIfNeeded();
+    }
+    for (auto& buffer : dnormals){
       if (buffer.getStride() != dnormals[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of normal derivative buffers have to be identical for each time step");
-    
+      if (buffer) buffer.buffer->commitIfNeeded();
+    }
     vertices0 = vertices[0];
     if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
     {
@@ -368,6 +373,57 @@ namespace embree
       tangents0 = tangents[0];
 
     Geometry::commit();
+  }
+
+  size_t CurveGeometry::getGeometryDataDeviceByteSize() const {
+    size_t byte_size = sizeof(CurveGeometry);
+    if (vertices.size() > 0)
+      byte_size += numTimeSteps * sizeof(BufferView<Vec3ff>);
+    if (normals.size() > 0)
+      byte_size += numTimeSteps * sizeof(BufferView<Vec3fa>);
+    if (tangents.size() > 0)
+      byte_size += numTimeSteps * sizeof(BufferView<Vec3ff>);
+    if (dnormals.size() > 0)
+      byte_size += numTimeSteps * sizeof(BufferView<Vec3fa>);
+    return 16 * ((byte_size + 15) / 16);
+  }
+
+  void CurveGeometry::convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const {
+    CurveGeometry* curve = (CurveGeometry*)(data_host + offset);
+    std::memcpy(data_host + offset, (void*)this, sizeof(CurveGeometry));
+    offset += sizeof(CurveGeometry);
+    if (vertices.size() > 0) {
+      const size_t offsetVertices = offset;
+      for (size_t t = 0; t < numTimeSteps; ++t) {
+        std::memcpy(data_host + offset, &(vertices[t]), sizeof(BufferView<Vec3ff>));
+        offset += sizeof(BufferView<Vec3ff>);
+      }
+      curve->vertices.setDataPtr((BufferView<Vec3ff>*)(data_device + offsetVertices));
+    }
+    if (normals.size() > 0) {
+      const size_t offsetNormals = offset;
+      for (size_t t = 0; t < numTimeSteps; ++t) {
+        std::memcpy(data_host + offset, &(normals[t]), sizeof(BufferView<Vec3fa>));
+        offset += sizeof(BufferView<Vec3fa>);
+      }
+      curve->normals.setDataPtr((BufferView<Vec3fa>*)(data_device + offsetNormals));
+    }
+    if (tangents.size() > 0) {
+      const size_t offsetTangents = offset;
+      for (size_t t = 0; t < numTimeSteps; ++t) {
+        std::memcpy(data_host + offset, &(tangents[t]), sizeof(BufferView<Vec3ff>));
+        offset += sizeof(BufferView<Vec3ff>);
+      }
+      curve->tangents.setDataPtr((BufferView<Vec3ff>*)(data_device + offsetTangents));
+    }
+    if (dnormals.size() > 0) {
+      const size_t offsetDNormals = offset;
+      for (size_t t = 0; t < numTimeSteps; ++t) {
+        std::memcpy(data_host + offset, &(dnormals[t]), sizeof(BufferView<Vec3fa>));
+        offset += sizeof(BufferView<Vec3fa>);
+      }
+      curve->dnormals.setDataPtr((BufferView<Vec3fa>*)(data_device + offsetDNormals));
+    }
   }
 
 #endif

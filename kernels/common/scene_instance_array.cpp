@@ -59,7 +59,7 @@ namespace embree
 
     numObjects = numScenes;
     device->memoryMonitor(numObjects*sizeof(Accel*), false);
-    objects = (Accel**) device->malloc(numScenes*sizeof(Accel*),16);
+    objects = (Accel**) device->malloc(numScenes*sizeof(Accel*),16,EmbreeMemoryType::MALLOC);
     for (size_t i = 0; i < numObjects; ++i) {
       Ref<Scene> scene = (Scene*) scenes[i];
       objects[i] = scene.ptr;
@@ -88,7 +88,7 @@ namespace embree
   void InstanceArray::setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num)
   {
     /* verify that all accesses are 4 bytes aligned */
-    if (((size_t(buffer->getPtr()) + offset) & 0x3) || (stride & 0x3))
+    if (((size_t(buffer->getHostPtr()) + offset) & 0x3) || (stride & 0x3))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION, "data must be 4 bytes aligned");
 
     if (type == RTC_BUFFER_TYPE_TRANSFORM)
@@ -122,19 +122,19 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
   }
 
-  void* InstanceArray::getBuffer(RTCBufferType type, unsigned int slot)
+  void* InstanceArray::getBufferData(RTCBufferType type, unsigned int slot, BufferDataPointerType pointerType)
   {
     if (type == RTC_BUFFER_TYPE_TRANSFORM)
     {
       if (slot >= l2w_buf.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid transform buffer slot");
-      return l2w_buf[slot].getPtr();
+      return l2w_buf[slot].getPtr(pointerType);
     }
     else if (type == RTC_BUFFER_TYPE_INDEX)
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid index buffer slot. must be 0");
-      return object_ids.getPtr();
+      return object_ids.getPtr(pointerType);
     }
     else
     {
@@ -188,6 +188,37 @@ namespace embree
     }
 
     Geometry::commit();
+  }
+  
+  size_t InstanceArray::getGeometryDataDeviceByteSize() const {
+    size_t byte_size = sizeof(InstanceArray);
+    byte_size += numObjects * sizeof(Accel*);
+    byte_size += numTimeSteps * sizeof(RawBufferView);
+    return 16 * ((byte_size + 15) / 16);
+  }
+
+  void InstanceArray::convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const {
+    InstanceArray* iarray = (InstanceArray*)(data_host + offset);
+    std::memcpy(data_host + offset, (void*)this, sizeof(InstanceArray));
+    offset += sizeof(InstanceArray);
+
+    const size_t offsetObjects = offset;
+    Accel** objects_host = (Accel**)(data_host + offsetObjects);
+    for (size_t i = 0; i < numObjects; ++i) {
+      objects_host[i] = (Accel*)((Scene*)objects[i])->getTraversable();
+    }
+
+    offset += numObjects * sizeof(Accel*);
+    iarray->objects = (Accel**)(data_device + offsetObjects);
+
+    if (l2w_buf.size() > 0) {
+      const size_t offsetBuffer = offset;
+      for (size_t t = 0; t < numTimeSteps; ++t) {
+        std::memcpy(data_host + offset, &(l2w_buf[t]), sizeof(RawBufferView));
+        offset += sizeof(RawBufferView);
+      }
+      iarray->l2w_buf.setDataPtr((RawBufferView*)(data_device + offsetBuffer));
+    }
   }
 
   // TODO InstanceArray: merge this with scene_array.cpp

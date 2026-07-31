@@ -608,6 +608,7 @@ extern "C" void device_init (char* cfg)
 
   /* commit changes to scene */
   rtcCommitScene (g_scene);
+  data.g_traversable = rtcGetSceneTraversable(data.g_scene);
 }
 
 /* task that renders a single screen tile */
@@ -627,7 +628,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
   iargs.intersect = sphereIntersectFuncN;
 #endif
   
-  rtcIntersect1(data.g_scene,RTCRayHit_(ray),&iargs);
+  rtcTraversableIntersect1(data.g_traversable,RTCRayHit_(ray),&iargs);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -664,7 +665,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
 #if USE_ARGUMENT_CALLBACKS
     sargs.occluded = sphereOccludedFuncN;
 #endif
-    rtcOccluded1(data.g_scene,RTCRay_(shadow),&sargs);
+    rtcTraversableOccluded1(data.g_traversable,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -774,7 +775,7 @@ extern "C" void device_render (int* pixels,
   /* create accumulator */
   if (data.g_accu_width != width || data.g_accu_height != height) {
     alignedUSMFree(data.g_accu);
-    data.g_accu = (Vec3ff*) alignedUSMMalloc((width*height)*sizeof(Vec3ff),16,EMBREE_USM_SHARED_DEVICE_READ_WRITE);
+    data.g_accu = (Vec3ff*) alignedUSMMalloc((width*height)*sizeof(Vec3ff),16,EmbreeUSMMode::DEVICE_READ_WRITE);
     data.g_accu_width = width;
     data.g_accu_height = height;
     for (unsigned int i=0; i<width*height; i++)

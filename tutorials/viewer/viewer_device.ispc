@@ -134,6 +134,21 @@ AffineSpace3f calculate_interpolated_space (uniform ISPCInstance* instance, floa
 
 typedef ISPCInstance* ISPCInstancePtr;
 
+AffineSpace3f calculate_interpolated_space (uniform ISPCInstanceArray* instanceArray, unsigned int primID, float gtime)
+{
+  if (instanceArray->numTimeSteps == 1)
+    return make_AffineSpace3f(instanceArray->spaces_array[0][primID]);
+
+   /* calculate time segment itime and fractional time ftime */
+  const int time_segments = instanceArray->numTimeSteps-1;
+  const float time = gtime*(float)(time_segments);
+  const int itime = clamp((int)(floor(time)),(varying int)0,time_segments-1);
+  const float ftime = time - (float)(itime);
+  return (1.0f-ftime)*make_AffineSpace3f(instanceArray->spaces_array[itime+0][primID]) + ftime*make_AffineSpace3f(instanceArray->spaces_array[itime+1][primID]);
+}
+
+typedef ISPCInstanceArray* ISPCInstanceArrayPtr;
+
 unsigned int postIntersect(const uniform TutorialData& data, const Ray& ray, DifferentialGeometry& dg)
 {
   AffineSpace3f local2world = make_AffineSpace3f_scale(make_Vec3f(1));
@@ -144,11 +159,21 @@ unsigned int postIntersect(const uniform TutorialData& data, const Ray& ray, Dif
     const unsigned int instID = ray.instID[i];
     if (instID == -1) break;
 
-    ISPCInstance* instance = (ISPCInstancePtr) geometries[instID];
-    local2world = local2world * calculate_interpolated_space(instance,ray.time);
+    if (geometries[instID]->type == INSTANCE) {
+      ISPCInstance* instance = (ISPCInstancePtr) geometries[instID];
+      local2world = local2world * calculate_interpolated_space(instance,ray.time);
 
-    assert(instance->child->type == GROUP);
-    geometries = ((ISPCGroup*)instance->child)->geometries;
+      assert(instance->child->type == GROUP);
+      geometries = ((ISPCGroup*)instance->child)->geometries;
+    }
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+    else if (geometries[instID]->type == INSTANCE_ARRAY) {
+      ISPCInstanceArray* instanceArray = (ISPCInstanceArrayPtr) geometries[instID];
+      local2world = local2world * calculate_interpolated_space(instanceArray,ray.instPrimID[i],ray.time);
+      assert(instanceArray->child->type == GROUP);
+      geometries = ((ISPCGroup*)instanceArray->child)->geometries;
+    }
+#endif
   }
 
   ISPCGeometry* mesh = geometries[ray.geomID];
@@ -193,7 +218,7 @@ void renderPixelStandard(const uniform TutorialData& data,
 #endif
   args.feature_mask = feature_mask;
   
-  rtcIntersectV(data.scene,RTCRayHit_(ray),&args);
+  rtcTraversableIntersectV(data.traversable,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade background black */
@@ -341,6 +366,7 @@ export void device_render (uniform int* uniform pixels,
     g_scene = data.scene = convertScene(g_ispc_scene);
     if (data.subdiv_mode) updateEdgeLevels(g_ispc_scene, camera.xfm.p);
     rtcCommitScene (data.scene);
+    data.traversable = rtcGetSceneTraversable(data.scene);
     old_p = camera.xfm.p;
   }
 
@@ -356,6 +382,7 @@ export void device_render (uniform int* uniform pixels,
     if (camera_changed && data.subdiv_mode) {
       updateEdgeLevels(g_ispc_scene,camera.xfm.p);
       rtcCommitScene (data.scene);
+      data.traversable = rtcGetSceneTraversable(data.scene);
     }
 
     if (g_animation_mode)

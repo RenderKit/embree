@@ -53,7 +53,7 @@ namespace embree
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
 
     size_t dispatchGlobalSize = DispatchGlobals::GetDispatchGlobalsSize();
-    void* dispatchGlobalsPtr = rthwifAllocAccelBuffer(nullptr,dispatchGlobalSize,device,context);
+    void* dispatchGlobalsPtr = rthwifAllocAccelBuffer(nullptr,dispatchGlobalSize,device,context,sycl::usm::alloc::shared);
     memset(dispatchGlobalsPtr, 0, dispatchGlobalSize);
 
     DispatchGlobals* dg = (DispatchGlobals*) dispatchGlobalsPtr;
@@ -109,9 +109,7 @@ namespace embree
     if (result != ZE_RESULT_SUCCESS) return -1;
     
     bool ze_extension_ray_tracing = false;
-#if defined(EMBREE_SYCL_L0_RTAS_BUILDER)
     bool ze_rtas_builder = false;
-#endif
     for (uint32_t i=0; i<extensions.size(); i++)
     {
       //std::cout << extensions[i].name << " version " << extensions[i].version << std::endl;
@@ -119,18 +117,14 @@ namespace embree
       if (strncmp("ZE_extension_raytracing",extensions[i].name,sizeof(extensions[i].name)) == 0)
         ze_extension_ray_tracing = true;
       
-#if defined(EMBREE_SYCL_L0_RTAS_BUILDER)
       if (strncmp("ZE_experimental_rtas_builder",extensions[i].name,sizeof(extensions[i].name)) == 0)
         ze_rtas_builder = true;
-#endif
     }
     if (!ze_extension_ray_tracing)
       return -1;
 
-#if defined(EMBREE_SYCL_L0_RTAS_BUILDER)
     if (!ze_rtas_builder)
       return -1;
-#endif
 
     /* check if ray queries are supported */
     ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(sycl_device);
@@ -156,7 +150,7 @@ namespace embree
     return sycl_device.get_info<sycl::info::device::max_compute_units>();
   }
 
-  void* rthwifAllocAccelBuffer(Device* embree_device, size_t bytes, sycl::device device, sycl::context context)
+  void* rthwifAllocAccelBuffer(Device* embree_device, size_t bytes, sycl::device device, sycl::context context, sycl::usm::alloc alloc_type)
   {
     ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
     ze_device_handle_t  hDevice  = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
@@ -176,28 +170,48 @@ namespace embree
     relaxed.stype = ZE_STRUCTURE_TYPE_RELAXED_ALLOCATION_LIMITS_EXP_DESC;
     relaxed.pNext = &rt_desc;
     relaxed.flags = ZE_RELAXED_ALLOCATION_LIMITS_EXP_FLAG_MAX_SIZE;
-    
+
+    ze_memory_compression_hints_ext_desc_t compressed;
+    compressed.stype = ZE_STRUCTURE_TYPE_MEMORY_COMPRESSION_HINTS_EXT_DESC;
+    compressed.pNext = &relaxed;
+    compressed.flags = ZE_MEMORY_COMPRESSION_HINTS_EXT_FLAG_UNCOMPRESSED;
+
     ze_device_mem_alloc_desc_t device_desc;
     device_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_MEM_ALLOC_DESC;
-    device_desc.pNext = &relaxed;
+    device_desc.pNext = &compressed;
     device_desc.flags = ZE_DEVICE_MEM_ALLOC_FLAG_BIAS_CACHED;
     device_desc.ordinal = 0;
-  
+
     ze_host_mem_alloc_desc_t host_desc;
     host_desc.stype = ZE_STRUCTURE_TYPE_HOST_MEM_ALLOC_DESC;
     host_desc.pNext = nullptr;
     host_desc.flags = ZE_HOST_MEM_ALLOC_FLAG_BIAS_CACHED;
-    
+
     void* ptr = nullptr;
 
     if (embree_device) embree_device->memoryMonitor(bytes,false);
-    ze_result_t result = ZeWrapper::zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,rtasProp.rtasBufferAlignment,hDevice,&ptr);
+
+    ze_result_t result;
+    switch (alloc_type) {
+      case sycl::usm::alloc::host:
+        result = ZeWrapper::zeMemAllocHost(hContext,&host_desc,bytes,rtasProp.rtasBufferAlignment,&ptr);
+        break;
+      case sycl::usm::alloc::device:
+        result = ZeWrapper::zeMemAllocDevice(hContext,&device_desc,bytes,rtasProp.rtasBufferAlignment,hDevice,&ptr);
+        break;
+      case sycl::usm::alloc::shared:
+        result = ZeWrapper::zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,rtasProp.rtasBufferAlignment,hDevice,&ptr);
+        break;
+      default:
+        throw_RTCError(RTC_ERROR_UNKNOWN, "sycl::usm::alloc type unknown in rthwifAllocAccelBuffer");
+    }
+
     if (result != ZE_RESULT_SUCCESS)
       throw_RTCError(RTC_ERROR_OUT_OF_MEMORY,"rtas memory allocation failed");
 
     return ptr;
   }
-  
+
   void rthwifFreeAccelBuffer(Device* embree_device, void* ptr, size_t bytes, sycl::context context)
   {
     if (ptr == nullptr) return;
@@ -362,9 +376,9 @@ namespace embree
     const AffineSpace3fa local2world = geom->getLocal2World();
     out->transformFormat = ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FLOAT3X4_ALIGNED_COLUMN_MAJOR;
     out->pTransform = (float*) &out->xfmdata;
-    out->pBounds = (ze_rtas_aabb_exp_t*) &dynamic_cast<Scene*>(geom->object)->hwaccel_bounds;
+    out->pBounds = (ze_rtas_aabb_exp_t*) &dynamic_cast<Scene*>(geom->object)->accelBuffer.getBounds();
     out->xfmdata = *(ze_rtas_transform_float3x4_aligned_column_major_exp_t*) &local2world;
-    out->pAccelerationStructure = dynamic_cast<Scene*>(geom->object)->getHWAccel(0);
+    out->pAccelerationStructure = dynamic_cast<Scene*>(geom->object)->accelBuffer.getAccelBufferDeviceData(0);
   }
 
   void createGeometryDesc(ze_rtas_builder_instance_geometry_info_exp_t* out, Scene* scene, Instance* geom)
@@ -377,8 +391,8 @@ namespace embree
     out->instanceUserID = 0;
     out->transformFormat = ZE_RTAS_BUILDER_INPUT_DATA_FORMAT_EXP_FLOAT3X4_ALIGNED_COLUMN_MAJOR;
     out->pTransform = (float*) &geom->local2world[0];
-    out->pBounds = (ze_rtas_aabb_exp_t*) &dynamic_cast<Scene*>(geom->object)->hwaccel_bounds;
-    out->pAccelerationStructure = dynamic_cast<Scene*>(geom->object)->getHWAccel(0);
+    out->pBounds = (ze_rtas_aabb_exp_t*) &dynamic_cast<Scene*>(geom->object)->accelBuffer.getBounds();
+    out->pAccelerationStructure = dynamic_cast<Scene*>(geom->object)->accelBuffer.getAccelBufferDeviceData(0);
   }
 
   void createGeometryDesc(char* out, Scene* scene, Geometry* geom, GEOMETRY_TYPE type)
@@ -417,7 +431,7 @@ namespace embree
     return result;
   }  
 
-  std::tuple<BBox3f, size_t> rthwifBuild(Scene* scene, AccelBuffer& accel)
+  std::tuple<BBox3f, size_t> rthwifBuild(Scene* scene, AccelBufferData& accel)
   {
     DeviceGPU* gpuDevice = dynamic_cast<DeviceGPU*>(scene->device);
     if (gpuDevice == nullptr) throw std::runtime_error("internal error");
@@ -502,7 +516,7 @@ namespace embree
       // TODO: remove
       std::cerr << "maxTimeSegments not yet computed. this is unexpected." << std::endl;
     }
-    assert(maxTimeSegments > 1);
+    assert(maxTimeSegments > 0);
 
     /* calculate size of geometry descriptor buffer */
     size_t totalBytes = 0;
@@ -647,4 +661,55 @@ namespace embree
 
     return std::tie(fullBounds, sizeTotal.rtasBufferSizeBytesExpected);
   }
+
+  AccelBuffer::AccelBuffer(Device *device) : device(device)
+  {
+    DeviceGPU *gpu_device = dynamic_cast<DeviceGPU *>(device);
+
+    if (!gpu_device)
+    {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "AccelBuffer constructor called with non-GPU device");
+    }
+
+    unifiedMemory = gpu_device->has_unified_memory();
+    if (unifiedMemory)
+    {
+      accelBufferShared = AccelBufferData(AccelAllocator<char>(device, gpu_device->getGPUDevice(), gpu_device->getGPUContext(), sycl::usm::alloc::shared), 0);
+    }
+    else
+    {
+      accelBufferHost = AccelBufferData(AccelAllocator<char>(device, gpu_device->getGPUDevice(), gpu_device->getGPUContext(), sycl::usm::alloc::host), 0);
+      accelBufferDevice = AccelBufferData(AccelAllocator<char>(device, gpu_device->getGPUDevice(), gpu_device->getGPUContext(), sycl::usm::alloc::device), 0);
+    }
+  }
+
+  void AccelBuffer::build(Scene *scene)
+  {
+    auto [aabb, stride] = rthwifBuild(scene, getAccelBufferData());
+    hwaccel_stride = stride;
+    hwaccel_bounds = aabb;
+  }
+
+  sycl::event AccelBuffer::commit(sycl::queue queue)
+  {
+    if (unifiedMemory) {
+      hwaccel = (char*)accelBufferShared.data();
+      return sycl::event();
+    }
+
+    auto deviceGPU = reinterpret_cast<DeviceGPU*>(device);
+    if (!deviceGPU) {
+      return sycl::event();
+    }
+
+    if (accelBufferDevice.size() != accelBufferHost.size())
+      accelBufferDevice.resize(accelBufferHost.size());
+
+    sycl::event event = queue.memcpy(accelBufferDevice.data(), accelBufferHost.data(), accelBufferHost.size());
+
+    hwaccel = (char*)accelBufferDevice.data();
+
+    return event;
+  }
+
 }

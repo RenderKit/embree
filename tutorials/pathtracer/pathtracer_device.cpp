@@ -1506,7 +1506,7 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
     args.filter = nullptr;
 #endif
   
-    rtcIntersect1(data.scene,RTCRayHit_(ray),&args);
+    rtcTraversableIntersect1(data.traversable,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
     const Vec3fa wo = neg(ray.dir);
 
@@ -1579,7 +1579,7 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
 #if USE_ARGUMENT_CALLBACKS && ENABLE_FILTER_FUNCTION
       sargs.filter = contextFilterFunction;
 #endif
-      rtcOccluded1(data.scene,RTCRay_(shadow),&sargs);
+      rtcTraversableOccluded1(data.traversable,RTCRay_(shadow),&sargs);
       RayStats_addShadowRay(stats);
 #if !ENABLE_FILTER_FUNCTION
       if (shadow.tfar > 0.0f)
@@ -1802,12 +1802,13 @@ extern "C" void device_render (int* pixels,
     data.scene = convertScene(data.ispc_scene);
     if (g_subdiv_mode) updateEdgeLevels(data.ispc_scene,camera.xfm.p);
     rtcCommitScene (data.scene);
+    data.traversable = rtcGetSceneTraversable(data.scene);
   }
 
   /* create accumulator */
   if (data.accu_width != width || data.accu_height != height) {
     alignedUSMFree(data.accu);
-    data.accu = (Vec3ff*) alignedUSMMalloc((width*height)*sizeof(Vec3ff),16,EMBREE_USM_SHARED_DEVICE_READ_WRITE);
+    data.accu = (Vec3ff*) alignedUSMMalloc((width*height)*sizeof(Vec3ff),16,EmbreeUSMMode::DEVICE_READ_WRITE);
     data.accu_width = width;
     data.accu_height = height;
     for (unsigned int i=0; i<width*height; i++)
@@ -1830,6 +1831,7 @@ extern "C" void device_render (int* pixels,
     if (g_subdiv_mode) {
       updateEdgeLevels(data.ispc_scene,camera.xfm.p);
       rtcCommitScene (data.scene);
+      data.traversable = rtcGetSceneTraversable(data.scene);
     }
   }
   else

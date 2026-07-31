@@ -123,7 +123,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceIntersectFunc(const RTCIntersectFuncti
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
   args.context = context;
-  rtcIntersect1(instance->object,RTCRayHit_(*ray),&args);
+  rtcTraversableIntersect1(instance->object,RTCRayHit_(*ray),&args);
   popInstanceId(context);
   const float updated_tfar = ray->tfar;
   ray->org = ray_org;
@@ -144,7 +144,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceIntersectFunc(const RTCIntersectFuncti
   xray.id = 0;
   xray.flags = 0;
   
-  rtcForwardIntersect1(args,instance->object,&xray,args->geomID);
+  rtcTraversableForwardIntersect1(args,instance->object,&xray,args->geomID);
   
 #endif
 }
@@ -176,7 +176,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceOccludedFunc(const RTCOccludedFunction
   RTCOccludedArguments args;
   rtcInitOccludedArguments(&args);
   args.context = context;
-  rtcOccluded1(instance->object,RTCRay_(*ray),&args);
+  rtcTraversableOccluded1(instance->object,RTCRay_(*ray),&args);
   popInstanceId(context);
   const float updated_tfar = ray->tfar;
   ray->org    = ray_org;
@@ -198,7 +198,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceOccludedFunc(const RTCOccludedFunction
   xray.id = 0;
   xray.flags = 0;
   
-  rtcForwardOccluded1(args,instance->object,&xray,args->geomID);
+  rtcTraversableForwardOccluded1(args,instance->object,&xray,args->geomID);
   
 #endif
 }
@@ -208,7 +208,7 @@ Instance* createInstance (RTCScene scene, RTCScene object, int geomID, const Vec
 #if !ENABLE_NATIVE_INSTANCING
   Instance* instance = (Instance*) alignedUSMMalloc(sizeof(Instance),16);
   instance->type = USER_GEOMETRY_INSTANCE;
-  instance->object = object;
+  instance->object = rtcGetSceneTraversable(object);
   instance->lower = lower;
   instance->upper = upper;
   instance->local2world.l.vx = Vec3fa(1,0,0);
@@ -502,9 +502,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereFilterFunction(const RTCFilterFunctionNA
   const RayQueryContext* context = (const RayQueryContext*) args->context;
   struct Ray* ray    = (struct Ray*)args->ray;
   //struct RTCHit* hit = (struct RTCHit*)args->hit;
-  const unsigned int N = args->N;
-  assert(N == 1);
-  _unused(N);
+  assert(args->N == 1);
 
   /* avoid crashing when debug visualizations are used */
   if (context == nullptr)
@@ -764,7 +762,7 @@ Vec3fa renderPixelStandard(const TutorialData& data,
 #endif
   iargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
   
-  rtcIntersect1(data.g_scene,RTCRayHit_(ray),&iargs);
+  rtcTraversableIntersect1(data.g_traversable,RTCRayHit_(ray),&iargs);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -801,7 +799,7 @@ Vec3fa renderPixelStandard(const TutorialData& data,
 #endif
     sargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
     
-    rtcOccluded1(data.g_scene,RTCRay_(shadow),&sargs);
+    rtcTraversableOccluded1(data.g_traversable,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -929,6 +927,7 @@ extern "C" void device_render (int* pixels,
   updateInstance(data.g_scene,data.g_instance[2]);
   updateInstance(data.g_scene,data.g_instance[3]);
   rtcCommitScene (data.g_scene);
+  data.g_traversable = rtcGetSceneTraversable(data.g_scene);
 }
 
 /* called by the C++ code for cleanup */

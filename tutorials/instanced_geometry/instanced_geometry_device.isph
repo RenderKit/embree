@@ -11,6 +11,7 @@ struct TutorialData
   /* scene data */
   RTCScene g_scene;
   RTCScene g_scene1;
+  RTCTraversable g_traversable;
   
   uniform AffineSpace3f* uniform instance_xfm;
   uniform LinearSpace3f* uniform normal_xfm;
@@ -31,6 +32,7 @@ void TutorialData_Constructor(uniform TutorialData* uniform This)
 {
   This->g_scene  = NULL;
   This->g_scene1 = NULL;
+  This->g_traversable = NULL;
   This->instance_xfm = uniform new uniform AffineSpace3f[4];
   This->normal_xfm = uniform new uniform LinearSpace3f[4];
   This->colors = uniform new uniform Vec3f[4*4];

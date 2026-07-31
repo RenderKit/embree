@@ -43,6 +43,11 @@ The buffer data must remain valid for as long as the buffer may be
 used, and the user is responsible for freeing the buffer data when no
 longer required.
 
+If using a SYCL Embree device, `ptr` must be allocated using SYCL USM shared
+memory to be accessible on the device. Alternatively the function
+`rtcSetSharedGeometryBufferHostDevice` can be used to pass an explicitly
+managed host/device buffer pair.
+
 Sharing buffers can significantly reduce the memory required by the
 application, thus we recommend using this feature. When enabling the
 `RTC_SCENE_FLAG_COMPACT` scene flag, the spatial index structures index
@@ -55,4 +60,4 @@ On failure an error code is set that can be queried using
 
 #### SEE ALSO
 
-[rtcSetGeometryBuffer], [rtcSetNewGeometryBuffer]
+[rtcSetSharedGeometryBufferHostDevice], [rtcSetGeometryBuffer], [rtcSetNewGeometryBuffer]

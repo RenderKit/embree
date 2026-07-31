@@ -30,7 +30,7 @@ namespace embree {
             has_raytracing = true;
 
           if (has_raytracing && strncmp("ZE_experimental_rtas_builder",extensions[i].name,sizeof(extensions[i].name)) == 0) {
-            ze_result_t result_rtas_builder = ZeWrapper::initRTASBuilder(hDriver,ZeWrapper::RTAS_BUILD_MODE::LEVEL_ZERO);
+            ze_result_t result_rtas_builder = ZeWrapper::initRTASBuilder(hDriver);
             if (result_rtas_builder == ZE_RESULT_ERROR_DEPENDENCY_UNAVAILABLE) {
               return;
             }
@@ -72,11 +72,9 @@ namespace embree {
       throw std::runtime_error("No raytracing capable SYCL platform found. Please install a recent driver. On Linux, make sure that the intel-level-zero-gpu package is installed.");
     }
 
-#if defined(EMBREE_SYCL_L0_RTAS_BUILDER)
     if (!has_accel_builder_support) {
       throw std::runtime_error("No driver support for acceleration structure building found. Please install a recent driver. On Linux, make sure that the package intel-level-zero-gpu-raytracing is installed.");
     }
-#endif
   }
 
   inline void printDeviceInfo(sycl::device const& device)

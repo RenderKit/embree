@@ -14,7 +14,7 @@ ENDIF()
 
 ADD_EXECUTABLE(embree_info embree_info.cpp)
 IF (EMBREE_SYCL_SUPPORT)
-  TARGET_LINK_LIBRARIES(embree_info embree ze_wrapper)
+  TARGET_LINK_LIBRARIES(embree_info embree ze_wrapper ${CMAKE_DL_LIBS})
 ELSE()
   TARGET_LINK_LIBRARIES(embree_info embree)
 ENDIF()

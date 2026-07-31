@@ -43,6 +43,15 @@ access the same object are not thread-safe, unless specified
 otherwise. However, attaching geometries to the same scene and
 performing ray queries in a scene is thread-safe.
 
+Starting with Embree 4.4 intersection and occlusion queries on a SYCL device
+require the use of the `rtcTraversableIntersect`-type functions or the
+`rtcTraversableOccluded`-type function respectively. These functions
+take a traversable object (`RTCTraversable` type) which corresponds to a
+`RTCScene`. Traversable objects are not reference counted
+and therefore they do not have to be released like the other handles.
+Traversable objects grant read-only access to a scene object on a SYCL
+device and are valid as long as the corresponding scene object is valid.
+
 Device Object
 -------------
 
@@ -90,6 +99,17 @@ time. Any API call that sets a property of the scene or geometries
 contained in the scene count as scene modification, e.g. including
 setting of intersection filter functions.
 
+When using SYCL, calls to `rtcCommitScene` trigger memory transfers
+from the host (CPU) to the device (GPU). Calling `rtcCommitScene`
+will be blocking and return only after the memory transfers are completed.
+Embree also provides the function `rtcCommitSceneWithQueue` which
+takes a SYCL queue as argument to which the memory transfer operations
+are submitted. Calling `rtcCommitSceneWithQueue` will trigger the
+memory transfers asynchronously and the application is responsible for
+sychronizing command on the queue properly to ensure the scene data
+is available on a SYCL device when a SYCL kernels performs intersection
+queries that rely on the scene data.
+
 Scene flags can be used to configure a scene to use less memory
 (`RTC_SCENE_FLAG_COMPACT`), use more robust traversal algorithms
 (`RTC_SCENE_FLAG_ROBUST`), and to optimize for dynamic content. See
@@ -99,6 +119,26 @@ A build quality can be specified for a scene to balance between
 acceleration structure build performance and ray query performance.
 See Section [rtcSetSceneBuildQuality] for more details on build
 quality.
+
+
+Traversable Object
+------------------
+
+Starting with Embree 4.4 scene objects (`RTCScene` types) are
+not valid handles on SYCL devices anymore and therefore can not
+be used for Embree API calls in a SYCL kernel. Instead, Embree API
+calls on a SYCL kernel have a variation which use traversable objects
+(`RTCTraversable` type).
+
+Traversable objects grant read-only access to a scene object on a SYCL
+device and are valid as long as the corresponding scene object is valid.
+They can be queried from a scene object using the `rtcGetSceneTraversable`
+function and used in `rtcTraversableIntersect`-type functions or the
+`rtcTraversableOccluded`-type function. They can also be used in CPU code
+and Embree provides other API calls such as the `rtcTraversablePointQuery`
+(which are not currently implemented for SYCL) to help write portable code
+compatible with CPU and SYCL device execution.
+
 
 Geometry Object
 ---------------
@@ -153,6 +193,10 @@ description of how to set up and trace a ray.
 See tutorial [Triangle Geometry] for a complete example of how to
 trace single rays and ray packets.
 
+On SYCL devices the API functions `rtcTraversableIntersect`
+and `rtcTraversableOccluded` have to be used.
+
+
 Point Queries
 -------------
 
@@ -162,6 +206,8 @@ according domain, a user defined callback function is called which allows
 queries such as finding the closest point on the surface geometries of the
 scene (see Tutorial [Closest Point]) or nearest neighbour queries (see
 Tutorial [Voronoi]).
+
+Point Queries can currently not be used on SYCL devices.
 
 See Section [rtcPointQuery] for a detailed description of how to set up
 point queries.
@@ -173,6 +219,8 @@ The Embree API also supports collision detection queries between two
 scenes consisting only of user geometries. Embree only performs
 broadphase collision detection, the narrow phase detection can be
 performed through a callback function.
+
+Collision detection can currently not be used on SYCL devices.
 
 See Section [rtcCollide] for a detailed description of how to set up collision
 detection.

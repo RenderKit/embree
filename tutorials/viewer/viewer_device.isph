@@ -20,6 +20,7 @@ struct TutorialData
   
   /* scene data */
   RTCScene scene;
+  RTCTraversable traversable;
   uniform bool subdiv_mode;
   uniform bool motion_blur;
 
@@ -32,6 +33,7 @@ void TutorialData_Constructor(uniform TutorialData* uniform This)
   This->instancing_mode = g_instancing_mode;
   This->iflags_coherent = g_iflags_coherent;
   This->scene = NULL;
+  This->traversable = NULL;
   This->subdiv_mode = false;
   This->motion_blur = g_motion_blur;
   This->min_width = g_min_width;
