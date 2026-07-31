@@ -157,6 +157,41 @@ jobs:
         EMBREE_PATH=$(./scripts/prepare-test-files-macos.sh --type ctest)
         ./scripts/run-tests.sh --type ctest --embree-dir "$EMBREE_PATH" --ctest-config Release
 
+  build-windows-arm64:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    with:
+      runs-on: '[ "Windows", "build", "arm64" ]'
+      artifact-out: build-windows-arm64
+      artifact-path: ./build/embree-*.zip
+      cmd: |
+        $opts  = "-DCMAKE_BUILD_TYPE=Release"
+        $opts += " -DBUILD_TESTING=ON"
+        $opts += " -DEMBREE_TUTORIALS=ON"
+        $opts += " -DEMBREE_ISPC_SUPPORT=OFF"
+        $opts += " -DEMBREE_TESTING_INTENSITY=3"
+        $opts += " -DEMBREE_MAX_ISA=NEON2X"
+        $opts += " -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        $opts += " -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        $opts += " -DCMAKE_INSTALL_TESTDIR=testing"
+        $opts += " -DEMBREE_ZIP_MODE=ON"
+
+        cmake -S superbuild -B build -G Ninja -D BUILD_TBB_FROM_SOURCE=ON -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config Release
+        cmake --build build/embree/build --config Release --target build
+        Copy-Item build/embree/build/embree-*.zip build/ -Force
+
+  windows-arm64-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    needs: ["build-windows-arm64"]
+    with:
+      runs-on: '[ "Windows", "arm64" ]'
+      artifact-in: build-windows-arm64
+      cmd: |
+        $EmbreeDir = .\\scripts\\prepare-test-files.ps1 -TestType ctest
+        .\\scripts\\run-tests.ps1 -TestType ctest -EmbreeDir $EmbreeDir -CtestConfig Release
+
   build-linux:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/docker.yml@main
@@ -361,10 +396,12 @@ jobs:
   binary-analysis-arm:
     needs:
       - build-macosx-arm
+      - build-windows-arm64
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/binary_analysis.yml@main
     with:
       project: embree
+      artifact-in-windows: build-windows-arm64
       artifact-in-macos: build-macosx-arm
       path: "build/*.zip"
       artifact-out-name: "binary-analysis-arm"
@@ -372,10 +409,12 @@ jobs:
   antivirus-scan-arm:
     needs:
       - build-macosx-arm
+      - build-windows-arm64
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/antivirus_scan.yml@main
     with:
       project: embree
+      artifact-in-windows: build-windows-arm64
       artifact-in-macos: build-macosx-arm
       path: "build/*.zip"
       artifact-out-name: "antivirus-scan-arm"

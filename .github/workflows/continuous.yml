@@ -471,6 +471,31 @@ jobs:
         $EmbreeDir = .\\scripts\\prepare-test-files.ps1 -TestType ctest
         .\\scripts\\run-tests.ps1 -TestType ctest -EmbreeDir $EmbreeDir -CtestConfig RelWithDebInfo
 
+  windows-ARM64-MSVC-NEON:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
+    with:
+      force-delete: true
+      runs-on: '[ "Windows", "build", "arm64" ]'
+      cmd: |
+        $opts  = "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+        $opts += " -DBUILD_TESTING=ON"
+        $opts += " -DEMBREE_TUTORIALS=ON"
+        $opts += " -DEMBREE_ISPC_SUPPORT=OFF"
+        $opts += " -DEMBREE_MAX_ISA=NEON2X"
+        $opts += " -DEMBREE_INSTALL_DEPENDENCIES=ON"
+        $opts += " -DEMBREE_TESTING_INSTALL_TESTS=ON"
+        $opts += " -DCMAKE_INSTALL_TESTDIR=testing"
+        $opts += " -DEMBREE_ZIP_MODE=ON"
+
+        cmake -S superbuild -B build -G Ninja -D BUILD_TBB_FROM_SOURCE=ON -D EMBREE_EXTRA_OPTIONS="$opts"
+        cmake --build build --config RelWithDebInfo
+        cmake --build build/embree/build --config RelWithDebInfo --target build
+        Copy-Item build/embree/build/embree-*.zip build/ -Force
+
+        $EmbreeDir = .\\scripts\\prepare-test-files.ps1 -TestType ctest
+        .\\scripts\\run-tests.ps1 -TestType ctest -EmbreeDir $EmbreeDir -CtestConfig RelWithDebInfo
+
   ########################################
   # MacOS
   ########################################
