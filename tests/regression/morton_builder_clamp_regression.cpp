@@ -125,25 +125,27 @@ static bool runCase(unsigned int maxBranchingFactor)
   args.createLeaf = createLeaf;
   args.buildProgress = buildProgress;
 
+  rtcGetDeviceError(device);
   void *root = rtcBuildBVH(&args);
+  RTCError error = rtcGetDeviceError(device);
 
   rtcReleaseBVH(bvh);
   rtcReleaseDevice(device);
-  return root != nullptr;
+  return root == nullptr && error == RTC_ERROR_INVALID_ARGUMENT;
 }
 
 int main()
 {
-  /* In the failure case, this test should assert or result in a segfault from stack overflow. */
-
   bool okOversized = runCase(64);
   bool okExtreme = runCase(std::numeric_limits<unsigned int>::max());
 
-  if (!okOversized)
-    std::cerr << "Morton clamp regression failed for maxBranchingFactor=64\n";
-  if (!okExtreme)
-    std::cerr << "Morton clamp regression failed for maxBranchingFactor=UINT_MAX\n";
+  if (!okOversized) {
+    std::cerr << "Morton oversized maxBranchingFactor regression failed for maxBranchingFactor=64\n";
+  }
+  if (!okExtreme) {
+    std::cerr << "Morton oversized maxBranchingFactor regression failed for maxBranchingFactor=UINT_MAX\n";
+  }
 
-  std::cout << "Morton clamp regression test completed.\n";
+  std::cout << "Morton oversized branching factor regression test completed.\n";
   return (okOversized && okExtreme) ? 0 : 1;
 }

@@ -84,7 +84,12 @@ namespace embree
             createLeaf(createLeaf),
             progressMonitor(progressMonitor),
             reportFinishedRange(reportFinishedRange),
-            alignedHeuristic(prims), unalignedHeuristic(scene,prims), strandHeuristic(scene,prims) {}
+            alignedHeuristic(prims), unalignedHeuristic(scene,prims), strandHeuristic(scene,prims)
+          {
+            if (cfg.branchingFactor > MAX_BRANCHING_FACTOR) {
+              throw_RTCError(RTC_ERROR_UNKNOWN,"bvh_builder: branching factor too large");
+            }
+          }
 
           /*! checks if all primitives are from the same geometry */
           __forceinline bool sameGeometry(const PrimInfoRange& range)
