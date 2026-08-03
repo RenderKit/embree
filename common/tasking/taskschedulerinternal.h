@@ -58,15 +58,16 @@ namespace embree
       /*! switch from one state to another */
       __forceinline void switch_state(int from, int to)
       {
-	__memory_barrier();
+	      __memory_barrier();
         MAYBE_UNUSED bool success = state.compare_exchange_strong(from,to);
-	assert(success);
+	      assert(success);
+        (void)success;
       }
 
       /*! try to switch from one state to another */
       __forceinline bool try_switch_state(int from, int to) {
-	__memory_barrier();
-	return state.compare_exchange_strong(from,to);
+        __memory_barrier();
+        return state.compare_exchange_strong(from,to);
       }
 
        /*! increment/decrement dependency counter */
@@ -88,7 +89,7 @@ namespace embree
 
       /*! construction of stolen task, stealing thread will decrement initial dependency */
       __forceinline Task (TaskFunction* closure, Task* parent, TaskGroupContext* context)
-        : dependencies(1), stealable(false), closure(closure), parent(parent), context(context), stackPtr(-1), N(1)
+        : dependencies(1), stealable(false), closure(closure), parent(parent), context(context), stackPtr((size_t)-1), N(1)
       {
 	switch_state(DONE,INITIALIZED);
       }
