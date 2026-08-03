@@ -17,7 +17,7 @@ TEST_CASE("Test parallel_partition", "[parallel_partition")
     /* create random permutation */
     uint64_t N = std::rand() % 1000000;
     std::vector<unsigned> array(N);
-    for (unsigned i=0; i<N; i++) array[i] = i;
+    for (unsigned j=0; j<N; j++) array[j] = j;
     for (auto& v : array) std::swap(v,array[std::rand()%array.size()]);
     uint64_t split = std::rand() % (N+1);
 
@@ -37,8 +37,8 @@ TEST_CASE("Test parallel_partition", "[parallel_partition")
     passed &= mid == split;
     passed &= left_sum == split*(split-1)/2;
     passed &= right_sum == N*(N-1)/2-left_sum;
-    for (uint64_t i=0; i<split; i++) passed &= array[i] < split;
-    for (uint64_t i=split; i<N; i++) passed &= array[i] >= split;
+    for (uint64_t j=0; j<split; j++) passed &= array[j] < split;
+    for (uint64_t j=split; j<N; j++) passed &= array[j] >= split;
   }
 
   REQUIRE(passed);

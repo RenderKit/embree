@@ -44,7 +44,7 @@ namespace embree
           });
       }
       
-#if PROFILE
+#if defined(PROFILE) && PROFILE
       while(1) 
 #endif
       {
@@ -108,7 +108,7 @@ namespace embree
       });
 
 
-#if PROFILE
+#if defined(PROFILE) && PROFILE
       double d0 = getSeconds();
 #endif
       /* fast path for single geometry scenes */
@@ -215,7 +215,7 @@ namespace embree
         
       bvh->alloc.cleanup();
       bvh->postBuild(t0);
-#if PROFILE
+#if defined(PROFILE) && PROFILE
       double d1 = getSeconds();
       std::cout << "TOP_LEVEL OPENING/REBUILD TIME " << 1000.0*(d1-d0) << " ms" << std::endl;
 #endif

@@ -5,7 +5,7 @@
 
 namespace embree {
 
-#if EMBREE_SYCL_TUTORIAL
+#if defined(EMBREE_SYCL_TUTORIAL) && EMBREE_SYCL_TUTORIAL
 #define USE_ARGUMENT_CALLBACKS 1
 #else
 #define USE_ARGUMENT_CALLBACKS 0
@@ -45,7 +45,7 @@ inline float transparencyFunction(Vec3fa& h)
 
 
 /* task that renders a single screen tile */
-void renderPixelStandard(const TutorialData& data,
+void renderPixelStandard(const TutorialData& tutorialData,
                          int x, int y, 
                          int* pixels,
                          const unsigned int width,
@@ -60,8 +60,7 @@ void renderPixelStandard(const TutorialData& data,
   InitIntersectionContext(&context);
 
   /* initialize ray */
-  Ray primary;
-  init_Ray(primary,Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
+  Ray primary(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
   float primary_transparency = 0.0f;
 
   while (true)
@@ -76,7 +75,7 @@ void renderPixelStandard(const TutorialData& data,
 #if USE_ARGUMENT_CALLBACKS
     iargs.filter = intersectionFilter;
 #endif
-    rtcTraversableIntersect1(data.g_traversable,RTCRayHit_(primary),&iargs);
+    rtcTraversableIntersect1(tutorialData.g_traversable,RTCRayHit_(primary),&iargs);
     RayStats_addRay(stats);
 
     /* shade pixels */
@@ -84,7 +83,7 @@ void renderPixelStandard(const TutorialData& data,
       break;
 
     float opacity = 1.0f-primary_transparency;
-    Vec3fa diffuse = data.colors[primary.primID];
+    Vec3fa diffuse = tutorialData.colors[primary.primID];
     Vec3fa La = diffuse*0.5f;
     color = color + weight*opacity*La;
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
@@ -103,7 +102,7 @@ void renderPixelStandard(const TutorialData& data,
 #if USE_ARGUMENT_CALLBACKS
     sargs.filter = occlusionFilter;
 #endif
-    rtcTraversableOccluded1(data.g_traversable,RTCRay_(shadow),&sargs);
+    rtcTraversableOccluded1(tutorialData.g_traversable,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

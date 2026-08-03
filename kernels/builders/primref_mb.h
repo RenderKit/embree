@@ -28,7 +28,7 @@ namespace embree
       lbounds.bounds1.upper.a = totalTimeSegments;
     }
 
-    __forceinline PrimRefMB (EmptyTy empty, const LBBox3fa& lbounds_i, unsigned int activeTimeSegments, BBox1f time_range, unsigned int totalTimeSegments, size_t id)
+    __forceinline PrimRefMB (EmptyTy, const LBBox3fa& lbounds_i, unsigned int activeTimeSegments, BBox1f time_range, unsigned int totalTimeSegments, size_t id)
       : lbounds((LBBox3fx)lbounds_i), time_range(time_range)
     {
       assert(activeTimeSegments > 0);
@@ -159,7 +159,7 @@ namespace embree
       bbox.upper.a = primID;
     }
     
-    __forceinline PrimRefMB (EmptyTy empty, const LBBox3fa& bounds, unsigned int activeTimeSegments, BBox1f time_range, unsigned int totalTimeSegments, size_t id)
+    __forceinline PrimRefMB (EmptyTy, const LBBox3fa& bounds, unsigned int activeTimeSegments, BBox1f time_range, unsigned int totalTimeSegments, size_t id)
       : bbox(bounds.interpolate(0.5f)), _activeTimeSegments(activeTimeSegments), _totalTimeSegments(totalTimeSegments), time_range(time_range)
     {
       assert(activeTimeSegments > 0);

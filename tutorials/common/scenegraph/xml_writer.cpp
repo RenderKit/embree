@@ -343,20 +343,20 @@ namespace embree
 
   void XMLWriter::store(Ref<SceneGraph::LightNode> node, ssize_t id)
   {
-    if (auto light = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::AmbientLight>>())
-      store(light->light,id);
-    else if (auto light = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::PointLight>>())
-      store(light->light,id);
-    else if (auto light = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::DirectionalLight>>())
-      store(light->light,id);
-    else if (auto light = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::SpotLight>>())
-      store(light->light,id);
-    else if (auto light = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::DistantLight>>())
-      store(light->light,id);
-    else if (auto light = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::TriangleLight>>())
-      store(light->light,id);
-    else if (auto light = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::QuadLight>>())
-      store(light->light,id);
+    if (auto lightA = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::AmbientLight>>())
+      store(lightA->light,id);
+    else if (auto lightP = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::PointLight>>())
+      store(lightP->light,id);
+    else if (auto lightD = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::DirectionalLight>>())
+      store(lightD->light,id);
+    else if (auto lightS = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::SpotLight>>())
+      store(lightS->light,id);
+    else if (auto lightDist = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::DistantLight>>())
+      store(lightDist->light,id);
+    else if (auto lightT = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::TriangleLight>>())
+      store(lightT->light,id);
+    else if (auto lightQ = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::QuadLight>>())
+      store(lightQ->light,id);
     else
       throw std::runtime_error("unsupported light");
   }
@@ -505,16 +505,16 @@ namespace embree
     }
     const ssize_t id = nodeMap[node] = currentNodeID++;
 
-    if      (Ref<OBJMaterial> m = mnode.dynamicCast<OBJMaterial>()) store(m,id);
-    else if (Ref<ThinDielectricMaterial> m = mnode.dynamicCast<ThinDielectricMaterial>()) store(m,id);
-    else if (Ref<MetalMaterial> m = mnode.dynamicCast<MetalMaterial>()) store(m,id);
-    else if (Ref<VelvetMaterial> m = mnode.dynamicCast<VelvetMaterial>()) store(m,id);
-    else if (Ref<DielectricMaterial> m = mnode.dynamicCast<DielectricMaterial>()) store(m,id);
-    else if (Ref<MetallicPaintMaterial> m = mnode.dynamicCast<MetallicPaintMaterial>()) store(m,id);
-    else if (Ref<MatteMaterial> m = mnode.dynamicCast<MatteMaterial>()) store(m,id);
-    else if (Ref<MirrorMaterial> m = mnode.dynamicCast<MirrorMaterial>()) store(m,id);
-    else if (Ref<ReflectiveMetalMaterial> m = mnode.dynamicCast<ReflectiveMetalMaterial>()) store(m,id);
-    else if (Ref<HairMaterial> m = mnode.dynamicCast<HairMaterial>()) store(m,id);
+    if      (Ref<OBJMaterial> mOBJ = mnode.dynamicCast<OBJMaterial>()) store(mOBJ,id);
+    else if (Ref<ThinDielectricMaterial> mThinD = mnode.dynamicCast<ThinDielectricMaterial>()) store(mThinD,id);
+    else if (Ref<MetalMaterial> mMetal = mnode.dynamicCast<MetalMaterial>()) store(mMetal,id);
+    else if (Ref<VelvetMaterial> mVelvet = mnode.dynamicCast<VelvetMaterial>()) store(mVelvet,id);
+    else if (Ref<DielectricMaterial> mDielec = mnode.dynamicCast<DielectricMaterial>()) store(mDielec,id);
+    else if (Ref<MetallicPaintMaterial> mMetalPaint = mnode.dynamicCast<MetallicPaintMaterial>()) store(mMetalPaint,id);
+    else if (Ref<MatteMaterial> mMatte = mnode.dynamicCast<MatteMaterial>()) store(mMatte,id);
+    else if (Ref<MirrorMaterial> mMirror = mnode.dynamicCast<MirrorMaterial>()) store(mMirror,id);
+    else if (Ref<ReflectiveMetalMaterial> mReflMetal = mnode.dynamicCast<ReflectiveMetalMaterial>()) store(mReflMetal,id);
+    else if (Ref<HairMaterial> mHair = mnode.dynamicCast<HairMaterial>()) store(mHair,id);
     else throw std::runtime_error("unsupported material");
   }
 
@@ -757,17 +757,17 @@ namespace embree
       tab(); xml << "<extern id=\"" << id << "\" src=\"" << node->fileName << "\"/>" << std::endl; return;
     }
 
-    if      (Ref<SceneGraph::AnimatedLightNode> cnode = node.dynamicCast<SceneGraph::AnimatedLightNode>()) store(cnode,id);
-    else if (Ref<SceneGraph::LightNode> cnode = node.dynamicCast<SceneGraph::LightNode>()) store(cnode,id);
+    if      (Ref<SceneGraph::AnimatedLightNode> cnodeAL = node.dynamicCast<SceneGraph::AnimatedLightNode>()) store(cnodeAL,id);
+    else if (Ref<SceneGraph::LightNode> cnodeL = node.dynamicCast<SceneGraph::LightNode>()) store(cnodeL,id);
     //else if (Ref<SceneGraph::MaterialNode> cnode = node.dynamicCast<SceneGraph::MaterialNode>()) store(cnode,id);
-    else if (Ref<SceneGraph::TriangleMeshNode> cnode = node.dynamicCast<SceneGraph::TriangleMeshNode>()) store(cnode,id);
-    else if (Ref<SceneGraph::QuadMeshNode> cnode = node.dynamicCast<SceneGraph::QuadMeshNode>()) store(cnode,id);
-    else if (Ref<SceneGraph::SubdivMeshNode> cnode = node.dynamicCast<SceneGraph::SubdivMeshNode>()) store(cnode,id);
-    else if (Ref<SceneGraph::HairSetNode> cnode = node.dynamicCast<SceneGraph::HairSetNode>()) store(cnode,id);
-    else if (Ref<SceneGraph::AnimatedPerspectiveCameraNode> cnode = node.dynamicCast<SceneGraph::AnimatedPerspectiveCameraNode>()) store(cnode,id);
-    else if (Ref<SceneGraph::PerspectiveCameraNode> cnode = node.dynamicCast<SceneGraph::PerspectiveCameraNode>()) store(cnode,id);
-    else if (Ref<SceneGraph::TransformNode> cnode = node.dynamicCast<SceneGraph::TransformNode>()) store(cnode,id);
-    else if (Ref<SceneGraph::GroupNode> cnode = node.dynamicCast<SceneGraph::GroupNode>()) store(cnode,id);
+    else if (Ref<SceneGraph::TriangleMeshNode> cnodeTri = node.dynamicCast<SceneGraph::TriangleMeshNode>()) store(cnodeTri,id);
+    else if (Ref<SceneGraph::QuadMeshNode> cnodeQuad = node.dynamicCast<SceneGraph::QuadMeshNode>()) store(cnodeQuad,id);
+    else if (Ref<SceneGraph::SubdivMeshNode> cnodeSubdiv = node.dynamicCast<SceneGraph::SubdivMeshNode>()) store(cnodeSubdiv,id);
+    else if (Ref<SceneGraph::HairSetNode> cnodeHair = node.dynamicCast<SceneGraph::HairSetNode>()) store(cnodeHair,id);
+    else if (Ref<SceneGraph::AnimatedPerspectiveCameraNode> cnodeAnimCam = node.dynamicCast<SceneGraph::AnimatedPerspectiveCameraNode>()) store(cnodeAnimCam,id);
+    else if (Ref<SceneGraph::PerspectiveCameraNode> cnodeCam = node.dynamicCast<SceneGraph::PerspectiveCameraNode>()) store(cnodeCam,id);
+    else if (Ref<SceneGraph::TransformNode> cnodeXfm = node.dynamicCast<SceneGraph::TransformNode>()) store(cnodeXfm,id);
+    else if (Ref<SceneGraph::GroupNode> cnodeGroup = node.dynamicCast<SceneGraph::GroupNode>()) store(cnodeGroup,id);
     else throw std::runtime_error("unknown node type");
   }
  

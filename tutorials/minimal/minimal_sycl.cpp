@@ -29,7 +29,7 @@
 RTC_NAMESPACE_USE
 #endif
 
-const sycl::specialization_id<RTCFeatureFlags> feature_mask;
+inline const sycl::specialization_id<RTCFeatureFlags> feature_mask;
 const RTCFeatureFlags required_features = RTC_FEATURE_FLAG_TRIANGLE;
 
 struct Result {
@@ -237,7 +237,7 @@ void castRay(sycl::queue& queue, const RTCTraversable traversable,
       rayhit.ray.dir_z = dz;
       rayhit.ray.tnear = 0;
       rayhit.ray.tfar = std::numeric_limits<float>::infinity();
-      rayhit.ray.mask = -1;
+      rayhit.ray.mask = 0xFFFFFFFFu;
       rayhit.ray.flags = 0;
       rayhit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
       rayhit.hit.instID[0] = RTC_INVALID_GEOMETRY_ID;

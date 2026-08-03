@@ -38,7 +38,7 @@ struct TutorialData
   Vec3fa hair_Kt;    //!< transparency of hair
 };
 
-#if __SYCL_COMPILER_VERSION >= 20210801
+#if defined(__SYCL_COMPILER_VERSION) && __SYCL_COMPILER_VERSION >= 20210801
 }
 namespace sycl {
   template<> struct is_device_copyable<embree::TutorialData> : std::true_type {};

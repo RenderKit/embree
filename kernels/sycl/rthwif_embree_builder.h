@@ -23,7 +23,7 @@ namespace embree
 
   int rthwifIsSYCLDeviceSupported(const sycl::device& sycl_device);
 
-  const bool isPVC(const ze_device_handle_t hDevice);
+  bool isPVC(const ze_device_handle_t hDevice);
 
   /*! allocator that performs BVH memory allocations */
   template <typename T>

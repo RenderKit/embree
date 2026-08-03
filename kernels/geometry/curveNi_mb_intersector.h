@@ -27,7 +27,7 @@ namespace embree
       static __forceinline vbool<M> intersect(Ray& ray, const Primitive& prim, vfloat<M>& tNear_o)
       {
         const size_t N = prim.N;
-#if __SYCL_DEVICE_ONLY__
+#ifdef __SYCL_DEVICE_ONLY__
         const Vec3f offset = *prim.offset(N);
         const float scale  = *prim.scale(N);
 #else
@@ -278,7 +278,7 @@ namespace embree
       static __forceinline vbool<M> intersect(RayK<K>& ray, const size_t k, const Primitive& prim, vfloat<M>& tNear_o)
       {
         const size_t N = prim.N;
-#if __SYCL_DEVICE_ONLY__
+#ifdef __SYCL_DEVICE_ONLY__
         const Vec3f offset = *prim.offset(N);
         const float scale  = *prim.scale(N);
 #else

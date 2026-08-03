@@ -612,10 +612,10 @@ extern "C" void device_init (char* cfg)
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera& camera, RayStats& stats)
+Vec3fa renderPixel(const TutorialData& tutorialData, float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
-  float time = abs((int)(0.01f*data.frameID) - 0.01f*data.frameID);
-  if (data.g_time != -1) time = data.g_time;
+  float time = abs((int)(0.01f*tutorialData.frameID) - 0.01f*tutorialData.frameID);
+  if (tutorialData.g_time != -1) time = tutorialData.g_time;
 
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, time);
@@ -628,7 +628,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
   iargs.intersect = sphereIntersectFuncN;
 #endif
   
-  rtcTraversableIntersect1(data.g_traversable,RTCRayHit_(ray),&iargs);
+  rtcTraversableIntersect1(tutorialData.g_traversable,RTCRayHit_(ray),&iargs);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -639,16 +639,16 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
     if (ray.instID[0] == RTC_INVALID_GEOMETRY_ID)
       ray.instID[0] = ray.geomID;
     switch (ray.instID[0] / 2) {
-    case 0: diffuse = data.face_colors[ray.primID]; break;
-    case 1: diffuse = data.face_colors[2*ray.primID]; break;
-    case 2: diffuse = data.face_colors[2*ray.primID]; break;
+    case 0: diffuse = tutorialData.face_colors[ray.primID]; break;
+    case 1: diffuse = tutorialData.face_colors[2*ray.primID]; break;
+    case 2: diffuse = tutorialData.face_colors[2*ray.primID]; break;
 
     case 3: diffuse = Vec3fa(0.5f,0.0f,0.0f); break;
     case 4: diffuse = Vec3fa(0.0f,0.5f,0.0f); break;
     case 5: diffuse = Vec3fa(0.0f,0.0f,0.5f); break;
 
-    case 6: diffuse = data.face_colors[ray.primID]; break;
-    case 7: diffuse = data.face_colors[2*ray.primID]; break;
+    case 6: diffuse = tutorialData.face_colors[ray.primID]; break;
+    case 7: diffuse = tutorialData.face_colors[2*ray.primID]; break;
     case 8: diffuse = Vec3fa(0.5f,0.5f,0.0f); break;
     default: diffuse = Vec3fa(0.5f,0.5f,0.5f); break;
     }
@@ -665,7 +665,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
 #if USE_ARGUMENT_CALLBACKS
     sargs.occluded = sphereOccludedFuncN;
 #endif
-    rtcTraversableOccluded1(data.g_traversable,RTCRay_(shadow),&sargs);
+    rtcTraversableOccluded1(tutorialData.g_traversable,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -675,7 +675,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
   return color;
 }
 
-void renderPixelStandard(const TutorialData& data, int x, int y,
+void renderPixelStandard(const TutorialData& tutorialData, int x, int y,
                   int* pixels,
                   const unsigned int width,
                   const unsigned int height,
@@ -683,10 +683,10 @@ void renderPixelStandard(const TutorialData& data, int x, int y,
                   const ISPCCamera& camera, RayStats& stats)
 {
   /* calculate pixel color */
-  Vec3fa color = renderPixel(data,(float)x,(float)y,camera,stats);
+  Vec3fa color = renderPixel(tutorialData,(float)x,(float)y,camera,stats);
   
   /* write color to framebuffer */
-  Vec3ff accu_color = data.g_accu[y*width+x] + Vec3ff(color.x,color.y,color.z,1.0f); data.g_accu[y*width+x] = accu_color;
+  Vec3ff accu_color = tutorialData.g_accu[y*width+x] + Vec3ff(color.x,color.y,color.z,1.0f); tutorialData.g_accu[y*width+x] = accu_color;
   float f = rcp(max(0.001f,accu_color.w));
   unsigned int r = (unsigned int) (255.0f * clamp(accu_color.x*f,0.0f,1.0f));
   unsigned int g = (unsigned int) (255.0f * clamp(accu_color.y*f,0.0f,1.0f));

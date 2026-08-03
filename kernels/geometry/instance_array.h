@@ -39,7 +39,7 @@ namespace embree
     {}
 
     __forceinline bool valid() const { 
-      return primID_ != -1;
+      return primID_ != ~0u;
     }
 
     void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
@@ -62,7 +62,7 @@ namespace embree
       return instanceArray->linearBounds(primID,itime);
     }
 
-    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& i, size_t end, Scene* scene, const BBox1f time_range)
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& i, size_t end, Scene* scene, const BBox1f trange)
     {
       assert(end-i == 1);
       const PrimRefMB& prim = prims[i]; i++;
@@ -70,7 +70,7 @@ namespace embree
       const size_t primID = prim.primID();
       new (this) InstanceArrayPrimitive(geomID, primID);
       const InstanceArray* instanceArray = scene->get<InstanceArray>(geomID);
-      return instanceArray->linearBounds(primID,time_range);
+      return instanceArray->linearBounds(primID,trange);
     }
 
     /* Updates the primitive */

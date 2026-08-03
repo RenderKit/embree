@@ -233,10 +233,10 @@ namespace embree
     }
 
     /*! calculates the linear bounds of the i'th primitive for the specified time range */
-    __forceinline bool linearBounds(size_t i, const BBox1f& time_range, LBBox3fa& bbox) const
+    __forceinline bool linearBounds(size_t i, const BBox1f& trange, LBBox3fa& bbox) const
     {
-      if (!valid(i, timeSegmentRange(time_range))) return false;
-      bbox = linearBounds(i, time_range);
+      if (!valid(i, timeSegmentRange(trange))) return false;
+      bbox = linearBounds(i, trange);
       return true;
     }
 
@@ -247,7 +247,7 @@ namespace embree
     
     __forceinline float projectedPrimitiveArea(const size_t i) const {
       const float R = radius(i);
-      return 1 + 2*M_PI*R*R;
+      return 1.0f + 2.0f*float(M_PI)*R*R;
     }
 
    public:
@@ -303,10 +303,10 @@ namespace embree
         return pinfo;
       }
 
-      PrimInfo createPrimRefArrayMB(PrimRef* prims, const BBox1f& time_range, const range<size_t>& r, size_t k, unsigned int geomID) const
+      PrimInfo createPrimRefArrayMB(PrimRef* prims, const BBox1f& trange, const range<size_t>& r, size_t k, unsigned int geomID) const
       {
         PrimInfo pinfo(empty);
-        const BBox1f t0t1 = BBox1f::intersect(getTimeRange(), time_range);
+        const BBox1f t0t1 = BBox1f::intersect(getTimeRange(), trange);
         if (t0t1.empty()) return pinfo;
         
         for (size_t j = r.begin(); j < r.end(); j++) {
@@ -347,14 +347,14 @@ namespace embree
         return bounds(space, i);
       }
 
-      LBBox3fa vlinearBounds(size_t primID, const BBox1f& time_range) const
+      LBBox3fa vlinearBounds(size_t primID, const BBox1f& trange) const
       {
-        return linearBounds(primID, time_range);
+        return linearBounds(primID, trange);
       }
 
-      LBBox3fa vlinearBounds(const LinearSpace3fa& space, size_t primID, const BBox1f& time_range) const
+      LBBox3fa vlinearBounds(const LinearSpace3fa& space, size_t primID, const BBox1f& trange) const
       {
-        return linearBounds(space, primID, time_range);
+        return linearBounds(space, primID, trange);
       }
     };
   }  // namespace isa

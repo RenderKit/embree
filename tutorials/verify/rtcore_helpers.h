@@ -126,15 +126,15 @@ namespace embree
     rh.ray.tnear = pos_inf;
     rh.ray.tfar = neg_inf;
     rh.ray.time = 0;
-    rh.ray.mask = -1;
-    rh.ray.id = -1;
+    rh.ray.mask = (unsigned int)-1;
+    rh.ray.id = (unsigned int)-1;
     rh.hit.Ng_x = 0.0f;
     rh.hit.Ng_y = 0.0f;
     rh.hit.Ng_z = 0.0f;
     rh.hit.u = 0.0f;
     rh.hit.v = 0.0f;
-    rh.hit.geomID = -1;
-    rh.hit.primID = -1;
+    rh.hit.geomID = (unsigned int)-1;
+    rh.hit.primID = (unsigned int)-1;
     for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l) {
       rh.hit.instID[l] = RTC_INVALID_GEOMETRY_ID;
 #if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
@@ -149,8 +149,8 @@ namespace embree
     rh.ray.org_x = org.x; rh.ray.org_y = org.y; rh.ray.org_z = org.z;
     rh.ray.dir_x = dir.x; rh.ray.dir_y = dir.y; rh.ray.dir_z = dir.z;
     rh.ray.tnear = 0.0f; rh.ray.tfar = inf;
-    rh.ray.time = 0; rh.ray.mask = -1;
-    rh.hit.geomID = rh.hit.primID = -1;
+    rh.ray.time = 0; rh.ray.mask = (unsigned int)-1;
+    rh.hit.geomID = rh.hit.primID = (unsigned int)-1;
     for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l) {
       rh.hit.instID[l] = RTC_INVALID_GEOMETRY_ID;
 #if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
@@ -166,8 +166,8 @@ namespace embree
     rh.ray.org_x = org.x; rh.ray.org_y = org.y; rh.ray.org_z = org.z;
     rh.ray.dir_x = dir.x; rh.ray.dir_y = dir.y; rh.ray.dir_z = dir.z;
     rh.ray.tnear = tnear; rh.ray.tfar = tfar;
-    rh.ray.time = 0; rh.ray.mask = -1;
-    rh.hit.geomID = rh.hit.primID = -1;
+    rh.ray.time = 0; rh.ray.mask = (unsigned int)-1;
+    rh.hit.geomID = rh.hit.primID = (unsigned int)-1;
     for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l) {
       rh.hit.instID[l] = RTC_INVALID_GEOMETRY_ID;
 #if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
@@ -185,9 +185,9 @@ namespace embree
     rh.ray.tnear = 0.0f; 
     rh.ray.tfar = inf;
     rh.ray.time = 0; 
-    rh.ray.mask = -1;
-    rh.ray.id = -1;
-    rh.hit.geomID = rh.hit.primID = -1;
+    rh.ray.mask = (unsigned int)-1;
+    rh.ray.id = (unsigned int)-1;
+    rh.hit.geomID = rh.hit.primID = (unsigned int)-1;
     for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l) {
       rh.hit.instID[l] = RTC_INVALID_GEOMETRY_ID;
 #if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
@@ -209,9 +209,9 @@ namespace embree
     rh.ray.tnear = 0.0f; 
     rh.ray.tfar = inf;
     rh.ray.time = 0; 
-    rh.ray.mask = -1;
-    rh.ray.id = -1;
-    rh.hit.geomID = rh.hit.primID = rh.hit.instID[0] = -1;
+    rh.ray.mask = (unsigned int)-1;
+    rh.ray.id = (unsigned int)-1;
+    rh.hit.geomID = rh.hit.primID = rh.hit.instID[0] = (unsigned int)-1;
 #if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
     rh.hit.instPrimID[0] = RTC_INVALID_GEOMETRY_ID;
 #endif
@@ -228,8 +228,8 @@ namespace embree
     rh.ray.org_x = org.x; rh.ray.org_y = org.y; rh.ray.org_z = org.z; // FIXME: optimize
     rh.ray.dir_x = dir.x; rh.ray.dir_y = dir.y; rh.ray.dir_z = dir.z;
     rh.ray.tnear = tnear; rh.ray.tfar = tfar;
-    rh.ray.time = 0; rh.ray.mask = -1; rh.ray.id = -1;
-    rh.hit.geomID = rh.hit.primID = -1;
+    rh.ray.time = 0; rh.ray.mask = (unsigned int)-1; rh.ray.id = (unsigned int)-1;
+    rh.hit.geomID = rh.hit.primID = (unsigned int)-1;
     for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l) {
       rh.hit.instID[l] = RTC_INVALID_GEOMETRY_ID;
 #if defined(RTC_GEOMETRY_INSTANCE_ARRAY)

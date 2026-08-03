@@ -21,12 +21,12 @@ namespace embree
 
   /* build full tokenizer that takes list of valid characters and keywords */
   TokenStream::TokenStream(const Ref<Stream<int> >& cin,            //< stream to read from
-                                   const std::string& alpha,                //< valid characters for identifiers
+                                   const std::string& alphaChars,           //< valid characters for identifiers
                                    const std::string& seps,                 //< characters that act as separators
                                    const std::vector<std::string>& symbols) //< symbols
     : cin(cin), symbols(symbols)
   {
-    createCharMap(isAlphaMap,alpha);
+    createCharMap(isAlphaMap,alphaChars);
     createCharMap(isSepMap,seps);
     createCharMap(isStringCharMap,stringChars);
   }

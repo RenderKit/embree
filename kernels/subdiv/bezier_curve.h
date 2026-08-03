@@ -154,7 +154,9 @@ namespace embree
       template<typename T1>
       __forceinline CubicBezierCurve (const CubicBezierCurve<T1>& other)
       : v0(other.v0), v1(other.v1), v2(other.v2), v3(other.v3) {}
-      
+
+      __forceinline CubicBezierCurve (const CubicBezierCurve& other) = default;
+
       __forceinline CubicBezierCurve& operator= (const CubicBezierCurve& other) {
         v0 = other.v0; v1 = other.v1; v2 = other.v2; v3 = other.v3; return *this;
       }
@@ -632,10 +634,10 @@ namespace embree
       {
         if (likely(N == 4))
         {
-          const Vec4vf4 pi = eval0<4>(0,4);
-          const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
-          const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
-          const Vec3fa upper_r = Vec3fa(reduce_max(abs(pi.w)));
+          const Vec4vf4 pt = eval0<4>(0,4);
+          const Vec3fa lower(reduce_min(pt.x),reduce_min(pt.y),reduce_min(pt.z));
+          const Vec3fa upper(reduce_max(pt.x),reduce_max(pt.y),reduce_max(pt.z));
+          const Vec3fa upper_r = Vec3fa(reduce_max(abs(pt.w)));
           return enlarge(BBox3fa(min(lower,v3),max(upper,v3)),max(upper_r,Vec3fa(abs(v3.w))));
         } 
         else
@@ -644,17 +646,17 @@ namespace embree
           for (int i=0; i<N; i+=VSIZEX)
           {
             vboolx valid = vintx(i)+vintx(StepTy()) < vintx(N);
-            const Vec4vfx pi = eval0<VSIZEX>(i,N);
+            const Vec4vfx pt = eval0<VSIZEX>(i,N);
             
-            pl.x = select(valid,min(pl.x,pi.x),pl.x); // FIXME: use masked min
-            pl.y = select(valid,min(pl.y,pi.y),pl.y); 
-            pl.z = select(valid,min(pl.z,pi.z),pl.z); 
+            pl.x = select(valid,min(pl.x,pt.x),pl.x); // FIXME: use masked min
+            pl.y = select(valid,min(pl.y,pt.y),pl.y); 
+            pl.z = select(valid,min(pl.z,pt.z),pl.z); 
             
-            pu.x = select(valid,max(pu.x,pi.x),pu.x); // FIXME: use masked min
-            pu.y = select(valid,max(pu.y,pi.y),pu.y); 
-            pu.z = select(valid,max(pu.z,pi.z),pu.z); 
+            pu.x = select(valid,max(pu.x,pt.x),pu.x); // FIXME: use masked min
+            pu.y = select(valid,max(pu.y,pt.y),pu.y); 
+            pu.z = select(valid,max(pu.z,pt.z),pu.z); 
             
-            ru   = select(valid,max(ru,abs(pi.w)),ru);
+            ru   = select(valid,max(ru,abs(pt.w)),ru);
           }
           const Vec3fa lower(reduce_min(pl.x),reduce_min(pl.y),reduce_min(pl.z));
           const Vec3fa upper(reduce_max(pu.x),reduce_max(pu.y),reduce_max(pu.z));
@@ -727,3 +729,4 @@ namespace embree
                                     enlargeRadiusToMinWidth(context,geom,ray_org,curve.v3));
   }
 }
+

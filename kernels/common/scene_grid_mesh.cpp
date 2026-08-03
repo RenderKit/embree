@@ -14,16 +14,16 @@ namespace embree
     vertices.resize(numTimeSteps);
   }
 
-  void GridMesh::setMask (unsigned mask) 
+  void GridMesh::setMask (unsigned newMask) 
   {
-    this->mask = mask; 
+    this->mask = newMask; 
     Geometry::update();
   }
 
-  void GridMesh::setNumTimeSteps (unsigned int numTimeSteps)
+  void GridMesh::setNumTimeSteps (unsigned int newNumTimeSteps)
   {
-    vertices.resize(numTimeSteps);
-    Geometry::setNumTimeSteps(numTimeSteps);
+    vertices.resize(newNumTimeSteps);
+    Geometry::setNumTimeSteps(newNumTimeSteps);
   }
 
   void GridMesh::setVertexAttributeCount (unsigned int N)

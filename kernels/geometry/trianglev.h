@@ -39,7 +39,7 @@ namespace embree
       : v0(v0), v1(v1), v2(v2), geomIDs(geomIDs), primIDs(primIDs) {}
     
     /* Returns a mask that tells which triangles are valid */
-    __forceinline vbool<M> valid() const { return geomIDs != vuint<M>(-1); }
+    __forceinline vbool<M> valid() const { return geomIDs != vuint<M>((unsigned int)-1); }
 
     /* Returns true if the specified triangle is valid */
     __forceinline bool valid(const size_t i) const { assert(i<M); return geomIDs[i] != -1; }
@@ -92,8 +92,8 @@ namespace embree
     /* Fill triangle from triangle list */
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t end, Scene* scene)
     {
-      vuint<M> vgeomID = -1, vprimID = -1;
-      Vec3vf<M> v0 = zero, v1 = zero, v2 = zero;
+      vuint<M> vgeomID = (unsigned int)-1, vprimID = (unsigned int)-1;
+      Vec3vf<M> lv0 = zero, lv1 = zero, lv2 = zero;
       
       for (size_t i=0; i<M && begin<end; i++, begin++)
       {
@@ -107,19 +107,19 @@ namespace embree
         const Vec3fa& p2 = mesh->vertex(tri.v[2]);
         vgeomID [i] = geomID;
         vprimID [i] = primID;
-        v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
-        v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
-        v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
+        lv0.x[i] = p0.x; lv0.y[i] = p0.y; lv0.z[i] = p0.z;
+        lv1.x[i] = p1.x; lv1.y[i] = p1.y; lv1.z[i] = p1.z;
+        lv2.x[i] = p2.x; lv2.y[i] = p2.y; lv2.z[i] = p2.z;
       }
-      TriangleMv::store_nt(this,TriangleMv(v0,v1,v2,vgeomID,vprimID));
+      TriangleMv::store_nt(this,TriangleMv(lv0,lv1,lv2,vgeomID,vprimID));
     }
 
     /* Updates the primitive */
     __forceinline BBox3fa update(TriangleMesh* mesh)
     {
       BBox3fa bounds = empty;
-      vuint<M> vgeomID = -1, vprimID = -1;
-      Vec3vf<M> v0 = zero, v1 = zero, v2 = zero;
+      vuint<M> vgeomID = (unsigned int)-1, vprimID = (unsigned int)-1;
+      Vec3vf<M> lv0 = zero, lv1 = zero, lv2 = zero;
       
       for (size_t i=0; i<M; i++)
       {
@@ -133,11 +133,11 @@ namespace embree
         bounds.extend(merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2)));
         vgeomID [i] = geomId;
         vprimID [i] = primId;
-        v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
-        v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
-        v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
+        lv0.x[i] = p0.x; lv0.y[i] = p0.y; lv0.z[i] = p0.z;
+        lv1.x[i] = p1.x; lv1.y[i] = p1.y; lv1.z[i] = p1.z;
+        lv2.x[i] = p2.x; lv2.y[i] = p2.y; lv2.z[i] = p2.z;
       }
-      new (this) TriangleMv(v0,v1,v2,vgeomID,vprimID);
+      new (this) TriangleMv(lv0,lv1,lv2,vgeomID,vprimID);
       return bounds;
     }
    

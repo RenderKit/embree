@@ -331,7 +331,7 @@ void rebuild_instances(size_t old_num_trees)
 }
 
 /* task that renders a single screen tile */
-void renderPixelStandard(const TutorialData& data,
+void renderPixelStandard(const TutorialData& tutorialData,
                          int x, int y, 
                          int* pixels,
                          const unsigned int width,
@@ -343,8 +343,8 @@ void renderPixelStandard(const TutorialData& data,
 
   // multiple samples per pixel because otherwise it looks very
   // bad due to geometric noise/aliasing in the far-field
-  for (int j = 0; j < data.spp; ++j)
-  for (int i = 0; i < data.spp; ++i)
+  for (int j = 0; j < tutorialData.spp; ++j)
+  for (int i = 0; i < tutorialData.spp; ++i)
   {
     float fx = (float) x + ((float)i + 0.5f) / 3;
     float fy = (float) y + ((float)j + 0.5f) / 3;
@@ -355,7 +355,7 @@ void renderPixelStandard(const TutorialData& data,
     RTCIntersectArguments iargs;
     rtcInitIntersectArguments(&iargs);
     iargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
-    rtcTraversableIntersect1(data.g_traversable,RTCRayHit_(ray),&iargs);
+    rtcTraversableIntersect1(tutorialData.g_traversable,RTCRayHit_(ray),&iargs);
     RayStats_addRay(stats);
 
     /* shade pixels */
@@ -365,20 +365,20 @@ void renderPixelStandard(const TutorialData& data,
       Vec3fa diffuse = Vec3fa(1.0f);
       if (ray.instID[0] != RTC_INVALID_GEOMETRY_ID) {
         unsigned int tree_idx = 0;
-        if (data.use_instance_array && ray.instPrimID[0] != RTC_INVALID_GEOMETRY_ID) {
+        if (tutorialData.use_instance_array && ray.instPrimID[0] != RTC_INVALID_GEOMETRY_ID) {
           tree_idx = ray.instPrimID[0];
         } else {
           tree_idx = ray.instID[0] - 1;
         }
 
-        unsigned int tree_id = data.trees_selected[data.tree_ids_device[tree_idx]];
-        Triangle* tree_triangles = data.tree_triangles[tree_id];
+        unsigned int tree_id = tutorialData.trees_selected[tutorialData.tree_ids_device[tree_idx]];
+        Triangle* tree_triangles = tutorialData.tree_triangles[tree_id];
         Triangle triangle = tree_triangles[ray.primID];
 
-        Vec3f* tree_colors = data.tree_vertex_colors[tree_id];
-        Vec3f c0 = tree_colors[triangle.v0];
-        Vec3f c1 = tree_colors[triangle.v1];
-        Vec3f c2 = tree_colors[triangle.v2];
+        Vec3f* vertex_colors = tutorialData.tree_vertex_colors[tree_id];
+        Vec3f c0 = vertex_colors[triangle.v0];
+        Vec3f c1 = vertex_colors[triangle.v1];
+        Vec3f c2 = vertex_colors[triangle.v2];
         float u = ray.u, v = ray.v, w = 1.0f-ray.u-ray.v;
         Vec3f c = w*c0 + u*c1 + v*c2;
         diffuse = Vec3fa(c);
@@ -399,7 +399,7 @@ void renderPixelStandard(const TutorialData& data,
       RTCOccludedArguments sargs;
       rtcInitOccludedArguments(&sargs);
       sargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
-      rtcTraversableOccluded1(data.g_traversable,RTCRay_(shadow),&sargs);
+      rtcTraversableOccluded1(tutorialData.g_traversable,RTCRay_(shadow),&sargs);
       RayStats_addShadowRay(stats);
 
       /* add light contribution */
@@ -413,9 +413,9 @@ void renderPixelStandard(const TutorialData& data,
   }
 
   /* write color to framebuffer */
-  unsigned int r = (unsigned int) (255.0f * clamp(color_accum.x/(data.spp*data.spp),0.0f,1.0f));
-  unsigned int g = (unsigned int) (255.0f * clamp(color_accum.y/(data.spp*data.spp),0.0f,1.0f));
-  unsigned int b = (unsigned int) (255.0f * clamp(color_accum.z/(data.spp*data.spp),0.0f,1.0f));
+  unsigned int r = (unsigned int) (255.0f * clamp(color_accum.x/(tutorialData.spp*tutorialData.spp),0.0f,1.0f));
+  unsigned int g = (unsigned int) (255.0f * clamp(color_accum.y/(tutorialData.spp*tutorialData.spp),0.0f,1.0f));
+  unsigned int b = (unsigned int) (255.0f * clamp(color_accum.z/(tutorialData.spp*tutorialData.spp),0.0f,1.0f));
   pixels[y*width+x] = (b << 16) + (g << 8) + r;
 }
 

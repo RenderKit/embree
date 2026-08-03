@@ -56,7 +56,6 @@ namespace embree
       if (likely(instance_id_stack::push(user_context, prim.instID_, prim.primID_)))
       {
         const AffineSpace3fa world2local = instance->getWorld2Local(prim.primID_);
-        Accel* object = instance->getObject(prim.primID_);
         const Vec3ff ray_org = ray.org;
         const Vec3ff ray_dir = ray.dir;
         ray.org = Vec3ff(xfmPoint(world2local, ray_org), ray.tnear());

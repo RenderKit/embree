@@ -457,7 +457,7 @@ namespace embree
 
 
     /*! Sets ray mask. */
-    virtual void setMask(unsigned mask) { 
+    virtual void setMask(unsigned msk) { 
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
     
@@ -519,7 +519,7 @@ namespace embree
   public:
 
     /*! Set bounds function. */
-    virtual void setBoundsFunction (RTCBoundsFunction bounds, void* userPtr) { 
+    virtual void setBoundsFunction (RTCBoundsFunction bounds, void* ptr) { 
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
@@ -599,7 +599,7 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"computeAlignedSpace not implemented for this geometry"); 
     }
 
-    virtual LinearSpace3fa computeAlignedSpaceMB(const size_t primID, const BBox1f time_range) const {
+    virtual LinearSpace3fa computeAlignedSpaceMB(const size_t primID, const BBox1f trange) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"computeAlignedSpace not implemented for this geometry"); 
     }
     
@@ -623,19 +623,19 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vbounds not implemented for this geometry"); 
     }
 
-    virtual LBBox3fa vlinearBounds(size_t primID, const BBox1f& time_range) const {
+    virtual LBBox3fa vlinearBounds(size_t primID, const BBox1f& trange) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vlinearBounds not implemented for this geometry"); 
     }
 
-    virtual LBBox3fa vlinearBounds(size_t primID, const BBox1f& time_range, const SubGridBuildData * const sgrids) const {
-      return vlinearBounds(primID,time_range);
+    virtual LBBox3fa vlinearBounds(size_t primID, const BBox1f& trange, const SubGridBuildData * const sgrids) const {
+      return vlinearBounds(primID,trange);
     }
     
-    virtual LBBox3fa vlinearBounds(const LinearSpace3fa& space, size_t primID, const BBox1f& time_range) const {
+    virtual LBBox3fa vlinearBounds(const LinearSpace3fa& space, size_t primID, const BBox1f& trange) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vlinearBounds not implemented for this geometry"); 
     }
 
-    virtual LBBox3fa vlinearBounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t primID, const BBox1f& time_range) const {
+    virtual LBBox3fa vlinearBounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t primID, const BBox1f& trange) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vlinearBounds not implemented for this geometry"); 
     }
     

@@ -12,6 +12,18 @@ SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /EHsc")        # catch C++ exceptions 
 SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /MP")          # compile source files in parallel
 SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /GR")          # enable runtime type information (on by default)
 SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /Gy")          # package individual functions
+SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /W4")          # enable highest practical warning level
+SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /WX")          # treat warnings as errors
+SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /wd4100")      # disable: unreferenced formal parameter (intentional in template/virtual code)
+SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /wd4127")      # disable: conditional expression is constant (intentional in template/SIMD code)
+SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /wd4201")      # disable: nonstandard extension used: nameless struct/union (intentional for SIMD vec types)
+SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /wd4244")      # disable: conversion from X to Y, possible loss of data (intentional in SIMD/geometry math)
+SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /wd4267")      # disable: conversion from size_t to smaller type (intentional in index arithmetic)
+SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /wd4324")      # disable: structure was padded due to alignment specifier (intentional for SIMD alignment)
+SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /wd4512")      # disable: assignment operator could not be generated (C++03 compat, types with const members)
+SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /wd4714")      # disable: function marked __forceinline not inlined (compiler decision, not an error)
+SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /wd4702")      # disable: unreachable code (false-positive in heavily-inlined/templated code)
+SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /wd4800")      # disable: implicit conversion from int to bool (intentional in flag/mask code)
 IF (EMBREE_STACK_PROTECTOR)
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /GS")          # protects against return address overrides
 ELSE()
@@ -25,6 +37,9 @@ ENDMACRO()
 
 SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEPENDENTLOADFLAG:0x2000")
 SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEPENDENTLOADFLAG:0x2000")
+
+# Remove CMake-injected /W3 so our /W4 is unambiguous
+STRING(REPLACE "/W3" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${COMMON_CXX_FLAGS}")
 STRING(REPLACE "/RTC1" "" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})         # disable native runtime checks

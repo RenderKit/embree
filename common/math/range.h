@@ -22,6 +22,8 @@ namespace embree
       __forceinline range(const range& other)
         : _begin(other._begin), _end(other._end) {}
 
+      __forceinline range& operator=(const range& other) = default;
+
       template<typename T1>
       __forceinline range(const range<T1>& other)
         : _begin(Ty(other._begin)), _end(Ty(other._end)) {}

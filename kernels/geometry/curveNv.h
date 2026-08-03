@@ -44,20 +44,20 @@ namespace embree
     __forceinline void fill(const PrimRef* prims, size_t& begin, size_t _end, Scene* scene)
     {
       size_t end = min(begin+M,_end);
-      size_t N = end-begin;
+      size_t num = end-begin;
 
       /* encode all primitives */
-      for (size_t i=0; i<N; i++)
+      for (size_t i=0; i<num; i++)
       {
         const PrimRef& prim = prims[begin+i];
         const unsigned int geomID = prim.geomID();
         const unsigned int primID = prim.primID();
         CurveGeometry* mesh = (CurveGeometry*) scene->get(geomID);
         const unsigned vtxID = mesh->curve(primID);
-        Vec3fa::storeu(&this->vertices(i,N)[0],mesh->vertex(vtxID+0));
-        Vec3fa::storeu(&this->vertices(i,N)[1],mesh->vertex(vtxID+1));
-        Vec3fa::storeu(&this->vertices(i,N)[2],mesh->vertex(vtxID+2));
-        Vec3fa::storeu(&this->vertices(i,N)[3],mesh->vertex(vtxID+3));
+        Vec3fa::storeu(&this->vertices(i,num)[0],mesh->vertex(vtxID+0));
+        Vec3fa::storeu(&this->vertices(i,num)[1],mesh->vertex(vtxID+1));
+        Vec3fa::storeu(&this->vertices(i,num)[2],mesh->vertex(vtxID+2));
+        Vec3fa::storeu(&this->vertices(i,num)[3],mesh->vertex(vtxID+3));
       }
     }
 
@@ -89,8 +89,8 @@ namespace embree
     
   public:
     unsigned char data[4*16*M];
-    __forceinline       Vec3fa* vertices(size_t i, size_t N)       { return (Vec3fa*)CurveNi<M>::end(N)+4*i; }
-    __forceinline const Vec3fa* vertices(size_t i, size_t N) const { return (Vec3fa*)CurveNi<M>::end(N)+4*i; }
+    __forceinline       Vec3fa* vertices(size_t i, size_t num)       { return (Vec3fa*)CurveNi<M>::end(num)+4*i; }
+    __forceinline const Vec3fa* vertices(size_t i, size_t num) const { return (Vec3fa*)CurveNi<M>::end(num)+4*i; }
   };
 
   template<int M>

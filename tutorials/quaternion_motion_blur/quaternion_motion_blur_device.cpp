@@ -47,18 +47,18 @@ extern "C" bool g_reset;
 
 RTCIntersectFunctionN sphereIntersectFuncPtr = nullptr;
 
-AffineSpace3fa fromQuaternionDecomposition(const RTCQuaternionDecomposition& qdc)
+AffineSpace3fa fromQuaternionDecomposition(const RTCQuaternionDecomposition& qdc_param)
 {
   AffineSpace3fa T = AffineSpace3fa::scale(Vec3fa(1.f, 1.f, 1.f));
-  T.p = Vec3fa(qdc.translation_x, qdc.translation_y, qdc.translation_z);
+  T.p = Vec3fa(qdc_param.translation_x, qdc_param.translation_y, qdc_param.translation_z);
 
   AffineSpace3fa S = AffineSpace3fa::scale(Vec3fa(1.f, 1.f, 1.f));
-  S.l.vx.x = qdc.scale_x; S.l.vy.x = qdc.skew_xy; S.l.vz.x = qdc.skew_xz; S.p.x = qdc.shift_x;
-                          S.l.vy.y = qdc.scale_y; S.l.vz.y = qdc.skew_yz; S.p.y = qdc.shift_y;
-                                                  S.l.vz.z = qdc.scale_z; S.p.z = qdc.shift_z;
+  S.l.vx.x = qdc_param.scale_x; S.l.vy.x = qdc_param.skew_xy; S.l.vz.x = qdc_param.skew_xz; S.p.x = qdc_param.shift_x;
+                          S.l.vy.y = qdc_param.scale_y; S.l.vz.y = qdc_param.skew_yz; S.p.y = qdc_param.shift_y;
+                                                  S.l.vz.z = qdc_param.scale_z; S.p.z = qdc_param.shift_z;
 
   Quaternion3f q = Quaternion3f(Vec4f(
-    qdc.quaternion_r, qdc.quaternion_i, qdc.quaternion_j, qdc.quaternion_k));
+    qdc_param.quaternion_r, qdc_param.quaternion_i, qdc_param.quaternion_j, qdc_param.quaternion_k));
 
   AffineSpace3fa R = AffineSpace3fa(LinearSpace3fa(q));
   return T * R * S;
@@ -260,7 +260,7 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-Vec3fa renderPixelFunction(const TutorialData& data,
+Vec3fa renderPixelFunction(const TutorialData& td,
                           float x, float y,
                           RandomSampler& sampler,
                           const ISPCCamera& camera,
@@ -273,7 +273,7 @@ Vec3fa renderPixelFunction(const TutorialData& data,
   args.intersect = sphereIntersectFunc;
 #endif
 
-  float time = data.g_motion_blur ? RandomSampler_get1D(sampler) * data.g_shutter_close: data.g_time;
+  float time = td.g_motion_blur ? RandomSampler_get1D(sampler) * td.g_shutter_close: td.g_time;
 
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p),
@@ -282,7 +282,7 @@ Vec3fa renderPixelFunction(const TutorialData& data,
                      RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
 
   /* intersect ray with scene */
-  rtcTraversableIntersect1(data.g_traversable,RTCRayHit_(ray),&args);
+  rtcTraversableIntersect1(td.g_traversable,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -304,7 +304,7 @@ Vec3fa renderPixelFunction(const TutorialData& data,
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(const TutorialData& data,
+Vec3fa renderPixelStandard(const TutorialData& td,
                            float x, float y,
                            const ISPCCamera& camera,
                            RayStats& stats)
@@ -313,20 +313,20 @@ Vec3fa renderPixelStandard(const TutorialData& data,
 
   Vec3fa L = Vec3fa(0.0f);
 
-  for (int i=0; i<data.g_spp; i++)
+  for (int i=0; i<td.g_spp; i++)
   {
-    RandomSampler_init(sampler, (int)x, (int)y, data.g_accu_count*data.g_spp+i);
+    RandomSampler_init(sampler, (int)x, (int)y, td.g_accu_count*td.g_spp+i);
 
     /* calculate pixel color */
     float fx = x + RandomSampler_get1D(sampler);
     float fy = y + RandomSampler_get1D(sampler);
-    L = L + renderPixelFunction(data,fx,fy,sampler,camera,stats);
+    L = L + renderPixelFunction(td,fx,fy,sampler,camera,stats);
   }
-  L = L/(float)data.g_spp;
+  L = L/(float)td.g_spp;
   return L;
 }
 
-void renderPixelStandard(const TutorialData& data,
+void renderPixelStandard(const TutorialData& td,
                          int x, int y,
                          int* pixels,
                          const unsigned int width,
@@ -334,10 +334,10 @@ void renderPixelStandard(const TutorialData& data,
                          const float time,
                          const ISPCCamera& camera, RayStats& stats)
 {
-  Vec3fa color = renderPixelStandard(data,(float)x,(float)y,camera,stats);
+  Vec3fa color = renderPixelStandard(td,(float)x,(float)y,camera,stats);
 
   /* write color to framebuffer */
-  Vec3ff accu_color = data.g_accu[y*width+x] + Vec3ff(color.x,color.y,color.z,1.0f); data.g_accu[y*width+x] = accu_color;
+  Vec3ff accu_color = td.g_accu[y*width+x] + Vec3ff(color.x,color.y,color.z,1.0f); td.g_accu[y*width+x] = accu_color;
   float f = rcp(max(1.f,accu_color.w));
   unsigned int r = (unsigned int) (255.0f * clamp(accu_color.x*f,0.0f,1.0f));
   unsigned int g = (unsigned int) (255.0f * clamp(accu_color.y*f,0.0f,1.0f));

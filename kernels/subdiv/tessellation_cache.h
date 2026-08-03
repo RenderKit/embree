@@ -285,7 +285,7 @@ namespace embree
 
    static __forceinline void* malloc(const size_t bytes)
    {
-     size_t block_index = -1;
+     size_t block_index = (size_t)-1;
      ThreadWorkState *const t_state = threadState();
      while (true)
      {

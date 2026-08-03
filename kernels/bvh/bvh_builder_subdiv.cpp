@@ -194,19 +194,19 @@ namespace embree
       __forceinline SubdivRecalculatePrimRef (mvector<BBox3fa>& bounds, SubdivPatch1* patches)
         : bounds(bounds), patches(patches) {}
 
-      __forceinline PrimRefMB operator() (const size_t patchIndexMB, const BBox1f prim_time_range, const unsigned prim_num_time_segments, const BBox1f time_range) const
+      __forceinline PrimRefMB operator() (const size_t patchIndexMB, const BBox1f prim_time_range, const unsigned prim_num_time_segments, const BBox1f trange) const
       {
-        const LBBox3fa lbounds = LBBox3fa([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, time_range, prim_time_range, (float)prim_num_time_segments);
-        const range<int> tbounds = getTimeSegmentRange(time_range, prim_time_range, (float)prim_num_time_segments);
+        const LBBox3fa lbounds = LBBox3fa([&] (size_t itime) { return bounds[patchIndexMB+itime]; }, trange, prim_time_range, (float)prim_num_time_segments);
+        const range<int> tbounds = getTimeSegmentRange(trange, prim_time_range, (float)prim_num_time_segments);
         return PrimRefMB (empty, lbounds, tbounds.size(), prim_time_range, prim_num_time_segments, patchIndexMB);
       }
 
-      __forceinline PrimRefMB operator() (const PrimRefMB& prim, const BBox1f time_range) const {
-        return operator()(prim.ID(),prim.time_range,prim.totalTimeSegments(),time_range);
+      __forceinline PrimRefMB operator() (const PrimRefMB& prim, const BBox1f trange) const {
+        return operator()(prim.ID(),prim.time_range,prim.totalTimeSegments(),trange);
       }
 
-      __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f time_range) const {
-        return LBBox3fa([&] (size_t itime) { return bounds[prim.ID()+itime]; }, time_range, prim.time_range, (float)prim.totalTimeSegments());
+      __forceinline LBBox3fa linearBounds(const PrimRefMB& prim, const BBox1f trange) const {
+        return LBBox3fa([&] (size_t itime) { return bounds[prim.ID()+itime]; }, trange, prim.time_range, (float)prim.totalTimeSegments());
       }
     };
 
@@ -301,6 +301,7 @@ namespace embree
         auto createLeafFunc = [&] (const BVHBuilderMSMBlur::BuildRecord& current, const Allocator& alloc) -> NodeRecordMB4D {
           mvector<PrimRefMB>& prims = *current.prims.prims;
           size_t items MAYBE_UNUSED = current.prims.size();
+          (void)items;
           assert(items == 1);
           const size_t patchIndexMB = prims[current.prims.begin()].ID();
           SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+0];

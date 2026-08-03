@@ -65,7 +65,7 @@ namespace embree
       const Split find(const range<size_t>& set, size_t logBlockSize)
       {
         Vec3fa axis0(0,0,1);
-        uint64_t bestGeomPrimID = -1;
+        uint64_t bestGeomPrimID = (uint64_t)-1;
 
         /* curve with minimum ID determines first axis */
         for (size_t i=set.begin(); i<set.end(); i++)
@@ -82,7 +82,7 @@ namespace embree
         /* find 2nd axis that is most misaligned with first axis and has minimum ID */
         float bestCos = 1.0f;
         Vec3fa axis1 = axis0;
-        bestGeomPrimID = -1;
+        bestGeomPrimID = (uint64_t)-1;
         for (size_t i=set.begin(); i<set.end(); i++) 
         {
           const uint64_t geomprimID = prims[i].ID64();

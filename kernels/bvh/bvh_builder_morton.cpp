@@ -101,17 +101,17 @@ namespace embree
         /* allocate leaf node */
         Triangle4* accel = (Triangle4*) alloc.malloc1(sizeof(Triangle4),BVH::byteAlignment);
         NodeRef ref = BVH::encodeLeaf((char*)accel,1);
-        vuint4 vgeomID = -1, vprimID = -1;
+        vuint4 vgeomID = (unsigned int)-1, vprimID = (unsigned int)-1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
-        const TriangleMesh* __restrict__ const mesh = this->mesh;
+        const TriangleMesh* __restrict__ const pMesh = this->mesh;
 
         for (size_t i=0; i<items; i++)
         {
           const unsigned int primID = morton[start+i].index;
-          const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-          const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-          const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-          const Vec3fa& p2 = mesh->vertex(tri.v[2]);
+          const TriangleMesh::Triangle& tri = pMesh->triangle(primID);
+          const Vec3fa& p0 = pMesh->vertex(tri.v[0]);
+          const Vec3fa& p1 = pMesh->vertex(tri.v[1]);
+          const Vec3fa& p2 = pMesh->vertex(tri.v[2]);
           lower = min(lower,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
           upper = max(upper,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
           vgeomID [i] = geomID_;
@@ -157,17 +157,17 @@ namespace embree
         /* allocate leaf node */
         Triangle4v* accel = (Triangle4v*) alloc.malloc1(sizeof(Triangle4v),BVH::byteAlignment);
         NodeRef ref = BVH::encodeLeaf((char*)accel,1);       
-        vuint4 vgeomID = -1, vprimID = -1;
+        vuint4 vgeomID = (unsigned int)-1, vprimID = (unsigned int)-1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
-        const TriangleMesh* __restrict__ mesh = this->mesh;
+        const TriangleMesh* __restrict__ pMesh = this->mesh;
 
         for (size_t i=0; i<items; i++)
         {
           const unsigned int primID = morton[start+i].index;
-          const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-          const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-          const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-          const Vec3fa& p2 = mesh->vertex(tri.v[2]);
+          const TriangleMesh::Triangle& tri = pMesh->triangle(primID);
+          const Vec3fa& p0 = pMesh->vertex(tri.v[0]);
+          const Vec3fa& p1 = pMesh->vertex(tri.v[1]);
+          const Vec3fa& p2 = pMesh->vertex(tri.v[2]);
           lower = min(lower,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
           upper = max(upper,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
           vgeomID [i] = geomID_;
@@ -213,16 +213,16 @@ namespace embree
         NodeRef ref = BVH::encodeLeaf((char*)accel,1);
         
         vuint4 v0 = zero, v1 = zero, v2 = zero;
-        vuint4 vgeomID = -1, vprimID = -1;
-        const TriangleMesh* __restrict__ const mesh = this->mesh;
+        vuint4 vgeomID = (unsigned int)-1, vprimID = (unsigned int)-1;
+        const TriangleMesh* __restrict__ const pMesh = this->mesh;
         
         for (size_t i=0; i<items; i++)
         {
           const unsigned int primID = morton[start+i].index;
-          const TriangleMesh::Triangle& tri = mesh->triangle(primID);
-          const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-          const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-          const Vec3fa& p2 = mesh->vertex(tri.v[2]);
+          const TriangleMesh::Triangle& tri = pMesh->triangle(primID);
+          const Vec3fa& p0 = pMesh->vertex(tri.v[0]);
+          const Vec3fa& p1 = pMesh->vertex(tri.v[1]);
+          const Vec3fa& p2 = pMesh->vertex(tri.v[2]);
           lower = min(lower,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
           upper = max(upper,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
           vgeomID[i] = geomID_;
@@ -236,7 +236,7 @@ namespace embree
         for (size_t i=items; i<4; i++)
         {
           vgeomID[i] = vgeomID[0];
-          vprimID[i] = -1;
+          vprimID[i] = (unsigned int)-1;
           v0[i] = 0;
           v1[i] = 0; 
           v2[i] = 0;
@@ -277,18 +277,18 @@ namespace embree
         Quad4v* accel = (Quad4v*) alloc.malloc1(sizeof(Quad4v),BVH::byteAlignment);
         NodeRef ref = BVH::encodeLeaf((char*)accel,1);
         
-        vuint4 vgeomID = -1, vprimID = -1;
+        vuint4 vgeomID = (unsigned int)-1, vprimID = (unsigned int)-1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero, v3 = zero;
-        const QuadMesh* __restrict__ mesh = this->mesh;
+        const QuadMesh* __restrict__ pMesh = this->mesh;
 
         for (size_t i=0; i<items; i++)
         {
           const unsigned int primID = morton[start+i].index;
-          const QuadMesh::Quad& tri = mesh->quad(primID);
-          const Vec3fa& p0 = mesh->vertex(tri.v[0]);
-          const Vec3fa& p1 = mesh->vertex(tri.v[1]);
-          const Vec3fa& p2 = mesh->vertex(tri.v[2]);
-          const Vec3fa& p3 = mesh->vertex(tri.v[3]);
+          const QuadMesh::Quad& tri = pMesh->quad(primID);
+          const Vec3fa& p0 = pMesh->vertex(tri.v[0]);
+          const Vec3fa& p1 = pMesh->vertex(tri.v[1]);
+          const Vec3fa& p2 = pMesh->vertex(tri.v[2]);
+          const Vec3fa& p3 = pMesh->vertex(tri.v[3]);
           lower = min(lower,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2,(vfloat4)p3);
           upper = max(upper,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2,(vfloat4)p3);
           vgeomID [i] = geomID_;
@@ -332,14 +332,14 @@ namespace embree
         /* allocate leaf node */
         Object* accel = (Object*) alloc.malloc1(items*sizeof(Object),BVH::byteAlignment);
         NodeRef ref = BVH::encodeLeaf((char*)accel,items);
-        const UserGeometry* mesh = this->mesh;
+        const UserGeometry* pMesh = this->mesh;
         
         BBox3fa bounds = empty;
         for (size_t i=0; i<items; i++)
         {
           const unsigned int index = morton[start+i].index;
           const unsigned int primID = index; 
-          bounds.extend(mesh->bounds(primID));
+          bounds.extend(pMesh->bounds(primID));
           new (&accel[i]) Object(geomID_,primID);
         }
 

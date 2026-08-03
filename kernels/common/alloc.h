@@ -33,7 +33,7 @@ namespace embree
     /*! Per thread structure holding the current memory block. */
     struct __aligned(64) ThreadLocal
     {
-      ALIGNED_CLASS_(64);
+      ALIGNED_CLASS_(64)
     public:
 
       /*! Constructor for usage with ThreadLocalData */
@@ -121,7 +121,7 @@ namespace embree
     /*! Two thread local structures. */
     struct __aligned(64) ThreadLocal2
     {
-      ALIGNED_CLASS_(64);
+      ALIGNED_CLASS_(64)
     public:
 
       __forceinline ThreadLocal2()
@@ -570,19 +570,19 @@ namespace embree
       Statistics ()
       : bytesUsed(0), bytesFree(0), bytesWasted(0) {}
 
-      Statistics (size_t bytesUsed, size_t bytesFree, size_t bytesWasted)
-      : bytesUsed(bytesUsed), bytesFree(bytesFree), bytesWasted(bytesWasted) {}
+      Statistics (size_t bytesUsed_, size_t bytesFree_, size_t bytesWasted_)
+      : bytesUsed(bytesUsed_), bytesFree(bytesFree_), bytesWasted(bytesWasted_) {}
 
-      Statistics (FastAllocator* alloc, AllocationType atype, bool huge_pages = false)
+      Statistics (FastAllocator* alloc, AllocationType alloc_type, bool huge_pages = false)
       : bytesUsed(0), bytesFree(0), bytesWasted(0)
       {
-        Block* usedBlocks = alloc->usedBlocks.load();
-        Block* freeBlocks = alloc->freeBlocks.load();
-        if (usedBlocks) bytesUsed += usedBlocks->getUsedBytes(atype,huge_pages);
-        if (freeBlocks) bytesFree += freeBlocks->getAllocatedBytes(atype,huge_pages);
-        if (usedBlocks) bytesFree += usedBlocks->getFreeBytes(atype,huge_pages);
-        if (freeBlocks) bytesWasted += freeBlocks->getWastedBytes(atype,huge_pages);
-        if (usedBlocks) bytesWasted += usedBlocks->getWastedBytes(atype,huge_pages);
+        Block* pUsedBlocks = alloc->usedBlocks.load();
+        Block* pFreeBlocks = alloc->freeBlocks.load();
+        if (pUsedBlocks) bytesUsed += pUsedBlocks->getUsedBytes(alloc_type,huge_pages);
+        if (pFreeBlocks) bytesFree += pFreeBlocks->getAllocatedBytes(alloc_type,huge_pages);
+        if (pUsedBlocks) bytesFree += pUsedBlocks->getFreeBytes(alloc_type,huge_pages);
+        if (pFreeBlocks) bytesWasted += pFreeBlocks->getWastedBytes(alloc_type,huge_pages);
+        if (pUsedBlocks) bytesWasted += pUsedBlocks->getWastedBytes(alloc_type,huge_pages);
       }
 
       std::string str(size_t numPrimitives)
@@ -614,8 +614,8 @@ namespace embree
       size_t bytesWasted;
     };
 
-    Statistics getStatistics(AllocationType atype, bool huge_pages = false) {
-      return Statistics(this,atype,huge_pages);
+    Statistics getStatistics(AllocationType alloc_type, bool huge_pages = false) {
+      return Statistics(this,alloc_type,huge_pages);
     }
 
     size_t getUsedBytes() {
@@ -819,9 +819,9 @@ namespace embree
       {
         Block* block = this;
         while (block) {
-          Block* next = block->next;
+          Block* nextBlock = block->next;
           block->clear_block(device, useUSM);
-          block = next;
+          block = nextBlock;
         }
       }
 
@@ -845,11 +845,11 @@ namespace embree
         }
       }
 
-      void* malloc(MemoryMonitorInterface* device, size_t& bytes_in, size_t align, bool partial)
+      void* malloc(MemoryMonitorInterface* device, size_t& bytes_in, size_t alignment, bool partial)
       {
         size_t bytes = bytes_in;
-        assert(align <= maxAlignment);
-        bytes = (bytes+(align-1)) & ~(align-1);
+        assert(alignment <= maxAlignment);
+        bytes = (bytes+(alignment-1)) & ~(alignment-1);
         if (unlikely(cur+bytes > reserveEnd && !partial)) return nullptr;
         const size_t i = cur.fetch_add(bytes);
         if (unlikely(i+bytes > reserveEnd && !partial)) return nullptr;
@@ -900,37 +900,37 @@ namespace embree
         else                           return atype_i == atype;
       }
 
-      size_t getUsedBytes(AllocationType atype, bool huge_pages = false) const {
+      size_t getUsedBytes(AllocationType alloc_type, bool use_huge_pages = false) const {
         size_t bytes = 0;
         for (const Block* block = this; block; block = block->next) {
-          if (!block->hasType(atype,huge_pages)) continue;
+          if (!block->hasType(alloc_type,use_huge_pages)) continue;
           bytes += block->getBlockUsedBytes();
         }
         return bytes;
       }
 
-      size_t getFreeBytes(AllocationType atype, bool huge_pages = false) const {
+      size_t getFreeBytes(AllocationType alloc_type, bool use_huge_pages = false) const {
         size_t bytes = 0;
         for (const Block* block = this; block; block = block->next) {
-          if (!block->hasType(atype,huge_pages)) continue;
+          if (!block->hasType(alloc_type,use_huge_pages)) continue;
           bytes += block->getBlockFreeBytes();
         }
         return bytes;
       }
 
-      size_t getWastedBytes(AllocationType atype, bool huge_pages = false) const {
+      size_t getWastedBytes(AllocationType alloc_type, bool use_huge_pages = false) const {
         size_t bytes = 0;
         for (const Block* block = this; block; block = block->next) {
-          if (!block->hasType(atype,huge_pages)) continue;
+          if (!block->hasType(alloc_type,use_huge_pages)) continue;
           bytes += block->getBlockWastedBytes();
         }
         return bytes;
       }
 
-      size_t getAllocatedBytes(AllocationType atype, bool huge_pages = false) const {
+      size_t getAllocatedBytes(AllocationType alloc_type, bool use_huge_pages = false) const {
         size_t bytes = 0;
         for (const Block* block = this; block; block = block->next) {
-          if (!block->hasType(atype,huge_pages)) continue;
+          if (!block->hasType(alloc_type,use_huge_pages)) continue;
           bytes += block->getBlockAllocatedBytes();
         }
         return bytes;
@@ -948,10 +948,10 @@ namespace embree
         else if (atype == EMBREE_OS_MALLOC) std::cout << "O";
         else if (atype == SHARED) std::cout << "S";
         if (huge_pages) std::cout << "H";
-        size_t bytesUsed = getBlockUsedBytes();
-        size_t bytesFree = getBlockFreeBytes();
-        size_t bytesWasted = getBlockWastedBytes();
-        std::cout << "[" << bytesUsed << ", " << bytesFree << ", " << bytesWasted << "] ";
+        size_t blockBytesUsed = getBlockUsedBytes();
+        size_t blockBytesFree = getBlockFreeBytes();
+        size_t blockBytesWasted = getBlockWastedBytes();
+        std::cout << "[" << blockBytesUsed << ", " << blockBytesFree << ", " << blockBytesWasted << "] ";
       }
 
     public:

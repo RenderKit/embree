@@ -300,7 +300,7 @@ namespace embree
   private:
     
     void tbbRadixIteration0(const Key shift, 
-                            const Ty* __restrict const src, 
+                            const Ty* __restrict const pSrc, 
                             Ty* __restrict const dst, 
                             const size_t threadIndex, const size_t threadCount)
     {
@@ -321,16 +321,16 @@ namespace embree
 #endif
       for (size_t i=startID; i<endID; i++) {
 #if defined(__64BIT__)
-        const size_t index = ((size_t)(Key)src[i] >> (size_t)shift) & (size_t)mask;
+        const size_t index = ((size_t)(Key)pSrc[i] >> (size_t)shift) & (size_t)mask;
 #else
-        const Key index = ((Key)src[i] >> shift) & mask;
+        const Key index = ((Key)pSrc[i] >> shift) & mask;
 #endif
         count[index]++;
       }
     }
     
     void tbbRadixIteration1(const Key shift, 
-                            const Ty* __restrict const src, 
+                            const Ty* __restrict const pSrc, 
                             Ty* __restrict const dst, 
                             const size_t threadIndex, const size_t threadCount)
     {
@@ -381,23 +381,23 @@ namespace embree
 #pragma nounroll
 #endif
       for (size_t i=startID; i<endID; i++) {
-        const Ty elt = src[i];
+        const Ty elt = pSrc[i];
 #if defined(__64BIT__)
-        const size_t index = ((size_t)(Key)src[i] >> (size_t)shift) & (size_t)mask;
+        const size_t index = ((size_t)(Key)pSrc[i] >> (size_t)shift) & (size_t)mask;
 #else
-        const size_t index = ((Key)src[i] >> shift) & mask;
+        const size_t index = ((Key)pSrc[i] >> shift) & mask;
 #endif
         dst[offset[index]++] = elt;
       }
     }
     
     void tbbRadixIteration(const Key shift, const bool last,
-                           const Ty* __restrict src, Ty* __restrict dst,
+                           const Ty* __restrict pSrc, Ty* __restrict dst,
                            const size_t numTasks)
     {
       affinity_partitioner ap;
-      parallel_for_affinity(numTasks,[&] (size_t taskIndex) { tbbRadixIteration0(shift,src,dst,taskIndex,numTasks); },ap);
-      parallel_for_affinity(numTasks,[&] (size_t taskIndex) { tbbRadixIteration1(shift,src,dst,taskIndex,numTasks); },ap);
+      parallel_for_affinity(numTasks,[&] (size_t taskIndex) { tbbRadixIteration0(shift,pSrc,dst,taskIndex,numTasks); },ap);
+      parallel_for_affinity(numTasks,[&] (size_t taskIndex) { tbbRadixIteration1(shift,pSrc,dst,taskIndex,numTasks); },ap);
     }
     
     void tbbRadixSort(const size_t numTasks)

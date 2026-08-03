@@ -189,9 +189,9 @@ namespace embree
           header.pop_front();
           
           Type ty = parseType(line);
-          std::string name; line >> name;
-          elt.type[name] = ty; 
-          elt.properties.emplace_back(name);
+          std::string propName; line >> propName;
+          elt.type[propName] = ty; 
+          elt.properties.emplace_back(propName);
         }
 
         mesh.elements[name] = elt;

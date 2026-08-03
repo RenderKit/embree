@@ -50,7 +50,8 @@ namespace embree
         assert(swidth < (2<<20) && sheight < (2<<20));
         const BBox2f srange(Vec2f(0.0f,0.0f),Vec2f(float(swidth-1),float(sheight-1)));
         const BBox2f erange(Vec2f(float(x0),float(y0)),Vec2f((float)x1,(float)y1));
-        bool done MAYBE_UNUSED = eval(patch,subPatch,srange,erange);
+        bool done = eval(patch,subPatch,srange,erange);
+        (void)done;
         assert(done);
         assert(count == (x1-x0+1)*(y1-y0+1));
       }
@@ -228,8 +229,8 @@ namespace embree
         {
           assert(i<MAX_PATCH_VALENCE);
           static_assert(MAX_PATCH_VALENCE <= 16, "MAX_PATCH_VALENCE > 16");
-          const int h = (i >> 2) & 3, l = i & 3;
-          const Vec2f subPatchID((float)l,(float)h);
+          const int innerH = (i >> 2) & 3, l = i & 3;
+          const Vec2f subPatchID((float)l,(float)innerH);
           const Vec2f uv[4] = { 2.0f*subPatchID + (0.5f+Vec2f(0.0f,0.0f)),
                                 2.0f*subPatchID + (0.5f+Vec2f(1.0f,0.0f)),
                                 2.0f*subPatchID + (0.5f+Vec2f(1.0f,1.0f)),
@@ -242,4 +243,3 @@ namespace embree
     }
   }
 }
-

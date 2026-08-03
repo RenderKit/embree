@@ -209,7 +209,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilter(const RTCFilterFunctionNArgume
 
 {
   RayQueryContext* context = (RayQueryContext*) args->context;
-  const TutorialData* data = (const TutorialData*) context->tutorialData;
+  const TutorialData* tutorialData = (const TutorialData*) context->tutorialData;
   Vec3fa* transparency = (Vec3fa*) context->userRayExt;
   if (!transparency) return;
     
@@ -227,7 +227,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilter(const RTCFilterFunctionNArgume
     *transparency = Vec3fa(0.0f);
     return;
   }*/
-  Vec3fa T = data->hair_Kt;
+  Vec3fa T = tutorialData->hair_Kt;
   T = T * *transparency;
   *transparency = T;
   if (max(T.x,max(T.y,T.z)) > 0.02f)
@@ -241,7 +241,7 @@ Vec3fa occluded(RTCTraversable traversable, RayQueryContext* context, Ray& ray)
   
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
+  ray.mask = 0xFFFFFFFFu;
 
   RTCOccludedArguments args;
   rtcInitOccludedArguments(&args);
@@ -257,17 +257,17 @@ Vec3fa occluded(RTCTraversable traversable, RayQueryContext* context, Ray& ray)
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera& camera, RayStats& stats)
+Vec3fa renderPixel(const TutorialData& tutorialData, float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   RandomSampler sampler;
-  RandomSampler_init(sampler, (int)x, (int)y, data.accu_count);
+  RandomSampler_init(sampler, (int)x, (int)y, tutorialData.accu_count);
   x += RandomSampler_get1D(sampler);
   y += RandomSampler_get1D(sampler);
   float time = RandomSampler_get1D(sampler);
 
   RayQueryContext context;
   InitIntersectionContext(&context);
-  context.tutorialData = (void*) &data;
+  context.tutorialData = (void*) &tutorialData;
 
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
@@ -288,18 +288,18 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
       return color;
 
     /* intersect ray with scene and gather all hits */
-    rtcTraversableIntersect1(data.traversable,RTCRayHit_(ray),&args);
+    rtcTraversableIntersect1(tutorialData.traversable,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
 
     /* exit if we hit environment */
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
-      return color + weight*Vec3fa(data.ambient_intensity);
+      return color + weight*Vec3fa(tutorialData.ambient_intensity);
 
     /* calculate transmissivity of hair */
     AnisotropicBlinn brdf;
     float eps = 0.0001f;
 
-    ISPCGeometry* geometry = data.ispc_scene->geometries[ray.geomID];
+    ISPCGeometry* geometry = tutorialData.ispc_scene->geometries[ray.geomID];
     if (geometry->type == CURVES)
     {
       /* calculate tangent space */
@@ -308,8 +308,8 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
       const Vec3fa dz = normalize(cross(dy,dx));
 
       /* generate anisotropic BRDF */
-      AnisotropicBlinn__Constructor(&brdf,data.hair_Kr,data.hair_Kt,dx,20.0f,dy,2.0f,dz);
-      brdf.Kr = data.hair_Kr;
+      AnisotropicBlinn__Constructor(&brdf,tutorialData.hair_Kr,tutorialData.hair_Kt,dx,20.0f,dy,2.0f,dz);
+      brdf.Kr = tutorialData.hair_Kr;
     }
     else if (geometry->type == TRIANGLE_MESH)
     {
@@ -327,11 +327,11 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
       return color;
 
     /* sample directional light */
-    Ray shadow(ray.org + ray.tfar*ray.dir, neg(Vec3fa(data.dirlight_direction)), eps, inf, time);
-    Vec3fa T = occluded(data.traversable,&context,shadow);
+    Ray shadow(ray.org + ray.tfar*ray.dir, neg(Vec3fa(tutorialData.dirlight_direction)), eps, inf, time);
+    Vec3fa T = occluded(tutorialData.traversable,&context,shadow);
     RayStats_addShadowRay(stats);
-    Vec3fa c = AnisotropicBlinn__eval(&brdf,neg(ray.dir),neg(Vec3fa(data.dirlight_direction)));
-    color = color + weight*c*T*Vec3fa(data.dirlight_intensity);
+    Vec3fa c = AnisotropicBlinn__eval(&brdf,neg(ray.dir),neg(Vec3fa(tutorialData.dirlight_direction)));
+    color = color + weight*c*T*Vec3fa(tutorialData.dirlight_intensity);
 
 #if 1
     /* sample BRDF */
@@ -350,7 +350,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
     ray.tfar = inf;
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
     ray.primID = RTC_INVALID_GEOMETRY_ID;
-    ray.mask = -1;
+    ray.mask = 0xFFFFFFFFu;
     ray.time() = time;
     weight = weight * c/wi.w;
 
@@ -370,7 +370,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
 }
 
 /* task that renders a single screen tile */
-void renderPixelStandard(const TutorialData& data,
+void renderPixelStandard(const TutorialData& tutorialData,
                          int x, int y, 
                          int* pixels,
                          const unsigned int width,
@@ -378,10 +378,10 @@ void renderPixelStandard(const TutorialData& data,
                          const float time,
                          const ISPCCamera& camera, RayStats& stats)
 {
-  Vec3fa color = renderPixel(data, (float)x,(float)y,camera,stats);
+  Vec3fa color = renderPixel(tutorialData, (float)x,(float)y,camera,stats);
 
   /* write color to framebuffer */
-  Vec3ff accu_color = data.accu[y*width+x] + Vec3ff(color.x,color.y,color.z,1.0f); data.accu[y*width+x] = accu_color;
+  Vec3ff accu_color = tutorialData.accu[y*width+x] + Vec3ff(color.x,color.y,color.z,1.0f); tutorialData.accu[y*width+x] = accu_color;
   float f = rcp(max(0.001f,accu_color.w));
   unsigned int r = (unsigned int) (255.01f * clamp(accu_color.x*f,0.0f,1.0f));
   unsigned int g = (unsigned int) (255.01f * clamp(accu_color.y*f,0.0f,1.0f));

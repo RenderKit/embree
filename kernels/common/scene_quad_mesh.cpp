@@ -14,16 +14,16 @@ namespace embree
     vertices.resize(numTimeSteps);
   }
 
-  void QuadMesh::setMask (unsigned mask) 
+  void QuadMesh::setMask (unsigned newMask) 
   {
-    this->mask = mask; 
+    this->mask = newMask; 
     Geometry::update();
   }
 
-  void QuadMesh::setNumTimeSteps (unsigned int numTimeSteps)
+  void QuadMesh::setNumTimeSteps (unsigned int newNumTimeSteps)
   {
-    vertices.resize(numTimeSteps);
-    Geometry::setNumTimeSteps(numTimeSteps);
+    vertices.resize(newNumTimeSteps);
+    Geometry::setNumTimeSteps(newNumTimeSteps);
   }
 
   void QuadMesh::setVertexAttributeCount (unsigned int N)

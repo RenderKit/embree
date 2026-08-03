@@ -41,8 +41,8 @@ TEST_CASE("Test parallel_for_for_prefix_sum", "[parallel_for_for_prefix_sum]")
       [&](std::vector<size_t> *v, const range<size_t> &r, size_t k, size_t i) -> size_t
   {
     size_t s = 0;
-    for (size_t i=r.begin(); i<r.end(); i++) {
-      s += (*v)[i];
+    for (size_t j=r.begin(); j<r.end(); j++) {
+      s += (*v)[j];
       verify_k[k++]++;
     }
     return s;
@@ -58,11 +58,11 @@ TEST_CASE("Test parallel_for_for_prefix_sum", "[parallel_for_for_prefix_sum]")
       [&](std::vector<size_t> *v, const range<size_t> &r, size_t k, size_t i, const size_t base) -> size_t
   {
     size_t s = 0;
-    for (size_t i=r.begin(); i<r.end(); i++) {
-      for (size_t j=0; j<(*v)[i]; j++) {
-        flattened[base+s+j]++;
+    for (size_t j=r.begin(); j<r.end(); j++) {
+      for (size_t jj=0; jj<(*v)[j]; jj++) {
+        flattened[base+s+jj]++;
       }
-      s += (*v)[i];
+      s += (*v)[j];
       verify_k[k++]++;
     }
     return s;

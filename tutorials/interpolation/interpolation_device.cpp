@@ -349,13 +349,13 @@ extern "C" void device_init (char* cfg)
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera& camera, RayStats& stats)
+Vec3fa renderPixel(const TutorialData& tutorialData, float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
-  rtcIntersect1(data.scene,RTCRayHit_(ray));
+  rtcIntersect1(tutorialData.scene,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -367,7 +367,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
     if (ray.geomID > 0)
     {
       auto geomID = ray.geomID; {
-        rtcInterpolate0(rtcGetGeometry(data.scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,0,&diffuse.x,3);
+        rtcInterpolate0(rtcGetGeometry(tutorialData.scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,0,&diffuse.x,3);
       }
       //return diffuse;
       diffuse = 0.5f*diffuse;
@@ -378,7 +378,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
     /*if (ray.geomID == 2 || ray.geomID == 3) {
       Vec3fa dPdu,dPdv;
       auto geomID = ray.geomID; {
-        rtcInterpolate1(rtcGetGeometry(data.scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,nullptr,&dPdu.x,&dPdv.x,3);
+        rtcInterpolate1(rtcGetGeometry(tutorialData.scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,nullptr,&dPdu.x,&dPdv.x,3);
       }
       //return dPdu;
       Ng = cross(dPdu,dPdv);
@@ -391,7 +391,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
     Ray shadow(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
-    rtcOccluded1(data.scene,RTCRay_(shadow));
+    rtcOccluded1(tutorialData.scene,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -405,7 +405,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
   return color;
 }
 
-void renderPixelStandard(const TutorialData& data,
+void renderPixelStandard(const TutorialData& tutorialData,
                          int x, int y,
                          int* pixels,
                          const unsigned int width,
@@ -415,7 +415,7 @@ void renderPixelStandard(const TutorialData& data,
                          RayStats& stats)
 {
   /* calculate pixel color */
-  Vec3fa color = renderPixel(data,(float)x,(float)y,camera,stats);
+  Vec3fa color = renderPixel(tutorialData,(float)x,(float)y,camera,stats);
   
   /* write color to framebuffer */
   unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));

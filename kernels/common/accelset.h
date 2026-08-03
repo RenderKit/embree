@@ -123,9 +123,9 @@ namespace embree
       }
       
       /*! calculates the linear bounds of the i'th primitive for the specified time range */
-      __forceinline bool linearBounds(size_t i, const BBox1f& time_range, LBBox3fa& bbox) const  {
-        if (!valid(i, timeSegmentRange(time_range))) return false;
-        bbox = linearBounds(i, time_range);
+      __forceinline bool linearBounds(size_t i, const BBox1f& trange, LBBox3fa& bbox) const  {
+        if (!valid(i, timeSegmentRange(trange))) return false;
+        bbox = linearBounds(i, trange);
         return true;
       }
 
@@ -146,9 +146,9 @@ namespace embree
       {
         assert(primID < size());
         
-        int mask = -1;
+        int rayMask = -1;
         IntersectFunctionNArguments args;
-        args.valid = &mask;
+        args.valid = &rayMask;
         args.geometryUserPtr = userPtr;
         args.context = context->user;
         args.rayhit = (RTCRayHitN*)&ray;
@@ -168,7 +168,7 @@ namespace embree
         assert(intersectFunc);
         intersectFunc(&args);
 
-        return mask != 0;
+        return rayMask != 0;
       }
 
       /*! Tests if single ray is occluded by the scene. */
@@ -176,9 +176,9 @@ namespace embree
       {
         assert(primID < size());
 
-        int mask = -1;
+        int rayMask = -1;
         OccludedFunctionNArguments args;
-        args.valid = &mask;
+        args.valid = &rayMask;
         args.geometryUserPtr = userPtr;
         args.context = context->user;
         args.ray = (RTCRayN*)&ray;
@@ -198,7 +198,7 @@ namespace embree
         assert(occludedFunc);
         occludedFunc(&args);
 
-        return mask != 0;
+        return rayMask != 0;
       }
 
       /*! Intersects a single ray with the scene. */
@@ -206,9 +206,9 @@ namespace embree
     {
         assert(primID < size());
         
-        int mask = -1;
+        int rayMask = -1;
         IntersectFunctionNArguments args;
-        args.valid = &mask;
+        args.valid = &rayMask;
         args.geometryUserPtr = userPtr;
         args.context = context->user;
         args.rayhit = (RTCRayHitN*)&ray;
@@ -235,7 +235,7 @@ namespace embree
           intersectFunc(&args);
         
         forward_scene = args.forward_scene;
-        return mask != 0;
+        return rayMask != 0;
       }
 
       /*! Tests if single ray is occluded by the scene. */
@@ -243,9 +243,9 @@ namespace embree
       {
         assert(primID < size());
 
-        int mask = -1;
+        int rayMask = -1;
         OccludedFunctionNArguments args;
-        args.valid = &mask;
+        args.valid = &rayMask;
         args.geometryUserPtr = userPtr;
         args.context = context->user;
         args.ray = (RTCRayN*)&ray;
@@ -272,7 +272,7 @@ namespace embree
           occludedFunc(&args);
         
         forward_scene = args.forward_scene;
-        return mask != 0;
+        return rayMask != 0;
       }
 
       /*! Intersects a packet of K rays with the scene. */
@@ -281,9 +281,9 @@ namespace embree
       {
         assert(primID < size());
         
-        vint<K> mask = valid.mask32();
+        vint<K> validMask = valid.mask32();
         IntersectFunctionNArguments args;
-        args.valid = (int*)&mask;
+        args.valid = (int*)&validMask;
         args.geometryUserPtr = userPtr;
         args.context = context->user;
         args.rayhit = (RTCRayHitN*)&ray;
@@ -310,9 +310,9 @@ namespace embree
       {
         assert(primID < size());
         
-        vint<K> mask = valid.mask32();
+        vint<K> validMask = valid.mask32();
         OccludedFunctionNArguments args;
-        args.valid = (int*)&mask;
+        args.valid = (int*)&validMask;
         args.geometryUserPtr = userPtr;
         args.context = context->user;
         args.ray = (RTCRayN*)&ray;

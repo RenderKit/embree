@@ -119,34 +119,34 @@ void knnQuery(Vec3f const& q, float radius, KNNResult* result)
   rtcPointQuery(data.scene, &query, &context, pointQueryFunc, (void*)result);
 }
 
-void createPoints (TutorialData& data)
+void createPoints (TutorialData& td)
 {
   RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER);
-  data.points = (Point*) alignedMalloc(data.num_points*sizeof(Point), 16);
-  data.points_tmp = (Point*) alignedMalloc(data.num_points*sizeof(Point), 16);
-  unsigned int geomID = rtcAttachGeometry(data.scene, geom);
-  for (int i=0; i<data.num_points; i++) {
-    data.points[i].geometry = geom;
-    data.points[i].geomID = geomID;
-    data.points_tmp[i].geometry = geom;
-    data.points_tmp[i].geomID = geomID;
+  td.points = (Point*) alignedMalloc(td.num_points*sizeof(Point), 16);
+  td.points_tmp = (Point*) alignedMalloc(td.num_points*sizeof(Point), 16);
+  unsigned int geomID = rtcAttachGeometry(td.scene, geom);
+  for (int i=0; i<td.num_points; i++) {
+    td.points[i].geometry = geom;
+    td.points[i].geomID = geomID;
+    td.points_tmp[i].geometry = geom;
+    td.points_tmp[i].geomID = geomID;
   }
-  rtcSetGeometryUserPrimitiveCount(geom, data.num_points);
-  rtcSetGeometryUserData(geom, data.points);
+  rtcSetGeometryUserPrimitiveCount(geom, td.num_points);
+  rtcSetGeometryUserData(geom, td.points);
   rtcSetGeometryBoundsFunction(geom, pointBoundsFunc, nullptr);
   rtcCommitGeometry(geom);
   rtcReleaseGeometry(geom);
 
   RandomSampler rs;
   RandomSampler_init(rs, 42);
-  for (int i = 0; i < data.num_points; ++i) 
+  for (int i = 0; i < td.num_points; ++i) 
   {
     float xi1 = RandomSampler_getFloat(rs);
     float xi2 = RandomSampler_getFloat(rs);
-    data.points[i].p = Vec3f(xi1, 0.f, xi2);
+    td.points[i].p = Vec3f(xi1, 0.f, xi2);
   }
 
-  g_num_points_current = data.num_points;
+  g_num_points_current = td.num_points;
 }
 
 /* called by the C++ code for initialization */

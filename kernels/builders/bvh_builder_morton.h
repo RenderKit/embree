@@ -184,7 +184,7 @@ namespace embree
 
         class BuilderT : private Settings
       {
-        ALIGNED_CLASS_(16);
+        ALIGNED_CLASS_(16)
 
       public:
 
@@ -223,7 +223,7 @@ namespace embree
           do {
 
             /* find best child with largest number of primitives */
-            size_t bestChild = -1;
+            size_t bestChild = (size_t)-1;
             size_t bestSize = 0;
             for (size_t i=0; i<numChildren; i++)
             {
@@ -319,9 +319,9 @@ namespace embree
           if (unlikely(bitpos == 32))
           {
             recreateMortonCodes(current);
-            const unsigned int code_start = morton[current.begin()].code;
-            const unsigned int code_end   = morton[current.end()-1].code;
-            bitpos = lzcnt(code_start^code_end);
+            const unsigned int new_code_start = morton[current.begin()].code;
+            const unsigned int new_code_end   = morton[current.end()-1].code;
+            bitpos = lzcnt(new_code_start^new_code_end);
 
             /* if the morton code is still the same, goto fall back split */
             if (unlikely(bitpos == 32)) {

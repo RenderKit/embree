@@ -29,11 +29,11 @@ namespace embree
   }
 
   template<int N>
-  void BVHN<N>::set (NodeRef root, const LBBox3fa& bounds, size_t numPrimitives)
+  void BVHN<N>::set (NodeRef bvhRoot, const LBBox3fa& bvhBounds, size_t numPrims)
   {
-    this->root = root;
-    this->bounds = bounds;
-    this->numPrimitives = numPrimitives;
+    this->root = bvhRoot;
+    this->bounds = bvhBounds;
+    this->numPrimitives = numPrims;
   }	
 
   template<int N>
@@ -151,12 +151,12 @@ namespace embree
 
       if (device->verbosity(2))
       {
-        FastAllocator::AllStatistics stat(&alloc);
+        FastAllocator::AllStatistics innerStat(&alloc);
         for (size_t i=0; i<objects.size(); i++)
           if (objects[i])
-            stat = stat + FastAllocator::AllStatistics(&objects[i]->alloc);
+            innerStat = innerStat + FastAllocator::AllStatistics(&objects[i]->alloc);
 
-        stat.print(numPrimitives);
+        innerStat.print(numPrimitives);
       }
 
       if (device->verbosity(3))
@@ -187,4 +187,3 @@ namespace embree
   template class BVHN<4>;
 #endif
 }
-

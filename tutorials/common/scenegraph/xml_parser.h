@@ -73,8 +73,8 @@ namespace embree
     }
 
     /*! adds a new parameter to the node */
-    Ref<XML> add(const std::string& name, const std::string& val) {
-      parms[name] = val; 
+    Ref<XML> add(const std::string& paramName, const std::string& val) {
+      parms[paramName] = val; 
       return this; 
     }
 

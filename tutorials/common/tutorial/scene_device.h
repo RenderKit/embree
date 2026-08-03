@@ -68,7 +68,7 @@ namespace embree
 #if !defined(ISPC)
     ALIGNED_STRUCT_USM_(16);
     
-    ISPCGeometry (ISPCType type) : type(type), geometry(nullptr), materialID(-1), visited(false) {}
+    ISPCGeometry (ISPCType type) : type(type), geometry(nullptr), materialID((unsigned int)-1), visited(false) {}
     ~ISPCGeometry () { if (geometry) rtcReleaseGeometry(geometry); }
 #endif
     ISPCType type;

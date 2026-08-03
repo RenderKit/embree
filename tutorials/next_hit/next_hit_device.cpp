@@ -17,7 +17,7 @@ RTCScene g_scene = nullptr;
 TutorialData data;
 
 #if defined(EMBREE_SYCL_TUTORIAL) && !defined(EMBREE_SYCL_RT_SIMULATION) && defined(USE_SPECIALIZATION_CONSTANTS)
-static const sycl::specialization_id<RTCFeatureFlags> spec_feature_mask;
+inline const sycl::specialization_id<RTCFeatureFlags> spec_feature_mask;
 #endif
 
 RTCFeatureFlags g_feature_mask;
@@ -25,8 +25,8 @@ RTCFeatureFlags g_feature_mask;
 /* extended ray structure that gathers all hits along the ray */
 struct HitList
 {
-  HitList (const TutorialData& data)
-    : data(data), begin(0), end(0) {
+  HitList (const TutorialData& tutorialData)
+    : data(tutorialData), begin(0), end(0) {
     }
 
   /* Hit structure that defines complete order over hits */
@@ -102,8 +102,8 @@ public:
 /* we store the Hit list inside the ray query context to access it from the filter functions */
 struct RayQueryContext
 {
-  RayQueryContext(const TutorialData& data, HitList& hits)
-    : hits(hits), max_next_hits(data.max_next_hits) {}
+  RayQueryContext(const TutorialData& tutorialData, HitList& hits)
+    : hits(hits), max_next_hits(tutorialData.max_next_hits) {}
 
   RTCRayQueryContext context;
   HitList& hits;
@@ -143,11 +143,11 @@ RTC_SYCL_INDIRECTLY_CALLABLE void gather_all_hits(const RTCFilterFunctionNArgume
 }
 
 /* gathers hits in a single pass */
-void single_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, RandomSampler& sampler, RayStats& stats, const RTCFeatureFlags feature_mask)
+void single_pass(const TutorialData& tutorialData, const Ray& ray_i, HitList& hits_o, RandomSampler& sampler, RayStats& stats, const RTCFeatureFlags feature_mask)
 {
   /* trace ray to gather all hits */
   Ray ray = ray_i;
-  RayQueryContext context(data,hits_o);
+  RayQueryContext context(tutorialData,hits_o);
   rtcInitRayQueryContext(&context.context);
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
@@ -155,7 +155,7 @@ void single_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, Ra
   args.filter = gather_all_hits;
   args.feature_mask = feature_mask;
   args.flags = RTC_RAY_QUERY_FLAG_INVOKE_ARGUMENT_FILTER; // invoke filter for each geometry
-  rtcTraversableIntersect1(data.traversable,RTCRayHit_(ray),&args);
+  rtcTraversableIntersect1(tutorialData.traversable,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* sort hits by extended order */
@@ -174,16 +174,16 @@ void single_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, Ra
   }
 
   /* drop hits in case we found too many */
-  hits_o.end = std::min(hits_o.end, data.max_total_hits);
+  hits_o.end = std::min(hits_o.end, tutorialData.max_total_hits);
 
   /* shade all hits */
-  if (data.enable_opacity)
+  if (tutorialData.enable_opacity)
   {
     for (unsigned int i=context.hits.begin; i<context.hits.end; i++)
     {
       /* roussion roulette ray termination */
       bool opaque = context.hits.hits[i].opaque;
-      if (RandomSampler_get1D(sampler) < data.curve_opacity)
+      if (RandomSampler_get1D(sampler) < tutorialData.curve_opacity)
 	opaque = true;
       
       if (opaque) {
@@ -243,11 +243,11 @@ RTC_SYCL_INDIRECTLY_CALLABLE void gather_next_hits(const RTCFilterFunctionNArgum
 }
   
 /* gathers hits in multiple passes */
-void multi_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, int max_next_hits, RandomSampler& sampler, RayStats& stats, const RTCFeatureFlags feature_mask)
+void multi_pass(const TutorialData& tutorialData, const Ray& ray_i, HitList& hits_o, int max_next_hits, RandomSampler& sampler, RayStats& stats, const RTCFeatureFlags feature_mask)
 {
   /* configure ray query context */
   Ray ray = ray_i;
-  RayQueryContext context(data,hits_o);
+  RayQueryContext context(tutorialData,hits_o);
   rtcInitRayQueryContext(&context.context);
   context.max_next_hits = max_next_hits;
   RTCIntersectArguments args;
@@ -272,20 +272,20 @@ void multi_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, int
     /* insert new hits at previous end of hits list */
     context.hits.begin = context.hits.end;
     for (size_t i=0; i<context.max_next_hits; i++)
-      if (context.hits.begin+i < data.max_total_hits)
+      if (context.hits.begin+i < tutorialData.max_total_hits)
         context.hits.hits[context.hits.begin+i] = HitList::Hit(false,neg_inf);
 
-    rtcTraversableIntersect1(data.traversable,RTCRayHit_(ray),&args);
+    rtcTraversableIntersect1(tutorialData.traversable,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
 
     /* shade all hits */
-    if (data.enable_opacity)
+    if (tutorialData.enable_opacity)
     {
       for (unsigned int i=context.hits.begin; i<context.hits.end; i++)
       {
         /* roussion roulette ray termination */
         bool opaque = context.hits.hits[i].opaque;
-        if (RandomSampler_get1D(sampler) < data.curve_opacity)
+        if (RandomSampler_get1D(sampler) < tutorialData.curve_opacity)
           opaque = true;
 
         /* remove all farther hits in case we terminate here */
@@ -303,7 +303,7 @@ void multi_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, int
 }
 
 /* task that renders a single screen tile */
-Vec3ff renderPixelStandard(const TutorialData& data, float x, float y,
+Vec3ff renderPixelStandard(const TutorialData& tutorialData, float x, float y,
                            const unsigned int width,
                            const unsigned int height,
                            const ISPCCamera& camera,
@@ -324,25 +324,25 @@ Vec3ff renderPixelStandard(const TutorialData& data, float x, float y,
   ray.u = ray.v = 0.0f;
 
   /* either gather hits in single pass or using multiple passes */
-  HitList hits(data);
-  switch (data.next_hit_mode)
+  HitList hits(tutorialData);
+  switch (tutorialData.next_hit_mode)
   {
   case SINGLE_PASS:
-    single_pass(data,ray,hits,mysampler,stats,feature_mask);
+    single_pass(tutorialData,ray,hits,mysampler,stats,feature_mask);
     break;
   
   case MULTI_PASS_FIXED_NEXT_HITS:
-    multi_pass (data,ray,hits,data.max_next_hits,mysampler,stats,feature_mask);
+    multi_pass (tutorialData,ray,hits,tutorialData.max_next_hits,mysampler,stats,feature_mask);
     break;
 #if !defined(EMBREE_SYCL_TUTORIAL)
   case MULTI_PASS_OPTIMAL_NEXT_HITS: {
-    int num_prev_hits = max(1,data.num_prev_hits[iy*width+ix]);
-    multi_pass (data,ray,hits,num_prev_hits,mysampler,stats,feature_mask);
+    int num_prev_hits = max(1,tutorialData.num_prev_hits[iy*width+ix]);
+    multi_pass (tutorialData,ray,hits,num_prev_hits,mysampler,stats,feature_mask);
     break;
   }
   case MULTI_PASS_ESTIMATED_NEXT_HITS: {
-    int estimated_num_next_hits = (int) min((float)data.max_next_hits, max(1.0f, 0.5f/data.curve_opacity));
-    multi_pass (data,ray,hits,estimated_num_next_hits,mysampler,stats,feature_mask);
+    int estimated_num_next_hits = (int) min((float)tutorialData.max_next_hits, max(1.0f, 0.5f/tutorialData.curve_opacity));
+    multi_pass (tutorialData,ray,hits,estimated_num_next_hits,mysampler,stats,feature_mask);
     break;
   }
 #endif
@@ -352,13 +352,13 @@ Vec3ff renderPixelStandard(const TutorialData& data, float x, float y,
 
   /* verify result with gathering all hits */
   bool has_error = false;
-  if (data.verify || data.visualize_errors)
+  if (tutorialData.verify || tutorialData.visualize_errors)
   {
     /* repeat using a single pass, which is assumed to produce the correct result */
-    HitList verify_hits(data);
+    HitList verify_hits(tutorialData);
     RandomSampler verify_sampler;
     RandomSampler_init(verify_sampler, ix, iy, 0);
-    single_pass(data,ray,verify_hits,verify_sampler,stats,feature_mask);
+    single_pass(tutorialData,ray,verify_hits,verify_sampler,stats,feature_mask);
 
     if (verify_hits.size() != hits.size())
       has_error = true;
@@ -369,7 +369,7 @@ Vec3ff renderPixelStandard(const TutorialData& data, float x, float y,
         has_error = true;
     }
 
-    if (!data.visualize_errors && has_error) {
+    if (!tutorialData.visualize_errors && has_error) {
       embree_cout << "error at (" << int(x) << int(y) << ")" << embree_endl;
     }
   }
@@ -390,7 +390,7 @@ Vec3ff renderPixelStandard(const TutorialData& data, float x, float y,
   color.z = RandomSampler_getFloat(sampler);
 
   /* mark errors red */
-  //if (data.visualize_errors)
+  //if (tutorialData.visualize_errors)
   {
     color.x = color.y = color.z;
     if (has_error)
@@ -401,7 +401,7 @@ Vec3ff renderPixelStandard(const TutorialData& data, float x, float y,
   return color;
 }
 
-void renderPixelStandard(const TutorialData& data,
+void renderPixelStandard(const TutorialData& tutorialData,
                          int x, int y, 
                          int* pixels,
                          const unsigned int width,
@@ -411,14 +411,14 @@ void renderPixelStandard(const TutorialData& data,
                          RayStats& stats,
                          const RTCFeatureFlags feature_mask)
 {
-  Vec3ff color = renderPixelStandard(data,x,y,width,height,camera,stats,feature_mask);
+  Vec3ff color = renderPixelStandard(tutorialData,x,y,width,height,camera,stats,feature_mask);
 
   /* write color to framebuffer */
   unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
   unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
   unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
   pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  data.num_prev_hits[y*width+x] = (int) color.w;
+  tutorialData.num_prev_hits[y*width+x] = (int) color.w;
 }
 
 /* renders a single screen tile */

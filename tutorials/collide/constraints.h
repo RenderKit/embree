@@ -52,7 +52,7 @@ protected:
 };
 
 class CollisionConstraint : public Constraint {
-  ALIGNED_CLASS_(16);
+  ALIGNED_CLASS_(16)
 public:
 
     CollisionConstraint ()

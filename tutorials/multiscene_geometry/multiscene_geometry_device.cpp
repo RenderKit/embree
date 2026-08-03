@@ -183,7 +183,7 @@ namespace embree {
   }
   
   /* task that renders a single screen tile */
-  void renderPixelStandard(const TutorialData& data,
+  void renderPixelStandard(const TutorialData& tutorialData,
                              int x, int y, 
                              int* pixels,
                              const unsigned int width,
@@ -199,14 +199,14 @@ namespace embree {
     rtcInitIntersectArguments(&iargs);
     iargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
   
-    rtcTraversableIntersect1(data.g_traversable, RTCRayHit_(ray),&iargs);
+    rtcTraversableIntersect1(tutorialData.g_traversable, RTCRayHit_(ray),&iargs);
     RayStats_addRay(stats);
     
     /* shade pixels */
     Vec3fa color = Vec3fa(0.0f);
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
     {
-      Vec3fa diffuse = data.colors[ray.geomID];
+      Vec3fa diffuse = tutorialData.colors[ray.geomID];
       color = color + diffuse * 0.1f;
       Vec3fa lightDir = normalize(Vec3fa(-1, -1, -1));
       
@@ -218,7 +218,7 @@ namespace embree {
       rtcInitOccludedArguments(&sargs);
       sargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
       
-      rtcTraversableOccluded1(data.g_traversable, RTCRay_(shadow),&sargs);
+      rtcTraversableOccluded1(tutorialData.g_traversable, RTCRay_(shadow),&sargs);
       RayStats_addShadowRay(stats);
       
       /* add light contribution */

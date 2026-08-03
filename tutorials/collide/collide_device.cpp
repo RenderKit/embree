@@ -369,7 +369,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
+  ray.mask = ~0u;
   ray.time() = 0.0f;
 
   /* intersect ray with scene */
@@ -394,8 +394,8 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 void renderTileStandard(int taskIndex,
                         int threadIndex,
                         int* pixels,
-                        const unsigned int width,
-                        const unsigned int height,
+                        const unsigned int fbWidth,
+                        const unsigned int fbHeight,
                         const float time,
                         const ISPCCamera& camera,
                         const int numTilesX,
@@ -405,9 +405,9 @@ void renderTileStandard(int taskIndex,
   const unsigned int tileY = t / numTilesX;
   const unsigned int tileX = t - tileY * numTilesX;
   const unsigned int x0 = tileX * TILE_SIZE_X;
-  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int x1 = min(x0+TILE_SIZE_X,fbWidth);
   const unsigned int y0 = tileY * TILE_SIZE_Y;
-  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,fbHeight);
 
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
@@ -417,20 +417,20 @@ void renderTileStandard(int taskIndex,
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
     unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
+    pixels[y*fbWidth+x] = (b << 16) + (g << 8) + r;
   }
 }
 
 /* task that renders a single screen tile */
 void renderTileTask (int taskIndex, int threadIndex, int* pixels,
-                         const unsigned int width,
-                         const unsigned int height,
+                         const unsigned int fbWidth,
+                         const unsigned int fbHeight,
                          const float time,
                          const ISPCCamera& camera,
                          const int numTilesX,
                          const int numTilesY)
 {
-  renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTileStandard(taskIndex,threadIndex,pixels,fbWidth,fbHeight,time,camera,numTilesX,numTilesY);
 }
 
 /* called by the C++ code for initialization */
@@ -450,25 +450,25 @@ extern "C" void device_init (char* cfg)
 }
 
 extern "C" void renderFrameStandard (int* pixels,
-                          const unsigned int width,
-                          const unsigned int height,
+                          const unsigned int fbWidth,
+                          const unsigned int fbHeight,
                           const float time,
                           const ISPCCamera& camera)
 {
   /* render image */
-  const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
-  const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
+  const int numTilesX = (fbWidth +TILE_SIZE_X-1)/TILE_SIZE_X;
+  const int numTilesY = (fbHeight+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
     const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+      renderTileTask((int)i,threadIndex,pixels,fbWidth,fbHeight,time,camera,numTilesX,numTilesY);
   }); 
 }
 
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
-                           const unsigned int width,
-                           const unsigned int height,
+                           const unsigned int fbWidth,
+                           const unsigned int fbHeight,
                            const float time,
                            const ISPCCamera& camera)
 {

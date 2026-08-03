@@ -78,8 +78,8 @@ namespace embree
         if (k0 > r1) break;
         Index k1 = k0+nused[i];
         Index src = begin+(i+0)*(end-begin)/taskCount+nused[i];
-        for (Index i=max(r0,k0); i<min(r1,k1); i++) {
-          Index isrc = src-i+k0-1;
+        for (Index j=max(r0,k0); j<min(r1,k1); j++) {
+          Index isrc = src-j+k0-1;
           assert(dst >= begin && dst < end);
           assert(isrc >= begin && isrc < end);
           data[dst++] = data[isrc];

@@ -24,7 +24,7 @@ GET_FILENAME_COMPONENT(SYCL_COMPILER_DIR ${CMAKE_CXX_COMPILER} PATH)
 GET_FILENAME_COMPONENT(SYCL_COMPILER_NAME ${CMAKE_CXX_COMPILER} NAME_WE)
 IF (NOT SYCL_COMPILER_NAME STREQUAL "clang++")
   SET(SYCL_ONEAPI TRUE)
-  IF (SYCL_COMPILER_NAME STREQUAL "icx" OR SYCL_COMPILER_NAME STREQUAL "icpx")
+  IF (SYCL_COMPILER_NAME STREQUAL "icx" OR SYCL_COMPILER_NAME STREQUAL "icpx" OR SYCL_COMPILER_NAME STREQUAL "icx-cl")
     SET(SYCL_ONEAPI_ICX TRUE)
   ELSE()
     SET(SYCL_ONEAPI_ICX FALSE)
@@ -144,10 +144,19 @@ IF (EMBREE_SYCL_SUPPORT)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-pessimizing-move") # disabled: warning: moving a temporary object prevents copy elision [-Wpessimizing-move]
 
   IF (SYCL_ONEAPI_ICX AND WIN32)
-    IF (${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 2024.0)
-      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I\"${SYCL_COMPILER_DIR}/../opt/compiler/include/sycl\" -I\"${SYCL_COMPILER_DIR}/../opt/compiler/include/sycl/sycl\"")       # disable warning from SYCL header
+    IF (SYCL_COMPILER_NAME STREQUAL "icx-cl")
+      # icx-cl is MSVC-compatible: use -imsvc (clang-cl equivalent of -isystem)
+      IF (${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 2024.0)
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -imsvc \"${SYCL_COMPILER_DIR}/../opt/compiler/include/sycl\" -imsvc \"${SYCL_COMPILER_DIR}/../opt/compiler/include/sycl/sycl\"")       # treat Intel SYCL runtime headers as system headers (suppresses their internal warnings)
+      ENDIF()
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -imsvc \"${SYCL_COMPILER_DIR}/../include/sycl\" -imsvc \"${SYCL_COMPILER_DIR}/../include/\"")       # treat Intel SYCL runtime headers as system headers (suppresses their internal warnings)
+    ELSE()
+      # icx/icpx on Windows: GCC-compatible frontend, use -isystem
+      IF (${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 2024.0)
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem \"${SYCL_COMPILER_DIR}/../opt/compiler/include/sycl\" -isystem \"${SYCL_COMPILER_DIR}/../opt/compiler/include/sycl/sycl\"")       # treat Intel SYCL runtime headers as system headers (suppresses their internal warnings)
+      ENDIF()
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem \"${SYCL_COMPILER_DIR}/../include/sycl\" -isystem \"${SYCL_COMPILER_DIR}/../include/\"")       # treat Intel SYCL runtime headers as system headers (suppresses their internal warnings)
     ENDIF()
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I\"${SYCL_COMPILER_DIR}/../include/sycl\" -I\"${SYCL_COMPILER_DIR}/../include/\"")       # disable warning from SYCL header
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qstd=c++17")
   ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
@@ -220,7 +229,14 @@ ELSE()
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_FORTIFY_SOURCE=2")         # perform extra security checks for some standard library calls
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsigned-char")               # treat char as signed on all processors, including ARM
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")                       # enables most warnings
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra")                    # enables extra warnings
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wformat -Wformat-security")  # enables string format vulnerability warnings
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter")      # disables warnings for unused function parameters
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cast-function-type")    # disables warnings for intentional function pointer casts
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-cast-function-type-mismatch") # disables warnings for intentional function pointer casts
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-sign-compare")           # disable: int/size_t comparisons in template code
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-field-initializers") # disable: intentional partial struct init with zero fill
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")                    # treat all warnings as errors
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffp-model=precise")   # makes dpcpp compiler compatible with clang++
 ENDIF()
 

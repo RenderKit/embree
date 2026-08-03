@@ -81,10 +81,10 @@ namespace embree
       };
 
 
-      __forceinline size_t openBuildRef(BuildRef &bref, BuildRef *const refs) {
+      __forceinline size_t openBuildRef(BuildRef &bref, BuildRef *const pRefs) {
         if (bref.node.isLeaf())
         {
-          refs[0] = bref;
+          pRefs[0] = bref;
           return 1;
         }
         NodeRef ref = bref.node;
@@ -94,7 +94,7 @@ namespace embree
         size_t n = 0;
         for (size_t i=0; i<N; i++) {
           if (node->child(i) == BVH::emptyNode) continue;
-          refs[i] = BuildRef(node->bounds(i),node->child(i),geomID,numPrims);
+          pRefs[i] = BuildRef(node->bounds(i),node->child(i),geomID,numPrims);
           n++;
         }
         assert(n > 1);

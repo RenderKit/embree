@@ -130,9 +130,9 @@ namespace embree
           t+=dt;
           if (!(ray.tnear() <= t && t <= ray.tfar)) return false; // rejects NaNs
           if (!(u >= 0.0f && u <= 1.0f)) return false; // rejects NaNs
-          const Vec3fa R = normalize(Q-P);
-          const Vec3fa U = madd(Vec3fa(dPdu.w),R,dPdu);
-          const Vec3fa V = cross(dPdu,R);
+          const Vec3fa Rnorm = normalize(Q-P);
+          const Vec3fa U = madd(Vec3fa(dPdu.w),Rnorm,dPdu);
+          const Vec3fa V = cross(dPdu,Rnorm);
           BezierCurveHit hit(t,u,cross(V,U));
           return epilog(hit);
         }

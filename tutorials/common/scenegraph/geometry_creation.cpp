@@ -365,7 +365,7 @@ namespace embree
     unsigned numTheta = 2 * numPhi;
     unsigned numVertices = numTheta * (numPhi + 1);
 
-    RTCGeometryType type;
+    RTCGeometryType type = RTC_GEOMETRY_TYPE_SPHERE_POINT;
     switch (subtype) {
       case SPHERE:
         type = RTC_GEOMETRY_TYPE_SPHERE_POINT;
@@ -650,11 +650,11 @@ namespace embree
 
         if (mblur) 
         {
-          const float x = cast_i2f(RandomSampler_getUInt(sampler));
-          const float y = cast_i2f(RandomSampler_getUInt(sampler));
-          const float z = cast_i2f(RandomSampler_getUInt(sampler));
-          const float w = cast_i2f(RandomSampler_getUInt(sampler));
-          mesh->positions[1].push_back(Vec3fa(Vec3ff(x,y,z,w)));
+          const float mx = cast_i2f(RandomSampler_getUInt(sampler));
+          const float my = cast_i2f(RandomSampler_getUInt(sampler));
+          const float mz = cast_i2f(RandomSampler_getUInt(sampler));
+          const float mw = cast_i2f(RandomSampler_getUInt(sampler));
+          mesh->positions[1].push_back(Vec3fa(Vec3ff(mx,my,mz,mw)));
         }
       }
     }
@@ -680,11 +680,11 @@ namespace embree
 
       if (mblur)
       {
-        const float x = cast_i2f(RandomSampler_getUInt(sampler));
-        const float y = cast_i2f(RandomSampler_getUInt(sampler));
-        const float z = cast_i2f(RandomSampler_getUInt(sampler));
-        const float r = cast_i2f(RandomSampler_getUInt(sampler));
-        mesh->positions[1].push_back(Vec3ff(x, y, z, r));
+        const float mx = cast_i2f(RandomSampler_getUInt(sampler));
+        const float my = cast_i2f(RandomSampler_getUInt(sampler));
+        const float mz = cast_i2f(RandomSampler_getUInt(sampler));
+        const float mr = cast_i2f(RandomSampler_getUInt(sampler));
+        mesh->positions[1].push_back(Vec3ff(mx, my, mz, mr));
       }
     }
 

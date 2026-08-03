@@ -220,9 +220,9 @@ namespace embree
         vbool<K> valid1 = valid;
         while (any(valid1)) {
           vbool<K> valid2;
-          const int itime = next_unique(valid1, itime_k, valid2);
-          space0 = select(valid2, AffineSpace3vff<K>(l2w(i, itime+0)), space0);
-          space1 = select(valid2, AffineSpace3vff<K>(l2w(i, itime+1)), space1);
+          const int itime2 = next_unique(valid1, itime_k, valid2);
+          space0 = select(valid2, AffineSpace3vff<K>(l2w(i, itime2+0)), space0);
+          space1 = select(valid2, AffineSpace3vff<K>(l2w(i, itime2+1)), space1);
         }
         return rcp(slerp(space0, space1, ftime));
       }
@@ -245,9 +245,9 @@ namespace embree
         vbool<K> valid1 = valid;
         while (any(valid1)) {
           vbool<K> valid2;
-          const int itime = next_unique(valid1, itime_k, valid2);
-          space0 = select(valid2, AffineSpace3vf<K>((AffineSpace3fa)l2w(i, itime+0)), space0);
-          space1 = select(valid2, AffineSpace3vf<K>((AffineSpace3fa)l2w(i, itime+1)), space1);
+          const int itime2 = next_unique(valid1, itime_k, valid2);
+          space0 = select(valid2, AffineSpace3vf<K>((AffineSpace3fa)l2w(i, itime2+0)), space0);
+          space1 = select(valid2, AffineSpace3vf<K>((AffineSpace3fa)l2w(i, itime2+1)), space1);
         }
         return rcp(lerp(space0, space1, ftime));
       }
@@ -318,8 +318,8 @@ namespace embree
       InstanceArrayISA (Device* device)
         : InstanceArray(device) {}
 
-      LBBox3fa vlinearBounds(size_t primID, const BBox1f& time_range) const {
-        return linearBounds(primID,time_range);
+      LBBox3fa vlinearBounds(size_t primID, const BBox1f& trange) const {
+        return linearBounds(primID,trange);
       }
 
       PrimInfo createPrimRefArray(PrimRef* prims, const range<size_t>& r, size_t k, unsigned int geomID) const
@@ -350,10 +350,10 @@ namespace embree
         return pinfo;
       }
 
-      PrimInfo createPrimRefArrayMB(PrimRef* prims, const BBox1f& time_range, const range<size_t>& r, size_t k, unsigned int geomID) const
+      PrimInfo createPrimRefArrayMB(PrimRef* prims, const BBox1f& trange, const range<size_t>& r, size_t k, unsigned int geomID) const
       {
         PrimInfo pinfo(empty);
-        const BBox1f t0t1 = BBox1f::intersect(getTimeRange(), time_range);
+        const BBox1f t0t1 = BBox1f::intersect(getTimeRange(), trange);
         if (t0t1.empty()) return pinfo;
 
         for (size_t j = r.begin(); j < r.end(); j++) {
