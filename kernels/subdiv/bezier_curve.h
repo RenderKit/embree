@@ -155,7 +155,7 @@ namespace embree
       __forceinline CubicBezierCurve (const CubicBezierCurve<T1>& other)
       : v0(other.v0), v1(other.v1), v2(other.v2), v3(other.v3) {}
 
-      CubicBezierCurve (const CubicBezierCurve& other) = default;
+      __forceinline CubicBezierCurve (const CubicBezierCurve& other) = default;
 
       __forceinline CubicBezierCurve& operator= (const CubicBezierCurve& other) {
         v0 = other.v0; v1 = other.v1; v2 = other.v2; v3 = other.v3; return *this;

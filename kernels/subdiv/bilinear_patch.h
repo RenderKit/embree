@@ -83,21 +83,21 @@ namespace embree
         return cross(eval_du(uu,vv),eval_dv(uu,vv));
       }
       
-      __forceinline void eval(const float u, const float vv, 
+      __forceinline void eval(const float uu, const float vv, 
                               Vertex* P, Vertex* dPdu, Vertex* dPdv, Vertex* ddPdudu, Vertex* ddPdvdv, Vertex* ddPdudv,
                               const float dscale = 1.0f) const
       {
         if (P) {
-          *P = eval(u,vv); 
+          *P = eval(uu,vv); 
         }
         if (dPdu) {
-          assert(dPdu); *dPdu = eval_du(u,vv)*dscale; 
-          assert(dPdv); *dPdv = eval_dv(u,vv)*dscale; 
+          assert(dPdu); *dPdu = eval_du(uu,vv)*dscale; 
+          assert(dPdv); *dPdv = eval_dv(uu,vv)*dscale; 
         }
         if (ddPdudu) {
-          assert(ddPdudu); *ddPdudu = eval_dudu(u,vv)*sqr(dscale); 
-          assert(ddPdvdv); *ddPdvdv = eval_dvdv(u,vv)*sqr(dscale); 
-          assert(ddPdudv); *ddPdudv = eval_dudv(u,vv)*sqr(dscale); 
+          assert(ddPdudu); *ddPdudu = eval_dudu(uu,vv)*sqr(dscale); 
+          assert(ddPdvdv); *ddPdvdv = eval_dvdv(uu,vv)*sqr(dscale); 
+          assert(ddPdudv); *ddPdudv = eval_dudv(uu,vv)*sqr(dscale); 
         }
       }
 

@@ -27,7 +27,7 @@ namespace embree
     __forceinline BBox           ( )                   { }
     template<typename T1>
     __forceinline BBox           ( const BBox<T1>& other ) : lower(other.lower), upper(other.upper) {}
-    BBox           ( const BBox& other ) = default;
+    __forceinline BBox           ( const BBox& other ) = default;
     __forceinline BBox& operator=( const BBox& other ) { lower = other.lower; upper = other.upper; return *this; }
 
     __forceinline BBox ( const T& v                     ) : lower(v), upper(v) {}

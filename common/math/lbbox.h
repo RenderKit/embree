@@ -27,7 +27,7 @@ namespace embree
     __forceinline LBBox ( const LBBox<T1>& other )
     : bounds0(other.bounds0), bounds1(other.bounds1) {} 
 
-    LBBox ( const LBBox& other ) = default;
+    __forceinline LBBox ( const LBBox& other ) = default;
 
     __forceinline LBBox& operator= ( const LBBox& other ) { 
       bounds0 = other.bounds0; bounds1 = other.bounds1; return *this; 
