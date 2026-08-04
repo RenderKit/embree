@@ -46,7 +46,7 @@ namespace embree
     bool verbosity(size_t N);
 
     /*! checks if some particular ISA is enabled */
-    bool hasISA(const int isa);
+    bool hasISA(const int64_t isa);
 
     /*! check whether selected ISA is supported by the HW */    
     bool checkISASupport();
@@ -138,8 +138,8 @@ namespace embree
     size_t numUserThreads;                 //!< number of user provided threads to use in builders
     bool set_affinity;                     //!< sets affinity for worker threads
     bool start_threads;                    //!< true when threads should be started at device creation time
-    int enabled_cpu_features;              //!< CPU ISA features to use
-    int enabled_builder_cpu_features;      //!< CPU ISA features to use for builders only
+    int64_t enabled_cpu_features;          //!< CPU ISA features to use
+    int64_t enabled_builder_cpu_features;  //!< CPU ISA features to use for builders only
     enum FREQUENCY_LEVEL {
       FREQUENCY_SIMD128,
       FREQUENCY_SIMD256,
