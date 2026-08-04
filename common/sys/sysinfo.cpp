@@ -134,6 +134,25 @@ namespace embree
     uint32_t DisplayFamily_DisplayModel = (DisplayFamily << 8) + (DisplayModel << 0);
 
     // Data from Intel® 64 and IA-32 Architectures, Volume 4, Chapter 2, Table 2-1 (CPUID Signature Values of DisplayFamily_DisplayModel)
+    if (DisplayFamily_DisplayModel == 0x06AF) return CPU::SIERRA_FOREST;
+    if (DisplayFamily_DisplayModel == 0x06AD) return CPU::GRANITE_RAPIDS;
+    if (DisplayFamily_DisplayModel == 0x06AE) return CPU::GRANITE_RAPIDS;
+    if (DisplayFamily_DisplayModel == 0x06CF) return CPU::EMERALD_RAPIDS;
+    if (DisplayFamily_DisplayModel == 0x068F) return CPU::SAPPHIRE_RAPIDS;
+    if (DisplayFamily_DisplayModel == 0x06D7) return CPU::BARTLETT_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06CC) return CPU::PANTHER_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06BD) return CPU::LUNAR_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06B5) return CPU::ARROW_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06C5) return CPU::ARROW_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06C6) return CPU::ARROW_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06AA) return CPU::METEOR_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06AC) return CPU::METEOR_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06B7) return CPU::RAPTOR_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06BA) return CPU::RAPTOR_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06BF) return CPU::RAPTOR_LAKE;
+    if (DisplayFamily_DisplayModel == 0x0697) return CPU::ALDER_LAKE;
+    if (DisplayFamily_DisplayModel == 0x069A) return CPU::ALDER_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06A7) return CPU::ROCKET_LAKE;
     if (DisplayFamily_DisplayModel == 0x067D) return CPU::CORE_ICE_LAKE;
     if (DisplayFamily_DisplayModel == 0x067E) return CPU::CORE_ICE_LAKE;
     if (DisplayFamily_DisplayModel == 0x068C) return CPU::CORE_TIGER_LAKE;
@@ -184,6 +203,19 @@ namespace embree
   std::string stringOfCPUModel(CPU model)
   {
     switch (model) {
+    case CPU::DIAMOND_RAPIDS         : return "Diamond Rapids";
+    case CPU::SIERRA_FOREST          : return "Sierra Forest";
+    case CPU::GRANITE_RAPIDS         : return "Granite Rapids";
+    case CPU::EMERALD_RAPIDS         : return "Emerald Rapids";
+    case CPU::SAPPHIRE_RAPIDS        : return "Sapphire Rapids";
+    case CPU::BARTLETT_LAKE          : return "Bartlett Lake";
+    case CPU::PANTHER_LAKE           : return "Panther Lake";
+    case CPU::LUNAR_LAKE             : return "Lunar Lake";
+    case CPU::ARROW_LAKE             : return "Arrow Lake";
+    case CPU::METEOR_LAKE            : return "Meteor Lake";
+    case CPU::RAPTOR_LAKE            : return "Raptor Lake";
+    case CPU::ALDER_LAKE             : return "Alder Lake";
+    case CPU::ROCKET_LAKE            : return "Rocket Lake";
     case CPU::XEON_ICE_LAKE           : return "Xeon Ice Lake";
     case CPU::CORE_ICE_LAKE           : return "Core Ice Lake";
     case CPU::CORE_TIGER_LAKE         : return "Core Tiger Lake";
@@ -253,6 +285,15 @@ namespace embree
   
   /* cpuid[eax=7,ecx=0].ecx */
   static const int CPU_FEATURE_BIT_AVX512VBMI = 1 << 1;   // AVX512VBMI (vector bit manipulation instructions)
+  
+  /* cpuid[eax=7,ecx=1].edx */
+  static const int CPU_FEATURE_BIT_APX = 1 << 21;         // APX (Advanced Performance Extensions)
+  
+  /* cpuid[eax=7,ecx=1].edx */
+  static const int CPU_FEATURE_BIT_AVX10 = 1 << 19;       // AVX-10 (256-bit and 512-bit vector instructions)
+
+  /* cpuid[eax=0x24,ecx=0].ebx */
+  static const int CPU_FEATURE_BIT_AVX10_512VL = 1 << 18; // AVX-10 supports 512-bit vectors
 #endif
 
 #if defined(__X86_ASM__)
@@ -270,11 +311,11 @@ namespace embree
   }
 #endif
 
-  int getCPUFeatures()
+  int64_t getCPUFeatures()
   {
 #if defined(__X86_ASM__)
     /* cache CPU features access */
-    static int cpu_features = 0;
+    static int64_t cpu_features = 0;
     if (cpu_features) 
       return cpu_features;
 
@@ -291,28 +332,34 @@ namespace embree
     /* get CPUID leaves for EAX = 1,7, and 0x80000001 */
     int cpuid_leaf_1[4] = { 0,0,0,0 };
     int cpuid_leaf_7[4] = { 0,0,0,0 };
+    int cpuid_leaf_7_1[4] = { 0,0,0,0 };
     int cpuid_leaf_e1[4] = { 0,0,0,0 };
     if (nIds >= 1) __cpuid (cpuid_leaf_1,0x00000001);
 #ifdef _WIN32
 #if _MSC_VER && (_MSC_FULL_VER < 160040219)
 #else
     if (nIds >= 7) __cpuidex(cpuid_leaf_7,0x00000007,0);
+    if (nIds >= 7) __cpuidex(cpuid_leaf_7_1,0x00000007,1);
 #endif
 #else
     if (nIds >= 7) __cpuid_count(cpuid_leaf_7,0x00000007,0);
+    if (nIds >= 7) __cpuid_count(cpuid_leaf_7_1,0x00000007,1);
 #endif
     if (nExIds >= 0x80000001) __cpuid(cpuid_leaf_e1,0x80000001);
 
-    /* detect if OS saves XMM, YMM, and ZMM states */
+    /* detect if OS saves XMM, YMM, and ZMM states, and APX state */
     bool xmm_enabled = true;
     bool ymm_enabled = false;
     bool zmm_enabled = false;
+    bool apx_enabled = false;
     if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_OXSAVE) {
       int64_t xcr0 = get_xcr0();
       xmm_enabled = ((xcr0 & 0x02) == 0x02);                /* checks if xmm are enabled in XCR0 */
       ymm_enabled = xmm_enabled && ((xcr0 & 0x04) == 0x04); /* checks if ymm state are enabled in XCR0 */
       zmm_enabled = ymm_enabled && ((xcr0 & 0xE0) == 0xE0); /* checks if OPMASK state, upper 256-bit of ZMM0-ZMM15 and ZMM16-ZMM31 state are enabled in XCR0 */
+      apx_enabled = ((xcr0 & (0x80000)) == 0x80000);        /* checks if APX state (bit 19) is enabled in XCR0 */
     }
+
     if (xmm_enabled) cpu_features |= CPU_FEATURE_XMM_ENABLED;
     if (ymm_enabled) cpu_features |= CPU_FEATURE_YMM_ENABLED;
     if (zmm_enabled) cpu_features |= CPU_FEATURE_ZMM_ENABLED;
@@ -343,6 +390,29 @@ namespace embree
     if (cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512IFMA) cpu_features |= CPU_FEATURE_AVX512IFMA;
     if (cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512VL  ) cpu_features |= CPU_FEATURE_AVX512VL;
     if (cpuid_leaf_7[ECX] & CPU_FEATURE_BIT_AVX512VBMI) cpu_features |= CPU_FEATURE_AVX512VBMI;
+    
+    if ((cpuid_leaf_7_1[EDX] & CPU_FEATURE_BIT_APX) && apx_enabled) cpu_features |= CPU_FEATURE_APX;
+    
+    /* detect AVX-10 version */
+    if ((cpuid_leaf_7_1[EDX] & CPU_FEATURE_BIT_AVX10) && (nIds >= 0x24)) {
+      int cpuid_leaf_24_0[4] = { 0, 0, 0, 0 };
+       
+#if _WIN32
+#if _MSC_VER && (_MSC_FULL_VER < 160040219)
+#else
+    __cpuidex(cpuid_leaf_24_0, 0x00000024, 0);
+#endif
+#else
+    __cpuid_count(cpuid_leaf_24_0, 0x00000024, 0);
+#endif
+      // enable AVX-10 features only if AVX-512VL is supported and ZMM registers are enabled
+      const int avx10_version = cpuid_leaf_24_0[EBX] & 0xff;
+      const bool avx10_512vl = (cpuid_leaf_24_0[EBX] & CPU_FEATURE_BIT_AVX10_512VL) != 0;
+      if (avx10_512vl && zmm_enabled) {
+        if (avx10_version >= 1) cpu_features |= CPU_FEATURE_AVX10_1;
+        if (avx10_version >= 2) cpu_features |= CPU_FEATURE_AVX10_2;
+      }
+    }
 
 #if defined(__MACOSX__)
     if (   (cpu_features & CPU_FEATURE_AVX512F)
@@ -382,7 +452,7 @@ namespace embree
 #endif
   }
 
-  std::string stringOfCPUFeatures(int features)
+  std::string stringOfCPUFeatures(int64_t features)
   {
     std::string str;
     if (features & CPU_FEATURE_XMM_ENABLED) str += "XMM ";
@@ -412,12 +482,15 @@ namespace embree
     if (features & CPU_FEATURE_AVX512VL) str += "AVX512VL ";
     if (features & CPU_FEATURE_AVX512IFMA) str += "AVX512IFMA ";
     if (features & CPU_FEATURE_AVX512VBMI) str += "AVX512VBMI ";
+    if (features & CPU_FEATURE_APX) str += "APX ";
+    if (features & CPU_FEATURE_AVX10_1) str += "AVX10.1 ";
+    if (features & CPU_FEATURE_AVX10_2) str += "AVX10.2 ";
     if (features & CPU_FEATURE_NEON) str += "NEON ";
     if (features & CPU_FEATURE_NEON_2X) str += "2xNEON ";
     return str;
   }
   
-  std::string stringOfISA (int isa)
+  std::string stringOfISA (int64_t isa)
   {
     if (isa == SSE) return "SSE";
     if (isa == SSE2) return "SSE2";
@@ -428,17 +501,18 @@ namespace embree
     if (isa == AVX) return "AVX";
     if (isa == AVX2) return "AVX2";
     if (isa == AVX512) return "AVX512";
+    if (isa == APX) return "APX";
 
     if (isa == NEON) return "NEON";
     if (isa == NEON_2X) return "2xNEON";
     return "UNKNOWN";
   }
-
-  static bool hasISA(int features, int isa) {
+  
+  static bool hasISA(int64_t features, int64_t isa) {
     return (features & isa) == isa;
   }
   
-  std::string supportedTargetList (int features)
+  std::string supportedTargetList (int64_t features)
   {
     std::string v;
     if (hasISA(features,SSE)) v += "SSE ";
@@ -451,7 +525,7 @@ namespace embree
     if (hasISA(features,AVXI)) v += "AVXI ";
     if (hasISA(features,AVX2)) v += "AVX2 ";
     if (hasISA(features,AVX512)) v += "AVX512 ";
-
+    if (hasISA(features,APX)) v += "APX ";
     if (hasISA(features,NEON)) v += "NEON ";
     if (hasISA(features,NEON_2X)) v += "2xNEON ";
     return v;
