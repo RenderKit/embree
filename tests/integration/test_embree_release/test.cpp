@@ -105,4 +105,3 @@ TEST_CASE("Minimal test", "[minimal]")
 
   REQUIRE(true);
 }
-

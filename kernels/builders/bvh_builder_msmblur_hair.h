@@ -101,7 +101,12 @@ namespace embree
             createLeaf(createLeaf),
             progressMonitor(progressMonitor),
             unalignedHeuristic(scene),
-            temporalSplitHeuristic(scene->device,recalculatePrimRef) {}
+            temporalSplitHeuristic(scene->device,recalculatePrimRef)
+          {
+            if (cfg.branchingFactor > MAX_BRANCHING_FACTOR) {
+              throw_RTCError(RTC_ERROR_UNKNOWN,"bvh_builder: branching factor too large");
+            }
+          }
 
         private:
 
