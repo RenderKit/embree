@@ -9,7 +9,7 @@
 #include <intrin.h>
 #endif
 
-#if defined(__ARM_NEON)
+#if defined(__ARM_NEON) || defined(__aarch64__)
 #include "../simd/arm/emulation.h"
 #else
 #include <immintrin.h>

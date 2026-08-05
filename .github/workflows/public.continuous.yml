@@ -114,3 +114,41 @@ jobs:
           cmake --build .
           cd embree/build
           ctest
+
+  windows-11-arm:
+    runs-on: windows-11-arm
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build and Run
+        shell: pwsh
+        run: |
+          $opts  = "-DBUILD_TESTING=ON"
+          $opts += " -DEMBREE_TUTORIALS=ON"
+          $opts += " -DEMBREE_ISPC_SUPPORT=OFF"
+          $opts += " -DEMBREE_TASKING_SYSTEM=INTERNAL"
+          $opts += " -DEMBREE_TESTING_INTENSITY=2"
+
+          cmake -B build -G "Visual Studio 17 2022" -A ARM64 $opts.Split(" ") .
+          cmake --build build --config Release
+          ctest --test-dir build -C Release --output-on-failure
+
+  windows-11:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build and Run
+        shell: pwsh
+        run: |
+          $opts  = "-DBUILD_TESTING=ON"
+          $opts += " -DEMBREE_TUTORIALS=ON"
+          $opts += " -DEMBREE_ISPC_SUPPORT=OFF"
+          $opts += " -DEMBREE_TASKING_SYSTEM=INTERNAL"
+          $opts += " -DEMBREE_TESTING_INTENSITY=2"
+
+          cmake -B build -G "Visual Studio 17 2022" $opts.Split(" ") .
+          cmake --build build --config Release
+          ctest --test-dir build -C Release --output-on-failure
