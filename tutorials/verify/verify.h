@@ -25,7 +25,7 @@ namespace embree
     
     struct Test : public RefCount
     {
-      Test (std::string name, int isa, TestType ty, bool enabled = true) 
+      Test (std::string name, int64_t isa, TestType ty, bool enabled = true) 
         : name(name), isa(isa), ty(ty), enabled(enabled), ignoreFailure(false) 
       {
         RandomSampler_init(sampler,0x23F67E21);
@@ -61,7 +61,7 @@ namespace embree
 
     public:
       std::string name;
-      int isa;
+      int64_t isa;
       TestType ty;
       bool enabled;
       bool ignoreFailure;
@@ -72,7 +72,7 @@ namespace embree
     {
     public:
       const std::string unit;
-      Benchmark (const std::string& name, int isa, const std::string& unit, bool higher_is_better, size_t max_attempts)
+      Benchmark (const std::string& name, int64_t isa, const std::string& unit, bool higher_is_better, size_t max_attempts)
         : Test(name,isa,BENCHMARK,false), unit(unit), numThreads(getNumberOfLogicalThreads()), higher_is_better(higher_is_better), max_attempts(max_attempts) {}
       
       virtual size_t setNumPrimitives(size_t N) { return 0; }
@@ -121,7 +121,7 @@ namespace embree
 
     struct IntersectTest : public Test
     {
-      IntersectTest (std::string name, int isa, IntersectMode imode, IntersectVariant ivariant, TestType ty = TEST_SHOULD_PASS)
+      IntersectTest (std::string name, int64_t isa, IntersectMode imode, IntersectVariant ivariant, TestType ty = TEST_SHOULD_PASS)
         : Test(name,isa,ty), imode(imode), ivariant(ivariant) {}
 
     public:
@@ -153,7 +153,7 @@ namespace embree
 
   public:
     MutexSys mutex;
-    std::vector<int> isas;
+    std::vector<int64_t> isas;
     Ref<Test> tests;
     std::map<std::string,Ref<Test>> name2test;
 

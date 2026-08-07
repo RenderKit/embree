@@ -159,6 +159,9 @@ namespace embree
 #if defined(EMBREE_TARGET_AVX512)
     v += "AVX512 ";
 #endif
+#if defined(EMBREE_TARGET_APX)
+  v += "APX ";
+#endif
     return v;
   }
 
@@ -188,7 +191,7 @@ namespace embree
 
   void Device::print()
   {
-    const int cpu_features = getCPUFeatures();
+    const int64_t cpu_features = getCPUFeatures();
     std::cout << std::endl;
     std::cout << "Embree Ray Tracing Kernels " << RTC_VERSION_STRING << " (" << RTC_HASH << ")" << std::endl;
     std::cout << "  Compiler  : " << getCompilerName() << std::endl;
