@@ -191,12 +191,15 @@ namespace embree
         return object;
       }
 
-      assert(objects);
-      assert(i < numPrimitives);
+        if (unlikely(objects == nullptr || i >= numPrimitives))
+          return nullptr;
+
       if (object_ids[i] == (unsigned int)(-1))
         return nullptr;
 
-      assert(object_ids[i] < numObjects);
+        if (unlikely(object_ids[i] >= numObjects))
+          return nullptr;
+
       return objects[object_ids[i]];
     }
 

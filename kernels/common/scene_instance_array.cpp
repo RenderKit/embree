@@ -79,6 +79,9 @@ namespace embree
 
   AffineSpace3fa InstanceArray::getTransform(size_t i, float time)
   {
+    if (unlikely(i >= numPrimitives))
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid instance primitive id");
+
     if (likely(numTimeSteps <= 1))
       return getLocal2World(i);
     else
@@ -185,6 +188,19 @@ namespace embree
     if (!object && objects && this->numPrimitives == 1) {
       object = objects[0];
       if (object) object->refInc();
+    }
+
+    if (!object && objects)
+    {
+      if (object_ids.size() != numPrimitives)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "instance index buffer size must match transform buffer size.");
+
+      for (size_t i = 0; i < numPrimitives; ++i)
+      {
+        const uint32_t id = object_ids[i];
+        if (id != (unsigned int)(-1) && id >= numObjects)
+          throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid instance array object id");
+      }
     }
 
     Geometry::commit();
