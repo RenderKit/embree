@@ -118,6 +118,12 @@ namespace embree
     template<typename BoundsFunc>
     __forceinline LBBox(const BoundsFunc& bounds, const BBox1f& time_range_in, const BBox1f& geom_time_range, float geom_time_segments)
     {
+      if (!(geom_time_segments > 0.0f) || !(geom_time_range.size() > 0.0f)) {
+        bounds0 = empty;
+        bounds1 = empty;
+        return;
+      }
+
       /* normalize global time_range_in to local geom_time_range */
       const BBox1f time_range((time_range_in.lower-geom_time_range.lower)/geom_time_range.size(),
                               (time_range_in.upper-geom_time_range.lower)/geom_time_range.size());
@@ -126,15 +132,31 @@ namespace embree
       const float upper = time_range.upper*geom_time_segments;
       const float ilowerf = floor(lower);
       const float iupperf = ceil(upper);
-      const float ilowerfc = max(0.0f,ilowerf);
-      const float iupperfc = min(iupperf,geom_time_segments);
+      if (!(ilowerf == ilowerf) || !(iupperf == iupperf)) {
+        bounds0 = empty;
+        bounds1 = empty;
+        return;
+      }
+
+      const float ilowerfc = clamp(ilowerf, 0.0f, geom_time_segments);
+      const float iupperfc = clamp(iupperf, 0.0f, geom_time_segments);
       const int   ilowerc = (int)ilowerfc;
       const int   iupperc = (int)iupperfc;
-      assert(iupperc-ilowerc > 0);
+      if (iupperc <= ilowerc) {
+        bounds0 = empty;
+        bounds1 = empty;
+        return;
+      }
 
       /* this larger iteration range guarantees that we process borders of geom_time_range is (partially) inside time_range_in */
-      const int ilower_iter = max(-1,(int)ilowerf);
-      const int iupper_iter = min((int)iupperf,(int)geom_time_segments+1);
+      const float iter_max = geom_time_segments + 1.0f;
+      const int ilower_iter = (int)clamp(ilowerf, -1.0f, iter_max);
+      const int iupper_iter = (int)clamp(iupperf, -1.0f, iter_max);
+      if (iupper_iter <= ilower_iter) {
+        bounds0 = empty;
+        bounds1 = empty;
+        return;
+      }
         
       const BBox<T> blower0 = bounds(ilowerc);
       const BBox<T> bupper1 = bounds(iupperc);
