@@ -62,8 +62,8 @@ namespace embree
     __forceinline LBBox(const BoundsFunc& bounds, const BBox1f& time_range, float numTimeSegments)
     {
       if (!(numTimeSegments > 0.0f)) {
-        bounds0 = empty;
-        bounds1 = empty;
+        bounds0 = EmptyTy();
+        bounds1 = EmptyTy();
         return;
       }
 
@@ -72,16 +72,16 @@ namespace embree
       const float ilowerf = floor(lower);
       const float iupperf = ceil(upper);
       if (!(ilowerf == ilowerf) || !(iupperf == iupperf)) {
-        bounds0 = empty;
-        bounds1 = empty;
+        bounds0 = EmptyTy();
+        bounds1 = EmptyTy();
         return;
       }
 
       const int ilower = (int)clamp(ilowerf, 0.0f, numTimeSegments);
       const int iupper = (int)clamp(iupperf, 0.0f, numTimeSegments);
       if (iupper <= ilower) {
-        bounds0 = empty;
-        bounds1 = empty;
+        bounds0 = EmptyTy();
+        bounds1 = EmptyTy();
         return;
       }
 
@@ -119,8 +119,8 @@ namespace embree
     __forceinline LBBox(const BoundsFunc& bounds, const BBox1f& time_range_in, const BBox1f& geom_time_range, float geom_time_segments)
     {
       if (!(geom_time_segments > 0.0f) || !(geom_time_range.size() > 0.0f)) {
-        bounds0 = empty;
-        bounds1 = empty;
+        bounds0 = EmptyTy();
+        bounds1 = EmptyTy();
         return;
       }
 
@@ -133,8 +133,8 @@ namespace embree
       const float ilowerf = floor(lower);
       const float iupperf = ceil(upper);
       if (!(ilowerf == ilowerf) || !(iupperf == iupperf)) {
-        bounds0 = empty;
-        bounds1 = empty;
+        bounds0 = EmptyTy();
+        bounds1 = EmptyTy();
         return;
       }
 
@@ -143,8 +143,8 @@ namespace embree
       const int   ilowerc = (int)ilowerfc;
       const int   iupperc = (int)iupperfc;
       if (iupperc <= ilowerc) {
-        bounds0 = empty;
-        bounds1 = empty;
+        bounds0 = EmptyTy();
+        bounds1 = EmptyTy();
         return;
       }
 
@@ -153,8 +153,8 @@ namespace embree
       const int ilower_iter = (int)clamp(ilowerf, -1.0f, iter_max);
       const int iupper_iter = (int)clamp(iupperf, -1.0f, iter_max);
       if (iupper_iter <= ilower_iter) {
-        bounds0 = empty;
-        bounds1 = empty;
+        bounds0 = EmptyTy();
+        bounds1 = EmptyTy();
         return;
       }
         
