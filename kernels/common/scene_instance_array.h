@@ -191,14 +191,14 @@ namespace embree
         return object;
       }
 
-        if (unlikely(objects == nullptr || i >= numPrimitives))
-          return nullptr;
+      if (unlikely(objects == nullptr || i >= numPrimitives))
+        return nullptr;
 
       if (object_ids[i] == (unsigned int)(-1))
         return nullptr;
 
-        if (unlikely(object_ids[i] >= numObjects))
-          return nullptr;
+      if (unlikely(object_ids[i] >= numObjects))
+        return nullptr;
 
       return objects[object_ids[i]];
     }
