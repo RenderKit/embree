@@ -72,7 +72,14 @@ namespace embree
       __forceinline void* encodeLeaf(size_t u, size_t v) {
         return (void*) (16*(v * width + u + 1)); // +1 to not create empty leaf
       }
+
+      static __forceinline bool validEncodedLeaf(const void* ptr) {
+        return (size_t)ptr >= 16;
+      }
+
       __forceinline float* decodeLeaf(size_t t, const void* ptr) {
+        if (unlikely(!validEncodedLeaf(ptr)))
+          return nullptr;
         return gridData(t) + (((size_t) (ptr) >> 4) - 1);
       }
 

@@ -73,6 +73,9 @@ namespace embree
       /*! Intersect a ray with the primitive. */
       static __forceinline void intersect(Precalculations& pre, RayHit& ray, RayQueryContext* context, const Primitive* prim, size_t& lazy_node) 
       {
+        if (unlikely(!GridSOA::validEncodedLeaf(prim)))
+          return;
+
         const size_t line_offset   = pre.grid->width;
         const size_t lines         = pre.grid->height;
         const float* const grid_x  = pre.grid->decodeLeaf(0,prim);
@@ -89,6 +92,9 @@ namespace embree
       /*! Test if the ray is occluded by the primitive */
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, RayQueryContext* context, const Primitive* prim, size_t& lazy_node)
       {
+        if (unlikely(!GridSOA::validEncodedLeaf(prim)))
+          return false;
+
         const size_t line_offset   = pre.grid->width;
         const size_t lines         = pre.grid->height;
         const float* const grid_x  = pre.grid->decodeLeaf(0,prim);
@@ -173,6 +179,9 @@ namespace embree
       /*! Intersect a ray with the primitive. */
       static __forceinline void intersect(Precalculations& pre, RayHit& ray, RayQueryContext* context, const Primitive* prim, size_t& lazy_node) 
       { 
+        if (unlikely(!GridSOA::validEncodedLeaf(prim)))
+          return;
+
         const size_t line_offset   = pre.grid->width;
         const size_t lines         = pre.grid->height;
         const float* const grid_x  = pre.grid->decodeLeaf(pre.itime,prim);
@@ -189,6 +198,9 @@ namespace embree
       /*! Test if the ray is occluded by the primitive */
       static __forceinline bool occluded(Precalculations& pre, Ray& ray, RayQueryContext* context, const Primitive* prim, size_t& lazy_node)
       {
+        if (unlikely(!GridSOA::validEncodedLeaf(prim)))
+          return false;
+
         const size_t line_offset   = pre.grid->width;
         const size_t lines         = pre.grid->height;
         const float* const grid_x  = pre.grid->decodeLeaf(pre.itime,prim);
