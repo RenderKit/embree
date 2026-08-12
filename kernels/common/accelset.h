@@ -64,7 +64,12 @@ namespace embree
       /*! check if the i'th primitive is valid between the specified time range */
       __forceinline bool valid(size_t i, const range<size_t>& itime_range) const
       {
-        for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
+        const size_t begin = itime_range.begin();
+        const size_t end = itime_range.end();
+        if (begin > end || end > fnumTimeSegments)
+          return false;
+
+        for (size_t itime = begin; itime <= end; itime++)
           if (!isvalid_non_empty(bounds(i,itime))) return false;
         
         return true;
