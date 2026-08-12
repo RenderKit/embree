@@ -61,12 +61,29 @@ namespace embree
     template<typename BoundsFunc>
     __forceinline LBBox(const BoundsFunc& bounds, const BBox1f& time_range, float numTimeSegments)
     {
+      if (!(numTimeSegments > 0.0f)) {
+        bounds0 = empty;
+        bounds1 = empty;
+        return;
+      }
+
       const float lower = time_range.lower*numTimeSegments;
       const float upper = time_range.upper*numTimeSegments;
       const float ilowerf = floor(lower);
       const float iupperf = ceil(upper);
-      const int ilower = (int)ilowerf;
-      const int iupper = (int)iupperf;
+      if (!(ilowerf == ilowerf) || !(iupperf == iupperf)) {
+        bounds0 = empty;
+        bounds1 = empty;
+        return;
+      }
+
+      const int ilower = (int)clamp(ilowerf, 0.0f, numTimeSegments);
+      const int iupper = (int)clamp(iupperf, 0.0f, numTimeSegments);
+      if (iupper <= ilower) {
+        bounds0 = empty;
+        bounds1 = empty;
+        return;
+      }
 
       const BBox<T> blower0 = bounds(ilower);
       const BBox<T> bupper1 = bounds(iupper);
