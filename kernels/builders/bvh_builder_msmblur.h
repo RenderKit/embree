@@ -431,6 +431,13 @@ namespace embree
             if (in.depth > cfg.maxDepth)
               throw_RTCError(RTC_ERROR_UNKNOWN,"depth limit reached");
 
+            if (in.prims.prims)
+            {
+              const mvector<PrimRefMB>& prims = *in.prims.prims;
+              if (in.prims.begin() > in.prims.end() || in.prims.end() > prims.size())
+                throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid motion-blur primitive range");
+            }
+
             /* replace already found split by fallback split */
             const BuildRecordSplit current(BuildRecord(in.prims,in.depth),findFallback(in.prims));
 
