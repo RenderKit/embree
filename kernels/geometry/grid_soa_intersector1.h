@@ -204,6 +204,7 @@ namespace embree
         if (unlikely(!GridSOA::validEncodedLeaf(prim))) {
           return false;
         }
+        const size_t line_offset   = pre.grid->width;
         const size_t lines         = pre.grid->height;
         const float* const grid_x  = pre.grid->decodeLeaf(pre.itime,prim);
 
