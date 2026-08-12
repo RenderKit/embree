@@ -497,8 +497,9 @@ namespace embree
     /*! check if the i'th primitive is valid at the itime'th time step */
     __forceinline bool valid(Geometry::GType ctype, size_t i, const range<size_t>& itime_range) const
     {
-      const unsigned int index = curve(i);
-      if (index+3 >= numVertices()) return false;
+      const size_t index = size_t(curve(i));
+      const size_t vertices = numVertices();
+      if (index > vertices || vertices - index < 4) return false;
       
       for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
       {
