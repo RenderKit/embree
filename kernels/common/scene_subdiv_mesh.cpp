@@ -783,6 +783,9 @@ namespace embree
 
   void SubdivMesh::commit () 
   {
+    if (!verify())
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid subdivision mesh topology");
+
     initializeHalfEdgeStructures();
     Geometry::commit();
   }
