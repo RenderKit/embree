@@ -186,11 +186,6 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "if scene index buffer is set, it has to have the same size as the transform buffer.");
       }
     }
-    if (!object && objects && this->numPrimitives == 1) {
-      object = objects[0];
-      if (object) object->refInc();
-    }
-
     if (!object && objects)
     {
       if (object_ids.size() != numPrimitives) {
@@ -203,6 +198,11 @@ namespace embree
         if (id != (unsigned int)(-1) && id >= numObjects) {
           throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid instance array object id");
         }
+      }
+
+      if (this->numPrimitives == 1) {
+        object = objects[0];
+        if (object) { object->refInc(); }
       }
     }
 

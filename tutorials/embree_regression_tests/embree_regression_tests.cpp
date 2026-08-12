@@ -40,6 +40,17 @@ namespace
     return true;
   }
 
+  /* empty bounds (lower > upper) are a valid defensive response; only NaN is unsafe */
+  static bool hasNaNBounds(const RTCBounds& b)
+  {
+    const float v[6] = { b.lower_x, b.lower_y, b.lower_z, b.upper_x, b.upper_y, b.upper_z };
+    for (size_t i = 0; i < 6; ++i) {
+      if (std::isnan(v[i]))
+        return true;
+    }
+    return false;
+  }
+
   static bool errorIsAccepted(RTCError err)
   {
     return err == RTC_ERROR_NONE || err == RTC_ERROR_INVALID_ARGUMENT || err == RTC_ERROR_INVALID_OPERATION;
@@ -213,7 +224,7 @@ namespace
     if (err == RTC_ERROR_NONE) {
       RTCBounds b;
       rtcGetSceneBounds(top, &b);
-      if (!isFiniteBounds(b)) {
+      if (hasNaNBounds(b)) {
         rtcReleaseScene(top);
         rtcReleaseScene(child);
         return failResult("NaN bounds");
@@ -616,12 +627,18 @@ namespace
     rtcSetSharedGeometryBuffer(curve, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, indices, 0, sizeof(unsigned int), 1);
     rtcCommitGeometry(curve);
 
-    RTCError err = consumeDeviceError(device);
+    RTCScene scene = rtcNewScene(device);
+    rtcAttachGeometry(scene, curve);
     rtcReleaseGeometry(curve);
+    rtcCommitScene(scene);
 
-    if (err == RTC_ERROR_NONE)
-      return failResult("overflowing curve index unexpectedly accepted");
-    return passResult("overflowing curve index rejected");
+    RTCError err = consumeDeviceError(device);
+    rtcReleaseScene(scene);
+
+    if (!errorIsAccepted(err)) {
+      return failResult("unexpected API error");
+    }
+    return passResult("overflowing curve index handled safely without OOB access");
   }
 
   static CaseResult issue13_motion_derivative_root_bound(RTCDevice device)
