@@ -126,7 +126,7 @@ namespace embree
     unsigned int getTopologyVersion() const {
       return numPrimitives;
     }
-  
+
     /* returns true if topology changed */
     bool topologyChanged(unsigned int otherVersion) const {
       return numPrimitives != otherVersion;
@@ -191,14 +191,16 @@ namespace embree
         return object;
       }
 
-      if (unlikely(objects == nullptr || i >= numPrimitives))
+      if (unlikely(objects == nullptr || i >= numPrimitives)) {
         return nullptr;
+      }
 
       if (object_ids[i] == (unsigned int)(-1))
         return nullptr;
 
-      if (unlikely(object_ids[i] >= numObjects))
+      if (unlikely(object_ids[i] >= numObjects)) {
         return nullptr;
+      }
 
       return objects[object_ids[i]];
     }

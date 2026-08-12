@@ -255,8 +255,9 @@ namespace embree
     const float upperf = ceil (round_down * time_range.upper * numTimeSegments);
     const int itime_lower = (int)clamp(lowerf, 0.0f, numTimeSegments);
     const int itime_upper = (int)clamp(upperf, 0.0f, numTimeSegments);
-    if (itime_upper < itime_lower)
+    if (itime_upper < itime_lower) {
       return make_range(itime_lower, itime_lower);
+    }
     return make_range(itime_lower, itime_upper);
   }
 

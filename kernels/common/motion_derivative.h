@@ -114,11 +114,13 @@ struct MotionDerivative
     unsigned int maxNumRoots,
     unsigned int depth = 0)
   {
-    if (numRoots >= maxNumRoots)
+    if (numRoots >= maxNumRoots) {
       return;
+    }
 
-    if (depth > 64)
+    if (depth > 64) {
       return;
+    }
 
     Interval1f range = eval(interval);
     if (range.lower > 0 || range.upper < 0 || range.lower >= range.upper) return;
@@ -142,8 +144,9 @@ struct MotionDerivative
     }
 
     findRoots(eval, Interval1f(interval.lower, split), numRoots, roots, maxNumRoots, depth + 1);
-    if (numRoots >= maxNumRoots)
+    if (numRoots >= maxNumRoots) {
       return;
+    }
     findRoots(eval, Interval1f(split, interval.upper), numRoots, roots, maxNumRoots, depth + 1);
   }
 };

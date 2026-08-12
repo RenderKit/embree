@@ -13,7 +13,7 @@ namespace embree
 {
   struct IntersectFunctionNArguments;
   struct OccludedFunctionNArguments;
-  
+
   struct IntersectFunctionNArguments : public RTCIntersectFunctionNArguments
   {
     Geometry* geometry;
@@ -32,7 +32,7 @@ namespace embree
   class AccelSet : public Geometry
   {
   public:
-    typedef RTCIntersectFunctionN IntersectFuncN;  
+    typedef RTCIntersectFunctionN IntersectFuncN;
     typedef RTCOccludedFunctionN OccludedFuncN;
     typedef void (*ErrorFunc) ();
 
@@ -40,24 +40,24 @@ namespace embree
       {
         IntersectorN (ErrorFunc error = nullptr) ;
         IntersectorN (IntersectFuncN intersect, OccludedFuncN occluded, const char* name);
-        
+
         operator bool() const { return name; }
-        
+
       public:
         static const char* type;
         IntersectFuncN intersect;
-        OccludedFuncN occluded; 
+        OccludedFuncN occluded;
         const char* name;
       };
-      
+
     public:
-      
+
       /*! construction */
       AccelSet (Device* device, Geometry::GType gtype, size_t items, size_t numTimeSteps);
-      
+
       /*! makes the acceleration structure immutable */
       virtual void immutable () {}
-      
+
       /*! build accel */
       virtual void build () = 0;
 
@@ -66,12 +66,13 @@ namespace embree
       {
         const size_t begin = itime_range.begin();
         const size_t end = itime_range.end();
-        if (begin > end || end > fnumTimeSegments)
+        if (begin > end || end > fnumTimeSegments) {
           return false;
+        }
 
         for (size_t itime = begin; itime <= end; itime++)
           if (!isvalid_non_empty(bounds(i,itime))) return false;
-        
+
         return true;
       }
 
@@ -126,7 +127,7 @@ namespace embree
       __forceinline LBBox3fa linearBounds(size_t primID, const BBox1f& dt) const {
         return LBBox3fa([&] (size_t itime) { return bounds(primID, itime); }, dt, time_range, fnumTimeSegments);
       }
-      
+
       /*! calculates the linear bounds of the i'th primitive for the specified time range */
       __forceinline bool linearBounds(size_t i, const BBox1f& time_range, LBBox3fa& bbox) const  {
         if (!valid(i, timeSegmentRange(time_range))) return false;
@@ -138,7 +139,7 @@ namespace embree
       unsigned int getTopologyVersion() const {
         return numPrimitives;
       }
-    
+
       /* returns true if topology changed */
       bool topologyChanged(unsigned int otherVersion) const {
         return numPrimitives != otherVersion;
@@ -147,10 +148,10 @@ namespace embree
   public:
 
       /*! Intersects a single ray with the scene. */
-      __forceinline bool intersect (RayHit& ray, unsigned int geomID, unsigned int primID, RayQueryContext* context) 
+      __forceinline bool intersect (RayHit& ray, unsigned int geomID, unsigned int primID, RayQueryContext* context)
       {
         assert(primID < size());
-        
+
         int mask = -1;
         IntersectFunctionNArguments args;
         args.valid = &mask;
@@ -166,7 +167,7 @@ namespace embree
 
         IntersectFuncN intersectFunc = nullptr;
         intersectFunc = intersectorN.intersect;
-        
+
         if (context->getIntersectFunction())
           intersectFunc = context->getIntersectFunction();
 
@@ -207,10 +208,10 @@ namespace embree
       }
 
       /*! Intersects a single ray with the scene. */
-    __forceinline bool intersect (RayHit& ray, unsigned int geomID, unsigned int primID, RayQueryContext* context, RTCScene& forward_scene) 
+    __forceinline bool intersect (RayHit& ray, unsigned int geomID, unsigned int primID, RayQueryContext* context, RTCScene& forward_scene)
     {
         assert(primID < size());
-        
+
         int mask = -1;
         IntersectFunctionNArguments args;
         args.valid = &mask;
@@ -226,19 +227,19 @@ namespace embree
 
         typedef void (*RTCIntersectFunctionSYCL)(const void* args);
         RTCIntersectFunctionSYCL intersectFunc = nullptr;
-        
+
 #if EMBREE_SYCL_GEOMETRY_CALLBACK
         if (context->args->feature_mask & RTC_FEATURE_FLAG_USER_GEOMETRY_CALLBACK_IN_GEOMETRY)
           intersectFunc = (RTCIntersectFunctionSYCL) intersectorN.intersect;
 #endif
-        
+
         if (context->args->feature_mask & RTC_FEATURE_FLAG_USER_GEOMETRY_CALLBACK_IN_ARGUMENTS)
           if (context->getIntersectFunction())
             intersectFunc = (RTCIntersectFunctionSYCL) context->getIntersectFunction();
 
         if (intersectFunc)
           intersectFunc(&args);
-        
+
         forward_scene = args.forward_scene;
         return mask != 0;
       }
@@ -268,24 +269,24 @@ namespace embree
         if (context->args->feature_mask & RTC_FEATURE_FLAG_USER_GEOMETRY_CALLBACK_IN_GEOMETRY)
           occludedFunc = (RTCOccludedFunctionSYCL) intersectorN.occluded;
 #endif
-        
+
         if (context->args->feature_mask & RTC_FEATURE_FLAG_USER_GEOMETRY_CALLBACK_IN_ARGUMENTS)
           if (context->getOccludedFunction())
             occludedFunc = (RTCOccludedFunctionSYCL) context->getOccludedFunction();
 
         if (occludedFunc)
           occludedFunc(&args);
-        
+
         forward_scene = args.forward_scene;
         return mask != 0;
       }
 
       /*! Intersects a packet of K rays with the scene. */
       template<int K>
-        __forceinline void intersect (const vbool<K>& valid, RayHitK<K>& ray, unsigned int geomID, unsigned int primID, RayQueryContext* context) 
+        __forceinline void intersect (const vbool<K>& valid, RayHitK<K>& ray, unsigned int geomID, unsigned int primID, RayQueryContext* context)
       {
         assert(primID < size());
-        
+
         vint<K> mask = valid.mask32();
         IntersectFunctionNArguments args;
         args.valid = (int*)&mask;
@@ -301,7 +302,7 @@ namespace embree
 
         IntersectFuncN intersectFunc = nullptr;
         intersectFunc = intersectorN.intersect;
-        
+
         if (context->getIntersectFunction())
           intersectFunc = context->getIntersectFunction();
 
@@ -314,7 +315,7 @@ namespace embree
         __forceinline void occluded (const vbool<K>& valid, RayK<K>& ray, unsigned int geomID, unsigned int primID, RayQueryContext* context)
       {
         assert(primID < size());
-        
+
         vint<K> mask = valid.mask32();
         OccludedFunctionNArguments args;
         args.valid = (int*)&mask;
@@ -330,7 +331,7 @@ namespace embree
 
         OccludedFuncN occludedFunc = nullptr;
         occludedFunc = intersectorN.occluded;
-        
+
         if (context->getOccludedFunction())
           occludedFunc = context->getOccludedFunction();
 
@@ -342,7 +343,7 @@ namespace embree
       RTCBoundsFunction boundsFunc;
       IntersectorN intersectorN;
   };
-  
+
 #define DEFINE_SET_INTERSECTORN(symbol,intersector)                     \
   AccelSet::IntersectorN symbol() {                                     \
     return AccelSet::IntersectorN(intersector::intersect, \

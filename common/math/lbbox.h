@@ -25,22 +25,22 @@ namespace embree
 
     template<typename T1>
     __forceinline LBBox ( const LBBox<T1>& other )
-    : bounds0(other.bounds0), bounds1(other.bounds1) {} 
+    : bounds0(other.bounds0), bounds1(other.bounds1) {}
 
-    __forceinline LBBox& operator= ( const LBBox& other ) { 
-      bounds0 = other.bounds0; bounds1 = other.bounds1; return *this; 
+    __forceinline LBBox& operator= ( const LBBox& other ) {
+      bounds0 = other.bounds0; bounds1 = other.bounds1; return *this;
     }
 
-    __forceinline LBBox (EmptyTy) 
+    __forceinline LBBox (EmptyTy)
       : bounds0(EmptyTy()), bounds1(EmptyTy()) {}
-    
-    __forceinline explicit LBBox ( const BBox<T>& bounds) 
+
+    __forceinline explicit LBBox ( const BBox<T>& bounds)
       : bounds0(bounds), bounds1(bounds) { }
-    
-    __forceinline LBBox ( const BBox<T>& bounds0, const BBox<T>& bounds1) 
+
+    __forceinline LBBox ( const BBox<T>& bounds0, const BBox<T>& bounds1)
       : bounds0(bounds0), bounds1(bounds1) { }
 
-    LBBox ( const avector<BBox<T>>& bounds ) 
+    LBBox ( const avector<BBox<T>>& bounds )
     {
       assert(bounds.size());
       BBox<T> b0 = bounds.front();
@@ -127,7 +127,7 @@ namespace embree
       /* normalize global time_range_in to local geom_time_range */
       const BBox1f time_range((time_range_in.lower-geom_time_range.lower)/geom_time_range.size(),
                               (time_range_in.upper-geom_time_range.lower)/geom_time_range.size());
-        
+
       const float lower = time_range.lower*geom_time_segments;
       const float upper = time_range.upper*geom_time_segments;
       const float ilowerf = floor(lower);
@@ -157,7 +157,7 @@ namespace embree
         bounds1 = EmptyTy();
         return;
       }
-        
+
       const BBox<T> blower0 = bounds(ilowerc);
       const BBox<T> bupper1 = bounds(iupperc);
       if (iupper_iter-ilower_iter == 1) {
@@ -202,7 +202,7 @@ namespace embree
         bounds1 = b1;
         return;
       }
-  
+
       for (int i = ilower+1; i<iupper; i++)
       {
         const float f = float(i - time_range.begin()) / float(time_range.size());
@@ -223,7 +223,7 @@ namespace embree
     {
       const BBox3f bounds0 = lbounds.bounds0;
       const BBox3f bounds1 = lbounds.bounds1;
-      
+
       /* normalize global target_time_range to local time_range_in */
       const BBox1f time_range((target_time_range.lower-time_range_in.lower)/time_range_in.size(),
                               (target_time_range.upper-time_range_in.lower)/time_range_in.size());
@@ -251,7 +251,7 @@ namespace embree
         b0.lower += dlower; b1.lower += dlower;
         b0.upper += dupper; b1.upper += dupper;
       }
-      
+
       this->bounds0 = b0;
       this->bounds1 = b1;
     }
@@ -294,7 +294,7 @@ namespace embree
     }
 
     /* calculates bounds for [0,1] time range from bounds in dt time range */
-    __forceinline LBBox global(const BBox1f& dt) const 
+    __forceinline LBBox global(const BBox1f& dt) const
     {
       const float rcp_dt_size = 1.0f/dt.size();
       const BBox<T> b0 = interpolate(-dt.lower*rcp_dt_size);
@@ -307,7 +307,7 @@ namespace embree
     //template<typename TT> friend __forceinline bool operator!=( const LBBox<TT>& a, const LBBox<TT>& b ) { return a.bounds0 != b.bounds0 || a.bounds1 != b.bounds1; }
     friend __forceinline bool operator==( const LBBox& a, const LBBox& b ) { return a.bounds0 == b.bounds0 && a.bounds1 == b.bounds1; }
     friend __forceinline bool operator!=( const LBBox& a, const LBBox& b ) { return a.bounds0 != b.bounds0 || a.bounds1 != b.bounds1; }
-    
+
     /*! output operator */
     friend __forceinline embree_ostream operator<<(embree_ostream cout, const LBBox& box) {
       return cout << "LBBox { " << box.bounds0 << "; " << box.bounds1 << " }";
@@ -327,7 +327,7 @@ namespace embree
     __forceinline bool isvalid_non_empty( const LBBox<T>& v ) {
     return isvalid_non_empty(v.bounds0) && isvalid_non_empty(v.bounds1);
   }
-  
+
   template<typename T>
     __forceinline T expectedArea(const T& a0, const T& a1, const T& b0, const T& b1)
   {
@@ -335,8 +335,8 @@ namespace embree
     const T db = b1-b0;
     return a0*b0+(a0*db+da*b0)*T(0.5f) + da*db*T(1.0f/3.0f);
   }
-  
-  template<> __forceinline float LBBox<Vec3fa>::expectedHalfArea() const 
+
+  template<> __forceinline float LBBox<Vec3fa>::expectedHalfArea() const
   {
     const Vec3fa d0 = bounds0.size();
     const Vec3fa d1 = bounds1.size();
@@ -348,7 +348,7 @@ namespace embree
 
   template<typename T>
   __forceinline float expectedApproxHalfArea(const LBBox<T>& box) {
-    return box.expectedApproxHalfArea(); 
+    return box.expectedApproxHalfArea();
   }
 
   template<typename T>

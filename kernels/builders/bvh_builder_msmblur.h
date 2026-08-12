@@ -434,8 +434,9 @@ namespace embree
             if (in.prims.prims)
             {
               const mvector<PrimRefMB>& prims = *in.prims.prims;
-              if (in.prims.begin() > in.prims.end() || in.prims.end() > prims.size())
+              if (in.prims.begin() > in.prims.end() || in.prims.end() > prims.size()) {
                 throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid motion-blur primitive range");
+              }
             }
 
             /* replace already found split by fallback split */

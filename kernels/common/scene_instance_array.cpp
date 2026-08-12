@@ -68,7 +68,7 @@ namespace embree
     Geometry::update();
   }
 
-  void InstanceArray::addElementsToCount (GeometryCounts & counts) const 
+  void InstanceArray::addElementsToCount (GeometryCounts & counts) const
   {
     if (1 == numTimeSteps) {
       counts.numInstanceArrays += numPrimitives;
@@ -79,8 +79,9 @@ namespace embree
 
   AffineSpace3fa InstanceArray::getTransform(size_t i, float time)
   {
-    if (unlikely(i >= numPrimitives))
+    if (unlikely(i >= numPrimitives)) {
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid instance primitive id");
+    }
 
     if (likely(numTimeSteps <= 1))
       return getLocal2World(i);
@@ -192,20 +193,22 @@ namespace embree
 
     if (!object && objects)
     {
-      if (object_ids.size() != numPrimitives)
+      if (object_ids.size() != numPrimitives) {
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "instance index buffer size must match transform buffer size.");
+      }
 
       for (size_t i = 0; i < numPrimitives; ++i)
       {
         const uint32_t id = object_ids[i];
-        if (id != (unsigned int)(-1) && id >= numObjects)
+        if (id != (unsigned int)(-1) && id >= numObjects) {
           throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid instance array object id");
+        }
       }
     }
 
     Geometry::commit();
   }
-  
+
   size_t InstanceArray::getGeometryDataDeviceByteSize() const {
     size_t byte_size = sizeof(InstanceArray);
     byte_size += numObjects * sizeof(Accel*);
@@ -313,7 +316,7 @@ namespace embree
     return delta;
   }
 
-  /* 
+  /*
      This function calculates the correction for the linear bounds
      bbox0/bbox1 to properly bound the motion obtained by linearly
      blending the quaternion transformations and applying the
@@ -322,9 +325,9 @@ namespace embree
      calclated, the the linear bounds get corrected at the extremal
      points. In difference to the previous function the extremal
      points cannot get calculated analytically, thus we fall back to
-     some root solver. 
+     some root solver.
   */
- 
+
   BBox3fa boundSegmentNonlinear(MotionDerivativeCoefficients const& motionDerivCoeffs,
                                 AffineSpace3fa const& xfm0,
                                 AffineSpace3fa const& xfm1,
@@ -386,8 +389,9 @@ namespace embree
       BBox3fa const& bbox0, BBox3fa const& bbox1,
       float tmin, float tmax) const
   {
-    if (unlikely(itime + 1 >= numTimeSteps))
+    if (unlikely(itime + 1 >= numTimeSteps)) {
       return empty;
+    }
 
     if (unlikely(gsubtype == GTY_SUBTYPE_INSTANCE_QUATERNION)) {
       auto const& xfm0 = l2w(i, itime);
@@ -407,8 +411,9 @@ namespace embree
                                      float geom_time_segments) const
   {
     LBBox3fa lbbox = empty;
-    if (!(geom_time_segments > 0.0f) || !(geom_time_range.size() > 0.0f))
+    if (!(geom_time_segments > 0.0f) || !(geom_time_range.size() > 0.0f)) {
       return lbbox;
+    }
 
     /* normalize global time_range_in to local geom_time_range */
     const BBox1f time_range((time_range_in.lower-geom_time_range.lower)/geom_time_range.size(),
@@ -418,22 +423,25 @@ namespace embree
     const float upper = time_range.upper*geom_time_segments;
     const float ilowerf = floor(lower);
     const float iupperf = ceil(upper);
-    if (!(ilowerf == ilowerf) || !(iupperf == iupperf))
+    if (!(ilowerf == ilowerf) || !(iupperf == iupperf)) {
       return lbbox;
+    }
 
     const float ilowerfc = clamp(ilowerf, 0.0f, geom_time_segments);
     const float iupperfc = clamp(iupperf, 0.0f, geom_time_segments);
     const int   ilowerc = (int)ilowerfc;
     const int   iupperc = (int)iupperfc;
-    if (iupperc <= ilowerc)
+    if (iupperc <= ilowerc) {
       return lbbox;
+    }
 
     /* this larger iteration range guarantees that we process borders of geom_time_range is (partially) inside time_range_in */
     const float iter_max = geom_time_segments + 1.0f;
     const int ilower_iter = (int)clamp(ilowerf, -1.0f, iter_max);
     const int iupper_iter = (int)clamp(iupperf, -1.0f, iter_max);
-    if (iupper_iter <= ilower_iter)
+    if (iupper_iter <= ilower_iter) {
       return lbbox;
+    }
 
     if (iupper_iter-ilower_iter == 1)
     {

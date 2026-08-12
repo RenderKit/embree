@@ -26,20 +26,20 @@ namespace embree
       /*! Subgrid creation */
       template<typename Allocator>
         static GridSOA* create(const SubdivPatch1Base* patches, const unsigned time_steps,
-                               unsigned x0, unsigned x1, unsigned y0, unsigned y1, 
+                               unsigned x0, unsigned x1, unsigned y0, unsigned y1,
                                const Scene* scene, Allocator& alloc, BBox3fa* bounds_o = nullptr)
       {
-        const unsigned width = x1-x0+1;  
-        const unsigned height = y1-y0+1; 
+        const unsigned width = x1-x0+1;
+        const unsigned height = y1-y0+1;
         const GridRange range(0,width-1,0,height-1);
         size_t bvhBytes = 0;
-        if (time_steps == 1) 
+        if (time_steps == 1)
           bvhBytes = getBVHBytes(range,sizeof(BVH4::AABBNode),0);
         else {
           bvhBytes = (time_steps-1)*getBVHBytes(range,sizeof(BVH4::AABBNodeMB),0);
           bvhBytes += getTemporalBVHBytes(make_range(0,int(time_steps-1)),sizeof(BVH4::AABBNodeMB4D));
         }
-        const size_t gridBytes = 4*size_t(width)*size_t(height)*sizeof(float);  
+        const size_t gridBytes = 4*size_t(width)*size_t(height)*sizeof(float);
         size_t rootBytes = time_steps*sizeof(BVH4::NodeRef);
 #if !defined(__64BIT__)
         rootBytes += 4; // We read 2 elements behind the grid. As we store at least 8 root bytes after the grid we are fine in 64 bit mode. But in 32 bit mode we have to do additional padding.
@@ -52,7 +52,7 @@ namespace embree
       /*! Grid creation */
       template<typename Allocator>
         static GridSOA* create(const SubdivPatch1Base* const patches, const unsigned time_steps,
-                               const Scene* scene, const Allocator& alloc, BBox3fa* bounds_o = nullptr) 
+                               const Scene* scene, const Allocator& alloc, BBox3fa* bounds_o = nullptr)
       {
         return create(patches,time_steps,0,patches->grid_u_res-1,0,patches->grid_v_res-1,scene,alloc,bounds_o);
       }
@@ -68,7 +68,7 @@ namespace embree
       /*! returns pointer to Grid array */
       __forceinline       float* gridData(size_t t = 0)       { return (float*) &data[gridOffset + t*gridBytes]; }
       __forceinline const float* gridData(size_t t = 0) const { return (float*) &data[gridOffset + t*gridBytes]; }
-      
+
       __forceinline void* encodeLeaf(size_t u, size_t v) {
         return (void*) (16*(v * width + u + 1)); // +1 to not create empty leaf
       }
@@ -78,8 +78,9 @@ namespace embree
       }
 
       __forceinline float* decodeLeaf(size_t t, const void* ptr) {
-        if (unlikely(!validEncodedLeaf(ptr)))
+        if (unlikely(!validEncodedLeaf(ptr))) {
           return nullptr;
+        }
         return gridData(t) + (((size_t) (ptr) >> 4) - 1);
       }
 
@@ -96,10 +97,10 @@ namespace embree
         const float* const grid_x_array = grid_array + 0 * dim_offset;
         const float* const grid_y_array = grid_array + 1 * dim_offset;
         const float* const grid_z_array = grid_array + 2 * dim_offset;
-        
+
         /* compute the bounds just for the range! */
         BBox3fa bounds( empty );
-        for (unsigned v = range.v_start; v<=range.v_end; v++) 
+        for (unsigned v = range.v_start; v<=range.v_end; v++)
         {
           for (unsigned u = range.u_start; u<=range.u_end; u++)
           {
@@ -115,13 +116,13 @@ namespace embree
 
       /*! Evaluates grid over patch and builds BVH4 tree over the grid. */
       std::pair<BVH4::NodeRef,BBox3fa> buildBVH(BBox3fa* bounds_o);
-      
+
       /*! Create BVH4 tree over grid. */
       std::pair<BVH4::NodeRef,BBox3fa> buildBVH(const GridRange& range, size_t& allocator);
 
       /*! Evaluates grid over patch and builds MSMBlur BVH4 tree over the grid. */
       std::pair<BVH4::NodeRef,LBBox3fa> buildMSMBlurBVH(const range<int> time_range, BBox3fa* bounds_o);
-      
+
       /*! Create MBlur BVH4 tree over grid. */
       std::pair<BVH4::NodeRef,LBBox3fa> buildMBlurBVH(size_t time, const GridRange& range, size_t& allocator);
 
@@ -140,12 +141,12 @@ namespace embree
           : grid_uv(grid_uv), line_offset(line_offset), lines(lines) {}
 
         __forceinline void operator() (vfloat& u, vfloat& v, Vec3<vfloat>& Ng) const {
-          const Vec3<vfloat> tri_v012_uv = Loader::gather(grid_uv,line_offset,lines);	
+          const Vec3<vfloat> tri_v012_uv = Loader::gather(grid_uv,line_offset,lines);
           const Vec2<vfloat> uv0 = GridSOA::decodeUV(tri_v012_uv[0]);
           const Vec2<vfloat> uv1 = GridSOA::decodeUV(tri_v012_uv[1]);
-          const Vec2<vfloat> uv2 = GridSOA::decodeUV(tri_v012_uv[2]);        
-          const Vec2<vfloat> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;        
-          u = uv[0];v = uv[1]; 
+          const Vec2<vfloat> uv2 = GridSOA::decodeUV(tri_v012_uv[2]);
+          const Vec2<vfloat> uv = u * uv1 + v * uv2 + (1.0f-u-v) * uv0;
+          u = uv[0];v = uv[1];
         }
       };
 
@@ -155,7 +156,7 @@ namespace embree
         typedef vbool4 vbool;
         typedef vint4 vint;
         typedef vfloat4 vfloat;
-        
+
         static __forceinline const Vec3vf4 gather(const float* const grid, const size_t line_offset, const size_t lines)
         {
           vfloat4 r0 = vfloat4::loadu(grid + 0*line_offset);
@@ -170,9 +171,9 @@ namespace embree
                          shuffle<0,1,1,2>(r1)); // r10, r11, r11, r12
         }
 
-        static __forceinline void gather(const float* const grid_x, 
-                                         const float* const grid_y, 
-                                         const float* const grid_z, 
+        static __forceinline void gather(const float* const grid_x,
+                                         const float* const grid_y,
+                                         const float* const grid_z,
                                          const size_t line_offset,
                                          const size_t lines,
                                          Vec3vf4& v0_o,
@@ -187,7 +188,7 @@ namespace embree
           v2_o = Vec3vf4(tri_v012_x[2],tri_v012_y[2],tri_v012_z[2]);
         }
       };
-      
+
 #if defined (__AVX__)
       struct Gather3x3
       {
@@ -195,15 +196,15 @@ namespace embree
         typedef vbool8 vbool;
         typedef vint8 vint;
         typedef vfloat8 vfloat;
-        
+
         static __forceinline const Vec3vf8 gather(const float* const grid, const size_t line_offset, const size_t lines)
         {
           vfloat4 ra = vfloat4::loadu(grid + 0*line_offset);
           vfloat4 rb = vfloat4::loadu(grid + 1*line_offset); // this accesses 2 elements too much in case of 2x2 grid, but this is ok as we ensure enough padding after the grid
           vfloat4 rc;
-          if (likely(lines > 2)) 
+          if (likely(lines > 2))
             rc = vfloat4::loadu(grid + 2*line_offset);
-          else                   
+          else
             rc = rb;
 
           if (unlikely(line_offset == 2))
@@ -212,7 +213,7 @@ namespace embree
             rb = shuffle<0,1,1,1>(rb);
             rc = shuffle<0,1,1,1>(rc);
           }
-          
+
           const vfloat8 r0 = vfloat8(ra,rb);
           const vfloat8 r1 = vfloat8(rb,rc);
           return Vec3vf8(unpacklo(r0,r1),         // r00, r10, r01, r11, r10, r20, r11, r21
@@ -220,9 +221,9 @@ namespace embree
                          shuffle<0,1,1,2>(r1));   // r10, r11, r11, r12, r20, r21, r21, r22
         }
 
-        static __forceinline void gather(const float* const grid_x, 
-                                         const float* const grid_y, 
-                                         const float* const grid_z, 
+        static __forceinline void gather(const float* const grid_x,
+                                         const float* const grid_y,
+                                         const float* const grid_z,
                                          const size_t line_offset,
                                          const size_t lines,
                                          Vec3vf8& v0_o,
@@ -249,14 +250,14 @@ namespace embree
 	const vfloat v = toFloat(iv) * vfloat(8.0f/0x10000);
 	return Vec2<vfloat>(u,v);
       }
-      
+
       __forceinline unsigned int geomID() const  {
         return _geomID;
-      } 
-      
+      }
+
       __forceinline unsigned int primID() const  {
         return _primID;
-      } 
+      }
 
     public:
       BVH4::NodeRef troot;

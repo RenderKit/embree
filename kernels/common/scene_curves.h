@@ -499,7 +499,7 @@ namespace embree
     {
       const size_t index = size_t(curve(i));
       const size_t vertices = numVertices();
-      if (index > vertices || vertices - index < 4) return false;
+      if (index > vertices || vertices - index < 4) { return false; }
       
       for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
       {
