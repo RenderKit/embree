@@ -783,12 +783,8 @@ namespace embree
 
   void SubdivMesh::commit ()
   {
-    /* guard against OOB in half-edge init: face-vertex sum must equal index buffer count */
-    size_t indexSum = 0;
-    for (size_t i = 0; i < numFaces(); ++i) {
-      indexSum += faceVertices[i];
-    }
-    if (indexSum != numEdges()) {
+    /* guard against OOB in half-edge init: index buffer must be consistent with face/vertex counts */
+    if (!topology[0].verify(numVertices())) {
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid subdivision mesh topology");
     }
 
