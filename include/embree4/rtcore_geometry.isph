@@ -72,6 +72,7 @@ enum RTCCurveFlags
 struct RTCBoundsFunctionArguments
 {
   void* uniform geometryUserPtr;
+  void* uniform boundsUserPtr;
   uniform unsigned int primID;
   uniform unsigned int timeStep;
   uniform RTCBounds* uniform bounds_o;
