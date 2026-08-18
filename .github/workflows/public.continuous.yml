@@ -15,6 +15,59 @@ concurrency:
 permissions: read-all
 
 jobs:
+  clang-tidy:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:24.04
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install packages (ubuntu 24.04)
+        run: |
+          apt-get update
+          apt-get -y install clang-tidy cmake ninja-build
+
+      - name: Configure compilation database
+        run: |
+          cmake -S . -B build-tidy -G Ninja \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DEMBREE_TASKING_SYSTEM=INTERNAL \
+            -DEMBREE_TUTORIALS=OFF \
+            -DBUILD_TESTING=OFF \
+            -DEMBREE_ISPC_SUPPORT=OFF
+
+      - name: Run clang-tidy on PR changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          source_patterns=(':(glob)**/*.c' ':(glob)**/*.cc' ':(glob)**/*.cpp' ':(glob)**/*.cxx')
+          header_patterns=(':(glob)**/*.h' ':(glob)**/*.hh' ':(glob)**/*.hpp' ':(glob)**/*.hxx')
+
+          if ! git diff --quiet "$BASE_SHA" "$HEAD_SHA" -- "${header_patterns[@]}"; then
+            mapfile -t files < <(
+              sed -n 's|.*"file": "\([^"]*\)".*|\1|p' build-tidy/compile_commands.json |
+                sort -u
+            )
+          else
+            mapfile -d '' -t files < <(
+              git diff --name-only -z --diff-filter=ACMR "$BASE_SHA" "$HEAD_SHA" -- "${source_patterns[@]}"
+            )
+          fi
+
+          if ((${#files[@]})); then
+            clang-tidy -p build-tidy -header-filter='^(common|kernels|include)/' "${files[@]}"
+          fi
+
   rocky-8:
     runs-on: ubuntu-latest
     container:
