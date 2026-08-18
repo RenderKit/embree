@@ -37,7 +37,7 @@ namespace embree
 
     __forceinline vllong(const __m256i& t) { v = t; }
     __forceinline operator __m256i() const { return v; }
-    __forceinline operator __m256d() const { return _mm256_castsi256_pd(v); }
+    __forceinline explicit operator __m256d() const { return _mm256_castsi256_pd(v); }
 
 
     __forceinline vllong(long long i) {
@@ -91,7 +91,7 @@ namespace embree
 #if defined(__AVX512VL__)
       _mm256_mask_storeu_epi64(ptr,mask,f);
 #else
-      _mm256_maskstore_pd((double*)ptr,mask,_mm256_castsi256_pd(f));
+      _mm256_maskstore_pd((double*)ptr,(__m256i)mask,_mm256_castsi256_pd(f));
 #endif
     }
 
@@ -99,7 +99,7 @@ namespace embree
 #if defined(__AVX512VL__)
       _mm256_mask_store_epi64(ptr,mask,f);
 #else
-      _mm256_maskstore_pd((double*)ptr,mask,_mm256_castsi256_pd(f));
+      _mm256_maskstore_pd((double*)ptr,(__m256i)mask,_mm256_castsi256_pd(f));
 #endif
     }
 

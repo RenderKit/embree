@@ -651,8 +651,8 @@ namespace embree
     pL = lerp(aL,bL,vfloat8(ftime));
     pR = lerp(aR,bR,vfloat8(ftime));
     
-    pL = select(vboolf4(leftExists), pL, Vec4vf8(inf));
-    pR = select(vboolf4(rightExists), pR, Vec4vf8(inf));
+    pL = select(vboolf8(leftExists), pL, Vec4vf8(inf));
+    pR = select(vboolf8(rightExists), pR, Vec4vf8(inf));
   }
 
   template<>

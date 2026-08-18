@@ -1,7 +1,7 @@
 // Copyright 2009-2020 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#if !defined(__ARM_NEON)
+#if !defined(__ARM_NEON) && !defined(_M_ARM64)
 #error "No ARM Neon support"
 #endif
 

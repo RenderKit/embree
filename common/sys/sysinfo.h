@@ -60,7 +60,7 @@
 #  define isa sse
 #  define ISA SSE
 #  define ISA_STR "SSE"
-#elif defined(__ARM_NEON)
+#elif defined(__ARM_NEON) || defined(EMBREE_ARM64)
 // NOTE(LTE): Use sse2 for `isa` for the compatibility at the moment.
 #define isa sse2
 #define ISA NEON

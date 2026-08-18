@@ -24,7 +24,7 @@ namespace embree
     {
       const vint<N> dist_shift = align_shift_right<N-1>(dist,dist);
       const vboolf<N> m_geq = d >= dist;
-      const vboolf<N> m_geq_shift = m_geq << 1;
+      const vboolf<N> m_geq_shift = m_geq.v << 1;
       dist = select(m_geq,d,dist);
       dist = select(m_geq_shift,dist_shift,dist);
     }

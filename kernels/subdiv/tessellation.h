@@ -126,8 +126,8 @@ namespace embree
       for (unsigned int x=0;x<grid_u_res;x+=8, u_i += 8)
       {
         const vbool8 m_u = u_i < grid_u_segments;
-	const vfloat8 u = select(m_u, vfloat8(x0+u_i) * inv_grid_u_segments, 1.0f);
-	const vfloat8 v = select(m_v, vfloat8(y0+v_i) * inv_grid_v_segments, 1.0f);
+	const vfloat8 u = select(m_u, vfloat8((x0+u_i)) * inv_grid_u_segments, 1.0f);
+	const vfloat8 v = select(m_v, vfloat8((y0+v_i)) * inv_grid_v_segments, 1.0f);
 	vfloat8::storeu(&u_array[index + x],u);
 	vfloat8::storeu(&v_array[index + x],v);	   
       }
