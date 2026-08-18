@@ -39,8 +39,8 @@ namespace embree
     __forceinline vboold(__m256d a) : v(a) {}
     __forceinline vboold(__m256i a) : v(_mm256_castsi256_pd(a)) {}
 
-    __forceinline operator const __m256() const { return _mm256_castpd_ps(v); }
-    __forceinline operator const __m256i() const { return _mm256_castpd_si256(v); }
+    __forceinline explicit operator const __m256() const { return _mm256_castpd_ps(v); }
+    __forceinline explicit operator const __m256i() const { return _mm256_castpd_si256(v); }
     __forceinline operator const __m256d() const { return v; }
 
     __forceinline vboold(int a)
@@ -62,7 +62,7 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     __forceinline vboold(FalseTy) : v(_mm256_setzero_pd()) {}
-#if !defined(__aarch64__)
+#if !defined(EMBREE_ARM64)
     __forceinline vboold(TrueTy)  : v(_mm256_cmp_pd(_mm256_setzero_pd(), _mm256_setzero_pd(), _CMP_EQ_OQ)) {}
 #else
     __forceinline vboold(TrueTy)  : v(_mm256_cmpeq_pd(_mm256_setzero_pd(), _mm256_setzero_pd())) {}
@@ -111,7 +111,7 @@ namespace embree
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-#if !defined(__aarch64__)
+#if !defined(EMBREE_ARM64)
   __forceinline vboold4 unpacklo(const vboold4& a, const vboold4& b) { return _mm256_unpacklo_pd(a, b); }
   __forceinline vboold4 unpackhi(const vboold4& a, const vboold4& b) { return _mm256_unpackhi_pd(a, b); }
 #endif

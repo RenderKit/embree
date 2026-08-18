@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "arm/simd_wrapper_types.h"
+
 #define vboolf vboolf_impl
 #define vboold vboold_impl
 #define vint vint_impl
@@ -23,8 +25,8 @@ namespace embree
     typedef vint4   Int;
     typedef vfloat4 Float;
 
-    enum  { size = 4 };            // number of SIMD elements
-    union { __m128 v; int i[4]; }; // data
+    enum  { size = 4 };                       // number of SIMD elements
+    union { __m128_wrapper v; int i[4]; };     // data
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constructors, Assignment & Cast Operators
@@ -35,10 +37,10 @@ namespace embree
     __forceinline vboolf4& operator =(const vboolf4& other) { v = other.v; return *this; }
 
     __forceinline vboolf(__m128 input) : v(input) {}
-    __forceinline operator const __m128&() const { return v; }
+    __forceinline operator const __m128&() const { return v.data; }
     #if !defined(__EMSCRIPTEN__)
-    __forceinline operator const __m128i() const { return _mm_castps_si128(v); }
-    __forceinline operator const __m128d() const { return _mm_castps_pd(v); }
+    __forceinline const __m128i m128i() const { return _mm_castps_si128(v.data); }
+    __forceinline const __m128d m128d() const { return _mm_castps_pd(v.data); }
     #endif
 
     __forceinline vboolf(bool a)
@@ -99,10 +101,10 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
   
   __forceinline vboolf4 operator !=(const vboolf4& a, const vboolf4& b) { return _mm_xor_ps(a, b); }
-  __forceinline vboolf4 operator ==(const vboolf4& a, const vboolf4& b) { return _mm_castsi128_ps(_mm_cmpeq_epi32(a, b)); }
+  __forceinline vboolf4 operator ==(const vboolf4& a, const vboolf4& b) { return _mm_castsi128_ps(_mm_cmpeq_epi32(a.m128i(), b.m128i())); }
   
   __forceinline vboolf4 select(const vboolf4& m, const vboolf4& t, const vboolf4& f) {
-#if defined(__aarch64__) || defined(__SSE4_1__)
+#if defined(EMBREE_ARM64) || defined(__SSE4_1__)
     return _mm_blendv_ps(f, t, m); 
 #else
     return _mm_or_ps(_mm_and_ps(m, t), _mm_andnot_ps(m, f)); 
@@ -116,20 +118,33 @@ namespace embree
   __forceinline vboolf4 unpacklo(const vboolf4& a, const vboolf4& b) { return _mm_unpacklo_ps(a, b); }
   __forceinline vboolf4 unpackhi(const vboolf4& a, const vboolf4& b) { return _mm_unpackhi_ps(a, b); }
 
-#if defined(__aarch64__)
+#if defined(EMBREE_ARM64)
   template<int i0, int i1, int i2, int i3>
   __forceinline vboolf4 shuffle(const vboolf4& v) {
+#if !defined(_M_ARM64)
     return vreinterpretq_f32_u8(vqtbl1q_u8( vreinterpretq_u8_s32((int32x4_t)v.v), _MN_SHUFFLE(i0, i1, i2, i3)));
+#else
+    // Avoids C4576 (no mixing C+CPP syntax), and C4002 (comma inside macro invocation)
+    uint8x16_t _shuffle = _MN_SHUFFLE(i0, i1, i2, i3);
+    return vreinterpretq_f32_u8(vqtbl1q_u8( vreinterpretq_u8_s32(v.v), _shuffle));
+#endif
   }
 
   template<int i0, int i1, int i2, int i3>
   __forceinline vboolf4 shuffle(const vboolf4& a, const vboolf4& b) {
+#if !defined(_M_ARM64)
     return vreinterpretq_f32_u8(vqtbl2q_u8( (uint8x16x2_t){(uint8x16_t)a.v, (uint8x16_t)b.v}, _MF_SHUFFLE(i0, i1, i2, i3)));
+#else
+    // Avoids C4576 (no mixing C+CPP syntax), and C4002 (comma inside macro invocation)
+    uint8x16x2_t _ab = {(uint8x16_t)a.v, (uint8x16_t)b.v};
+    uint8x16_t _shuffle = _MF_SHUFFLE(i0, i1, i2, i3);
+    return vreinterpretq_f32_u8(vqtbl2q_u8(_ab, _shuffle));
+#endif
   }
 #else
   template<int i0, int i1, int i2, int i3>
   __forceinline vboolf4 shuffle(const vboolf4& v) {
-    return _mm_castsi128_ps(_mm_shuffle_epi32(v, _MM_SHUFFLE(i3, i2, i1, i0)));
+    return _mm_castsi128_ps(_mm_shuffle_epi32(v.m128i(), _MM_SHUFFLE(i3, i2, i1, i0)));
   }
 
   template<int i0, int i1, int i2, int i3>
@@ -146,10 +161,10 @@ namespace embree
 #if defined(__SSE3__)
   template<> __forceinline vboolf4 shuffle<0, 0, 2, 2>(const vboolf4& v) { return _mm_moveldup_ps(v); }
   template<> __forceinline vboolf4 shuffle<1, 1, 3, 3>(const vboolf4& v) { return _mm_movehdup_ps(v); }
-  template<> __forceinline vboolf4 shuffle<0, 1, 0, 1>(const vboolf4& v) { return _mm_castpd_ps(_mm_movedup_pd(v)); }
+  template<> __forceinline vboolf4 shuffle<0, 1, 0, 1>(const vboolf4& v) { return _mm_castpd_ps(_mm_movedup_pd(v.m128d())); }
 #endif
 
-#if defined(__SSE4_1__) && !defined(__aarch64__)
+#if defined(__SSE4_1__) && !defined(EMBREE_ARM64)
   template<int dst, int src, int clr> __forceinline vboolf4 insert(const vboolf4& a, const vboolf4& b) { return _mm_insert_ps(a, b, (dst << 4) | (src << 6) | clr); }
   template<int dst, int src> __forceinline vboolf4 insert(const vboolf4& a, const vboolf4& b) { return insert<dst, src, 0>(a, b); }
   template<int dst> __forceinline vboolf4 insert(const vboolf4& a, const bool b) { return insert<dst, 0>(a, vboolf4(b)); }
