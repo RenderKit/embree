@@ -176,7 +176,6 @@ namespace embree
   {
     ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
     ze_device_handle_t  hDevice  = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
-    sycl::platform platform = device.get_platform();
 
     ze_rtas_device_ext_properties_t rtasProp = { ZE_STRUCTURE_TYPE_RTAS_DEVICE_EXT_PROPERTIES };
     ze_device_properties_t devProp = { ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES, &rtasProp };
