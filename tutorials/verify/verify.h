@@ -73,8 +73,8 @@ namespace embree
     {
     public:
       const std::string unit;
-      Benchmark (const std::string& name, int64_t isa, const std::string& unit, bool higher_is_better, size_t max_attempts)
-        : Test(name,isa,BENCHMARK,false), unit(unit), numThreads(getNumberOfLogicalThreads()), higher_is_better(higher_is_better), max_attempts(max_attempts) {}
+      Benchmark (std::string name, int64_t isa, std::string unit, bool higher_is_better, size_t max_attempts)
+        : Test(std::move(name),isa,BENCHMARK,false), unit(std::move(unit)), numThreads(getNumberOfLogicalThreads()), higher_is_better(higher_is_better), max_attempts(max_attempts) {}
       
       virtual size_t setNumPrimitives(size_t N) { return 0; }
       virtual void setNumThreads(size_t N) 
@@ -100,14 +100,14 @@ namespace embree
     struct TestGroup : public Test
     {
       TestGroup (std::string name, bool silent, bool parallel, bool enabled = true)
-        : Test(name,0,TEST_GROUP,enabled), silent(silent), parallel(parallel) {}
+        : Test(std::move(name),0,TEST_GROUP,enabled), silent(silent), parallel(parallel) {}
 
     public:
-      void add(Ref<Test> test) {
+      void add(const Ref<Test>& test) {
         tests.push_back(test);
       }
 
-      std::string extend_prefix(std::string prefix) const {
+      std::string extend_prefix(const std::string& prefix) const {
         return (name != "") ? prefix + name + "." : prefix;
       }
       
@@ -133,16 +133,16 @@ namespace embree
   public:
 
     VerifyApplication ();
-    void prefix_test_names(Ref<Test> test, std::string prefix = "");
+    void prefix_test_names(Ref<Test> test, const std::string& prefix = "");
     bool update_tests(Ref<Test> test);
     void print_tests(Ref<Test> test, size_t depth);
     void print_ctests(Ref<Test> test, size_t depth);
     template<typename Function> 
       void map_tests(Ref<Test> test, const Function& f);
-    void enable_disable_all_tests(Ref<Test> test, bool enabled);
-    size_t enable_disable_some_tests(Ref<Test> test, std::string regex, bool enabled);
+    void enable_disable_all_tests(const Ref<Test>& test, bool enabled);
+    size_t enable_disable_some_tests(const Ref<Test>& test, std::string regex, bool enabled);
      template<typename Closure>
-       void plot(std::vector<Ref<Benchmark>> benchmarks, const FileName outFileName, std::string xlabel, size_t startN, size_t endN, float f, size_t dn, const Closure& test);
+       void plot(std::vector<Ref<Benchmark>> benchmarks, const FileName& outFileName, const std::string& xlabel, size_t startN, size_t endN, float f, size_t dn, const Closure& test);
     FileName parse_benchmark_list(Ref<ParseStream> cin, std::vector<Ref<Benchmark>>& benchmarks);
     int main(int argc, char** argv);
     

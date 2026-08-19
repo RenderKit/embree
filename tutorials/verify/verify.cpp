@@ -51,7 +51,7 @@ namespace embree
     return (cpu_features & isa) == isa;
   }
 
-  bool regex_match(std::string str, std::string regex)
+  bool regex_match(const std::string& str, const std::string& regex)
   {
 #if (defined(__INTEL_COMPILER) && (__INTEL_COMPILER < 1600)) // works around __ZTVNSt3__123__match_any_but_newlineIcEE link error
     return str == regex; 
@@ -5714,7 +5714,7 @@ namespace embree
   struct SimpleBenchmark : public VerifyApplication::Benchmark
   {
     SimpleBenchmark (std::string name, int64_t isa)
-      : VerifyApplication::Benchmark(name,isa,"1/s",true,10) {}
+      : VerifyApplication::Benchmark(std::move(name),isa,"1/s",true,10) {}
     
     float benchmark(VerifyApplication* state)
     {
@@ -5730,7 +5730,7 @@ namespace embree
     unsigned int N, dN;
     
     ParallelIntersectBenchmark (std::string name, int64_t isa, unsigned int N, unsigned int dN)
-      : VerifyApplication::Benchmark(name,isa,"Mrps",true,10), N(N), dN(dN) {}
+      : VerifyApplication::Benchmark(std::move(name),isa,"Mrps",true,10), N(N), dN(dN) {}
 
     bool setup(VerifyApplication* state) 
     {
@@ -6076,7 +6076,7 @@ namespace embree
     std::vector<Ref<SceneGraph::Node>> geometries;
     
     CreateGeometryBenchmark (std::string name, int64_t isa, GeometryType gtype, SceneFlags sflags, RTCBuildQuality quality, size_t numPhi, size_t numMeshes, bool update, bool dobenchmark)
-      : VerifyApplication::Benchmark(name,isa,dobenchmark ? "Mprims/s" : "MB",dobenchmark,dobenchmark?10:1), gtype(gtype), sflags(sflags), quality(quality), 
+      : VerifyApplication::Benchmark(std::move(name),isa,dobenchmark ? "Mprims/s" : "MB",dobenchmark,dobenchmark?10:1), gtype(gtype), sflags(sflags), quality(quality), 
         numPhi(numPhi), numMeshes(numMeshes), update(update), dobenchmark(dobenchmark),
         numPrimitives(0), device(nullptr), scene(nullptr) {}
 
@@ -6882,27 +6882,27 @@ namespace embree
       }, "--skip-before <regexpr>: Skips all tests before the first test matching the regular expression.");
     registerOptionAlias("skip-before","disable-before");
 
-    registerOption("flatten", [this] (Ref<ParseStream> cin, const FileName& path) {
+    registerOption("flatten", [this] (const Ref<ParseStream>& cin, const FileName& path) {
         flatten = false;
       }, "--flatten: shows all leaf test names when executing tests");
     
-    registerOption("sequential", [this] (Ref<ParseStream> cin, const FileName& path) {
+    registerOption("sequential", [this] (const Ref<ParseStream>& cin, const FileName& path) {
         parallel = false;
       }, "--sequential: execute all tests sequentially");
 
-    registerOption("parallel", [this] (Ref<ParseStream> cin, const FileName& path) {
+    registerOption("parallel", [this] (const Ref<ParseStream>& cin, const FileName& path) {
         parallel = true;
       }, "--parallel: parallelized test execution (default)");
 
-    registerOption("colors", [this] (Ref<ParseStream> cin, const FileName& path) {
+    registerOption("colors", [this] (const Ref<ParseStream>& cin, const FileName& path) {
         usecolors = true;
       }, "--colors: do use shell colors");
 
-    registerOption("no-colors", [this] (Ref<ParseStream> cin, const FileName& path) {
+    registerOption("no-colors", [this] (const Ref<ParseStream>& cin, const FileName& path) {
         usecolors = false;
       }, "--no-colors: do not use shell colors");
 
-    registerOption("cdash", [this] (Ref<ParseStream> cin, const FileName& path) {
+    registerOption("cdash", [this] (const Ref<ParseStream>& cin, const FileName& path) {
         cdash = true;
       }, "--cdash: prints cdash measurements");
 
@@ -6921,13 +6921,13 @@ namespace embree
       }, "--benchmark-tolerance: maximum relative slowdown to let a test pass");
     registerOptionAlias("benchmark-tolerance","tolerance");
 
-    registerOption("print-tests", [this] (Ref<ParseStream> cin, const FileName& path) {
+    registerOption("print-tests", [this] (const Ref<ParseStream>& cin, const FileName& path) {
         print_tests(tests,0);
         exit(1);
       }, "--print-tests: prints all enabled test names");
     registerOptionAlias("print-tests","print-names");
 
-    registerOption("print-ctests", [this] (Ref<ParseStream> cin, const FileName& path) {
+    registerOption("print-ctests", [this] (const Ref<ParseStream>& cin, const FileName& path) {
         print_ctests(tests,0);
         exit(1);
       }, "--print-ctests: prints all test in a form to add to CMakeLists.txt");
@@ -6938,7 +6938,7 @@ namespace embree
 
     registerOption("plot-over-primitives", [this] (Ref<ParseStream> cin, const FileName& path) {
         std::vector<Ref<Benchmark>> benchmarks;
-        FileName outFileName = parse_benchmark_list(cin,benchmarks);
+        FileName outFileName = parse_benchmark_list(std::move(cin),benchmarks);
         plot(benchmarks,outFileName,"#primitives",1000,1100000,1.2f,0,[&] (Ref<Benchmark> benchmark, size_t& N) {
             N = benchmark->setNumPrimitives(N);
             benchmark->setup(this);
@@ -6951,7 +6951,7 @@ namespace embree
 
     registerOption("plot-over-threads", [this] (Ref<ParseStream> cin, const FileName& path) {
         std::vector<Ref<Benchmark>> benchmarks;
-        FileName outFileName = parse_benchmark_list(cin,benchmarks);
+        FileName outFileName = parse_benchmark_list(std::move(cin),benchmarks);
         plot(benchmarks,outFileName,"#threads",2,getNumberOfLogicalThreads(),1.0f,2,[&] (Ref<Benchmark> benchmark, size_t N) {
             benchmark->setNumThreads(N);
             benchmark->setup(this);
@@ -6968,7 +6968,7 @@ namespace embree
 #endif
   }
 
-  void VerifyApplication::prefix_test_names(Ref<Test> test, std::string prefix)
+  void VerifyApplication::prefix_test_names(Ref<Test> test, const std::string& prefix)
   {
     if (Ref<TestGroup> group = test.dynamicCast<TestGroup>()) 
       for (auto& t : group->tests) 
@@ -7048,13 +7048,13 @@ namespace embree
     }
   }
 
-  void VerifyApplication::enable_disable_all_tests(Ref<Test> test, bool enabled)
+  void VerifyApplication::enable_disable_all_tests(const Ref<Test>& test, bool enabled)
   {
     map_tests(test, [&] (Ref<Test> test) { test->enabled = enabled; });
     update_tests(test);
   }
 
-  size_t VerifyApplication::enable_disable_some_tests(Ref<Test> test, std::string regex, bool enabled)
+  size_t VerifyApplication::enable_disable_some_tests(const Ref<Test>& test, std::string regex, bool enabled)
   {
     size_t N = 0;
     map_tests(test, [&] (Ref<Test> test) { 
@@ -7068,7 +7068,7 @@ namespace embree
   }
 
   template<typename Closure>
-  void VerifyApplication::plot(std::vector<Ref<Benchmark>> benchmarks, const FileName outFileName, std::string xlabel, size_t startN, size_t endN, float f, size_t dn, const Closure& test)
+  void VerifyApplication::plot(std::vector<Ref<Benchmark>> benchmarks, const FileName& outFileName, const std::string& xlabel, size_t startN, size_t endN, float f, size_t dn, const Closure& test)
   {
     std::fstream plot;
     plot.open(outFileName, std::fstream::out | std::fstream::trunc);
