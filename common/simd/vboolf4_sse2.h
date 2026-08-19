@@ -26,7 +26,17 @@ namespace embree
     typedef vfloat4 Float;
 
     enum  { size = 4 };                       // number of SIMD elements
+    // The __m128_wrapper indirection is only required to work around an
+    // MSVC/ARM64 overload-ambiguity issue (__m128 and __m128i both alias
+    // __n128 there). On all other platforms we keep the plain __m128 union
+    // member, which is what x86 and non-MSVC ARM64 builds have always used
+    // (see simd_wrapper_types.h); wrapping it unconditionally previously
+    // caused miscompiles/segfaults with some optimizing compilers (e.g. ICX).
+#if defined(_MSC_VER) && defined(_M_ARM64)
     union { __m128_wrapper v; int i[4]; };     // data
+#else
+    union { __m128 v; int i[4]; };             // data
+#endif
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constructors, Assignment & Cast Operators
@@ -37,11 +47,22 @@ namespace embree
     __forceinline vboolf4& operator =(const vboolf4& other) { v = other.v; return *this; }
 
     __forceinline vboolf(__m128 input) : v(input) {}
+#if defined(_MSC_VER) && defined(_M_ARM64)
     __forceinline operator const __m128&() const { return v.data; }
     #if !defined(__EMSCRIPTEN__)
     __forceinline const __m128i m128i() const { return _mm_castps_si128(v.data); }
     __forceinline const __m128d m128d() const { return _mm_castps_pd(v.data); }
     #endif
+#else
+    __forceinline operator const __m128&() const { return v; }
+    #if !defined(__EMSCRIPTEN__)
+    __forceinline operator const __m128i() const { return _mm_castps_si128(v); }
+    __forceinline operator const __m128d() const { return _mm_castps_pd(v); }
+    /* kept for source compatibility with code that calls .m128i()/.m128d() explicitly */
+    __forceinline const __m128i m128i() const { return _mm_castps_si128(v); }
+    __forceinline const __m128d m128d() const { return _mm_castps_pd(v); }
+    #endif
+#endif
 
     __forceinline vboolf(bool a)
       : v(mm_lookupmask_ps[(size_t(a) << 3) | (size_t(a) << 2) | (size_t(a) << 1) | size_t(a)]) {}
