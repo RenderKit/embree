@@ -46,7 +46,7 @@ namespace embree
 #define SELECT_SYMBOL_DEFAULT(features,intersector) \
   intersector = isa::intersector;
 
-#if defined(__SSE__) || defined(__ARM_NEON)
+#if defined(__SSE__) || defined(__ARM_NEON) || defined(EMBREE_ARM64)
 #if !defined(EMBREE_TARGET_SIMD4)
 #define EMBREE_TARGET_SIMD4
 #endif

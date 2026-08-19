@@ -37,7 +37,7 @@ namespace embree
 
     __forceinline vllong(const __m512i& t) { v = t; }
     __forceinline operator __m512i() const { return v; }
-    __forceinline operator __m256i() const { return _mm512_castsi512_si256(v); }
+    __forceinline explicit operator __m256i() const { return _mm512_castsi512_si256(v); }
 
     __forceinline vllong(long long i) {
       v = _mm512_set1_epi64(i);

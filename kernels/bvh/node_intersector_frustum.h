@@ -75,7 +75,7 @@ namespace embree
         min_rdir = select(pos_rdir, reduced_min_rdir, reduced_max_rdir);
         max_rdir = select(pos_rdir, reduced_max_rdir, reduced_min_rdir);
 
-#if defined (__aarch64__)
+#if defined (__aarch64__) || defined(_M_ARM64)
         neg_min_org_rdir = -(min_rdir * select(pos_rdir, reduced_max_org, reduced_min_org));
         neg_max_org_rdir = -(max_rdir * select(pos_rdir, reduced_min_org, reduced_max_org));
 #else
@@ -99,7 +99,7 @@ namespace embree
       Vec3fa min_rdir;
       Vec3fa max_rdir;
 
-#if defined (__aarch64__)
+#if defined (__aarch64__) || defined(_M_ARM64)
       Vec3fa neg_min_org_rdir;
       Vec3fa neg_max_org_rdir;
 #else
@@ -199,7 +199,7 @@ namespace embree
       const vfloat<N> bmaxY = *(const vfloat<N>*)((const char*)&node->lower_x + frustum.nf.farY);
       const vfloat<N> bmaxZ = *(const vfloat<N>*)((const char*)&node->lower_x + frustum.nf.farZ);
 
-#if defined (__aarch64__)
+#if defined (__aarch64__) || defined(_M_ARM64)
       const vfloat<N> fminX = madd(bminX, vfloat<N>(frustum.min_rdir.x), vfloat<N>(frustum.neg_min_org_rdir.x));
       const vfloat<N> fminY = madd(bminY, vfloat<N>(frustum.min_rdir.y), vfloat<N>(frustum.neg_min_org_rdir.y));
       const vfloat<N> fminZ = madd(bminZ, vfloat<N>(frustum.min_rdir.z), vfloat<N>(frustum.neg_min_org_rdir.z));

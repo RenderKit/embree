@@ -1,12 +1,19 @@
 ## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
-SET(FLAGS_SSE2  "/D__SSE__ /D__SSE2__")
-SET(FLAGS_SSE42 "${FLAGS_SSE2} /D__SSE3__ /D__SSSE3__ /D__SSE4_1__ /D__SSE4_2__")
-SET(FLAGS_AVX   "${FLAGS_SSE42} /arch:AVX")
-SET(FLAGS_AVX2  "${FLAGS_SSE42} /arch:AVX2")
-SET(FLAGS_AVX512  "${FLAGS_AVX2} /arch:AVX512")
-SET(FLAGS_APX  "${FLAGS_AVX512} /arch:AVX10.2 /vlen=512 /feature:APX")
+IF (EMBREE_ARM)
+  SET(FLAGS_SSE2 "/D__SSE__ /D__SSE2__")
+  SET(FLAGS_SSE42 "/D__SSE4_2__  /D__SSE4_1__")
+  SET(FLAGS_AVX "/D__AVX__ /D__SSE4_2__  /D__SSE4_1__  /D__BMI__ /D__BMI2__ /D__LZCNT__")
+  SET(FLAGS_AVX2 "/D__AVX2__ /D__AVX__ /D__SSE4_2__  /D__SSE4_1__  /D__BMI__ /D__BMI2__ /D__LZCNT__")
+ELSE()
+  SET(FLAGS_SSE2  "/D__SSE__ /D__SSE2__")
+  SET(FLAGS_SSE42 "${FLAGS_SSE2} /D__SSE3__ /D__SSSE3__ /D__SSE4_1__ /D__SSE4_2__")
+  SET(FLAGS_AVX   "${FLAGS_SSE42} /arch:AVX")
+  SET(FLAGS_AVX2  "${FLAGS_SSE42} /arch:AVX2")
+  SET(FLAGS_AVX512  "${FLAGS_AVX2} /arch:AVX512")
+  SET(FLAGS_APX  "${FLAGS_AVX512} /arch:AVX10.2 /vlen=512 /feature:APX")
+ENDIF()
 
 SET(COMMON_CXX_FLAGS "")
 SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /EHsc")        # catch C++ exceptions only and extern "C" functions never throw a C++ exception
@@ -17,6 +24,10 @@ IF (EMBREE_STACK_PROTECTOR)
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /GS")          # protects against return address overrides
 ELSE()
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /GS-")          # do not protect against return address overrides
+ENDIF()
+IF (EMBREE_ARM)
+  # sse2neon uses the new preprocessor
+  SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /Zc:preprocessor")
 ENDIF()
 MACRO(DISABLE_STACK_PROTECTOR_FOR_FILE file)
   IF (EMBREE_STACK_PROTECTOR)
