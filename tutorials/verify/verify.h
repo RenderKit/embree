@@ -5,6 +5,7 @@
  * always compile without any internal Embree specific stuff. */
 #include "../../include/embree4/rtcore.h"
 #include "../../include/embree4/rtcore_ray.h"
+#include <utility>
 RTC_NAMESPACE_USE
 
 /* now we include all Embree internal files we need for testing */
@@ -26,7 +27,7 @@ namespace embree
     struct Test : public RefCount
     {
       Test (std::string name, int64_t isa, TestType ty, bool enabled = true) 
-        : name(name), isa(isa), ty(ty), enabled(enabled), ignoreFailure(false) 
+        : name(std::move(name)), isa(isa), ty(ty), enabled(enabled), ignoreFailure(false)
       {
         RandomSampler_init(sampler,0x23F67E21);
       }
@@ -122,7 +123,7 @@ namespace embree
     struct IntersectTest : public Test
     {
       IntersectTest (std::string name, int64_t isa, IntersectMode imode, IntersectVariant ivariant, TestType ty = TEST_SHOULD_PASS)
-        : Test(name,isa,ty), imode(imode), ivariant(ivariant) {}
+        : Test(std::move(name),isa,ty), imode(imode), ivariant(ivariant) {}
 
     public:
       IntersectMode imode;
