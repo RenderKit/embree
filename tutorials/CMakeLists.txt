@@ -113,6 +113,7 @@ ADD_SUBDIRECTORY(ray_mask)
 ADD_SUBDIRECTORY(forest)
 ADD_SUBDIRECTORY(host_device_memory)
 ADD_SUBDIRECTORY(embree_tests)
+ADD_SUBDIRECTORY(embree_regression_tests)
 
 
 ENDIF()

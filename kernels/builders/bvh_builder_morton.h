@@ -32,12 +32,19 @@ namespace embree
           if (RTC_BUILD_ARGUMENTS_HAS(settings,minLeafSize       )) minLeafSize     = settings.minLeafSize;
           if (RTC_BUILD_ARGUMENTS_HAS(settings,maxLeafSize       )) maxLeafSize     = settings.maxLeafSize;
 
+          if (branchingFactor > MAX_BRANCHING_FACTOR) {
+            throw_RTCError(RTC_ERROR_UNKNOWN,"bvh_builder: branching factor too large");
+          }
+
           minLeafSize = min(minLeafSize,maxLeafSize);
         }
 
-        Settings (size_t branchingFactor, size_t maxDepth, size_t minLeafSize, size_t maxLeafSize, size_t singleThreadThreshold)
-        : branchingFactor(branchingFactor), maxDepth(maxDepth), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), singleThreadThreshold(singleThreadThreshold)
+        Settings (size_t branchingFactor_, size_t maxDepth_, size_t minLeafSize_, size_t maxLeafSize_, size_t singleThreadThreshold_)
+        : branchingFactor(branchingFactor_), maxDepth(maxDepth_), minLeafSize(minLeafSize_), maxLeafSize(maxLeafSize_), singleThreadThreshold(singleThreadThreshold_)
         {
+          if (branchingFactor > MAX_BRANCHING_FACTOR) {
+            throw_RTCError(RTC_ERROR_UNKNOWN,"bvh_builder: branching factor too large");
+          }
           minLeafSize = min(minLeafSize,maxLeafSize);
         }
 
@@ -203,7 +210,11 @@ namespace embree
           createLeaf(createLeaf),
           calculateBounds(calculateBounds),
           progressMonitor(progressMonitor),
-          morton(nullptr) {}
+          morton(nullptr)
+        {
+          if (branchingFactor > MAX_BRANCHING_FACTOR)
+            throw_RTCError(RTC_ERROR_UNKNOWN,"bvh_builder: branching factor too large");
+        }
 
         ReductionTy createLargeLeaf(size_t depth, const range<unsigned>& current, Allocator alloc)
         {

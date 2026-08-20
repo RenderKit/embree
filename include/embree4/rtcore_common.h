@@ -35,7 +35,7 @@ typedef int ssize_t;
 #endif
 #endif
 
-#if defined(_WIN32) 
+#if defined(_WIN32)
 #  define RTC_FORCEINLINE __forceinline
 #else
 #  define RTC_FORCEINLINE inline __attribute__((always_inline))
@@ -223,25 +223,25 @@ enum RTCFeatureFlags
     RTC_FEATURE_FLAG_ROUND_BSPLINE_CURVE |
     RTC_FEATURE_FLAG_ROUND_HERMITE_CURVE |
     RTC_FEATURE_FLAG_ROUND_CATMULL_ROM_CURVE,
-  
+
   RTC_FEATURE_FLAG_FLAT_CURVES =
     RTC_FEATURE_FLAG_FLAT_LINEAR_CURVE |
     RTC_FEATURE_FLAG_FLAT_BEZIER_CURVE |
     RTC_FEATURE_FLAG_FLAT_BSPLINE_CURVE |
     RTC_FEATURE_FLAG_FLAT_HERMITE_CURVE |
     RTC_FEATURE_FLAG_FLAT_CATMULL_ROM_CURVE,
-  
+
   RTC_FEATURE_FLAG_NORMAL_ORIENTED_CURVES =
     RTC_FEATURE_FLAG_NORMAL_ORIENTED_BEZIER_CURVE |
     RTC_FEATURE_FLAG_NORMAL_ORIENTED_BSPLINE_CURVE |
     RTC_FEATURE_FLAG_NORMAL_ORIENTED_HERMITE_CURVE |
     RTC_FEATURE_FLAG_NORMAL_ORIENTED_CATMULL_ROM_CURVE,
-  
+
   RTC_FEATURE_FLAG_LINEAR_CURVES =
     RTC_FEATURE_FLAG_CONE_LINEAR_CURVE |
     RTC_FEATURE_FLAG_ROUND_LINEAR_CURVE |
     RTC_FEATURE_FLAG_FLAT_LINEAR_CURVE,
-  
+
   RTC_FEATURE_FLAG_BEZIER_CURVES =
     RTC_FEATURE_FLAG_ROUND_BEZIER_CURVE |
     RTC_FEATURE_FLAG_FLAT_BEZIER_CURVE |
@@ -256,7 +256,7 @@ enum RTCFeatureFlags
     RTC_FEATURE_FLAG_ROUND_HERMITE_CURVE |
     RTC_FEATURE_FLAG_FLAT_HERMITE_CURVE |
     RTC_FEATURE_FLAG_NORMAL_ORIENTED_HERMITE_CURVE,
-  
+
   RTC_FEATURE_FLAG_CURVES =
     RTC_FEATURE_FLAG_CONE_LINEAR_CURVE |
     RTC_FEATURE_FLAG_ROUND_LINEAR_CURVE |
@@ -273,7 +273,7 @@ enum RTCFeatureFlags
     RTC_FEATURE_FLAG_ROUND_CATMULL_ROM_CURVE |
     RTC_FEATURE_FLAG_FLAT_CATMULL_ROM_CURVE |
     RTC_FEATURE_FLAG_NORMAL_ORIENTED_CATMULL_ROM_CURVE,
-  
+
   RTC_FEATURE_FLAG_INSTANCE = 1 << 23,
 
   RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS = 1 << 24,
@@ -361,13 +361,13 @@ RTC_FORCEINLINE void rtcInitRayQueryContext(struct RTCRayQueryContext* context)
 }
 
 /* Point query structure for closest point query */
-struct RTC_ALIGN(16) RTCPointQuery 
+struct RTC_ALIGN(16) RTCPointQuery
 {
   float x;                // x coordinate of the query point
   float y;                // y coordinate of the query point
   float z;                // z coordinate of the query point
   float time;             // time of the point query
-  float radius;           // radius of the point query 
+  float radius;           // radius of the point query
 };
 
 /* Structure of a packet of 4 query points */
@@ -387,7 +387,7 @@ struct RTC_ALIGN(32) RTCPointQuery8
   float y[8];                // y coordinate of the query point
   float z[8];                // z coordinate of the query point
   float time[8];             // time of the point query
-  float radius[8];           // radius ofr the point query 
+  float radius[8];           // radius ofr the point query
 };
 
 /* Structure of a packet of 16 query points */
@@ -406,11 +406,11 @@ struct RTC_ALIGN(16) RTCPointQueryContext
 {
   // accumulated 4x4 column major matrices from world space to instance space.
   // undefined if size == 0.
-  float world2inst[RTC_MAX_INSTANCE_LEVEL_COUNT][16]; 
+  float world2inst[RTC_MAX_INSTANCE_LEVEL_COUNT][16];
 
   // accumulated 4x4 column major matrices from instance space to world space.
   // undefined if size == 0.
-  float inst2world[RTC_MAX_INSTANCE_LEVEL_COUNT][16]; 
+  float inst2world[RTC_MAX_INSTANCE_LEVEL_COUNT][16];
 
   // instance ids.
   unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT];
@@ -451,13 +451,13 @@ struct RTC_ALIGN(16) RTCPointQueryFunctionArguments
   void* userPtr;
 
   // primitive and geometry ID of primitive
-  unsigned int  primID;        
-  unsigned int  geomID;    
+  unsigned int  primID;
+  unsigned int  geomID;
 
   // the context with transformation and instance ID stack
   struct RTCPointQueryContext* context;
 
-  // If the current instance transform M (= context->world2inst[context->instStackSize]) 
+  // If the current instance transform M (= context->world2inst[context->instStackSize])
   // is a similarity matrix, i.e there is a constant factor similarityScale such that
   //    for all x,y: dist(Mx, My) = similarityScale * dist(x, y),
   // The similarity scale is 0, if the current instance transform is not a
