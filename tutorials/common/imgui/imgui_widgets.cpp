@@ -4439,7 +4439,7 @@ bool ImGui::InputTextEx(const char* label, const char* hint, char* buf, int buf_
                 // Clear input
                 apply_new_text = "";
                 apply_new_text_length = 0;
-                STB_TEXTEDIT_CHARTYPE empty_string;
+                STB_TEXTEDIT_CHARTYPE empty_string = '\0';
                 stb_textedit_replace(state, &state->Stb, &empty_string, 0);
             }
             else if (strcmp(buf, state->InitialTextA.Data) != 0)
