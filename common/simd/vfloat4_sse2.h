@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include "arm/simd_wrapper_types.h"
-
 #define vboolf vboolf_impl
 #define vboold vboold_impl
 #define vint vint_impl
@@ -26,7 +24,7 @@ namespace embree
     typedef vfloat4 Float;
     
     enum  { size = 4 };                                 // number of SIMD elements
-    union { __m128_wrapper v; float f[4]; int i[4]; };  // data
+    union { __m128 v; float f[4]; int i[4]; };  // data
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constructors, Assignment & Cast Operators
@@ -39,8 +37,8 @@ namespace embree
     __forceinline vfloat4& operator =(const vfloat4& other) { v = other.v; return *this; }
 
     __forceinline vfloat(__m128 a) : v(a) {}
-    __forceinline operator const __m128&() const { return v.data; }
-    __forceinline operator       __m128&()       { return v.data; }
+    __forceinline operator const __m128&() const { return v; }
+    __forceinline operator       __m128&()       { return v; }
 
     __forceinline vfloat(float a) : v(_mm_set1_ps(a)) {}
     __forceinline vfloat(float a, float b, float c, float d) : v(_mm_set_ps(d, c, b, a)) {}
