@@ -374,6 +374,17 @@ target_include_directories(embree PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
   $<INSTALL_INTERFACE:include>)
 
+# Precompiled header: kernels/common/default.h is included by nearly every
+# kernel translation unit and transitively pulls in platform.h, intrinsics.h,
+# windows.h and heavy STL headers. Precompiling it once per (ISA) target
+# amortizes that parse cost across all TUs of the target.
+SET(EMBREE_PCH_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/common/default.h")
+FOREACH(EMBREE_PCH_TARGET embree embree_sse42 embree_avx embree_avx2 embree_avx512)
+  IF (TARGET ${EMBREE_PCH_TARGET})
+    TARGET_PRECOMPILE_HEADERS(${EMBREE_PCH_TARGET} PRIVATE "${EMBREE_PCH_HEADER}")
+  ENDIF()
+ENDFOREACH()
+
 
 # libtbb is located in same install folder as libembree
 IF(WIN32)
