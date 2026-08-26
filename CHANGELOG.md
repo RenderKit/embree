@@ -15,6 +15,7 @@ Version History
 -  Updated TinyEXR dependency to fix resource leaks.
 -  Reduced memory copies and improved move semantics usage.
 -  Bumped CMake minimum required version to 3.10.
+-  Updated `RTCBoundsFunctionArguments` struct to include `boundsUserPtr` field for consistency across all APIs and documentation.
 
 ### Embree 4.4.0
 

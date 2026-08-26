@@ -77,6 +77,7 @@ namespace embree
         assert(i < size());
         RTCBoundsFunctionArguments args;
         args.geometryUserPtr = userPtr;
+        args.boundsUserPtr = boundsUserPtr;
         args.primID = (unsigned int)i;
         args.timeStep = (unsigned int)itime;
         args.bounds_o = (RTCBounds*)&box;
@@ -91,6 +92,7 @@ namespace embree
         assert(i < size());
         RTCBoundsFunctionArguments args;
         args.geometryUserPtr = userPtr;
+        args.boundsUserPtr = boundsUserPtr;
         args.primID = (unsigned int)i;
         args.timeStep = (unsigned int)(itime+0);
         args.bounds_o = (RTCBounds*)&box[0];
@@ -335,6 +337,7 @@ namespace embree
 
     public:
       RTCBoundsFunction boundsFunc;
+      void* boundsUserPtr;
       IntersectorN intersectorN;
   };
   
