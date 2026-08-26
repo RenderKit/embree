@@ -7068,8 +7068,11 @@ namespace embree
   }
 
   template<typename Closure>
-  void VerifyApplication::plot(std::vector<Ref<Benchmark>> benchmarks, const FileName& outFileName, const std::string& xlabel, size_t startN, size_t endN, float f, size_t dn, const Closure& test)
+  void VerifyApplication::plot(std::vector<Ref<Benchmark>>& benchmarks, const FileName& outFileName, const std::string& xlabel, size_t startN, size_t endN, float f, size_t dn, const Closure& test)
   {
+    if (f <= 0.0f) throw std::invalid_argument("plot scale must be > 0");
+    if (dn == 0) throw std::invalid_argument("plot step must be > 0");
+
     std::fstream plot;
     plot.open(outFileName, std::fstream::out | std::fstream::trunc);
     plot << "set key inside right top vertical Right noreverse enhanced autotitles box linetype -1 linewidth 1.000" << std::endl;
@@ -7091,17 +7094,21 @@ namespace embree
     plot << std::endl;
     plot.close();
     
-    for (auto benchmark : benchmarks) 
+    for (const auto& benchmark : benchmarks)
     {
       std::fstream data;
       data.open(outFileName.name()+"."+benchmark->name+".txt", std::fstream::out | std::fstream::trunc);
       std::cout << benchmark->name << std::endl;
-      for (size_t i=startN; i<=endN; i=size_t(i*f)+dn) 
+      for (size_t i=startN; i<=endN; )
       {
         size_t N = i;
         Statistics stat = test(benchmark,N);
         data << " " << N << " " << stat.getAvg() << std::endl;
         std::cout<< " " << N << " " << stat.getAvg() << std::endl;
+
+        const size_t next = size_t(double(i) * double(f)) + dn;
+        if (next <= i) break;
+        i = next;
       }
       data.close();
     }

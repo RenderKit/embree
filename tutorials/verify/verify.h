@@ -142,7 +142,7 @@ namespace embree
     void enable_disable_all_tests(const Ref<Test>& test, bool enabled);
     size_t enable_disable_some_tests(const Ref<Test>& test, std::string regex, bool enabled);
      template<typename Closure>
-       void plot(std::vector<Ref<Benchmark>> benchmarks, const FileName& outFileName, const std::string& xlabel, size_t startN, size_t endN, float f, size_t dn, const Closure& test);
+       void plot(std::vector<Ref<Benchmark>>& benchmarks, const FileName& outFileName, const std::string& xlabel, size_t startN, size_t endN, float f, size_t dn, const Closure& test);
     FileName parse_benchmark_list(Ref<ParseStream> cin, std::vector<Ref<Benchmark>>& benchmarks);
     int main(int argc, char** argv);
     
