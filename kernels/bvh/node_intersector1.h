@@ -539,15 +539,40 @@ namespace embree
     template<int N>
       __forceinline size_t intersectNodeRobust(const typename BVHN<N>::AABBNode* node, const TravRay<N,true>& ray, vfloat<N>& dist)
     {
-      const vfloat<N> tNearX = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearX)) - ray.org.x) * ray.rdir_near.x;
-      const vfloat<N> tNearY = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearY)) - ray.org.y) * ray.rdir_near.y;
-      const vfloat<N> tNearZ = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearZ)) - ray.org.z) * ray.rdir_near.z;
-      const vfloat<N> tFarX  = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.farX )) - ray.org.x) * ray.rdir_far.x;
-      const vfloat<N> tFarY  = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.farY )) - ray.org.y) * ray.rdir_far.y;
-      const vfloat<N> tFarZ  = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.farZ )) - ray.org.z) * ray.rdir_far.z;
+      const vfloat<N> lowerX = vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearX));
+      const vfloat<N> lowerY = vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearY));
+      const vfloat<N> lowerZ = vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearZ));
+      const vfloat<N> upperX = vfloat<N>::load((float*)((const char*)&node->lower_x+ray.farX ));
+      const vfloat<N> upperY = vfloat<N>::load((float*)((const char*)&node->lower_x+ray.farY ));
+      const vfloat<N> upperZ = vfloat<N>::load((float*)((const char*)&node->lower_x+ray.farZ ));
+
+      const vfloat<N> tNearX0 = (lowerX - ray.org.x) * ray.rdir_near.x;
+      const vfloat<N> tNearY0 = (lowerY - ray.org.y) * ray.rdir_near.y;
+      const vfloat<N> tNearZ0 = (lowerZ - ray.org.z) * ray.rdir_near.z;
+      const vfloat<N> tFarX0  = (upperX - ray.org.x) * ray.rdir_far.x;
+      const vfloat<N> tFarY0  = (upperY - ray.org.y) * ray.rdir_far.y;
+      const vfloat<N> tFarZ0  = (upperZ - ray.org.z) * ray.rdir_far.z;
+
+      const vbool<N> parX = ray.dir.x == vfloat<N>(0.0f);
+      const vbool<N> parY = ray.dir.y == vfloat<N>(0.0f);
+      const vbool<N> parZ = ray.dir.z == vfloat<N>(0.0f);
+
+      const vbool<N> outX = parX & ((ray.org.x < lowerX) | (ray.org.x > upperX));
+      const vbool<N> outY = parY & ((ray.org.y < lowerY) | (ray.org.y > upperY));
+      const vbool<N> outZ = parZ & ((ray.org.z < lowerZ) | (ray.org.z > upperZ));
+
+      const vfloat<N> pinf = std::numeric_limits<float>::infinity();
+      const vfloat<N> ninf = -pinf;
+      const vfloat<N> tNearX = select(parX, ninf, tNearX0);
+      const vfloat<N> tNearY = select(parY, ninf, tNearY0);
+      const vfloat<N> tNearZ = select(parZ, ninf, tNearZ0);
+      const vfloat<N> tFarX  = select(parX, pinf, tFarX0);
+      const vfloat<N> tFarY  = select(parY, pinf, tFarY0);
+      const vfloat<N> tFarZ  = select(parZ, pinf, tFarZ0);
+
       const vfloat<N> tNear = max(tNearX,tNearY,tNearZ,ray.tnear);
       const vfloat<N> tFar  = min(tFarX ,tFarY ,tFarZ ,ray.tfar);
-      const vbool<N> vmask = tNear <= tFar;
+      const vbool<N> vmask = (tNear <= tFar) & !(outX | outY | outZ);
       const size_t mask = movemask(vmask);
       dist = tNear;
       return mask;
