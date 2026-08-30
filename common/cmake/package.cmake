@@ -1,4 +1,4 @@
-## Copyright 2009-2021 Intel Corporation
+## Copyright 2009 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
 INCLUDE(GNUInstallDirs)
@@ -236,6 +236,8 @@ IF (EMBREE_SYCL_SUPPORT)
   SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.sycl")
   SET(EMBREE_VERSION_SUFFIX)
 ENDIF()
+# the testing package is platform independent, thus no platform suffix
+SET(PACKAGE_TESTING_NAME "${CPACK_PACKAGE_FILE_NAME}-testing")
 #SET(CPACK_PACKAGE_ICON "${PROJECT_SOURCE_DIR}/embree-doc/images/icon.png")
 #SET(CPACK_PACKAGE_RELOCATABLE TRUE)
 IF(NOT WIN32)
@@ -252,6 +254,7 @@ SET(CPACK_PACKAGE_CONTACT embree_support@intel.com)
 
 SET(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
 SET(CPACK_COMPONENTS_GROUPING ONE_PER_GROUP)
+SET(CPACK_COMPONENT_INCLUDE_TOPLEVEL_DIRECTORY ON)
 
 SET(CPACK_COMPONENT_LIB_DISPLAY_NAME "Library")
 SET(CPACK_COMPONENT_LIB_DESCRIPTION "The Embree library including documentation.")
@@ -323,16 +326,23 @@ ELSE()
   ENDIF()
 ENDIF()
 
+# name the group archives directly, the group name is only upper cased
+SET(CPACK_ARCHIVE_EMBREE_FILE_NAME "${PACKAGE_BASE_NAME}")
+SET(CPACK_ARCHIVE_EMBREE-TESTING_FILE_NAME "${PACKAGE_TESTING_NAME}")
+
 
 add_custom_target(
   build ${CMAKE_COMMAND} --build . --config ${CMAKE_BUILD_TYPE} --target package -j8
-  COMMAND ${CMAKE_COMMAND} -DPACKAGE_BASENAME=${PACKAGE_BASE_NAME} -DPACKAGE_EXT=${PACKAGE_EXT} -P ${PROJECT_SOURCE_DIR}/scripts/package_build.cmake
+  # repackage the tests without top-level directory, to be usable with the package of any platform
+  COMMAND ${CMAKE_CPACK_COMMAND} --config ${PROJECT_BINARY_DIR}/CPackConfig.cmake -B ${PROJECT_BINARY_DIR} -C ${CMAKE_BUILD_TYPE} -D CPACK_COMPONENTS_ALL=testing -D CPACK_COMPONENT_INCLUDE_TOPLEVEL_DIRECTORY=OFF
+  # files installed without component are not part of any package
+  COMMAND ${CMAKE_COMMAND} -E rm -f ${PACKAGE_BASE_NAME}-Unspecified.${PACKAGE_EXT}
 )
 
 add_custom_target(
-  test_package ${CMAKE_COMMAND} -DWHAT="UNPACK" -DPACKAGE_BASENAME=${PACKAGE_BASE_NAME} -DPACKAGE_EXT=${PACKAGE_EXT} -P ${PROJECT_SOURCE_DIR}/scripts/package_test.cmake
-  COMMAND cd embree_install/testing && ${CMAKE_COMMAND} -B build -DEMBREE_TESTING_INTENSITY=${EMBREE_TESTING_INTENSITY}
-  COMMAND ctest --test-dir ${CMAKE_CURRENT_BINARY_DIR}/embree_install/testing/build -VV -C ${CMAKE_BUILD_TYPE} --output-log ctest.output 
+  test_package ${CMAKE_COMMAND} -DWHAT="UNPACK" -DPACKAGE_BASENAME=${PACKAGE_BASE_NAME} -DPACKAGE_TESTING_NAME=${PACKAGE_TESTING_NAME} -DPACKAGE_EXT=${PACKAGE_EXT} -P ${PROJECT_SOURCE_DIR}/scripts/package_test.cmake
+  COMMAND cd embree_install/${PACKAGE_BASE_NAME}/testing && ${CMAKE_COMMAND} -B build -DEMBREE_TESTING_INTENSITY=${EMBREE_TESTING_INTENSITY}
+  COMMAND ctest --test-dir ${CMAKE_CURRENT_BINARY_DIR}/embree_install/${PACKAGE_BASE_NAME}/testing/build -VV -C ${CMAKE_BUILD_TYPE} --output-log ctest.output
   COMMAND ${CMAKE_COMMAND} -DWHAT="CHECK" -P ${PROJECT_SOURCE_DIR}/scripts/package_test.cmake
 )
 
@@ -344,8 +354,8 @@ else()
 endif()
 
 add_custom_target(
-  test_integration ${CMAKE_COMMAND} -DWHAT="UNPACK" -DPACKAGE_BASENAME=${PACKAGE_BASE_NAME} -DPACKAGE_EXT=${PACKAGE_EXT} -P ${PROJECT_SOURCE_DIR}/scripts/package_test.cmake 
-  COMMAND cd ${PROJECT_SOURCE_DIR}/tests/integration/test_embree_release && ${CMAKE_COMMAND} -B build --preset ${EMBREE_TESTING_INTEGRATION_PRESET} -Dembree_DIR="${CMAKE_CURRENT_BINARY_DIR}/embree_install/lib/cmake/embree-${EMBREE_VERSION}"
+  test_integration ${CMAKE_COMMAND} -DWHAT="UNPACK" -DPACKAGE_BASENAME=${PACKAGE_BASE_NAME} -DPACKAGE_TESTING_NAME=${PACKAGE_TESTING_NAME} -DPACKAGE_EXT=${PACKAGE_EXT} -P ${PROJECT_SOURCE_DIR}/scripts/package_test.cmake
+  COMMAND cd ${PROJECT_SOURCE_DIR}/tests/integration/test_embree_release && ${CMAKE_COMMAND} -B build --preset ${EMBREE_TESTING_INTEGRATION_PRESET} -Dembree_DIR="${CMAKE_CURRENT_BINARY_DIR}/embree_install/${PACKAGE_BASE_NAME}/${CMAKE_INSTALL_LIBDIR}/cmake/embree-${EMBREE_VERSION}"
   COMMAND cd ${PROJECT_SOURCE_DIR}/tests/integration/test_embree_release && ${CMAKE_COMMAND} --build build --config Release
   COMMAND cd ${PROJECT_SOURCE_DIR}/tests/integration/test_embree_release && ${INTEGRATE_BINARY}
 )

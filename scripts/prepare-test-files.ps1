@@ -40,8 +40,13 @@ if ($TestType -eq "integration") {
         Expand-Archive -Path $_.FullName -DestinationPath $DestDir -Force
         Write-Host "Extracted: $($_.Name)"
     }
-    Write-Host "EMBREE_DIR=$DestDir" | Out-File -FilePath $env:GITHUB_ENV -Append
-    Write-Output $DestDir  # Output for immediate use
+
+    # archives have a top level directory named after the package, except the testing package
+    $EmbreeDir = (Get-ChildItem -Path $DestDir -Directory -Filter "embree-*" | Select-Object -First 1).FullName
+    Remove-Item -Recurse -Force "$EmbreeDir/testing" -ErrorAction SilentlyContinue
+    Move-Item "$DestDir/testing" $EmbreeDir
+    "EMBREE_DIR=$EmbreeDir" | Out-File -FilePath $env:GITHUB_ENV -Append
+    Write-Output $EmbreeDir  # Output for immediate use
 }
 
 Write-Host "Test files prepared successfully"
