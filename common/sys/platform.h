@@ -57,12 +57,18 @@
 #define __X86_ASM__
 #endif
 
+#if defined(__powerpc64__)
+#define NO_WARN_X86_INTRINSICS
+#define __SSE__
+#define __SSE2__
+#endif
+
 /* detect 64 bit platform */
 #if defined(__aarch64__) || defined(_M_ARM64)
 #define EMBREE_ARM64
 #endif
 
-#if defined(__X86_64__) || defined(EMBREE_ARM64)
+#if defined(__X86_64__) || defined(EMBREE_ARM64) || defined(__powerpc64__)
 #define __64BIT__
 #endif
 
