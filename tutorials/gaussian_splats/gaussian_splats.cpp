@@ -10,6 +10,7 @@
 namespace embree
 {
   void gaussian_splats_set_ply_file(const std::string& filePath);
+  void gaussian_splats_set_aabb_geometry(bool enabled);
 
   struct Tutorial : public TutorialApplication
   {
@@ -22,6 +23,9 @@ namespace embree
       registerOption("ply", [] (Ref<ParseStream> cin, const FileName& path) {
         gaussian_splats_set_ply_file((path + cin->getFileName()).str());
       }, "--ply <filename>: loads gaussian splats from a PLY file");
+      registerOption("aabb", [] (Ref<ParseStream>, const FileName&) {
+        gaussian_splats_set_aabb_geometry(true);
+      }, "--aabb: uses axis-aligned user geometry instead of oriented user geometry");
     }
   };
 }

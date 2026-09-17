@@ -18,10 +18,16 @@ namespace embree {
 RTCScene g_scene = nullptr;
 TutorialData data;
 std::string g_plyFilePath;
+bool g_useAABBGeometry = false;
 
 void gaussian_splats_set_ply_file(const std::string& filePath)
 {
   g_plyFilePath = filePath;
+}
+
+void gaussian_splats_set_aabb_geometry(bool enabled)
+{
+  g_useAABBGeometry = enabled;
 }
 
 namespace
@@ -432,6 +438,30 @@ void splatBoundsFunc(const RTCOrientedBoundsFunctionArguments* args)
   bounds->axis2_z = axis2.z;
 }
 
+void splatAABBBoundsFunc(const RTCBoundsFunctionArguments* args)
+{
+  RTCOrientedBounds orientedBounds;
+  RTCOrientedBoundsFunctionArguments orientedArgs;
+  orientedArgs.geometryUserPtr = args->geometryUserPtr;
+  orientedArgs.primID = args->primID;
+  orientedArgs.timeStep = args->timeStep;
+  orientedArgs.bounds_o = &orientedBounds;
+  orientedArgs.boundsUserPtr = args->boundsUserPtr;
+  splatBoundsFunc(&orientedArgs);
+
+  const Vec3fa center(orientedBounds.center_x, orientedBounds.center_y, orientedBounds.center_z);
+  const Vec3fa axis0(orientedBounds.axis0_x, orientedBounds.axis0_y, orientedBounds.axis0_z);
+  const Vec3fa axis1(orientedBounds.axis1_x, orientedBounds.axis1_y, orientedBounds.axis1_z);
+  const Vec3fa axis2(orientedBounds.axis2_x, orientedBounds.axis2_y, orientedBounds.axis2_z);
+  const Vec3fa extent = abs(axis0) + abs(axis1) + abs(axis2);
+  args->bounds_o->lower_x = center.x - extent.x;
+  args->bounds_o->lower_y = center.y - extent.y;
+  args->bounds_o->lower_z = center.z - extent.z;
+  args->bounds_o->upper_x = center.x + extent.x;
+  args->bounds_o->upper_y = center.y + extent.y;
+  args->bounds_o->upper_z = center.z + extent.z;
+}
+
 RTC_SYCL_INDIRECTLY_CALLABLE void splatIntersectFunc(const RTCIntersectFunctionNArguments* args)
 {
   int* valid = args->valid;
@@ -505,10 +535,14 @@ void addGaussianSplats(RTCScene scene)
     loadGaussianSplatsFromPly(g_plyFilePath);
   }
 
-  RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER_ORIENTED);
+  RTCGeometry geom = rtcNewGeometry(
+    g_device, g_useAABBGeometry ? RTC_GEOMETRY_TYPE_USER : RTC_GEOMETRY_TYPE_USER_ORIENTED);
   rtcSetGeometryUserPrimitiveCount(geom, data.splatCount);
   rtcSetGeometryUserData(geom, data.splats);
-  rtcSetGeometryOrientedBoundsFunction(geom, splatBoundsFunc, nullptr);
+  if (g_useAABBGeometry)
+    rtcSetGeometryBoundsFunction(geom, splatAABBBoundsFunc, nullptr);
+  else
+    rtcSetGeometryOrientedBoundsFunction(geom, splatBoundsFunc, nullptr);
   rtcSetGeometryIntersectFunction(geom, splatIntersectFunc);
   rtcSetGeometryOccludedFunction(geom, splatOccludedFunc);
   rtcCommitGeometry(geom);
