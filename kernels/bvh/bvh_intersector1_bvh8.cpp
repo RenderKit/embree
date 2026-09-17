@@ -44,6 +44,8 @@ namespace embree
 
     IF_ENABLED_USER(DEFINE_INTERSECTOR1(BVH8VirtualIntersector1,BVHNIntersector1<8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<ObjectIntersector1<false>> >));
     IF_ENABLED_USER(DEFINE_INTERSECTOR1(BVH8VirtualMBIntersector1,BVHNIntersector1<8 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersector1<ObjectIntersector1<true>> >));
+    IF_ENABLED_USER(DEFINE_INTERSECTOR1(BVH8OBBVirtualIntersector1,BVHNIntersector1<8 COMMA BVH_AN1_UN1 COMMA false COMMA ArrayIntersector1<ObjectIntersector1<false>> >));
+    IF_ENABLED_USER(DEFINE_INTERSECTOR1(BVH8OBBVirtualMBIntersector1,BVHNIntersector1<8 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA ArrayIntersector1<ObjectIntersector1<true>> >));
 
     IF_ENABLED_INSTANCE(DEFINE_INTERSECTOR1(BVH8InstanceIntersector1,BVHNIntersector1<8 COMMA BVH_AN1 COMMA false COMMA ArrayIntersector1<InstanceIntersector1> >));
     IF_ENABLED_INSTANCE(DEFINE_INTERSECTOR1(BVH8InstanceMBIntersector1,BVHNIntersector1<8 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersector1<InstanceIntersector1MB> >));

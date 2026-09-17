@@ -63,6 +63,8 @@ namespace embree
 
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8VirtualIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8VirtualMBIntersector1);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH8OBBVirtualIntersector1);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH8OBBVirtualMBIntersector1);
 
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8InstanceIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH8InstanceMBIntersector1);
@@ -101,6 +103,8 @@ namespace embree
 
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8VirtualIntersector4Chunk);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8VirtualMBIntersector4Chunk);
+  DECLARE_SYMBOL2(Accel::Intersector4,BVH8OBBVirtualIntersector4Chunk);
+  DECLARE_SYMBOL2(Accel::Intersector4,BVH8OBBVirtualMBIntersector4Chunk);
 
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8InstanceIntersector4Chunk);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH8InstanceMBIntersector4Chunk);
@@ -138,6 +142,8 @@ namespace embree
 
   DECLARE_SYMBOL2(Accel::Intersector8,BVH8VirtualIntersector8Chunk);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH8VirtualMBIntersector8Chunk);
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH8OBBVirtualIntersector8Chunk);
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH8OBBVirtualMBIntersector8Chunk);
 
   DECLARE_SYMBOL2(Accel::Intersector8,BVH8InstanceIntersector8Chunk);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH8InstanceMBIntersector8Chunk);
@@ -175,6 +181,8 @@ namespace embree
 
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8VirtualIntersector16Chunk);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8VirtualMBIntersector16Chunk);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH8OBBVirtualIntersector16Chunk);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH8OBBVirtualMBIntersector16Chunk);
 
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8InstanceIntersector16Chunk);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH8InstanceMBIntersector16Chunk);
@@ -316,6 +324,8 @@ namespace embree
 
     IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_APX(features,BVH8VirtualIntersector1));
     IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_APX(features,BVH8VirtualMBIntersector1));
+    IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_APX(features,BVH8OBBVirtualIntersector1));
+    IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_APX(features,BVH8OBBVirtualMBIntersector1));
 
     IF_ENABLED_INSTANCE(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_APX(features,BVH8InstanceIntersector1));
     IF_ENABLED_INSTANCE(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_APX(features,BVH8InstanceMBIntersector1));
@@ -357,6 +367,8 @@ namespace embree
 
     IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_APX(features,BVH8VirtualIntersector4Chunk));
     IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_APX(features,BVH8VirtualMBIntersector4Chunk));
+    IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_APX(features,BVH8OBBVirtualIntersector4Chunk));
+    IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_APX(features,BVH8OBBVirtualMBIntersector4Chunk));
 
     IF_ENABLED_INSTANCE(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_APX(features,BVH8InstanceIntersector4Chunk));
     IF_ENABLED_INSTANCE(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_APX(features,BVH8InstanceMBIntersector4Chunk));
@@ -395,6 +407,8 @@ namespace embree
 
     IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_APX(features,BVH8VirtualIntersector8Chunk));
     IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_APX(features,BVH8VirtualMBIntersector8Chunk));
+    IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_APX(features,BVH8OBBVirtualIntersector8Chunk));
+    IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_APX(features,BVH8OBBVirtualMBIntersector8Chunk));
 
     IF_ENABLED_INSTANCE(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_APX(features,BVH8InstanceIntersector8Chunk));
     IF_ENABLED_INSTANCE(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512_APX(features,BVH8InstanceMBIntersector8Chunk));
@@ -433,6 +447,8 @@ namespace embree
 
     IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX512_APX(features,BVH8VirtualIntersector16Chunk));
     IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX512_APX(features,BVH8VirtualMBIntersector16Chunk));
+    IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX512_APX(features,BVH8OBBVirtualIntersector16Chunk));
+    IF_ENABLED_USER(SELECT_SYMBOL_INIT_AVX512_APX(features,BVH8OBBVirtualMBIntersector16Chunk));
 
     IF_ENABLED_INSTANCE(SELECT_SYMBOL_INIT_AVX512_APX(features,BVH8InstanceIntersector16Chunk));
     IF_ENABLED_INSTANCE(SELECT_SYMBOL_INIT_AVX512_APX(features,BVH8InstanceMBIntersector16Chunk));
@@ -791,6 +807,33 @@ namespace embree
     return intersectors;
   }
 
+  Accel::Intersectors BVH8Factory::BVH8UserGeometryOBBIntersectors(BVH8* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1  = BVH8OBBVirtualIntersector1();
+#if defined (EMBREE_RAY_PACKETS)
+    intersectors.intersector4  = BVH8OBBVirtualIntersector4Chunk();
+    intersectors.intersector8  = BVH8OBBVirtualIntersector8Chunk();
+    intersectors.intersector16 = BVH8OBBVirtualIntersector16Chunk();
+#endif
+    intersectors.collider      = BVH8ColliderUserGeom();
+    return intersectors;
+  }
+
+  Accel::Intersectors BVH8Factory::BVH8UserGeometryOBBMBIntersectors(BVH8* bvh)
+  {
+    Accel::Intersectors intersectors;
+    intersectors.ptr = bvh;
+    intersectors.intersector1  = BVH8OBBVirtualMBIntersector1();
+#if defined (EMBREE_RAY_PACKETS)
+    intersectors.intersector4  = BVH8OBBVirtualMBIntersector4Chunk();
+    intersectors.intersector8  = BVH8OBBVirtualMBIntersector8Chunk();
+    intersectors.intersector16 = BVH8OBBVirtualMBIntersector16Chunk();
+#endif
+    return intersectors;
+  }
+
   Accel::Intersectors BVH8Factory::BVH8InstanceIntersectors(BVH8* bvh)
   {
     Accel::Intersectors intersectors;
@@ -1071,7 +1114,7 @@ namespace embree
   Accel* BVH8Factory::BVH8UserGeometryOBB(Scene* scene)
   {
     BVH8* accel = new BVH8(Object::type,scene);
-    Accel::Intersectors intersectors = BVH8UserGeometryIntersectors(accel);
+    Accel::Intersectors intersectors = BVH8UserGeometryOBBIntersectors(accel);
     Builder* builder = BVH8OBBVirtualBuilder_OBB_New(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -1079,7 +1122,7 @@ namespace embree
   Accel* BVH8Factory::BVH8UserGeometryOBBMB(Scene* scene)
   {
     BVH8* accel = new BVH8(Object::type,scene);
-    Accel::Intersectors intersectors = BVH8UserGeometryMBIntersectors(accel);
+    Accel::Intersectors intersectors = BVH8UserGeometryOBBMBIntersectors(accel);
     Builder* builder = BVH8OBBVirtualMBBuilder_OBB(accel,scene,0);
     return new AccelInstance(accel,builder,intersectors);
   }

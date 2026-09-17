@@ -71,6 +71,8 @@ namespace embree
 
     Accel::Intersectors BVH8UserGeometryIntersectors(BVH8* bvh);
     Accel::Intersectors BVH8UserGeometryMBIntersectors(BVH8* bvh);
+    Accel::Intersectors BVH8UserGeometryOBBIntersectors(BVH8* bvh);
+    Accel::Intersectors BVH8UserGeometryOBBMBIntersectors(BVH8* bvh);
 
     Accel::Intersectors BVH8InstanceIntersectors(BVH8* bvh);
     Accel::Intersectors BVH8InstanceMBIntersectors(BVH8* bvh);
@@ -115,6 +117,8 @@ namespace embree
     
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8VirtualIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8VirtualMBIntersector1);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH8OBBVirtualIntersector1);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH8OBBVirtualMBIntersector1);
 
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8InstanceIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8InstanceMBIntersector1);
@@ -153,6 +157,8 @@ namespace embree
 
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8VirtualIntersector4Chunk);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8VirtualMBIntersector4Chunk);
+    DEFINE_SYMBOL2(Accel::Intersector4,BVH8OBBVirtualIntersector4Chunk);
+    DEFINE_SYMBOL2(Accel::Intersector4,BVH8OBBVirtualMBIntersector4Chunk);
 
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8InstanceIntersector4Chunk);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH8InstanceMBIntersector4Chunk);
@@ -190,6 +196,8 @@ namespace embree
 
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8VirtualIntersector8Chunk);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8VirtualMBIntersector8Chunk);
+    DEFINE_SYMBOL2(Accel::Intersector8,BVH8OBBVirtualIntersector8Chunk);
+    DEFINE_SYMBOL2(Accel::Intersector8,BVH8OBBVirtualMBIntersector8Chunk);
 
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8InstanceIntersector8Chunk);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH8InstanceMBIntersector8Chunk);
@@ -227,6 +235,8 @@ namespace embree
 
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8VirtualIntersector16Chunk);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8VirtualMBIntersector16Chunk);
+    DEFINE_SYMBOL2(Accel::Intersector16,BVH8OBBVirtualIntersector16Chunk);
+    DEFINE_SYMBOL2(Accel::Intersector16,BVH8OBBVirtualMBIntersector16Chunk);
 
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8InstanceIntersector16Chunk);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH8InstanceMBIntersector16Chunk);

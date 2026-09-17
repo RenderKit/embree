@@ -79,6 +79,8 @@ namespace embree
 
     Accel::Intersectors BVH4UserGeometryIntersectors(BVH4* bvh);
     Accel::Intersectors BVH4UserGeometryMBIntersectors(BVH4* bvh);
+    Accel::Intersectors BVH4UserGeometryOBBIntersectors(BVH4* bvh);
+    Accel::Intersectors BVH4UserGeometryOBBMBIntersectors(BVH4* bvh);
 
     Accel::Intersectors BVH4InstanceIntersectors(BVH4* bvh);
     Accel::Intersectors BVH4InstanceMBIntersectors(BVH4* bvh);
@@ -127,6 +129,8 @@ namespace embree
 
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4VirtualIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4VirtualMBIntersector1);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH4OBBVirtualIntersector1);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH4OBBVirtualMBIntersector1);
 
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4InstanceIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4InstanceMBIntersector1);
@@ -168,6 +172,8 @@ namespace embree
 
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4VirtualIntersector4Chunk);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4VirtualMBIntersector4Chunk);
+    DEFINE_SYMBOL2(Accel::Intersector4,BVH4OBBVirtualIntersector4Chunk);
+    DEFINE_SYMBOL2(Accel::Intersector4,BVH4OBBVirtualMBIntersector4Chunk);
 
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4InstanceIntersector4Chunk);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4InstanceMBIntersector4Chunk);
@@ -211,6 +217,8 @@ namespace embree
 
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4VirtualIntersector8Chunk);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4VirtualMBIntersector8Chunk);
+    DEFINE_SYMBOL2(Accel::Intersector8,BVH4OBBVirtualIntersector8Chunk);
+    DEFINE_SYMBOL2(Accel::Intersector8,BVH4OBBVirtualMBIntersector8Chunk);
 
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4InstanceIntersector8Chunk);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4InstanceMBIntersector8Chunk);
@@ -254,6 +262,8 @@ namespace embree
 
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4VirtualIntersector16Chunk);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4VirtualMBIntersector16Chunk);
+    DEFINE_SYMBOL2(Accel::Intersector16,BVH4OBBVirtualIntersector16Chunk);
+    DEFINE_SYMBOL2(Accel::Intersector16,BVH4OBBVirtualMBIntersector16Chunk);
 
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4InstanceIntersector16Chunk);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4InstanceMBIntersector16Chunk);
