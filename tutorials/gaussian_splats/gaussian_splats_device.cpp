@@ -9,6 +9,10 @@
 #include <unordered_map>
 #include <vector>
 
+#if defined(EMBREE_TUTORIALS_SPZ)
+#include <load-spz.h>
+#endif
+
 namespace embree {
 
 #define FEATURE_MASK \
@@ -18,12 +22,26 @@ namespace embree {
 RTCScene g_scene = nullptr;
 TutorialData data;
 std::string g_plyFilePath;
+#if defined(EMBREE_TUTORIALS_SPZ)
+std::string g_spzFilePath;
+#endif
 bool g_useAABBGeometry = false;
 
 void gaussian_splats_set_ply_file(const std::string& filePath)
 {
   g_plyFilePath = filePath;
+#if defined(EMBREE_TUTORIALS_SPZ)
+  g_spzFilePath.clear();
+#endif
 }
+
+#if defined(EMBREE_TUTORIALS_SPZ)
+void gaussian_splats_set_spz_file(const std::string& filePath)
+{
+  g_spzFilePath = filePath;
+  g_plyFilePath.clear();
+}
+#endif
 
 void gaussian_splats_set_aabb_geometry(bool enabled)
 {
@@ -256,6 +274,50 @@ namespace
     particleOpacity = splat.opacity * exp(-0.5f * dot(xGaussian, xGaussian));
     return std::isfinite(particleOpacity) && particleOpacity >= 0.01f;
   }
+
+#if defined(EMBREE_TUTORIALS_SPZ)
+  static void loadGaussianSplatsFromSpz(const std::string& filePath)
+  {
+    spz::UnpackOptions options;
+    options.to = spz::CoordinateSystem::RDF;
+    const spz::GaussianCloud cloud = spz::loadSpz(filePath, options);
+    if (cloud.numPoints <= 0)
+      throw std::runtime_error("SPZ file does not contain any gaussian splats: " + filePath);
+
+    const size_t splatCount = size_t(cloud.numPoints);
+    if (cloud.positions.size() != 3 * splatCount ||
+        cloud.scales.size() != 3 * splatCount ||
+        cloud.rotations.size() != 4 * splatCount ||
+        cloud.alphas.size() != splatCount ||
+        cloud.colors.size() != 3 * splatCount)
+      throw std::runtime_error("SPZ file contains inconsistent gaussian attribute counts: " + filePath);
+
+    TutorialData_ResizeSplats(&data, unsigned(splatCount));
+    const float sh0 = 0.28209479177387814f;
+    for (size_t i = 0; i < splatCount; ++i) {
+      GaussianSplat& splat = data.splats[i];
+      splat.center = Vec3fa(
+        cloud.positions[3 * i + 0],
+        cloud.positions[3 * i + 1],
+        cloud.positions[3 * i + 2]);
+      splat.scale = Vec3fa(
+        exp(cloud.scales[3 * i + 0]),
+        exp(cloud.scales[3 * i + 1]),
+        exp(cloud.scales[3 * i + 2]));
+      splat.rotation = normalizeQuaternion(Vec4f(
+        cloud.rotations[4 * i + 3],
+        cloud.rotations[4 * i + 0],
+        cloud.rotations[4 * i + 1],
+        cloud.rotations[4 * i + 2]));
+      splat.opacity = decodeOpacity(cloud.alphas[i], true);
+      splat.colorID = unsigned(i);
+      data.colors[i] = Vec3fa(
+        clamp(0.5f + sh0 * cloud.colors[3 * i + 0], 0.0f, 1.0f),
+        clamp(0.5f + sh0 * cloud.colors[3 * i + 1], 0.0f, 1.0f),
+        clamp(0.5f + sh0 * cloud.colors[3 * i + 2], 0.0f, 1.0f));
+    }
+  }
+#endif
 
   static void loadGaussianSplatsFromPly(const std::string& filePath)
   {
@@ -529,6 +591,11 @@ unsigned int addGroundPlane(RTCScene scene)
 
 void addGaussianSplats(RTCScene scene)
 {
+#if defined(EMBREE_TUTORIALS_SPZ)
+  if (!g_spzFilePath.empty()) {
+    loadGaussianSplatsFromSpz(g_spzFilePath);
+  } else
+#endif
   if (g_plyFilePath.empty()) {
     generateRandomGaussianSplats();
   } else {
