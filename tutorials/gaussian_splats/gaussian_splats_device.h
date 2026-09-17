@@ -12,10 +12,8 @@ static constexpr unsigned int DEFAULT_NUM_SPLATS = 1024;
 struct GaussianSplat
 {
   Vec3fa center;
-  Vec3fa axisU;
-  Vec3fa axisV;
-  float sigmaU;
-  float sigmaV;
+  Vec3fa scale;
+  Vec4f rotation;
   float opacity;
   unsigned int colorID;
 };

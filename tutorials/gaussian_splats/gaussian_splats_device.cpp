@@ -125,21 +125,29 @@ namespace
     return it == values.end() ? defaultValue : it->second;
   }
 
-  static void basisFromNormal(const Vec3fa& normal, Vec3fa& axisU, Vec3fa& axisV)
+  static Vec4f normalizeQuaternion(const Vec4f& q)
   {
-    Vec3fa n = normal;
-    if (dot(n, n) < 1.0e-10f)
-      n = Vec3fa(0.0f, 0.0f, 1.0f);
-    n = normalize(n);
-
-    const Vec3fa helper = abs(n.z) < 0.999f ? Vec3fa(0.0f, 0.0f, 1.0f) : Vec3fa(0.0f, 1.0f, 0.0f);
-    axisU = normalize(cross(helper, n));
-    axisV = normalize(cross(n, axisU));
+    const float lengthSquared = dot(q, q);
+    if (lengthSquared < 1.0e-20f)
+      return Vec4f(1.0f, 0.0f, 0.0f, 0.0f);
+    return q * rsqrt(lengthSquared);
   }
 
-  static float decodeOpacity(float opacity)
+  static Vec3fa rotateVector(const Vec4f& q, const Vec3fa& v)
   {
-    if (opacity < 0.0f || opacity > 1.0f)
+    const Vec3fa qv(q.y, q.z, q.w);
+    const Vec3fa t = 2.0f * cross(qv, v);
+    return v + q.x * t + cross(qv, t);
+  }
+
+  static Vec3fa inverseRotateVector(const Vec4f& q, const Vec3fa& v)
+  {
+    return rotateVector(Vec4f(q.x, -q.y, -q.z, -q.w), v);
+  }
+
+  static float decodeOpacity(float opacity, bool encoded)
+  {
+    if (encoded)
       opacity = 1.0f / (1.0f + exp(-opacity));
     return clamp(opacity, 0.01f, 1.0f);
   }
@@ -177,17 +185,61 @@ namespace
     return Vec3fa(0.8f, 0.8f, 0.8f);
   }
 
-  static Vec2f decodeSigma(const std::unordered_map<std::string, float>& values)
+  static Vec3fa decodeScale(const std::unordered_map<std::string, float>& values)
   {
     if (hasProperty(values, "scale_0")) {
-      const float sigmaU = exp(getProperty(values, "scale_0", -2.0f));
-      const float sigmaV = exp(getProperty(values, "scale_1", getProperty(values, "scale_0", -2.0f)));
-      return Vec2f(max(0.001f, sigmaU), max(0.001f, sigmaV));
+      const float scaleX = exp(getProperty(values, "scale_0", -2.0f));
+      const float scaleY = exp(getProperty(values, "scale_1", getProperty(values, "scale_0", -2.0f)));
+      const float scaleZ = exp(getProperty(values, "scale_2", getProperty(values, "scale_0", -2.0f)));
+      return Vec3fa(max(1.0e-6f, scaleX), max(1.0e-6f, scaleY), max(1.0e-6f, scaleZ));
     }
 
     const float sx = hasProperty(values, "scale_x") ? abs(getProperty(values, "scale_x", 0.1f)) : 0.1f;
     const float sy = hasProperty(values, "scale_y") ? abs(getProperty(values, "scale_y", sx)) : sx;
-    return Vec2f(max(0.001f, sx), max(0.001f, sy));
+    const float sz = hasProperty(values, "scale_z") ? abs(getProperty(values, "scale_z", sx)) : sx;
+    return Vec3fa(max(1.0e-6f, sx), max(1.0e-6f, sy), max(1.0e-6f, sz));
+  }
+
+  static Vec4f decodeRotation(const std::unordered_map<std::string, float>& values)
+  {
+    if (!hasProperty(values, "rot_0"))
+      return Vec4f(1.0f, 0.0f, 0.0f, 0.0f);
+
+    return normalizeQuaternion(Vec4f(getProperty(values, "rot_0", 1.0f),
+                                     getProperty(values, "rot_1", 0.0f),
+                                     getProperty(values, "rot_2", 0.0f),
+                                     getProperty(values, "rot_3", 0.0f)));
+  }
+
+  static Vec3fa clampGaussianScale(const Vec3fa& scale)
+  {
+    const float maxScale = max(scale.x, max(scale.y, scale.z));
+    return max(scale, Vec3fa(maxScale * 1.0e-3f));
+  }
+
+  static bool evaluateGaussian(const GaussianSplat& splat,
+                               const Ray& ray,
+                               float& t,
+                               float& particleOpacity)
+  {
+    const Vec3fa scale = clampGaussianScale(splat.scale);
+
+    const Vec3fa oRotated = inverseRotateVector(splat.rotation, ray.org - splat.center);
+    const Vec3fa dRotated = inverseRotateVector(splat.rotation, ray.dir);
+    const Vec3fa oGaussian(oRotated.x / scale.x, oRotated.y / scale.y, oRotated.z / scale.z);
+    const Vec3fa dGaussian(dRotated.x / scale.x, dRotated.y / scale.y, dRotated.z / scale.z);
+
+    const float denominator = dot(dGaussian, dGaussian);
+    if (denominator <= 1.0e-20f)
+      return false;
+
+    t = -dot(oGaussian, dGaussian) / denominator;
+    if (t < ray.tnear() || t > ray.tfar)
+      return false;
+
+    const Vec3fa xGaussian = oGaussian + t * dGaussian;
+    particleOpacity = splat.opacity * exp(-0.5f * dot(xGaussian, xGaussian));
+    return particleOpacity >= 0.01f;
   }
 
   static void loadGaussianSplatsFromPly(const std::string& filePath)
@@ -296,15 +348,10 @@ namespace
                               getProperty(values, "y", 0.0f),
                               getProperty(values, "z", 0.0f));
 
-        const Vec3fa normal(getProperty(values, "nx", 0.0f),
-                            getProperty(values, "ny", 0.0f),
-                            getProperty(values, "nz", 1.0f));
-        basisFromNormal(normal, splat.axisU, splat.axisV);
-
-        const Vec2f sigma = decodeSigma(values);
-        splat.sigmaU = sigma.x;
-        splat.sigmaV = sigma.y;
-        splat.opacity = decodeOpacity(getProperty(values, "opacity", 1.0f));
+        splat.scale = decodeScale(values);
+        splat.rotation = decodeRotation(values);
+        splat.opacity = decodeOpacity(getProperty(values, "opacity", 1.0f),
+                                      hasProperty(values, "scale_0"));
         splat.colorID = (unsigned int) splats.size();
         splats.push_back(splat);
         colors.push_back(decodeColor(values));
@@ -334,28 +381,11 @@ namespace
       const float py = 2.5f * RandomSampler_get1D(rng) - 0.5f;
       const float pz = 8.0f * RandomSampler_get1D(rng) - 4.0f;
 
-      Vec3fa axisU(RandomSampler_get1D(rng) * 2.0f - 1.0f,
-                   RandomSampler_get1D(rng) * 2.0f - 1.0f,
-                   RandomSampler_get1D(rng) * 2.0f - 1.0f);
-      axisU = normalize(axisU);
-
-      Vec3fa tangent(RandomSampler_get1D(rng) * 2.0f - 1.0f,
-                     RandomSampler_get1D(rng) * 2.0f - 1.0f,
-                     RandomSampler_get1D(rng) * 2.0f - 1.0f);
-      tangent = normalize(tangent);
-
-      Vec3fa axisV = normalize(cross(axisU, tangent));
-      if (dot(axisV, axisV) < 1.0e-6f) {
-        axisV = normalize(cross(axisU, Vec3fa(0.0f, 1.0f, 0.0f)));
-        if (dot(axisV, axisV) < 1.0e-6f)
-          axisV = normalize(cross(axisU, Vec3fa(1.0f, 0.0f, 0.0f)));
-      }
-
       data.splats[i].center = Vec3fa(px, py, pz);
-      data.splats[i].axisU = axisU;
-      data.splats[i].axisV = axisV;
-      data.splats[i].sigmaU = 0.06f + 0.18f * RandomSampler_get1D(rng);
-      data.splats[i].sigmaV = 0.06f + 0.18f * RandomSampler_get1D(rng);
+      data.splats[i].scale = Vec3fa(0.06f + 0.18f * RandomSampler_get1D(rng),
+                                    0.06f + 0.18f * RandomSampler_get1D(rng),
+                                    0.06f + 0.18f * RandomSampler_get1D(rng));
+      data.splats[i].rotation = Vec4f(1.0f, 0.0f, 0.0f, 0.0f);
       data.splats[i].opacity = 0.25f + 0.75f * RandomSampler_get1D(rng);
       data.splats[i].colorID = i;
 
@@ -373,17 +403,13 @@ void splatBoundsFunc(const RTCBoundsFunctionArguments* args)
   const GaussianSplat& s = splats[args->primID];
   RTCBounds* bounds = args->bounds_o;
 
-  const float radiusScale = 3.0f;
-  const Vec3fa du = radiusScale * s.sigmaU * s.axisU;
-  const Vec3fa dv = radiusScale * s.sigmaV * s.axisV;
-
-  const Vec3fa p0 = s.center + du + dv;
-  const Vec3fa p1 = s.center + du - dv;
-  const Vec3fa p2 = s.center - du + dv;
-  const Vec3fa p3 = s.center - du - dv;
-
-  const Vec3fa lower = min(min(p0, p1), min(p2, p3));
-  const Vec3fa upper = max(max(p0, p1), max(p2, p3));
+  const Vec3fa scale = clampGaussianScale(s.scale);
+  const Vec3fa axisX = rotateVector(s.rotation, Vec3fa(scale.x, 0.0f, 0.0f));
+  const Vec3fa axisY = rotateVector(s.rotation, Vec3fa(0.0f, scale.y, 0.0f));
+  const Vec3fa axisZ = rotateVector(s.rotation, Vec3fa(0.0f, 0.0f, scale.z));
+  const Vec3fa extent = 3.0f * (abs(axisX) + abs(axisY) + abs(axisZ));
+  const Vec3fa lower = s.center - extent;
+  const Vec3fa upper = s.center + extent;
 
   bounds->lower_x = lower.x;
   bounds->lower_y = lower.y;
@@ -405,38 +431,18 @@ RTC_SYCL_INDIRECTLY_CALLABLE void splatIntersectFunc(const RTCIntersectFunctionN
   const GaussianSplat* splats = (const GaussianSplat*) args->geometryUserPtr;
   const GaussianSplat& s = splats[args->primID];
 
-  const Vec3fa n = normalize(cross(s.axisU, s.axisV));
-  const float denom = dot(ray->dir, n);
-  if (abs(denom) < 1.0e-6f)
-    return;
-
-  const float t = dot(s.center - ray->org, n) / denom;
-  if (t <= ray->tnear() || t >= ray->tfar)
-    return;
-
-  const Vec3fa p = ray->org + t * ray->dir;
-  const Vec3fa d = p - s.center;
-  const float u = dot(d, s.axisU);
-  const float v = dot(d, s.axisV);
-
-  const float invSigmaU2 = rcp(max(1.0e-8f, s.sigmaU * s.sigmaU));
-  const float invSigmaV2 = rcp(max(1.0e-8f, s.sigmaV * s.sigmaV));
-  const float r2 = u * u * invSigmaU2 + v * v * invSigmaV2;
-
-  if (r2 > 9.0f)
-    return;
-
-  const float w = s.opacity * exp(-0.5f * r2);
-  if (w < 0.01f)
+  float t;
+  float particleOpacity;
+  if (!evaluateGaussian(s, *ray, t, particleOpacity))
     return;
 
   ray->tfar = t;
   hit->geomID = args->geomID;
   hit->primID = args->primID;
-  hit->Ng_x = n.x;
-  hit->Ng_y = n.y;
-  hit->Ng_z = n.z;
-  hit->u = w;
+  hit->Ng_x = -ray->dir.x;
+  hit->Ng_y = -ray->dir.y;
+  hit->Ng_z = -ray->dir.z;
+  hit->u = particleOpacity;
   hit->v = 0.0f;
   valid[0] = -1;
 }
@@ -452,26 +458,9 @@ RTC_SYCL_INDIRECTLY_CALLABLE void splatOccludedFunc(const RTCOccludedFunctionNAr
   const GaussianSplat* splats = (const GaussianSplat*) args->geometryUserPtr;
   const GaussianSplat& s = splats[args->primID];
 
-  const Vec3fa n = normalize(cross(s.axisU, s.axisV));
-  const float denom = dot(ray->dir, n);
-  if (abs(denom) < 1.0e-6f)
-    return;
-
-  const float t = dot(s.center - ray->org, n) / denom;
-  if (t <= ray->tnear() || t >= ray->tfar)
-    return;
-
-  const Vec3fa p = ray->org + t * ray->dir;
-  const Vec3fa d = p - s.center;
-  const float u = dot(d, s.axisU);
-  const float v = dot(d, s.axisV);
-
-  const float invSigmaU2 = rcp(max(1.0e-8f, s.sigmaU * s.sigmaU));
-  const float invSigmaV2 = rcp(max(1.0e-8f, s.sigmaV * s.sigmaV));
-  const float r2 = u * u * invSigmaU2 + v * v * invSigmaV2;
-  const float w = s.opacity * exp(-0.5f * r2);
-
-  if (r2 <= 9.0f && w >= 0.05f)
+  float t;
+  float particleOpacity;
+  if (evaluateGaussian(s, *ray, t, particleOpacity) && particleOpacity >= 0.05f)
     ray->tfar = neg_inf;
 }
 
