@@ -32,6 +32,11 @@ called to intersect the primitive with a ray. The user data pointer is
 passed to each callback invocation and can be used to point to the
 application's representation of the user geometry.
 
+For primitives that can provide a tighter oriented bounding box, use
+`RTC_GEOMETRY_TYPE_USER_ORIENTED` and register an
+`RTCOrientedBoundsFunction` with
+`rtcSetGeometryOrientedBoundsFunction`.
+
 The creation of a user geometry typically looks the following:
 
     RTCGeometry geometry = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
@@ -61,4 +66,6 @@ queried using `rtcGetDeviceError`.
 
 [rtcNewGeometry], [rtcSetGeometryUserPrimitiveCount],
 [rtcSetGeometryUserData], [rtcSetGeometryBoundsFunction],
-[rtcSetGeometryIntersectFunction], [rtcSetGeometryOccludedFunction]
+[rtcSetGeometryIntersectFunction], [rtcSetGeometryOccludedFunction],
+[RTC_GEOMETRY_TYPE_USER_ORIENTED],
+[rtcSetGeometryOrientedBoundsFunction]

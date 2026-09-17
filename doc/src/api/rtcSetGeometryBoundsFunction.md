@@ -15,6 +15,7 @@
       unsigned int primID;
       unsigned int timeStep;
       struct RTCBounds* bounds_o;
+      void* boundsUserPtr;
     };
   
     typedef void (*RTCBoundsFunction)(
@@ -50,7 +51,9 @@ contains various arguments, such as: the user data of the geometry
 (`geometryUserPtr` member), the ID of the primitive to calculate the
 bounds for (`primID` member), the time step at which to calculate the
 bounds (`timeStep` member), and a memory location to write the
-calculated bound to (`bounds_o` member).
+calculated bound to (`bounds_o` member). The `boundsUserPtr` member
+contains the callback payload passed to
+`rtcSetGeometryBoundsFunction`.
 
 In a typical usage scenario one would store a pointer to the internal
 representation of the user geometry object using
@@ -66,5 +69,5 @@ On failure an error code is set that can be queried using
 
 #### SEE ALSO
 
-[RTC_GEOMETRY_TYPE_USER]
-
+[RTC_GEOMETRY_TYPE_USER], [RTC_GEOMETRY_TYPE_USER_ORIENTED],
+[rtcSetGeometryOrientedBoundsFunction]

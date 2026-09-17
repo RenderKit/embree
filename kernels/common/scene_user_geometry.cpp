@@ -25,10 +25,11 @@ namespace embree
 
   void UserGeometry::setBoundsFunction (RTCBoundsFunction bounds, void* userPtr) {
     this->boundsFunc = bounds;
+    this->boundsUserPtr = userPtr;
     Geometry::update();
   }
 
-  void UserGeometry::setOrientedBoundsFunction (RTCBoundsFunction bounds, void* userPtr) {
+  void UserGeometry::setOrientedBoundsFunction (RTCOrientedBoundsFunction bounds, void* userPtr) {
     (void)bounds;
     (void)userPtr;
     throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation only supported for oriented user geometries");

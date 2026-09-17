@@ -3,6 +3,7 @@
 
 #include <embree4/rtcore.h>
 
+#include <atomic>
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -10,30 +11,37 @@
 
 struct Primitive
 {
-  RTCBounds bounds;
+  RTCOrientedBounds bounds;
 };
 
-static void boundsFunction(const RTCBoundsFunctionArguments* args)
+static void* expectedBoundsUserPtr = nullptr;
+static std::atomic<bool> boundsUserPtrMismatch(false);
+
+static void boundsFunction(const RTCOrientedBoundsFunctionArguments* args)
 {
+  if (args->boundsUserPtr != expectedBoundsUserPtr)
+    boundsUserPtrMismatch.store(true);
   const Primitive* primitives = static_cast<const Primitive*>(args->geometryUserPtr);
   *args->bounds_o = primitives[args->primID].bounds;
 }
 
 static bool intersectPrimitive(const Primitive& primitive, RTCRayN* rays, unsigned int N, unsigned int lane, float& t)
 {
+  const RTCOrientedBounds& bounds = primitive.bounds;
   const float dirZ = RTCRayN_dir_z(rays, N, lane);
   if (dirZ == 0.0f)
     return false;
 
-  t = (0.5f * (primitive.bounds.lower_z + primitive.bounds.upper_z) -
-       RTCRayN_org_z(rays, N, lane)) / dirZ;
+  t = (bounds.center_z - RTCRayN_org_z(rays, N, lane)) / dirZ;
   if (t < RTCRayN_tnear(rays, N, lane) || t > RTCRayN_tfar(rays, N, lane))
     return false;
 
   const float x = RTCRayN_org_x(rays, N, lane) + t * RTCRayN_dir_x(rays, N, lane);
   const float y = RTCRayN_org_y(rays, N, lane) + t * RTCRayN_dir_y(rays, N, lane);
-  return x >= primitive.bounds.lower_x && x <= primitive.bounds.upper_x &&
-         y >= primitive.bounds.lower_y && y <= primitive.bounds.upper_y;
+  const float extentX = std::abs(bounds.axis0_x) + std::abs(bounds.axis1_x) + std::abs(bounds.axis2_x);
+  const float extentY = std::abs(bounds.axis0_y) + std::abs(bounds.axis1_y) + std::abs(bounds.axis2_y);
+  return x >= bounds.center_x - extentX && x <= bounds.center_x + extentX &&
+         y >= bounds.center_y - extentY && y <= bounds.center_y + extentY;
 }
 
 static void intersectFunction(const RTCIntersectFunctionNArguments* args)
@@ -85,12 +93,18 @@ static std::vector<Primitive> makePrimitives()
     const float z = 10.0f;
     const float radius = 0.1f;
 
-    primitives[i].bounds.lower_x = x - radius;
-    primitives[i].bounds.lower_y = y - radius;
-    primitives[i].bounds.lower_z = z - radius;
-    primitives[i].bounds.upper_x = x + radius;
-    primitives[i].bounds.upper_y = y + radius;
-    primitives[i].bounds.upper_z = z + radius;
+    primitives[i].bounds.center_x = x;
+    primitives[i].bounds.center_y = y;
+    primitives[i].bounds.center_z = z;
+    primitives[i].bounds.axis0_x = invSqrtTwo;
+    primitives[i].bounds.axis0_y = invSqrtTwo;
+    primitives[i].bounds.axis0_z = 0.0f;
+    primitives[i].bounds.axis1_x = -radius * invSqrtTwo;
+    primitives[i].bounds.axis1_y = radius * invSqrtTwo;
+    primitives[i].bounds.axis1_z = 0.0f;
+    primitives[i].bounds.axis2_x = 0.0f;
+    primitives[i].bounds.axis2_y = 0.0f;
+    primitives[i].bounds.axis2_z = radius;
   }
   return primitives;
 }
@@ -142,11 +156,13 @@ int main(int argc, char** argv)
   }
   RTCScene scene = rtcNewScene(device);
   std::vector<Primitive> primitives = makePrimitives();
+  int boundsPayload = 0;
+  expectedBoundsUserPtr = &boundsPayload;
 
   RTCGeometry geometry = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER_ORIENTED);
   rtcSetGeometryUserPrimitiveCount(geometry, primitives.size());
   rtcSetGeometryUserData(geometry, primitives.data());
-  rtcSetGeometryOrientedBoundsFunction(geometry, boundsFunction, nullptr);
+  rtcSetGeometryOrientedBoundsFunction(geometry, boundsFunction, &boundsPayload);
   rtcSetGeometryIntersectFunction(geometry, intersectFunction);
   rtcSetGeometryOccludedFunction(geometry, occludedFunction);
   rtcCommitGeometry(geometry);
@@ -155,14 +171,13 @@ int main(int argc, char** argv)
 
   std::vector<Primitive> motionPrimitives = primitives;
   for (Primitive& primitive : motionPrimitives) {
-    primitive.bounds.lower_x += 100.0f;
-    primitive.bounds.upper_x += 100.0f;
+    primitive.bounds.center_x += 100.0f;
   }
   RTCGeometry motionGeometry = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER_ORIENTED);
   rtcSetGeometryTimeStepCount(motionGeometry, 2);
   rtcSetGeometryUserPrimitiveCount(motionGeometry, motionPrimitives.size());
   rtcSetGeometryUserData(motionGeometry, motionPrimitives.data());
-  rtcSetGeometryOrientedBoundsFunction(motionGeometry, boundsFunction, nullptr);
+  rtcSetGeometryOrientedBoundsFunction(motionGeometry, boundsFunction, &boundsPayload);
   rtcSetGeometryIntersectFunction(motionGeometry, intersectFunction);
   rtcSetGeometryOccludedFunction(motionGeometry, occludedFunction);
   rtcCommitGeometry(motionGeometry);
@@ -171,8 +186,8 @@ int main(int argc, char** argv)
   rtcCommitScene(scene);
 
   const Primitive& target = primitives[8 * 16 + 8];
-  const float x = 0.5f * (target.bounds.lower_x + target.bounds.upper_x);
-  const float y = 0.5f * (target.bounds.lower_y + target.bounds.upper_y);
+  const float x = target.bounds.center_x;
+  const float y = target.bounds.center_y;
 
   RTCRayHit rayHit{};
   initializeRay(rayHit.ray, x, y);
@@ -186,8 +201,8 @@ int main(int argc, char** argv)
   const bool occluded = shadow.tfar < 0.0f;
 
   const Primitive& motionTarget = motionPrimitives[8 * 16 + 8];
-  const float motionX = 0.5f * (motionTarget.bounds.lower_x + motionTarget.bounds.upper_x);
-  const float motionY = 0.5f * (motionTarget.bounds.lower_y + motionTarget.bounds.upper_y);
+  const float motionX = motionTarget.bounds.center_x;
+  const float motionY = motionTarget.bounds.center_y;
 
   RTCRayHit motionRayHit{};
   initializeRay(motionRayHit.ray, motionX, motionY);
@@ -206,13 +221,13 @@ int main(int argc, char** argv)
   const float packetX[4] = {
     x,
     motionX,
-    0.5f * (secondTarget.bounds.lower_x + secondTarget.bounds.upper_x),
+    secondTarget.bounds.center_x,
     1000.0f
   };
   const float packetY[4] = {
     y,
     motionY,
-    0.5f * (secondTarget.bounds.lower_y + secondTarget.bounds.upper_y),
+    secondTarget.bounds.center_y,
     1000.0f
   };
   const int valid[4] = {-1, -1, -1, -1};
@@ -252,6 +267,8 @@ int main(int argc, char** argv)
     std::cerr << "Oriented user geometry packet intersection failed\n";
   if (!packetOccluded)
     std::cerr << "Oriented user geometry packet occlusion failed\n";
+  if (boundsUserPtrMismatch.load())
+    std::cerr << "Oriented bounds callback payload mismatch\n";
   return intersected && occluded && motionIntersected && motionOccluded &&
-         packetIntersected && packetOccluded ? 0 : 1;
+         packetIntersected && packetOccluded && !boundsUserPtrMismatch.load() ? 0 : 1;
 }

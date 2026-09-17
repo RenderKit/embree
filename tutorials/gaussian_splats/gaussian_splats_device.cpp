@@ -397,26 +397,29 @@ namespace
   }
 }
 
-void splatBoundsFunc(const RTCBoundsFunctionArguments* args)
+void splatBoundsFunc(const RTCOrientedBoundsFunctionArguments* args)
 {
   const GaussianSplat* splats = (const GaussianSplat*) args->geometryUserPtr;
   const GaussianSplat& s = splats[args->primID];
-  RTCBounds* bounds = args->bounds_o;
+  RTCOrientedBounds* bounds = args->bounds_o;
 
   const Vec3fa scale = clampGaussianScale(s.scale);
-  const Vec3fa axisX = rotateVector(s.rotation, Vec3fa(scale.x, 0.0f, 0.0f));
-  const Vec3fa axisY = rotateVector(s.rotation, Vec3fa(0.0f, scale.y, 0.0f));
-  const Vec3fa axisZ = rotateVector(s.rotation, Vec3fa(0.0f, 0.0f, scale.z));
-  const Vec3fa extent = 3.0f * (abs(axisX) + abs(axisY) + abs(axisZ));
-  const Vec3fa lower = s.center - extent;
-  const Vec3fa upper = s.center + extent;
+  const Vec3fa axis0 = 3.0f * rotateVector(s.rotation, Vec3fa(scale.x, 0.0f, 0.0f));
+  const Vec3fa axis1 = 3.0f * rotateVector(s.rotation, Vec3fa(0.0f, scale.y, 0.0f));
+  const Vec3fa axis2 = 3.0f * rotateVector(s.rotation, Vec3fa(0.0f, 0.0f, scale.z));
 
-  bounds->lower_x = lower.x;
-  bounds->lower_y = lower.y;
-  bounds->lower_z = lower.z;
-  bounds->upper_x = upper.x;
-  bounds->upper_y = upper.y;
-  bounds->upper_z = upper.z;
+  bounds->center_x = s.center.x;
+  bounds->center_y = s.center.y;
+  bounds->center_z = s.center.z;
+  bounds->axis0_x = axis0.x;
+  bounds->axis0_y = axis0.y;
+  bounds->axis0_z = axis0.z;
+  bounds->axis1_x = axis1.x;
+  bounds->axis1_y = axis1.y;
+  bounds->axis1_z = axis1.z;
+  bounds->axis2_x = axis2.x;
+  bounds->axis2_y = axis2.y;
+  bounds->axis2_z = axis2.z;
 }
 
 RTC_SYCL_INDIRECTLY_CALLABLE void splatIntersectFunc(const RTCIntersectFunctionNArguments* args)

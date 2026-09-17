@@ -57,8 +57,8 @@ namespace embree
       const unsigned geomID = prim.geomID();
       const unsigned primID = prim.primID();
       new (this) Object(geomID, primID);
-      AccelSet* accel = (AccelSet*) scene->get(geomID);
-      return accel->linearBounds(primID,itime);
+      Geometry* geometry = scene->get(geomID);
+      return geometry->vlinearBounds(primID, BBox1f(geometry->timeStep(itime), geometry->timeStep(itime + 1)));
     }
 
     /*! fill triangle from triangle list */
@@ -68,8 +68,7 @@ namespace embree
       const unsigned geomID = prim.geomID();
       const unsigned primID = prim.primID();
       new (this) Object(geomID, primID);
-      AccelSet* accel = (AccelSet*) scene->get(geomID);
-      return accel->linearBounds(primID,time_range);
+      return scene->get(geomID)->vlinearBounds(primID, time_range);
     }
 
      /*! fill triangle from triangle list */
@@ -79,13 +78,12 @@ namespace embree
       const unsigned geomID = prim.geomID();
       const unsigned primID = prim.primID();
       new (this) Object(geomID, primID);
-      AccelSet* accel = (AccelSet*) scene->get(geomID);
-      return accel->linearBounds(primID,time_range);
+      return scene->get(geomID)->vlinearBounds(primID, time_range);
     }
 
     /* Updates the primitive */
     __forceinline BBox3fa update(AccelSet* mesh) {
-      return mesh->bounds(primID());
+      return mesh->vbounds(primID());
     }
 
   private:

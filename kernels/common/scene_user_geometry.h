@@ -17,13 +17,30 @@ namespace embree
     UserGeometry (Device* device, unsigned int items = 0, unsigned int numTimeSteps = 1, Geometry::GType gtype = Geometry::GTY_USER_GEOMETRY);
     virtual void setMask (unsigned mask) override;
     virtual void setBoundsFunction (RTCBoundsFunction bounds, void* userPtr) override;
-    virtual void setOrientedBoundsFunction (RTCBoundsFunction bounds, void* userPtr) override;
+    virtual void setOrientedBoundsFunction (RTCOrientedBoundsFunction bounds, void* userPtr) override;
     virtual void setIntersectFunctionN (RTCIntersectFunctionN intersect) override;
     virtual void setOccludedFunctionN (RTCOccludedFunctionN occluded) override;
     virtual void build() override {}
     virtual void addElementsToCount (GeometryCounts & counts) const override;
     virtual size_t getGeometryDataDeviceByteSize() const override;
     virtual void convertToDeviceRepresentation(size_t offset, char* data_host, char* data_device) const override;
+
+    virtual BBox3fa vbounds(size_t primID) const override {
+      return bounds(primID);
+    }
+
+    virtual BBox3fa vbounds(const LinearSpace3fa& space, size_t primID) const override {
+      return xfmBounds(space, bounds(primID));
+    }
+
+    virtual LBBox3fa vlinearBounds(size_t primID, const BBox1f& time_range) const override {
+      return linearBounds(primID, time_range);
+    }
+
+    virtual LBBox3fa vlinearBounds(const LinearSpace3fa& space, size_t primID, const BBox1f& time_range) const override {
+      const LBBox3fa lb = linearBounds(primID, time_range);
+      return LBBox3fa(xfmBounds(space, lb.bounds0), xfmBounds(space, lb.bounds1));
+    }
 
     __forceinline float projectedPrimitiveArea(const size_t i) const { return 0.0f; }
   };
@@ -42,17 +59,112 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"use rtcSetGeometryOrientedBoundsFunction for oriented user geometry");
     }
 
-    virtual void setOrientedBoundsFunction (RTCBoundsFunction bounds, void* userPtr) override {
-      this->boundsFunc = bounds;
+    virtual void setOrientedBoundsFunction (RTCOrientedBoundsFunction bounds, void* userPtr) override {
+      this->orientedBoundsFunc = bounds;
+      this->boundsUserPtr = userPtr;
       Geometry::update();
     }
 
+    __forceinline RTCOrientedBounds orientedBounds(size_t primID, size_t timeStep = 0) const {
+      RTCOrientedBounds bounds;
+      RTCOrientedBoundsFunctionArguments args;
+      args.geometryUserPtr = userPtr;
+      args.primID = unsigned(primID);
+      args.timeStep = unsigned(timeStep);
+      args.bounds_o = &bounds;
+      args.boundsUserPtr = boundsUserPtr;
+      orientedBoundsFunc(&args);
+      return bounds;
+    }
+
+    static __forceinline BBox3fa bounds(const RTCOrientedBounds& bounds, const LinearSpace3fa& space = one) {
+      const Vec3fa center = space * Vec3fa(bounds.center_x, bounds.center_y, bounds.center_z);
+      const Vec3fa axis0 = space * Vec3fa(bounds.axis0_x, bounds.axis0_y, bounds.axis0_z);
+      const Vec3fa axis1 = space * Vec3fa(bounds.axis1_x, bounds.axis1_y, bounds.axis1_z);
+      const Vec3fa axis2 = space * Vec3fa(bounds.axis2_x, bounds.axis2_y, bounds.axis2_z);
+      const Vec3fa extent = abs(axis0) + abs(axis1) + abs(axis2);
+      return BBox3fa(center - extent, center + extent);
+    }
+
+    __forceinline BBox3fa bounds(size_t primID, size_t timeStep = 0) const {
+      return bounds(orientedBounds(primID, timeStep));
+    }
+
+    __forceinline bool valid(size_t primID, const range<size_t>& timeSteps) const {
+      for (size_t timeStep = timeSteps.begin(); timeStep <= timeSteps.end(); ++timeStep)
+        if (!isvalid_non_empty(bounds(primID, timeStep)))
+          return false;
+      return true;
+    }
+
+    __forceinline LBBox3fa linearBounds(size_t primID, size_t timeStep) const {
+      return LBBox3fa(bounds(primID, timeStep), bounds(primID, timeStep + 1));
+    }
+
+    __forceinline LBBox3fa linearBounds(size_t primID, const BBox1f& timeRange) const {
+      return LBBox3fa([&] (size_t timeStep) { return bounds(primID, timeStep); },
+                      timeRange, time_range, fnumTimeSegments);
+    }
+
+    __forceinline bool linearBounds(size_t primID, const BBox1f& timeRange, LBBox3fa& bounds_o) const {
+      if (!valid(primID, timeSegmentRange(timeRange)))
+        return false;
+      bounds_o = linearBounds(primID, timeRange);
+      return true;
+    }
+
+    __forceinline bool buildBounds(size_t primID, BBox3fa* bounds_o = nullptr) const {
+      const BBox3fa box = bounds(primID);
+      if (bounds_o)
+        *bounds_o = box;
+      return isvalid_non_empty(box);
+    }
+
+    __forceinline bool buildBounds(size_t primID, size_t timeStep, BBox3fa& bounds_o) const {
+      const LBBox3fa linear = linearBounds(primID, timeStep);
+      bounds_o = linear.bounds0;
+      return isvalid_non_empty(linear);
+    }
+
+    static __forceinline Vec3fa direction(const RTCOrientedBounds& bounds) {
+      const Vec3fa axes[] = {
+        Vec3fa(bounds.axis0_x, bounds.axis0_y, bounds.axis0_z),
+        Vec3fa(bounds.axis1_x, bounds.axis1_y, bounds.axis1_z),
+        Vec3fa(bounds.axis2_x, bounds.axis2_y, bounds.axis2_z)
+      };
+      const float lengths[] = {sqr_length(axes[0]), sqr_length(axes[1]), sqr_length(axes[2])};
+      const size_t longest = lengths[0] >= lengths[1] ?
+        (lengths[0] >= lengths[2] ? 0 : 2) :
+        (lengths[1] >= lengths[2] ? 1 : 2);
+      return axes[longest];
+    }
+
+    static __forceinline LinearSpace3fa alignedSpace(const RTCOrientedBounds& bounds) {
+      const Vec3fa axis0 = normalize(Vec3fa(bounds.axis0_x, bounds.axis0_y, bounds.axis0_z));
+      const Vec3fa axis1 = normalize(Vec3fa(bounds.axis1_x, bounds.axis1_y, bounds.axis1_z));
+      const Vec3fa axis2 = normalize(Vec3fa(bounds.axis2_x, bounds.axis2_y, bounds.axis2_z));
+      if (!is_finite(axis0) || !is_finite(axis1) || !is_finite(axis2)) {
+        const Vec3fa axis = normalize(direction(bounds));
+        return is_finite(axis) ? frame(axis).transposed() : LinearSpace3fa(one);
+      }
+      return LinearSpace3fa(axis0, axis1, axis2).transposed();
+    }
+
+    virtual LinearSpace3fa computeAlignedSpace(const size_t primID) const override {
+      return alignedSpace(orientedBounds(primID));
+    }
+
+    virtual LinearSpace3fa computeAlignedSpaceMB(const size_t primID, const BBox1f timeRange) const override {
+      const range<int> timeSteps = timeSegmentRange(timeRange);
+      return alignedSpace(orientedBounds(primID, (timeSteps.begin() + timeSteps.end()) / 2));
+    }
+
     virtual Vec3fa computeDirection(unsigned int primID) const override {
-      return Vec3fa(1.0f, 0.0f, 0.0f);
+      return direction(orientedBounds(primID));
     }
 
     virtual Vec3fa computeDirection(unsigned int primID, size_t time) const override {
-      return Vec3fa(1.0f, 0.0f, 0.0f);
+      return direction(orientedBounds(primID, time));
     }
 
     virtual BBox3fa vbounds(size_t primID) const override {
@@ -60,7 +172,7 @@ namespace embree
     }
 
     virtual BBox3fa vbounds(const LinearSpace3fa& space, size_t primID) const override {
-      return xfmBounds(space, bounds(primID));
+      return bounds(orientedBounds(primID), space);
     }
 
     virtual LBBox3fa vlinearBounds(size_t primID, const BBox1f& time_range) const override {
@@ -68,9 +180,14 @@ namespace embree
     }
 
     virtual LBBox3fa vlinearBounds(const LinearSpace3fa& space, size_t primID, const BBox1f& time_range) const override {
-      const LBBox3fa lb = linearBounds(primID, time_range);
-      return LBBox3fa(xfmBounds(space, lb.bounds0), xfmBounds(space, lb.bounds1));
+      const LBBox3fa lb = LBBox3fa(
+        [&] (size_t timeStep) { return bounds(orientedBounds(primID, timeStep), space); },
+        time_range, this->time_range, fnumTimeSegments);
+      return lb;
     }
+
+  public:
+    RTCOrientedBoundsFunction orientedBoundsFunc = nullptr;
   };
 
   namespace isa

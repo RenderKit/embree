@@ -77,10 +77,24 @@ struct RTCBoundsFunctionArguments
   unsigned int primID;
   unsigned int timeStep;
   struct RTCBounds* bounds_o;
+  void* boundsUserPtr;
 };
 
 /* Bounding callback function */
 typedef void (*RTCBoundsFunction)(const struct RTCBoundsFunctionArguments* args);
+
+/* Arguments for RTCOrientedBoundsFunction */
+struct RTCOrientedBoundsFunctionArguments
+{
+  void* geometryUserPtr;
+  unsigned int primID;
+  unsigned int timeStep;
+  struct RTCOrientedBounds* bounds_o;
+  void* boundsUserPtr;
+};
+
+/* Oriented bounding callback function */
+typedef void (*RTCOrientedBoundsFunction)(const struct RTCOrientedBoundsFunctionArguments* args);
 
 /* Arguments for RTCIntersectFunctionN */
 struct RTCIntersectFunctionNArguments
@@ -217,7 +231,7 @@ RTC_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry geometry, unsigned int
 RTC_API void rtcSetGeometryBoundsFunction(RTCGeometry geometry, RTCBoundsFunction bounds, void* userPtr);
 
 /* Sets the oriented bounding callback function for oriented user primitives. */
-RTC_API void rtcSetGeometryOrientedBoundsFunction(RTCGeometry geometry, RTCBoundsFunction bounds, void* userPtr);
+RTC_API void rtcSetGeometryOrientedBoundsFunction(RTCGeometry geometry, RTCOrientedBoundsFunction bounds, void* userPtr);
 
 /* Set the intersect callback function of a user geometry. */
 RTC_API void rtcSetGeometryIntersectFunction(RTCGeometry geometry, RTCIntersectFunctionN intersect);
@@ -399,5 +413,3 @@ struct RTCGrid
 };
 
 RTC_NAMESPACE_END
-
-

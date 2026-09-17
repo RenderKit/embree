@@ -175,6 +175,15 @@ struct RTC_ALIGN(16) RTCLinearBounds
   struct RTCBounds bounds1;
 };
 
+/* Oriented bounding box represented by a center and three half-axis vectors. */
+struct RTC_ALIGN(16) RTCOrientedBounds
+{
+  float center_x, center_y, center_z, align0;
+  float axis0_x, axis0_y, axis0_z, align1;
+  float axis1_x, axis1_y, axis1_z, align2;
+  float axis2_x, axis2_y, axis2_z, align3;
+};
+
 /* Feature flags for SYCL specialization constants */
 enum RTCFeatureFlags
 {

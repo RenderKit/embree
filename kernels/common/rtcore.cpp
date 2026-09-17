@@ -2108,7 +2108,7 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcSetGeometryOrientedBoundsFunction (RTCGeometry hgeometry, RTCBoundsFunction bounds, void* userPtr)
+  RTC_API void rtcSetGeometryOrientedBoundsFunction (RTCGeometry hgeometry, RTCOrientedBoundsFunction bounds, void* userPtr)
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;

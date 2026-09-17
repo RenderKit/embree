@@ -527,7 +527,7 @@ namespace embree
     }
 
     /*! Set oriented bounds function (for OOBB user geometries). */
-    virtual void setOrientedBoundsFunction (RTCBoundsFunction bounds, void* userPtr) {
+    virtual void setOrientedBoundsFunction (RTCOrientedBoundsFunction bounds, void* userPtr) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry");
     }
 

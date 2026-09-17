@@ -199,6 +199,11 @@
 ```
 \pagebreak
 
+## RTC_GEOMETRY_TYPE_USER_ORIENTED
+``` {include=src/api/RTC_GEOMETRY_TYPE_USER_ORIENTED.md}
+```
+\pagebreak
+
 ## RTC_GEOMETRY_TYPE_INSTANCE
 ``` {include=src/api/RTC_GEOMETRY_TYPE_INSTANCE.md}
 ```
@@ -371,6 +376,11 @@
 
 ## rtcSetGeometryBoundsFunction
 ``` {include=src/api/rtcSetGeometryBoundsFunction.md}
+```
+\pagebreak
+
+## rtcSetGeometryOrientedBoundsFunction
+``` {include=src/api/rtcSetGeometryOrientedBoundsFunction.md}
 ```
 \pagebreak
 

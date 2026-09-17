@@ -27,6 +27,7 @@ namespace embree
         const LinearSpace3fa computeAlignedSpace(const range<size_t>& set)
         {
           Vec3fa axis(0,0,1);
+          LinearSpace3fa space = frame(axis).transposed();
           uint64_t bestGeomPrimID = -1;
 
           /*! find curve with minimum ID that defines valid direction */
@@ -36,13 +37,20 @@ namespace embree
             const unsigned int primID = prims[i].primID();
             const uint64_t geomprimID = prims[i].ID64();
             if (geomprimID >= bestGeomPrimID) continue;
-            const Vec3fa axis1 = scene->get(geomID)->computeDirection(primID);
+            const Geometry* geometry = scene->get(geomID);
+            if (geometry->getTypeMask() & Geometry::MTY_USER_GEOMETRY_ORIENTED) {
+              space = geometry->computeAlignedSpace(primID);
+              bestGeomPrimID = geomprimID;
+              continue;
+            }
+            const Vec3fa axis1 = geometry->computeDirection(primID);
             if (sqr_length(axis1) > 1E-18f) {
               axis = normalize(axis1);
+              space = frame(axis).transposed();
               bestGeomPrimID = geomprimID;
             }
           }
-          return frame(axis).transposed();
+          return space;
         }
         
         const PrimInfo computePrimInfo(const range<size_t>& set, const LinearSpace3fa& space)
@@ -200,6 +208,7 @@ namespace embree
         const LinearSpace3fa computeAlignedSpaceMB(Scene* scene, const SetMB& set)
         {
           Vec3fa axis0(0,0,1);
+          LinearSpace3fa space = frame(axis0).transposed();
           uint64_t bestGeomPrimID = -1;
 
           /*! find curve with minimum ID that defines valid direction */
@@ -216,14 +225,20 @@ namespace embree
             if (tbounds.size() == 0) continue;
 
             const size_t t = (tbounds.begin()+tbounds.end())/2;
+            if (mesh->getTypeMask() & Geometry::MTY_USER_GEOMETRY_ORIENTED) {
+              space = mesh->computeAlignedSpaceMB(primID, set.time_range);
+              bestGeomPrimID = geomprimID;
+              continue;
+            }
             const Vec3fa axis1 = mesh->computeDirection(primID,t);
             if (sqr_length(axis1) > 1E-18f) {
               axis0 = normalize(axis1);
+              space = frame(axis0).transposed();
               bestGeomPrimID = geomprimID;
             }
           }
 
-          return frame(axis0).transposed();
+          return space;
         }
 
         struct BinBoundsAndCenter

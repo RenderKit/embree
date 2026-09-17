@@ -80,6 +80,7 @@ namespace embree
         args.primID = (unsigned int)i;
         args.timeStep = (unsigned int)itime;
         args.bounds_o = (RTCBounds*)&box;
+        args.boundsUserPtr = boundsUserPtr;
         boundsFunc(&args);
         return box;
       }
@@ -94,6 +95,7 @@ namespace embree
         args.primID = (unsigned int)i;
         args.timeStep = (unsigned int)(itime+0);
         args.bounds_o = (RTCBounds*)&box[0];
+        args.boundsUserPtr = boundsUserPtr;
         boundsFunc(&args);
         args.timeStep = (unsigned int)(itime+1);
         args.bounds_o = (RTCBounds*)&box[1];
@@ -335,6 +337,7 @@ namespace embree
 
     public:
       RTCBoundsFunction boundsFunc;
+      void* boundsUserPtr;
       IntersectorN intersectorN;
   };
   
