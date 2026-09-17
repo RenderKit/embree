@@ -128,7 +128,7 @@ namespace
   static Vec4f normalizeQuaternion(const Vec4f& q)
   {
     const float lengthSquared = dot(q, q);
-    if (lengthSquared < 1.0e-20f)
+    if (!(lengthSquared >= 1.0e-20f) || !std::isfinite(lengthSquared))
       return Vec4f(1.0f, 0.0f, 0.0f, 0.0f);
     return q * rsqrt(lengthSquared);
   }
@@ -213,8 +213,13 @@ namespace
 
   static Vec3fa clampGaussianScale(const Vec3fa& scale)
   {
-    const float maxScale = max(scale.x, max(scale.y, scale.z));
-    return max(scale, Vec3fa(maxScale * 1.0e-3f));
+    const float minimumScale = 1.0e-6f;
+    const Vec3fa finiteScale(
+      std::isfinite(scale.x) && scale.x > 0.0f ? scale.x : minimumScale,
+      std::isfinite(scale.y) && scale.y > 0.0f ? scale.y : minimumScale,
+      std::isfinite(scale.z) && scale.z > 0.0f ? scale.z : minimumScale);
+    const float maxScale = max(finiteScale.x, max(finiteScale.y, finiteScale.z));
+    return max(finiteScale, Vec3fa(maxScale * 1.0e-3f));
   }
 
   static bool evaluateGaussian(const GaussianSplat& splat,
@@ -222,24 +227,28 @@ namespace
                                float& t,
                                float& particleOpacity)
   {
-    const Vec3fa scale = clampGaussianScale(splat.scale);
+    if (!is_finite(splat.center) || !std::isfinite(splat.opacity))
+      return false;
 
-    const Vec3fa oRotated = inverseRotateVector(splat.rotation, ray.org - splat.center);
-    const Vec3fa dRotated = inverseRotateVector(splat.rotation, ray.dir);
+    const Vec3fa scale = clampGaussianScale(splat.scale);
+    const Vec4f rotation = normalizeQuaternion(splat.rotation);
+
+    const Vec3fa oRotated = inverseRotateVector(rotation, ray.org - splat.center);
+    const Vec3fa dRotated = inverseRotateVector(rotation, ray.dir);
     const Vec3fa oGaussian(oRotated.x / scale.x, oRotated.y / scale.y, oRotated.z / scale.z);
     const Vec3fa dGaussian(dRotated.x / scale.x, dRotated.y / scale.y, dRotated.z / scale.z);
 
     const float denominator = dot(dGaussian, dGaussian);
-    if (denominator <= 1.0e-20f)
+    if (!(denominator > 1.0e-20f) || !std::isfinite(denominator))
       return false;
 
     t = -dot(oGaussian, dGaussian) / denominator;
-    if (t < ray.tnear() || t > ray.tfar)
+    if (!std::isfinite(t) || t < ray.tnear() || t > ray.tfar)
       return false;
 
     const Vec3fa xGaussian = oGaussian + t * dGaussian;
     particleOpacity = splat.opacity * exp(-0.5f * dot(xGaussian, xGaussian));
-    return particleOpacity >= 0.01f;
+    return std::isfinite(particleOpacity) && particleOpacity >= 0.01f;
   }
 
   static void loadGaussianSplatsFromPly(const std::string& filePath)
@@ -404,9 +413,10 @@ void splatBoundsFunc(const RTCOrientedBoundsFunctionArguments* args)
   RTCOrientedBounds* bounds = args->bounds_o;
 
   const Vec3fa scale = clampGaussianScale(s.scale);
-  const Vec3fa axis0 = 3.0f * rotateVector(s.rotation, Vec3fa(scale.x, 0.0f, 0.0f));
-  const Vec3fa axis1 = 3.0f * rotateVector(s.rotation, Vec3fa(0.0f, scale.y, 0.0f));
-  const Vec3fa axis2 = 3.0f * rotateVector(s.rotation, Vec3fa(0.0f, 0.0f, scale.z));
+  const Vec4f rotation = normalizeQuaternion(s.rotation);
+  const Vec3fa axis0 = 3.0f * rotateVector(rotation, Vec3fa(scale.x, 0.0f, 0.0f));
+  const Vec3fa axis1 = 3.0f * rotateVector(rotation, Vec3fa(0.0f, scale.y, 0.0f));
+  const Vec3fa axis2 = 3.0f * rotateVector(rotation, Vec3fa(0.0f, 0.0f, scale.z));
 
   bounds->center_x = s.center.x;
   bounds->center_y = s.center.y;

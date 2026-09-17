@@ -47,6 +47,8 @@ The callback writes the box center and three mutually orthogonal half-axis
 vectors to `bounds_o`. The lengths of the vectors are the half-extents, and
 their directions specify the primitive orientation. Embree uses the complete
 orientation when evaluating and constructing oriented BVH nodes.
+Bounds containing NaN or infinite values are ignored. Zero-length axes are
+supported and do not require special handling by the callback.
 
 The `geometryUserPtr` member contains the pointer set with
 `rtcSetGeometryUserData`. The `primID` and `timeStep` members identify the

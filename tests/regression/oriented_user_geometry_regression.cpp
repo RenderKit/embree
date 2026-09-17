@@ -82,10 +82,10 @@ static void occludedFunction(const RTCOccludedFunctionNArguments* args)
 
 static std::vector<Primitive> makePrimitives()
 {
-  std::vector<Primitive> primitives(256);
+  std::vector<Primitive> primitives(259);
   const float invSqrtTwo = 1.0f / std::sqrt(2.0f);
 
-  for (size_t i = 0; i < primitives.size(); ++i) {
+  for (size_t i = 0; i < 256; ++i) {
     const float u = (float(int(i % 16) - 8)) * 1.5f;
     const float v = (float(int(i / 16) - 8)) * 0.35f;
     const float x = (u - v) * invSqrtTwo;
@@ -106,6 +106,23 @@ static std::vector<Primitive> makePrimitives()
     primitives[i].bounds.axis2_y = 0.0f;
     primitives[i].bounds.axis2_z = radius;
   }
+
+  primitives[256].bounds = primitives[0].bounds;
+  primitives[256].bounds.center_x = std::numeric_limits<float>::quiet_NaN();
+  primitives[257].bounds = primitives[0].bounds;
+  primitives[257].bounds.center_x = 1000.0f;
+  primitives[257].bounds.axis0_x = 0.0f;
+  primitives[257].bounds.axis0_y = 0.0f;
+  primitives[257].bounds.axis0_z = 0.0f;
+  primitives[257].bounds.axis1_x = 0.0f;
+  primitives[257].bounds.axis1_y = 0.0f;
+  primitives[257].bounds.axis1_z = 0.0f;
+  primitives[257].bounds.axis2_x = 0.0f;
+  primitives[257].bounds.axis2_y = 0.0f;
+  primitives[257].bounds.axis2_z = 0.0f;
+  primitives[258].bounds = primitives[0].bounds;
+  primitives[258].bounds.center_x = 2000.0f;
+  primitives[258].bounds.axis0_x = std::numeric_limits<float>::infinity();
   return primitives;
 }
 
@@ -252,6 +269,17 @@ int main(int argc, char** argv)
     shadow4.tfar[2] < 0.0f &&
     shadow4.tfar[3] >= 0.0f;
 
+  RTCRayHit malformedRayHit{};
+  initializeRay(malformedRayHit.ray, 1000.0f, primitives[257].bounds.center_y);
+  malformedRayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
+  rtcIntersect1(scene, &malformedRayHit);
+
+  RTCRayHit nonFiniteRayHit{};
+  initializeRay(nonFiniteRayHit.ray, 2000.0f, primitives[258].bounds.center_y);
+  nonFiniteRayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
+  rtcIntersect1(scene, &nonFiniteRayHit);
+  const bool nonFiniteMissed = nonFiniteRayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID;
+
   rtcReleaseScene(scene);
   rtcReleaseDevice(device);
 
@@ -269,6 +297,9 @@ int main(int argc, char** argv)
     std::cerr << "Oriented user geometry packet occlusion failed\n";
   if (boundsUserPtrMismatch.load())
     std::cerr << "Oriented bounds callback payload mismatch\n";
+  if (!nonFiniteMissed)
+    std::cerr << "Non-finite oriented bound was not ignored\n";
   return intersected && occluded && motionIntersected && motionOccluded &&
-         packetIntersected && packetOccluded && !boundsUserPtrMismatch.load() ? 0 : 1;
+         packetIntersected && packetOccluded && !boundsUserPtrMismatch.load() &&
+         nonFiniteMissed ? 0 : 1;
 }
