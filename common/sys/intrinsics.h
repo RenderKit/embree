@@ -38,11 +38,13 @@ __forceinline __m128 _mm_insert_ps(__m128 a, __m128 b, const int imm) {
 #define _MM_MASK_DENORM 0x0100
 #define _MM_MASK_DIV_ZERO 0x0200
 #define _MM_MASK_MASK 0x1f80
+#define _MM_FLUSH_ZERO_MASK 0x8000
 #define _MM_FLUSH_ZERO_ON 0x8000
 #define _MM_DENORMALS_ZERO_ON 0x0040
 #define _MM_DENORMALS_ZERO_OFF 0x0000
 #define _MM_DENORMALS_ZERO_MASK 0x0040
 #define _MM_SET_EXCEPTION_MASK(x) _mm_setcsr((_mm_getcsr() & ~_MM_MASK_MASK) | (x))
+#define _MM_SET_FLUSH_ZERO_MODE(x) _mm_setcsr((_mm_getcsr() & ~_MM_FLUSH_ZERO_MASK) | (x))
 #endif
 #if defined(__EMSCRIPTEN__)
 #include "../simd/wasm/emulation.h"
