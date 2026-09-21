@@ -13,6 +13,39 @@
 #include "../simd/arm/emulation.h"
 #else
 #include <immintrin.h>
+#if defined(__powerpc64__) && defined(__clang__)
+__forceinline unsigned int _mm_getcsr() { return 0; }
+__forceinline void _mm_setcsr(unsigned int) {}
+__forceinline int _mm_popcnt_u32(unsigned int v) { return __builtin_popcount(v); }
+__forceinline long long _mm_popcnt_u64(unsigned long long v) { return __builtin_popcountll(v); }
+__forceinline __m128i _mm_stream_load_si128(__m128i* p) { return _mm_load_si128(p); }
+__forceinline __m128 _mm_dp_ps(__m128 a, __m128 b, const int imm) {
+  const __m128i hi = _mm_set_epi32((imm & 0x80) ? -1 : 0, (imm & 0x40) ? -1 : 0, (imm & 0x20) ? -1 : 0, (imm & 0x10) ? -1 : 0);
+  const __m128i lo = _mm_set_epi32((imm & 0x08) ? -1 : 0, (imm & 0x04) ? -1 : 0, (imm & 0x02) ? -1 : 0, (imm & 0x01) ? -1 : 0);
+  __m128 p = _mm_and_ps(_mm_mul_ps(a, b), _mm_castsi128_ps(hi));
+  p = _mm_hadd_ps(p, p);
+  p = _mm_hadd_ps(p, p);
+  return _mm_and_ps(p, _mm_castsi128_ps(lo));
+}
+__forceinline __m128 _mm_insert_ps(__m128 a, __m128 b, const int imm) {
+  float ta[4], tb[4];
+  _mm_storeu_ps(ta, a);
+  _mm_storeu_ps(tb, b);
+  ta[(imm >> 4) & 3] = tb[(imm >> 6) & 3];
+  for (int i = 0; i < 4; i++) if (imm & (1 << i)) ta[i] = 0.0f;
+  return _mm_loadu_ps(ta);
+}
+#define _MM_MASK_DENORM 0x0100
+#define _MM_MASK_DIV_ZERO 0x0200
+#define _MM_MASK_MASK 0x1f80
+#define _MM_FLUSH_ZERO_MASK 0x8000
+#define _MM_FLUSH_ZERO_ON 0x8000
+#define _MM_DENORMALS_ZERO_ON 0x0040
+#define _MM_DENORMALS_ZERO_OFF 0x0000
+#define _MM_DENORMALS_ZERO_MASK 0x0040
+#define _MM_SET_EXCEPTION_MASK(x) _mm_setcsr((_mm_getcsr() & ~_MM_MASK_MASK) | (x))
+#define _MM_SET_FLUSH_ZERO_MODE(x) _mm_setcsr((_mm_getcsr() & ~_MM_FLUSH_ZERO_MASK) | (x))
+#endif
 #if defined(__EMSCRIPTEN__)
 #include "../simd/wasm/emulation.h"
 #endif
