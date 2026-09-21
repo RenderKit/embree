@@ -51,6 +51,14 @@ interpolation buffer, one can specify vertex buffers
 (`RTC_BUFFER_TYPE_VERTEX`) and vertex attribute buffers
 (`RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE`) as well.
 
+The `bufferType` has to be either `RTC_BUFFER_TYPE_VERTEX` or
+`RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE`, and the `bufferSlot` has to be a
+valid slot of the specified buffer type, thus smaller than the number
+of time steps for vertex buffers and smaller than the vertex attribute
+count set using `rtcSetGeometryVertexAttributeCount` for vertex
+attribute buffers. Otherwise an `RTC_ERROR_INVALID_ARGUMENT` error is
+raised and no data is interpolated.
+
 The `rtcInterpolate` call stores `valueCount` number of interpolated
 floating point values to the memory location pointed to by `P`. One
 can avoid storing the interpolated value by setting `P` to `NULL`.
