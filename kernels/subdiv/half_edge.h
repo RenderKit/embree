@@ -48,7 +48,7 @@ namespace embree
 
     HalfEdge () 
       : vtx_index(-1), next_half_edge_ofs(0), prev_half_edge_ofs(0), opposite_half_edge_ofs(0), edge_crease_weight(0), 
-      vertex_crease_weight(0), edge_level(0), patch_type(COMPLEX_PATCH), vertex_type(REGULAR_VERTEX)
+      vertex_crease_weight(0), edge_level(0), patch_type(COMPLEX_PATCH), vertex_type(REGULAR_VERTEX), valid_sizes(0)
     {
       static_assert(sizeof(HalfEdge) == 32, "invalid half edge size");
     }
@@ -354,6 +354,67 @@ namespace embree
       
       return faceValence <= MAX_RING_FACE_VALENCE && edgeValence <= MAX_RING_EDGE_VALENCE;
     }
+
+    /*! tests if the ring around the start vertex is within the supported size
+     *  limits. In contrast to validRing this test only depends on the topology
+     *  and not on the vertex positions. */
+    __forceinline bool validRingSizes() const
+    {
+      size_t faceValence = 0;
+      size_t edgeValence = 0;
+
+      const HalfEdge* p = this;
+      do
+      {
+        /* check size of current face */
+        const size_t n = p->numEdges();
+        if (n < 3 || n > MAX_PATCH_VALENCE)
+          return false;
+        edgeValence += n-2;
+
+        faceValence++;
+        p = p->prev();
+
+        /* continue with next face */
+        if (likely(p->hasOpposite()))
+          p = p->opposite();
+
+        /* if there is no opposite go the long way to the other side of the border */
+        else {
+          faceValence++;
+          edgeValence++;
+          p = this;
+          while (p->hasOpposite())
+            p = p->opposite()->next();
+        }
+
+        /* stop early for degenerated topology */
+        if (faceValence > MAX_RING_FACE_VALENCE || edgeValence > MAX_RING_EDGE_VALENCE)
+          return false;
+
+      } while (p != this);
+
+      return true;
+    }
+
+  public:
+
+    /*! tests if this patch and all its rings are within the supported size
+     *  limits. Patches that are not, cannot get evaluated. */
+    __forceinline bool validPatchSizes() const
+    {
+      size_t N = 1;
+      if (!this->validRingSizes()) return false;
+      for (const HalfEdge* p=this->next(); p!=this; p=p->next(), N++) {
+        if (!p->validRingSizes()) return false;
+      }
+      return N >= 3 && N <= MAX_PATCH_VALENCE;
+    }
+
+    /*! returns the cached result of validPatchSizes computed at commit time */
+    __forceinline bool hasValidSizes() const {
+      return valid_sizes != 0;
+    }
     
   private:
     unsigned int vtx_index;         //!< index of edge start vertex
@@ -367,6 +428,7 @@ namespace embree
     float edge_level;               //!< subdivision factor for edge
     PatchType patch_type;           //!< stores type of subdiv patch
     VertexType vertex_type;         //!< stores type of the start vertex
-    char align[2];
+    char valid_sizes;               //!< stores if the patch and all its rings are within the supported size limits
+    char align[1];
   };
 }

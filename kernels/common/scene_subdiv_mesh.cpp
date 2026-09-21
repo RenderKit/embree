@@ -561,8 +561,11 @@ namespace embree
 
         /* we have to calculate patch_type last! */
         HalfEdge::PatchType patch_type = edge->patchType();
-        for (size_t i=0; i<mesh->faceVertices[f]; i++) 
+        const char valid_sizes = edge->validPatchSizes() ? 1 : 0;
+        for (size_t i=0; i<mesh->faceVertices[f]; i++) {
           edge[i].patch_type = patch_type;
+          edge[i].valid_sizes = valid_sizes;
+        }
       }
     });
   }
@@ -878,6 +881,17 @@ namespace embree
       bool has_P = P;
       bool has_dP = dPdu;     assert(!has_dP  || dPdv);
       bool has_ddP = ddPdudu; assert(!has_ddP || (ddPdvdv && ddPdudu));
+
+      /* patches that exceed the supported valence limits cannot get evaluated */
+      if (unlikely(!topo->getHalfEdge(primID)->hasValidSizes()))
+      {
+        for (unsigned int j=0; j<valueCount; j++) {
+          if (has_P) P[j] = 0.0f;
+          if (has_dP) { dPdu[j] = 0.0f; dPdv[j] = 0.0f; }
+          if (has_ddP) { ddPdudu[j] = 0.0f; ddPdvdv[j] = 0.0f; ddPdudv[j] = 0.0f; }
+        }
+        return;
+      }
       
       for (unsigned int i=0; i<valueCount; i+=4)
       {
@@ -966,6 +980,20 @@ namespace embree
         
         foreach_unique(valid1,primID,[&](const vbool4& valid1, const unsigned int primID)
                        {
+                         /* patches that exceed the supported valence limits cannot get evaluated */
+                         if (unlikely(!topo->getHalfEdge(primID)->hasValidSizes()))
+                         {
+                           for (unsigned int j=0; j<valueCount; j++) {
+                             if (P) vfloat4::storeu(valid1,P+j*N+i,vfloat4(0.0f));
+                             if (dPdu) vfloat4::storeu(valid1,dPdu+j*N+i,vfloat4(0.0f));
+                             if (dPdv) vfloat4::storeu(valid1,dPdv+j*N+i,vfloat4(0.0f));
+                             if (ddPdudu) vfloat4::storeu(valid1,ddPdudu+j*N+i,vfloat4(0.0f));
+                             if (ddPdvdv) vfloat4::storeu(valid1,ddPdvdv+j*N+i,vfloat4(0.0f));
+                             if (ddPdudv) vfloat4::storeu(valid1,ddPdudv+j*N+i,vfloat4(0.0f));
+                           }
+                           return;
+                         }
+
                          for (unsigned int j=0; j<valueCount; j+=4) 
                          {
                            const size_t M = min(4u,valueCount-j);
