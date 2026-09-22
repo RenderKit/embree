@@ -84,7 +84,14 @@ RTC_FORCEINLINE bool push(RTCPointQueryContext* context,
 {
   assert(context);
   const size_t stackSize = context->instStackSize;
-  assert(stackSize < RTC_MAX_INSTANCE_LEVEL_COUNT);
+
+  /* We assert here because instances are silently dropped when the stack is full.
+     This might be quite hard to find in production. */
+  const bool spaceAvailable = stackSize < RTC_MAX_INSTANCE_LEVEL_COUNT;
+  assert(spaceAvailable);
+  if (unlikely(!spaceAvailable))
+    return false;
+
   context->instID[stackSize] = instanceId;
 #if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
   context->instPrimID[stackSize] = instancePrimId;
