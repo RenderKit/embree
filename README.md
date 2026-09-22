@@ -3627,6 +3627,12 @@ topologies, which means that the `n`-th primitive always has the same
 number of vertices (e.g. being a triangle or a quad) for each topology.
 However, the indices of the topologies themselves may be different.
 
+The face buffer has to be consistent with the index buffers, thus each
+face must have at least 3 vertices and the sum of all face vertex
+counts must not exceed the size of any index buffer. Committing a
+geometry that violates this raises an `RTC_ERROR_INVALID_OPERATION`
+error.
+
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that can be

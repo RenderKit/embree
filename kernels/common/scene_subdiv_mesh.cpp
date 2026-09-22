@@ -11,6 +11,7 @@
 #include "../../common/algorithms/parallel_sort.h"
 #include "../../common/algorithms/parallel_prefix_sum.h"
 #include "../../common/algorithms/parallel_for.h"
+#include "../../common/algorithms/parallel_reduce.h"
 
 /*! maximum number of user vertex buffers for subdivision surfaces */
 #define RTC_MAX_USER_VERTEX_BUFFERS 65536
@@ -633,6 +634,10 @@ namespace embree
     /* allocate half edge array */
     halfEdges.resize(mesh->numEdges());
 
+    /* the index buffer of each topology has to be large enough for all half edges */
+    if (vertexIndices.size() < mesh->numHalfEdges)
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"index buffer of subdivision mesh too small for face buffer");
+
     /* check if we have to recalculate the half edges */
     bool recalculate = false;
     recalculate |= vertexIndices.isLocalModified(); 
@@ -688,9 +693,50 @@ namespace embree
               << std::endl;
   }
 
+  /*! statistics gathered over the face buffer to validate it */
+  struct FaceBufferStats
+  {
+    uint64_t numHalfEdges = 0;
+    unsigned int minValence = unsigned(-1);
+  };
+
   void SubdivMesh::initializeHalfEdgeStructures ()
   {
     double t0 = getSeconds();
+
+    /* The half edge of a face is looked up through the prefix sum of the face
+       valences. We thus have to validate the face buffer before anything else,
+       as otherwise a face with zero vertices or a face buffer that does not
+       match the index buffer would index the half edge array out of bounds. */
+    if (faceVertices.isLocalModified())
+    {
+      const FaceBufferStats stats = parallel_reduce
+        (size_t(0), numFaces(), size_t(1024), FaceBufferStats(),
+         [&](const range<size_t>& r) -> FaceBufferStats
+         {
+           FaceBufferStats stats;
+           for (size_t f=r.begin(); f<r.end(); f++) {
+             stats.numHalfEdges += faceVertices[f];
+             stats.minValence = min(stats.minValence,faceVertices[f]);
+           }
+           return stats;
+         },
+         [](const FaceBufferStats& a, const FaceBufferStats& b) -> FaceBufferStats {
+           FaceBufferStats stats;
+           stats.numHalfEdges = a.numHalfEdges + b.numHalfEdges;
+           stats.minValence = min(a.minValence,b.minValence);
+           return stats;
+         });
+
+      if (numFaces() && stats.minValence == 0)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"subdivision face with zero vertices");
+
+      if (stats.numHalfEdges > (uint64_t)numEdges())
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"index buffer of subdivision mesh too small for face buffer");
+
+      if (stats.numHalfEdges > (uint64_t)0xFFFFFFFF)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"too many edges in subdivision mesh");
+    }
 
     invalid_face.resize(numFaces()*numTimeSteps);
  
