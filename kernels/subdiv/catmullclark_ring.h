@@ -151,6 +151,7 @@ namespace embree
 
       do
       {
+        assert(i+2 <= MAX_RING_EDGE_VALENCE);
         vertex_level = max(vertex_level,p->edge_level);
         crease_weight[i/2] = p->edge_crease_weight;
         assert(p->hasOpposite() || p->edge_crease_weight == float(inf));
@@ -178,6 +179,7 @@ namespace embree
           if (index0 < min_vertex_index) { min_vertex_index = index0; min_vertex_index_face = i>>1; }
 
           /*! mark first border edge and store dummy vertex for face between the two border edges */
+          assert(i+2 <= MAX_RING_EDGE_VALENCE);
           border_index = i;
           crease_weight[i/2] = inf; 
           ring[i++] = Vertex_t::loadu(vertices+index0*stride);
@@ -606,9 +608,11 @@ namespace embree
 	/* store first N-2 vertices of face */
 	unsigned int vn = 0;
         for (p = p_next; p!=p_prev; p=p->next()) {
+          assert(e < MAX_RING_EDGE_VALENCE);
           ring[e++] = Vertex_t::loadu(vertices+p->getStartVertexIndex()*stride);
           vn++;
 	}
+        assert(f < MAX_RING_FACE_VALENCE);
 	faces[f++] = Face(vn,crease_weight);
 	only_quads &= (vn == 2);
 	
@@ -624,6 +628,8 @@ namespace embree
           if (vertex_index < min_vertex_index) { min_vertex_index = vertex_index; min_vertex_index_face = f; min_vertex_index_vertex = e; }
 
           /*! mark first border edge and store dummy vertex for face between the two border edges */
+          assert(f < MAX_RING_FACE_VALENCE);
+          assert(e+2 <= MAX_RING_EDGE_VALENCE);
           border_face = f;
 	  faces[f++] = Face(2,inf); 
           ring[e++] = Vertex_t::loadu(vertices+p->getStartVertexIndex()*stride);
