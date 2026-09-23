@@ -48,7 +48,7 @@ namespace embree
 
     HalfEdge () 
       : vtx_index(-1), next_half_edge_ofs(0), prev_half_edge_ofs(0), opposite_half_edge_ofs(0), edge_crease_weight(0), 
-      vertex_crease_weight(0), edge_level(0), patch_type(COMPLEX_PATCH), vertex_type(REGULAR_VERTEX), valid_sizes(0)
+      vertex_crease_weight(0), edge_level(0), patch_type(COMPLEX_PATCH), vertex_type(REGULAR_VERTEX), valid_patch(false)
     {
       static_assert(sizeof(HalfEdge) == 32, "invalid half edge size");
     }
@@ -358,7 +358,7 @@ namespace embree
     /*! tests if the ring around the start vertex is within the supported size
      *  limits. In contrast to validRing this test only depends on the topology
      *  and not on the vertex positions. */
-    __forceinline bool validRingSizes() const
+    __forceinline bool validRingTopology() const
     {
       size_t faceValence = 0;
       size_t edgeValence = 0;
@@ -401,19 +401,14 @@ namespace embree
 
     /*! tests if this patch and all its rings are within the supported size
      *  limits. Patches that are not, cannot get evaluated. */
-    __forceinline bool validPatchSizes() const
+    __forceinline bool validPatchTopology() const
     {
       size_t N = 1;
-      if (!this->validRingSizes()) return false;
+      if (!this->validRingTopology()) return false;
       for (const HalfEdge* p=this->next(); p!=this; p=p->next(), N++) {
-        if (!p->validRingSizes()) return false;
+        if (!p->validRingTopology()) return false;
       }
       return N >= 3 && N <= MAX_PATCH_VALENCE;
-    }
-
-    /*! returns the cached result of validPatchSizes computed at commit time */
-    __forceinline bool hasValidSizes() const {
-      return valid_sizes != 0;
     }
     
   private:
@@ -428,7 +423,7 @@ namespace embree
     float edge_level;               //!< subdivision factor for edge
     PatchType patch_type;           //!< stores type of subdiv patch
     VertexType vertex_type;         //!< stores type of the start vertex
-    char valid_sizes;               //!< stores if the patch and all its rings are within the supported size limits
+    bool valid_patch;               //!< stores if the patch can be evaluated
     char align[1];
   };
 }

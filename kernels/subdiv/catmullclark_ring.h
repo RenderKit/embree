@@ -151,10 +151,7 @@ namespace embree
 
       do
       {
-        /* stop when the ring buffers are exhausted to avoid writing out of bounds */
-        if (unlikely(i+2 > MAX_RING_EDGE_VALENCE))
-          break;
-
+        assert(i+2 <= MAX_RING_EDGE_VALENCE);
         vertex_level = max(vertex_level,p->edge_level);
         crease_weight[i/2] = p->edge_crease_weight;
         assert(p->hasOpposite() || p->edge_crease_weight == float(inf));
@@ -182,9 +179,7 @@ namespace embree
           if (index0 < min_vertex_index) { min_vertex_index = index0; min_vertex_index_face = i>>1; }
 
           /*! mark first border edge and store dummy vertex for face between the two border edges */
-          if (unlikely(i+2 > MAX_RING_EDGE_VALENCE))
-            break;
-
+          assert(i+2 <= MAX_RING_EDGE_VALENCE);
           border_index = i;
           crease_weight[i/2] = inf; 
           ring[i++] = Vertex_t::loadu(vertices+index0*stride);
@@ -202,10 +197,6 @@ namespace embree
       face_valence = i >> 1;
       eval_unique_identifier = min_vertex_index;
       eval_start_index = min_vertex_index_face;
-
-      /* the ring may have been truncated above, thus clamp the start index */
-      if (unlikely(eval_start_index >= face_valence))
-        eval_start_index = 0;
 
       assert( hasValidPositions() );
     }
@@ -604,10 +595,6 @@ namespace embree
       vertex_level = 0.0f;
       do 
       {
-        /* stop when the ring buffers are exhausted to avoid writing out of bounds */
-        if (unlikely(f+1 > MAX_RING_FACE_VALENCE || e+1 > MAX_RING_EDGE_VALENCE))
-          break;
-
         HalfEdge* p_prev = p->prev();
         HalfEdge* p_next = p->next();
         const float crease_weight = p->edge_crease_weight;
@@ -621,16 +608,13 @@ namespace embree
 	/* store first N-2 vertices of face */
 	unsigned int vn = 0;
         for (p = p_next; p!=p_prev; p=p->next()) {
-          if (unlikely(e >= MAX_RING_EDGE_VALENCE)) break;
+          assert(e < MAX_RING_EDGE_VALENCE);
           ring[e++] = Vertex_t::loadu(vertices+p->getStartVertexIndex()*stride);
           vn++;
 	}
+        assert(f < MAX_RING_FACE_VALENCE);
 	faces[f++] = Face(vn,crease_weight);
 	only_quads &= (vn == 2);
-
-        /* stop in case the face got truncated above */
-        if (unlikely(p != p_prev))
-          break;
 	
         /* continue with next face */
         if (likely(p->hasOpposite())) 
@@ -644,9 +628,8 @@ namespace embree
           if (vertex_index < min_vertex_index) { min_vertex_index = vertex_index; min_vertex_index_face = f; min_vertex_index_vertex = e; }
 
           /*! mark first border edge and store dummy vertex for face between the two border edges */
-          if (unlikely(f+1 > MAX_RING_FACE_VALENCE || e+2 > MAX_RING_EDGE_VALENCE))
-            break;
-
+          assert(f < MAX_RING_FACE_VALENCE);
+          assert(e+2 <= MAX_RING_EDGE_VALENCE);
           border_face = f;
 	  faces[f++] = Face(2,inf); 
           ring[e++] = Vertex_t::loadu(vertices+p->getStartVertexIndex()*stride);
@@ -665,12 +648,6 @@ namespace embree
       eval_unique_identifier = min_vertex_index;
       eval_start_face_index = min_vertex_index_face;
       eval_start_vertex_index = min_vertex_index_vertex;
-
-      /* the ring may have been truncated above, thus clamp the start indices */
-      if (unlikely(eval_start_face_index >= face_valence))
-        eval_start_face_index = 0;
-      if (unlikely(eval_start_vertex_index >= edge_valence))
-        eval_start_vertex_index = 0;
 
       assert( hasValidPositions() );
     }

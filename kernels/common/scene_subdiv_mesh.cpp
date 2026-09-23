@@ -561,10 +561,10 @@ namespace embree
 
         /* we have to calculate patch_type last! */
         HalfEdge::PatchType patch_type = edge->patchType();
-        const char valid_sizes = edge->validPatchSizes() ? 1 : 0;
+        const bool valid = edge->validPatchTopology();
         for (size_t i=0; i<mesh->faceVertices[f]; i++) {
           edge[i].patch_type = patch_type;
-          edge[i].valid_sizes = valid_sizes;
+          edge[i].valid_patch = valid;
         }
       }
     });
@@ -882,8 +882,10 @@ namespace embree
       bool has_dP = dPdu;     assert(!has_dP  || dPdv);
       bool has_ddP = ddPdudu; assert(!has_ddP || (ddPdvdv && ddPdudu));
 
-      /* patches that exceed the supported valence limits cannot get evaluated */
-      if (unlikely(!topo->getHalfEdge(primID)->hasValidSizes()))
+      const HalfEdge* halfEdge = topo->getHalfEdge(primID);
+
+      /* invalid patches cannot get evaluated */
+      if (unlikely(!this->valid(primID) || !topo->valid(primID)))
       {
         for (unsigned int j=0; j<valueCount; j++) {
           if (has_P) P[j] = 0.0f;
@@ -897,7 +899,7 @@ namespace embree
       {
         vfloat4 Pt, dPdut, dPdvt, ddPdudut, ddPdvdvt, ddPdudvt;
         isa::PatchEval<vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,i/4,stride)),commitCounter,
-                                        topo->getHalfEdge(primID),src+i*sizeof(float),stride,u,v,
+                                        halfEdge,src+i*sizeof(float),stride,u,v,
                                         has_P ? &Pt : nullptr, 
                                         has_dP ? &dPdut : nullptr, 
                                         has_dP ? &dPdvt : nullptr,
@@ -980,8 +982,10 @@ namespace embree
         
         foreach_unique(valid1,primID,[&](const vbool4& valid1, const unsigned int primID)
                        {
-                         /* patches that exceed the supported valence limits cannot get evaluated */
-                         if (unlikely(!topo->getHalfEdge(primID)->hasValidSizes()))
+                         const HalfEdge* halfEdge = topo->getHalfEdge(primID);
+
+                         /* invalid patches cannot get evaluated */
+                         if (unlikely(!this->valid(primID) || !topo->valid(primID)))
                          {
                            for (unsigned int j=0; j<valueCount; j++) {
                              if (P) vfloat4::storeu(valid1,P+j*N+i,vfloat4(0.0f));
@@ -998,7 +1002,7 @@ namespace embree
                          {
                            const size_t M = min(4u,valueCount-j);
                            isa::PatchEvalSimd<vbool4,vint4,vfloat4,vfloat4>(baseEntry->at(interpolationSlot(primID,j/4,stride)),commitCounter,
-                                                                            topo->getHalfEdge(primID),src+j*sizeof(float),stride,valid1,uu,vv,
+                                                                            halfEdge,src+j*sizeof(float),stride,valid1,uu,vv,
                                                                             P ? P+j*N+i : nullptr,
                                                                             dPdu ? dPdu+j*N+i : nullptr,
                                                                             dPdv ? dPdv+j*N+i : nullptr,
