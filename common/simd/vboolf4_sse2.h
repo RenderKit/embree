@@ -58,10 +58,10 @@ namespace embree
     #if !defined(__EMSCRIPTEN__)
     __forceinline operator const __m128i() const { return _mm_castps_si128(v); }
     __forceinline operator const __m128d() const { return _mm_castps_pd(v); }
+    #endif
     /* kept for source compatibility with code that calls .m128i()/.m128d() explicitly */
     __forceinline const __m128i m128i() const { return _mm_castps_si128(v); }
     __forceinline const __m128d m128d() const { return _mm_castps_pd(v); }
-    #endif
 #endif
 
     __forceinline vboolf(bool a)
