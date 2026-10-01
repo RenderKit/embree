@@ -144,12 +144,12 @@ namespace embree
   State::~State() {
   }
 
-  bool State::hasISA(const int isa) {
+  bool State::hasISA(const int64_t isa) {
     return (enabled_cpu_features & isa) == isa;
   }
 
   bool State::checkISASupport() {
-#if defined(__ARM_NEON)
+#if defined(__ARM_NEON) || defined(EMBREE_ARM64)
     /*
      * NEON CPU type is a mixture of NEON and SSE2
      */
@@ -175,7 +175,7 @@ namespace embree
      * functions */
 #if defined(DEBUG)
 #if defined(EMBREE_TARGET_SSE2)
-#if !defined(__ARM_NEON)
+#if !defined(__ARM_NEON) && !defined(EMBREE_ARM64)
     assert(sse2::getISA() <= SSE2);
 #endif
 #endif
@@ -190,6 +190,9 @@ namespace embree
 #endif
 #if defined (EMBREE_TARGET_AVX512)
     assert(avx512::getISA() <= AVX512);
+#endif
+#if defined (EMBREE_TARGET_APX)
+  assert(apx::getISA() <= APX);
 #endif
 #endif
   }
@@ -232,7 +235,7 @@ namespace embree
     parse(cin);
   }
   
-  int string_to_cpufeatures(const std::string& isa)
+  int64_t string_to_cpufeatures(const std::string& isa)
   {
     if      (isa == "sse" ) return SSE;
     else if (isa == "sse2") return SSE2;
@@ -246,6 +249,7 @@ namespace embree
     else if (isa == "avxi") return AVXI;
     else if (isa == "avx2") return AVX2;
     else if (isa == "avx512") return AVX512;
+    else if (isa == "apx") return APX;
     else return SSE2;
   }
 

@@ -156,8 +156,8 @@ namespace embree
           /* parametrization for arbitrary polygons */
           else 
           {
-            const vint l = (vint)floor(0.5f*uv.x); const vfloat u = 2.0f*frac(0.5f*uv.x)-0.5f; 
-            const vint h = (vint)floor(0.5f*uv.y); const vfloat v = 2.0f*frac(0.5f*uv.y)-0.5f; 
+            const vint l = toInt(floor(0.5f*uv.x)); const vfloat u = 2.0f*frac(0.5f*uv.x)-0.5f;
+            const vint h = toInt(floor(0.5f*uv.y)); const vfloat v = 2.0f*frac(0.5f*uv.y)-0.5f;
             const vint i = (h<<2)+l; assert(all(valid,i<Nc));
             foreach_unique(valid,i,[&](const vbool& valid, const int i) {
 #if PATCH_USE_GREGORY == 2

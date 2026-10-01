@@ -103,38 +103,49 @@ namespace embree
         const NativeCurve3fa curve3Di(v0,v1,v2,v3);
         const NativeCurve3fa curve3D = enlargeRadiusToMinWidth(context,geom,ray.org,curve3Di);
         const NativeCurve3fa curve2D = curve3D.xfm_pr(pre.ray_space,ray.org);
-      
-        /* evaluate the bezier curve */
-        vboolx valid = vfloatx(step) < vfloatx(float(N));
-        const Vec4vfx p0 = curve2D.template eval0<W>(0,N);
-        const Vec4vfx p1 = curve2D.template eval1<W>(0,N);
 
-        /* approximative intersection with cone */
-        const Vec4vfx v = p1-p0;
-        const Vec4vfx w = -p0;
-        const vfloatx d0 = madd(w.x,v.x,w.y*v.y);
-        const vfloatx d1 = madd(v.x,v.x,v.y*v.y);
-        const vfloatx u = clamp(d0*rcp(d1),vfloatx(zero),vfloatx(one));
-        const Vec4vfx p = madd(u,v,p0);
-        const vfloatx t = p.z*pre.depth_scale;
-        const vfloatx d2 = madd(p.x,p.x,p.y*p.y); 
-        const vfloatx r = p.w;
-        const vfloatx r2 = r*r;
-        valid &= (d2 <= r2) & (vfloatx(ray.tnear()) <= t) & (t <= vfloatx(ray.tfar));
-        if (EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR != 0.0f) 
-          valid &= t > float(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR)*r*pre.depth_scale; // ignore self intersections
-
-        /* update hit information */
         bool ishit = false;
-        if (unlikely(any(valid))) {
-          DistanceCurveHit<NativeCurve3fa,W> hit(valid,u,0.0f,t,0,N,curve3D);
-          ishit = ishit | epilog(valid,hit);
-        }
+        int i = 0;
 
-        if (unlikely(W < N)) 
+#if !defined(__SYCL_DEVICE_ONLY__)
+        /* unrolled first iteration: on CPU SIMD this lets the compiler keep
+           the first chunk of segments in registers and skip the loop overhead.
+           On SYCL (W=1) it duplicates code without benefit and just bloats the
+           kernel, so the SYCL path falls straight into the unified loop. */
+        {
+          /* evaluate the bezier curve */
+          vboolx valid = vfloatx(step) < vfloatx(float(N));
+          const Vec4vfx p0 = curve2D.template eval0<W>(0,N);
+          const Vec4vfx p1 = curve2D.template eval1<W>(0,N);
+
+          /* approximative intersection with cone */
+          const Vec4vfx v = p1-p0;
+          const Vec4vfx w = -p0;
+          const vfloatx d0 = madd(w.x,v.x,w.y*v.y);
+          const vfloatx d1 = madd(v.x,v.x,v.y*v.y);
+          const vfloatx u = clamp(d0*rcp(d1),vfloatx(zero),vfloatx(one));
+          const Vec4vfx p = madd(u,v,p0);
+          const vfloatx t = p.z*pre.depth_scale;
+          const vfloatx d2 = madd(p.x,p.x,p.y*p.y);
+          const vfloatx r = p.w;
+          const vfloatx r2 = r*r;
+          valid &= (d2 <= r2) & (vfloatx(ray.tnear()) <= t) & (t <= vfloatx(ray.tfar));
+          if (EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR != 0.0f)
+            valid &= t > float(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR)*r*pre.depth_scale; // ignore self intersections
+
+          /* update hit information */
+          if (unlikely(any(valid))) {
+            DistanceCurveHit<NativeCurve3fa,W> hit(valid,u,0.0f,t,0,N,curve3D);
+            ishit = ishit | epilog(valid,hit);
+          }
+          i = W;
+        }
+#endif
+
+        if (unlikely(i < N))
         {
           /* process SIMD-size many segments per iteration */
-          for (int i=W; i<N; i+=W)
+          for (; i<N; i+=W)
           {
             /* evaluate the bezier curve */
             vboolx valid = vintx(i)+vintx(step) < vintx(N);

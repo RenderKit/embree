@@ -114,3 +114,79 @@ jobs:
           cmake --build .
           cd embree/build
           ctest
+
+  windows-11-arm:
+    runs-on: windows-11-arm
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build and Run
+        shell: pwsh
+        run: |
+          $opts  = "-DBUILD_TESTING=ON"
+          $opts += " -DEMBREE_TUTORIALS=ON"
+          $opts += " -DEMBREE_ISPC_SUPPORT=OFF"
+          $opts += " -DEMBREE_TASKING_SYSTEM=INTERNAL"
+          $opts += " -DEMBREE_TESTING_INTENSITY=2"
+
+          cmake -B build -G "Visual Studio 17 2022" -A ARM64 $opts.Split(" ") .
+          cmake --build build --config Release
+          ctest --test-dir build -C Release --output-on-failure
+
+  windows-11:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build and Run
+        shell: pwsh
+        run: |
+          $opts  = "-DBUILD_TESTING=ON"
+          $opts += " -DEMBREE_TUTORIALS=ON"
+          $opts += " -DEMBREE_ISPC_SUPPORT=OFF"
+          $opts += " -DEMBREE_TASKING_SYSTEM=INTERNAL"
+          $opts += " -DEMBREE_TESTING_INTENSITY=2"
+
+          cmake -B build -G "Visual Studio 17 2022" $opts.Split(" ") .
+          cmake --build build --config Release
+          ctest --test-dir build -C Release --output-on-failure
+
+  macos-26:
+    runs-on: macos-26
+    steps:
+      - name: Install packages (macOS 26)
+        run: |
+          brew update
+          brew install cmake git-lfs freeglut glfw tbb
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build and Run
+        run: |
+          mkdir build
+          cd build
+          cmake -DBUILD_TESTING=ON -DEMBREE_TUTORIALS=ON -DEMBREE_ISPC_SUPPORT=OFF -DEMBREE_TESTING_INTENSITY=3 ..
+          make -j$(sysctl -n hw.ncpu)
+          ctest --test-dir . -C Release --output-on-failure
+
+  macos-26-intel:
+    runs-on: macos-26-intel
+    steps:
+      - name: Install packages (macOS 26)
+        run: |
+          brew update
+          brew install cmake git-lfs freeglut glfw tbb
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build and Run
+        run: |
+          mkdir build
+          cd build
+          cmake -DBUILD_TESTING=ON -DEMBREE_TUTORIALS=ON -DEMBREE_ISPC_SUPPORT=OFF -DEMBREE_TESTING_INTENSITY=3 ..
+          make -j$(sysctl -n hw.ncpu)
+          ctest --test-dir . -C Release --output-on-failure

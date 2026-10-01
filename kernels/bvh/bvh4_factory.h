@@ -11,7 +11,7 @@ namespace embree
   class BVH4Factory : public BVHFactory
   {
   public:
-    BVH4Factory(int bfeatures, int ifeatures);
+    BVH4Factory(int64_t bfeatures, int64_t ifeatures);
 
   public:
     Accel* BVH4OBBVirtualCurve4i(Scene* scene, IntersectVariant ivariant);
@@ -55,8 +55,8 @@ namespace embree
     Accel* BVH4GridMB(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
 
   private:
-    void selectBuilders(int features);
-    void selectIntersectors(int features);
+    void selectBuilders(int64_t features);
+    void selectIntersectors(int64_t features);
     
   private:
     Accel::Intersectors BVH4OBBVirtualCurveIntersectors(BVH4* bvh, VirtualCurveIntersector* leafIntersector, IntersectVariant ivariant);

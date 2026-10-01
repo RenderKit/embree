@@ -12,7 +12,7 @@
 #  include "math_sycl.h"
 #else
 
-#if defined(__ARM_NEON)
+#if defined(__ARM_NEON) || defined(EMBREE_ARM64)
 #include "../simd/arm/emulation.h"
 #else
 #include <emmintrin.h>
@@ -60,14 +60,13 @@ namespace embree
 
   __forceinline float rcp  ( const float x )
   {
-#if defined(__aarch64__)
+#if defined(EMBREE_ARM64)
       // Move scalar to vector register and do rcp.
-      __m128 a;
-      a[0] = x;
+      __m128 a = vdupq_n_f32(x);
       float32x4_t reciprocal = vrecpeq_f32(a);
       reciprocal = vmulq_f32(vrecpsq_f32(a, reciprocal), reciprocal);
       reciprocal = vmulq_f32(vrecpsq_f32(a, reciprocal), reciprocal);
-      return reciprocal[0];
+      return vgetq_lane_f32(reciprocal, 0);
 #else
 
     const __m128 a = _mm_set_ss(x);
@@ -84,58 +83,51 @@ namespace embree
     return _mm_cvtss_f32(_mm_mul_ss(r,_mm_sub_ss(_mm_set_ss(2.0f), _mm_mul_ss(r, a))));
 #endif
 
-#endif  //defined(__aarch64__)
+#endif  //defined(EMBREE_ARM64)
   }
 
   __forceinline float signmsk ( const float x ) {
-#if defined(__aarch64__)
+#if defined(EMBREE_ARM64)
       // FP and Neon shares same vector register in arm64
-      __m128 a;
-      __m128i b;
-      a[0] = x;
-      b[0] = 0x80000000;
+      __m128 a = vdupq_n_f32(x);
+      __m128i b = vdupq_n_s32(0x80000000);
       a = _mm_and_ps(a, vreinterpretq_f32_s32(b));
-      return a[0];
+      return vgetq_lane_f32(a, 0);
 #else
     return _mm_cvtss_f32(_mm_and_ps(_mm_set_ss(x),_mm_castsi128_ps(_mm_set1_epi32(0x80000000))));
 #endif
   }
   __forceinline float xorf( const float x, const float y ) {
-#if defined(__aarch64__)
+#if defined(EMBREE_ARM64)
       // FP and Neon shares same vector register in arm64
-      __m128 a;
-      __m128 b;
-      a[0] = x;
-      b[0] = y;
+      __m128 a = vdupq_n_f32(x);
+      __m128 b = vdupq_n_f32(y);
       a = _mm_xor_ps(a, b);
-      return a[0];
+      return vgetq_lane_f32(a, 0);
 #else
     return _mm_cvtss_f32(_mm_xor_ps(_mm_set_ss(x),_mm_set_ss(y)));
 #endif
   }
   __forceinline float andf( const float x, const unsigned y ) {
-#if defined(__aarch64__)
+#if defined(EMBREE_ARM64)
       // FP and Neon shares same vector register in arm64
-      __m128 a;
-      __m128i b;
-      a[0] = x;
-      b[0] = y;
+      __m128 a = vdupq_n_f32(x);
+      __m128i b = vdupq_n_u32(y);
       a = _mm_and_ps(a, vreinterpretq_f32_s32(b));
-      return a[0];
+      return vgetq_lane_f32(a, 0);
 #else
     return _mm_cvtss_f32(_mm_and_ps(_mm_set_ss(x),_mm_castsi128_ps(_mm_set1_epi32(y))));
 #endif
   }
   __forceinline float rsqrt( const float x )
   {
-#if defined(__aarch64__)
+#if defined(EMBREE_ARM64)
       // FP and Neon shares same vector register in arm64
-      __m128 a;
-      a[0] = x;
+      __m128 a = vdupq_n_f32(x);
       __m128 value = _mm_rsqrt_ps(a);
       value = vmulq_f32(value, vrsqrtsq_f32(vmulq_f32(a, value), value));
       value = vmulq_f32(value, vrsqrtsq_f32(vmulq_f32(a, value), value));
-      return value[0];
+      return vgetq_lane_f32(value, 0);
 #else
 
     const __m128 a = _mm_set_ss(x);
@@ -204,15 +196,13 @@ namespace embree
   __forceinline double floor( const double x ) { return ::floor (x); }
   __forceinline double ceil ( const double x ) { return ::ceil (x); }
 
-#if defined(__aarch64__)
+#if defined(EMBREE_ARM64)
     __forceinline float mini(float a, float b) {
-        // FP and Neon shares same vector register in arm64
-        __m128 x;
-        __m128 y;
-        x[0] = a;
-        y[0] = b;
-        x = _mm_min_ps(x, y);
-        return x[0];
+      // FP and Neon shares same vector register in arm64
+      __m128 x = vdupq_n_f32(a);
+      __m128 y = vdupq_n_f32(b);
+      x = _mm_min_ps(x, y);
+      return vgetq_lane_f32(x, 0);
     }
 #elif defined(__SSE4_1__)
   __forceinline float mini(float a, float b) {
@@ -223,15 +213,13 @@ namespace embree
   }
 #endif
 
-#if defined(__aarch64__)
+#if defined(EMBREE_ARM64)
     __forceinline float maxi(float a, float b) {
         // FP and Neon shares same vector register in arm64
-        __m128 x;
-        __m128 y;
-        x[0] = a;
-        y[0] = b;
+        __m128 x = vdupq_n_f32(a);
+        __m128 y = vdupq_n_f32(b);
         x = _mm_max_ps(x, y);
-        return x[0];
+        return vgetq_lane_f32(x, 0);
     }
 #elif defined(__SSE4_1__)
   __forceinline float maxi(float a, float b) {
@@ -250,7 +238,7 @@ namespace embree
   __forceinline  int64_t min(int64_t  a, int64_t  b) { return a<b ? a:b; }
   __forceinline    float min(float    a, float    b) { return a<b ? a:b; }
   __forceinline   double min(double   a, double   b) { return a<b ? a:b; }
-#if defined(__64BIT__) || defined(__EMSCRIPTEN__)
+#if defined(__64BIT__) || defined(__EMSCRIPTEN__) || (defined(_M_ARM64) && !defined(__clang__))
   __forceinline   size_t min(size_t   a, size_t   b) { return a<b ? a:b; }
 #endif
 #if defined(__EMSCRIPTEN__)
@@ -270,7 +258,7 @@ namespace embree
   __forceinline  int64_t max(int64_t  a, int64_t  b) { return a<b ? b:a; }
   __forceinline    float max(float    a, float    b) { return a<b ? b:a; }
   __forceinline   double max(double   a, double   b) { return a<b ? b:a; }
-#if defined(__64BIT__) || defined(__EMSCRIPTEN__)
+#if defined(__64BIT__) || defined(__EMSCRIPTEN__) || (defined(_M_ARM64) && !defined(__clang__))
   __forceinline   size_t max(size_t   a, size_t   b) { return a<b ? b:a; }
 #endif
 #if defined(__EMSCRIPTEN__)
@@ -423,7 +411,7 @@ __forceinline float nmsub ( const float a, const float b, const float c) { retur
     return x | (y << 1) | (z << 2);
   }
 
-#if defined(__AVX2__) && !defined(__aarch64__)
+#if defined(__AVX2__) && !defined(EMBREE_ARM64)
 
   template<>
     __forceinline unsigned int bitInterleave(const unsigned int &xi, const unsigned int& yi, const unsigned int& zi)

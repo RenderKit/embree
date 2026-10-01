@@ -71,8 +71,8 @@ namespace embree
     static __forceinline vuint8 load (const void* a) { return _mm256_castps_si256(_mm256_load_ps((float*)a)); }
     static __forceinline vuint8 loadu(const void* a) { return _mm256_castps_si256(_mm256_loadu_ps((float*)a)); }
 
-    static __forceinline vuint8 load (const vboolf8& mask, const void* a) { return _mm256_castps_si256(_mm256_maskload_ps((float*)a,mask)); }
-    static __forceinline vuint8 loadu(const vboolf8& mask, const void* a) { return _mm256_castps_si256(_mm256_maskload_ps((float*)a,mask)); }
+    static __forceinline vuint8 load (const vboolf8& mask, const void* a) { return _mm256_castps_si256(_mm256_maskload_ps((float*)a,mask.operator const __m256i())); }
+    static __forceinline vuint8 loadu(const vboolf8& mask, const void* a) { return _mm256_castps_si256(_mm256_maskload_ps((float*)a,mask.operator const __m256i())); }
 
     static __forceinline void store (void* ptr, const vuint8& f) { _mm256_store_ps((float*)ptr,_mm256_castsi256_ps(f)); }
     static __forceinline void storeu(void* ptr, const vuint8& f) { _mm256_storeu_ps((float*)ptr,_mm256_castsi256_ps(f)); }

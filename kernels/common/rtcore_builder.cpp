@@ -367,6 +367,31 @@ RTC_NAMESPACE_BEGIN
       if (arguments->primitiveArrayCapacity < arguments->primitiveCount)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"primitiveArrayCapacity must be greater or equal to primitiveCount")
 
+      if (RTC_BUILD_ARGUMENTS_HAS((*arguments),maxLeafSize) && arguments->maxLeafSize > RTC_BUILD_MAX_PRIMITIVES_PER_LEAF) {
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"maxLeafSize must be smaller or equal to RTC_BUILD_MAX_PRIMITIVES_PER_LEAF")
+      }
+
+      if (RTC_BUILD_ARGUMENTS_HAS((*arguments),maxBranchingFactor))
+      {
+        const unsigned int branchingFactor = arguments->maxBranchingFactor;
+        if (branchingFactor < 2) {
+          throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"maxBranchingFactor must be greater or equal to 2");
+        }
+
+        if (arguments->buildQuality == RTC_BUILD_QUALITY_LOW)
+        {
+          if (branchingFactor > BVHBuilderMorton::MAX_BRANCHING_FACTOR) {
+            throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"maxBranchingFactor too large for RTC_BUILD_QUALITY_LOW (maximum is 8)")
+          }
+        }
+        else if (arguments->buildQuality == RTC_BUILD_QUALITY_MEDIUM || arguments->buildQuality == RTC_BUILD_QUALITY_HIGH)
+        {
+          if (branchingFactor > GeneralBVHBuilder::MAX_BRANCHING_FACTOR) {
+            throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"maxBranchingFactor too large for this build quality (maximum is 16)")
+          }
+        }
+      }
+
       /* initialize the allocator */
       bvh->allocator.init_estimate(arguments->primitiveCount*sizeof(BBox3fa));
       bvh->allocator.reset();

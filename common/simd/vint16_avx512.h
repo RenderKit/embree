@@ -39,7 +39,7 @@ namespace embree
 
     __forceinline vint(const __m512i& t) { v = t; }
     __forceinline operator __m512i() const { return v; }
-    __forceinline operator __m256i() const { return _mm512_castsi512_si256(v); }
+    __forceinline explicit operator __m256i() const { return _mm512_castsi512_si256(v); }
 
     __forceinline vint(int i) {
       v = _mm512_set1_epi32(i);

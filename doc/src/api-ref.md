@@ -360,7 +360,7 @@
 \pagebreak
 
 ## rtcGetGeometryUserDataFromTraversable
-``` {include=src/api/rtcGetGeometryUserDataFromScenTraversable
+``` {include=src/api/rtcGetGeometryUserDataFromTraversable.md}
 ```
 \pagebreak
 

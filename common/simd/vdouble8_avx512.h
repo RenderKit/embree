@@ -37,7 +37,7 @@ namespace embree
 
     __forceinline vdouble(const __m512d& t) { v = t; }
     __forceinline operator __m512d() const { return v; }
-    __forceinline operator __m256d() const { return _mm512_castpd512_pd256(v); }
+    __forceinline explicit operator __m256d() const { return _mm512_castpd512_pd256(v); }
 
     __forceinline vdouble(double i) {
       v = _mm512_set1_pd(i);

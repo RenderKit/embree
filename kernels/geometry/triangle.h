@@ -8,8 +8,8 @@
 namespace embree
 {
   /* Precalculated representation for M triangles. Stores for each
-     triangle a base vertex, two edges, and the geometry normal to
-     speed up intersection calculations */
+     triangle a base vertex and two edges to speed up intersection 
+     calculations */
   template<int M>
   struct TriangleM
   {

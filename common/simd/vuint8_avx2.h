@@ -100,11 +100,11 @@ namespace embree
     static __forceinline void store (const vboolf8& mask, void* ptr, const vuint8& v) { _mm256_mask_store_epi32 (ptr,mask,v); }
     static __forceinline void storeu(const vboolf8& mask, void* ptr, const vuint8& v) { _mm256_mask_storeu_epi32(ptr,mask,v); }
 #else
-    static __forceinline vuint8 load (const vboolf8& mask, const void* ptr) { return _mm256_castps_si256(_mm256_maskload_ps((float*)ptr,mask)); }
-    static __forceinline vuint8 loadu(const vboolf8& mask, const void* ptr) { return _mm256_castps_si256(_mm256_maskload_ps((float*)ptr,mask)); }
+    static __forceinline vuint8 load (const vboolf8& mask, const void* ptr) { return _mm256_castps_si256(_mm256_maskload_ps((float*)ptr,mask.operator const __m256i())); }
+    static __forceinline vuint8 loadu(const vboolf8& mask, const void* ptr) { return _mm256_castps_si256(_mm256_maskload_ps((float*)ptr,mask.operator const __m256i())); }
 
-    static __forceinline void store (const vboolf8& mask, void* ptr, const vuint8& v) { _mm256_maskstore_epi32((int*)ptr,mask,v); }
-    static __forceinline void storeu(const vboolf8& mask, void* ptr, const vuint8& v) { _mm256_maskstore_epi32((int*)ptr,mask,v); }
+    static __forceinline void store (const vboolf8& mask, void* ptr, const vuint8& v) { _mm256_maskstore_epi32((int*)ptr,mask.operator const __m256i(),v); }
+    static __forceinline void storeu(const vboolf8& mask, void* ptr, const vuint8& v) { _mm256_maskstore_epi32((int*)ptr,mask.operator const __m256i(),v); }
 #endif
     
     static __forceinline vuint8 load_nt(void* ptr) {
@@ -137,7 +137,7 @@ namespace embree
 #if defined(__AVX512VL__)
       return _mm256_mmask_i32gather_epi32(r, mask, index, (const int*) ptr, scale);
 #else
-      return _mm256_mask_i32gather_epi32(r, (const int*) ptr, index, mask, scale);
+      return _mm256_mask_i32gather_epi32(r, (const int*) ptr, index, _mm256_castps_si256(mask.v), scale);
 #endif
     }
 

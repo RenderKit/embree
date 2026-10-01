@@ -375,7 +375,7 @@ namespace embree
       __forceinline Vec2fa eval_dv(const float u, const float v) const
       {
         const vfloat4 p = LR.eval(u);
-        return Vec2fa(shuffle<2,3,2,3>(p)-shuffle<0,1,0,1>(p));
+        return Vec2fa((shuffle<2,3,2,3>(p)-shuffle<0,1,0,1>(p)));
       }
       
       __forceinline void eval(const float u, const float v, Vec2fa& p, Vec2fa& dpdu, Vec2fa& dpdv) const
@@ -383,7 +383,7 @@ namespace embree
         vfloat4 p0, dp0du; LR.eval(u,p0,dp0du);
         p = Vec2fa(lerp(shuffle<0,1,0,1>(p0),shuffle<2,3,2,3>(p0),v));
         dpdu = Vec2fa(lerp(shuffle<0,1,0,1>(dp0du),shuffle<2,3,2,3>(dp0du),v));
-        dpdv = Vec2fa(shuffle<2,3,2,3>(p0)-shuffle<0,1,0,1>(p0));
+        dpdv = Vec2fa((shuffle<2,3,2,3>(p0)-shuffle<0,1,0,1>(p0)));
       }
       
       __forceinline TensorLinearQuadraticBezierSurface<Vec2fa> derivative_u() const {

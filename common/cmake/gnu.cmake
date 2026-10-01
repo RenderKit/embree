@@ -18,6 +18,16 @@ ELSE ()
   _SET_IF_EMPTY(FLAGS_AVX   "-mavx")
   _SET_IF_EMPTY(FLAGS_AVX2  "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
   _SET_IF_EMPTY(FLAGS_AVX512 "-march=skylake-avx512")
+  _SET_IF_EMPTY(FLAGS_APX "${FLAGS_AVX512} -mavx10.1 -mavx10.2 -mapxf")
+
+  # GCC 15.0-15.2 can emit illegal vbroadcasti128 with -mapxf under high
+  # register pressure. Disable APX for affected compiler versions entirely.
+  IF (CMAKE_CXX_COMPILER_ID MATCHES "GNU"
+      AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "15.0"
+      AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "15.3")
+    SET(EMBREE_ISA_APX OFF CACHE BOOL "" FORCE)
+    MESSAGE(WARNING "Disabling APX ISA for GCC ${CMAKE_CXX_COMPILER_VERSION} due to known APX codegen bug; upgrade to GCC 15.3+.")
+  ENDIF()
 ENDIF ()
 
 OPTION(EMBREE_IGNORE_CMAKE_CXX_FLAGS "When enabled Embree ignores default CMAKE_CXX_FLAGS." ON)

@@ -78,6 +78,8 @@ namespace embree
     case CPU::XEON_PHI_KNIGHTS_MILL   : frequency_level = FREQUENCY_SIMD512; break;
     case CPU::XEON_PHI_KNIGHTS_LANDING: frequency_level = FREQUENCY_SIMD512; break;
     case CPU::ARM:             frequency_level = FREQUENCY_SIMD256; break;
+    default:
+      frequency_level = FREQUENCY_SIMD256; break;
     }
 
     /* initialize global state */
@@ -159,6 +161,9 @@ namespace embree
 #if defined(EMBREE_TARGET_AVX512)
     v += "AVX512 ";
 #endif
+#if defined(EMBREE_TARGET_APX)
+  v += "APX ";
+#endif
     return v;
   }
 
@@ -188,7 +193,7 @@ namespace embree
 
   void Device::print()
   {
-    const int cpu_features = getCPUFeatures();
+    const int64_t cpu_features = getCPUFeatures();
     std::cout << std::endl;
     std::cout << "Embree Ray Tracing Kernels " << RTC_VERSION_STRING << " (" << RTC_HASH << ")" << std::endl;
     std::cout << "  Compiler  : " << getCompilerName() << std::endl;
@@ -665,18 +670,22 @@ namespace embree
     bool ze_rtas_builder = false;
     for (uint32_t i=0; i<extensions.size(); i++)
     {
-      if (strncmp("ZE_experimental_rtas_builder",extensions[i].name,sizeof(extensions[i].name)) == 0)
+      if (strncmp("ZE_extension_rtas",extensions[i].name,sizeof(extensions[i].name)) == 0) {
         ze_rtas_builder = true;
+      }
+      if (strncmp("ZE_experimental_relaxed_allocation_limits", extensions[i].name, sizeof(extensions[i].name)) == 0) {
+        hasRelaxedAllocationLimits = true;
+      }
     }
     if (!ze_rtas_builder)
-      throw_RTCError(RTC_ERROR_LEVEL_ZERO_RAYTRACING_SUPPORT_MISSING, "ZE_experimental_rtas_builder extension not found. Please install a recent driver. On Linux, make sure that the package intel-level-zero-gpu-raytracing is installed");
+      throw_RTCError(RTC_ERROR_LEVEL_ZERO_RAYTRACING_SUPPORT_MISSING, "ZE_extension_rtas extension not found. Please install a recent driver. On Linux, make sure that the package intel-level-zero-gpu-raytracing is installed");
 
     result = ZeWrapper::initRTASBuilder(hDriver);
     if (result == ZE_RESULT_ERROR_DEPENDENCY_UNAVAILABLE) {
-      throw_RTCError(RTC_ERROR_LEVEL_ZERO_RAYTRACING_SUPPORT_MISSING, "cannot load ZE_experimental_rtas_builder extension. Please install a recent driver. On Linux, make sure that the package intel-level-zero-gpu-raytracing is installed");
+      throw_RTCError(RTC_ERROR_LEVEL_ZERO_RAYTRACING_SUPPORT_MISSING, "cannot load ZE_extension_rtas extension. Please install a recent driver. On Linux, make sure that the package intel-level-zero-gpu-raytracing is installed");
     }
     if (result != ZE_RESULT_SUCCESS)
-      throw_RTCError(RTC_ERROR_UNKNOWN, "cannot initialize ZE_experimental_rtas_builder extension");
+      throw_RTCError(RTC_ERROR_UNKNOWN, "cannot initialize ZE_extension_rtas extension");
 
     if (State::verbosity(1))
     {
@@ -684,12 +693,12 @@ namespace embree
     }
 
     /* check if extension library can get loaded */
-    ze_rtas_parallel_operation_exp_handle_t hParallelOperation;
-    result = ZeWrapper::zeRTASParallelOperationCreateExp(hDriver, &hParallelOperation);
+    ze_rtas_parallel_operation_ext_handle_t hParallelOperation;
+    result = ZeWrapper::zeRTASParallelOperationCreateExt(hDriver, &hParallelOperation);
     if (result == ZE_RESULT_ERROR_DEPENDENCY_UNAVAILABLE)
       throw_RTCError(RTC_ERROR_UNKNOWN, "Level Zero RTAS Build Extension cannot get loaded");
     if (result == ZE_RESULT_SUCCESS)
-      ZeWrapper::zeRTASParallelOperationDestroyExp(hParallelOperation);
+      ZeWrapper::zeRTASParallelOperationDestroyExt(hParallelOperation);
 
     gpu_maxWorkGroupSize = getGPUDevice().get_info<sycl::info::device::max_work_group_size>();
     gpu_maxComputeUnits  = getGPUDevice().get_info<sycl::info::device::max_compute_units>();    
@@ -704,7 +713,7 @@ namespace embree
       std::cout << std::endl;
     }
     
-    dispatchGlobalsPtr = zeRTASInitExp(gpu_device, gpu_context);
+    dispatchGlobalsPtr = zeRTASInit(gpu_device, gpu_context);
   }
 
   DeviceGPU::~DeviceGPU()

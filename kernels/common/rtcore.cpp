@@ -1565,7 +1565,7 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     {
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
       createTriangleMeshTy createTriangleMesh = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(device->enabled_cpu_features,createTriangleMesh);
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512_APX(device->enabled_cpu_features,createTriangleMesh);
       Geometry* geom = createTriangleMesh(device);
       return (RTCGeometry) geom->refInc();
 #else
@@ -1577,7 +1577,7 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     {
 #if defined(EMBREE_GEOMETRY_QUAD)
       createQuadMeshTy createQuadMesh = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(device->enabled_cpu_features,createQuadMesh);
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512_APX(device->enabled_cpu_features,createQuadMesh);
       Geometry* geom = createQuadMesh(device);
       return (RTCGeometry) geom->refInc();
 #else
@@ -1591,7 +1591,7 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     {
 #if defined(EMBREE_GEOMETRY_POINT)
       createPointsTy createPoints = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(device->enabled_builder_cpu_features, createPoints);
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512_APX(device->enabled_builder_cpu_features, createPoints);
 
       Geometry *geom;
       switch(type) {
@@ -1636,9 +1636,9 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     {
 #if defined(EMBREE_GEOMETRY_CURVE)
       createLineSegmentsTy createLineSegments = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(device->enabled_cpu_features,createLineSegments);
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512_APX(device->enabled_cpu_features,createLineSegments);
       createCurvesTy createCurves = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(device->enabled_cpu_features,createCurves);
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512_APX(device->enabled_cpu_features,createCurves);
       
       Geometry* geom;
       switch (type) {
@@ -1675,7 +1675,7 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
 #if defined(EMBREE_GEOMETRY_SUBDIVISION)
       createSubdivMeshTy createSubdivMesh = nullptr;
       SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createSubdivMesh);
-      //SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(device->enabled_cpu_features,createSubdivMesh); // FIXME: this does not work for some reason?
+      //SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512_APX(device->enabled_cpu_features,createSubdivMesh); // FIXME: this does not work for some reason?
       Geometry* geom = createSubdivMesh(device);
       return (RTCGeometry) geom->refInc();
 #else
@@ -1687,7 +1687,7 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     {
 #if defined(EMBREE_GEOMETRY_USER)
       createUserGeometryTy createUserGeometry = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(device->enabled_cpu_features,createUserGeometry);
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512_APX(device->enabled_cpu_features,createUserGeometry);
       Geometry* geom = createUserGeometry(device);
       return (RTCGeometry) geom->refInc();
 #else
@@ -1699,7 +1699,7 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     {
 #if defined(EMBREE_GEOMETRY_INSTANCE)
       createInstanceTy createInstance = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(device->enabled_cpu_features,createInstance);
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512_APX(device->enabled_cpu_features,createInstance);
       Geometry* geom = createInstance(device);
       return (RTCGeometry) geom->refInc();
 #else
@@ -1711,7 +1711,7 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     {
 #if defined(EMBREE_GEOMETRY_INSTANCE_ARRAY)
       createInstanceArrayTy createInstanceArray = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(device->enabled_cpu_features,createInstanceArray);
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512_APX(device->enabled_cpu_features,createInstanceArray);
       Geometry* geom = createInstanceArray(device);
       return (RTCGeometry) geom->refInc();
 #else
@@ -1723,7 +1723,7 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     {
 #if defined(EMBREE_GEOMETRY_GRID)
       createGridMeshTy createGridMesh = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(device->enabled_cpu_features,createGridMesh);
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512_APX(device->enabled_cpu_features,createGridMesh);
       Geometry* geom = createGridMesh(device);
       return (RTCGeometry) geom->refInc();
 #else

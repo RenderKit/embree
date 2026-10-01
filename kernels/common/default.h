@@ -234,7 +234,7 @@ namespace embree
     const vfloat<N> timeScaled = time * numTimeSegments;
     const vfloat<N> itimef = clamp(floor(timeScaled), vfloat<N>(zero), numTimeSegments-1.0f);
     ftime = timeScaled - itimef;
-    return vint<N>(itimef);
+    return toInt(itimef);
   }
 
   template<int N>
@@ -243,7 +243,7 @@ namespace embree
     const vfloat<N> timeScaled = (time-start_time)/(end_time-start_time) * numTimeSegments;
     const vfloat<N> itimef = clamp(floor(timeScaled), vfloat<N>(zero), numTimeSegments-1.0f);
     ftime = timeScaled - itimef;
-    return vint<N>(itimef);
+      return toInt(itimef);
   }
 
   /* calculate overlapping time segment range */
