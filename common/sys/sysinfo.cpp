@@ -765,9 +765,12 @@ namespace embree
     cpu_set_t set;
     if (pthread_getaffinity_np(pthread_self(), sizeof(set), &set) == 0)
       nThreads = CPU_COUNT(&set);
+    else
+      nThreads = (int)sysconf(_SC_NPROCESSORS_ONLN);
 #endif
-    
-    assert(nThreads);
+
+    if (nThreads < 1)
+      nThreads = 1;
     return nThreads;
   }
 
