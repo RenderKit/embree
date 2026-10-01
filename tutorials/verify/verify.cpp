@@ -7068,7 +7068,7 @@ namespace embree
   }
 
   template<typename Closure>
-  void VerifyApplication::plot(std::vector<Ref<Benchmark>>& benchmarks, const FileName& outFileName, const std::string& xlabel, size_t startN, size_t endN, float f, size_t dn, const Closure& test)
+  void VerifyApplication::plot(const std::vector<Ref<Benchmark>>& benchmarks, const FileName& outFileName, const std::string& xlabel, size_t startN, size_t endN, float f, size_t dn, const Closure& test)
   {
     if (f <= 0.0f) throw std::invalid_argument("plot scale must be > 0");
     if (dn == 0) throw std::invalid_argument("plot step must be > 0");
