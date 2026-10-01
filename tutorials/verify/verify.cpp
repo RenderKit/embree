@@ -12,6 +12,8 @@
 #include "../../kernels/common/context.h"
 #include "../../kernels/common/geometry.h"
 #include "../../kernels/common/scene.h"
+#include "../../include/embree4/rtcore_builder.h"
+#include <limits>
 #include <regex>
 #include <stack>
 
@@ -694,6 +696,131 @@ namespace embree
       RTCDevice device = rtcNewDevice("verbose=1");
       errorHandler(nullptr,rtcGetDeviceError(device));
       rtcReleaseDevice(device);
+      return VerifyApplication::PASSED;
+    }
+  };
+
+  struct MortonBuilderBranchingFactorTest : public VerifyApplication::Test
+  {
+    static constexpr unsigned int max_branching_factor = 8;
+
+    struct Node
+    {
+      Node()
+      {
+        for (unsigned int i = 0; i < max_branching_factor; ++i)
+          children[i] = nullptr;
+      }
+
+      Node* children[max_branching_factor];
+    };
+
+    MortonBuilderBranchingFactorTest()
+      : VerifyApplication::Test("morton_builder_oversized_branching_factor",0,VerifyApplication::TEST_SHOULD_PASS) {}
+
+    static bool buildProgress(void* /*userPtr*/, double /*f*/)
+    {
+      return true;
+    }
+
+    static void* createNode(RTCThreadLocalAllocator alloc, unsigned int childCount, void* /*userPtr*/)
+    {
+      if (childCount > max_branching_factor)
+        return nullptr;
+
+      Node* node = (Node*)rtcThreadLocalAlloc(alloc,sizeof(Node),16);
+      new (node) Node();
+      return node;
+    }
+
+    static void setNodeChildren(void* nodePtr, void** children, unsigned int childCount, void* /*userPtr*/)
+    {
+      if (childCount > max_branching_factor)
+        return;
+
+      Node* node = (Node*)nodePtr;
+      for (unsigned int i = 0; i < childCount; ++i)
+        node->children[i] = (Node*)children[i];
+    }
+
+    static void setNodeBounds(void* /*nodePtr*/, const RTCBounds** /*bounds*/, unsigned int /*childCount*/, void* /*userPtr*/) {}
+
+    static void* createLeaf(RTCThreadLocalAllocator alloc,
+                            const RTCBuildPrimitive* /*prims*/,
+                            size_t /*primCount*/,
+                            void* /*userPtr*/)
+    {
+      Node* node = (Node*)rtcThreadLocalAlloc(alloc,sizeof(Node),16);
+      new (node) Node();
+      return node;
+    }
+
+    static std::vector<RTCBuildPrimitive> makeGridPrimitives(size_t primitiveCount)
+    {
+      std::vector<RTCBuildPrimitive> prims(primitiveCount);
+      for (size_t i = 0; i < primitiveCount; ++i)
+      {
+        const float x = float(i % 32);
+        const float y = float((i / 32) % 32);
+
+        RTCBuildPrimitive& p = prims[i];
+        p = {};
+        p.lower_x = x * 2.0f;
+        p.lower_y = y * 2.0f;
+        p.lower_z = 0.0f;
+        p.upper_x = p.lower_x + 0.5f;
+        p.upper_y = p.lower_y + 0.5f;
+        p.upper_z = 0.5f;
+        p.geomID = 0;
+        p.primID = (unsigned int)i;
+      }
+      return prims;
+    }
+
+    static bool rejectsOversizedBranchingFactor(RTCDevice device, unsigned int maxBranchingFactor)
+    {
+      RTCBVH bvh = rtcNewBVH(device);
+      if (!bvh)
+        return false;
+
+      std::vector<RTCBuildPrimitive> prims = makeGridPrimitives(1024);
+
+      RTCBuildArguments args = rtcDefaultBuildArguments();
+      args.byteSize = sizeof(args);
+      args.buildQuality = RTC_BUILD_QUALITY_LOW;
+      args.maxBranchingFactor = maxBranchingFactor;
+      args.maxDepth = 1024;
+      args.minLeafSize = 1;
+      args.maxLeafSize = 1;
+      args.bvh = bvh;
+      args.primitives = prims.data();
+      args.primitiveCount = prims.size();
+      args.primitiveArrayCapacity = prims.size();
+      args.createNode = createNode;
+      args.setNodeChildren = setNodeChildren;
+      args.setNodeBounds = setNodeBounds;
+      args.createLeaf = createLeaf;
+      args.buildProgress = buildProgress;
+
+      rtcGetDeviceError(device);
+      void* root = rtcBuildBVH(&args);
+      const RTCError error = rtcGetDeviceError(device);
+
+      rtcReleaseBVH(bvh);
+      return root == nullptr && error == RTC_ERROR_INVALID_ARGUMENT;
+    }
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool /*silent*/)
+    {
+      RTCDeviceRef device = rtcNewDevice(state->rtcore.c_str());
+      AssertNoError(device);
+
+      if (!rejectsOversizedBranchingFactor(device,64))
+        return VerifyApplication::FAILED;
+
+      if (!rejectsOversizedBranchingFactor(device,std::numeric_limits<unsigned int>::max()))
+        return VerifyApplication::FAILED;
+
       return VerifyApplication::PASSED;
     }
   };
@@ -6301,6 +6428,7 @@ namespace embree
     };
 
     groups.top()->add(new DeviceCreationTest("create_device"));
+    groups.top()->add(new MortonBuilderBranchingFactorTest());
     
     /* add Embree internal tests */
     for (size_t i=2000000; i<3000000; i++) {
