@@ -164,35 +164,48 @@ namespace
 
 int main()
 {
-  RTCDevice device = rtcNewDevice(nullptr);
-  if (!device)
+  try
   {
-    std::printf("FAIL create_device\n");
-    return 1;
-  }
+    RTCDevice device = rtcNewDevice(nullptr);
+    if (!device)
+    {
+      std::printf("FAIL create_device\n");
+      return 1;
+    }
 
-  const TestCase tests[] = {
+    const TestCase tests[] = {
     { "Morton-builder-clamp", morton_builder_clamp }
   };
 
-  int failed = 0;
+    int failed = 0;
   for (const TestCase& tc : tests)
-  {
-    const CaseResult result = tc.fn(device);
-    if (result.pass)
-      std::printf("PASS %s: %s\n", tc.name, result.message.c_str());
-    else
     {
-      ++failed;
-      std::printf("FAIL %s: %s\n", tc.name, result.message.c_str());
+      const CaseResult result = tc.fn(device);
+      if (result.pass)
+        std::printf("PASS %s: %s\n", tc.name, result.message.c_str());
+      else
+      {
+        ++failed;
+        std::printf("FAIL %s: %s\n", tc.name, result.message.c_str());
+      }
     }
+
+    rtcReleaseDevice(device);
+
+    std::printf("SUMMARY total=%u passed=%u failed=%d\n",
+                (unsigned)(sizeof(tests) / sizeof(tests[0])),
+                (unsigned)(sizeof(tests) / sizeof(tests[0])) - (unsigned)failed,
+                failed);
+    return failed == 0 ? 0 : 1;
   }
-
-  rtcReleaseDevice(device);
-
-  std::printf("SUMMARY total=%u passed=%u failed=%d\n",
-              (unsigned)(sizeof(tests) / sizeof(tests[0])),
-              (unsigned)(sizeof(tests) / sizeof(tests[0])) - (unsigned)failed,
-              failed);
-  return failed == 0 ? 0 : 1;
+  catch (const std::exception &e)
+  {
+    std::fprintf(stderr, "ERROR: %s\n", e.what());
+    return 1;
+  }
+  catch (...)
+  {
+    std::fprintf(stderr, "ERROR: unknown exception\n");
+    return 1;
+  }
 }
