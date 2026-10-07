@@ -142,7 +142,7 @@ namespace embree
 
 #if !defined(__SYCL_DEVICE_ONLY__)
     
-    template<typename NativeCurve3ff, typename Ray, typename Epilog>
+    template<bool anyHit, typename NativeCurve3ff, typename Ray, typename Epilog>
     __forceinline bool intersect_bezier_recursive_jacobian(const Ray& ray, const float dt, const NativeCurve3ff& curve, const Epilog& epilog)
     {
       float u0 = 0.0f;
@@ -191,7 +191,7 @@ namespace embree
           u0 = stack[sptr].u0;
           u1 = stack[sptr].u1;
           depth = stack[sptr].depth;
-          const size_t i = select_min(valid,tlower); clear(valid,i);
+          const size_t i = anyHit ? bsf(movemask(valid)) : select_min(valid,tlower); clear(valid,i);
           stack[sptr].valid = valid;
           if (any(valid)) sptr++; // there are still items on the stack
 
@@ -262,28 +262,38 @@ namespace embree
         vboolx valid1 = valid & (tp1.lower <= tp1.upper);
         if (none(valid0 | valid1)) continue;
         
-        /* iterate over all first hits front to back */
+        /* iterate over all first hits */
         const vintx termDepth0 = select(unstable0,vintx(maxDepth+1),vintx(maxDepth));
         vboolx recursion_valid0 = valid0 & (depth < termDepth0);
         valid0 &= depth >= termDepth0;
         
         while (any(valid0))
         {
-          const size_t i = select_min(valid0,tp0.lower); clear(valid0,i);
-          found = found | intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer0[i],tp0.lower[i],epilog);
+          const size_t i = anyHit ? bsf(movemask(valid0)) : select_min(valid0,tp0.lower); clear(valid0,i);
+          const bool hit = intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer0[i],tp0.lower[i],epilog);
+          if (anyHit) {
+            if (hit) return true;
+          } else {
+            found = found | hit;
+          }
           //found = found | intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer0,tp0,h0,h1,Ng_outer0,dP0du,dP3du,epilog);
           valid0 &= tp0.lower+dt <= ray.tfar;
         }
         valid1 &= tp1.lower+dt <= ray.tfar;
         
-        /* iterate over all second hits front to back */
+        /* iterate over all second hits */
         const vintx termDepth1 = select(unstable1,vintx(maxDepth+1),vintx(maxDepth));
         vboolx recursion_valid1 = valid1 & (depth < termDepth1);
         valid1 &= depth >= termDepth1;
         while (any(valid1))
         {
-          const size_t i = select_min(valid1,tp1.lower); clear(valid1,i);
-          found = found | intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer1[i],tp1.upper[i],epilog);
+          const size_t i = anyHit ? bsf(movemask(valid1)) : select_min(valid1,tp1.lower); clear(valid1,i);
+          const bool hit = intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer1[i],tp1.upper[i],epilog);
+          if (anyHit) {
+            if (hit) return true;
+          } else {
+            found = found | hit;
+          }
           //found = found | intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer1,tp1,h0,h1,Ng_outer1,dP0du,dP3du,epilog);
           valid1 &= tp1.lower+dt <= ray.tfar;
         }
@@ -308,7 +318,7 @@ namespace embree
 
 #else
     
-     template<typename NativeCurve3ff, typename Ray, typename Epilog>
+     template<bool anyHit, typename NativeCurve3ff, typename Ray, typename Epilog>
      __forceinline bool intersect_bezier_recursive_jacobian(const Ray& ray, const float dt, const NativeCurve3ff& curve, const Epilog& epilog)
     {
       const Vec3fa org = zero;
@@ -431,15 +441,21 @@ namespace embree
            continue;
          }
 
-        if (valid0)
-          found |= intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer0,tp0.lower,epilog);
+        if (valid0) {
+          const bool hit = intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer0,tp0.lower,epilog);
+          if (anyHit && hit) return true;
+          found |= hit;
+        }
           
         /* the far hit cannot be closer, thus skip if we hit entry already */
         valid1 &= tp1.lower+dt <= ray.tfar;
         
         /* iterate over second hit */
-        if (valid1)
-          found |= intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer1,tp1.upper,epilog);
+        if (valid1) {
+          const bool hit = intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer1,tp1.upper,epilog);
+          if (anyHit && hit) return true;
+          found |= hit;
+        }
 
         stack.pop();
         
@@ -450,7 +466,7 @@ namespace embree
 
 #endif
     
-    template<template<typename Ty> class NativeCurve>
+    template<template<typename Ty> class NativeCurve, bool anyHit = false>
     struct SweepCurve1Intersector1
     {
       typedef NativeCurve<Vec3ff> NativeCurve3ff;
@@ -470,11 +486,11 @@ namespace embree
         const float dt = dot(curve0.center()-ray.org,ray.dir)*rcp(dot(ray.dir,ray.dir));
         const Vec3ff ref(madd(Vec3fa(dt),ray.dir,ray.org),0.0f);
         const NativeCurve3ff curve1 = curve0-ref;
-        return intersect_bezier_recursive_jacobian(ray,dt,curve1,epilog);
+        return intersect_bezier_recursive_jacobian<anyHit>(ray,dt,curve1,epilog);
       }
     };
 
-    template<template<typename Ty> class NativeCurve, int K>
+    template<template<typename Ty> class NativeCurve, int K, bool anyHit = false>
     struct SweepCurve1IntersectorK
     {
       typedef NativeCurve<Vec3ff> NativeCurve3ff;
@@ -512,7 +528,7 @@ namespace embree
         const float dt = dot(curve0.center()-ray.org,ray.dir)*rcp(dot(ray.dir,ray.dir));
         const Vec3ff ref(madd(Vec3fa(dt),ray.dir,ray.org),0.0f);
         const NativeCurve3ff curve1 = curve0-ref;
-        return intersect_bezier_recursive_jacobian(ray,dt,curve1,epilog);
+        return intersect_bezier_recursive_jacobian<anyHit>(ray,dt,curve1,epilog);
       }
     };
   }
