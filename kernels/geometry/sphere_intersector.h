@@ -72,7 +72,7 @@ namespace embree
       Vec3f vNg;
     };
 
-    template<int M>
+    template<int M, bool anyHit = false>
     struct SphereIntersector1
     {
       typedef CurvePrecalculations1 Precalculations;
@@ -125,6 +125,7 @@ namespace embree
 
         /* invoke intersection filter for first hit */
         const bool is_hit_first = epilog(valid_first, hit);
+        if (anyHit && is_hit_first) return true;
 
 #if defined (EMBREE_BACKFACE_CULLING_SPHERES)
         return is_hit_first;
@@ -154,7 +155,7 @@ namespace embree
       }
     };
 
-    template<int M, int K>
+    template<int M, int K, bool anyHit = false>
     struct SphereIntersectorK
     {
       typedef CurvePrecalculationsK<K> Precalculations;
@@ -212,6 +213,7 @@ namespace embree
 
         /* invoke intersection filter for first hit */
         const bool is_hit_first = epilog(valid_first, hit);
+        if (anyHit && is_hit_first) return true;
 
 #if defined (EMBREE_BACKFACE_CULLING_SPHERES)
         return is_hit_first;

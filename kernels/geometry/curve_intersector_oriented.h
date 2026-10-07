@@ -14,7 +14,7 @@ namespace embree
 {
   namespace isa
   {
-    template<typename Ray, typename Epilog, int N = VSIZEX-1, int V = VSIZEX>
+    template<typename Ray, typename Epilog, int N = VSIZEX-1, int V = VSIZEX, bool anyHit = false>
       struct TensorLinearCubicBezierSurfaceIntersector
       {
         const LinearSpace3fa& ray_space;
@@ -90,6 +90,7 @@ namespace embree
               const Vec3fa Ng = cross(curve3d.eval_du(u,v),curve3d.eval_dv(u,v));
               BezierCurveHit hit(t,u,v,Ng);
               isHit |= epilog(hit);
+              if (anyHit && isHit) return;
             }
             return;
           }
@@ -123,6 +124,7 @@ namespace embree
           TensorLinearCubicBezierSurface2fa curve2l, curve2r;
           curve2a.split_u(curve2l,curve2r);
           solve_bezier_clipping(BBox1f(cu.lower,cu.center()),cv,curve2l);
+          if (anyHit && isHit) return;
           solve_bezier_clipping(BBox1f(cu.center(),cu.upper),cv,curve2r);
         }
         
@@ -163,6 +165,7 @@ namespace embree
               const Vec3fa Ng = cross(curve3d.eval_du(u,v),curve3d.eval_dv(u,v));
               BezierCurveHit hit(t,u,v,Ng);
               isHit |= epilog(hit);
+              if (anyHit && isHit) return;
               return;
             }
           }       
@@ -273,7 +276,9 @@ namespace embree
             /* we assume convergence for small u ranges and verify using krawczyk */
             if (cu.size() < 1.0f/6.0f) {
               const bool very_small = cu.size() < 0.001f || sptr >= stack_size;
-              if (solve_krawczyk(very_small,cu,cv)) {
+              const bool solved = solve_krawczyk(very_small,cu,cv);
+              if (anyHit && isHit) return;
+              if (solved) {
                 continue;
               }
             }
@@ -327,7 +332,7 @@ namespace embree
       };
 
 
-    template<template<typename Ty> class SourceCurve, int N = VSIZEX-1, int V = VSIZEX>
+    template<template<typename Ty> class SourceCurve, int N = VSIZEX-1, int V = VSIZEX, bool anyHit = false>
       struct OrientedCurve1Intersector1
     {
       //template<typename Ty> using Curve = SourceCurve<Ty>;
@@ -352,7 +357,7 @@ namespace embree
         ccurve = enlargeRadiusToMinWidth(context,geom,ray.org,ccurve);
         TensorLinearCubicBezierSurface3fa curve = TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(ccurve,ncurve);
         //return TensorLinearCubicBezierSurfaceIntersector<Ray,Epilog>(pre.ray_space,ray,curve,epilog).solve_bezier_clipping();
-        return TensorLinearCubicBezierSurfaceIntersector<Ray,Epilog,N,V>(pre.ray_space,ray,curve,epilog).solve_newton_raphson_main();
+        return TensorLinearCubicBezierSurfaceIntersector<Ray,Epilog,N,V,anyHit>(pre.ray_space,ray,curve,epilog).solve_newton_raphson_main();
       }
 
       template<typename Ray, typename Epilog>
@@ -363,11 +368,11 @@ namespace embree
       {
         STAT3(normal.trav_prims,1,1,1);
         //return TensorLinearCubicBezierSurfaceIntersector<Ray,Epilog>(pre.ray_space,ray,curve,epilog).solve_bezier_clipping();
-        return TensorLinearCubicBezierSurfaceIntersector<Ray,Epilog,N,V>(pre.ray_space,ray,curve,epilog).solve_newton_raphson_main();
+        return TensorLinearCubicBezierSurfaceIntersector<Ray,Epilog,N,V,anyHit>(pre.ray_space,ray,curve,epilog).solve_newton_raphson_main();
       }
     };
 
-    template<template<typename Ty> class SourceCurve, int K>
+    template<template<typename Ty> class SourceCurve, int K, bool anyHit = false>
       struct OrientedCurve1IntersectorK
     {
       //template<typename Ty> using Curve = SourceCurve<Ty>;
@@ -405,7 +410,7 @@ namespace embree
         ccurve = enlargeRadiusToMinWidth(context,geom,ray.org,ccurve);
         TensorLinearCubicBezierSurface3fa curve = TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(ccurve,ncurve);
         //return TensorLinearCubicBezierSurfaceIntersector<Ray1,Epilog>(pre.ray_space[k],ray,curve,epilog).solve_bezier_clipping();
-        return TensorLinearCubicBezierSurfaceIntersector<Ray1,Epilog>(pre.ray_space[k],ray,curve,epilog).solve_newton_raphson_main();
+        return TensorLinearCubicBezierSurfaceIntersector<Ray1,Epilog,VSIZEX-1,VSIZEX,anyHit>(pre.ray_space[k],ray,curve,epilog).solve_newton_raphson_main();
       }
 
       template<typename Epilog>
@@ -418,7 +423,7 @@ namespace embree
         STAT3(normal.trav_prims,1,1,1);
         Ray1 ray(vray,k);
         //return TensorLinearCubicBezierSurfaceIntersector<Ray1,Epilog>(pre.ray_space[k],ray,curve,epilog).solve_bezier_clipping();
-        return TensorLinearCubicBezierSurfaceIntersector<Ray1,Epilog>(pre.ray_space[k],ray,curve,epilog).solve_newton_raphson_main();
+        return TensorLinearCubicBezierSurfaceIntersector<Ray1,Epilog,VSIZEX-1,VSIZEX,anyHit>(pre.ray_space[k],ray,curve,epilog).solve_newton_raphson_main();
       }
     };
   }

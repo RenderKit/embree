@@ -39,7 +39,7 @@ namespace embree
         const Points* geom = context->scene->get<Points>(sphere.geomID());
         Vec4vf<M> v0; sphere.gather(v0, geom);
         const vbool<M> valid = sphere.valid();
-        return SphereIntersector1<M>::intersect(
+        return SphereIntersector1<M,true>::intersect(
           valid, ray, context, geom, pre, v0, Occluded1EpilogM<M, filter>(ray, context, sphere.geomID(), sphere.primID()));
       }
       
@@ -79,7 +79,7 @@ namespace embree
         const Points* geom = context->scene->get<Points>(sphere.geomID());
         Vec4vf<M> v0; sphere.gather(v0, geom, ray.time());
         const vbool<M> valid = sphere.valid();
-        return SphereIntersector1<M>::intersect(
+        return SphereIntersector1<M,true>::intersect(
           valid, ray, context, geom, pre, v0, Occluded1EpilogM<M, filter>(ray, context, sphere.geomID(), sphere.primID()));
       }
 
@@ -116,7 +116,7 @@ namespace embree
         const Points* geom = context->scene->get<Points>(sphere.geomID());
         Vec4vf<M> v0; sphere.gather(v0, geom);
         const vbool<M> valid = sphere.valid();
-        return SphereIntersectorK<M, K>::intersect(
+        return SphereIntersectorK<M, K,true>::intersect(
           valid, ray, k, context, geom, pre, v0,
           Occluded1KEpilogM<M, K, filter>(ray, k, context, sphere.geomID(), sphere.primID()));
       }
@@ -147,7 +147,7 @@ namespace embree
         const Points* geom = context->scene->get<Points>(sphere.geomID());
         Vec4vf<M> v0; sphere.gather(v0, geom, ray.time()[k]);
         const vbool<M> valid = sphere.valid();
-        return SphereIntersectorK<M, K>::intersect(
+        return SphereIntersectorK<M, K,true>::intersect(
           valid, ray, k, context, geom, pre, v0,
           Occluded1KEpilogM<M, K, filter>(ray, k, context, sphere.geomID(), sphere.primID()));
       }

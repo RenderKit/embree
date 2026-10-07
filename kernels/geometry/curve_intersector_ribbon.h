@@ -69,7 +69,7 @@ namespace embree
       return d.first <= r*r*d.second;
     }
 
-    template<int M = VSIZEX, typename NativeCurve3ff, typename Epilog>
+    template<bool anyHit, int M = VSIZEX, typename NativeCurve3ff, typename Epilog>
     __forceinline bool intersect_ribbon(const Vec3fa& ray_org, const Vec3fa& ray_dir, const float ray_tnear, const float& ray_tfar,
                                         const LinearSpace3fa& ray_space, const float& depth_scale,
                                         const NativeCurve3ff& curve3D, const int N,
@@ -120,7 +120,9 @@ namespace embree
             {
               vv = madd(2.0f,vv,vfloat<M>(-1.0f));
               RibbonHit<NativeCurve3ff,M> bhit(valid0,vu,vv,vt,0,N,curve3D);
-              ishit |= epilog(bhit.valid,bhit);
+              const bool hit = epilog(bhit.valid,bhit);
+              if (anyHit && hit) return true;
+              ishit |= hit;
             }
           }
         }
@@ -168,7 +170,9 @@ namespace embree
             {
               vv = madd(2.0f,vv,vfloat<M>(-1.0f));
               RibbonHit<NativeCurve3ff,M> bhit(valid0,vu,vv,vt,i,N,curve3D);
-              ishit |= epilog(bhit.valid,bhit);
+              const bool hit = epilog(bhit.valid,bhit);
+              if (anyHit && hit) return true;
+              ishit |= hit;
             }
           }
         }
@@ -176,7 +180,7 @@ namespace embree
       return ishit;
     }
         
-    template<template<typename Ty> class NativeCurve, int M = VSIZEX>
+    template<template<typename Ty> class NativeCurve, int M = VSIZEX, bool anyHit = false>
     struct RibbonCurve1Intersector1
     {
       typedef NativeCurve<Vec3ff> NativeCurve3ff;
@@ -191,14 +195,14 @@ namespace embree
         const int N = geom->tessellationRate;
         NativeCurve3ff curve(v0,v1,v2,v3);
         curve = enlargeRadiusToMinWidth(context,geom,ray.org,curve);
-        return intersect_ribbon<M,NativeCurve3ff>(ray.org,ray.dir,ray.tnear(),ray.tfar,
-                                                pre.ray_space,pre.depth_scale,
-                                                curve,N,
-                                                epilog);
+        return intersect_ribbon<anyHit,M,NativeCurve3ff>(ray.org,ray.dir,ray.tnear(),ray.tfar,
+                                                         pre.ray_space,pre.depth_scale,
+                                                         curve,N,
+                                                         epilog);
       }
     };
     
-    template<template<typename Ty> class NativeCurve, int K, int M = VSIZEX>
+    template<template<typename Ty> class NativeCurve, int K, int M = VSIZEX, bool anyHit = false>
     struct RibbonCurve1IntersectorK
     {
       typedef NativeCurve<Vec3ff> NativeCurve3ff;
@@ -215,10 +219,10 @@ namespace embree
         const Vec3fa ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
         NativeCurve3ff curve(v0,v1,v2,v3);
         curve = enlargeRadiusToMinWidth(context,geom,ray_org,curve);
-        return intersect_ribbon<M,NativeCurve3ff>(ray_org,ray_dir,ray.tnear()[k],ray.tfar[k],
-                                                pre.ray_space[k],pre.depth_scale[k],
-                                                curve,N,
-                                                epilog);
+        return intersect_ribbon<anyHit,M,NativeCurve3ff>(ray_org,ray_dir,ray.tnear()[k],ray.tfar[k],
+                                                         pre.ray_space[k],pre.depth_scale[k],
+                                                         curve,N,
+                                                         epilog);
       }
     };
   }

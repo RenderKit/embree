@@ -531,7 +531,7 @@ namespace embree
       };
       
       
-      template<int M, typename Epilog, typename ray_tfar_func>
+      template<bool anyHit, int M, typename Epilog, typename ray_tfar_func>
         static __forceinline bool intersectConeSphere(const vbool<M>& valid_i,
                                                       const Vec3vf<M>& ray_org_in, const Vec3vf<M>& ray_dir, 
                                                       const vfloat<M>& ray_tnear, const ray_tfar_func& ray_tfar,
@@ -605,6 +605,7 @@ namespace embree
         /* invoke intersection filter for first hit */
         RoundLineIntersectorHitM<M> hit(u_first,zero,dt+t_first,Ng_first);
         const bool is_hit_first = epilog(valid_first, hit);
+        if (anyHit && is_hit_first) return true;
         
         /* check for possible second hits before potentially accepted hit */
         const vfloat<M> t_second = t_cone_sphere_upper;
@@ -646,7 +647,7 @@ namespace embree
       
     } // end namespace __roundline_internal
     
-    template<int M>
+    template<int M, bool anyHit = false>
       struct RoundLinearCurveIntersector1
       {
         typedef CurvePrecalculations1 Precalculations;
@@ -675,11 +676,11 @@ namespace embree
           const Vec4vf<M> v1 = enlargeRadiusToMinWidth<M>(context,geom,ray_org,v1i);
           const Vec4vf<M> vL = enlargeRadiusToMinWidth<M>(context,geom,ray_org,vLi);
           const Vec4vf<M> vR = enlargeRadiusToMinWidth<M>(context,geom,ray_org,vRi);
-          return  __roundline_internal::intersectConeSphere<M>(valid_i,ray_org,ray_dir,ray_tnear,ray_tfar<Ray>(ray),v0,v1,vL,vR,epilog);
+          return  __roundline_internal::intersectConeSphere<anyHit,M>(valid_i,ray_org,ray_dir,ray_tnear,ray_tfar<Ray>(ray),v0,v1,vL,vR,epilog);
         }
       };
     
-    template<int M, int K>
+    template<int M, int K, bool anyHit = false>
       struct RoundLinearCurveIntersectorK
       {
         typedef CurvePrecalculationsK<K> Precalculations;
@@ -708,7 +709,7 @@ namespace embree
           const Vec4vf<M> v1 = enlargeRadiusToMinWidth<M>(context,geom,ray_org,v1i);
           const Vec4vf<M> vL = enlargeRadiusToMinWidth<M>(context,geom,ray_org,vLi);
           const Vec4vf<M> vR = enlargeRadiusToMinWidth<M>(context,geom,ray_org,vRi);
-          return __roundline_internal::intersectConeSphere<M>(valid_i,ray_org,ray_dir,ray_tnear,ray_tfar(ray,k),v0,v1,vL,vR,epilog);
+          return __roundline_internal::intersectConeSphere<anyHit,M>(valid_i,ray_org,ray_dir,ray_tnear,ray_tfar(ray,k),v0,v1,vL,vR,epilog);
         }
       };
   }
