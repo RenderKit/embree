@@ -13,7 +13,7 @@
 #include "../simd/arm/emulation.h"
 #else
 #include <immintrin.h>
-#if defined(__powerpc64__) && defined(__clang__)
+#if defined(__powerpc64__)
 __forceinline unsigned int _mm_getcsr() { return 0; }
 __forceinline void _mm_setcsr(unsigned int) {}
 __forceinline int _mm_popcnt_u32(unsigned int v) { return __builtin_popcount(v); }
