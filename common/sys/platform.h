@@ -59,8 +59,8 @@
 
 #if defined(__powerpc64__)
 #define NO_WARN_X86_INTRINSICS
-#define __SSE__
-#define __SSE2__
+#define __SSE__ 1
+#define __SSE2__ 1
 #endif
 
 /* detect 64 bit platform */
