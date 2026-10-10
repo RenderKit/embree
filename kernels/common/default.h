@@ -251,8 +251,13 @@ namespace embree
   {
     const float round_up   = 1.0f+2.0f*float(ulp); // corrects inaccuracies to precisely match time step
     const float round_down = 1.0f-2.0f*float(ulp);
-    const int itime_lower = (int)max(floor(round_up  *time_range.lower*numTimeSegments), 0.0f);
-    const int itime_upper = (int)min(ceil (round_down*time_range.upper*numTimeSegments), numTimeSegments);
+    const float lowerf = floor(round_up  * time_range.lower * numTimeSegments);
+    const float upperf = ceil (round_down * time_range.upper * numTimeSegments);
+    const int itime_lower = (int)clamp(lowerf, 0.0f, numTimeSegments);
+    const int itime_upper = (int)clamp(upperf, 0.0f, numTimeSegments);
+    if (itime_upper < itime_lower) {
+      return make_range(itime_lower, itime_lower);
+    }
     return make_range(itime_lower, itime_upper);
   }
 
