@@ -885,7 +885,7 @@ namespace embree
       const HalfEdge* halfEdge = topo->getHalfEdge(primID);
 
       /* invalid patches cannot get evaluated */
-      if (unlikely(!this->valid(primID) || !topo->valid(primID)))
+      if (unlikely(!topo->valid(primID)))
       {
         for (unsigned int j=0; j<valueCount; j++) {
           if (has_P) P[j] = 0.0f;
@@ -985,7 +985,7 @@ namespace embree
                          const HalfEdge* halfEdge = topo->getHalfEdge(primID);
 
                          /* invalid patches cannot get evaluated */
-                         if (unlikely(!this->valid(primID) || !topo->valid(primID)))
+                         if (unlikely(!topo->valid(primID)))
                          {
                            for (unsigned int j=0; j<valueCount; j++) {
                              if (P) vfloat4::storeu(valid1,P+j*N+i,vfloat4(0.0f));
