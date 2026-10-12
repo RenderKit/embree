@@ -239,6 +239,11 @@ namespace
   static CaseResult issue03_lbbox_extreme_range(RTCDevice device)
   {
     RTCScene child = createTriangleScene(device);
+    if (consumeDeviceError(device) != RTC_ERROR_NONE) {
+      rtcReleaseScene(child);
+      return failResult("failed to build child scene");
+    }
+
     RTCScene top = rtcNewScene(device);
     RTCGeometry inst = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_INSTANCE);
     if (!inst) {
