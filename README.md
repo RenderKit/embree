@@ -209,6 +209,11 @@ your application when using just in time compilation:
 
     -fsycl -fsycl-targets=spir64
 
+The SYCL compiler may throw warnings about undefined symbols. These
+can be suppressed with:
+
+    -Wno-sycl-undefined-func-in-image
+
 For a full example on how to build an Embree SYCL application please
 have a look at the SYCL version of the `minimal` tutorial provided in
 the `src` folder of the Embree package and also the contained

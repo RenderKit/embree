@@ -48,7 +48,7 @@ IF (EMBREE_SYCL_SUPPORT)
   
   SET(CMAKE_CXX_FLAGS_SYCL "-fsycl -fsycl-unnamed-lambda -Xclang -fsycl-allow-func-ptr")
   SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -Wno-mismatched-tags -Wno-pessimizing-move -Wno-reorder -Wno-unneeded-internal-declaration -Wno-delete-non-abstract-non-virtual-dtor -Wno-dangling-field -Wno-unknown-pragmas -Wno-logical-op-parentheses")
-  
+
   IF (SYCL_ONEAPI_ICX AND WIN32)
     SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} /debug:none")    # FIXME: debug information generation takes forever in SYCL
     SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} /DNDEBUG")    # FIXME: debug information generation takes forever in SYCL
@@ -80,7 +80,12 @@ IF (EMBREE_SYCL_SUPPORT)
   ENDIF()
 
   SET(CMAKE_LINK_FLAGS_SYCL "-fsycl")
-  
+
+  CHECK_CXX_COMPILER_FLAG("-Wno-sycl-undefined-func-in-image" HAVE_WNO_SYCL_UNDEFINED_FUNC_IN_IMAGE)
+  IF (HAVE_WNO_SYCL_UNDEFINED_FUNC_IN_IMAGE)
+    SET(CMAKE_LINK_FLAGS_SYCL "${CMAKE_LINK_FLAGS_SYCL} -Wno-sycl-undefined-func-in-image")
+  ENDIF()
+
   #LIST(APPEND CMAKE_IGC_OPTIONS "EnableOCLNoInlineAttr=0")                                # enabled __noinline
   #LIST(APPEND CMAKE_IGC_OPTIONS "ControlKernelTotalSize=0")
   #LIST(APPEND CMAKE_IGC_OPTIONS "SubroutineThreshold=110000")        # Minimal kernel size to enable subroutines

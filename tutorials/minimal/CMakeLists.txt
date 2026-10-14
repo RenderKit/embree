@@ -2,7 +2,7 @@
 ## SPDX-License-Identifier: Apache-2.0
 
 PROJECT(minimal)
-CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.13)
 
 IF (NOT EMBREE_PROJECT_COMPILATION)
   FIND_PACKAGE(embree REQUIRED)
@@ -28,9 +28,14 @@ IF (EMBREE_SYCL_SUPPORT)
   
   ADD_EXECUTABLE(embree_minimal_sycl minimal_sycl.cpp)
   TARGET_LINK_LIBRARIES(embree_minimal_sycl embree ze_wrapper ${CMAKE_DL_LIBS})
-  SET_PROPERTY(TARGET embree_minimal_sycl APPEND PROPERTY COMPILE_FLAGS "-fsycl -Xclang -fsycl-allow-func-ptr -fsycl-targets=spir64")
-  SET_PROPERTY(TARGET embree_minimal_sycl APPEND PROPERTY LINK_FLAGS    "-fsycl -fsycl-targets=spir64")
+  TARGET_COMPILE_OPTIONS(embree_minimal_sycl PRIVATE -fsycl -Xclang -fsycl-allow-func-ptr -fsycl-targets=spir64)
+  TARGET_LINK_OPTIONS(embree_minimal_sycl PRIVATE -fsycl -fsycl-targets=spir64)
   
+  CHECK_CXX_COMPILER_FLAG("-Wno-sycl-undefined-func-in-image" HAVE_WNO_SYCL_UNDEFINED_FUNC_IN_IMAGE)
+  IF (HAVE_WNO_SYCL_UNDEFINED_FUNC_IN_IMAGE)
+    TARGET_LINK_OPTIONS(embree_minimal_sycl PRIVATE -Wno-sycl-undefined-func-in-image)
+  ENDIF()
+
   SET_PROPERTY(TARGET embree_minimal_sycl PROPERTY FOLDER tutorials/sycl)
   INSTALL(TARGETS embree_minimal_sycl DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
   IF (COMMAND SIGN_TARGET)
