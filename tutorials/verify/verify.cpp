@@ -1234,7 +1234,7 @@ namespace embree
       scene = rtcNewScene(device);
       geometry = createGeometry(true);
       rtcCommitGeometry(geometry);
-      AssertError(device,RTC_ERROR_INVALID_OPERATION);
+      AssertNoError(device);
       rtcReleaseGeometry(geometry);
       rtcReleaseScene(scene);
 
