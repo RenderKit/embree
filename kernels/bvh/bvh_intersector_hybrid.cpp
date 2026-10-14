@@ -767,7 +767,7 @@ namespace embree
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
 
         size_t lazy_node = 0;
-        terminated |= PrimitiveIntersectorK::occluded(!terminated, This, pre, ray, context, prim, items, tray, lazy_node);
+        terminated |= valid_leaf & PrimitiveIntersectorK::occluded(valid_leaf, This, pre, ray, context, prim, items, tray, lazy_node);
         if (all(terminated)) break;
         tray.tfar = select(terminated, vfloat<K>(neg_inf), tray.tfar); // ignore node intersections for terminated rays
 
@@ -904,7 +904,8 @@ namespace embree
           size_t items; const Primitive* prim = (Primitive*)cur.leaf(items);
 
           size_t lazy_node = 0;
-          terminated |= PrimitiveIntersectorK::occluded(!terminated, This, pre, ray, context, prim, items, tray, lazy_node);
+          const vbool<K> valid_leaf((int)m_active);
+          terminated |= valid_leaf & PrimitiveIntersectorK::occluded(valid_leaf, This, pre, ray, context, prim, items, tray, lazy_node);
           octant_valid &= !terminated;
           if (unlikely(none(octant_valid))) break;
           tray.tfar = select(terminated, vfloat<K>(neg_inf), tray.tfar); // ignore node intersections for terminated rays
