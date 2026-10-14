@@ -293,6 +293,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       runs-on: '[ "Windows",  "dg2" ]'
+      dpcpp-version: intel/2025.2
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
       artifact-out: nightly-windows-DG2-MULTILEVEL-build
       artifact-path: ./build/*.zip
@@ -324,6 +325,7 @@ jobs:
     needs: ["nightly-windows-DG2-MULTILEVEL-build"]
     with:
       runs-on: '[ "Windows",  "dg2" ]'
+      dpcpp-version: intel/2025.2
       env-from-files: ./.github/workflows/gfx-windows-public.env
       artifact-in: nightly-windows-DG2-MULTILEVEL-build
       cmd: |

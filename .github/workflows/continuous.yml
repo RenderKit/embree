@@ -162,6 +162,7 @@ jobs:
     with:
       force-delete: true
       runs-on: '[ "Windows",  "build" ]'
+      dpcpp-version: intel/2025.2
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
       artifact-out: windows-JIT-build
       artifact-path: ./build/*.zip
@@ -192,6 +193,7 @@ jobs:
     needs: ["windows-JIT-build"]
     with:
       runs-on: '[ "Windows", "dg2" ]'
+      dpcpp-version: intel/2025.2
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
       artifact-in: windows-JIT-build
       cmd: |
@@ -204,6 +206,7 @@ jobs:
     needs: ["windows-JIT-build"]
     with:
       runs-on: '[ "Windows", "bmg" ]'
+      dpcpp-version: intel/2025.2
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
       artifact-in: windows-JIT-build
       cmd: |
@@ -216,6 +219,7 @@ jobs:
     needs: ["windows-JIT-build"]
     with:
       runs-on: '[ "Windows", "lnl" ]'
+      dpcpp-version: intel/2025.2
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
       artifact-in: windows-JIT-build
       cmd: |
@@ -228,6 +232,7 @@ jobs:
     needs: ["windows-JIT-build"]
     with:
       runs-on: '[ "Windows",  "dg2" ]'
+      dpcpp-version: intel/2025.2
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
       artifact-in: windows-JIT-build
       cmd: |
@@ -269,6 +274,7 @@ jobs:
     with:
       force-delete: true
       runs-on: '[ "Windows",  "build" ]'
+      dpcpp-version: intel/2025.2
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
       cmd: |
         $opts  = "-DCMAKE_BUILD_TYPE=Debug"

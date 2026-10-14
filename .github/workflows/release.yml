@@ -50,6 +50,7 @@ jobs:
         platform: [avx2, avx512]
     with:
       runs-on: '[ "Windows", "${{ matrix.platform }}" ]'
+      msvc-version: 2019
       artifact-in: build-windows
       cmd: |
         $EmbreeDir = .\\scripts\\prepare-test-files.ps1 -TestType ctest
@@ -276,6 +277,7 @@ jobs:
         platform: [dg2, bmg, lnl]
     with:
       runs-on: '[ "Windows", "${{ matrix.platform }}" ]'
+      dpcpp-version: intel/2025.2
       env-from-files: ./.github/workflows/gfx-windows-public.env
       artifact-in: build-windows-sycl
       cmd: |
