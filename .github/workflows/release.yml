@@ -22,8 +22,8 @@ jobs:
       runs-on: '[ "Windows", "build"]'
       artifact-out: build-windows
       artifact-path: ./build/embree-*.zip
-      dpcpp-version: intel-llvm/v6.2.0
       msvc-version: 2019
+      dpcpp-version: intel-llvm/v6.2.0
       cmd: |
         $opts  = "-DCMAKE_BUILD_TYPE=Release"
         $opts += " -DBUILD_TESTING=ON"
@@ -214,8 +214,8 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       runs-on: '[ "Windows", "build" ]'
-      dpcpp-version: intel-llvm/v6.2.0
       msvc-version: 2019
+      dpcpp-version: intel-llvm/v6.2.0
       artifact-out: build-windows-sycl
       artifact-path: ./build/*.zip
       cmd: |
@@ -279,8 +279,8 @@ jobs:
         platform: [dg2, bmg, lnl]
     with:
       runs-on: '[ "Windows", "${{ matrix.platform }}" ]'
-      dpcpp-version: intel/2025.2
       msvc-version: 2026
+      dpcpp-version: intel/2025.2
       env-from-files: ./.github/workflows/gfx-windows-public.env
       artifact-in: build-windows-sycl
       cmd: |
