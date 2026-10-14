@@ -280,6 +280,7 @@ jobs:
     with:
       runs-on: '[ "Windows", "${{ matrix.platform }}" ]'
       dpcpp-version: intel/2025.2
+      msvc-version: 2026
       env-from-files: ./.github/workflows/gfx-windows-public.env
       artifact-in: build-windows-sycl
       cmd: |
