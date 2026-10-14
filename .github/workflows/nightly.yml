@@ -178,6 +178,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       runs-on: '[ "Windows",  "build" ]'
+      msvc-version: 2026
       dpcpp-version: intel/2025.2
       artifact-out: nightly-windows-DG2-JIT-ICX-RC-build
       artifact-path: ./build/*.zip
@@ -208,6 +209,7 @@ jobs:
     with:
       runs-on: '[ "Windows",  "dg2" ]'
       env-from-files: ./.github/workflows/gfx-windows-public.env
+      msvc-version: 2026
       dpcpp-version: intel-llvm/v6.2.0
       artifact-out: nightly-windows-DG2-JIT-INTELLLVM-bulid
       artifact-path: ./build/*.zip
@@ -239,6 +241,7 @@ jobs:
     with:
       runs-on: '[ "Windows",  "dg2" ]'
       env-from-files: ./.github/workflows/gfx-windows-public.env
+      msvc-version: 2026
       dpcpp-version: intel-llvm/v6.2.0
       artifact-in: nightly-windows-DG2-JIT-INTELLLVM-bulid
       cmd: |
@@ -251,6 +254,7 @@ jobs:
     with:
       runs-on: '[ "Windows",  "dg2" ]'
       env-from-files: ./.github/workflows/gfx-windows-public.env
+      msvc-version: 2026
       dpcpp-version: intel-llvm/v6.2.0
       artifact-out: nightly-windows-DG2-JIT-PUBLIC-build
       artifact-path: ./build/*.zip
@@ -282,6 +286,7 @@ jobs:
     with:
       runs-on: '[ "Windows",  "dg2" ]'
       env-from-files: ./.github/workflows/gfx-windows-public.env
+      msvc-version: 2026
       dpcpp-version: intel-llvm/v6.2.0
       artifact-in: nightly-windows-DG2-JIT-PUBLIC-build
       cmd: |
@@ -293,6 +298,8 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/windows.yml@main
     with:
       runs-on: '[ "Windows",  "dg2" ]'
+      msvc-version: 2026
+      dpcpp-version: intel/2025.2
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
       artifact-out: nightly-windows-DG2-MULTILEVEL-build
       artifact-path: ./build/*.zip
@@ -324,6 +331,8 @@ jobs:
     needs: ["nightly-windows-DG2-MULTILEVEL-build"]
     with:
       runs-on: '[ "Windows",  "dg2" ]'
+      msvc-version: 2026
+      dpcpp-version: intel/2025.2
       env-from-files: ./.github/workflows/gfx-windows-public.env
       artifact-in: nightly-windows-DG2-MULTILEVEL-build
       cmd: |
