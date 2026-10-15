@@ -859,21 +859,18 @@ namespace embree
       unsigned int valueCount = args->valueCount;
       
       /* calculate base pointer and stride */
-      assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < RTC_MAX_TIME_STEP_COUNT) ||
-             (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE && bufferSlot < RTC_MAX_USER_VERTEX_BUFFERS));
+      checkInterpolateBuffer(bufferType,bufferSlot,vertexAttribs.size());
       const char* src = nullptr; 
       size_t stride = 0;
       std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
       Topology* topo = nullptr;
       if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
-        assert(bufferSlot < vertexAttribs.size());
         src    = vertexAttribs[bufferSlot].getPtr();
         stride = vertexAttribs[bufferSlot].getStride();
         baseEntry = &vertex_attrib_buffer_tags[bufferSlot];
         int topologyID = vertexAttribs[bufferSlot].userData;
         topo = &topology[topologyID];
       } else {
-        assert(bufferSlot < numTimeSteps);
         src    = vertices[bufferSlot].getPtr();
         stride = vertices[bufferSlot].getStride();
         baseEntry = &vertex_buffer_tags[bufferSlot];
@@ -936,21 +933,18 @@ namespace embree
       unsigned int valueCount = args->valueCount;
     
       /* calculate base pointer and stride */
-      assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < RTC_MAX_TIME_STEP_COUNT) ||
-             (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE && bufferSlot < RTC_MAX_USER_VERTEX_BUFFERS));
+      checkInterpolateBuffer(bufferType,bufferSlot,vertexAttribs.size());
       const char* src = nullptr; 
       size_t stride = 0;
       std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
       Topology* topo = nullptr;
       if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
-        assert(bufferSlot < vertexAttribs.size());
         src    = vertexAttribs[bufferSlot].getPtr();
         stride = vertexAttribs[bufferSlot].getStride();
         baseEntry = &vertex_attrib_buffer_tags[bufferSlot];
         int topologyID = vertexAttribs[bufferSlot].userData;
         topo = &topology[topologyID];
       } else {
-        assert(bufferSlot < numTimeSteps);
         src    = vertices[bufferSlot].getPtr();
         stride = vertices[bufferSlot].getStride();
         baseEntry = &vertex_buffer_tags[bufferSlot];

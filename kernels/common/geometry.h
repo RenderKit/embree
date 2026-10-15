@@ -401,6 +401,23 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
+    /*! validates the buffer type and slot of an interpolation request. The buffer slot
+     *  originates from the public rtcInterpolate/rtcInterpolateN API and is used to index
+     *  fixed size arrays of buffer descriptors, thus it has to be range checked at runtime. */
+    __forceinline void checkInterpolateBuffer(RTCBufferType bufferType, unsigned int bufferSlot, size_t numVertexAttributes) const
+    {
+      if (bufferType == RTC_BUFFER_TYPE_VERTEX) {
+        if (unlikely(bufferSlot >= numTimeSteps))
+          throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid vertex buffer slot specified for interpolation");
+      }
+      else if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
+        if (unlikely(bufferSlot >= numVertexAttributes))
+          throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid vertex attribute buffer slot specified for interpolation");
+      }
+      else
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid buffer type specified for interpolation");
+    }
+
     /*! interpolates user data to the specified u/v locations */
     virtual void interpolateN(const RTCInterpolateNArguments* const args);
 

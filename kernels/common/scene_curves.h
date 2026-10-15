@@ -545,8 +545,7 @@ namespace embree
       unsigned int valueCount = args->valueCount;
       
       /* calculate base pointer and stride */
-      assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < numTimeSteps) ||
-             (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE && bufferSlot <= vertexAttribs.size()));
+      checkInterpolateBuffer(bufferType,bufferSlot,vertexAttribs.size());
       const char* src = nullptr; 
       size_t stride = 0;
       if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
@@ -708,10 +707,11 @@ namespace embree
       float* ddPdudu = args->ddPdudu;
       unsigned int valueCount = args->valueCount;
       
+      checkInterpolateBuffer(bufferType,bufferSlot,vertexAttribs.size());
+
       /* we interpolate vertex attributes linearly for hermite basis */
       if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
       {
-        assert(bufferSlot <= vertexAttribs.size());
         const char* vsrc = vertexAttribs[bufferSlot].getPtr();
         const size_t vstride = vertexAttribs[bufferSlot].getStride();
         
@@ -732,7 +732,6 @@ namespace embree
       /* interpolation for vertex buffers */
       else
       {
-        assert(bufferSlot < numTimeSteps);
         const char* vsrc = vertices[bufferSlot].getPtr();
         const char* tsrc = tangents[bufferSlot].getPtr();
         const size_t vstride = vertices[bufferSlot].getStride();
