@@ -531,7 +531,7 @@ namespace embree
     {
       for (size_t f=r.begin(); f<r.end(); f++) 
       {
-          /* Skip faces with zero vertices. */
+        /* Skip faces with zero vertices. */
         if (mesh->faceVertices[f] == 0) {
           continue;
         }
@@ -705,15 +705,6 @@ namespace embree
     if (faceVertices.isLocalModified())
     {
       numHalfEdges = parallel_prefix_sum(faceVertices,faceStartEdge,numFaces(),0,std::plus<unsigned>());
-
-      /* Corner case: If the last faces have zero edges, start edge index will be invalid.
-         Set it to the last valid half edge index. */
-      if (numFaces() && faceVertices[numFaces()-1] == 0) {
-        /* Walk back through the faces until we find one with non-zero edges */
-        for (size_t i = numFaces() - 1; i > 0 && faceVertices[i] == 0; i--) {
-          faceStartEdge[i] = numHalfEdges - 1;
-        }
-      }
 
       /* calculate face of each half edge */
       halfEdgeFace.resize(numHalfEdges);
