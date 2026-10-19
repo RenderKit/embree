@@ -1173,6 +1173,75 @@ namespace embree
     BBox<Vec4<double>> bbv4d;
   };
 
+  struct SubdivZeroValenceTest : public VerifyApplication::Test
+  {
+    SubdivZeroValenceTest(std::string name, int64_t isa)
+      : VerifyApplication::Test(std::move(name),isa,VerifyApplication::TEST_SHOULD_PASS)
+    {}
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(nullptr,rtcGetDeviceError(device));
+
+      auto createGeometry = [&](bool zeroValenceFace)
+      {
+        RTCGeometry geometry = rtcNewGeometry(device,RTC_GEOMETRY_TYPE_SUBDIVISION);
+        float* vertices = static_cast<float*>(rtcSetNewGeometryBuffer(
+            geometry,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,3*sizeof(float),4));
+        unsigned int* faces = static_cast<unsigned int*>(rtcSetNewGeometryBuffer(
+            geometry,RTC_BUFFER_TYPE_FACE,0,RTC_FORMAT_UINT,sizeof(unsigned int),
+            zeroValenceFace ? 2 : 1));
+        unsigned int* indices = static_cast<unsigned int*>(rtcSetNewGeometryBuffer(
+            geometry,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT,sizeof(unsigned int),4));
+        if (!vertices || !faces || !indices)
+          throw std::runtime_error("failed to allocate subdivision geometry buffers");
+
+        vertices[0] = 0.0f;
+        vertices[1] = 0.0f;
+        vertices[2] = 0.0f;
+        vertices[3] = 1.0f;
+        vertices[4] = 0.0f;
+        vertices[5] = 0.0f;
+        vertices[6] = 1.0f;
+        vertices[7] = 1.0f;
+        vertices[8] = 0.0f;
+        vertices[9] = 0.0f;
+        vertices[10] = 1.0f;
+        vertices[11] = 0.0f;
+        faces[0] = 4;
+        if (zeroValenceFace) faces[1] = 0;
+        indices[0] = 0;
+        indices[1] = 1;
+        indices[2] = 2;
+        indices[3] = 3;
+        AssertNoError(device);
+        return geometry;
+      };
+
+      RTCScene scene = rtcNewScene(device);
+      RTCGeometry geometry = createGeometry(false);
+      rtcCommitGeometry(geometry);
+      AssertNoError(device);
+      rtcAttachGeometry(scene,geometry);
+      AssertNoError(device);
+      rtcReleaseGeometry(geometry);
+      rtcCommitScene(scene);
+      AssertNoError(device);
+      rtcReleaseScene(scene);
+
+      scene = rtcNewScene(device);
+      geometry = createGeometry(true);
+      rtcCommitGeometry(geometry);
+      AssertNoError(device);
+      rtcReleaseGeometry(geometry);
+      rtcReleaseScene(scene);
+
+      return VerifyApplication::PASSED;
+    }
+  };
+
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
@@ -6444,6 +6513,7 @@ namespace embree
       
       groups.top()->add(new MultipleDevicesTest("multiple_devices",isa));
       groups.top()->add(new TypesTest("types_test",isa));
+      groups.top()->add(new SubdivZeroValenceTest("subdiv_zero_valence",isa));
 
       push(new TestGroup("get_bounds",true,true));
       for (auto gtype : gtypes_all)
