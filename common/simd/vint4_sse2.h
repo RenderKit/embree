@@ -27,7 +27,12 @@ namespace embree
     typedef vfloat4 Float;
 
     enum  { size = 4 };                    // number of SIMD elements
+    // See vboolf4_sse2.h for why the wrapper is restricted to MSVC/ARM64.
+#if defined(_MSC_VER) && defined(_M_ARM64)
     union { __m128i_wrapper v; int i[4]; }; // data
+#else
+    union { __m128i v; int i[4]; };         // data
+#endif
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constructors, Assignment & Cast Operators
@@ -38,8 +43,13 @@ namespace embree
     __forceinline vint4& operator =(const vint4& a) { v = a.v; return *this; }
 
     __forceinline vint(__m128i a) : v(a) {}
+#if defined(_MSC_VER) && defined(_M_ARM64)
     __forceinline operator const __m128i&() const { return v.data; }
     __forceinline operator       __m128i&()       { return v.data; }
+#else
+    __forceinline operator const __m128i&() const { return v; }
+    __forceinline operator       __m128i&()       { return v; }
+#endif
 
     __forceinline vint(int a) : v(_mm_set1_epi32(a)) {}
     __forceinline vint(int a, int b, int c, int d) : v(_mm_set_epi32(d, c, b, a)) {}

@@ -531,6 +531,11 @@ namespace embree
     {
       for (size_t f=r.begin(); f<r.end(); f++)
       {
+        /* Skip faces with zero vertices. */
+        if (mesh->faceVertices[f] == 0) {
+          continue;
+        }
+
         HalfEdge* edge = &halfEdges[mesh->faceStartEdge[f]];
 
         /* for vertex topology we also test if vertices are valid */
