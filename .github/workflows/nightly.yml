@@ -299,7 +299,6 @@ jobs:
     with:
       runs-on: '[ "Windows",  "dg2" ]'
       msvc-version: 2022
-      dpcpp-version: intel/2025.2
       env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env
       artifact-out: nightly-windows-DG2-MULTILEVEL-build
       artifact-path: ./build/*.zip
