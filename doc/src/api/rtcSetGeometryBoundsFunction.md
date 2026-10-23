@@ -15,6 +15,7 @@
       unsigned int primID;
       unsigned int timeStep;
       struct RTCBounds* bounds_o;
+      void* boundsUserPtr;
     };
   
     typedef void (*RTCBoundsFunction)(
@@ -49,8 +50,9 @@ pointer to a structure of type `RTCBoundsFunctionArguments` which
 contains various arguments, such as: the user data of the geometry
 (`geometryUserPtr` member), the ID of the primitive to calculate the
 bounds for (`primID` member), the time step at which to calculate the
-bounds (`timeStep` member), and a memory location to write the
-calculated bound to (`bounds_o` member).
+bounds (`timeStep` member), a memory location to write the
+calculated bound to (`bounds_o` member), and the custom pointer data
+provided to `rtcSetGeometryBoundsFunction` (`boundsUserPtr` member).
 
 In a typical usage scenario one would store a pointer to the internal
 representation of the user geometry object using
