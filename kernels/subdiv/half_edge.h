@@ -205,9 +205,9 @@ namespace embree
     __forceinline bool valid(const BufferView<Vec3fa>& vertices) const
     {
       size_t N = 1;
-      if (!this->validRing(vertices)) return false;
+      if (!this->validRing(&vertices)) return false;
       for (const HalfEdge* p=this->next(); p!=this; p=p->next(), N++) {
-        if (!p->validRing(vertices)) return false;
+        if (!p->validRing(&vertices)) return false;
       }
       return N >= 3 && N <= MAX_PATCH_VALENCE;
     }
@@ -306,23 +306,9 @@ namespace embree
       return bounds;
     }
     
-    /*! tests if this is a valid face */
-    __forceinline bool validFace(const BufferView<Vec3fa>& vertices, size_t& N) const 
-    {
-      const Vec3fa v = vertices[getStartVertexIndex()];
-      if (!isvalid(v)) return false;
-      size_t n = 1;
-      for (const HalfEdge* p = next(); p!=this; p=p->next(), n++) {
-        const Vec3fa v = vertices[p->getStartVertexIndex()];
-        if (!isvalid(v)) return false;
-      }
-      if (n < 2) return false;
-      N += n-2;
-      return n >= 3 && n <= MAX_PATCH_VALENCE;
-    }
-    
-    /*! tests if this is a valid ring */
-    __forceinline bool validRing(const BufferView<Vec3fa>& vertices) const 
+  private:
+    template <bool checkVertices = true>
+    __forceinline bool validRing(const BufferView<Vec3fa>* vertices) const
     {
       size_t faceValence = 0;
       size_t edgeValence = 0;
@@ -330,9 +316,19 @@ namespace embree
       const HalfEdge* p = this;
       do 
       {
-        /* calculate bounds of current face */
-        if (!p->validFace(vertices,edgeValence)) 
+        size_t n = 0;
+        const HalfEdge* q = p;
+        do
+        {
+          if (checkVertices && vertices && !isvalid((*vertices)[q->getStartVertexIndex()]))
+            return false;
+          n++;
+          q = q->next();
+        } while (q != p);
+
+        if (n < 3 || n > MAX_PATCH_VALENCE)
           return false;
+        edgeValence += n-2;
         
         faceValence++;
         p = p->prev();
@@ -347,44 +343,6 @@ namespace embree
           edgeValence++;
           p = this;
           while (p->hasOpposite()) 
-            p = p->opposite()->next();
-        }
-        
-      } while (p != this); 
-      
-      return faceValence <= MAX_RING_FACE_VALENCE && edgeValence <= MAX_RING_EDGE_VALENCE;
-    }
-
-    /*! tests if the ring around the start vertex is within the supported size
-     *  limits. In contrast to validRing this test only depends on the topology
-     *  and not on the vertex positions. */
-    __forceinline bool validRingTopology() const
-    {
-      size_t faceValence = 0;
-      size_t edgeValence = 0;
-
-      const HalfEdge* p = this;
-      do
-      {
-        /* check size of current face */
-        const size_t n = p->numEdges();
-        if (n < 3 || n > MAX_PATCH_VALENCE)
-          return false;
-        edgeValence += n-2;
-
-        faceValence++;
-        p = p->prev();
-
-        /* continue with next face */
-        if (likely(p->hasOpposite()))
-          p = p->opposite();
-
-        /* if there is no opposite go the long way to the other side of the border */
-        else {
-          faceValence++;
-          edgeValence++;
-          p = this;
-          while (p->hasOpposite())
             p = p->opposite()->next();
         }
 
@@ -404,9 +362,9 @@ namespace embree
     __forceinline bool validPatchTopology() const
     {
       size_t N = 1;
-      if (!this->validRingTopology()) return false;
+      if (!this->validRing<false>(nullptr)) return false;
       for (const HalfEdge* p=this->next(); p!=this; p=p->next(), N++) {
-        if (!p->validRingTopology()) return false;
+        if (!p->validRing<false>(nullptr)) return false;
       }
       return N >= 3 && N <= MAX_PATCH_VALENCE;
     }
