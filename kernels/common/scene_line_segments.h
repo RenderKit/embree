@@ -70,7 +70,7 @@ namespace embree
         const vfloat<N> p1 = mem<vfloat<N>>::loadu(valid,(float*)&src[(segment+1)*stride+ofs]);
         if (P      ) mem<vfloat<N>>::storeu(valid,P+i,lerp(p0,p1,u));
         if (dPdu   ) mem<vfloat<N>>::storeu(valid,dPdu+i,p1-p0);
-        if (ddPdudu) mem<vfloat<N>>::storeu(valid,dPdu+i,vfloat<N>(zero));
+        if (ddPdudu) mem<vfloat<N>>::storeu(valid,ddPdudu+i,vfloat<N>(zero));
       }
     }
     
