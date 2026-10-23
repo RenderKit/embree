@@ -86,15 +86,20 @@ namespace embree
       unsigned int valueCount = args->valueCount;
       
       /* calculate base pointer and stride */
-      checkInterpolateBuffer(bufferType,bufferSlot,vertexAttribs.size());
       const char* src = nullptr; 
       size_t stride = 0;
       if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
+        if (unlikely(bufferSlot >= vertexAttribs.size()))
+          throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid vertex attribute buffer slot specified for interpolation");
         src    = vertexAttribs[bufferSlot].getPtr();
         stride = vertexAttribs[bufferSlot].getStride();
-      } else {
+      } else if (bufferType == RTC_BUFFER_TYPE_VERTEX) {
+        if (unlikely(bufferSlot >= numTimeSteps))
+          throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid vertex buffer slot specified for interpolation");
         src    = vertices[bufferSlot].getPtr();
         stride = vertices[bufferSlot].getStride();
+      } else {
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid buffer type specified for interpolation");
       }
       
       const Grid& grid = grids[primID];

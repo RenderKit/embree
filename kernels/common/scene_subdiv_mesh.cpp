@@ -859,22 +859,27 @@ namespace embree
       unsigned int valueCount = args->valueCount;
       
       /* calculate base pointer and stride */
-      checkInterpolateBuffer(bufferType,bufferSlot,vertexAttribs.size());
       const char* src = nullptr; 
       size_t stride = 0;
       std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
       Topology* topo = nullptr;
       if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
+        if (unlikely(bufferSlot >= vertexAttribs.size()))
+          throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid vertex attribute buffer slot specified for interpolation");
         src    = vertexAttribs[bufferSlot].getPtr();
         stride = vertexAttribs[bufferSlot].getStride();
         baseEntry = &vertex_attrib_buffer_tags[bufferSlot];
         int topologyID = vertexAttribs[bufferSlot].userData;
         topo = &topology[topologyID];
-      } else {
+      } else if (bufferType == RTC_BUFFER_TYPE_VERTEX) {
+        if (unlikely(bufferSlot >= numTimeSteps))
+          throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid vertex buffer slot specified for interpolation");
         src    = vertices[bufferSlot].getPtr();
         stride = vertices[bufferSlot].getStride();
         baseEntry = &vertex_buffer_tags[bufferSlot];
         topo = &topology[0];
+      } else {
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid buffer type specified for interpolation");
       }
       
       bool has_P = P;
@@ -933,22 +938,27 @@ namespace embree
       unsigned int valueCount = args->valueCount;
     
       /* calculate base pointer and stride */
-      checkInterpolateBuffer(bufferType,bufferSlot,vertexAttribs.size());
       const char* src = nullptr; 
       size_t stride = 0;
       std::vector<SharedLazyTessellationCache::CacheEntry>* baseEntry = nullptr;
       Topology* topo = nullptr;
       if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
+        if (unlikely(bufferSlot >= vertexAttribs.size()))
+          throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid vertex attribute buffer slot specified for interpolation");
         src    = vertexAttribs[bufferSlot].getPtr();
         stride = vertexAttribs[bufferSlot].getStride();
         baseEntry = &vertex_attrib_buffer_tags[bufferSlot];
         int topologyID = vertexAttribs[bufferSlot].userData;
         topo = &topology[topologyID];
-      } else {
+      } else if (bufferType == RTC_BUFFER_TYPE_VERTEX) {
+        if (unlikely(bufferSlot >= numTimeSteps))
+          throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid vertex buffer slot specified for interpolation");
         src    = vertices[bufferSlot].getPtr();
         stride = vertices[bufferSlot].getStride();
         baseEntry = &vertex_buffer_tags[bufferSlot];
         topo = &topology[0];
+      } else {
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid buffer type specified for interpolation");
       }
       
       const int* valid = (const int*) valid_i;

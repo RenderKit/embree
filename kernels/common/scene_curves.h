@@ -545,15 +545,20 @@ namespace embree
       unsigned int valueCount = args->valueCount;
       
       /* calculate base pointer and stride */
-      checkInterpolateBuffer(bufferType,bufferSlot,vertexAttribs.size());
       const char* src = nullptr; 
       size_t stride = 0;
       if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
+        if (unlikely(bufferSlot >= vertexAttribs.size()))
+          throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid vertex attribute buffer slot specified for interpolation");
         src    = vertexAttribs[bufferSlot].getPtr();
         stride = vertexAttribs[bufferSlot].getStride();
-      } else {
+      } else if (bufferType == RTC_BUFFER_TYPE_VERTEX) {
+        if (unlikely(bufferSlot >= numTimeSteps))
+          throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid vertex buffer slot specified for interpolation");
         src    = vertices[bufferSlot].getPtr();
         stride = vertices[bufferSlot].getStride();
+      } else {
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid buffer type specified for interpolation");
       }
 
       for (unsigned int i=0; i<valueCount; i+=N)
@@ -707,11 +712,11 @@ namespace embree
       float* ddPdudu = args->ddPdudu;
       unsigned int valueCount = args->valueCount;
       
-      checkInterpolateBuffer(bufferType,bufferSlot,vertexAttribs.size());
-
       /* we interpolate vertex attributes linearly for hermite basis */
       if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
       {
+        if (unlikely(bufferSlot >= vertexAttribs.size()))
+          throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid vertex attribute buffer slot specified for interpolation");
         const char* vsrc = vertexAttribs[bufferSlot].getPtr();
         const size_t vstride = vertexAttribs[bufferSlot].getStride();
         
@@ -730,8 +735,10 @@ namespace embree
       }
       
       /* interpolation for vertex buffers */
-      else
+      else if (bufferType == RTC_BUFFER_TYPE_VERTEX)
       {
+        if (unlikely(bufferSlot >= numTimeSteps))
+          throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid vertex buffer slot specified for interpolation");
         const char* vsrc = vertices[bufferSlot].getPtr();
         const char* tsrc = tangents[bufferSlot].getPtr();
         const size_t vstride = vertices[bufferSlot].getStride();
@@ -753,6 +760,8 @@ namespace embree
           if (ddPdudu) mem<vfloat<N>>::storeu(valid,ddPdudu+i,curve.eval_dudu(u));
         }
       }
+      else
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid buffer type specified for interpolation");
     }
 
     void interpolate(const RTCInterpolateArguments* const args) {
