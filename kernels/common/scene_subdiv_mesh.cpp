@@ -566,7 +566,7 @@ namespace embree
 
         /* we have to calculate patch_type last! */
         HalfEdge::PatchType patch_type = edge->patchType();
-        bool valid = edge->validPatchTopology();
+        bool valid = true;
         const HalfEdge* geometryEdge = &mesh->topology[0].halfEdges[mesh->faceStartEdge[f]];
         for (size_t t=0; t<mesh->numTimeSteps && valid; t++) {
           valid = valid && geometryEdge->valid(mesh->vertices[t]);
