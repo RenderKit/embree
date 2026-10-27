@@ -160,12 +160,15 @@ RTC_FORCEINLINE void copy_UU(const RTCRayQueryContext* context, const unsigned* 
 #else
   
   unsigned int depth = context->instStackSize;
-  
-  for (unsigned l = 0; l < depth; ++l)
-    tgt[l] = src[l];
-  
-  for (unsigned l = depth; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
-    tgt[l] = RTC_INVALID_GEOMETRY_ID;
+
+  /* NOTE: Splitting this into two separate loops (one copying the first
+   * `depth` elements, one filling the remainder with
+   * RTC_INVALID_GEOMETRY_ID) has been observed to get miscompiled by some
+   * SYCL/GPU compilers when `depth` is a runtime value, silently reversing
+   * which elements get the copied value and which get invalidated. Using a
+   * single fused loop with a per-element select avoids triggering this. */
+  for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+    tgt[l] = (l < depth) ? src[l] : RTC_INVALID_GEOMETRY_ID;
 
 #endif
 }
