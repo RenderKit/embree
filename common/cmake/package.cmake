@@ -45,6 +45,9 @@ IF (EMBREE_SYCL_SUPPORT AND EMBREE_INSTALL_DEPENDENCIES)
     IF (EXISTS "${DPCPP_COMPILER_DIR}/ur_adapter_level_zero.dll")
       INSTALL(FILES "${DPCPP_COMPILER_DIR}/ur_adapter_level_zero.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
     ENDIF()
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/ur_adapter_level_zero_V2.dll")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/ur_adapter_level_zero_V2.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
+    ENDIF()
 
     # copy unified runtime loader dll
     IF(EXISTS "${DPCPP_COMPILER_DIR}/ur_loader.dll")
@@ -84,6 +87,7 @@ IF (EMBREE_SYCL_SUPPORT AND EMBREE_INSTALL_DEPENDENCIES)
       "${DPCPP_COMPILER_DIR}/../lib/libsycl.so.?.?.?"
       "${DPCPP_COMPILER_DIR}/../lib/libsycl.so.?.?.?-?"
       "${DPCPP_COMPILER_DIR}/../lib/libur_adapter_level_zero.so*"
+      "${DPCPP_COMPILER_DIR}/../lib/libur_adapter_level_zero_V2.so*"
       "${DPCPP_COMPILER_DIR}/../lib/libur_loader.so*"
       "${DPCPP_COMPILER_DIR}/../lib/libumf.so*")
     INSTALL(FILES ${LIB_SYCL_FILES} DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)

@@ -755,9 +755,9 @@ namespace embree
       return node;
     }
 
-    static std::vector<RTCBuildPrimitive> makeGridPrimitives(size_t primitiveCount)
+    static avector<RTCBuildPrimitive> makeGridPrimitives(size_t primitiveCount)
     {
-      std::vector<RTCBuildPrimitive> prims(primitiveCount);
+      avector<RTCBuildPrimitive> prims(primitiveCount);
       for (size_t i = 0; i < primitiveCount; ++i)
       {
         const float x = float(i % 32);
@@ -783,7 +783,7 @@ namespace embree
       if (!bvh)
         return false;
 
-      std::vector<RTCBuildPrimitive> prims = makeGridPrimitives(1024);
+      avector<RTCBuildPrimitive> prims = makeGridPrimitives(1024);
 
       RTCBuildArguments args = rtcDefaultBuildArguments();
       args.byteSize = sizeof(args);
