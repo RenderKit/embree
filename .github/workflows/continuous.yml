@@ -194,7 +194,7 @@ jobs:
     with:
       runs-on: '[ "Windows", "dg2" ]'
       msvc-version: 2022
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
+      env-from-files: ./.github/workflows/gfx-windows-public.env
       artifact-in: windows-JIT-build
       cmd: |
         $EmbreeDir = .\\scripts\\prepare-test-files.ps1 -TestType ctest
@@ -207,7 +207,7 @@ jobs:
     with:
       runs-on: '[ "Windows", "bmg" ]'
       msvc-version: 2022
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
+      env-from-files: ./.github/workflows/gfx-windows-public.env
       artifact-in: windows-JIT-build
       cmd: |
         $EmbreeDir = .\\scripts\\prepare-test-files.ps1 -TestType ctest
@@ -220,7 +220,7 @@ jobs:
     with:
       runs-on: '[ "Windows", "lnl" ]'
       msvc-version: 2022
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-public.env
+      env-from-files: ./.github/workflows/gfx-windows-public.env
       artifact-in: windows-JIT-build
       cmd: |
         $EmbreeDir = .\\scripts\\prepare-test-files.ps1 -TestType ctest
@@ -233,7 +233,7 @@ jobs:
     with:
       runs-on: '[ "Windows",  "dg2" ]'
       msvc-version: 2022
-      env-from-files: ./.github/workflows/dpcpp-sycl-nightly.env ./.github/workflows/gfx-windows-internal.env
+      env-from-files: ./.github/workflows/gfx-windows-internal.env
       artifact-in: windows-JIT-build
       cmd: |
         $EmbreeDir = .\\scripts\\prepare-test-files.ps1 -TestType ctest
