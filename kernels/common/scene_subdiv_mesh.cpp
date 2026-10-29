@@ -543,7 +543,7 @@ namespace embree
         {
           /* calculate if face is valid */
           for (size_t t=0; t<mesh->numTimeSteps; t++)
-            mesh->invalidFace(f,t) = !edge->valid(mesh->vertices[t]) || mesh->holeSet->holeSet.lookup(unsigned(f));
+            mesh->invalidFace(f,t) = !edge->valid(&mesh->vertices[t]) || mesh->holeSet->holeSet.lookup(unsigned(f));
         }
 
         /* pin some edges and vertices */
@@ -566,11 +566,7 @@ namespace embree
 
         /* we have to calculate patch_type last! */
         HalfEdge::PatchType patch_type = edge->patchType();
-        bool valid = edge->validPatchTopology();
-        const HalfEdge* geometryEdge = &mesh->topology[0].halfEdges[mesh->faceStartEdge[f]];
-        for (size_t t=0; t<mesh->numTimeSteps && valid; t++) {
-          valid = valid && geometryEdge->valid(mesh->vertices[t]);
-        }
+        bool valid = edge->valid(nullptr);
         for (size_t i=0; i<mesh->faceVertices[f]; i++) {
           edge[i].patch_type = patch_type;
           edge[i].valid_patch = valid;
@@ -896,7 +892,7 @@ namespace embree
       const HalfEdge* halfEdge = topo->getHalfEdge(primID);
 
       /* invalid patches cannot get evaluated */
-      if (unlikely(!topo->valid(primID)))
+      if (unlikely(!halfEdge->valid_patch))
       {
         for (unsigned int j=0; j<valueCount; j++) {
           if (has_P) P[j] = 0.0f;
@@ -998,7 +994,7 @@ namespace embree
                          const HalfEdge* halfEdge = topo->getHalfEdge(primID);
 
                          /* invalid patches cannot get evaluated */
-                         if (unlikely(!topo->valid(primID)))
+                         if (unlikely(!halfEdge->valid_patch))
                          {
                            for (unsigned int j=0; j<valueCount; j++) {
                              if (P) vfloat4::storeu(valid1,P+j*N+i,vfloat4(0.0f));

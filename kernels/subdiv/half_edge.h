@@ -201,13 +201,13 @@ namespace embree
       return bounds;
     }
     
-    /*! tests if this is a valid patch */
-    __forceinline bool valid(const BufferView<Vec3fa>& vertices) const
+    /*! tests if this is a valid patch, the vertex check is skipped when vertices is NULL */
+    __forceinline bool valid(const BufferView<Vec3fa>* vertices) const
     {
       size_t N = 1;
-      if (!this->validRing(&vertices)) return false;
+      if (!this->validRing(vertices)) return false;
       for (const HalfEdge* p=this->next(); p!=this; p=p->next(), N++) {
-        if (!p->validRing(&vertices)) return false;
+        if (!p->validRing(vertices)) return false;
       }
       return N >= 3 && N <= MAX_PATCH_VALENCE;
     }
@@ -307,7 +307,6 @@ namespace embree
     }
     
   private:
-    template <bool checkVertices = true>
     __forceinline bool validRing(const BufferView<Vec3fa>* vertices) const
     {
       size_t faceValence = 0;
@@ -320,7 +319,7 @@ namespace embree
         const HalfEdge* q = p;
         do
         {
-          if (checkVertices && vertices && !isvalid((*vertices)[q->getStartVertexIndex()]))
+          if (vertices && !isvalid((*vertices)[q->getStartVertexIndex()]))
             return false;
           n++;
           q = q->next();
@@ -355,20 +354,6 @@ namespace embree
       return true;
     }
 
-  public:
-
-    /*! tests if this patch and all its rings are within the supported size
-     *  limits. Patches that are not, cannot get evaluated. */
-    __forceinline bool validPatchTopology() const
-    {
-      size_t N = 1;
-      if (!this->validRing<false>(nullptr)) return false;
-      for (const HalfEdge* p=this->next(); p!=this; p=p->next(), N++) {
-        if (!p->validRing<false>(nullptr)) return false;
-      }
-      return N >= 3 && N <= MAX_PATCH_VALENCE;
-    }
-    
   private:
     unsigned int vtx_index;         //!< index of edge start vertex
     int next_half_edge_ofs;         //!< relative offset to next half edge of face
