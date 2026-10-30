@@ -314,13 +314,13 @@ namespace embree
     __forceinline bool validFace(const BufferView<Vec3fa>* vertices, size_t& N) const
     {
       if (vertices) {
-        const Vec3fa v = vertices[getStartVertexIndex()];
+        const Vec3fa v = vertices->operator[](getStartVertexIndex());
         if (!isvalid(v)) return false;
       }
       size_t n = 1;
       for (const HalfEdge* p = next(); p!=this; p=p->next(), n++) {
         if (vertices) {
-          const Vec3fa v = vertices[p->getStartVertexIndex()];
+          const Vec3fa v = vertices->operator[](p->getStartVertexIndex());
           if (!isvalid(v)) return false;
         }
       }
