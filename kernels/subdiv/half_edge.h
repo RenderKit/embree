@@ -311,7 +311,7 @@ namespace embree
     /*! Tests if this is a valid face topology. If vertices are
      *  provided these are also tested to have valid floating point
      *  numbers. */
-    __forceinline bool validFace(const BufferView<Vec3fa>* vertices, size_t& N) const 
+    __forceinline bool validFace(const BufferView<Vec3fa>* vertices, size_t& N) const
     {
       if (vertices) {
         const Vec3fa v = vertices[getStartVertexIndex()];
@@ -332,7 +332,7 @@ namespace embree
     /*! Tests if this is a valid ring topology. If vertices are
      *  provided these are also tested to have valid floating point
      *  numbers. */
-    __forceinline bool validRing(const BufferView<Vec3fa>* vertices) const 
+    __forceinline bool validRing(const BufferView<Vec3fa>* vertices) const
     {
       size_t faceValence = 0;
       size_t edgeValence = 0;
@@ -341,7 +341,7 @@ namespace embree
       do 
       {
         /* calculate bounds of current face */
-        if (!p->validFace(vertices,edgeValence)) 
+        if (!p->validFace(vertices,edgeValence))
           return false;
         
         faceValence++;
@@ -359,9 +359,9 @@ namespace embree
           while (p->hasOpposite()) 
             p = p->opposite()->next();
         }
-        
+
       } while (p != this); 
-      
+
       return faceValence <= MAX_RING_FACE_VALENCE && edgeValence <= MAX_RING_EDGE_VALENCE;
     }
 
