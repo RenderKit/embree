@@ -36,12 +36,6 @@ namespace embree
       Scene* scene MAYBE_UNUSED = context->scene;
       Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 
-      /* ray mask test */
-#if defined(EMBREE_RAY_MASK)
-      if ((geometry->mask & ray.mask) == 0)
-        return false;
-#endif
-
       /* call intersection filter function */
 #if defined(EMBREE_FILTER_FUNCTION) 
       if (filter && (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())))
@@ -79,12 +73,6 @@ namespace embree
 
       Scene* scene MAYBE_UNUSED = context->scene;
       Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
-
-      /* ray mask test */
-#if defined(EMBREE_RAY_MASK)
-      if ((geometry->mask & ray.mask) == 0)
-        return false;
-#endif
 
       const Vec3fa Ng = hit_i.Ng();
       const Vec2f uv = hit_i.uv();
@@ -144,12 +132,6 @@ namespace embree
       Scene* scene MAYBE_UNUSED = context->scene;
       Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 
-      /* ray mask test */
-#if defined(EMBREE_RAY_MASK)
-      if ((geometry->mask & ray.mask) == 0)
-        return false;
-#endif
-
       /* call intersection filter function */
 #if defined(EMBREE_FILTER_FUNCTION) 
       if (filter && (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())))
@@ -176,12 +158,6 @@ namespace embree
 
       Scene* scene MAYBE_UNUSED = context->scene;
       Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
-
-      /* ray mask test */
-#if defined(EMBREE_RAY_MASK)
-      if ((geometry->mask & ray.mask) == 0)
-        return false;
-#endif
 
       /* call intersection filter function */
 #if defined(EMBREE_FILTER_FUNCTION) 

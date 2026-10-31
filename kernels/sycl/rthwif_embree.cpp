@@ -134,11 +134,7 @@ __forceinline Vec3f intel_get_hit_triangle_normal(intel_ray_query_t& query, inte
 
 __forceinline bool intersect_user_geometry(intel_ray_query_t& query, RayHit& ray, UserGeometry* geom, Scenes& scenes, sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID)
 {
-  /* perform ray mask test */
-#if defined(EMBREE_RAY_MASK)
-  if ((ray.mask & geom->mask) == 0)
-    return false;
-#endif
+  /* the ray mask test has already been performed by the caller (trav_loop) */
 
   RTCScene forward_scene = nullptr;
   const bool ishit = geom->intersect(ray,geomID,primID,context,forward_scene);
@@ -176,11 +172,7 @@ __forceinline bool intersect_user_geometry(intel_ray_query_t& query, RayHit& ray
 
 __forceinline bool intersect_user_geometry(intel_ray_query_t& query, Ray& ray, UserGeometry* geom, Scenes& scenes, sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID)
 {
-  /* perform ray mask test */
-#if defined(EMBREE_RAY_MASK)
-  if ((ray.mask & geom->mask) == 0) 
-    return false;
-#endif
+  /* the ray mask test has already been performed by the caller (trav_loop) */
 
   RTCScene forward_scene = nullptr;
   const bool ishit = geom->occluded(ray,geomID,primID,context,forward_scene);
@@ -219,11 +211,7 @@ __forceinline bool intersect_instance(intel_ray_query_t& query, Ray& ray, Geomet
 template<>
 __forceinline bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Geometry* geom, Scenes& scenes, sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID, bool instance_array, const RTCFeatureFlags feature_mask)
 {
-  /* perform ray mask test */
-#if defined(EMBREE_RAY_MASK)
-  if ((ray.mask & geom->mask) == 0)
-    return false;
-#endif
+  /* the ray mask test has already been performed by the caller (trav_loop) */
 
   if (!instance_id_stack::push(context->user, geomID, primID))
     return false;
@@ -285,11 +273,7 @@ __forceinline bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Geo
 template<>
 __forceinline bool intersect_instance(intel_ray_query_t& query, Ray& ray, Geometry* geom, Scenes& scenes, sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID, bool instance_array, const RTCFeatureFlags feature_mask)
 {
-  /* perform ray mask test */
-#if defined(EMBREE_RAY_MASK)
-  if ((ray.mask & geom->mask) == 0) 
-    return false;
-#endif
+  /* the ray mask test has already been performed by the caller (trav_loop) */
 
   if (!instance_id_stack::push(context->user, geomID, primID))
     return false;
