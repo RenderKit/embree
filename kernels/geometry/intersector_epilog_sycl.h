@@ -12,29 +12,32 @@ namespace embree
   template<typename Ray>
   struct Intersect1Epilog1_HWIF;
 
+  /* The ray mask test against the geometry has already been performed by the
+   * caller (trav_loop) for this geomID, thus it is not repeated here. The
+   * geometry pointer is passed in to avoid a dependent re-load through the
+   * scene's geometry array. */
   template<>
   struct Intersect1Epilog1_HWIF<RayHit>
   {
     RayHit& ray;
     sycl::private_ptr<RayQueryContext> context;
+    Geometry* const geometry;
     const unsigned int geomID;
     const unsigned int primID;
     const bool filter;
     
     __forceinline Intersect1Epilog1_HWIF(RayHit& ray,
                                          sycl::private_ptr<RayQueryContext> context,
+                                         Geometry* geometry,
                                          const unsigned int geomID,
                                          const unsigned int primID,
                                          const bool filter)
-      : ray(ray), context(context), geomID(geomID), primID(primID), filter(filter) {}
+      : ray(ray), context(context), geometry(geometry), geomID(geomID), primID(primID), filter(filter) {}
     
     template<typename Hit_i>
     __forceinline bool operator() (Hit_i& hit_i) const
     {
       hit_i.finalize();
-
-      Scene* scene MAYBE_UNUSED = context->scene;
-      Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 
       /* call intersection filter function */
 #if defined(EMBREE_FILTER_FUNCTION) 
@@ -70,9 +73,6 @@ namespace embree
     __forceinline bool operator() (bool, Hit_i& hit_i) const
     {
       hit_i.finalize();
-
-      Scene* scene MAYBE_UNUSED = context->scene;
-      Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 
       const Vec3fa Ng = hit_i.Ng();
       const Vec2f uv = hit_i.uv();
@@ -113,24 +113,23 @@ namespace embree
   {
     Ray& ray;
     sycl::private_ptr<RayQueryContext> context;
+    Geometry* const geometry;
     const unsigned int geomID;
     const unsigned int primID;
     const bool filter;
     
     __forceinline Intersect1Epilog1_HWIF(Ray& ray,
                                          sycl::private_ptr<RayQueryContext> context,
+                                         Geometry* geometry,
                                          const unsigned int geomID,
                                          const unsigned int primID,
                                          const bool filter)
-      : ray(ray), context(context), geomID(geomID), primID(primID), filter(filter) {}
+      : ray(ray), context(context), geometry(geometry), geomID(geomID), primID(primID), filter(filter) {}
     
     template<typename Hit_i>
     __forceinline bool operator() (Hit_i& hit_i) const
     {
       hit_i.finalize();
-
-      Scene* scene MAYBE_UNUSED = context->scene;
-      Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 
       /* call intersection filter function */
 #if defined(EMBREE_FILTER_FUNCTION) 
@@ -155,9 +154,6 @@ namespace embree
     __forceinline bool operator() (bool, Hit_i& hit_i) const
     {
       hit_i.finalize();
-
-      Scene* scene MAYBE_UNUSED = context->scene;
-      Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 
       /* call intersection filter function */
 #if defined(EMBREE_FILTER_FUNCTION) 
