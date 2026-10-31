@@ -294,10 +294,10 @@ namespace embree
     }
 
     /*! loads curve vertices for specified time for mblur and non-mblur geometry */
-    __forceinline void gather_hermite_safe(Vec3ff& p0, Vec3ff& t0, Vec3ff& p1, Vec3ff& t1, size_t i, float time) const
+    __forceinline void gather_hermite_safe(Vec3ff& p0, Vec3ff& t0, Vec3ff& p1, Vec3ff& t1, size_t i, float time, const bool motion_blur = true) const
     {
-      if (hasMotionBlur()) gather_hermite(p0,t0,p1,t1,i,time);
-      else                 gather_hermite(p0,t0,p1,t1,i);
+      if (motion_blur && hasMotionBlur()) gather_hermite(p0,t0,p1,t1,i,time);
+      else                                gather_hermite(p0,t0,p1,t1,i);
     }
 
     /*! gathers the hermite curve starting with i'th vertex */
@@ -347,10 +347,10 @@ namespace embree
     }
 
     /*! loads curve vertices for specified time */
-    __forceinline void gather_hermite_safe(Vec3ff& p0, Vec3ff& t0, Vec3fa& n0, Vec3fa& dn0, Vec3ff& p1, Vec3ff& t1, Vec3fa& n1, Vec3fa& dn1, size_t i, float time) const
+    __forceinline void gather_hermite_safe(Vec3ff& p0, Vec3ff& t0, Vec3fa& n0, Vec3fa& dn0, Vec3ff& p1, Vec3ff& t1, Vec3fa& n1, Vec3fa& dn1, size_t i, float time, const bool motion_blur = true) const
     {
-      if (hasMotionBlur()) gather_hermite(p0,t0,n0,dn0,p1,t1,n1,dn1,i,time);
-      else                 gather_hermite(p0,t0,n0,dn0,p1,t1,n1,dn1,i);
+      if (motion_blur && hasMotionBlur()) gather_hermite(p0,t0,n0,dn0,p1,t1,n1,dn1,i,time);
+      else                                gather_hermite(p0,t0,n0,dn0,p1,t1,n1,dn1,i);
     }
 
     template<typename SourceCurve3ff, typename SourceCurve3fa, typename TensorLinearCubicBezierSurface3fa>

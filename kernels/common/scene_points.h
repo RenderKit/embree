@@ -83,10 +83,10 @@ namespace embree
     }
 
     /*! returns i'th vertex of for specified time */
-    __forceinline Vec3ff vertex_safe(size_t i, float time) const
+    __forceinline Vec3ff vertex_safe(size_t i, float time, const bool motion_blur = true) const
     {
-      if (hasMotionBlur()) return vertex(i,time);
-      else                 return vertex(i);
+      if (motion_blur && hasMotionBlur()) return vertex(i,time);
+      else                                return vertex(i);
     }
 
     /*! returns i'th vertex of itime'th timestep */
@@ -112,10 +112,10 @@ namespace embree
     }
 
     /*! returns i'th normal of for specified time */
-    __forceinline Vec3fa normal_safe(size_t i, float time) const
+    __forceinline Vec3fa normal_safe(size_t i, float time, const bool motion_blur = true) const
     {
-      if (hasMotionBlur()) return normal(i,time);
-      else                 return normal(i);
+      if (motion_blur && hasMotionBlur()) return normal(i,time);
+      else                                return normal(i);
     }
 
     /*! returns i'th radius of itime'th timestep */

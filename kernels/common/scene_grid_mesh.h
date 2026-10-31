@@ -265,10 +265,10 @@ namespace embree
     }
 
     /*! gathers quad vertices for mblur and non-mblur meshes */
-    __forceinline void gather_quad_vertices_safe(Vec3fa& v0, Vec3fa& v1, Vec3fa& v2, Vec3fa& v3, const Grid& g, size_t x, size_t y, float time) const
+    __forceinline void gather_quad_vertices_safe(Vec3fa& v0, Vec3fa& v1, Vec3fa& v2, Vec3fa& v3, const Grid& g, size_t x, size_t y, float time, const bool motion_blur = true) const
     {
-      if (hasMotionBlur()) gather_quad_vertices(v0,v1,v2,v3,g,x,y,time);
-      else                 gather_quad_vertices(v0,v1,v2,v3,g,x,y);
+      if (motion_blur && hasMotionBlur()) gather_quad_vertices(v0,v1,v2,v3,g,x,y,time);
+      else                                gather_quad_vertices(v0,v1,v2,v3,g,x,y);
     }
 
     /*! calculates the build bounds of the i'th quad, if it's valid */
