@@ -358,8 +358,6 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
   }
 #endif
 
-  isa::CurvePrecalculations1 pre(ray,context->scene);
-  
   const Geometry::GType gtype MAYBE_UNUSED = geom->getType();
   const Geometry::GType stype MAYBE_UNUSED = (Geometry::GType)(gtype & Geometry::GTY_SUBTYPE_MASK);
   const Geometry::GType basis MAYBE_UNUSED = (Geometry::GType)(gtype & Geometry::GTY_BASIS_MASK);
@@ -420,6 +418,12 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
     return ishit0 || ishit1;
   } else
 #endif
+
+#if defined(EMBREE_GEOMETRY_POINT) || defined(EMBREE_GEOMETRY_CURVE)
+  if (geom->getTypeMask() & Geometry::MTY_CURVES) /* MTY_CURVES includes MTY_POINTS */
+  {
+  /* ray space precalculations are only required by the point and curve intersectors */
+  isa::CurvePrecalculations1 pre(ray,context->scene);
 
 #if defined(EMBREE_GEOMETRY_POINT)
   
@@ -532,6 +536,9 @@ __forceinline bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene
     }
   } else
     
+#endif
+    return false;
+  } else
 #endif
 
 #endif
