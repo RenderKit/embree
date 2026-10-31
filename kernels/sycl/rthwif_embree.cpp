@@ -594,8 +594,9 @@ __forceinline void trav_loop(intel_ray_query_t& query, Ray& ray, Scene* scene, s
 
   while (!intel_is_traversal_done(query))
   {
-    intel_candidate_type_t candidate = intel_get_hit_candidate(query, intel_hit_type_potential_hit);
-
+    /* issue all independent ray-query loads up front so that their latencies
+       overlap each other and the geometry lookup below */
+    const intel_candidate_type_t candidate = intel_get_hit_candidate(query, intel_hit_type_potential_hit);
     const unsigned int bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit );
     const float3 org = intel_get_ray_origin   ( query, bvh_level );
     const float3 dir = intel_get_ray_direction( query, bvh_level );
@@ -645,7 +646,8 @@ __forceinline void trav_loop(intel_ray_query_t& query, Ray& ray, Scene* scene, s
       else // if (candidate == TRIANGLE)
       {
         ray.tfar = t;
-        Vec3f Ng = intel_get_hit_triangle_normal(query, intel_hit_type_potential_hit);
+        /* the geometric normal is only consumed by filter functions */
+        const Vec3f Ng = (feature_mask & RTC_FEATURE_FLAG_FILTER_FUNCTION) ? intel_get_hit_triangle_normal(query, intel_hit_type_potential_hit) : Vec3f(0.0f);
         Hit hit(context->user,geomID,primID,Vec2f(uv.x(),uv.y()),Ng);
         if (invokeTriangleIntersectionFilter(query, geom, bvh_level, ray, hit, context, feature_mask))
           break; // shadow rays break at first hit
