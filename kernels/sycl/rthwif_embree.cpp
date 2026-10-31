@@ -322,7 +322,7 @@ __forceinline bool intersect_instance(intel_ray_query_t& query, Ray& ray, Geomet
 #endif
 
   uint32_t bvh_id = 0;
-  if (context->args->feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR) {
+  if (feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR) {
     float time = clamp(ray.time(),0.0f,1.0f);
     uint32_t numTimeSegments = object->getMaxTimeSegments();
     bvh_id = (uint32_t) clamp(uint32_t(numTimeSegments*time), 0u, numTimeSegments-1);
