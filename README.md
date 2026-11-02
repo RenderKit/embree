@@ -5758,9 +5758,38 @@ On failure an error code is set that can be queried using
 ```
 ## rtcGetGeometryUserDataFromTraversable
 
-`{include=src/api/rtcGetGeometryUserDataFromScenTraversable`
-``{=tex}
+#### NAME {#name}
 
+    rtcGetGeometryUserDataFromTraversable - returns the user data pointer
+      of the geometry through the scene object
+
+#### SYNOPSIS {#synopsis}
+
+    #include <embree4/rtcore.h>
+
+    void* rtcGetGeometryUserDataFromTraversable(
+        RTCTraversable traversable,
+        unsigned int geomID);
+
+#### DESCRIPTION {#description}
+
+The `rtcGetGeometryUserDataFromTraversable` function is equivalent to
+`rtcGetGeometryUserDataFromScene` but takes traversable object
+(`traversable` argument) instead of a scene object. Using this method
+is optional on CPU but it is required for SYCL.
+
+#### EXIT STATUS {#exit-status}
+
+On failure an error code is set that can be queried using
+`rtcGetDeviceError`.
+
+#### SEE ALSO {#see-also}
+
+[rtcGetGeometryUserDataFromScene], [rtcGetSceneTraversable]
+
+```{=tex}
+
+```
 ## rtcSetGeometryUserPrimitiveCount
 
 #### NAME {#name}
