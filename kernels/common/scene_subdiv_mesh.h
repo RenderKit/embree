@@ -169,6 +169,8 @@ namespace embree
       /*! check if the i'th primitive is valid in this topology */
       __forceinline bool valid(size_t i) const 
       {
+        if (unlikely(!getHalfEdge(i)->valid_patch))
+          return false;
         if (unlikely(subdiv_mode == RTC_SUBDIVISION_MODE_NO_BOUNDARY)) {
           if (getHalfEdge(i)->faceHasBorder()) return false;
         }

@@ -48,7 +48,7 @@ namespace embree
 
     HalfEdge () 
       : vtx_index(-1), next_half_edge_ofs(0), prev_half_edge_ofs(0), opposite_half_edge_ofs(0), edge_crease_weight(0), 
-      vertex_crease_weight(0), edge_level(0), patch_type(COMPLEX_PATCH), vertex_type(REGULAR_VERTEX)
+      vertex_crease_weight(0), edge_level(0), patch_type(COMPLEX_PATCH), vertex_type(REGULAR_VERTEX), valid_patch(false)
     {
       static_assert(sizeof(HalfEdge) == 32, "invalid half edge size");
     }
@@ -201,8 +201,8 @@ namespace embree
       return bounds;
     }
     
-    /*! tests if this is a valid patch */
-    __forceinline bool valid(const BufferView<Vec3fa>& vertices) const
+    /*! tests if this is a valid patch, the vertex check is skipped when vertices is NULL */
+    __forceinline bool valid(const BufferView<Vec3fa>* vertices) const
     {
       size_t N = 1;
       if (!this->validRing(vertices)) return false;
@@ -306,23 +306,33 @@ namespace embree
       return bounds;
     }
     
-    /*! tests if this is a valid face */
-    __forceinline bool validFace(const BufferView<Vec3fa>& vertices, size_t& N) const 
+  private:
+
+    /*! Tests if this is a valid face topology. If vertices are
+     *  provided these are also tested to have valid floating point
+     *  numbers. */
+    __forceinline bool validFace(const BufferView<Vec3fa>* vertices, size_t& N) const
     {
-      const Vec3fa v = vertices[getStartVertexIndex()];
-      if (!isvalid(v)) return false;
+      if (vertices) {
+        const Vec3fa v = vertices->operator[](getStartVertexIndex());
+        if (!isvalid(v)) return false;
+      }
       size_t n = 1;
       for (const HalfEdge* p = next(); p!=this; p=p->next(), n++) {
-        const Vec3fa v = vertices[p->getStartVertexIndex()];
-        if (!isvalid(v)) return false;
+        if (vertices) {
+          const Vec3fa v = vertices->operator[](p->getStartVertexIndex());
+          if (!isvalid(v)) return false;
+        }
       }
       if (n < 2) return false;
       N += n-2;
       return n >= 3 && n <= MAX_PATCH_VALENCE;
     }
-    
-    /*! tests if this is a valid ring */
-    __forceinline bool validRing(const BufferView<Vec3fa>& vertices) const 
+
+    /*! Tests if this is a valid ring topology. If vertices are
+     *  provided these are also tested to have valid floating point
+     *  numbers. */
+    __forceinline bool validRing(const BufferView<Vec3fa>* vertices) const
     {
       size_t faceValence = 0;
       size_t edgeValence = 0;
@@ -331,7 +341,7 @@ namespace embree
       do 
       {
         /* calculate bounds of current face */
-        if (!p->validFace(vertices,edgeValence)) 
+        if (!p->validFace(vertices,edgeValence))
           return false;
         
         faceValence++;
@@ -349,12 +359,12 @@ namespace embree
           while (p->hasOpposite()) 
             p = p->opposite()->next();
         }
-        
+
       } while (p != this); 
-      
+
       return faceValence <= MAX_RING_FACE_VALENCE && edgeValence <= MAX_RING_EDGE_VALENCE;
     }
-    
+
   private:
     unsigned int vtx_index;         //!< index of edge start vertex
     int next_half_edge_ofs;         //!< relative offset to next half edge of face
@@ -367,6 +377,7 @@ namespace embree
     float edge_level;               //!< subdivision factor for edge
     PatchType patch_type;           //!< stores type of subdiv patch
     VertexType vertex_type;         //!< stores type of the start vertex
-    char align[2];
+    bool valid_patch;               //!< stores if the patch can be evaluated
+    char align[1];
   };
 }
