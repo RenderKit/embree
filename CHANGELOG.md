@@ -5,6 +5,7 @@ Version History
 
 -  Added AVX 10.2 and APX support.
 -  Added Windows ARM64 support with MSVC.
+-  Using standard Level Zero Ray Tracing extension to build RTAS (ZE_extension_rtas)
 -  Improved curve intersection performance on Intel® integrated GPUs.
 -  Updated the SYCL compiler to version 7.2.0 and migrated Level Zero ray tracing integration to the latest API.
 -  Validated buffer types and slots in `rtcInterpolate` and `rtcInterpolateN`, reporting invalid arguments instead of accessing invalid buffers.
