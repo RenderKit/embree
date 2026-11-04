@@ -1,6 +1,18 @@
 Version History
 ---------------
 
+### Embree 4.5.0
+
+-  Added AVX 10.2 and APX support.
+-  Added Windows ARM64 support with MSVC.
+-  Using standard Level Zero Ray Tracing extension to build RTAS (ZE_extension_rtas)
+-  Improved curve intersection performance on Intel® integrated GPUs.
+-  Updated the SYCL compiler to version 7.2.0 and migrated Level Zero ray tracing integration to the latest API.
+-  Validated buffer types and slots in `rtcInterpolate` and `rtcInterpolateN`, reporting invalid arguments instead of accessing invalid buffers.
+-  Fixed out-of-bounds writes in point queries with deeply nested instances and in subdivision meshes with empty faces or high-valence vertices.
+-  Fixed SYCL instance ID corruption when using multiple instance levels.
+-  Clamped oversized Morton branching factors to supported limits.
+
 ### Embree 4.4.1
 
 -  Enabled support for Intel® Core™ Ultra series 3 integrated GPUs.
