@@ -153,10 +153,10 @@ jobs:
           cmake --build build --config Release
           ctest --test-dir build -C Release --output-on-failure
 
-  macos-26:
-    runs-on: macos-26
+  macos-27:
+    runs-on: macos-27
     steps:
-      - name: Install packages (macOS 26)
+      - name: Install packages (macOS 27)
         run: |
           brew update
           brew install cmake git-lfs freeglut glfw tbb
