@@ -153,29 +153,10 @@ jobs:
           cmake --build build --config Release
           ctest --test-dir build -C Release --output-on-failure
 
-  macos-26:
-    runs-on: macos-26
+  macos-27:
+    runs-on: macos-27
     steps:
-      - name: Install packages (macOS 26)
-        run: |
-          brew update
-          brew install cmake git-lfs freeglut glfw tbb
-
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Build and Run
-        run: |
-          mkdir build
-          cd build
-          cmake -DBUILD_TESTING=ON -DEMBREE_TUTORIALS=ON -DEMBREE_ISPC_SUPPORT=OFF -DEMBREE_TESTING_INTENSITY=3 ..
-          make -j$(sysctl -n hw.ncpu)
-          ctest --test-dir . -C Release --output-on-failure
-
-  macos-26-intel:
-    runs-on: macos-26-intel
-    steps:
-      - name: Install packages (macOS 26)
+      - name: Install packages (macOS 27)
         run: |
           brew update
           brew install cmake git-lfs freeglut glfw tbb
