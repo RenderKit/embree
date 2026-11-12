@@ -171,7 +171,8 @@ namespace embree
     __forceinline AffineSpace3vf<K> getWorld2LocalSlerp(const vbool<K>& valid, const vfloat<K>& t) const
     {
       vfloat<K> ftime;
-      const vint<K> itime_k = timeSegment<K>(t, ftime);
+      const vfloat<K> safe_t = select(valid, t, vfloat<K>(0.0f));
+      const vint<K> itime_k = timeSegment<K>(safe_t, ftime);
       assert(any(valid));
       const size_t index = bsf(movemask(valid));
       const int itime = itime_k[index];
@@ -181,7 +182,8 @@ namespace embree
                          ftime));
       }
       else {
-        AffineSpace3vff<K> space0,space1;
+        AffineSpace3vff<K> space0(local2world[itime+0]);
+        AffineSpace3vff<K> space1(local2world[itime+1]);
         vbool<K> valid1 = valid;
         while (any(valid1)) {
           vbool<K> valid2;

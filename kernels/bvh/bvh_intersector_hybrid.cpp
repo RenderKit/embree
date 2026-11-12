@@ -862,6 +862,7 @@ namespace embree
 
             if (unlikely(!m_frustum_node)) goto pop;
             cur = BVH::emptyNode;
+            const size_t m_active_node = m_active;
             m_active = 0;
 
 #if defined(__AVX__)
@@ -874,6 +875,7 @@ namespace embree
               vbool<K> lhit = false; // motion blur is not supported, so the initial value will be ignored
               STAT3(normal.trav_nodes, 1, 1, 1);
               BVHNNodeIntersectorK<N, K, types, robust>::intersect(nodeRef, i, tray, ray.time(), lnearP, lhit);
+              lhit &= vbool<K>(static_cast<int>(m_active_node));
 
               if (likely(any(lhit)))
               {                                
