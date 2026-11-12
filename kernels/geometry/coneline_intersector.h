@@ -46,7 +46,7 @@ namespace embree
         const vfloat<M> dPdP2 = sqr(dPdP);
         const vfloat<M> dPdPr0 = dPdP*v0.w;
         
-        const vfloat<M> A = dPdP2     - sqr(dOdP)*hy;
+        const vfloat<M> A = dPdP2*dOdO - sqr(dOdP)*hy;
         const vfloat<M> B = dPdP2*dO0 - dP0*dOdP*hy   + dPdPr0*(dr*dOdP);
         const vfloat<M> C = dPdP2*OO  - sqr(dP0)*hy   + dPdPr0*(2.0f*dr*dP0 - dPdPr0);
         
