@@ -1562,6 +1562,8 @@ Vec3f renderPixelFunction(const uniform TutorialData& data, float x, float y, Ra
     for (uniform unsigned int i=0; i<data.ispc_scene->numLights; i++)
     {
       const uniform Light* uniform l = data.ispc_scene->lights[i];
+      /* ambient light is already accounted for when rays escape */
+      if (l->type == LIGHT_AMBIENT) continue;
       //Light_SampleRes ls = l->sample(l,dg,RandomSampler_get2D(sampler));
       Light_SampleRes ls = Lights_sample(l,dg,RandomSampler_get2D(sampler));
       if (ls.pdf <= 0.0f) continue;
