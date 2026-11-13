@@ -181,6 +181,28 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END(device);
   }
 
+  RTC_API RTCErrorFunction rtcGetDeviceErrorFunction(RTCDevice hdevice)
+  {
+    Device* device = (Device*) hdevice;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetDeviceErrorFunction);
+    RTC_VERIFY_HANDLE(hdevice);
+    return device->getErrorFunction();
+    RTC_CATCH_END(device);
+    return nullptr;
+  }
+
+  RTC_API void* rtcGetDeviceErrorFunctionUserPtr(RTCDevice hdevice)
+  {
+    Device* device = (Device*) hdevice;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetDeviceErrorFunctionUserPtr);
+    RTC_VERIFY_HANDLE(hdevice);
+    return device->getErrorFunctionUserPtr();
+    RTC_CATCH_END(device);
+    return nullptr;
+  }
+
   RTC_API void rtcSetDeviceMemoryMonitorFunction(RTCDevice hdevice, RTCMemoryMonitorFunction memoryMonitor, void* userPtr)
   {
     Device* device = (Device*) hdevice;
@@ -188,6 +210,28 @@ RTC_NAMESPACE_BEGIN;
     RTC_TRACE(rtcSetDeviceMemoryMonitorFunction);
     device->setMemoryMonitorFunction(memoryMonitor, userPtr);
     RTC_CATCH_END(device);
+  }
+
+  RTC_API RTCMemoryMonitorFunction rtcGetDeviceMemoryMonitorFunction(RTCDevice hdevice)
+  {
+    Device* device = (Device*) hdevice;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetDeviceMemoryMonitorFunction);
+    RTC_VERIFY_HANDLE(hdevice);
+    return device->getMemoryMonitorFunction();
+    RTC_CATCH_END(device);
+    return nullptr;
+  }
+
+  RTC_API void* rtcGetDeviceMemoryMonitorFunctionUserPtr(RTCDevice hdevice)
+  {
+    Device* device = (Device*) hdevice;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetDeviceMemoryMonitorFunctionUserPtr);
+    RTC_VERIFY_HANDLE(hdevice);
+    return device->getMemoryMonitorFunctionUserPtr();
+    RTC_CATCH_END(device);
+    return nullptr;
   }
 
   RTC_API RTCBuffer rtcNewBuffer(RTCDevice hdevice, size_t byteSize)
@@ -245,6 +289,28 @@ RTC_NAMESPACE_BEGIN;
     return nullptr;
   }
 
+  RTC_API bool rtcIsBufferShared(RTCBuffer hbuffer)
+  {
+    Buffer* buffer = (Buffer*)hbuffer;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcIsBufferShared);
+    RTC_VERIFY_HANDLE(hbuffer);
+    return buffer->isShared();
+    RTC_CATCH_END2(buffer);
+    return false;
+  }
+
+  RTC_API size_t rtcGetBufferSize(RTCBuffer hbuffer)
+  {
+    Buffer* buffer = (Buffer*)hbuffer;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetBufferSize);
+    RTC_VERIFY_HANDLE(hbuffer);
+    return buffer->bytes();
+    RTC_CATCH_END2(buffer);
+    return 0;
+  }
+
   RTC_API void* rtcGetBufferData(RTCBuffer hbuffer)
   {
     Buffer* buffer = (Buffer*)hbuffer;
@@ -285,7 +351,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(buffer);
   }
 
-  RTC_API RTCScene rtcNewScene (RTCDevice hdevice) 
+  RTC_API RTCScene rtcNewScene (RTCDevice hdevice)
   {
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewScene);
@@ -321,7 +387,7 @@ RTC_NAMESPACE_BEGIN;
     return (RTCTraversable)nullptr;
   }
 
-  RTC_API void rtcSetSceneProgressMonitorFunction(RTCScene hscene, RTCProgressMonitorFunction progress, void* ptr) 
+  RTC_API void rtcSetSceneProgressMonitorFunction(RTCScene hscene, RTCProgressMonitorFunction progress, void* ptr)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -330,6 +396,32 @@ RTC_NAMESPACE_BEGIN;
     Lock<MutexSys> lock(g_mutex);
     scene->setProgressMonitorFunction(progress,ptr);
     RTC_CATCH_END2(scene);
+  }
+
+  RTC_API RTCProgressMonitorFunction rtcGetSceneProgressMonitorFunction(RTCScene hscene)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetSceneProgressMonitorFunction);
+    RTC_VERIFY_HANDLE(hscene);
+    RTC_ENTER_DEVICE(hscene);
+    Lock<MutexSys> lock(g_mutex);
+    return scene->getProgressMonitorFunction();
+    RTC_CATCH_END2(scene);
+    return nullptr;
+  }
+
+  RTC_API void* rtcGetSceneProgressMonitorFunctionUserPtr(RTCScene hscene)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetSceneProgressMonitorFunctionUserPtr);
+    RTC_VERIFY_HANDLE(hscene);
+    RTC_ENTER_DEVICE(hscene);
+    Lock<MutexSys> lock(g_mutex);
+    return scene->getProgressMonitorFunctionUserPtr();
+    RTC_CATCH_END2(scene);
+    return nullptr;
   }
 
   RTC_API void rtcSetSceneBuildQuality (RTCScene hscene, RTCBuildQuality quality) 
@@ -344,6 +436,18 @@ RTC_NAMESPACE_BEGIN;
       throw std::runtime_error("invalid build quality");
     scene->setBuildQuality(quality);
     RTC_CATCH_END2(scene);
+  }
+
+  RTC_API RTCBuildQuality rtcGetSceneBuildQuality (RTCScene hscene)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetSceneBuildQuality);
+    RTC_VERIFY_HANDLE(hscene);
+    RTC_ENTER_DEVICE(hscene);
+    return scene->getBuildQuality();
+    RTC_CATCH_END2(scene);
+    return RTC_BUILD_QUALITY_MEDIUM;
   }
 
   RTC_API void rtcSetSceneFlags (RTCScene hscene, RTCSceneFlags flags) 
@@ -375,7 +479,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcCommitScene);
     RTC_VERIFY_HANDLE(hscene);
-    
+
     scene->commit(false);
 
 #if defined(EMBREE_SYCL_SUPPORT)
@@ -391,9 +495,21 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcJoinCommitScene);
     RTC_VERIFY_HANDLE(hscene);
-    
+
     scene->commit(true);
     RTC_CATCH_END2(scene);
+  }
+
+  RTC_API bool rtcIsSceneModified(RTCScene hscene)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcIsSceneModified);
+    RTC_VERIFY_HANDLE(hscene);
+    RTC_ENTER_DEVICE(hscene);
+    return scene->isModified();
+    RTC_CATCH_END2(scene);
+    return false;
   }
 
   RTC_API void rtcGetSceneBounds(RTCScene hscene, RTCBounds* bounds_o)
@@ -1362,7 +1478,7 @@ RTC_NAMESPACE_BEGIN;
     rtcForwardOccluded16Ex(valid, args, (RTCScene)htraversable, iray, instID, instPrimID);
   }
 
-  RTC_API void rtcRetainScene (RTCScene hscene) 
+  RTC_API void rtcRetainScene (RTCScene hscene)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -2308,6 +2424,84 @@ RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeSte
     RTC_VERIFY_HANDLE(hgeometry);
     geometry->refDec();
     RTC_CATCH_END2(geometry);
+  }
+
+  RTC_API size_t rtcGetNumAttachedGeometryIDs (RTCScene hscene)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetNumAttachedGeometryIDs);
+    RTC_VERIFY_HANDLE(hscene);
+    RTC_ENTER_DEVICE(hscene);
+    unsigned int numGeomIDs = scene->size();
+    for (unsigned int i = 0; i < scene->size(); ++i) {
+      Geometry* ptr = scene->get(i);
+      if (!ptr) {
+        numGeomIDs -= 1;
+      }
+    }
+    return numGeomIDs;
+    RTC_CATCH_END2(scene);
+    return 0;
+  }
+
+  RTC_API void rtcGetAttachedGeometryIDs (RTCScene hscene, size_t* numGeomIDs, unsigned int* geomIDs)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetAttachedGeometryIDs);
+    RTC_VERIFY_HANDLE(hscene);
+    RTC_VERIFY_HANDLE(numGeomIDs);
+    RTC_ENTER_DEVICE(hscene);
+    *numGeomIDs = scene->size();
+    for (unsigned int i = 0; i < scene->size(); ++i) {
+      Geometry* ptr = scene->get(i);
+      if (!ptr) {
+        *numGeomIDs -= 1;
+      } else if (geomIDs) {
+        *geomIDs++ = i;
+      }
+    }
+    RTC_CATCH_END2(scene);
+  }
+
+  RTC_API size_t rtcGetNumAttachedGeometries (RTCScene hscene)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetNumAttachedGeometryIDs);
+    RTC_VERIFY_HANDLE(hscene);
+    RTC_ENTER_DEVICE(hscene);
+    unsigned int numGeomIDs = scene->size();
+    for (unsigned int i = 0; i < scene->size(); ++i) {
+      Geometry* ptr = scene->get(i);
+      if (!ptr) {
+        numGeomIDs -= 1;
+      }
+    }
+    return numGeomIDs;
+    RTC_CATCH_END2(scene);
+    return 0;
+  }
+
+  RTC_API void rtcGetAttachedGeometries (RTCScene hscene, size_t* numGeoms, RTCGeometry* geometries)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetAttachedGeometries);
+    RTC_VERIFY_HANDLE(hscene);
+    RTC_VERIFY_HANDLE(numGeoms);
+    RTC_ENTER_DEVICE(hscene);
+    *numGeoms = scene->size();
+    for (unsigned int i = 0; i < scene->size(); ++i) {
+      Geometry* ptr = scene->get(i);
+      if (!ptr) {
+        *numGeoms -= 1;
+      } else if (geometries) {
+        *geometries++ = (RTCGeometry) ptr;
+      }
+    }
+    RTC_CATCH_END2(scene);
   }
 
   RTC_API RTCGeometry rtcGetGeometry (RTCScene hscene, unsigned int geomID)

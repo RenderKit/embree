@@ -1089,6 +1089,16 @@ namespace embree
     progress_monitor_ptr      = ptr;
   }
 
+  RTCProgressMonitorFunction Scene::getProgressMonitorFunction() const
+  {
+    return progress_monitor_function;
+  }
+
+  void* Scene::getProgressMonitorFunctionUserPtr() const
+  {
+    return progress_monitor_ptr;
+  }
+
   void Scene::progressMonitor(double dn)
   {
     if (progress_monitor_function) {
