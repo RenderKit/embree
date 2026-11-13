@@ -70,8 +70,13 @@ else
       echo "Extracted: $archive" >&2
     fi
   done
-  echo "EMBREE_DIR=$DEST_DIR" >> "$GITHUB_ENV"
-  echo "$DEST_DIR"  # Output for immediate use
+
+  # archives have a top level directory named after the package, except the testing package
+  EMBREE_DIR=$(echo "$DEST_DIR"/embree-*)
+  rm -rf "$EMBREE_DIR/testing"
+  mv "$DEST_DIR/testing" "$EMBREE_DIR"
+  echo "EMBREE_DIR=$EMBREE_DIR" >> "$GITHUB_ENV"
+  echo "$EMBREE_DIR"  # Output for immediate use
 fi
 
 echo "Test files prepared successfully" >&2
