@@ -16,7 +16,7 @@ ELSEIF (TASKING_TBB)
   ADD_LIBRARY(tasking STATIC taskschedulertbb.cpp)
   
   if (TARGET TBB::${EMBREE_TBB_COMPONENT})
-    message("-- TBB: reuse existing TBB::${TBB_COMPONENT} target")
+    message("-- TBB: reuse existing TBB::${EMBREE_TBB_COMPONENT} target")
     TARGET_LINK_LIBRARIES(tasking PUBLIC TBB::${EMBREE_TBB_COMPONENT})
   else()
     # Try getting TBB via config first
