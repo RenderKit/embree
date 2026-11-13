@@ -75,6 +75,7 @@ struct RTCBoundsFunctionArguments
   uniform unsigned int primID;
   uniform unsigned int timeStep;
   uniform RTCBounds* uniform bounds_o;
+  void* uniform boundsUserPtr;
 };
 
 /* Bounding callback function */
