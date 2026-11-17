@@ -2819,6 +2819,62 @@ namespace embree
     }
   };
   
+  struct ConeLinearNonUnitRayTest : public VerifyApplication::IntersectTest
+  {
+    SceneFlags sflags;
+
+    ConeLinearNonUnitRayTest (std::string name, int64_t isa, SceneFlags sflags, IntersectMode imode, IntersectVariant ivariant)
+      : VerifyApplication::IntersectTest(std::move(name),isa,imode,ivariant,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags) {}
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(nullptr,rtcGetDeviceError(device));
+
+      for (float radius : { 1.0f, 2.0f })
+      {
+        Vec4f vertices[2] = { Vec4f(-3,0,4,1), Vec4f(3,0,4,radius) };
+        unsigned indices[1] = { 0 };
+        RTCSceneRef scene = rtcNewScene(device);
+        rtcSetSceneFlags(scene,sflags.sflags);
+        rtcSetSceneBuildQuality(scene,sflags.qflags);
+        RTCGeometry geom = rtcNewGeometry(device,RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE);
+        rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT4,vertices,0,sizeof(Vec4f),2);
+        rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT,indices,0,sizeof(unsigned),1);
+        rtcCommitGeometry(geom);
+        unsigned geomID = rtcAttachGeometry(scene,geom);
+        rtcReleaseGeometry(geom);
+        rtcCommitScene(scene);
+        AssertNoError(device);
+
+        const float hit_z = 4.0f - 0.5f*(1.0f+radius);
+        for (float dz : { 0.5f, 1.0f, 2.0f })
+        {
+          RTCRayHit rays[2] = {
+            makeRay(Vec3fa(zero),Vec3fa(0,0,dz),0.0f,16.0f),
+            makeRay(Vec3fa(zero),Vec3fa(0,0,dz),0.0f,(hit_z-0.5f)/dz)
+          };
+          IntersectWithMode(imode,ivariant,scene,rays,2);
+          AssertNoError(device);
+
+          if (ivariant & VARIANT_INTERSECT)
+          {
+            if (rays[0].hit.geomID != geomID || rays[0].hit.primID != 0) return VerifyApplication::FAILED;
+            if (abs(rays[0].ray.tfar - hit_z/dz) > 16.0f*float(ulp)) return VerifyApplication::FAILED;
+            if (rays[1].hit.geomID != RTC_INVALID_GEOMETRY_ID) return VerifyApplication::FAILED;
+          }
+          else
+          {
+            if (rays[0].ray.tfar != float(neg_inf)) return VerifyApplication::FAILED;
+          }
+          if (rays[1].ray.tfar != (hit_z-0.5f)/dz) return VerifyApplication::FAILED;
+        }
+      }
+      return VerifyApplication::PASSED;
+    }
+  };
+
   struct RayMasksTest : public VerifyApplication::IntersectTest
   {
     SceneFlags sflags; 
@@ -6668,6 +6724,17 @@ namespace embree
             if (has_variant(imode,ivariant))
                 groups.top()->add(new QuadHitTest(to_string(sflags,imode,ivariant),isa,sflags,RTC_BUILD_QUALITY_MEDIUM,imode,ivariant));
       groups.pop();
+
+      if (rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_CURVE_GEOMETRY_SUPPORTED))
+      {
+        push(new TestGroup("cone_linear_non_unit_ray",true,true));
+        for (auto sflags : sceneFlags)
+          for (auto imode : intersectModes)
+            for (auto ivariant : intersectVariants)
+              if (has_variant(imode,ivariant))
+                groups.top()->add(new ConeLinearNonUnitRayTest(to_string(sflags,imode,ivariant),isa,sflags,imode,ivariant));
+        groups.pop();
+      }
 
       if (rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_RAY_MASK_SUPPORTED)) 
       {
