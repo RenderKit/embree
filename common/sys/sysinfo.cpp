@@ -429,6 +429,13 @@ namespace embree
 #endif
     return cpu_features;
 
+#elif defined(__powerpc64__)
+
+    int cpu_features = CPU_FEATURE_SSE|CPU_FEATURE_SSE2|CPU_FEATURE_SSE3|CPU_FEATURE_SSSE3;
+    cpu_features |= CPU_FEATURE_SSE41|CPU_FEATURE_SSE42|CPU_FEATURE_POPCNT;
+    cpu_features |= CPU_FEATURE_XMM_ENABLED;
+    return cpu_features;
+
 #elif defined(__ARM_NEON) || defined(EMBREE_ARM64) || defined(__EMSCRIPTEN__)
 
     int cpu_features = CPU_FEATURE_NEON|CPU_FEATURE_SSE|CPU_FEATURE_SSE2;
