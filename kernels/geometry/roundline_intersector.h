@@ -200,7 +200,7 @@ namespace embree
           {
             const Vec3vf<M> p0p = p - p0;
             const vfloat<M> y = dot(p0p,dP);
-            const vfloat<M> cap0 = -r0dr+vfloat<M>(ulp);
+            const vfloat<M> cap0 = -r0dr+vfloat<M>(ulp)*g;
             const vfloat<M> cap1 = -r1*dr + dPdP;
             
             vbool<M> inside_cone = valid_i & (p0.x != vfloat<M>(inf)) & (p1.x != vfloat<M>(inf));
@@ -335,11 +335,11 @@ namespace embree
           const vfloat<M> rcp_2A = rcp(2.0f*A);
           t_cone_front = (-B-Q)*rcp_2A;
           y_cone_front = yp + t_cone_front*dOdP;
-          lower = select( (y_cone_front > -(float)ulp) & (y_cone_front <= g) & (g > 0.0f), t_cone_front, vfloat<M>(pos_inf));
+          lower = select( (y_cone_front > -(float)ulp*g) & (y_cone_front <= g) & (g > 0.0f), t_cone_front, vfloat<M>(pos_inf));
 #if !defined (EMBREE_BACKFACE_CULLING_CURVES)
           t_cone_back = (-B+Q)*rcp_2A;
           y_cone_back  = yp + t_cone_back *dOdP;
-          upper = select( (y_cone_back  > -(float)ulp) & (y_cone_back  <= g) & (g > 0.0f), t_cone_back , vfloat<M>(neg_inf));
+          upper = select( (y_cone_back  > -(float)ulp*g) & (y_cone_back  <= g) & (g > 0.0f), t_cone_back , vfloat<M>(neg_inf));
 #endif          
           return true;
         }
