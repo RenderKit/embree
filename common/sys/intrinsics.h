@@ -512,6 +512,17 @@ namespace embree
   }
   
   /* prefetches */
+#if defined(_MSC_VER) && defined(__clang__) && !defined(EMBREE_ARM64)
+  /* clang targeting MSVC: <windows.h> (included above) pulls in winnt.h, which redefines
+     _MM_HINT_T0/T1/T2/NTA to the MSVC values 1/2/3/0 after clang's xmmintrin.h set them
+     to 3/2/1/0; clang's _mm_prefetch decodes the hint GCC-style (locality = hint & 3), so
+     _MM_HINT_T0 became prefetcht2 (LLVM bug 37400). Use the builtin with explicit locality. */
+  __forceinline void prefetchL1 (const void* ptr) { __builtin_prefetch(ptr,0,3); }
+  __forceinline void prefetchL2 (const void* ptr) { __builtin_prefetch(ptr,0,2); }
+  __forceinline void prefetchL3 (const void* ptr) { __builtin_prefetch(ptr,0,1); }
+  __forceinline void prefetchNTA(const void* ptr) { __builtin_prefetch(ptr,0,0); }
+  __forceinline void prefetchEX (const void* ptr) { __builtin_prefetch(ptr,0,3); } /* as the non-Intel path below: read prefetch */
+#else
   __forceinline void prefetchL1 (const void* ptr) { _mm_prefetch((const char*)ptr,_MM_HINT_T0); }
   __forceinline void prefetchL2 (const void* ptr) { _mm_prefetch((const char*)ptr,_MM_HINT_T1); }
   __forceinline void prefetchL3 (const void* ptr) { _mm_prefetch((const char*)ptr,_MM_HINT_T2); }
@@ -523,6 +534,7 @@ namespace embree
     _mm_prefetch((const char*)ptr,_MM_HINT_T0);    
 #endif
   }
+#endif
 
   __forceinline void prefetchL1EX(const void* ptr) {
     prefetchEX(ptr);
