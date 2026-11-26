@@ -512,6 +512,14 @@ namespace embree
   }
   
   /* prefetches */
+#if defined(_MSC_VER) && defined(__clang__) && !defined(EMBREE_ARM64)
+  /* clang-cl: winnt.h redefines _MM_HINT_* (LLVM bug 37400), so prefetchL1 became prefetcht2 */
+  __forceinline void prefetchL1 (const void* ptr) { __builtin_prefetch(ptr,0,3); }
+  __forceinline void prefetchL2 (const void* ptr) { __builtin_prefetch(ptr,0,2); }
+  __forceinline void prefetchL3 (const void* ptr) { __builtin_prefetch(ptr,0,1); }
+  __forceinline void prefetchNTA(const void* ptr) { __builtin_prefetch(ptr,0,0); }
+  __forceinline void prefetchEX (const void* ptr) { __builtin_prefetch(ptr,0,3); }
+#else
   __forceinline void prefetchL1 (const void* ptr) { _mm_prefetch((const char*)ptr,_MM_HINT_T0); }
   __forceinline void prefetchL2 (const void* ptr) { _mm_prefetch((const char*)ptr,_MM_HINT_T1); }
   __forceinline void prefetchL3 (const void* ptr) { _mm_prefetch((const char*)ptr,_MM_HINT_T2); }
@@ -523,6 +531,7 @@ namespace embree
     _mm_prefetch((const char*)ptr,_MM_HINT_T0);    
 #endif
   }
+#endif
 
   __forceinline void prefetchL1EX(const void* ptr) {
     prefetchEX(ptr);
